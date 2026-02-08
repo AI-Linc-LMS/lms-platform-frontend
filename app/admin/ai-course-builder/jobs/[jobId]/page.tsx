@@ -17,7 +17,11 @@ import {
   TextField,
   FormControlLabel,
   Checkbox,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -439,7 +443,7 @@ export default function JobDetailPage() {
 
                 if (outline?.modules?.length) {
                   return (
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
                       {(outline.modules as OutlineModule[]).map((mod, modIdx) => {
                         const modTasks: ContentTask[] = [];
                         (mod.submodules ?? []).forEach((sub: OutlineSubmodule) => {
@@ -449,146 +453,148 @@ export default function JobDetailPage() {
                         });
                         const modProg = subProgress(modTasks);
                         return (
-                          <Box
+                          <Accordion
                             key={`week-${mod.week}-${modIdx}`}
-                            sx={{
-                              border: "1px solid",
-                              borderColor: "divider",
-                              borderRadius: 1,
-                              p: 2,
-                            }}
+                            disableGutters
+                            sx={{ "&:before": { display: "none" }, borderBottom: "1px solid", borderColor: "divider" }}
                           >
-                            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.5 }}>
-                              Week {mod.week}: {mod.title}
-                            </Typography>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1.5 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={modProg.pct}
-                                sx={{ flex: 1, height: 8, borderRadius: 1 }}
-                              />
-                              <Typography variant="caption" sx={{ minWidth: 56 }}>
-                                {modProg.completed} / {modProg.total} ({modProg.pct}%)
-                              </Typography>
-                            </Box>
-                            {(mod.submodules ?? []).map((sub: OutlineSubmodule, subIdx: number) => {
-                              const key = sub.title?.trim() ?? "";
-                              const subTasks = tasksBySubmoduleTitle[key] ?? [];
-                              const subProg = subProgress(subTasks);
-                              const subId = subTasks[0]?.submodule;
-                              const loadingSub = subId != null && regeneratingSubmoduleId === subId;
-                              return (
-                                <Box
-                                  key={`${modIdx}-${subIdx}-${key}`}
-                                  sx={{
-                                    borderLeft: "2px solid",
-                                    borderColor: "divider",
-                                    pl: 1.5,
-                                    ml: 0.5,
-                                    mb: 1.5,
-                                  }}
-                                >
-                                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 0.5 }}>
-                                    <Typography variant="body2" fontWeight={500}>
-                                      {sub.title}
-                                    </Typography>
-                                    {subId != null && (
-                                      <Button
-                                        size="small"
-                                        variant="outlined"
-                                        disabled={loadingSub}
-                                        onClick={() => handleRegenerateSubmodule(subId)}
-                                        startIcon={
-                                          loadingSub ? (
-                                            <CircularProgress size={14} />
-                                          ) : (
-                                            <IconWrapper icon="mdi:refresh" size={14} />
-                                          )
-                                        }
-                                      >
-                                        Regenerate submodule
-                                      </Button>
-                                    )}
-                                  </Box>
-                                  {subTasks.length > 0 && (
-                                    <>
-                                      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.75 }}>
-                                        <LinearProgress
-                                          variant="determinate"
-                                          value={subProg.pct}
-                                          sx={{ flex: 1, height: 6, borderRadius: 1 }}
-                                        />
-                                        <Typography variant="caption" color="text.secondary">
-                                          {subProg.completed} / {subProg.total}
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 56 }}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%", pr: 1 }}>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                  Week {mod.week}: {mod.title}
+                                </Typography>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={modProg.pct}
+                                  sx={{ flex: 1, maxWidth: 200, height: 8, borderRadius: 1 }}
+                                />
+                                <Typography variant="caption" sx={{ minWidth: 48 }}>
+                                  {modProg.completed} / {modProg.total} ({modProg.pct}%)
+                                </Typography>
+                              </Box>
+                            </AccordionSummary>
+                            <AccordionDetails sx={{ pt: 0 }}>
+                              {(mod.submodules ?? []).map((sub: OutlineSubmodule, subIdx: number) => {
+                                const key = sub.title?.trim() ?? "";
+                                const subTasks = tasksBySubmoduleTitle[key] ?? [];
+                                const subProg = subProgress(subTasks);
+                                const subId = subTasks[0]?.submodule;
+                                const loadingSub = subId != null && regeneratingSubmoduleId === subId;
+                                return (
+                                  <Accordion
+                                    key={`${modIdx}-${subIdx}-${key}`}
+                                    disableGutters
+                                    sx={{ boxShadow: "none", "&:before": { display: "none" }, border: "1px solid", borderColor: "divider", borderRadius: 1, mb: 1, "&.Mui-expanded": { m: 0, mb: 1 } }}
+                                  >
+                                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 48 }}>
+                                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", pr: 1 }}>
+                                        <Typography variant="body2" fontWeight={500}>
+                                          {sub.title}
                                         </Typography>
-                                      </Box>
-                                      <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                        {subTasks.map((t) => {
-                                          const loadingTask = regeneratingTaskId === t.id;
-                                          const loadingContent = t.content != null && regeneratingContentId === t.content;
-                                          return (
-                                            <Box
-                                              component="li"
-                                              key={t.id}
-                                              sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                flexWrap: "wrap",
-                                                gap: 1,
-                                                ...(t.status === "failed" && {
-                                                  bgcolor: "rgba(211, 47, 47, 0.08)",
-                                                  borderLeft: "3px solid",
-                                                  borderColor: "error.main",
-                                                  pl: 0.75,
-                                                  borderRadius: 0.5,
-                                                }),
-                                              }}
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                          <LinearProgress
+                                            variant="determinate"
+                                            value={subProg.pct}
+                                            sx={{ width: 80, height: 6, borderRadius: 1 }}
+                                          />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {subProg.completed} / {subProg.total}
+                                          </Typography>
+                                          {subId != null && (
+                                            <Button
+                                              size="small"
+                                              variant="outlined"
+                                              disabled={loadingSub}
+                                              onClick={(e) => { e.stopPropagation(); handleRegenerateSubmodule(subId); }}
+                                              startIcon={
+                                                loadingSub ? (
+                                                  <CircularProgress size={14} />
+                                                ) : (
+                                                  <IconWrapper icon="mdi:refresh" size={14} />
+                                                )
+                                              }
                                             >
-                                              <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
-                                                {t.content_type} — {t.status}
-                                              </Typography>
-                                              <Button
-                                                size="small"
-                                                variant="text"
-                                                disabled={loadingTask}
-                                                onClick={() => handleRegenerateTask(t.id)}
-                                                startIcon={
-                                                  loadingTask ? (
-                                                    <CircularProgress size={12} />
-                                                  ) : (
-                                                    <IconWrapper icon="mdi:refresh" size={12} />
-                                                  )
-                                                }
+                                              Regenerate submodule
+                                            </Button>
+                                          )}
+                                        </Box>
+                                      </Box>
+                                    </AccordionSummary>
+                                    <AccordionDetails sx={{ pt: 0, pl: 2, borderTop: "1px solid", borderColor: "divider" }}>
+                                      {subTasks.length > 0 ? (
+                                        <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                          {subTasks.map((t) => {
+                                            const loadingTask = regeneratingTaskId === t.id;
+                                            const loadingContent = t.content != null && regeneratingContentId === t.content;
+                                            const isPending = t.status === "pending";
+                                            return (
+                                              <Box
+                                                component="li"
+                                                key={t.id}
+                                                sx={{
+                                                  display: "flex",
+                                                  alignItems: "center",
+                                                  flexWrap: "wrap",
+                                                  gap: 1,
+                                                  ...(t.status === "failed" && {
+                                                    bgcolor: "rgba(211, 47, 47, 0.08)",
+                                                    borderLeft: "3px solid",
+                                                    borderColor: "error.main",
+                                                    pl: 0.75,
+                                                    borderRadius: 0.5,
+                                                  }),
+                                                }}
                                               >
-                                                Regenerate task
-                                              </Button>
-                                              {t.content != null && (
+                                                <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
+                                                  {t.content_type} — {t.status}
+                                                </Typography>
                                                 <Button
                                                   size="small"
                                                   variant="text"
-                                                  disabled={loadingContent}
-                                                  onClick={() => handleRegenerateContent(t.content!)}
+                                                  disabled={loadingTask}
+                                                  onClick={() => handleRegenerateTask(t.id)}
                                                   startIcon={
-                                                    loadingContent ? (
+                                                    loadingTask ? (
                                                       <CircularProgress size={12} />
                                                     ) : (
-                                                      <IconWrapper icon="mdi:refresh" size={12} />
+                                                      <IconWrapper icon={isPending ? "mdi:play" : "mdi:refresh"} size={12} />
                                                     )
                                                   }
                                                 >
-                                                  Regenerate content
+                                                  {isPending ? "Generate task" : "Regenerate task"}
                                                 </Button>
-                                              )}
-                                            </Box>
-                                          );
-                                        })}
-                                      </Box>
-                                    </>
-                                  )}
-                                </Box>
-                              );
-                            })}
-                          </Box>
+                                                {t.content != null && (
+                                                  <Button
+                                                    size="small"
+                                                    variant="text"
+                                                    disabled={loadingContent}
+                                                    onClick={() => handleRegenerateContent(t.content!)}
+                                                    startIcon={
+                                                      loadingContent ? (
+                                                        <CircularProgress size={12} />
+                                                      ) : (
+                                                        <IconWrapper icon="mdi:refresh" size={12} />
+                                                      )
+                                                    }
+                                                  >
+                                                    Regenerate content
+                                                  </Button>
+                                                )}
+                                              </Box>
+                                            );
+                                          })}
+                                        </Box>
+                                      ) : (
+                                        <Typography variant="caption" color="text.secondary">
+                                          No tasks for this submodule.
+                                        </Typography>
+                                      )}
+                                    </AccordionDetails>
+                                  </Accordion>
+                                );
+                              })}
+                            </AccordionDetails>
+                          </Accordion>
                         );
                       })}
                     </Box>
@@ -605,110 +611,111 @@ export default function JobDetailPage() {
                   {}
                 );
                 return (
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
                     {Object.entries(bySubmodule).map(([subIdStr, subTasks]) => {
                       const subId = Number(subIdStr);
                       const title = subTasks[0]?.submodule_title ?? `Submodule ${subId}`;
                       const loadingSub = regeneratingSubmoduleId === subId;
                       const prog = subProgress(subTasks);
                       return (
-                        <Box
+                        <Accordion
                           key={subId}
-                          sx={{
-                            border: "1px solid",
-                            borderColor: "divider",
-                            borderRadius: 1,
-                            p: 1.5,
-                          }}
+                          disableGutters
+                          sx={{ "&:before": { display: "none" }, borderBottom: "1px solid", borderColor: "divider" }}
                         >
-                          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 1 }}>
-                            <Typography variant="body2" fontWeight={500}>
-                              {title}
-                            </Typography>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              disabled={loadingSub}
-                              onClick={() => handleRegenerateSubmodule(subId)}
-                              startIcon={
-                                loadingSub ? (
-                                  <CircularProgress size={14} />
-                                ) : (
-                                  <IconWrapper icon="mdi:refresh" size={14} />
-                                )
-                              }
-                            >
-                              Regenerate submodule
-                            </Button>
-                          </Box>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.75 }}>
-                            <LinearProgress variant="determinate" value={prog.pct} sx={{ flex: 1, height: 6, borderRadius: 1 }} />
-                            <Typography variant="caption" color="text.secondary">
-                              {prog.completed} / {prog.total}
-                            </Typography>
-                          </Box>
-                          <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                            {subTasks.map((t) => {
-                              const loadingTask = regeneratingTaskId === t.id;
-                              const loadingContent = t.content != null && regeneratingContentId === t.content;
-                              return (
-                                <Box
-                                  component="li"
-                                  key={t.id}
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    flexWrap: "wrap",
-                                    gap: 1,
-                                    ...(t.status === "failed" && {
-                                      bgcolor: "rgba(211, 47, 47, 0.08)",
-                                      borderLeft: "3px solid",
-                                      borderColor: "error.main",
-                                      pl: 0.75,
-                                      borderRadius: 0.5,
-                                    }),
-                                  }}
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 48 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", pr: 1 }}>
+                              <Typography variant="body2" fontWeight={500}>
+                                {title}
+                              </Typography>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <LinearProgress variant="determinate" value={prog.pct} sx={{ width: 80, height: 6, borderRadius: 1 }} />
+                                <Typography variant="caption" color="text.secondary">
+                                  {prog.completed} / {prog.total}
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  disabled={loadingSub}
+                                  onClick={(e) => { e.stopPropagation(); handleRegenerateSubmodule(subId); }}
+                                  startIcon={
+                                    loadingSub ? (
+                                      <CircularProgress size={14} />
+                                    ) : (
+                                      <IconWrapper icon="mdi:refresh" size={14} />
+                                    )
+                                  }
                                 >
-                                  <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
-                                    {t.content_type} — {t.status}
-                                  </Typography>
-                                  <Button
-                                    size="small"
-                                    variant="text"
-                                    disabled={loadingTask}
-                                    onClick={() => handleRegenerateTask(t.id)}
-                                    startIcon={
-                                      loadingTask ? (
-                                        <CircularProgress size={12} />
-                                      ) : (
-                                        <IconWrapper icon="mdi:refresh" size={12} />
-                                      )
-                                    }
+                                  Regenerate submodule
+                                </Button>
+                              </Box>
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ pt: 0, borderTop: "1px solid", borderColor: "divider" }}>
+                            <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
+                              {subTasks.map((t) => {
+                                const loadingTask = regeneratingTaskId === t.id;
+                                const loadingContent = t.content != null && regeneratingContentId === t.content;
+                                const isPending = t.status === "pending";
+                                return (
+                                  <Box
+                                    component="li"
+                                    key={t.id}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      flexWrap: "wrap",
+                                      gap: 1,
+                                      ...(t.status === "failed" && {
+                                        bgcolor: "rgba(211, 47, 47, 0.08)",
+                                        borderLeft: "3px solid",
+                                        borderColor: "error.main",
+                                        pl: 0.75,
+                                        borderRadius: 0.5,
+                                      }),
+                                    }}
                                   >
-                                    Regenerate task
-                                  </Button>
-                                  {t.content != null && (
+                                    <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
+                                      {t.content_type} — {t.status}
+                                    </Typography>
                                     <Button
                                       size="small"
                                       variant="text"
-                                      disabled={loadingContent}
-                                      onClick={() => handleRegenerateContent(t.content!)}
+                                      disabled={loadingTask}
+                                      onClick={() => handleRegenerateTask(t.id)}
                                       startIcon={
-                                        loadingContent ? (
+                                        loadingTask ? (
                                           <CircularProgress size={12} />
                                         ) : (
-                                          <IconWrapper icon="mdi:refresh" size={12} />
+                                          <IconWrapper icon={isPending ? "mdi:play" : "mdi:refresh"} size={12} />
                                         )
                                       }
                                     >
-                                      Regenerate content
+                                      {isPending ? "Generate task" : "Regenerate task"}
                                     </Button>
-                                  )}
-                                </Box>
-                              );
-                            })}
-                          </Box>
-                        </Box>
+                                    {t.content != null && (
+                                      <Button
+                                        size="small"
+                                        variant="text"
+                                        disabled={loadingContent}
+                                        onClick={() => handleRegenerateContent(t.content!)}
+                                        startIcon={
+                                          loadingContent ? (
+                                            <CircularProgress size={12} />
+                                          ) : (
+                                            <IconWrapper icon="mdi:refresh" size={12} />
+                                          )
+                                        }
+                                      >
+                                        Regenerate content
+                                      </Button>
+                                    )}
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          </AccordionDetails>
+                        </Accordion>
                       );
                     })}
                   </Box>
