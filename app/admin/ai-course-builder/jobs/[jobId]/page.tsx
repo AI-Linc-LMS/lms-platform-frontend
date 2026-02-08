@@ -75,6 +75,14 @@ export default function JobDetailPage() {
     return () => clearInterval(id);
   }, [data?.job?.status, loadJob]);
 
+  const hasFailedTasks = (data?.failed_tasks ?? 0) > 0;
+  const hasContentTasks = (data?.content_tasks?.length ?? 0) > 0;
+  const isLive = data?.job?.status === "generating_content";
+  const showRegenerateSection =
+    !isLive &&
+    data?.job?.generated_course_id != null &&
+    (hasContentTasks || hasFailedTasks);
+
   const handleRegenerateOutline = async () => {
     try {
       setRegenerating(true);
@@ -356,7 +364,7 @@ export default function JobDetailPage() {
           );
         })()}
 
-        {job.generated_course_id != null && (
+        {job.generated_course_id != null && !isLive && (
           <Box sx={{ mb: 3 }}>
             <Button
               variant="contained"
@@ -386,17 +394,31 @@ export default function JobDetailPage() {
           </Box>
         )}
 
-        {job.generated_course_id != null &&
-          (data.content_tasks?.length ?? 0) > 0 && (
+        {showRegenerateSection && (
             <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
                 Regenerate content
               </Typography>
+              {hasFailedTasks && (
+                <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+                  Some tasks failed. Use &quot;Regenerate task&quot; on failed items below to retry, or regenerate by submodule.
+                </Typography>
+              )}
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Regenerate by submodule or by individual task/content after
                 content has been generated.
               </Typography>
-              {(() => {
+              {!hasContentTasks && hasFailedTasks ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Task list not loaded. Refresh to see failed tasks and retry options.
+                  </Typography>
+                  <Button size="small" variant="outlined" onClick={loadJob} startIcon={<IconWrapper icon="mdi:refresh" size={16} />}>
+                    Refresh
+                  </Button>
+                </Box>
+              ) : (
+              (() => {
                 const tasks = (data.content_tasks ?? []) as ContentTask[];
                 const bySubmodule = tasks.reduce<Record<number, ContentTask[]>>(
                   (acc, t) => {
@@ -473,9 +495,16 @@ export default function JobDetailPage() {
                                     alignItems: "center",
                                     flexWrap: "wrap",
                                     gap: 1,
+                                    ...(t.status === "failed" && {
+                                      bgcolor: "rgba(211, 47, 47, 0.08)",
+                                      borderLeft: "3px solid",
+                                      borderColor: "error.main",
+                                      pl: 0.75,
+                                      borderRadius: 0.5,
+                                    }),
                                   }}
                                 >
-                                  <Typography variant="caption" sx={{ mr: 0.5 }}>
+                                  <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
                                     {t.content_type} — {t.status}
                                   </Typography>
                                   <Button
@@ -521,7 +550,7 @@ export default function JobDetailPage() {
                     })}
                   </Box>
                 );
-              })()}
+              })() )}
             </Paper>
           )}
 
