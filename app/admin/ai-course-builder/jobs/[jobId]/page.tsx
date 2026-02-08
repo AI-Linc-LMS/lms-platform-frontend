@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   Box,
@@ -26,6 +26,9 @@ import {
   type JobDetailResponse,
   type ApproveOutlineBody,
   type ContentTask,
+  type CourseOutline,
+  type OutlineModule,
+  type OutlineSubmodule,
 } from "@/lib/services/admin/ai-course-builder.service";
 import { OutlinePreview } from "@/components/admin/ai-course-builder/OutlinePreview";
 
@@ -33,7 +36,6 @@ const POLL_INTERVAL_MS = 10000;
 
 export default function JobDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const jobId = params.jobId as string;
   const { showToast } = useToast();
 
@@ -107,13 +109,10 @@ export default function JobDetailPage() {
         thumbnail: approveThumbnail.trim() || undefined,
         published: approvePublished,
       };
-      const res = await aiCourseBuilderService.approveOutline(jobId, body);
+      await aiCourseBuilderService.approveOutline(jobId, body);
       showToast("Course structure created successfully", "success");
       setApproveOpen(false);
       await loadJob();
-      if (res.course_id != null) {
-        router.push(`/admin/course-builder/${res.course_id}/edit`);
-      }
     } catch (error: unknown) {
       showToast(
         error instanceof Error ? error.message : "Approve failed",
@@ -288,7 +287,7 @@ export default function JobDetailPage() {
           
         </Box>
 
-        {outlineReady && (
+        {outlineReady && job.generated_course_id == null && (
           <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
             <Button
               variant="outlined"
@@ -420,6 +419,182 @@ export default function JobDetailPage() {
               ) : (
               (() => {
                 const tasks = (data.content_tasks ?? []) as ContentTask[];
+                const outline = job.outline as CourseOutline | null | undefined;
+
+                const tasksBySubmoduleTitle = tasks.reduce<Record<string, ContentTask[]>>(
+                  (acc, t) => {
+                    const key = t.submodule_title?.trim() ?? "";
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(t);
+                    return acc;
+                  },
+                  {}
+                );
+
+                const subProgress = (taskList: ContentTask[]) => {
+                  const total = taskList.length;
+                  const completed = taskList.filter((t) => t.status === "completed").length;
+                  return { completed, total, pct: total ? Math.round((completed / total) * 100) : 0 };
+                };
+
+                if (outline?.modules?.length) {
+                  return (
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      {(outline.modules as OutlineModule[]).map((mod, modIdx) => {
+                        const modTasks: ContentTask[] = [];
+                        (mod.submodules ?? []).forEach((sub: OutlineSubmodule) => {
+                          const key = sub.title?.trim() ?? "";
+                          const list = tasksBySubmoduleTitle[key] ?? [];
+                          modTasks.push(...list);
+                        });
+                        const modProg = subProgress(modTasks);
+                        return (
+                          <Box
+                            key={`week-${mod.week}-${modIdx}`}
+                            sx={{
+                              border: "1px solid",
+                              borderColor: "divider",
+                              borderRadius: 1,
+                              p: 2,
+                            }}
+                          >
+                            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.5 }}>
+                              Week {mod.week}: {mod.title}
+                            </Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1.5 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={modProg.pct}
+                                sx={{ flex: 1, height: 8, borderRadius: 1 }}
+                              />
+                              <Typography variant="caption" sx={{ minWidth: 56 }}>
+                                {modProg.completed} / {modProg.total} ({modProg.pct}%)
+                              </Typography>
+                            </Box>
+                            {(mod.submodules ?? []).map((sub: OutlineSubmodule, subIdx: number) => {
+                              const key = sub.title?.trim() ?? "";
+                              const subTasks = tasksBySubmoduleTitle[key] ?? [];
+                              const subProg = subProgress(subTasks);
+                              const subId = subTasks[0]?.submodule;
+                              const loadingSub = subId != null && regeneratingSubmoduleId === subId;
+                              return (
+                                <Box
+                                  key={`${modIdx}-${subIdx}-${key}`}
+                                  sx={{
+                                    borderLeft: "2px solid",
+                                    borderColor: "divider",
+                                    pl: 1.5,
+                                    ml: 0.5,
+                                    mb: 1.5,
+                                  }}
+                                >
+                                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 0.5 }}>
+                                    <Typography variant="body2" fontWeight={500}>
+                                      {sub.title}
+                                    </Typography>
+                                    {subId != null && (
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        disabled={loadingSub}
+                                        onClick={() => handleRegenerateSubmodule(subId)}
+                                        startIcon={
+                                          loadingSub ? (
+                                            <CircularProgress size={14} />
+                                          ) : (
+                                            <IconWrapper icon="mdi:refresh" size={14} />
+                                          )
+                                        }
+                                      >
+                                        Regenerate submodule
+                                      </Button>
+                                    )}
+                                  </Box>
+                                  {subTasks.length > 0 && (
+                                    <>
+                                      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.75 }}>
+                                        <LinearProgress
+                                          variant="determinate"
+                                          value={subProg.pct}
+                                          sx={{ flex: 1, height: 6, borderRadius: 1 }}
+                                        />
+                                        <Typography variant="caption" color="text.secondary">
+                                          {subProg.completed} / {subProg.total}
+                                        </Typography>
+                                      </Box>
+                                      <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                        {subTasks.map((t) => {
+                                          const loadingTask = regeneratingTaskId === t.id;
+                                          const loadingContent = t.content != null && regeneratingContentId === t.content;
+                                          return (
+                                            <Box
+                                              component="li"
+                                              key={t.id}
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                flexWrap: "wrap",
+                                                gap: 1,
+                                                ...(t.status === "failed" && {
+                                                  bgcolor: "rgba(211, 47, 47, 0.08)",
+                                                  borderLeft: "3px solid",
+                                                  borderColor: "error.main",
+                                                  pl: 0.75,
+                                                  borderRadius: 0.5,
+                                                }),
+                                              }}
+                                            >
+                                              <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
+                                                {t.content_type} — {t.status}
+                                              </Typography>
+                                              <Button
+                                                size="small"
+                                                variant="text"
+                                                disabled={loadingTask}
+                                                onClick={() => handleRegenerateTask(t.id)}
+                                                startIcon={
+                                                  loadingTask ? (
+                                                    <CircularProgress size={12} />
+                                                  ) : (
+                                                    <IconWrapper icon="mdi:refresh" size={12} />
+                                                  )
+                                                }
+                                              >
+                                                Regenerate task
+                                              </Button>
+                                              {t.content != null && (
+                                                <Button
+                                                  size="small"
+                                                  variant="text"
+                                                  disabled={loadingContent}
+                                                  onClick={() => handleRegenerateContent(t.content!)}
+                                                  startIcon={
+                                                    loadingContent ? (
+                                                      <CircularProgress size={12} />
+                                                    ) : (
+                                                      <IconWrapper icon="mdi:refresh" size={12} />
+                                                    )
+                                                  }
+                                                >
+                                                  Regenerate content
+                                                </Button>
+                                              )}
+                                            </Box>
+                                          );
+                                        })}
+                                      </Box>
+                                    </>
+                                  )}
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  );
+                }
+
                 const bySubmodule = tasks.reduce<Record<number, ContentTask[]>>(
                   (acc, t) => {
                     const sid = t.submodule;
@@ -433,10 +608,9 @@ export default function JobDetailPage() {
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {Object.entries(bySubmodule).map(([subIdStr, subTasks]) => {
                       const subId = Number(subIdStr);
-                      const title =
-                        subTasks[0]?.submodule_title ?? `Submodule ${subId}`;
-                      const loadingSub =
-                        regeneratingSubmoduleId === subId;
+                      const title = subTasks[0]?.submodule_title ?? `Submodule ${subId}`;
+                      const loadingSub = regeneratingSubmoduleId === subId;
+                      const prog = subProgress(subTasks);
                       return (
                         <Box
                           key={subId}
@@ -447,16 +621,7 @@ export default function JobDetailPage() {
                             p: 1.5,
                           }}
                         >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              flexWrap: "wrap",
-                              gap: 1,
-                              mb: 1,
-                            }}
-                          >
+                          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 1 }}>
                             <Typography variant="body2" fontWeight={500}>
                               {title}
                             </Typography>
@@ -476,16 +641,16 @@ export default function JobDetailPage() {
                               Regenerate submodule
                             </Button>
                           </Box>
-                          <Box
-                            component="ul"
-                            sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}
-                          >
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.75 }}>
+                            <LinearProgress variant="determinate" value={prog.pct} sx={{ flex: 1, height: 6, borderRadius: 1 }} />
+                            <Typography variant="caption" color="text.secondary">
+                              {prog.completed} / {prog.total}
+                            </Typography>
+                          </Box>
+                          <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
                             {subTasks.map((t) => {
-                              const loadingTask =
-                                regeneratingTaskId === t.id;
-                              const loadingContent =
-                                t.content != null &&
-                                regeneratingContentId === t.content;
+                              const loadingTask = regeneratingTaskId === t.id;
+                              const loadingContent = t.content != null && regeneratingContentId === t.content;
                               return (
                                 <Box
                                   component="li"
@@ -527,9 +692,7 @@ export default function JobDetailPage() {
                                       size="small"
                                       variant="text"
                                       disabled={loadingContent}
-                                      onClick={() =>
-                                        handleRegenerateContent(t.content!)
-                                      }
+                                      onClick={() => handleRegenerateContent(t.content!)}
                                       startIcon={
                                         loadingContent ? (
                                           <CircularProgress size={12} />

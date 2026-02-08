@@ -127,7 +127,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
         label="Articles per submodule"
         value={c.articles_per_submodule ?? 1}
         onChange={(e) => handleNumber("articles_per_submodule", e.target.value)}
-        inputProps={{ min: 0, max: 3 }}
+        inputProps={{ min: 0 }}
         fullWidth
       />
       <TextField
@@ -136,7 +136,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
         label="Quizzes per submodule"
         value={c.quizzes_per_submodule ?? 1}
         onChange={(e) => handleNumber("quizzes_per_submodule", e.target.value)}
-        inputProps={{ min: 0, max: 2 }}
+        inputProps={{ min: 0 }}
         fullWidth
       />
       <TextField
@@ -145,7 +145,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
         label="Questions per quiz"
         value={c.questions_per_quiz ?? 5}
         onChange={(e) => handleNumber("questions_per_quiz", e.target.value)}
-        inputProps={{ min: 3, max: 20 }}
+        inputProps={{ min: 3}}
         fullWidth
       />
       <TextField
@@ -156,7 +156,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
         onChange={(e) =>
           handleNumber("coding_problems_per_submodule", e.target.value)
         }
-        inputProps={{ min: 0, max: 2 }}
+        inputProps={{ min: 0, }}
         fullWidth
         disabled={!c.include_coding_problems}
       />
