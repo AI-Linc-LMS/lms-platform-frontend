@@ -432,8 +432,10 @@ export function TestResults({
         {/* Test Cases Tab */}
         {mainTab === 0 && (
           <Box>
-            {/* Compilation/Runtime Errors - bind error, stderr, compile_output */}
-            {hasCompilationError && (errorType || errorMessage) && (
+            {/* Compilation/Runtime Errors - only show if there's a compilation error, not test case failures */}
+            {hasCompilationError && (errorType || errorMessage) && !testCasesArray.some((tc: any) => 
+              tc.status === "Accepted" || tc.verdict === "Accepted" || tc.passed === true
+            ) && (
               <Box
                 sx={{
                   backgroundColor: "#ffffff",
@@ -443,17 +445,17 @@ export function TestResults({
                 }}
               >
                 <Alert
-                  severity={errorType && !errorMessage ? "error" : "success"}
+                  severity="error"
                   sx={{
                     mb: 2,
                     py: 1.5,
-                    backgroundColor: errorType && !errorMessage ? "#fee2e2" : "#d1fae5",
-                    border: errorType && !errorMessage ? "1px solid #ef4444" : "1px solid #10b981",
+                    backgroundColor: "#fee2e2",
+                    border: "1px solid #ef4444",
                     "& .MuiAlert-message": {
                       width: "100%",
                     },
                     "& .MuiAlert-icon": {
-                      color: errorType && !errorMessage ? "#dc2626" : "#059669",
+                      color: "#dc2626",
                     },
                   }}
                 >
@@ -463,10 +465,10 @@ export function TestResults({
                       fontWeight: 600,
                       mb: 0.5,
                       fontSize: "0.875rem",
-                      color: errorType && !errorMessage ? "#991b1b" : "#065f46",
+                      color: "#991b1b",
                     }}
                   >
-                    {errorType || testCasesArray[0]?.status || "Error"}
+                    {errorType || "Error"}
                   </Typography>
                   <Typography
                     component="pre"
@@ -476,7 +478,7 @@ export function TestResults({
                       fontSize: "0.8rem",
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
-                      color: errorType && !errorMessage ? "#dc2626" : "#059669",
+                      color: "#dc2626",
                     }}
                   >
                     {errorMessage || errorType}
@@ -484,6 +486,141 @@ export function TestResults({
                 </Alert>
               </Box>
             )}
+
+            {/* Separate Passed and Failed Test Cases */}
+            {testResults && testCasesArray.length > 0 && (() => {
+              const passedCases = testCasesArray.filter((tc: any) =>
+                tc.status === "Accepted" ||
+                tc.verdict === "Accepted" ||
+                tc.passed === true
+              );
+              const failedCases = testCasesArray.filter((tc: any) =>
+                tc.status !== "Accepted" &&
+                tc.verdict !== "Accepted" &&
+                tc.passed !== true &&
+                !tc.stderr &&
+                !tc.compile_output &&
+                !tc.error
+              );
+
+              return (
+                <>
+                  {/* Passed Test Cases */}
+                  {passedCases.length > 0 && (
+                    <Box
+                      sx={{
+                        backgroundColor: "#ffffff",
+                        p: 2,
+                        borderRadius: 1,
+                        mb: 2,
+                      }}
+                    >
+                      <Alert
+                        severity="success"
+                        sx={{
+                          py: 1.5,
+                          backgroundColor: "#d1fae5",
+                          border: "1px solid #10b981",
+                          "& .MuiAlert-message": {
+                            width: "100%",
+                          },
+                          "& .MuiAlert-icon": {
+                            color: "#059669",
+                          },
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            mb: 1,
+                            fontSize: "0.875rem",
+                            color: "#065f46",
+                          }}
+                        >
+                          ✓ {passedCases.length} Test Case{passedCases.length !== 1 ? "s" : ""} Passed
+                        </Typography>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                          {passedCases.map((tc: any, idx: number) => {
+                            const originalIndex = testCasesArray.indexOf(tc);
+                            return (
+                              <Typography
+                                key={idx}
+                                variant="body2"
+                                sx={{
+                                  fontSize: "0.875rem",
+                                  color: "#065f46",
+                                  fontFamily: "monospace",
+                                }}
+                              >
+                                Case {originalIndex + 1}: {tc.status || tc.verdict || "Accepted"}
+                              </Typography>
+                            );
+                          })}
+                        </Box>
+                      </Alert>
+                    </Box>
+                  )}
+
+                  {/* Failed Test Cases */}
+                  {failedCases.length > 0 && (
+                    <Box
+                      sx={{
+                        backgroundColor: "#ffffff",
+                        p: 2,
+                        borderRadius: 1,
+                        mb: 2,
+                      }}
+                    >
+                      <Alert
+                        severity="error"
+                        sx={{
+                          py: 1.5,
+                          backgroundColor: "#fee2e2",
+                          border: "1px solid #ef4444",
+                          "& .MuiAlert-message": {
+                            width: "100%",
+                          },
+                          "& .MuiAlert-icon": {
+                            color: "#dc2626",
+                          },
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            mb: 1,
+                            fontSize: "0.875rem",
+                            color: "#991b1b",
+                          }}
+                        >
+                          ✗ {failedCases.length} Test Case{failedCases.length !== 1 ? "s" : ""} Failed
+                        </Typography>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                          {failedCases.map((tc: any, idx: number) => {
+                            const originalIndex = testCasesArray.indexOf(tc);
+                            return (
+                              <Typography
+                                key={idx}
+                                variant="body2"
+                                sx={{
+                                  fontSize: "0.875rem",
+                                  color: "#991b1b",
+                                  fontFamily: "monospace",
+                                }}
+                              >
+                                Case {originalIndex + 1}: {tc.status || tc.verdict || "Failed"}
+                              </Typography>
+                            );
+                          })}
+                        </Box>
+                      </Alert>
+                    </Box>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Case Selection Buttons */}
             {testResults && testCasesArray.length > 0 && (
