@@ -443,17 +443,17 @@ export function TestResults({
                 }}
               >
                 <Alert
-                  severity="error"
+                  severity={errorType && !errorMessage ? "error" : "success"}
                   sx={{
                     mb: 2,
                     py: 1.5,
-                    backgroundColor: "#fee2e2",
-                    border: "1px solid #ef4444",
+                    backgroundColor: errorType && !errorMessage ? "#fee2e2" : "#d1fae5",
+                    border: errorType && !errorMessage ? "1px solid #ef4444" : "1px solid #10b981",
                     "& .MuiAlert-message": {
                       width: "100%",
                     },
                     "& .MuiAlert-icon": {
-                      color: "#dc2626",
+                      color: errorType && !errorMessage ? "#dc2626" : "#059669",
                     },
                   }}
                 >
@@ -463,7 +463,7 @@ export function TestResults({
                       fontWeight: 600,
                       mb: 0.5,
                       fontSize: "0.875rem",
-                      color: "#991b1b",
+                      color: errorType && !errorMessage ? "#991b1b" : "#065f46",
                     }}
                   >
                     {errorType || testCasesArray[0]?.status || "Error"}
@@ -476,7 +476,7 @@ export function TestResults({
                       fontSize: "0.8rem",
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
-                      color: "#dc2626",
+                      color: errorType && !errorMessage ? "#dc2626" : "#059669",
                     }}
                   >
                     {errorMessage || errorType}
