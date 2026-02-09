@@ -5,6 +5,7 @@ import * as tf from "@tensorflow/tfjs-core";
 export type ProctoringViolationType =
   | "NO_FACE"
   | "MULTIPLE_FACES"
+  | "FACE_NOT_VISIBLE"
   | "LOOKING_AWAY"
   | "EYE_MOVEMENT"
   | "FACE_TOO_CLOSE"
@@ -34,6 +35,14 @@ export interface ProctoringConfig {
   lookingAwayThreshold: number; // How off-center before considered looking away
   detectionInterval: number; // How often to run detection (ms)
   violationCooldown: number; // Cooldown before reporting same violation again (ms)
+  /** Minimum confidence (0-1) for a face prediction to count. Reduces false negatives. */
+  minConfidence?: number;
+  /** Number of consecutive frames to smooth face count (reduces flicker). */
+  smoothFrameCount?: number;
+  /** Probability below which to report poor lighting (higher = stricter). Default 0.4. */
+  poorLightingThreshold?: number;
+  /** Minimum confidence to accept face as "properly visible" (reject hand/obstruction). Default 0.65. */
+  minConfidenceForValidFace?: number;
 
   // Callbacks
   onViolation?: (violation: ProctoringViolation) => void;
@@ -42,11 +51,15 @@ export interface ProctoringConfig {
 }
 
 const DEFAULT_CONFIG: ProctoringConfig = {
-  minFaceSize: 15, // 15% of video height
-  maxFaceSize: 70, // 70% of video height
-  lookingAwayThreshold: 0.25, // 25% off-center
-  detectionInterval: 1000, // Check every second
-  violationCooldown: 3000, // 3 seconds cooldown
+  minFaceSize: 20, // 20% of video height (strictly rejects faces beyond 2-3 meters)
+  maxFaceSize: 75, // 75% of video height (slightly more lenient for close)
+  lookingAwayThreshold: 0.3, // 30% off-center (reduces false "looking away")
+  detectionInterval: 800, // Check every 800ms (responsive but not heavy)
+  violationCooldown: 2500, // 2.5 seconds cooldown
+  minConfidence: 0.4, // Ignore very low-confidence face boxes
+  smoothFrameCount: 3, // Require 3 consistent frames to reduce flicker
+  poorLightingThreshold: 0.4, // Only flag lighting if confidence < 0.4
+  minConfidenceForValidFace: 0.78, // Require high confidence for "face OK" (reject hand covering face)
 };
 
 export class ProctoringService {
@@ -62,6 +75,8 @@ export class ProctoringService {
   private currentFaceCount = 0;
   private violationHistory: ProctoringViolation[] = [];
   private currentLatestViolation: ProctoringViolation | null = null;
+  /** Rolling buffer of recent face counts for smoothing */
+  private faceCountBuffer: number[] = [];
 
   constructor(config: Partial<ProctoringConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -124,18 +139,26 @@ export class ProctoringService {
       // Check if there's an existing active video stream we can reuse
       let existingStream: MediaStream | null = null;
       try {
-        // First, check for globally stored stream (from device-check page)
-        if (
-          typeof window !== "undefined" &&
-          (window as any).__mockInterviewStream
-        ) {
-          const globalStream = (window as any).__mockInterviewStream;
-          const videoTracks = globalStream.getVideoTracks();
-          // Check if stream has active video track
-          if (videoTracks.length > 0 && videoTracks[0].readyState === "live") {
-            existingStream = globalStream;
-            // Clear the global reference after using it
-            delete (window as any).__mockInterviewStream;
+        // First, check for globally stored streams (from device-check pages)
+        if (typeof window !== "undefined") {
+          // Check for assessment stream
+          if ((window as any).__assessmentStream) {
+            const globalStream = (window as any).__assessmentStream;
+            const videoTracks = globalStream.getVideoTracks();
+            if (videoTracks.length > 0 && videoTracks[0].readyState === "live") {
+              existingStream = globalStream;
+              // Don't delete - keep it for the assessment session
+            }
+          }
+          // Check for mock interview stream
+          if (!existingStream && (window as any).__mockInterviewStream) {
+            const globalStream = (window as any).__mockInterviewStream;
+            const videoTracks = globalStream.getVideoTracks();
+            if (videoTracks.length > 0 && videoTracks[0].readyState === "live") {
+              existingStream = globalStream;
+              // Clear the global reference after using it
+              delete (window as any).__mockInterviewStream;
+            }
           }
         }
 
@@ -358,6 +381,7 @@ export class ProctoringService {
     // Reset state
     this.currentStatus = "NORMAL";
     this.currentFaceCount = 0;
+    this.faceCountBuffer = [];
     this.lastViolationTime.clear();
   }
 
@@ -431,6 +455,81 @@ export class ProctoringService {
   }
 
   /**
+   * Extract [x, y] from a BlazeFace landmark (can be tensor or array)
+   */
+  private getLandmarkPoint(
+    landmarks: unknown,
+    index: number
+  ): [number, number] | null {
+    if (!Array.isArray(landmarks) || index < 0 || index >= landmarks.length) {
+      return null;
+    }
+    const item = landmarks[index];
+    if (Array.isArray(item) && item.length >= 2) {
+      const x = Number(item[0]);
+      const y = Number(item[1]);
+      if (Number.isFinite(x) && Number.isFinite(y)) return [x, y];
+    }
+    try {
+      const t = item as { dataSync?: () => Float32Array | number[] };
+      const data = t?.dataSync?.();
+      if (data && data.length >= 2) {
+        const x = Number(data[0]);
+        const y = Number(data[1]);
+        if (Number.isFinite(x) && Number.isFinite(y)) return [x, y];
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  /**
+   * Extract face probability from BlazeFace prediction (handles tensor or number)
+   */
+  private getFaceProbability(face: blazeface.NormalizedFace): number | undefined {
+    const p = (face as any).probability;
+    if (p == null) return undefined;
+    if (typeof p === "number") return p;
+    if (Array.isArray(p) && p.length > 0) return Number(p[0]);
+    try {
+      const data = (p as any).dataSync?.();
+      if (data && data.length > 0) return Number(data[0]);
+    } catch {
+      // ignore
+    }
+    return undefined;
+  }
+
+  /**
+   * Smooth face count over recent frames to reduce flicker (0/1/0/1 -> 1)
+   */
+  private getSmoothedFaceCount(rawCount: number): number {
+    const smoothN = this.config.smoothFrameCount ?? 3;
+    this.faceCountBuffer.push(rawCount);
+    if (this.faceCountBuffer.length > smoothN) {
+      this.faceCountBuffer.shift();
+    }
+    if (this.faceCountBuffer.length < smoothN) {
+      return rawCount; // Not enough samples yet
+    }
+    // Use mode (most frequent value) for stability
+    const counts = new Map<number, number>();
+    for (const n of this.faceCountBuffer) {
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+    }
+    let best: number = this.faceCountBuffer[this.faceCountBuffer.length - 1];
+    let bestFreq = 0;
+    counts.forEach((freq, n) => {
+      if (freq > bestFreq || (freq === bestFreq && n === 1)) {
+        bestFreq = freq;
+        best = n;
+      }
+    });
+    return best;
+  }
+
+  /**
    * Detect faces in the current video frame
    */
   async detectFaces(): Promise<FaceDetectionResult> {
@@ -453,23 +552,34 @@ export class ProctoringService {
       };
     }
 
-    let predictions;
+    let predictions: blazeface.NormalizedFace[];
     try {
-      predictions = await this.model.estimateFaces(this.videoElement, false);
+      const raw = await this.model.estimateFaces(this.videoElement, false);
+      const minConf = this.config.minConfidence ?? 0.4;
+      // Filter by confidence to reduce false negatives and noise
+      predictions = raw.filter((face) => {
+        const prob = this.getFaceProbability(face);
+        return typeof prob === "number" && prob >= minConf;
+      }) as blazeface.NormalizedFace[];
     } catch (error) {
-      // Return empty result on estimation error
+      // On estimation error, push 0 and use smoothed count (avoids one-frame glitches)
+      const smoothed = this.getSmoothedFaceCount(0);
       return {
-        faceCount: 0,
-        violations: [],
-        status: "NORMAL",
+        faceCount: smoothed,
+        violations:
+          smoothed === 0
+            ? [this.createViolation("NO_FACE", "No face detected", "high")]
+            : [],
+        status: smoothed === 0 ? "VIOLATION" : "NORMAL",
         predictions: [],
       };
     }
 
     const violations: ProctoringViolation[] = [];
-    const faceCount = predictions.length;
+    const rawFaceCount = predictions.length;
+    const faceCount = this.getSmoothedFaceCount(rawFaceCount);
 
-    // Check for violations
+    // Check for violations (use smoothed count for stability)
     if (faceCount === 0) {
       violations.push(
         this.createViolation("NO_FACE", "No face detected", "high")
@@ -482,25 +592,63 @@ export class ProctoringService {
           "high"
         )
       );
-    } else {
-      // Single face - check for other violations
+    } else if (predictions.length >= 1) {
+      // Single face this frame - check visibility, position, size, lighting
       const face = predictions[0];
       const videoWidth = this.videoElement.videoWidth;
       const videoHeight = this.videoElement.videoHeight;
-
-      // Calculate face size
       const topLeft = face.topLeft as [number, number];
       const bottomRight = face.bottomRight as [number, number];
       const faceWidth = bottomRight[0] - topLeft[0];
       const faceHeight = bottomRight[1] - topLeft[1];
       const faceSizePercent = (faceHeight / videoHeight) * 100;
+      const probability = this.getFaceProbability(face);
+      const minValidConf = this.config.minConfidenceForValidFace ?? 0.78;
+      const faceNotVisibleMsg =
+        "Face not clearly visible. Remove hands or obstructions from your face.";
+
+      // 1) Require high confidence (reject hand/obstruction - model often gives lower confidence)
+      if (typeof probability === "number" && probability < minValidConf) {
+        violations.push(
+          this.createViolation(
+            "FACE_NOT_VISIBLE",
+            faceNotVisibleMsg,
+            "high",
+            probability
+          )
+        );
+      }
+
+      // 2) Require valid landmarks with proper eye spread - otherwise treat as not visible
+      // When face is covered, landmarks are missing or eyes are in wrong place / collapsed
+      const landmarks = (face as any).landmarks;
+      const rightEye = this.getLandmarkPoint(landmarks, 0);
+      const leftEye = this.getLandmarkPoint(landmarks, 1);
+
+      if (faceWidth > 0 && rightEye && leftEye) {
+        const eyeDx = leftEye[0] - rightEye[0];
+        const eyeDy = leftEye[1] - rightEye[1];
+        const eyeDistance = Math.sqrt(eyeDx * eyeDx + eyeDy * eyeDy);
+        const eyeSpreadRatio = eyeDistance / faceWidth;
+        // Real face: eyes are ~30–50% of face width apart. Hand/covered gives tiny or weird ratio
+        if (eyeSpreadRatio < 0.22) {
+          violations.push(
+            this.createViolation("FACE_NOT_VISIBLE", faceNotVisibleMsg, "high")
+          );
+        }
+      } else {
+        // No usable landmarks – cannot verify real face (e.g. hand in front)
+        violations.push(
+          this.createViolation("FACE_NOT_VISIBLE", faceNotVisibleMsg, "high")
+        );
+      }
 
       // Check if face is too close or too far
       if (faceSizePercent < this.config.minFaceSize) {
         violations.push(
           this.createViolation(
             "FACE_TOO_FAR",
-            "Please move closer to the camera",
+            "Please move closer to the camera (within 2-3 meters)",
             "medium"
           )
         );
@@ -552,22 +700,18 @@ export class ProctoringService {
         );
       }
 
-      // Check lighting (using probability as proxy)
-      const probability = face.probability as any;
+      // Check lighting (using probability as proxy) - only flag when very low
+      const lightingThreshold = this.config.poorLightingThreshold ?? 0.4;
       if (
-        probability &&
-        (Array.isArray(probability)
-          ? probability[0]
-          : (probability as any).dataSync?.()[0] || probability) < 0.7
+        typeof probability === "number" &&
+        probability < lightingThreshold
       ) {
         violations.push(
           this.createViolation(
             "POOR_LIGHTING",
             "Poor lighting conditions detected",
             "low",
-            Array.isArray(probability)
-              ? probability[0]
-              : (probability as any).dataSync?.()[0] || probability
+            probability
           )
         );
       }
@@ -665,14 +809,18 @@ export class ProctoringService {
 
   /**
    * Determine overall status from violations
+   * EYE_MOVEMENT and POOR_LIGHTING are not treated as WARNING so face detection stays stable
    */
   private determineStatus(
     violations: ProctoringViolation[]
   ): FaceDetectionResult["status"] {
-    if (violations.length === 0) return "NORMAL";
+    const significant = violations.filter(
+      (v) => v.type !== "EYE_MOVEMENT" && v.type !== "POOR_LIGHTING"
+    );
+    if (significant.length === 0) return "NORMAL";
 
-    const hasHighSeverity = violations.some((v) => v.severity === "high");
-    const hasMediumSeverity = violations.some((v) => v.severity === "medium");
+    const hasHighSeverity = significant.some((v) => v.severity === "high");
+    const hasMediumSeverity = significant.some((v) => v.severity === "medium");
 
     if (hasHighSeverity) return "VIOLATION";
     if (hasMediumSeverity) return "WARNING";
@@ -749,6 +897,7 @@ export class ProctoringService {
     const violationsByType: Record<ProctoringViolationType, number> = {
       NO_FACE: 0,
       MULTIPLE_FACES: 0,
+      FACE_NOT_VISIBLE: 0,
       LOOKING_AWAY: 0,
       EYE_MOVEMENT: 0,
       FACE_TOO_CLOSE: 0,

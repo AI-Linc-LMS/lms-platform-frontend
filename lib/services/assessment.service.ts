@@ -167,6 +167,7 @@ export interface AssessmentMetadata {
       type:
         | "NO_FACE"
         | "MULTIPLE_FACES"
+        | "FACE_NOT_VISIBLE"
         | "LOOKING_AWAY"
         | "EYE_MOVEMENT"
         | "FACE_TOO_CLOSE"

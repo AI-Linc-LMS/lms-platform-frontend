@@ -1,9 +1,120 @@
 "use client";
 
-import { Paper, Typography, Box, Chip, LinearProgress } from "@mui/material";
+import { Paper, Typography, Box, Chip, LinearProgress, Button } from "@mui/material";
 import { ContentDetail } from "@/lib/services/courses.service";
 import { useEffect, useRef, useState } from "react";
-import { AccessTime } from "@mui/icons-material";
+import { AccessTime, CheckCircleOutline } from "@mui/icons-material";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+/** Heuristic: content that looks like markdown (headers, code fences, etc.) vs HTML */
+function looksLikeMarkdown(text: string): boolean {
+  const trimmed = text.trim();
+  if (/^<[a-z][\s\S]*>/i.test(trimmed)) return false; // starts with HTML tag
+  if (trimmed.includes("## ") || trimmed.includes("### ") || trimmed.includes("```")) return true;
+  if (/^\s*[-*]\s+/m.test(trimmed) || /^\s*\d+\.\s+/m.test(trimmed)) return true; // list
+  if (/\*\*[^*]+\*\*/.test(trimmed)) return true; // bold
+  return false;
+}
+
+const articleBodySx = {
+  "& h1": {
+    color: "#1a1f2e",
+    fontWeight: 700,
+    fontSize: "2rem",
+    mb: 2,
+    mt: 0,
+  },
+  "& h2": {
+    color: "#1a1f2e",
+    fontWeight: 600,
+    fontSize: "1.5rem",
+    mt: 3,
+    mb: 1.5,
+  },
+  "& h3": {
+    color: "#1a1f2e",
+    fontWeight: 600,
+    fontSize: "1.25rem",
+    mt: 2,
+    mb: 1,
+  },
+  "& h4, & h5, & h6": {
+    color: "#1a1f2e",
+    fontWeight: 600,
+    mt: 2,
+    mb: 1,
+  },
+  "& p": {
+    color: "#4b5563",
+    lineHeight: 1.8,
+    mb: 1.5,
+    fontSize: "1rem",
+  },
+  "& ul, & ol": {
+    color: "#4b5563",
+    pl: 3,
+    mb: 1.5,
+    lineHeight: 1.8,
+  },
+  "& li": { mb: 0.75 },
+  "& a": {
+    color: "#3b82f6",
+    textDecoration: "none",
+    "&:hover": { textDecoration: "underline" },
+  },
+  "& img": {
+    maxWidth: "100%",
+    height: "auto",
+    borderRadius: 1,
+    mb: 2,
+    mt: 2,
+  },
+  "& blockquote": {
+    borderLeft: "4px solid #3b82f6",
+    pl: 2,
+    ml: 0,
+    fontStyle: "italic",
+    color: "#6b7280",
+    mb: 2,
+  },
+  "& code": {
+    backgroundColor: "#f3f4f6",
+    padding: "2px 6px",
+    borderRadius: "4px",
+    fontSize: "0.875rem",
+    fontFamily: "monospace",
+    color: "#1a1f2e",
+  },
+  "& pre": {
+    backgroundColor: "#1a1f2e",
+    color: "#f9fafb",
+    padding: 2,
+    borderRadius: 1,
+    overflowX: "auto",
+    mb: 2,
+    "& code": {
+      backgroundColor: "transparent",
+      padding: 0,
+      color: "#f9fafb",
+    },
+  },
+  "& table": {
+    width: "100%",
+    borderCollapse: "collapse",
+    mb: 2,
+  },
+  "& th, & td": {
+    border: "1px solid #e5e7eb",
+    padding: 1,
+    textAlign: "left",
+  },
+  "& th": {
+    backgroundColor: "#f9fafb",
+    fontWeight: 600,
+    color: "#1a1f2e",
+  },
+} as const;
 
 interface ArticleContentProps {
   content: ContentDetail;
@@ -66,7 +177,15 @@ export function ArticleContent({
     }
   }, [content.id, hasTrackedView]);
 
+  const handleMarkAsRead = () => {
+    if (hasMarkedComplete || !onArticleComplete) return;
+    setHasMarkedComplete(true);
+    setReadProgress(100);
+    onArticleComplete();
+  };
+
   const articleContent = content.details?.content || content.details?.description || "";
+  const isMarkdown = articleContent ? looksLikeMarkdown(articleContent) : false;
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -95,8 +214,8 @@ export function ArticleContent({
         </Box>
       )}
 
-      {/* Reading Time Chip */}
-      <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+      {/* Reading Time Chip + Mark as read */}
+      <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
         <Chip
           icon={<AccessTime sx={{ fontSize: 16 }} />}
           label={`${readingTimeMinutes} min read`}
@@ -107,8 +226,9 @@ export function ArticleContent({
             fontWeight: 500,
           }}
         />
-        {hasMarkedComplete && (
+        {hasMarkedComplete ? (
           <Chip
+            icon={<CheckCircleOutline sx={{ fontSize: 16 }} />}
             label="Completed"
             size="small"
             sx={{
@@ -117,6 +237,23 @@ export function ArticleContent({
               fontWeight: 500,
             }}
           />
+        ) : (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<CheckCircleOutline />}
+            onClick={handleMarkAsRead}
+            sx={{
+              borderColor: "#10b981",
+              color: "#059669",
+              "&:hover": {
+                borderColor: "#059669",
+                backgroundColor: "rgba(5, 150, 105, 0.04)",
+              },
+            }}
+          >
+            Mark as read
+          </Button>
         )}
       </Box>
 
@@ -148,113 +285,18 @@ export function ArticleContent({
         ref={articleRef}
       >
         {articleContent ? (
-          <Box
-            dangerouslySetInnerHTML={{
-              __html: articleContent,
-            }}
-            sx={{
-              "& h1": {
-                color: "#1a1f2e",
-                fontWeight: 700,
-                fontSize: "2rem",
-                mb: 2,
-                mt: 0,
-              },
-              "& h2": {
-                color: "#1a1f2e",
-                fontWeight: 600,
-                fontSize: "1.5rem",
-                mt: 3,
-                mb: 1.5,
-              },
-              "& h3": {
-                color: "#1a1f2e",
-                fontWeight: 600,
-                fontSize: "1.25rem",
-                mt: 2,
-                mb: 1,
-              },
-              "& h4, & h5, & h6": {
-                color: "#1a1f2e",
-                fontWeight: 600,
-                mt: 2,
-                mb: 1,
-              },
-              "& p": {
-                color: "#4b5563",
-                lineHeight: 1.8,
-                mb: 1.5,
-                fontSize: "1rem",
-              },
-              "& ul, & ol": {
-                color: "#4b5563",
-                pl: 3,
-                mb: 1.5,
-                lineHeight: 1.8,
-              },
-              "& li": {
-                mb: 0.75,
-              },
-              "& a": {
-                color: "#3b82f6",
-                textDecoration: "none",
-                "&:hover": {
-                  textDecoration: "underline",
-                },
-              },
-              "& img": {
-                maxWidth: "100%",
-                height: "auto",
-                borderRadius: 1,
-                mb: 2,
-                mt: 2,
-              },
-              "& blockquote": {
-                borderLeft: "4px solid #3b82f6",
-                pl: 2,
-                ml: 0,
-                fontStyle: "italic",
-                color: "#6b7280",
-                mb: 2,
-              },
-              "& code": {
-                backgroundColor: "#f3f4f6",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                fontSize: "0.875rem",
-                fontFamily: "monospace",
-                color: "#1a1f2e",
-              },
-              "& pre": {
-                backgroundColor: "#1a1f2e",
-                color: "#f9fafb",
-                padding: 2,
-                borderRadius: 1,
-                overflowX: "auto",
-                mb: 2,
-                "& code": {
-                  backgroundColor: "transparent",
-                  padding: 0,
-                  color: "#f9fafb",
-                },
-              },
-              "& table": {
-                width: "100%",
-                borderCollapse: "collapse",
-                mb: 2,
-              },
-              "& th, & td": {
-                border: "1px solid #e5e7eb",
-                padding: 1,
-                textAlign: "left",
-              },
-              "& th": {
-                backgroundColor: "#f9fafb",
-                fontWeight: 600,
-                color: "#1a1f2e",
-              },
-            }}
-          />
+          <Box sx={articleBodySx}>
+            {isMarkdown ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {articleContent}
+              </ReactMarkdown>
+            ) : (
+              <Box
+                component="div"
+                dangerouslySetInnerHTML={{ __html: articleContent }}
+              />
+            )}
+          </Box>
         ) : (
           <Typography variant="body1" sx={{ color: "#6b7280" }}>
             No content available for this article.

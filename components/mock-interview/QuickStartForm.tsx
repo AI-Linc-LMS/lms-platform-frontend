@@ -42,6 +42,8 @@ const interviewTopics = [
   "Leadership & Management",
 ];
 
+const CUSTOM_TOPIC_VALUE = "__CUSTOM__";
+
 const difficultyLevels = ["Easy", "Medium", "Hard"];
 
 const QuickStartFormComponent = ({
@@ -60,6 +62,7 @@ const QuickStartFormComponent = ({
   });
 
   const [errors, setErrors] = useState<Partial<QuickStartFormData>>({});
+  const [customTopic, setCustomTopic] = useState<string>("");
 
   const handleChange = useCallback(
     (field: keyof QuickStartFormData, value: string) => {
@@ -68,6 +71,10 @@ const QuickStartFormComponent = ({
         // When topic changes, update subtopic to match
         if (field === "topic") {
           updated.subtopic = value;
+          // Clear custom topic if switching away from custom
+          if (value !== CUSTOM_TOPIC_VALUE) {
+            setCustomTopic("");
+          }
         }
         return updated;
       });
@@ -76,11 +83,18 @@ const QuickStartFormComponent = ({
     []
   );
 
+  const handleCustomTopicChange = useCallback((value: string) => {
+    setCustomTopic(value);
+    setErrors((prev) => ({ ...prev, topic: "" }));
+  }, []);
+
   const validate = useCallback(() => {
     const newErrors: Partial<QuickStartFormData> = {};
 
     if (!formData.topic) {
       newErrors.topic = "Interview topic is required";
+    } else if (formData.topic === CUSTOM_TOPIC_VALUE && !customTopic.trim()) {
+      newErrors.topic = "Please enter a custom topic";
     }
     if (!formData.difficulty) {
       newErrors.difficulty = "Difficulty level is required";
@@ -88,13 +102,19 @@ const QuickStartFormComponent = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData]);
+  }, [formData, customTopic]);
 
   const handleSubmit = useCallback(() => {
     if (validate()) {
-      onSubmit(formData);
+      // Use custom topic if selected, otherwise use the selected topic
+      const finalTopic = formData.topic === CUSTOM_TOPIC_VALUE ? customTopic.trim() : formData.topic;
+      onSubmit({
+        ...formData,
+        topic: finalTopic,
+        subtopic: finalTopic, // Update subtopic to match topic
+      });
     }
-  }, [formData, validate, onSubmit]);
+  }, [formData, customTopic, validate, onSubmit]);
 
   return (
     <Box sx={{ position: "relative" }}>
@@ -174,6 +194,7 @@ const QuickStartFormComponent = ({
                   {topic}
                 </MenuItem>
               ))}
+              <MenuItem value={CUSTOM_TOPIC_VALUE}>Custom Topic</MenuItem>
             </Select>
             {errors.topic && (
               <Typography variant="caption" sx={{ color: "#ef4444", mt: 0.5 }}>
@@ -181,6 +202,18 @@ const QuickStartFormComponent = ({
               </Typography>
             )}
           </FormControl>
+
+          {formData.topic === CUSTOM_TOPIC_VALUE && (
+            <TextField
+              fullWidth
+              label="Enter Custom Topic"
+              placeholder="e.g., Machine Learning, DevOps, Frontend Architecture"
+              value={customTopic}
+              onChange={(e) => handleCustomTopicChange(e.target.value)}
+              error={Boolean(errors.topic)}
+              helperText={errors.topic || "Enter your custom interview topic"}
+            />
+          )}
 
           <Box>
             <Typography

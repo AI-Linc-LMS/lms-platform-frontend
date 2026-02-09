@@ -11,11 +11,13 @@ import {
   Alert,
   CircularProgress,
   LinearProgress,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { assessmentService } from "@/lib/services/assessment.service";
+import { useProctoring } from "@/lib/hooks/useProctoring";
 import { CheckCircle, XCircle, Video, Mic, AlertCircle } from "lucide-react";
 
 interface DeviceStatus {
@@ -42,8 +44,9 @@ export default function DeviceCheckPage({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
+  const [faceValidationPassed, setFaceValidationPassed] = useState(false);
+  const [faceValidationMessage, setFaceValidationMessage] = useState<string>("");
 
-  const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -51,6 +54,66 @@ export default function DeviceCheckPage({
   const isNavigatingToAssessmentRef = useRef(false);
   const hasAutoTestedRef = useRef(false);
   const { showToast } = useToast();
+
+  // Face detection proctoring - use its videoRef
+  const {
+    isActive: isFaceDetectionActive,
+    isInitializing: isFaceDetectionInitializing,
+    faceCount,
+    status: faceStatus,
+    latestViolation,
+    startProctoring: startFaceDetection,
+    stopProctoring: stopFaceDetection,
+    videoRef,
+  } = useProctoring({
+    autoStart: false,
+    detectionInterval: 600,
+    violationCooldown: 2000,
+    minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
+    maxFaceSize: 75,
+    lookingAwayThreshold: 0.3,
+    minConfidence: 0.4,
+    smoothFrameCount: 3,
+    poorLightingThreshold: 0.4,
+    minConfidenceForValidFace: 0.82, // Stricter on device check: reject hand covering face
+    onViolation: (violation) => {
+      setFaceValidationPassed(false);
+      setFaceValidationMessage(violation.message);
+    },
+    onStatusChange: () => {
+      // Status change will trigger useEffect below to update validation
+    },
+    onFaceCountChange: (count) => {
+      if (count === 0) {
+        setFaceValidationPassed(false);
+        setFaceValidationMessage("No face detected. Please position yourself in front of the camera.");
+      } else if (count > 1) {
+        setFaceValidationPassed(false);
+        setFaceValidationMessage(`${count} faces detected. Only one person should be visible.`);
+      }
+      // For count === 1, useEffect below will check status
+    },
+  });
+
+  // Update face validation status when faceCount or faceStatus changes
+  useEffect(() => {
+    if (faceCount === 1 && faceStatus === "NORMAL" && !latestViolation) {
+      setFaceValidationPassed(true);
+      setFaceValidationMessage("Face detected and positioned correctly");
+    } else {
+      setFaceValidationPassed(false);
+      // Update message based on current state
+      if (faceCount === 0) {
+        setFaceValidationMessage("No face detected. Please position yourself in front of the camera.");
+      } else if (faceCount > 1) {
+        setFaceValidationMessage(`${faceCount} faces detected. Only one person should be visible.`);
+      } else if (latestViolation) {
+        setFaceValidationMessage(latestViolation.message);
+      } else if (faceStatus !== "NORMAL") {
+        setFaceValidationMessage("Please adjust your position - look at the screen and maintain proper distance.");
+      }
+    }
+  }, [faceCount, faceStatus, latestViolation]);
 
   // Test devices
   const testDevices = useCallback(async () => {
@@ -84,10 +147,36 @@ export default function DeviceCheckPage({
       const hasAudio =
         audioTracks.length > 0 && audioTracks[0].readyState === "live";
 
-      // Set video element source
+      // Set video element source and start face detection
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.play().then(() => {
+          // Start face detection once video is playing and has metadata
+          if (hasVideo && videoRef.current) {
+            const checkVideoReady = () => {
+              if (
+                videoRef.current &&
+                videoRef.current.readyState >= 2 &&
+                videoRef.current.videoWidth > 0 &&
+                videoRef.current.videoHeight > 0
+              ) {
+                // Video is ready, start face detection
+                setTimeout(() => {
+                  startFaceDetection().catch((err) => {
+                    console.error("Failed to start face detection:", err);
+                    setFaceValidationMessage("Face detection failed to initialize");
+                  });
+                }, 500);
+              } else {
+                // Wait a bit more and check again
+                setTimeout(checkVideoReady, 200);
+              }
+            };
+            checkVideoReady();
+          }
+        }).catch((err) => {
+          console.error("Failed to play video:", err);
+        });
       }
 
       setDeviceStatus({
@@ -239,12 +328,21 @@ export default function DeviceCheckPage({
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
+        // Clean up global stream reference if not navigating to assessment
+        if (typeof window !== "undefined") {
+          delete (window as any).__assessmentStream;
+          delete (window as any).__assessmentVideoStream;
+        }
+      } else {
+        // Navigating to assessment - ensure stream is preserved
+        // Don't clear videoRef.srcObject - let take page reuse it
+        // Stream is already stored globally in handleStartAssessment
       }
 
       analyserRef.current = null;
       setAudioLevel(0);
     };
-  }, []);
+  }, [stopFaceDetection]);
 
   // Load assessment details - simplified, don't block on it
   useEffect(() => {
@@ -283,8 +381,27 @@ export default function DeviceCheckPage({
       showToast("Please complete all device checks", "error");
       return;
     }
+
+    if (!faceValidationPassed) {
+      showToast("Please position your face correctly before starting", "error");
+      return;
+    }
+
     // Mark that we're navigating to assessment (so cleanup won't stop camera)
     isNavigatingToAssessmentRef.current = true;
+
+    // Store the stream globally so take page can access it (prevents camera from turning off)
+    if (streamRef.current) {
+      (window as any).__assessmentStream = streamRef.current;
+      // Also store on video element for proctoring service to find
+      if (videoRef.current && videoRef.current.srcObject) {
+        // Keep the stream attached to video element
+        (window as any).__assessmentVideoStream = videoRef.current.srcObject;
+      }
+    }
+
+    // Stop face detection before navigating (it will restart in the assessment page)
+    stopFaceDetection();
 
     // Navigate to take assessment page immediately
     router.push(`/assessments/${slug}/take`);
@@ -293,7 +410,8 @@ export default function DeviceCheckPage({
   const canProceed =
     deviceStatus.camera &&
     deviceStatus.microphone &&
-    deviceStatus.browserSupported;
+    deviceStatus.browserSupported &&
+    faceValidationPassed;
 
   // Don't show loading screen - render immediately for better UX
 
@@ -399,7 +517,9 @@ export default function DeviceCheckPage({
                 borderRadius: 2,
                 overflow: "hidden",
                 border: deviceStatus.camera
-                  ? "2px solid #10b981"
+                  ? faceValidationPassed
+                    ? "2px solid #10b981"
+                    : "2px solid #f59e0b"
                   : "2px solid #e5e7eb",
                 backgroundColor: "#000000",
                 minHeight: deviceStatus.camera ? "auto" : "200px",
@@ -448,7 +568,93 @@ export default function DeviceCheckPage({
                   }
                 }}
               />
+              
+              {/* Face Detection Status Overlay */}
+              {deviceStatus.camera && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    zIndex: 2,
+                  }}
+                >
+                  {isFaceDetectionInitializing && (
+                    <Chip
+                      icon={<CircularProgress size={16} />}
+                      label="Initializing face detection..."
+                      size="small"
+                      sx={{ backgroundColor: "#6366f1", color: "#ffffff" }}
+                    />
+                  )}
+                  {!isFaceDetectionInitializing && (
+                    <>
+                      <Chip
+                        icon={
+                          faceValidationPassed ? (
+                            <CheckCircle size={16} />
+                          ) : (
+                            <XCircle size={16} />
+                          )
+                        }
+                        label={
+                          faceCount === 0
+                            ? "No face"
+                            : faceCount > 1
+                            ? `${faceCount} faces`
+                            : faceValidationPassed
+                            ? "Face OK"
+                            : "Adjust position"
+                        }
+                        size="small"
+                        sx={{
+                          backgroundColor: faceValidationPassed
+                            ? "#10b981"
+                            : "#ef4444",
+                          color: "#ffffff",
+                        }}
+                      />
+                      {faceStatus !== "NORMAL" && latestViolation && (
+                        <Chip
+                          icon={<AlertCircle size={14} />}
+                          label={latestViolation.message}
+                          size="small"
+                          sx={{
+                            backgroundColor: "#f59e0b",
+                            color: "#ffffff",
+                            fontSize: "0.7rem",
+                            maxWidth: "200px",
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </Box>
+              )}
             </Box>
+
+            {/* Face Validation Message */}
+            {deviceStatus.camera && !isFaceDetectionInitializing && (
+              <Box sx={{ mt: 2 }}>
+                {faceValidationPassed ? (
+                  <Alert severity="success" sx={{ mt: 1 }}>
+                    <Typography variant="body2">
+                      ✓ Face detected and positioned correctly. You can proceed.
+                    </Typography>
+                  </Alert>
+                ) : (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    <Typography variant="body2">
+                      {faceValidationMessage ||
+                        "Please position your face in front of the camera. Make sure you're looking at the screen, not too close or too far, and only one person is visible."}
+                    </Typography>
+                  </Alert>
+                )}
+              </Box>
+            )}
           </Paper>
 
           {/* Microphone Status */}
@@ -566,18 +772,25 @@ export default function DeviceCheckPage({
               size="large"
               onClick={handleStartAssessment}
               endIcon={<IconWrapper icon="mdi:arrow-right" size={24} />}
+              disabled={!faceValidationPassed}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
                 px: 4,
                 py: 1.5,
-                backgroundColor: "#10b981",
+                backgroundColor: faceValidationPassed ? "#10b981" : "#9ca3af",
                 "&:hover": {
-                  backgroundColor: "#059669",
+                  backgroundColor: faceValidationPassed ? "#059669" : "#9ca3af",
+                },
+                "&:disabled": {
+                  backgroundColor: "#9ca3af",
+                  color: "#ffffff",
                 },
               }}
             >
-              Start Assessment
+              {faceValidationPassed
+                ? "Start Assessment"
+                : "Position Face Correctly"}
             </Button>
           )}
 

@@ -308,7 +308,8 @@ export default function AssessmentDetailPage({
                 <li>
                   <strong>Camera & Microphone Required:</strong> You must have a
                   working camera and microphone. Your device will be tested before
-                  the exam begins.
+                  the exam begins. Position your face clearly in frame and look at
+                  the screen—you’ll need to pass a quick face check before starting.
                 </li>
                 <li>
                   <strong>AI Proctoring Active:</strong> This exam is monitored by

@@ -320,7 +320,7 @@ export const CourseCard = memo(
                 ? "Continue Learning"
                 : course.is_free
                 ? "Enroll Now"
-                : `Enroll - ₹${course.price}`}
+                :parseFloat(course.price) > 0 ? `Enroll - ₹${course.price}` : "Enroll Now"}
             </Button>
           </Box>
         </CardContent>

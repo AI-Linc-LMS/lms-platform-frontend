@@ -161,6 +161,7 @@ export default function TakeAssessmentPage({
     faceCount,
     status,
     metadata,
+    latestViolation,
     startProctoring,
     stopProctoring,
     enterFullscreen,
@@ -172,7 +173,90 @@ export default function TakeAssessmentPage({
     autoStart: false,
   });
 
-  // Show warning when eye movement violations occur
+  // Track last violation timestamp per type to avoid duplicate toasts
+  const lastViolationToastRef = useRef<Map<string, number>>(new Map());
+
+  // Show toast notifications for proctoring violations
+  useEffect(() => {
+    if (!assessmentStarted || submitting || !latestViolation) return;
+
+    // Skip NORMAL status violations
+    if (latestViolation.type === "NORMAL") return;
+
+    const now = Date.now();
+    const violationType = latestViolation.type;
+    const lastToastTime = lastViolationToastRef.current.get(violationType) || 0;
+
+    // Map violation types to user-friendly messages and toast types
+    const violationMessages: Record<string, { message: string; toastType: "warning" | "error" | "info"; cooldown: number }> = {
+      LOOKING_AWAY: {
+        message: "Please look at the screen",
+        toastType: "warning",
+        cooldown: 3000,
+      },
+      NO_FACE: {
+        message: "Face not detected. Please position yourself in front of the camera",
+        toastType: "error",
+        cooldown: 4000,
+      },
+      MULTIPLE_FACES: {
+        message: "Multiple faces detected. Please ensure only you are visible",
+        toastType: "warning",
+        cooldown: 4000,
+      },
+      FACE_NOT_VISIBLE: {
+        message: "Face not clearly visible. Please remove any obstructions (mask, hand, etc.)",
+        toastType: "error",
+        cooldown: 4000,
+      },
+      FACE_TOO_CLOSE: {
+        message: "Please move back from the camera",
+        toastType: "warning",
+        cooldown: 3000,
+      },
+      FACE_TOO_FAR: {
+        message: "Please move closer to the camera (within 2-3 meters)",
+        toastType: "warning",
+        cooldown: 3000,
+      },
+      POOR_LIGHTING: {
+        message: "Poor lighting detected. Please improve lighting conditions",
+        toastType: "warning",
+        cooldown: 5000,
+      },
+    };
+
+    const violationConfig = violationMessages[violationType];
+    
+    if (violationConfig) {
+      // Check cooldown for this specific violation type
+      const timeSinceLastToast = now - lastToastTime;
+      if (timeSinceLastToast < violationConfig.cooldown) {
+        return; // Still in cooldown period
+      }
+      
+      // Update last toast time for this violation type
+      lastViolationToastRef.current.set(violationType, now);
+      
+      // Show toast with violation message
+      showToast(violationConfig.message, violationConfig.toastType);
+    } else if (latestViolation.message) {
+      // Fallback to violation's own message if no custom message defined
+      const defaultCooldown = 3000;
+      const timeSinceLastToast = now - lastToastTime;
+      
+      if (timeSinceLastToast < defaultCooldown) {
+        return; // Still in cooldown period
+      }
+      
+      const toastType = latestViolation.severity === "high" ? "error" : 
+                       latestViolation.severity === "medium" ? "warning" : "info";
+      lastViolationToastRef.current.set(violationType, now);
+      showToast(latestViolation.message, toastType);
+    }
+  }, [latestViolation, assessmentStarted, submitting, showToast]);
+
+  // Show warning when eye movement violations occur (kept for backward compatibility)
   useEffect(() => {
     const eyeMovementCount = metadata.proctoring.eye_movement_count || 0;
     
@@ -183,13 +267,10 @@ export default function TakeAssessmentPage({
       const now = Date.now();
       if (now - lastEyeMovementWarningRef.current > 5000) { // 5 second cooldown
         lastEyeMovementWarningRef.current = now;
-        // showToast(
-        //   `Eye movement detected`,
-        //   "warning"
-        // );
+        // Note: Eye movement toasts are now handled by latestViolation effect above
       }
     }
-  }, [metadata.proctoring.eye_movement_count, showToast]);
+  }, [metadata.proctoring.eye_movement_count]);
 
   // Navigation
   const navigation = useAssessmentNavigation({
@@ -378,7 +459,7 @@ export default function TakeAssessmentPage({
     slug,
     responses,
     sections,
-    metadata,
+    metadata: metadata as any, // Type compatibility - both types have same structure
     navigation,
     stopProctoring,
     setSubmitting,
@@ -387,21 +468,42 @@ export default function TakeAssessmentPage({
   });
 
   // Pre-initialize camera IMMEDIATELY as soon as videoRef is available (before assessment starts)
-  // This ensures camera is ready when assessment starts
+  // IMPORTANT: Reuse stream from device-check page to prevent camera from turning off
   useEffect(() => {
     if (
-      videoRef.current &&
       assessment &&
       !loading &&
       assessment.status !== "submitted" &&
       !assessmentStarted &&
       assessment.proctoring_enabled !== false
     ) {
+      // Check if we have an existing stream from device-check page
+      const existingStream = typeof window !== "undefined" 
+        ? (window as any).__assessmentStream 
+        : null;
+      
+      // If stream exists, attach it to video element immediately to keep camera on
+      if (existingStream && videoRef.current && !videoRef.current.srcObject) {
+        try {
+          videoRef.current.srcObject = existingStream;
+          videoRef.current.autoplay = true;
+          videoRef.current.playsInline = true;
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {
+            // Silently fail - will be handled by proctoring service
+          });
+        } catch (error) {
+          // Silently fail
+        }
+      }
+
       // Start camera immediately - don't wait for assessment to start
       // This makes camera preview appear instantly when assessment begins
+      // Proctoring service will reuse existing stream if available
       const startCameraEarly = async () => {
         try {
           // Start proctoring immediately (non-blocking)
+          // Proctoring service will detect and reuse the existing stream
           startProctoring().catch(() => {
             // Silently fail - will retry when assessment starts
           });
