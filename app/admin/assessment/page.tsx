@@ -177,7 +177,7 @@ export default function AssessmentPage() {
           phone: s.phone ?? "",
           maximum_marks: s.maximum_marks ?? "",
           overall_score: s.overall_score ?? "",
-          percentage: s.percentage ?? "",
+          percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? `${s.percentage}%` : "",
           total_questions: s.total_questions ?? "",
           attempted_questions: s.attempted_questions ?? "",
         };
