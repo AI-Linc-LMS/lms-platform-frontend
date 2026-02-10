@@ -8,12 +8,14 @@ import { Course as CourseCardCourse } from "@/components/course/interfaces";
 
 interface DashboardContentProps {
   courses: CourseCardCourse[];
+  loading?: boolean;
   streakDays?: number[];
   currentStreak?: number;
 }
 
 export const DashboardContent = ({
   courses,
+  loading,
   streakDays,
   currentStreak,
 }: DashboardContentProps) => {
@@ -33,7 +35,7 @@ export const DashboardContent = ({
       <Box>
         <WelcomeMessage />
         <Box sx={{ mt: 3 }}>
-          <MyCoursesSection courses={courses} />
+          <MyCoursesSection courses={courses} loading={loading} />
         </Box>
       </Box>
       <DashboardSidebar streakDays={streakDays} currentStreak={currentStreak} />

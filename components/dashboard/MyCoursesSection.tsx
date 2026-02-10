@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Typography, Button, Paper } from "@mui/material";
+import { Box, Typography, Button, Paper, LinearProgress } from "@mui/material";
 import { CourseCard } from "@/components/course/CourseCard";
 import { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -8,9 +8,10 @@ import Link from "next/link";
 
 interface MyCoursesSectionProps {
   courses: CourseCardCourse[];
+  loading?: boolean;
 }
 
-export const MyCoursesSection = ({ courses }: MyCoursesSectionProps) => {
+export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) => {
   const hasCourses = courses && courses.length > 0;
 
   return (
@@ -35,7 +36,11 @@ export const MyCoursesSection = ({ courses }: MyCoursesSectionProps) => {
         </Typography>
       </Box>
 
-      {hasCourses ? (
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+          <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+        </Box>
+      ) : hasCourses ? (
         <Box
           sx={{
             display: "grid",

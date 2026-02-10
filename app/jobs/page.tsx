@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback, startTransition } from "react";
-import { Box } from "@mui/material";
+import { Box, LinearProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { JobCard } from "@/components/jobs/JobCard";
 import { JobSearchBar } from "@/components/jobs/JobSearchBar";
@@ -250,7 +250,11 @@ export default function JobsPage() {
 
         {/* Desktop Job List */}
         <Box sx={{ flex: 1, p: 3 }}>
-          {paginatedJobs.length === 0 ? (
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 300 }}>
+              <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+            </Box>
+          ) : paginatedJobs.length === 0 ? (
             <EmptyJobsState />
           ) : (
             <>
@@ -320,7 +324,11 @@ export default function JobsPage() {
             backgroundColor: "#f9fafb",
           }}
         >
-          {paginatedJobs.length === 0 ? (
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+              <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+            </Box>
+          ) : paginatedJobs.length === 0 ? (
             <EmptyJobsState />
           ) : (
             <>
