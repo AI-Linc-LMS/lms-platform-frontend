@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Box, Typography, Card, Avatar, Skeleton, Tooltip } from "@mui/material";
+import { Box, Typography, Card, Avatar, LinearProgress, Tooltip } from "@mui/material";
 import { dashboardService } from "@/lib/services/dashboard.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -124,6 +124,22 @@ export const StreakHolders = () => {
       >
         Top Streak Holders
       </Typography>
+      
+      {/* Loading Progress Bar */}
+      {loading && (
+        <Box sx={{ mb: 2 }}>
+          <LinearProgress
+            sx={{
+              height: 2,
+              borderRadius: 1,
+              "& .MuiLinearProgress-bar": {
+                borderRadius: 1,
+              },
+            }}
+          />
+        </Box>
+      )}
+      
       <Card
         sx={{
           borderRadius: 2,
@@ -136,86 +152,7 @@ export const StreakHolders = () => {
           overflow: "hidden",
         }}
       >
-        {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 1,
-              p: 2,
-            }}
-          >
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  p: 1,
-                  borderRadius: 1,
-                }}
-              >
-                <Skeleton
-                  variant="circular"
-                  width={24}
-                  height={24}
-                  animation="wave"
-                  sx={{
-                    bgcolor: "#FEF3C7",
-                  }}
-                />
-                <Skeleton
-                  variant="circular"
-                  width={32}
-                  height={32}
-                  animation="wave"
-                  sx={{
-                    bgcolor: "#FEF3C7",
-                  }}
-                />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Skeleton
-                    variant="text"
-                    width="60%"
-                    height={16}
-                    animation="wave"
-                    sx={{
-                      bgcolor: "#FEF3C7",
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mt: 0.5,
-                    }}
-                  >
-                    <Skeleton
-                      variant="circular"
-                      width={14}
-                      height={14}
-                      animation="wave"
-                      sx={{
-                        bgcolor: "#FEF3C7",
-                      }}
-                    />
-                    <Skeleton
-                      variant="text"
-                      width="40%"
-                      height={12}
-                      animation="wave"
-                      sx={{
-                        bgcolor: "#FEF3C7",
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-            ))}
-          </Box>
-        ) : streakHolders.length === 0 ? (
+        {streakHolders.length === 0 ? (
           <Typography
             variant="body2"
             sx={{ color: "#6B7280", textAlign: "center", py: 2, p: 2 }}

@@ -15,6 +15,7 @@ import {
   MenuItem,
   FormControl,
   Chip,
+  LinearProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -554,7 +555,11 @@ export default function AssessmentsPage() {
         </Paper>
 
         {/* All Assessments Grid */}
-        {filteredAssessments.length > 0 ? (
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+            <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+          </Box>
+        ) : filteredAssessments.length > 0 ? (
           <AssessmentsGrid
             assessments={paginatedAssessments}
             searchQuery={searchQuery}
@@ -616,16 +621,6 @@ export default function AssessmentsPage() {
                 : "Check back later for new assessments"}
             </Typography>
           </Paper>
-        )}
-
-        {/* Empty State */}
-        {regularCount === 0 && psychometricCount === 0 && (
-          <Box sx={{ width: "100%" }}>
-            <AssessmentsGrid
-              assessments={[]}
-            searchQuery={searchQuery}
-          />
-        </Box>
         )}
 
         {/* Pagination */}
