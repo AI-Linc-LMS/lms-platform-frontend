@@ -83,6 +83,7 @@ export function MultipleSectionsSection({
     const section: Section = {
       id: `section-${Date.now()}`,
       ...newSection,
+      order: newSection.order || sections.length + 1,
     };
 
     onSectionsChange([...sections, section]);
@@ -159,15 +160,16 @@ export function MultipleSectionsSection({
             <TextField
               label="Section Order"
               type="number"
-              value={newSection.order}
-              onChange={(e) =>
+              value={newSection.order === 0 ? "" : newSection.order}
+              onChange={(e) => {
+                const v = e.target.value;
                 setNewSection({
                   ...newSection,
-                  order: Number(e.target.value),
-                })
-              }
+                  order: v === "" ? 0 : Number(v),
+                });
+              }}
               fullWidth
-              inputProps={{ min: 1 }}
+              inputProps={{ min: 0 }}
               helperText="Display order"
               error={sections.some((s) => s.order === newSection.order)}
             />
@@ -188,13 +190,14 @@ export function MultipleSectionsSection({
               <TextField
                 label="Easy Score"
                 type="number"
-                value={newSection.easyScore || 1}
-                onChange={(e) =>
+                value={newSection.easyScore === undefined || newSection.easyScore === "" ? "" : newSection.easyScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setNewSection({
                     ...newSection,
-                    easyScore: Number(e.target.value),
-                  })
-                }
+                    easyScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 helperText={newSection.type === "quiz" ? "Points for Easy questions" : "Points for Easy problems"}
@@ -202,13 +205,14 @@ export function MultipleSectionsSection({
               <TextField
                 label="Medium Score"
                 type="number"
-                value={newSection.mediumScore || 2}
-                onChange={(e) =>
+                value={newSection.mediumScore === undefined || newSection.mediumScore === "" ? "" : newSection.mediumScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setNewSection({
                     ...newSection,
-                    mediumScore: Number(e.target.value),
-                  })
-                }
+                    mediumScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 helperText={newSection.type === "quiz" ? "Points for Medium questions" : "Points for Medium problems"}
@@ -216,13 +220,14 @@ export function MultipleSectionsSection({
               <TextField
                 label="Hard Score"
                 type="number"
-                value={newSection.hardScore || 3}
-                onChange={(e) =>
+                value={newSection.hardScore === undefined || newSection.hardScore === "" ? "" : newSection.hardScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setNewSection({
                     ...newSection,
-                    hardScore: Number(e.target.value),
-                  })
-                }
+                    hardScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 helperText={newSection.type === "quiz" ? "Points for Hard questions" : "Points for Hard problems"}
@@ -253,17 +258,16 @@ export function MultipleSectionsSection({
           <TextField
             label="Number of Questions to Show"
             type="number"
-            value={newSection.number_of_questions_to_show || ""}
-            onChange={(e) =>
+            value={newSection.number_of_questions_to_show ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
               setNewSection({
                 ...newSection,
-                number_of_questions_to_show: e.target.value
-                  ? Number(e.target.value)
-                  : undefined,
-              })
-            }
+                number_of_questions_to_show: v === "" ? undefined : Number(v),
+              });
+            }}
             fullWidth
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 0 }}
             helperText="If you have 10 questions but only want to show 5, enter 5 here. Leave empty to show all questions."
           />
           <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -413,12 +417,13 @@ function SectionCard({
             <TextField
               label="Order"
               type="number"
-              value={editData.order}
-              onChange={(e) =>
-                setEditData({ ...editData, order: Number(e.target.value) })
-              }
+              value={editData.order === 0 ? "" : editData.order}
+              onChange={(e) => {
+                const v = e.target.value;
+                setEditData({ ...editData, order: v === "" ? 0 : Number(v) });
+              }}
               fullWidth
-              inputProps={{ min: 1 }}
+              inputProps={{ min: 0 }}
               error={
                 allSections.some(
                   (s) => s.id !== section.id && s.order === editData.order
@@ -463,39 +468,42 @@ function SectionCard({
               <TextField
                 label="Easy Score"
                 type="number"
-                value={editData.easyScore || 1}
-                onChange={(e) =>
+                value={editData.easyScore === undefined || editData.easyScore === "" ? "" : editData.easyScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setEditData({
                     ...editData,
-                    easyScore: Number(e.target.value),
-                  })
-                }
+                    easyScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
               />
               <TextField
                 label="Medium Score"
                 type="number"
-                value={editData.mediumScore || 2}
-                onChange={(e) =>
+                value={editData.mediumScore === undefined || editData.mediumScore === "" ? "" : editData.mediumScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setEditData({
                     ...editData,
-                    mediumScore: Number(e.target.value),
-                  })
-                }
+                    mediumScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
               />
               <TextField
                 label="Hard Score"
                 type="number"
-                value={editData.hardScore || 3}
-                onChange={(e) =>
+                value={editData.hardScore === undefined || editData.hardScore === "" ? "" : editData.hardScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setEditData({
                     ...editData,
-                    hardScore: Number(e.target.value),
-                  })
-                }
+                    hardScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
               />
@@ -504,17 +512,16 @@ function SectionCard({
           <TextField
             label="Number of Questions to Show"
             type="number"
-            value={editData.number_of_questions_to_show || ""}
-            onChange={(e) =>
+            value={editData.number_of_questions_to_show ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
               setEditData({
                 ...editData,
-                number_of_questions_to_show: e.target.value
-                  ? Number(e.target.value)
-                  : undefined,
-              })
-            }
+                number_of_questions_to_show: v === "" ? undefined : Number(v),
+              });
+            }}
             fullWidth
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 0 }}
             helperText="If you have 10 questions but only want to show 5, enter 5 here. Leave empty to show all questions."
           />
           {allSections.some(
