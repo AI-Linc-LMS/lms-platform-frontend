@@ -15,6 +15,16 @@ export interface LiveAttendanceActivity {
   expires_at: string;
   time_remaining_minutes: number;
   has_marked_attendance: boolean;
+  is_zoom?: boolean;
+  zoom_join_url?: string | null;
+  zoom_password?: string | null;
+  meeting_status?: string | null;
+}
+
+export interface AttendanceRecordingResponse {
+  activity_name: string;
+  recording_url: string;
+  duration_seconds?: number;
 }
 
 export interface MarkAttendanceResponse {
@@ -48,6 +58,15 @@ export const activityService = {
       endpoint,
       code ? { code } : {}
     );
+    return response.data;
+  },
+
+  // Get recording for an activity (student). 404 if not available.
+  getRecording: async (
+    activityId: number
+  ): Promise<AttendanceRecordingResponse> => {
+    const endpoint = `/activity/clients/${config.clientId}/student/attendance-activities/${activityId}/recording/`;
+    const response = await apiClient.get<AttendanceRecordingResponse>(endpoint);
     return response.data;
   },
 };

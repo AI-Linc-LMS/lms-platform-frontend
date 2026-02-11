@@ -84,9 +84,9 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           </Typography>
         </Box>
         <Box>
-          <Typography 
-            variant="caption" 
-            sx={{ 
+          <Typography
+            variant="caption"
+            sx={{
               color: "#6b7280",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
@@ -96,30 +96,32 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Box
             sx={{ display: "flex", gap: 0.5, mt: 0.5, flexWrap: "wrap" }}
           >
-            <Chip
-              label={activity.is_active ? "Active" : "Inactive"}
-              size="small"
-              sx={{
-                bgcolor: activity.is_active ? "#d1fae5" : "#fee2e2",
-                color: activity.is_active ? "#065f46" : "#991b1b",
-                fontWeight: 600,
-                fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                height: { xs: 20, sm: 24 },
-              }}
-            />
-            {activity.is_valid && (
-              <Chip
-                label="Valid"
-                size="small"
-                sx={{
-                  bgcolor: "#dbeafe",
-                  color: "#1e40af",
-                  fontWeight: 600,
-                  fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                  height: { xs: 20, sm: 24 },
-                }}
-              />
-            )}
+            {(() => {
+              const isEnded = activity.meeting_status === "ended";
+              const isExpired = !activity.is_valid;
+              const label = isEnded
+                ? "Ended"
+                : isExpired
+                  ? "Expired"
+                  : "Active";
+              const chipStyle = isEnded
+                ? { bgcolor: "#9ca3af", color: "#1f2937" }
+                : isExpired
+                  ? { bgcolor: "#fed7aa", color: "#9a3412" }
+                  : { bgcolor: "#d1fae5", color: "#065f46" };
+              return (
+                <Chip
+                  label={label}
+                  size="small"
+                  sx={{
+                    ...chipStyle,
+                    fontWeight: 600,
+                    fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                    height: { xs: 20, sm: 24 },
+                  }}
+                />
+              );
+            })()}
           </Box>
         </Box>
         <Box>

@@ -190,11 +190,27 @@ export default function AttendancePage() {
                     </TableCell>
                     <TableCell>{activity.duration_minutes} min</TableCell>
                     <TableCell>
-                      <Chip
-                        label={activity.is_active ? "Active" : "Inactive"}
-                        color={activity.is_active ? "success" : "error"}
-                        size="small"
-                      />
+                      {(() => {
+                        const isEnded = activity.meeting_status === "ended";
+                        const isExpired = !activity.is_valid;
+                        const label = isEnded
+                          ? "Ended"
+                          : isExpired
+                            ? "Expired"
+                            : "Active";
+                        const chipSx = isEnded
+                          ? { bgcolor: "#9ca3af", color: "#1f2937" }
+                          : isExpired
+                            ? { bgcolor: "#fed7aa", color: "#9a3412" }
+                            : { bgcolor: "#d1fae5", color: "#065f46" };
+                        return (
+                          <Chip
+                            label={label}
+                            size="small"
+                            sx={{ ...chipSx, fontWeight: 600 }}
+                          />
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>{activity.attendees_count}</TableCell>
                     <TableCell>
@@ -260,6 +276,7 @@ export default function AttendancePage() {
               setSelectedActivity(null);
             }}
             onSave={handleUpdateActivity}
+            onActivityUpdated={(updated) => setSelectedActivity(updated)}
             studentsPage={studentsPage}
             studentsLimit={studentsLimit}
             onStudentsPageChange={setStudentsPage}

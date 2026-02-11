@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Typography, IconButton, Drawer, Tabs, Tab } from "@mui/material";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Drawer,
+  Tabs,
+  Tab,
+  Button,
+} from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
 import { ActivityDetailsCard } from "./ActivityDetailsCard";
@@ -19,6 +27,7 @@ interface ViewActivityPanelProps {
     hands_on_coding?: string;
     additional_comments?: string;
   }) => void;
+  onActivityUpdated?: (activity: AttendanceActivity) => void;
   studentsPage: number;
   studentsLimit: number;
   onStudentsPageChange: (page: number) => void;
@@ -32,6 +41,7 @@ export function ViewActivityPanel({
   activity,
   onClose,
   onSave,
+  onActivityUpdated,
   studentsPage,
   studentsLimit,
   onStudentsPageChange,
@@ -120,6 +130,28 @@ export function ViewActivityPanel({
             {activity.name}
           </Typography>
 
+          {activity.is_zoom &&
+            activity.zoom_start_url &&
+            activity.meeting_status !== "ended" && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<IconWrapper icon="mdi:video" size={18} />}
+                onClick={() =>
+                  window.open(activity.zoom_start_url!, "_blank")
+                }
+                sx={{
+                  mr: 1,
+                  bgcolor: "#6366f1",
+                  "&:hover": { bgcolor: "#4f46e5" },
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Join as host
+              </Button>
+            )}
+
           <IconButton
             onClick={onClose}
             sx={{
@@ -191,7 +223,11 @@ export function ViewActivityPanel({
           }}
         >
           {activeTab === 0 && (
-            <SessionSummaryCard activity={activity} onSave={onSave} />
+            <SessionSummaryCard
+              activity={activity}
+              onSave={onSave}
+              onActivityUpdated={onActivityUpdated}
+            />
           )}
 
           {activeTab === 1 && (

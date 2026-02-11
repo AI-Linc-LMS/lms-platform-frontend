@@ -12,10 +12,15 @@ import {
   TextField,
   IconButton,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import { adminAttendanceService } from "@/lib/services/admin/admin-attendance.service";
+import {
+  adminAttendanceService,
+  AttendanceActivity,
+} from "@/lib/services/admin/admin-attendance.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
 interface CreateActivityDialogProps {
@@ -33,12 +38,16 @@ export function CreateActivityDialog({
   const { clientInfo } = useClientInfo();
   const [name, setName] = useState("");
   const [duration, setDuration] = useState(60);
+  const [isZoom, setIsZoom] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [successView, setSuccessView] = useState(false);
+  const [createdActivity, setCreatedActivity] =
+    useState<AttendanceActivity | null>(null);
 
   // Generate default name when dialog opens or client info is available
   useEffect(() => {
     const clientName = (clientInfo as any)?.data?.name || clientInfo?.name;
-    if (open && clientName) {
+    if (open && clientName && !successView) {
       // Extract initials (e.g., "Kakatiya University" -> "KU")
       const initials = clientName
         .split(" ")
@@ -48,7 +57,14 @@ export function CreateActivityDialog({
       const generatedName = `${initials}-Classroom`;
       setName(generatedName);
     }
-  }, [open, clientInfo]);
+  }, [open, clientInfo, successView]);
+
+  // Reset success state when dialog is opened fresh
+  useEffect(() => {
+    if (open && !successView) {
+      setCreatedActivity(null);
+    }
+  }, [open, successView]);
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -57,22 +73,59 @@ export function CreateActivityDialog({
     }
     try {
       setCreating(true);
-      await adminAttendanceService.createAttendanceActivity({
+      const activity = await adminAttendanceService.createAttendanceActivity({
         name: name.trim(),
         duration_minutes: duration,
+        is_zoom: isZoom,
       });
       showToast("Attendance activity created successfully", "success");
-      setName("");
-      setDuration(30);
-      onSuccess();
+      if (isZoom && (activity.zoom_start_url || activity.zoom_join_url)) {
+        setCreatedActivity(activity);
+        setSuccessView(true);
+      } else if (isZoom && activity.id) {
+        const full = await adminAttendanceService.getAttendanceActivity(
+          activity.id
+        );
+        setCreatedActivity(full);
+        setSuccessView(true);
+      } else {
+        setName("");
+        setDuration(60);
+        setIsZoom(false);
+        onSuccess();
+      }
     } catch (error: any) {
+      const detail =
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        "Failed to create activity";
       showToast(
-        error?.response?.data?.detail || "Failed to create activity",
+        typeof detail === "string" ? detail : JSON.stringify(detail),
         "error"
       );
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleCopyJoinLink = async () => {
+    const url = createdActivity?.zoom_join_url;
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Join link copied to clipboard", "success");
+    } catch {
+      showToast("Failed to copy link", "error");
+    }
+  };
+
+  const handleDone = () => {
+    setSuccessView(false);
+    setCreatedActivity(null);
+    setName("");
+    setDuration(60);
+    setIsZoom(false);
+    onSuccess();
   };
 
   return (
@@ -104,77 +157,159 @@ export function CreateActivityDialog({
               fontSize: { xs: "1rem", sm: "1.25rem" },
             }}
           >
-            Create Attendance Activity
+            {successView ? "Zoom session created" : "Create Attendance Activity"}
           </Typography>
-          <IconButton onClick={onClose} size="small">
+          <IconButton onClick={successView ? handleDone : onClose} size="small">
             <IconWrapper icon="mdi:close" size={20} />
           </IconButton>
         </Box>
       </DialogTitle>
       <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: { xs: 2, sm: 3 },
-            mt: { xs: 0.5, sm: 1 },
-          }}
-        >
-          <TextField
-            label="Activity Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., AB-Classroom"
-            fullWidth
-            required
-            helperText="Enter the activity name (e.g., AB-Classroom )"
-            size="small"
+        {successView ? (
+          <Box
             sx={{
-              "& .MuiInputBase-root": {
-                fontSize: { xs: "0.875rem", sm: "1rem" },
-              },
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              mt: 1,
+              alignItems: "center",
+              py: 2,
             }}
-          />
-          <TextField
-            label="Duration (minutes)"
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-            fullWidth
-            required
-            inputProps={{ min: 1 }}
-            size="small"
+          >
+            <Typography variant="body1" sx={{ color: "#6b7280" }}>
+              Your Zoom session is ready. Start the meeting or share the join
+              link with students.
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, justifyContent: "center", mt: 2 }}>
+              {createdActivity?.zoom_start_url && (
+                <Button
+                  variant="contained"
+                  onClick={() =>
+                    window.open(createdActivity!.zoom_start_url!, "_blank")
+                  }
+                  startIcon={<IconWrapper icon="mdi:video" size={20} />}
+                  sx={{
+                    bgcolor: "#6366f1",
+                    "&:hover": { bgcolor: "#4f46e5" },
+                  }}
+                >
+                  Start Meeting
+                </Button>
+              )}
+              {createdActivity?.zoom_join_url && (
+                <Button
+                  variant="outlined"
+                  onClick={handleCopyJoinLink}
+                  startIcon={<IconWrapper icon="mdi:link" size={20} />}
+                  sx={{ borderColor: "#6366f1", color: "#6366f1" }}
+                >
+                  Copy Join Link
+                </Button>
+              )}
+            </Box>
+          </Box>
+        ) : (
+          <Box
             sx={{
-              "& .MuiInputBase-root": {
-                fontSize: { xs: "0.875rem", sm: "1rem" },
-              },
+              display: "flex",
+              flexDirection: "column",
+              gap: { xs: 2, sm: 3 },
+              mt: { xs: 0.5, sm: 1 },
             }}
-          />
-        </Box>
+          >
+            <TextField
+              label="Activity Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., AB-Classroom"
+              fullWidth
+              required
+              helperText="Enter the activity name (e.g., AB-Classroom )"
+              size="small"
+              sx={{
+                "& .MuiInputBase-root": {
+                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                },
+              }}
+            />
+            <TextField
+              label="Duration (minutes)"
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              fullWidth
+              required
+              inputProps={{ min: 1 }}
+              size="small"
+              sx={{
+                "& .MuiInputBase-root": {
+                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                },
+              }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isZoom}
+                  onChange={(e) => setIsZoom(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Create Zoom meeting"
+              sx={{
+                "& .MuiFormControlLabel-label": {
+                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                },
+              }}
+            />
+          </Box>
+        )}
       </DialogContent>
-      <DialogActions
-        sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-          }}
+      {!successView && (
+        <DialogActions
+          sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}
         >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleCreate}
-          disabled={creating || !name.trim()}
-          sx={{
-            bgcolor: "#6366f1",
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-          }}
+          <Button
+            onClick={onClose}
+            sx={{
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCreate}
+            disabled={creating || !name.trim()}
+            sx={{
+              bgcolor: "#6366f1",
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            }}
+          >
+            {creating ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Create"
+            )}
+          </Button>
+        </DialogActions>
+      )}
+      {successView && (
+        <DialogActions
+          sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}
         >
-          {creating ? <CircularProgress size={20} color="inherit" /> : "Create"}
-        </Button>
-      </DialogActions>
+          <Button
+            variant="contained"
+            onClick={handleDone}
+            sx={{
+              bgcolor: "#6366f1",
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            }}
+          >
+            Done
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 }
