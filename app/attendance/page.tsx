@@ -408,7 +408,7 @@ export default function AttendancePage() {
                                     },
                                   }}
                                 >
-                                  Join Zoom
+                                  Join Live Class
                                 </Button>
                                 {activity.zoom_password && (
                                   <Typography

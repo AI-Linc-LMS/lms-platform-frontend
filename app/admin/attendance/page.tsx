@@ -25,6 +25,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminAttendanceService,
   AttendanceActivity,
+  getAttendanceStatusDisplay,
 } from "@/lib/services/admin/admin-attendance.service";
 import { ViewActivityPanel } from "@/components/admin/attendance/ViewActivityPanel";
 import { CreateActivityDialog } from "@/components/admin/attendance/CreateActivityDialog";
@@ -191,18 +192,8 @@ export default function AttendancePage() {
                     <TableCell>{activity.duration_minutes} min</TableCell>
                     <TableCell>
                       {(() => {
-                        const isEnded = activity.meeting_status === "ended";
-                        const isExpired = !activity.is_valid;
-                        const label = isEnded
-                          ? "Ended"
-                          : isExpired
-                            ? "Expired"
-                            : "Active";
-                        const chipSx = isEnded
-                          ? { bgcolor: "#9ca3af", color: "#1f2937" }
-                          : isExpired
-                            ? { bgcolor: "#fed7aa", color: "#9a3412" }
-                            : { bgcolor: "#d1fae5", color: "#065f46" };
+                        const { label, chipSx } =
+                          getAttendanceStatusDisplay(activity);
                         return (
                           <Chip
                             label={label}
