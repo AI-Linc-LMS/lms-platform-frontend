@@ -46,7 +46,7 @@ export default function GenerateDescriptionPage() {
     const err: Record<string, string> = {};
     if (!formData.title.trim()) err.title = "Title is required";
     if (!formData.description.trim()) err.description = "Description is required";
-    if (formData.duration_weeks < 1 || formData.duration_weeks > 52) {
+    if (!formData.duration_weeks || formData.duration_weeks < 1 || formData.duration_weeks > 52) {
       err.duration_weeks = "Duration must be between 1 and 52 weeks";
     }
     setErrors(err);
@@ -54,7 +54,7 @@ export default function GenerateDescriptionPage() {
 
     try {
       setSubmitting(true);
-      const job = aiCourseBuilderService.generateOutline({
+      await aiCourseBuilderService.generateOutline({
         input_type: "description",
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -169,16 +169,17 @@ export default function GenerateDescriptionPage() {
               fullWidth
               type="number"
               label="Duration (weeks)"
-              value={formData.duration_weeks}
-              onChange={(e) =>
+              value={formData.duration_weeks === 0 ? "" : formData.duration_weeks}
+              onChange={(e) => {
+                const v = e.target.value;
                 setFormData((p) => ({
                   ...p,
-                  duration_weeks: parseInt(e.target.value, 10) || 1,
-                }))
-              }
+                  duration_weeks: v === "" ? 0 : parseInt(v, 10) || 0,
+                }));
+              }}
               error={!!errors.duration_weeks}
               helperText={errors.duration_weeks}
-              inputProps={{ min: 1, max: 52 }}
+              inputProps={{ min: 0, max: 52 }}
               size="small"
               sx={{ mb: 3 }}
             />
