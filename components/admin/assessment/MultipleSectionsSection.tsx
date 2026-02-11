@@ -190,7 +190,7 @@ export function MultipleSectionsSection({
               <TextField
                 label="Easy Score"
                 type="number"
-                value={newSection.easyScore === undefined || newSection.easyScore === "" ? "" : newSection.easyScore}
+                value={newSection.easyScore === undefined ? "" : newSection.easyScore}
                 onChange={(e) => {
                   const v = e.target.value;
                   setNewSection({
@@ -205,7 +205,7 @@ export function MultipleSectionsSection({
               <TextField
                 label="Medium Score"
                 type="number"
-                value={newSection.mediumScore === undefined || newSection.mediumScore === "" ? "" : newSection.mediumScore}
+                value={newSection.mediumScore === undefined ? "" : newSection.mediumScore}
                 onChange={(e) => {
                   const v = e.target.value;
                   setNewSection({
@@ -220,7 +220,7 @@ export function MultipleSectionsSection({
               <TextField
                 label="Hard Score"
                 type="number"
-                value={newSection.hardScore === undefined || newSection.hardScore === "" ? "" : newSection.hardScore}
+                value={newSection.hardScore === undefined ? "" : newSection.hardScore}
                 onChange={(e) => {
                   const v = e.target.value;
                   setNewSection({
@@ -468,7 +468,7 @@ function SectionCard({
               <TextField
                 label="Easy Score"
                 type="number"
-                value={editData.easyScore === undefined || editData.easyScore === "" ? "" : editData.easyScore}
+                value={editData.easyScore === undefined ? "" : editData.easyScore}
                 onChange={(e) => {
                   const v = e.target.value;
                   setEditData({
@@ -482,7 +482,7 @@ function SectionCard({
               <TextField
                 label="Medium Score"
                 type="number"
-                value={editData.mediumScore === undefined || editData.mediumScore === "" ? "" : editData.mediumScore}
+                value={editData.mediumScore === undefined ? "" : editData.mediumScore}
                 onChange={(e) => {
                   const v = e.target.value;
                   setEditData({
@@ -496,7 +496,7 @@ function SectionCard({
               <TextField
                 label="Hard Score"
                 type="number"
-                value={editData.hardScore === undefined || editData.hardScore === "" ? "" : editData.hardScore}
+                value={editData.hardScore === undefined ? "" : editData.hardScore}
                 onChange={(e) => {
                   const v = e.target.value;
                   setEditData({
