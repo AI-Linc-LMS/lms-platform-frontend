@@ -358,7 +358,7 @@ export default function AssessmentEditPage() {
         phone: s.phone ?? "",
         maximum_marks: s.maximum_marks ?? "",
         overall_score: s.overall_score ?? "",
-        percentage: s.percentage ?? "",
+        percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? `${s.percentage}%` : "",
         total_questions: s.total_questions ?? "",
         attempted_questions: s.attempted_questions ?? "",
       };
@@ -765,7 +765,7 @@ export default function AssessmentEditPage() {
                               Score
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              %
+                              Percentage
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
                               Attempted
@@ -787,7 +787,7 @@ export default function AssessmentEditPage() {
                                 {s.overall_score ?? "—"}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
-                                {s.percentage ?? "—"}
+                                {s.percentage != null && !isNaN(Number(s.percentage)) ? `${s.percentage}%` : "—"}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.attempted_questions ?? "—"}

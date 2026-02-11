@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { Box, Typography, Card, Avatar, Skeleton, LinearProgress, Tooltip } from "@mui/material";
+import { Box, Typography, Card, Avatar, LinearProgress, Tooltip } from "@mui/material";
 import {
   dashboardService,
   OverallLeaderboardEntry,
@@ -213,72 +213,13 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
           <Box
             sx={{
               display: "flex",
-              flexDirection: "column",
-              gap: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: 200,
               p: 2,
             }}
           >
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  p: 1,
-                  borderRadius: 1,
-                }}
-              >
-                <Skeleton
-                  variant="circular"
-                  width={24}
-                  height={24}
-                  animation="wave"
-                  sx={{
-                    bgcolor: "#E0E7FF",
-                  }}
-                />
-                <Skeleton
-                  variant="circular"
-                  width={32}
-                  height={32}
-                  animation="wave"
-                  sx={{
-                    bgcolor: "#E0E7FF",
-                  }}
-                />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Skeleton
-                    variant="text"
-                    width="60%"
-                    height={16}
-                    animation="wave"
-                    sx={{
-                      bgcolor: "#E0E7FF",
-                    }}
-                  />
-                  <Skeleton
-                    variant="text"
-                    width="40%"
-                    height={12}
-                    animation="wave"
-                    sx={{
-                      mt: 0.5,
-                      bgcolor: "#E0E7FF",
-                    }}
-                  />
-                </Box>
-                <Skeleton
-                  variant="text"
-                  width={30}
-                  height={16}
-                  animation="wave"
-                  sx={{
-                    bgcolor: "#E0E7FF",
-                  }}
-                />
-              </Box>
-            ))}
+            <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
           </Box>
         ) : safeLeaderboard.length === 0 ? (
           <Typography

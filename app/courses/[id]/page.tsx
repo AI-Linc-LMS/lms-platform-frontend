@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Typography, Fab, Tooltip } from "@mui/material";
+import { Box, Typography, Fab, Tooltip, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   coursesService,
@@ -189,6 +189,23 @@ export default function CourseDetailPage() {
   const handleNavigate = (submoduleId: number) => {
     router.push(`/courses/${courseId}/submodule/${submoduleId}`);
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 400,
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      </MainLayout>
+    );
+  }
 
   if (!course) {
     return (
