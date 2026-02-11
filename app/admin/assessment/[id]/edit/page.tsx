@@ -765,7 +765,7 @@ export default function AssessmentEditPage() {
                               Score
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              %
+                              Percentage
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
                               Attempted
