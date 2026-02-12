@@ -25,8 +25,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminAttendanceService,
   AttendanceActivity,
-  getAttendanceStatusDisplay,
 } from "@/lib/services/admin/admin-attendance.service";
+import { getAttendanceStatusDisplay } from "@/lib/utils/attendance-utils";
 import { ViewActivityPanel } from "@/components/admin/attendance/ViewActivityPanel";
 import { CreateActivityDialog } from "@/components/admin/attendance/CreateActivityDialog";
 

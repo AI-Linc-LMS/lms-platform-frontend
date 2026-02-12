@@ -1,10 +1,8 @@
 "use client";
 
 import { Box, Typography, Paper, Chip } from "@mui/material";
-import {
-  AttendanceActivity,
-  getAttendanceStatusDisplay,
-} from "@/lib/services/admin/admin-attendance.service";
+import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
+import { getAttendanceStatusDisplay } from "@/lib/utils/attendance-utils";
 
 interface ActivityDetailsCardProps {
   activity: AttendanceActivity;
