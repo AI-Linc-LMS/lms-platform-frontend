@@ -73,7 +73,7 @@ export interface SyncRecordingResponse {
 export interface SyncAttendanceResponse {
   status: string;
   message: string;
-  data?: { synced_count: number } | null;
+  data?: { synced_count: number; meeting_ended?: boolean } | null;
 }
 
 export const adminAttendanceService = {
@@ -153,6 +153,16 @@ export const adminAttendanceService = {
   ): Promise<SyncAttendanceResponse> => {
     const response = await apiClient.post<SyncAttendanceResponse>(
       `/activity/clients/${config.clientId}/zoom/activities/${activityId}/sync-attendance/`
+    );
+    return response.data;
+  },
+
+  // End Zoom meeting for an activity
+  endMeeting: async (
+    activityId: number
+  ): Promise<{ status: string; message: string }> => {
+    const response = await apiClient.post<{ status: string; message: string }>(
+      `/activity/clients/${config.clientId}/zoom/activities/${activityId}/end-meeting/`
     );
     return response.data;
   },

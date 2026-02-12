@@ -343,7 +343,40 @@ export default function AttendancePage() {
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          {activity.time_remaining_minutes <= 0 ? (
+                          {activity.meeting_status === "live" ? (
+                            <Chip
+                              label="Live"
+                              size="small"
+                              sx={{
+                                backgroundColor: "#d1fae5",
+                                color: "#065f46",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          ) : activity.meeting_status === "ended" ? (
+                            <Chip
+                              label="Class Ended"
+                              size="small"
+                              sx={{
+                                backgroundColor: "#9ca3af",
+                                color: "#1f2937",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          ) : activity.meeting_status === "expired" ? (
+                            <Chip
+                              label="Expired"
+                              size="small"
+                              sx={{
+                                backgroundColor: "#fed7aa",
+                                color: "#9a3412",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          ) : activity.time_remaining_minutes <= 0 ? (
                             <Chip
                               label="Expired"
                               size="small"
@@ -357,9 +390,7 @@ export default function AttendancePage() {
                           ) : (
                             <Typography
                               variant="body2"
-                              sx={{
-                                color: "#374151",
-                              }}
+                              sx={{ color: "#374151" }}
                             >
                               {formatTimeRemaining(
                                 activity.time_remaining_minutes
@@ -376,10 +407,9 @@ export default function AttendancePage() {
                               gap: 1,
                             }}
                           >
-                            {canMark &&
+                            {activity.meeting_status === "live" &&
                             activity.is_zoom &&
-                            activity.zoom_join_url &&
-                            activity.meeting_status !== "ended" ? (
+                            activity.zoom_join_url ? (
                               <>
                                 <Button
                                   variant="contained"
@@ -440,6 +470,46 @@ export default function AttendancePage() {
                                   </Typography>
                                 )}
                               </>
+                            ) : activity.meeting_status === "live" &&
+                              !activity.has_marked_attendance ? (
+                              <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() =>
+                                  handleMarkAttendanceClick(activity.id)
+                                }
+                                disabled={markingAttendance === activity.id}
+                                startIcon={
+                                  markingAttendance === activity.id ? (
+                                    <CircularProgress
+                                      size={16}
+                                      color="inherit"
+                                    />
+                                  ) : (
+                                    <IconWrapper
+                                      icon="mdi:check-circle"
+                                      size={18}
+                                    />
+                                  )
+                                }
+                                sx={{
+                                  backgroundColor: "#10b981",
+                                  color: "#ffffff",
+                                  textTransform: "none",
+                                  fontWeight: 600,
+                                  fontSize: "0.875rem",
+                                  px: 2,
+                                  "&:hover": {
+                                    backgroundColor: "#059669",
+                                  },
+                                  "&:disabled": {
+                                    backgroundColor: "#d1d5db",
+                                    color: "#9ca3af",
+                                  },
+                                }}
+                              >
+                                Mark Attendance
+                              </Button>
                             ) : canMark ? (
                               <Button
                                 variant="contained"
@@ -497,6 +567,25 @@ export default function AttendancePage() {
                                   />
                                 }
                               />
+                            ) : (activity.meeting_status === "ended" ||
+                                activity.meeting_status === "expired") ? (
+                              <Chip
+                                label={
+                                  activity.meeting_status === "ended"
+                                    ? "Class Ended"
+                                    : "Expired"
+                                }
+                                size="small"
+                                sx={{
+                                  backgroundColor:
+                                    activity.meeting_status === "ended"
+                                      ? "#9ca3af"
+                                      : "#ed4545",
+                                  color: "#ffffff",
+                                  fontWeight: 600,
+                                  fontSize: "0.75rem",
+                                }}
+                              />
                             ) : (
                               <Chip
                                 label="Absent"
@@ -509,7 +598,8 @@ export default function AttendancePage() {
                                 }}
                               />
                             )}
-                            {(activity.time_remaining_minutes <= 0 ||
+                            {(activity.meeting_status === "ended" ||
+                              activity.meeting_status === "expired" ||
                               activity.has_marked_attendance) && (
                               <Button
                                 variant="text"
@@ -526,7 +616,8 @@ export default function AttendancePage() {
                                       icon="mdi:play-circle-outline"
                                       size={16}
                                     />
-                                  )}
+                                  )
+                                }
                                 onClick={() =>
                                   handleWatchRecording(activity.id)
                                 }

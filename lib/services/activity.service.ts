@@ -19,6 +19,8 @@ export interface LiveAttendanceActivity {
   zoom_join_url?: string | null;
   zoom_password?: string | null;
   meeting_status?: string | null;
+  zoom_meeting_ended_at?: string | null;
+  zoom_recording_url?: string | null;
 }
 
 export interface AttendanceRecordingResponse {

@@ -132,7 +132,7 @@ export function ViewActivityPanel({
 
           {activity.is_zoom &&
             activity.zoom_start_url &&
-            activity.meeting_status !== "ended" && (
+            activity.meeting_status === "live" && (
               <Button
                 variant="contained"
                 size="small"

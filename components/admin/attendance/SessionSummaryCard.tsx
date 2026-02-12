@@ -42,6 +42,7 @@ export function SessionSummaryCard({
   const { showToast } = useToast();
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [syncingAttendance, setSyncingAttendance] = useState(false);
+  const [endingMeeting, setEndingMeeting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -141,12 +142,11 @@ export function SessionSummaryCard({
       setSyncingAttendance(true);
       const result = await adminAttendanceService.syncAttendance(activity.id);
       const count = result.data?.synced_count;
-      showToast(
-        count != null
-          ? `${result.message} (${count} synced)`
-          : result.message || "Attendance synced",
-        "success"
-      );
+      const meetingEnded = result.data?.meeting_ended;
+      let toastMsg = result.message || "Attendance synced";
+      if (count != null) toastMsg += ` (${count} synced)`;
+      if (meetingEnded) toastMsg += " — meeting marked as ended";
+      showToast(toastMsg, "success");
       const updated = await adminAttendanceService.getAttendanceActivity(
         activity.id
       );
@@ -159,6 +159,26 @@ export function SessionSummaryCard({
       showToast(typeof msg === "string" ? msg : JSON.stringify(msg), "error");
     } finally {
       setSyncingAttendance(false);
+    }
+  };
+
+  const handleEndMeeting = async () => {
+    try {
+      setEndingMeeting(true);
+      const result = await adminAttendanceService.endMeeting(activity.id);
+      showToast(result.message || "Meeting ended", "success");
+      const updated = await adminAttendanceService.getAttendanceActivity(
+        activity.id
+      );
+      onActivityUpdated?.(updated);
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        "Failed to end meeting";
+      showToast(typeof msg === "string" ? msg : JSON.stringify(msg), "error");
+    } finally {
+      setEndingMeeting(false);
     }
   };
 
@@ -361,6 +381,31 @@ export function SessionSummaryCard({
             >
               {syncingAttendance ? "Syncing..." : "Sync Attendance"}
             </Button>
+            {activity.meeting_status !== "ended" && (
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={endingMeeting}
+                startIcon={
+                  endingMeeting ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : (
+                    <IconWrapper icon="mdi:stop-circle" size={18} />
+                  )
+                }
+                onClick={handleEndMeeting}
+                sx={{
+                  borderColor: "#ef4444",
+                  color: "#ef4444",
+                  "&:hover": {
+                    borderColor: "#dc2626",
+                    backgroundColor: "#fef2f2",
+                  },
+                }}
+              >
+                {endingMeeting ? "Ending..." : "End Meeting"}
+              </Button>
+            )}
           </Box>
         </Box>
       )}
