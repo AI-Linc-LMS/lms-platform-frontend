@@ -133,8 +133,8 @@ export default function GenerateStructuredPlanPage() {
     e.preventDefault();
     if (!validate()) return;
 
-    const payloadModules = modules.map((mod) => ({
-      week: mod.week,
+    const payloadModules = modules.map((mod, i) => ({
+      week: mod.week && mod.week >= 1 ? mod.week : i + 1,
       title: mod.title.trim(),
       description: mod.description?.trim() || undefined,
       submodules: mod.submodules
@@ -157,7 +157,7 @@ export default function GenerateStructuredPlanPage() {
 
     try {
       setSubmitting(true);
-      const job = aiCourseBuilderService.generateOutline({
+      await aiCourseBuilderService.generateOutline({
         input_type: "structured_plan",
         title: title.trim(),
         modules: payloadModules,
@@ -277,15 +277,16 @@ export default function GenerateStructuredPlanPage() {
                     size="small"
                     label="Week"
                     type="number"
-                    value={mod.week}
-                    onChange={(e) =>
+                    value={mod.week === 0 ? "" : mod.week}
+                    onChange={(e) => {
+                      const v = e.target.value;
                       updateModule(
                         modIndex,
                         "week",
-                        parseInt(e.target.value, 10) || 1
-                      )
-                    }
-                    inputProps={{ min: 1 }}
+                        v === "" ? 0 : parseInt(v, 10) || 0
+                      );
+                    }}
+                    inputProps={{ min: 0 }}
                     sx={{ mt: 1, mb: 1 }}
                   />
                   <TextField

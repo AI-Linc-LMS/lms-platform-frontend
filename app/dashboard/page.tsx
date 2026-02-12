@@ -13,6 +13,7 @@ export default function DashboardPage() {
       <Box sx={{ p: 3 }}>
         <DashboardContent
           courses={courses}
+          loading={loading}
           streakDays={[23, 25, 27]}
           currentStreak={3}
         />

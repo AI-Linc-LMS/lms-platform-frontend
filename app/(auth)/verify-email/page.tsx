@@ -170,7 +170,7 @@ export default function VerifyEmailPage() {
                   py: 1.25,
                   mb: 1.5,
                   background:
-                    "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
+                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
                   color: "white",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
@@ -183,7 +183,7 @@ export default function VerifyEmailPage() {
                   },
                   "&:disabled": {
                     background:
-                      "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
+                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
                     opacity: 0.6,
                   },
                 }}

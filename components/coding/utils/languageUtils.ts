@@ -8,6 +8,7 @@ export const LANGUAGE_ID_MAPPING: Record<string, number> = {
   cpp: 54,
   "c++": 54,
   c: 50,
+  sql: 82,
 };
 
 // Map language names to Monaco Editor language identifiers
@@ -20,6 +21,7 @@ export const MONACO_LANGUAGE_MAPPING: Record<string, string> = {
   python: "python",
   java: "java",
   c: "c",
+  sql: "sql",
 };
 
 // Map display names
@@ -32,6 +34,7 @@ export const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
   typescript: "TypeScript",
   java: "Java",
   c: "C",
+  sql: "SQL",
 };
 
 // Get languages available for a problem based on template_code

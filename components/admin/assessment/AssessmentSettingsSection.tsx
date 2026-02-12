@@ -91,11 +91,14 @@ export function AssessmentSettingsSection({
         <TextField
           label="Duration (minutes)"
           type="number"
-          value={durationMinutes}
-          onChange={(e) => onDurationChange(Number(e.target.value))}
+          value={durationMinutes === 0 ? "" : durationMinutes}
+          onChange={(e) => {
+            const v = e.target.value;
+            onDurationChange(v === "" ? 0 : Number(v));
+          }}
           fullWidth
           required
-          inputProps={{ min: 1 }}
+          inputProps={{ min: 0 }}
         />
         <FormControl fullWidth>
           <InputLabel>Courses (optional)</InputLabel>

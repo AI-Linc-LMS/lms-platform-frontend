@@ -882,14 +882,15 @@ export default function TakeAssessmentPage({
             answered++;
           }
         } 
-        // For coding: only count if user submitted or ran (tc_passed > 0)
-        // Unattempted with tc_passed=0 should NOT count
+        // For coding: count as attempted if user has code, has run tests, or submitted
+        // (so "visited/attempted" matches what the student did, not only full pass)
         else if (sectionType === "coding") {
           if (response && typeof response === "object") {
             const isSubmitted = response.submitted === true;
-            const passedCount = response.tc_passed ?? response.passed ?? 0;
             const totalCount = response.total_tc ?? response.total_test_cases ?? 0;
-            if (isSubmitted || (totalCount > 0 && passedCount > 0)) {
+            const hasCode = typeof response.code === "string" && response.code.trim().length > 0;
+            const hasRun = totalCount > 0;
+            if (isSubmitted || hasRun || hasCode) {
               answered++;
             }
           }
@@ -908,45 +909,11 @@ export default function TakeAssessmentPage({
     return status;
   }, [sections, responses]);
 
-  // Optimized totalAnswered - use ref to prevent recalculation on every navigation
-  const totalAnsweredRef = useRef<number>(0);
-  const lastTotalAnsweredHashRef = useRef<string>("");
-  
+  // totalAnswered must match section breakdown (sum of sectionStatus.answered)
+  // so "Questions Visited" and section breakdown are always consistent
   const totalAnswered = useMemo(() => {
-    // Create a simple hash to detect actual changes
-    const hash = JSON.stringify(Object.keys(responses).map(key => ({
-      key,
-      count: Object.keys(responses[key] || {}).length
-    })));
-    
-    // Only recalculate if responses actually changed
-    if (hash === lastTotalAnsweredHashRef.current) {
-      return totalAnsweredRef.current;
-    }
-    
-    lastTotalAnsweredHashRef.current = hash;
-    
-    const total = Object.values(responses).reduce(
-      (sum: number, sectionResponses: any) => {
-        if (!sectionResponses || typeof sectionResponses !== "object") {
-          return sum;
-        }
-        return (
-          sum +
-          Object.keys(sectionResponses).filter(
-            (key) =>
-              sectionResponses[key] !== undefined &&
-              sectionResponses[key] !== null &&
-              sectionResponses[key] !== ""
-          ).length
-        );
-      },
-      0
-    );
-    
-    totalAnsweredRef.current = total;
-    return total;
-  }, [responses]);
+    return sectionStatus.reduce((sum, s) => sum + s.answered, 0);
+  }, [sectionStatus]);
 
   // Handlers - memoized
   const handleQuizAnswerSelect = useCallback(
