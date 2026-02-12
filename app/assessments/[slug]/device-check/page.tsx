@@ -52,6 +52,7 @@ export default function DeviceCheckPage({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const isNavigatingToAssessmentRef = useRef(false);
+  const [isNavigatingToAssessment, setIsNavigatingToAssessment] = useState(false);
   const hasAutoTestedRef = useRef(false);
   const { showToast } = useToast();
 
@@ -389,6 +390,7 @@ export default function DeviceCheckPage({
 
     // Mark that we're navigating to assessment (so cleanup won't stop camera)
     isNavigatingToAssessmentRef.current = true;
+    setIsNavigatingToAssessment(true);
 
     // Store the stream globally so take page can access it (prevents camera from turning off)
     if (streamRef.current) {
@@ -543,6 +545,25 @@ export default function DeviceCheckPage({
                 >
                   <Typography variant="body2" sx={{ color: "#ffffff" }}>
                     Camera preview will appear here
+                  </Typography>
+                </Box>
+              )}
+              {(isFaceDetectionInitializing || isNavigatingToAssessment) && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    zIndex: 1,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "#ffffff" }}>
+                    {isNavigatingToAssessment
+                      ? "Starting assessment..."
+                      : "Initializing face detection..."}
                   </Typography>
                 </Box>
               )}

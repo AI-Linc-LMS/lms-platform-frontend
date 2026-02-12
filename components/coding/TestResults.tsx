@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -31,9 +31,10 @@ export function TestResults({
 }: TestResultsProps) {
   const [mainTab, setMainTab] = useState(0); // 0: Test Cases, 1: Custom Input
   const [selectedCase, setSelectedCase] = useState(0);
+  const [assessmentCaseTab, setAssessmentCaseTab] = useState(0); // which test case tab in assessment mode
   const [customInput, setCustomInput] = useState("");
 
-  // Normalize: unwrap nested response (data, result, output, run_result, run_output, submission, submissions)
+  // Normalize: unwrap nested response (run after we have res/testCasesArray - see below) (data, result, output, run_result, run_output, submission, submissions)
   const raw =
     testResults?.data ??
     testResults?.result ??
@@ -45,19 +46,21 @@ export function TestResults({
     testResults;
   const res = raw || testResults;
 
-  // Helper to extract error fields from any object
+  // Helper to extract error fields from any object (compilation/runtime only — not test case status)
   const extractErrorFrom = (obj: any) => {
     if (!obj || typeof obj !== "object") return;
+    const stderr = obj.stderr;
+    const compileOutput = obj.compile_output;
     const err =
       obj.error ||
       obj.status_message ||
       (typeof obj.status === "string" ? obj.status : obj.status?.description);
-    const stderr = obj.stderr;
-    const compileOutput = obj.compile_output;
-    if (err || stderr || compileOutput) {
+    // Don't treat test case "Accepted" / success as an error — only real stderr/compile_output or non-Accepted status
+    const isSuccessStatus = err === "Accepted" || obj.passed === true;
+    if (stderr || compileOutput || (err && !isSuccessStatus)) {
       return {
-        errorType: err || "Error",
-        errorMessage: [stderr, compileOutput].filter(Boolean).join("\n\n") || err || "",
+        errorType: err && !isSuccessStatus ? err : "Error",
+        errorMessage: [stderr, compileOutput].filter(Boolean).join("\n\n") || (err && !isSuccessStatus ? err : "") || "",
       };
     }
   };
@@ -87,6 +90,8 @@ export function TestResults({
       testCasesArray = res.results;
     } else if (res.test_cases) {
       testCasesArray = res.test_cases;
+    } else if (res.test_case_results && Array.isArray(res.test_case_results)) {
+      testCasesArray = res.test_case_results;
     } else if (res.stderr || res.compile_output || res.error) {
       testCasesArray = [res];
       hasCompilationError = true;
@@ -113,6 +118,11 @@ export function TestResults({
       }
     }
   }
+
+  // Reset assessment test case tab when results change
+  useEffect(() => {
+    setAssessmentCaseTab(0);
+  }, [testResults]);
 
   // Fallback: extract error from top-level, nested wrappers, or individual test case results
   if (testResults && !hasCompilationError) {
@@ -229,8 +239,8 @@ export function TestResults({
               </Box>
             )}
 
-            {/* Show error details under test case count - ensure visibility */}
-            {hasCompilationError && (errorType || errorMessage) && (
+            {/* Error section - compilation/runtime errors only (never show "Accepted" as error) */}
+            {hasCompilationError && (errorType || errorMessage) && errorType !== "Accepted" && (
               <Box
                 sx={{
                   width: "100%",
@@ -242,7 +252,13 @@ export function TestResults({
               >
                 <Typography
                   variant="subtitle2"
-                  sx={{ fontWeight: 600, color: "#991b1b", mb: 1 }}
+                  sx={{ fontWeight: 700, color: "#991b1b", mb: 1, fontSize: "0.875rem" }}
+                >
+                  Error
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#b91c1c", fontWeight: 600, display: "block", mb: 0.5 }}
                 >
                   {errorType || "Error"}
                 </Typography>
@@ -261,6 +277,99 @@ export function TestResults({
                 </Typography>
               </Box>
             )}
+
+            {/* Accepted section - passed test cases only */}
+            {totalCount > 0 && passedCount > 0 && testCasesArray.length > 0 && (() => {
+              const passedCases = testCasesArray.filter((tc: any) =>
+                tc.status === "Accepted" || tc.verdict === "Accepted" || tc.passed === true
+              );
+              return (
+                <Box
+                  sx={{
+                    width: "100%",
+                    p: 2,
+                    backgroundColor: "#f0fdf4",
+                    borderRadius: 1,
+                    border: "1px solid #bbf7d0",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, color: "#065f46", mb: 1, fontSize: "0.875rem" }}
+                  >
+                    Accepted
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#065f46", fontSize: "0.875rem", mb: 0.5 }}>
+                    {passedCases.length} test case{passedCases.length !== 1 ? "s" : ""} passed
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
+                    {passedCases.map((tc: any, idx: number) => {
+                      const num = tc.test_case_number ?? testCasesArray.indexOf(tc) + 1;
+                      return (
+                        <Chip
+                          key={idx}
+                          size="small"
+                          label={`Case ${num}`}
+                          sx={{
+                            backgroundColor: "#d1fae5",
+                            color: "#065f46",
+                            fontWeight: 600,
+                            fontSize: "0.75rem",
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                </Box>
+              );
+            })()}
+
+            {/* Failed section - failed test cases only (when no compilation error) */}
+            {totalCount > 0 && passedCount < totalCount && testCasesArray.length > 0 && !hasCompilationError && (() => {
+              const failedCases = testCasesArray.filter((tc: any) =>
+                tc.status !== "Accepted" && tc.verdict !== "Accepted" && tc.passed !== true
+              );
+              return (
+                <Box
+                  sx={{
+                    width: "100%",
+                    p: 2,
+                    backgroundColor: "#fef2f2",
+                    borderRadius: 1,
+                    border: "1px solid #fecaca",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, color: "#991b1b", mb: 1, fontSize: "0.875rem" }}
+                  >
+                    Failed
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#991b1b", fontSize: "0.875rem", mb: 0.5 }}>
+                    {failedCases.length} test case{failedCases.length !== 1 ? "s" : ""} failed
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
+                    {failedCases.map((tc: any, idx: number) => {
+                      const num = tc.test_case_number ?? testCasesArray.indexOf(tc) + 1;
+                      const status = tc.status || tc.verdict || "Wrong Answer";
+                      return (
+                        <Chip
+                          key={idx}
+                          size="small"
+                          label={`Case ${num}: ${status}`}
+                          sx={{
+                            backgroundColor: "#fee2e2",
+                            color: "#991b1b",
+                            fontWeight: 600,
+                            fontSize: "0.75rem",
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                </Box>
+              );
+            })()}
 
             {/* Show status messages */}
             {totalCount > 0 && (
@@ -289,6 +398,139 @@ export function TestResults({
                 Code executed. Waiting for test results...
               </Alert>
             )}
+
+            {/* Tabbed view for each test case result (assessment) */}
+            {testCasesArray.length > 0 && (() => {
+              const safeCaseIndex = Math.min(assessmentCaseTab, Math.max(0, testCasesArray.length - 1));
+              return (
+              <Box sx={{ mt: 2, width: "100%" }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 1.5 }}>
+                  Test case details
+                </Typography>
+                <Tabs
+                  value={safeCaseIndex}
+                  onChange={(_, v) => setAssessmentCaseTab(v)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    borderBottom: "1px solid #e5e7eb",
+                    minHeight: 36,
+                    mb: 2,
+                    "& .MuiTab-root": { minHeight: 36, fontSize: "0.8rem", fontWeight: 500, textTransform: "none" },
+                    "& .Mui-selected": { color: "#111827" },
+                    "& .MuiTabs-indicator": { backgroundColor: "#6366f1" },
+                  }}
+                >
+                  {testCasesArray.map((tc: any, index: number) => {
+                    const isPassed = tc.status === "Accepted" || tc.verdict === "Accepted" || tc.passed === true;
+                    return (
+                      <Tab
+                        key={index}
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            <span>Case {tc.test_case_number ?? index + 1}</span>
+                            {isPassed ? (
+                              <IconWrapper icon="mdi:check-circle" size={14} color="#10b981" />
+                            ) : (
+                              <IconWrapper icon="mdi:close-circle" size={14} color="#ef4444" />
+                            )}
+                          </Box>
+                        }
+                        sx={{
+                          color: isPassed ? "#065f46" : "#991b1b",
+                          "&.Mui-selected": { color: isPassed ? "#065f46" : "#991b1b" },
+                        }}
+                      />
+                    );
+                  })}
+                </Tabs>
+                {testCasesArray[safeCaseIndex] && (() => {
+                  const testCase = testCasesArray[safeCaseIndex];
+                  const isPassed = testCase.status === "Accepted" || testCase.verdict === "Accepted" || testCase.passed === true;
+                  return (
+                    <Box
+                      sx={{
+                        p: 2,
+                        backgroundColor: "#f9fafb",
+                        borderRadius: 1,
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600, mb: 0.5, display: "block" }}>
+                          Input:
+                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            backgroundColor: "#ffffff",
+                            fontFamily: "monospace",
+                            fontSize: "0.8rem",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            border: "1px solid #e5e7eb",
+                          }}
+                        >
+                          {testCase.input ?? ""}
+                        </Paper>
+                      </Box>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600, mb: 0.5, display: "block" }}>
+                          Expected output:
+                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            backgroundColor: "#ffffff",
+                            fontFamily: "monospace",
+                            fontSize: "0.8rem",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            border: "1px solid #e5e7eb",
+                          }}
+                        >
+                          {testCase.expected_output ?? ""}
+                        </Paper>
+                      </Box>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ color: isPassed ? "#10b981" : "#ef4444", fontWeight: 600, mb: 0.5, display: "block" }}>
+                          Your output:
+                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            backgroundColor: "#ffffff",
+                            fontFamily: "monospace",
+                            fontSize: "0.8rem",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            border: `1px solid ${isPassed ? "#10b981" : "#ef4444"}`,
+                          }}
+                        >
+                          {testCase.actual_output ?? ""}
+                        </Paper>
+                      </Box>
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          backgroundColor: isPassed ? "#d1fae5" : "#fee2e2",
+                          border: `1px solid ${isPassed ? "#10b981" : "#ef4444"}`,
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem", color: isPassed ? "#065f46" : "#991b1b" }}>
+                          Status: {testCase.status || testCase.verdict || (isPassed ? "Accepted" : "Wrong Answer")}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                })()}
+              </Box>
+            );
+            })()}
           </Box>
         )}
             </>
