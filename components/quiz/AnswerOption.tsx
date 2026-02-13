@@ -4,6 +4,11 @@ import { Box, Paper, Typography } from "@mui/material";
 import { memo } from "react";
 import { QuizOption } from "./QuizLayout";
 
+/** Check if string contains HTML tags so we can render with dangerouslySetInnerHTML */
+function hasHtml(str: unknown): str is string {
+  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+}
+
 interface AnswerOptionProps {
   option: QuizOption;
   isSelected: boolean;
@@ -87,23 +92,44 @@ export const AnswerOption = memo(function AnswerOption({
           justifyContent: "space-between",
         }}
       >
-        <Typography
-          sx={{
-            fontWeight: isSelected || isCorrect ? 600 : 500,
-            color: isSelected
-              ? "#1e40af"
-              : isCorrect
-              ? "#065f46"
-              : isWrongSelection
-              ? "#991b1b"
-              : "#1a1f2e",
-            fontSize: "1rem",
-            lineHeight: 1.6,
-            letterSpacing: "0.01em",
-          }}
-        >
-          {option.label}
-        </Typography>
+        {hasHtml(option.label) ? (
+          <Box
+            component="span"
+            sx={{
+              fontWeight: isSelected || isCorrect ? 600 : 500,
+              color: isSelected
+                ? "#1e40af"
+                : isCorrect
+                ? "#065f46"
+                : isWrongSelection
+                ? "#991b1b"
+                : "#1a1f2e",
+              fontSize: "1rem",
+              lineHeight: 1.6,
+              letterSpacing: "0.01em",
+              "& p": { margin: 0 },
+            }}
+            dangerouslySetInnerHTML={{ __html: option.label }}
+          />
+        ) : (
+          <Typography
+            sx={{
+              fontWeight: isSelected || isCorrect ? 600 : 500,
+              color: isSelected
+                ? "#1e40af"
+                : isCorrect
+                ? "#065f46"
+                : isWrongSelection
+                ? "#991b1b"
+                : "#1a1f2e",
+              fontSize: "1rem",
+              lineHeight: 1.6,
+              letterSpacing: "0.01em",
+            }}
+          >
+            {option.label}
+          </Typography>
+        )}
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
           {isCorrect && (
             <Box

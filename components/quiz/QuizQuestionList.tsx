@@ -4,6 +4,11 @@ import { Box, Paper, Typography, List, ListItem, ListItemButton, ListItemText } 
 import { useState, memo } from "react";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
+/** Check if string contains HTML tags so we can render with dangerouslySetInnerHTML */
+function hasHtml(str: unknown): str is string {
+  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+}
+
 interface QuizQuestion {
   id: string | number;
   question: string;
@@ -134,22 +139,43 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                             color={isCurrent ? "#6366f1" : "#d1d5db"}
                           />
                         )}
-                        <Typography
-                          sx={{
-                            fontWeight: isCurrent ? 700 : 500,
-                            color: isCurrent
-                              ? "#1e40af"
-                              : "#6b7280",
-                            fontSize: "0.875rem",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            flex: 1,
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {question.question || `Quiz question ${index + 1}`}
-                        </Typography>
+                        {hasHtml(question.question) ? (
+                          <Box
+                            component="span"
+                            sx={{
+                              fontWeight: isCurrent ? 700 : 500,
+                              color: isCurrent ? "#1e40af" : "#6b7280",
+                              fontSize: "0.875rem",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              flex: 1,
+                              lineHeight: 1.5,
+                              "& p": { margin: 0, display: "inline" },
+                              "& br": { display: "none" },
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: question.question || `Quiz question ${index + 1}`,
+                            }}
+                          />
+                        ) : (
+                          <Typography
+                            sx={{
+                              fontWeight: isCurrent ? 700 : 500,
+                              color: isCurrent
+                                ? "#1e40af"
+                                : "#6b7280",
+                              fontSize: "0.875rem",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              flex: 1,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {question.question || `Quiz question ${index + 1}`}
+                          </Typography>
+                        )}
                         {isCurrent && (
                           <Box
                             sx={{

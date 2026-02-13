@@ -62,9 +62,9 @@ export default function CreateAssessmentPage() {
   // Multiple sections
   const [sections, setSections] = useState<Section[]>([]);
 
-  // MCQ input method
-  const [mcqInputMethod, setMcqInputMethod] =
-    useState<MCQInputMethod>("manual");
+  // MCQ input method (per section)
+  const [mcqInputMethodBySection, setMcqInputMethodBySection] =
+    useState<Record<string, MCQInputMethod>>({});
 
   // Section-based question assignments
   // For manual/csv/ai input
@@ -84,10 +84,9 @@ export default function CreateAssessmentPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
 
-  // Coding problems
-  const [codingInputMethod, setCodingInputMethod] = useState<"existing" | "ai">(
-    "existing"
-  );
+  // Coding problem input method (per section)
+  const [codingInputMethodBySection, setCodingInputMethodBySection] =
+    useState<Record<string, "existing" | "ai">>({});
   const [sectionCodingProblemIds, setSectionCodingProblemIds] = useState<
     Record<string, number[]>
   >({});
@@ -175,10 +174,11 @@ export default function CreateAssessmentPage() {
       let hasQuizQuestions = false;
       let hasCodingProblems = false;
 
-      // Check quiz sections
+      // Check quiz sections (each section can have its own input method)
       if (quizSections.length > 0) {
         for (const section of quizSections) {
-          if (mcqInputMethod === "existing") {
+          const method = mcqInputMethodBySection[section.id] ?? "manual";
+          if (method === "existing") {
             const ids = sectionMcqIds[section.id] || [];
             if (ids.length > 0) {
               hasQuizQuestions = true;
@@ -273,18 +273,10 @@ export default function CreateAssessmentPage() {
         }
       }
       
-      // Check coding sections
+      // Check coding sections (count only selected IDs to avoid double-counting with AI list)
       for (const section of codingSections) {
-        // Calculate total coding problems for this section (inline logic)
-        let totalProblems = 0;
-        const existingIds = sectionCodingProblemIds[section.id] || [];
-        totalProblems += existingIds.length;
-        if (aiCodingProblems[section.id]) {
-          totalProblems += aiCodingProblems[section.id].length;
-        }
-        
+        const totalProblems = (sectionCodingProblemIds[section.id] || []).length;
         const requiredProblems = section.number_of_questions_to_show ?? 1;
-        
         if (totalProblems < requiredProblems) {
           return true; // Not enough problems
         }
@@ -318,13 +310,7 @@ export default function CreateAssessmentPage() {
       
       if (codingSections.length > 0) {
         for (const section of codingSections) {
-          let totalProblems = 0;
-          const existingIds = sectionCodingProblemIds[section.id] || [];
-          totalProblems += existingIds.length;
-          if (aiCodingProblems[section.id]) {
-            totalProblems += aiCodingProblems[section.id].length;
-          }
-          
+          const totalProblems = (sectionCodingProblemIds[section.id] || []).length;
           if (totalProblems > 0) {
             hasCodingProblems = true;
             break;
@@ -433,18 +419,7 @@ export default function CreateAssessmentPage() {
 
   // Get total count of coding problems for a specific section (all sources combined)
   const getTotalCodingProblemCountForSection = (sectionId: string): number => {
-    let count = 0;
-    
-    // Existing pool coding problems
-    const existingIds = sectionCodingProblemIds[sectionId] || [];
-    count += existingIds.length;
-    
-    // AI generated coding problems
-    if (aiCodingProblems[sectionId]) {
-      count += aiCodingProblems[sectionId].length;
-    }
-    
-    return count;
+    return (sectionCodingProblemIds[sectionId] || []).length;
   };
 
   // Get Coding Problem IDs for a specific section
@@ -822,8 +797,10 @@ export default function CreateAssessmentPage() {
         return (
           <SectionBasedQuestionsInput
             sections={sections}
-            mcqInputMethod={mcqInputMethod}
-            onMcqInputMethodChange={setMcqInputMethod}
+            mcqInputMethodBySection={mcqInputMethodBySection}
+            onMcqInputMethodChange={(sectionId, method) => {
+              setMcqInputMethodBySection((prev) => ({ ...prev, [sectionId]: method }));
+            }}
             sectionMcqIds={sectionMcqIds}
             onSectionMcqIdsChange={(sectionId, ids) => {
               setSectionMcqIds((prev) => ({ ...prev, [sectionId]: ids }));
@@ -842,8 +819,10 @@ export default function CreateAssessmentPage() {
             }}
             existingMCQs={existingMCQs}
             loadingMCQs={loadingMCQs}
-            codingInputMethod={codingInputMethod}
-            onCodingInputMethodChange={setCodingInputMethod}
+            codingInputMethodBySection={codingInputMethodBySection}
+            onCodingInputMethodChange={(sectionId, method) => {
+              setCodingInputMethodBySection((prev) => ({ ...prev, [sectionId]: method }));
+            }}
             sectionCodingProblemIds={sectionCodingProblemIds}
             onSectionCodingProblemIdsChange={(sectionId, ids) => {
               setSectionCodingProblemIds((prev) => ({
