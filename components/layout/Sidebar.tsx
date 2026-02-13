@@ -100,6 +100,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "attendance",
     },
     {
+      label: "Live Sessions",
+      path: "/live-sessions",
+      icon: "mdi:video-box",
+      featureName: "live_sessions",
+    },
+    {
       label: "Community",
       path: "/community",
       icon: "mdi:forum",
@@ -169,12 +175,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     //   icon: "mdi:video",
     //   featureName: "admin_webinar_management",
     // },
-    // {
-    //   label: "Live",
-    //   path: "/admin/live",
-    //   icon: "mdi:video-box",
-    //   featureName: "admin_live",
-    // },
+    {
+      label: "Live Sessions",
+      path: "/admin/live-sessions",
+      icon: "mdi:video-box",
+      featureName: "admin_live_sessions",
+    },
     {
       label: "Verify Content",
       path: "/admin/verify-content",

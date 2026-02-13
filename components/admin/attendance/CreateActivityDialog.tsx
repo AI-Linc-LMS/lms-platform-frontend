@@ -27,18 +27,21 @@ interface CreateActivityDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** When true, only create Zoom sessions (checkbox hidden, is_zoom always true). Use on Live Sessions page. */
+  zoomOnly?: boolean;
 }
 
 export function CreateActivityDialog({
   open,
   onClose,
   onSuccess,
+  zoomOnly = false,
 }: CreateActivityDialogProps) {
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
   const [name, setName] = useState("");
   const [duration, setDuration] = useState(60);
-  const [isZoom, setIsZoom] = useState(false);
+  const [isZoom, setIsZoom] = useState(zoomOnly);
   const [creating, setCreating] = useState(false);
   const [successView, setSuccessView] = useState(false);
   const [createdActivity, setCreatedActivity] =
@@ -59,12 +62,13 @@ export function CreateActivityDialog({
     }
   }, [open, clientInfo, successView]);
 
-  // Reset success state when dialog is opened fresh
+  // Reset success state when dialog is opened fresh; keep zoomOnly in sync
   useEffect(() => {
     if (open && !successView) {
       setCreatedActivity(null);
+      if (zoomOnly) setIsZoom(true);
     }
-  }, [open, successView]);
+  }, [open, successView, zoomOnly]);
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -91,7 +95,7 @@ export function CreateActivityDialog({
       } else {
         setName("");
         setDuration(60);
-        setIsZoom(false);
+        setIsZoom(zoomOnly);
         onSuccess();
       }
     } catch (error: any) {
@@ -124,7 +128,7 @@ export function CreateActivityDialog({
     setCreatedActivity(null);
     setName("");
     setDuration(60);
-    setIsZoom(false);
+    setIsZoom(zoomOnly);
     onSuccess();
   };
 
@@ -157,7 +161,11 @@ export function CreateActivityDialog({
               fontSize: { xs: "1rem", sm: "1.25rem" },
             }}
           >
-            {successView ? "Zoom session created" : "Create Attendance Activity"}
+            {successView
+              ? "Zoom session created"
+              : zoomOnly
+                ? "Create Live Session"
+                : "Create Attendance Activity"}
           </Typography>
           <IconButton onClick={successView ? handleDone : onClose} size="small">
             <IconWrapper icon="mdi:close" size={20} />
@@ -247,21 +255,23 @@ export function CreateActivityDialog({
                 },
               }}
             />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={isZoom}
-                  onChange={(e) => setIsZoom(e.target.checked)}
-                  color="primary"
-                />
-              }
-              label="Create Zoom meeting"
-              sx={{
-                "& .MuiFormControlLabel-label": {
-                  fontSize: { xs: "0.875rem", sm: "1rem" },
-                },
-              }}
-            />
+            {!zoomOnly && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isZoom}
+                    onChange={(e) => setIsZoom(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Create Zoom meeting"
+                sx={{
+                  "& .MuiFormControlLabel-label": {
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                  },
+                }}
+              />
+            )}
           </Box>
         )}
       </DialogContent>

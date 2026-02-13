@@ -16,7 +16,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -39,9 +38,6 @@ export default function AttendancePage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [markingAttendance, setMarkingAttendance] = useState<number | null>(
-    null
-  );
-  const [watchingRecordingId, setWatchingRecordingId] = useState<number | null>(
     null
   );
   const [codeDialogOpen, setCodeDialogOpen] = useState(false);
@@ -69,7 +65,11 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       const data = await activityService.getLiveAttendance();
-      setAttendanceActivities(data);
+      // Attendance page: code-based only; exclude Zoom sessions (they are on Live Sessions page)
+      const codeOnly = (data || []).filter(
+        (a) => !a.is_zoom && !a.zoom_join_url?.trim()
+      );
+      setAttendanceActivities(codeOnly);
     } catch (error: any) {
       showToast(
         error?.response?.data?.detail ||
@@ -86,34 +86,6 @@ export default function AttendancePage() {
     setSelectedActivityId(activityId);
     setCodeDialogOpen(true);
     setAttendanceCode(["", "", "", "", "", ""]);
-  };
-
-  const handleWatchRecording = async (activityId: number) => {
-    try {
-      setWatchingRecordingId(activityId);
-      const data = await activityService.getRecording(activityId);
-      if (data.recording_url) {
-        window.open(data.recording_url, "_blank");
-      }
-    } catch (error: any) {
-      const msg =
-        error?.response?.status === 404
-          ? error?.response?.data?.error ||
-            "Recording is not available for this session yet."
-          : error?.response?.data?.detail ||
-            error?.response?.data?.message ||
-            "Failed to load recording";
-      showToast(typeof msg === "string" ? msg : JSON.stringify(msg), "error");
-    } finally {
-      setWatchingRecordingId(null);
-    }
-  };
-
-  const handleCopyPassword = (password: string) => {
-    navigator.clipboard.writeText(password).then(
-      () => showToast("Password copied", "success"),
-      () => showToast("Failed to copy", "error")
-    );
   };
 
   const handleCodeDialogClose = () => {
@@ -209,9 +181,11 @@ export default function AttendancePage() {
   };
 
   const isActivityActive = (activity: LiveAttendanceActivity) => {
-    const expiresAt = new Date(activity.expires_at);
+    const dateStr = activity.class_datetime ?? activity.expires_at;
+    if (!dateStr) return false;
+    const expiresAt = new Date(dateStr);
     const now = new Date();
-    return now < expiresAt && activity.time_remaining_minutes > 0;
+    return now < expiresAt && (activity.time_remaining_minutes ?? 0) > 0;
   };
 
 
@@ -334,12 +308,16 @@ export default function AttendancePage() {
                               color: "#111827",
                             }}
                           >
-                            {activity.name}
+                            {activity.topic_name ?? activity.name ?? "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ color: "#374151" }}>
-                            {formatDateTime(activity.expires_at)}
+                            {activity.class_datetime ?? activity.expires_at
+                              ? formatDateTime(
+                                  activity.class_datetime ?? activity.expires_at ?? ""
+                                )
+                              : "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -407,110 +385,7 @@ export default function AttendancePage() {
                               gap: 1,
                             }}
                           >
-                            {activity.meeting_status === "live" &&
-                            activity.is_zoom &&
-                            activity.zoom_join_url ? (
-                              <>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  onClick={() =>
-                                    window.open(
-                                      activity.zoom_join_url!,
-                                      "_blank"
-                                    )
-                                  }
-                                  startIcon={
-                                    <IconWrapper
-                                      icon="mdi:video"
-                                      size={18}
-                                    />
-                                  }
-                                  sx={{
-                                    backgroundColor: "#6366f1",
-                                    color: "#ffffff",
-                                    textTransform: "none",
-                                    fontWeight: 600,
-                                    fontSize: "0.875rem",
-                                    px: 2,
-                                    "&:hover": {
-                                      backgroundColor: "#4f46e5",
-                                    },
-                                  }}
-                                >
-                                  Join Live Class
-                                </Button>
-                                {activity.zoom_password && (
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      color: "#6b7280",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 0.5,
-                                    }}
-                                  >
-                                    Password: {activity.zoom_password}
-                                    <Button
-                                      size="small"
-                                      sx={{
-                                        minWidth: 0,
-                                        p: 0.25,
-                                        fontSize: "0.7rem",
-                                        textTransform: "none",
-                                      }}
-                                      onClick={() =>
-                                        handleCopyPassword(
-                                          activity.zoom_password!
-                                        )
-                                      }
-                                    >
-                                      Copy
-                                    </Button>
-                                  </Typography>
-                                )}
-                              </>
-                            ) : activity.meeting_status === "live" &&
-                              !activity.has_marked_attendance ? (
-                              <Button
-                                variant="contained"
-                                size="small"
-                                onClick={() =>
-                                  handleMarkAttendanceClick(activity.id)
-                                }
-                                disabled={markingAttendance === activity.id}
-                                startIcon={
-                                  markingAttendance === activity.id ? (
-                                    <CircularProgress
-                                      size={16}
-                                      color="inherit"
-                                    />
-                                  ) : (
-                                    <IconWrapper
-                                      icon="mdi:check-circle"
-                                      size={18}
-                                    />
-                                  )
-                                }
-                                sx={{
-                                  backgroundColor: "#10b981",
-                                  color: "#ffffff",
-                                  textTransform: "none",
-                                  fontWeight: 600,
-                                  fontSize: "0.875rem",
-                                  px: 2,
-                                  "&:hover": {
-                                    backgroundColor: "#059669",
-                                  },
-                                  "&:disabled": {
-                                    backgroundColor: "#d1d5db",
-                                    color: "#9ca3af",
-                                  },
-                                }}
-                              >
-                                Mark Attendance
-                              </Button>
-                            ) : canMark ? (
+                            {canMark ? (
                               <Button
                                 variant="contained"
                                 size="small"
@@ -597,38 +472,6 @@ export default function AttendancePage() {
                                   fontSize: "0.75rem",
                                 }}
                               />
-                            )}
-                            {(activity.meeting_status === "ended" ||
-                              activity.meeting_status === "expired" ||
-                              activity.has_marked_attendance) && (
-                              <Button
-                                variant="text"
-                                size="small"
-                                disabled={watchingRecordingId === activity.id}
-                                startIcon={
-                                  watchingRecordingId === activity.id ? (
-                                    <CircularProgress
-                                      size={14}
-                                      color="inherit"
-                                    />
-                                  ) : (
-                                    <IconWrapper
-                                      icon="mdi:play-circle-outline"
-                                      size={16}
-                                    />
-                                  )
-                                }
-                                onClick={() =>
-                                  handleWatchRecording(activity.id)
-                                }
-                                sx={{
-                                  fontSize: "0.75rem",
-                                  textTransform: "none",
-                                  color: "#6366f1",
-                                }}
-                              >
-                                Watch Recording
-                              </Button>
                             )}
                           </Box>
                         </TableCell>

@@ -28,7 +28,7 @@ import {
 } from "@/lib/services/admin/admin-attendance.service";
 import { getAttendanceStatusDisplay } from "@/lib/utils/attendance-utils";
 import { ViewActivityPanel } from "@/components/admin/attendance/ViewActivityPanel";
-import { CreateActivityDialog } from "@/components/admin/attendance/CreateActivityDialog";
+import { CreateCodeAttendanceDialog } from "@/components/admin/attendance/CreateCodeAttendanceDialog";
 
 export default function AttendancePage() {
   const { showToast } = useToast();
@@ -75,14 +75,20 @@ export default function AttendancePage() {
     }
   };
 
+  // Code-only activities (no Zoom); Zoom is managed on Live Sessions
+  const codeOnlyActivities = useMemo(
+    () => (allActivities || []).filter((a) => !a.is_zoom),
+    [allActivities]
+  );
+
   // 🔥 FRONTEND PAGINATION LOGIC
   useEffect(() => {
     const start = (page - 1) * limit;
     const end = start + limit;
 
-    setActivities(allActivities.slice(start, end));
-    setTotalPages(Math.max(1, Math.ceil(allActivities.length / limit)));
-  }, [allActivities, page, limit]);
+    setActivities(codeOnlyActivities.slice(start, end));
+    setTotalPages(Math.max(1, Math.ceil(codeOnlyActivities.length / limit)));
+  }, [codeOnlyActivities, page, limit]);
 
   const handleViewActivity = async (activityId: number) => {
     try {
@@ -161,6 +167,7 @@ export default function AttendancePage() {
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => setCreateDialogOpen(true)}
+            sx={{ bgcolor: "#10b981", "&:hover": { bgcolor: "#059669" } }}
           >
             Create Activity
           </Button>
@@ -221,7 +228,7 @@ export default function AttendancePage() {
           </TableContainer>
 
           {/* Pagination */}
-          {allActivities.length > 0 && (
+          {codeOnlyActivities.length > 0 && (
             <Box
               sx={{
                 p: 2,
@@ -252,6 +259,7 @@ export default function AttendancePage() {
                 page={page}
                 onChange={(_, value) => setPage(value)}
                 color="primary"
+                sx={{ "& .Mui-selected": { bgcolor: "#10b981" } }}
               />
             </Box>
           )}
@@ -275,8 +283,8 @@ export default function AttendancePage() {
           />
         )}
 
-        {/* Create Dialog */}
-        <CreateActivityDialog
+        {/* Create Dialog (code-only; Zoom is on Live Sessions) */}
+        <CreateCodeAttendanceDialog
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
           onSuccess={() => {

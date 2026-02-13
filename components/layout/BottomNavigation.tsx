@@ -48,6 +48,12 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "attendance",
   },
   {
+    label: "Live Sessions",
+    path: "/live-sessions",
+    icon: "mdi:video-box",
+    featureName: "live_sessions",
+  },
+  {
     label: "Community",
     path: "/community",
     icon: "mdi:forum",
@@ -98,6 +104,12 @@ const adminNavigationItems: NavigationItem[] = [
     path: "/admin/attendance",
     icon: "mdi:calendar-check",
     featureName: "admin_attendance",
+  },
+  {
+    label: "Live Sessions",
+    path: "/admin/live-sessions",
+    icon: "mdi:video-box",
+    featureName: "admin_live_sessions",
   },
   {
     label: "Emails",
