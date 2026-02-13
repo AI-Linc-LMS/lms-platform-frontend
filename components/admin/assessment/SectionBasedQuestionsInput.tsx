@@ -28,8 +28,8 @@ type CodingInputMethod = "existing" | "ai";
 
 interface SectionBasedQuestionsInputProps {
   sections: Section[];
-  mcqInputMethod: MCQInputMethod;
-  onMcqInputMethodChange: (method: MCQInputMethod) => void;
+  mcqInputMethodBySection: Record<string, MCQInputMethod>;
+  onMcqInputMethodChange: (sectionId: string, method: MCQInputMethod) => void;
   // Section-based question assignments
   sectionMcqIds: Record<string, number[]>; // sectionId -> MCQ IDs (for existing pool)
   onSectionMcqIdsChange: (sectionId: string, ids: number[]) => void;
@@ -43,9 +43,9 @@ interface SectionBasedQuestionsInputProps {
   // Existing pool
   existingMCQs: MCQListItem[];
   loadingMCQs: boolean;
-  // Coding problems
-  codingInputMethod: CodingInputMethod;
-  onCodingInputMethodChange: (method: CodingInputMethod) => void;
+  // Coding problems (per-section method)
+  codingInputMethodBySection: Record<string, CodingInputMethod>;
+  onCodingInputMethodChange: (sectionId: string, method: CodingInputMethod) => void;
   sectionCodingProblemIds: Record<string, number[]>; // sectionId -> Coding Problem IDs
   onSectionCodingProblemIdsChange: (sectionId: string, ids: number[]) => void;
   aiCodingProblems: Record<string, CodingProblemListItem[]>; // sectionId -> Generated Coding Problems
@@ -56,7 +56,7 @@ interface SectionBasedQuestionsInputProps {
 
 export function SectionBasedQuestionsInput({
   sections,
-  mcqInputMethod,
+  mcqInputMethodBySection,
   onMcqInputMethodChange,
   sectionMcqIds,
   onSectionMcqIdsChange,
@@ -68,7 +68,7 @@ export function SectionBasedQuestionsInput({
   onAiMCQsChange,
   existingMCQs,
   loadingMCQs,
-  codingInputMethod,
+  codingInputMethodBySection,
   onCodingInputMethodChange,
   sectionCodingProblemIds,
   onSectionCodingProblemIdsChange,
@@ -111,25 +111,29 @@ export function SectionBasedQuestionsInput({
     ? aiMCQs[selectedSectionId] || []
     : [];
 
-  const hasManualData = Object.values(manualMCQs).some(
-    (mcqs) => mcqs.length > 0
-  );
-  const hasExistingData = Object.values(sectionMcqIds).some(
-    (ids) => ids.length > 0
-  );
-  const hasCsvData = Object.values(csvMCQs).some((mcqs) => mcqs.length > 0);
-  const hasAiData = Object.values(aiMCQs).some((mcqs) => mcqs.length > 0);
-  const hasAnyData = hasManualData || hasExistingData || hasCsvData || hasAiData;
-  const isFormatLocked = hasAnyData;
+  // Per-section format lock: only lock the current section when it has data
+  const isFormatLocked = useMemo(() => {
+    if (!selectedSectionId) return false;
+    const manual = (manualMCQs[selectedSectionId] || []).length > 0;
+    const existing = (sectionMcqIds[selectedSectionId] || []).length > 0;
+    const csv = (csvMCQs[selectedSectionId] || []).length > 0;
+    const ai = (aiMCQs[selectedSectionId] || []).length > 0;
+    return manual || existing || csv || ai;
+  }, [selectedSectionId, manualMCQs, sectionMcqIds, csvMCQs, aiMCQs]);
 
-  // Check if coding problems have been added (format lock for coding)
-  // Check both existing selections and AI generated problems
-  const hasCodingData = Object.values(sectionCodingProblemIds).some(
-    (ids) => ids.length > 0
-  ) || Object.values(aiCodingProblems).some(
-    (problems) => problems.length > 0
-  );
-  const isCodingFormatLocked = hasCodingData;
+  const isCodingFormatLocked = useMemo(() => {
+    if (!selectedCodingSectionId) return false;
+    const idsLen = (sectionCodingProblemIds[selectedCodingSectionId] || []).length;
+    const aiLen = (aiCodingProblems[selectedCodingSectionId] || []).length;
+    return idsLen > 0 || aiLen > 0;
+  }, [selectedCodingSectionId, sectionCodingProblemIds, aiCodingProblems]);
+
+  const currentMcqInputMethod = selectedSectionId
+    ? (mcqInputMethodBySection[selectedSectionId] ?? "manual")
+    : "manual";
+  const currentCodingInputMethod = selectedCodingSectionId
+    ? (codingInputMethodBySection[selectedCodingSectionId] ?? "existing")
+    : "existing";
 
   if (sections.length === 0) {
     return (
@@ -157,13 +161,11 @@ export function SectionBasedQuestionsInput({
   const sectionCodingCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     codingSections.forEach((section) => {
-      let total = 0;
-      if (sectionCodingProblemIds[section.id]) total += sectionCodingProblemIds[section.id].length;
-      if (aiCodingProblems[section.id]) total += aiCodingProblems[section.id].length;
-      counts[section.id] = total;
+      // Count only selected IDs (both "existing" and "ai" store selected ids here; avoid double-counting with aiCodingProblems)
+      counts[section.id] = sectionCodingProblemIds[section.id]?.length ?? 0;
     });
     return counts;
-  }, [codingSections, sectionCodingProblemIds, aiCodingProblems]);
+  }, [codingSections, sectionCodingProblemIds]);
 
   // Check validation errors for sections (insufficient questions)
   const sectionValidationErrors = useMemo(() => {
@@ -288,10 +290,10 @@ export function SectionBasedQuestionsInput({
           <FormControl fullWidth>
             <InputLabel>Question Input Method</InputLabel>
             <Select
-              value={mcqInputMethod}
+              value={currentMcqInputMethod}
               onChange={(e) => {
-                if (!isFormatLocked) {
-                  onMcqInputMethodChange(e.target.value as MCQInputMethod);
+                if (!isFormatLocked && selectedSectionId) {
+                  onMcqInputMethodChange(selectedSectionId, e.target.value as MCQInputMethod);
                 }
               }}
               label="Question Input Method"
@@ -305,12 +307,12 @@ export function SectionBasedQuestionsInput({
           </FormControl>
           {isFormatLocked && (
             <Alert severity="info">
-              You cannot switch to another format once you have added questions.
-              Please remove all questions first to change the format.
+              You cannot switch to another format once you have added questions to this section.
+              Remove all questions from this section first to change the format.
             </Alert>
           )}
 
-          {mcqInputMethod === "manual" && (
+          {currentMcqInputMethod === "manual" && (
             <MCQFormSection
               mcqs={currentManualMCQs}
               onMCQsChange={(mcqs) =>
@@ -319,7 +321,7 @@ export function SectionBasedQuestionsInput({
             />
           )}
 
-          {mcqInputMethod === "existing" && (
+          {currentMcqInputMethod === "existing" && (
             <MCQSelectionSection
               selectedIds={currentSelectedIds}
               onSelectionChange={(ids) =>
@@ -330,7 +332,7 @@ export function SectionBasedQuestionsInput({
             />
           )}
 
-          {mcqInputMethod === "csv" && (
+          {currentMcqInputMethod === "csv" && (
             <CSVUploadSection
               mcqs={currentCsvMCQs}
               onMCQsChange={(mcqs) =>
@@ -339,7 +341,7 @@ export function SectionBasedQuestionsInput({
             />
           )}
 
-          {mcqInputMethod === "ai" && (
+          {currentMcqInputMethod === "ai" && (
             <AIGeneratedSection
               mcqs={currentAiMCQs}
               onMCQsChange={(mcqs) =>
@@ -387,10 +389,10 @@ export function SectionBasedQuestionsInput({
                 <FormControl fullWidth>
                   <InputLabel>Coding Problem Input Method</InputLabel>
                   <Select
-                    value={codingInputMethod}
+                    value={currentCodingInputMethod}
                     onChange={(e) => {
-                      if (!isCodingFormatLocked) {
-                        onCodingInputMethodChange(e.target.value as CodingInputMethod);
+                      if (!isCodingFormatLocked && selectedCodingSectionId) {
+                        onCodingInputMethodChange(selectedCodingSectionId, e.target.value as CodingInputMethod);
                       }
                     }}
                     label="Coding Problem Input Method"
@@ -402,12 +404,12 @@ export function SectionBasedQuestionsInput({
                 </FormControl>
                 {isCodingFormatLocked && (
                   <Alert severity="info">
-                    You cannot switch to another format once you have added coding problems.
-                    Please remove all coding problems first to change the format.
+                    You cannot switch to another format once you have added coding problems to this section.
+                    Remove all coding problems from this section first to change the format.
                   </Alert>
                 )}
 
-                {codingInputMethod === "existing" && (
+                {currentCodingInputMethod === "existing" && (
                   <CodingProblemSelectionSection
                     selectedIds={currentCodingProblemIds}
                     onSelectionChange={(ids) =>
@@ -418,7 +420,7 @@ export function SectionBasedQuestionsInput({
                   />
                 )}
 
-                {codingInputMethod === "ai" && (
+                {currentCodingInputMethod === "ai" && (
                   <AIGeneratedCodingSection
                     codingProblemIds={currentCodingProblemIds}
                     onCodingProblemIdsChange={(ids) =>
