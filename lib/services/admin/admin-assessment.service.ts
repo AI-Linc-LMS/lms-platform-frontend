@@ -112,6 +112,8 @@ export interface CreateAssessmentPayload {
   proctoring_enabled?: boolean;
   /** Whether to send notification email to students */
   send_communication?: boolean;
+  /** Whether to show results to students after submission (default true) */
+  show_result?: boolean;
   quiz_section?: QuizSection; // For backward compatibility
   quiz_sections?: Array<{
     title: string;

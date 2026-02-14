@@ -25,6 +25,8 @@ export interface Assessment {
 
 export interface AssessmentDetail extends Assessment {
   sections: any[];
+  /** When false, hide "View Assessment Result" button on submission-success */
+  show_result?: boolean;
 }
 
 export interface AssessmentSubmission {
@@ -101,6 +103,8 @@ export interface AssessmentResult {
   assessment_id: string;
   assessment_name: string;
   maximum_marks: number;
+  /** When false, show evaluation-in-progress message instead of full result */
+  show_result?: boolean;
   stats: {
     total_questions: number;
     attempted_questions: number;

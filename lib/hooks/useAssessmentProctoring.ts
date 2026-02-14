@@ -311,6 +311,13 @@ export function useAssessmentProctoring(
     }
   }, [autoStart, startProctoring]);
 
+  // Stable wrapper: update metadata then stop - prevents infinite loop when
+  // take page effect depends on stopProctoring (new ref each render caused re-runs)
+  const stopProctoringWithMetadata = useCallback(() => {
+    updateSubmissionTime();
+    stopProctoring();
+  }, [updateSubmissionTime, stopProctoring]);
+
   return {
     // State
     isActive: isFaceProctoringActive,
@@ -330,10 +337,7 @@ export function useAssessmentProctoring(
 
     // Actions
     startProctoring,
-    stopProctoring: () => {
-      updateSubmissionTime();
-      stopProctoring();
-    },
+    stopProctoring: stopProctoringWithMetadata,
     enterFullscreen,
     videoRef,
     clearViolations,

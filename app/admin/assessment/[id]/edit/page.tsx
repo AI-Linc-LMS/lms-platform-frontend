@@ -124,6 +124,7 @@ export default function AssessmentEditPage() {
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [sendCommunication, setSendCommunication] = useState(false);
+  const [showResult, setShowResult] = useState(true);
 
   const [questionsPage, setQuestionsPage] = useState(1);
   const [questionsLimit, setQuestionsLimit] = useState(10);
@@ -157,6 +158,7 @@ export default function AssessmentEditPage() {
       setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
       setSendCommunication((data as any).send_communication ?? false);
+      setShowResult((data as any).show_result ?? true);
     } catch (e: any) {
       showToast(e?.message || "Failed to load assessment", "error");
       setAssessment(null);
@@ -243,6 +245,7 @@ export default function AssessmentEditPage() {
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
         send_communication: sendCommunication,
+        show_result: showResult,
         course_ids: courseIds.length ? courseIds : undefined,
         colleges: colleges.length ? colleges : undefined,
       };
@@ -513,6 +516,7 @@ export default function AssessmentEditPage() {
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}
                   sendCommunication={sendCommunication}
+                  showResult={showResult}
                   onDurationChange={setDurationMinutes}
                   onStartTimeChange={setStartTime}
                   onEndTimeChange={setEndTime}
@@ -524,6 +528,7 @@ export default function AssessmentEditPage() {
                   onCollegesChange={setColleges}
                   onProctoringEnabledChange={setProctoringEnabled}
                   onSendCommunicationChange={setSendCommunication}
+                  onShowResultChange={setShowResult}
                 />
                 <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                   <Button

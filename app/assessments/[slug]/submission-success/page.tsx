@@ -140,7 +140,7 @@ export default function SubmissionSuccessPage() {
           </Typography>
 
           <Box
-            sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4 }}
+            sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4, flexWrap: "wrap" }}
           >
             <Button
               variant="outlined"
@@ -149,13 +149,15 @@ export default function SubmissionSuccessPage() {
             >
               Back to Assessments
             </Button>
-            <Button
-              variant="contained"
-              onClick={() => router.push(`/assessments/result/${slug}`)}
-              startIcon={<IconWrapper icon="mdi:file-document-edit" />}
-            >
-              View Assessment Result
-            </Button>
+            {assessment.show_result !== false && (
+              <Button
+                variant="contained"
+                onClick={() => router.push(`/assessments/result/${slug}`)}
+                startIcon={<IconWrapper icon="mdi:file-document-edit" />}
+              >
+                View Assessment Result
+              </Button>
+            )}
           </Box>
         </Paper>
       </Container>

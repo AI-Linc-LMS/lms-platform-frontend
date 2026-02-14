@@ -28,6 +28,7 @@ interface AssessmentSettingsSectionProps {
   isActive: boolean;
   proctoringEnabled: boolean;
   sendCommunication: boolean;
+  showResult: boolean;
   courseIds: number[];
   courses: any[];
   loadingCourses: boolean;
@@ -41,6 +42,7 @@ interface AssessmentSettingsSectionProps {
   onActiveChange: (value: boolean) => void;
   onProctoringEnabledChange: (value: boolean) => void;
   onSendCommunicationChange: (value: boolean) => void;
+  onShowResultChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
   onCollegesChange: (value: string[]) => void;
 }
@@ -55,6 +57,7 @@ export function AssessmentSettingsSection({
   isActive,
   proctoringEnabled,
   sendCommunication,
+  showResult,
   courseIds,
   courses,
   loadingCourses,
@@ -68,6 +71,7 @@ export function AssessmentSettingsSection({
   onActiveChange,
   onProctoringEnabledChange,
   onSendCommunicationChange,
+  onShowResultChange,
   onCourseIdsChange,
   onCollegesChange,
 }: AssessmentSettingsSectionProps) {
@@ -267,6 +271,18 @@ export function AssessmentSettingsSection({
           />
           <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
             Should the notification email be sent when this assessment is created?
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showResult}
+                onChange={(e) => onShowResultChange(e.target.checked)}
+              />
+            }
+            label="Show results to students"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
+            When enabled, students can view their score and detailed results after submission. When disabled, they will see an evaluation-in-progress message instead.
           </Typography>
         </Box>
       </Box>
