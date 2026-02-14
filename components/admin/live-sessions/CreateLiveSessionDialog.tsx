@@ -121,7 +121,7 @@ export function CreateLiveSessionDialog({
         const msg = (result.message || "").toLowerCase();
         if (msg.includes("already exists") || msg.includes("already created")) {
           const detail = await adminLiveActivitiesService.getLiveActivity(createdSession.id);
-          applyZoomSuccessState(detail, result.data);
+          applyZoomSuccessState(detail, result.data ?? undefined);
           showToast(ZOOM_MEETING_ALREADY_EXISTS_MESSAGE, "info");
         } else {
           showToast(
@@ -131,7 +131,7 @@ export function CreateLiveSessionDialog({
         }
         return;
       }
-      const data = result.data;
+      const data = result.data ?? undefined;
       const detail = await adminLiveActivitiesService.getLiveActivity(
         createdSession.id
       );
