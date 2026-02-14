@@ -14,6 +14,7 @@ interface WelcomeHeaderProps {
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ courseId }) => {
   const { user } = useAuth();
   const displayName = getUserDisplayName(user);
+  const hideLeaderboardView = useHideLeaderboardView();
 
   return (
     <Box
