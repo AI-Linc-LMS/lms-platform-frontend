@@ -4,9 +4,15 @@ import { Box, Paper, Typography } from "@mui/material";
 import { memo } from "react";
 import { QuizOption } from "./QuizLayout";
 
-/** Check if string contains HTML tags so we can render with dangerouslySetInnerHTML */
+/** Check if string contains HTML tags */
 function hasHtml(str: unknown): str is string {
-  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+  return typeof str === "string" && /<[a-zA-Z][^>]*\/?>|<[a-zA-Z][\s\S]*>/i.test(str);
+}
+
+/** Check if HTML string would render visible text (not blank). Bare tags like <p>, <br/> render as blank. */
+function hasVisibleHtmlContent(str: string): boolean {
+  const textContent = str.replace(/<[^>]+>/g, "").trim();
+  return textContent.length > 0;
 }
 
 interface AnswerOptionProps {
@@ -92,7 +98,7 @@ export const AnswerOption = memo(function AnswerOption({
           justifyContent: "space-between",
         }}
       >
-        {hasHtml(option.label) ? (
+        {hasHtml(option.label) && hasVisibleHtmlContent(option.label) ? (
           <Box
             component="span"
             sx={{
@@ -127,7 +133,7 @@ export const AnswerOption = memo(function AnswerOption({
               letterSpacing: "0.01em",
             }}
           >
-            {option.label}
+            {option.label ?? ""}
           </Typography>
         )}
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>

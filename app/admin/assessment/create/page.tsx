@@ -58,6 +58,7 @@ export default function CreateAssessmentPage() {
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [sendCommunication, setSendCommunication] = useState(false);
+  const [showResult, setShowResult] = useState(true);
 
   // Multiple sections
   const [sections, setSections] = useState<Section[]>([]);
@@ -629,6 +630,7 @@ export default function CreateAssessmentPage() {
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
         send_communication: sendCommunication,
+        show_result: showResult,
       };
 
       // Add course_ids if any courses are selected
@@ -773,6 +775,7 @@ export default function CreateAssessmentPage() {
               colleges={colleges}
               proctoringEnabled={proctoringEnabled}
               sendCommunication={sendCommunication}
+              showResult={showResult}
               onDurationChange={setDurationMinutes}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
@@ -784,6 +787,7 @@ export default function CreateAssessmentPage() {
               onCollegesChange={setColleges}
               onProctoringEnabledChange={setProctoringEnabled}
               onSendCommunicationChange={setSendCommunication}
+              onShowResultChange={setShowResult}
             />
             <Divider />
             <MultipleSectionsSection
@@ -882,7 +886,7 @@ export default function CreateAssessmentPage() {
             onClick={() => router.back()}
             sx={{ mb: 2 }}
           >
-            Back
+            Back to Assessments
           </Button>
           <Typography
             variant="h4"
