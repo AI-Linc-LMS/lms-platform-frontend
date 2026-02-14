@@ -51,3 +51,11 @@ export function useClientInfo() {
   return context;
 }
 
+/** When true, hide all leaderboards and streak UI (feature name: no_leaderboard_view). */
+export function useHideLeaderboardView(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(
+    clientInfo?.features?.some((f) => f.name === "no_leaderboard_view")
+  );
+}
+

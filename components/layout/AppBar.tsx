@@ -17,14 +17,14 @@ import {
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { LogOut, User, Menu as MenuIcon, Bell } from "lucide-react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
 import {
   getUserDisplayName,
   getUserInitials,
   getUserProfilePicture,
 } from "@/lib/utils/user-utils";
-import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useClientInfo, useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -41,6 +41,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
   const { clientInfo } = useClientInfo();
+  const hideLeaderboardView = useHideLeaderboardView();
   const { isAdminMode, toggleAdminMode } = useAdminMode();
 
   // Check if user can access admin mode
@@ -272,7 +273,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Box>
             </>
           )}
-          {/* Daily Progress Leaderboard */}
+          {/* Daily Progress Leaderboard - hidden when no_leaderboard_view */}
+          {!hideLeaderboardView && (
+          <React.Fragment>
           <Box
             sx={{
               display: { xs: "none", sm: "block" },
@@ -802,6 +805,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Box>
             </Popover>
           </Box>
+          </React.Fragment>
+          )}
 
           {/* Notifications */}
           <IconButton
