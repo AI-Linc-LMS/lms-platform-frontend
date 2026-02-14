@@ -5,6 +5,7 @@ import { MyCoursesSection } from "./MyCoursesSection";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { WelcomeMessage } from "./WelcomeMessage";
 import { Course as CourseCardCourse } from "@/components/course/interfaces";
+import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 
 interface DashboardContentProps {
   courses: CourseCardCourse[];
@@ -19,13 +20,14 @@ export const DashboardContent = ({
   streakDays,
   currentStreak,
 }: DashboardContentProps) => {
+  const hideLeaderboardView = useHideLeaderboardView();
   return (
     <Box
       sx={{
         display: "grid",
         gridTemplateColumns: {
           xs: "1fr",
-          lg: "2fr 1fr",
+          lg: hideLeaderboardView ? "1fr" : "2fr 1fr",
         },
         gap: 3,
         mb: 4,
@@ -34,11 +36,13 @@ export const DashboardContent = ({
     >
       <Box>
         <WelcomeMessage />
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ mt: 3, width: hideLeaderboardView ? "70%" : "auto" }}>
           <MyCoursesSection courses={courses} loading={loading} />
         </Box>
       </Box>
-      <DashboardSidebar streakDays={streakDays} currentStreak={currentStreak} />
+      {!hideLeaderboardView && (
+        <DashboardSidebar streakDays={streakDays} currentStreak={currentStreak} />
+      )}
     </Box>
   );
 };

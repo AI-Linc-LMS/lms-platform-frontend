@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth/auth-context";
 import { getUserDisplayName } from "@/lib/utils/user-utils";
 import { Leaderboard } from "./Leaderboard";
+import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 
 interface WelcomeHeaderProps {
   courseId?: number; // Kept for backward compatibility but not used
@@ -65,6 +66,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ courseId }) => {
           your lesson today.
         </Typography>
       </Box>
+      {!hideLeaderboardView && (
       <Box
         sx={{
           display: { xs: "none", lg: "block" },
@@ -72,6 +74,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ courseId }) => {
       >
         <Leaderboard />
       </Box>
+      )}
     </Box>
   );
 };

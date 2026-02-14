@@ -21,6 +21,7 @@ import { InstructorCard } from "@/components/course/InstructorCard";
 import { CertificateButtons } from "@/components/course/CertificateButtons";
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
+import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -35,6 +36,7 @@ export default function CourseDetailPage() {
   }>({});
   const { showToast } = useToast();
   const { handlePayment, isProcessing } = usePayment();
+  const hideLeaderboardView = useHideLeaderboardView();
 
   useEffect(() => {
     if (!courseId) return;
@@ -313,14 +315,13 @@ export default function CourseDetailPage() {
                   }
                   certificateUrl={`/courses/${course.course_id}`}
                 />
-              {/* Progress Dashboard */}
-              {dashboard && <ProgressDashboard dashboard={dashboard} />}
-
-            
-
-
-              {/* Leaderboard */}
-              <CourseLeaderboard leaderboard={leaderboard} />
+              {/* Progress Dashboard & Leaderboard - hidden when no_leaderboard_view */}
+              {!hideLeaderboardView && dashboard && (
+                <ProgressDashboard dashboard={dashboard} />
+              )}
+              {!hideLeaderboardView && (
+                <CourseLeaderboard leaderboard={leaderboard} />
+              )}
 
               {/* Instructor Section */}
               {instructor && <InstructorCard instructor={instructor} />}

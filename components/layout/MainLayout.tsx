@@ -11,6 +11,7 @@ import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { useStreakCongratulations } from "@/lib/hooks/useStreakCongratulations";
 import { StreakCongratulationsModal } from "@/components/common/StreakCongratulationsModal";
 import { ReportIssueFAB } from "@/components/common/ReportIssueFAB";
+import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -30,7 +31,8 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
   // Global app time tracking
   useTimeTracking();
 
-  // Streak congratulations modal
+  // Streak congratulations modal (hidden when no_leaderboard_view)
+  const hideLeaderboardView = useHideLeaderboardView();
   const { streak, isStreakLoading, refreshStreak } = useLeaderboardAndStreak();
   const { showModal, streakCount, handleClose, triggerCheck } =
     useStreakCongratulations(streak, isStreakLoading, refreshStreak);
@@ -115,12 +117,14 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
       {/* Bottom Navigation for Mobile - Hidden on full page views like submodule pages */}
       {!fullPage && <BottomNavigation />}
 
-      {/* Streak Congratulations Modal */}
-      <StreakCongratulationsModal
-        open={showModal}
-        onClose={handleClose}
-        streakCount={streakCount}
-      />
+      {/* Streak Congratulations Modal - hidden when no_leaderboard_view */}
+      {!hideLeaderboardView && (
+        <StreakCongratulationsModal
+          open={showModal}
+          onClose={handleClose}
+          streakCount={streakCount}
+        />
+      )}
 
       {/* Report Issue FAB - Shows on all pages except excluded routes, only when authenticated */}
       <ReportIssueFAB />
