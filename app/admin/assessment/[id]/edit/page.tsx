@@ -76,6 +76,24 @@ function isoToDatetimeLocal(iso: string | null | undefined): string {
   }
 }
 
+/** Format ISO date string for display (e.g. "12 Feb 2026, 12:43") */
+function formatSubmissionDate(iso: string | null | undefined): string {
+  if (!iso || !iso.trim()) return "—";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "—";
+  }
+}
+
 /** Convert datetime-local to IST "YYYY-MM-DDTHH:mm:ss+05:30" */
 function convertToIST(dateTimeString: string): string | undefined {
   if (!dateTimeString?.trim()) return undefined;
@@ -339,6 +357,8 @@ export default function AssessmentEditPage() {
       { key: "name", header: "Name" },
       { key: "email", header: "Email" },
       { key: "phone", header: "Phone" },
+      { key: "started_at", header: "Started At" },
+      { key: "submitted_at", header: "Submitted At" },
       { key: "maximum_marks", header: "Maximum Marks" },
       { key: "overall_score", header: "Overall Score" },
       { key: "percentage", header: "Percentage" },
@@ -356,12 +376,14 @@ export default function AssessmentEditPage() {
 
     const rows: Record<string, unknown>[] = subs.map((s) => {
       const base: Record<string, unknown> = {
-        name: s.name,
-        email: s.email,
+        name: s.name ?? "",
+        email: s.email ?? "",
         phone: s.phone ?? "",
+        started_at: s.started_at ?? "",
+        submitted_at: s.submitted_at ?? "",
         maximum_marks: s.maximum_marks ?? "",
         overall_score: s.overall_score ?? "",
-        percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? `${s.percentage}%` : "",
+        percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? s.percentage : "",
         total_questions: s.total_questions ?? "",
         attempted_questions: s.attempted_questions ?? "",
       };
@@ -764,6 +786,12 @@ export default function AssessmentEditPage() {
                               Phone
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Started At
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Submitted At
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
                               Max Marks
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
@@ -784,6 +812,12 @@ export default function AssessmentEditPage() {
                               <TableCell sx={{ py: 1.5 }}>{s.email}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.phone ?? "—"}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {formatSubmissionDate(s.started_at)}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {formatSubmissionDate(s.submitted_at)}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.maximum_marks ?? "—"}

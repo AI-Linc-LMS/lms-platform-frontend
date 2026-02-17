@@ -11,6 +11,7 @@ export type ProctoringViolationType =
   | "FACE_TOO_CLOSE"
   | "FACE_TOO_FAR"
   | "POOR_LIGHTING"
+  | "TRACKPAD_SWIPE"
   | "NORMAL";
 
 export interface ProctoringViolation {
@@ -903,6 +904,7 @@ export class ProctoringService {
       FACE_TOO_CLOSE: 0,
       FACE_TOO_FAR: 0,
       POOR_LIGHTING: 0,
+      TRACKPAD_SWIPE: 0,
       NORMAL: 0,
     };
 
