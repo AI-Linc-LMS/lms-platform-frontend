@@ -19,7 +19,7 @@ import { StudentsPagination } from "../../../components/admin/manage-students/St
 import { BulkEnrollmentDialog } from "../../../components/admin/manage-students/BulkEnrollmentDialog";
 import { EnrollmentJobHistory } from "../../../components/admin/manage-students/EnrollmentJobHistory";
 
-type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak";
+type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak" | "completion_pct" | "attendance_pct";
 type SortOrder = "asc" | "desc";
 
 export default function ManageStudentsPage() {
@@ -217,6 +217,7 @@ export default function ManageStudentsPage() {
 
   // Client-side filtering, sorting, and pagination
   // This runs entirely in the browser - no API calls for search, status, sort, or pagination changes
+  const hasFilter = Boolean(selectedCourse || status !== "all" || (searchTerm && searchTerm.trim()));
   const { filteredStudents, paginatedStudents, totalCount, totalPages } =
     useMemo(() => {
       // Step 1: Filter by search term (name or email)
@@ -237,7 +238,7 @@ export default function ManageStudentsPage() {
         filtered = filtered.filter((s) => !s.is_active);
       }
 
-      // Step 3: Sort
+      // Step 3: Sort (completion_pct and attendance_pct use completionStats)
       const sorted = [...filtered].sort((a, b) => {
         let aValue: any;
         let bValue: any;
@@ -267,6 +268,20 @@ export default function ManageStudentsPage() {
             aValue = a.current_streak;
             bValue = b.current_streak;
             break;
+          case "completion_pct": {
+            const statsA = completionStats[a.user_id] ?? completionStats[a.id];
+            const statsB = completionStats[b.user_id] ?? completionStats[b.id];
+            aValue = statsA?.completion_percentage ?? 0;
+            bValue = statsB?.completion_percentage ?? 0;
+            break;
+          }
+          case "attendance_pct": {
+            const statsA = completionStats[a.user_id] ?? completionStats[a.id];
+            const statsB = completionStats[b.user_id] ?? completionStats[b.id];
+            aValue = statsA?.attendance_percentage ?? 0;
+            bValue = statsB?.attendance_percentage ?? 0;
+            break;
+          }
           default:
             return 0;
         }
@@ -289,14 +304,20 @@ export default function ManageStudentsPage() {
         totalCount: total,
         totalPages: totalPagesCount,
       };
-    }, [allStudents, searchTerm, status, sortBy, sortOrder, page, limit]);
+    }, [allStudents, completionStats, searchTerm, status, sortBy, sortOrder, page, limit]);
 
   const handleSort = (field: SortOption) => {
+    const isPctColumn = field === "completion_pct" || field === "attendance_pct";
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortOrder("asc");
+      // When any filter is selected and sorting by completion/attendance %, default to DESC
+      if (isPctColumn && hasFilter) {
+        setSortOrder("desc");
+      } else {
+        setSortOrder("asc");
+      }
     }
     setPage(1);
   };

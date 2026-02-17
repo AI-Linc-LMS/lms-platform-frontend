@@ -23,7 +23,7 @@ import {
   CourseCompletionStats,
 } from "@/lib/services/admin/admin-student.service";
 
-type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak";
+type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak" | "completion_pct" | "attendance_pct";
 type SortOrder = "asc" | "desc";
 
 interface StudentsTableProps {
@@ -229,7 +229,11 @@ export function StudentsTable({
                     display: "flex",
                     alignItems: "center",
                     gap: 1,
+                    cursor: "pointer",
+                    "&:hover": { color: "#6366f1" },
+                    transition: "color 0.2s",
                   }}
+                  onClick={() => onSort("completion_pct")}
                 >
                   <IconWrapper icon="mdi:chart-bar" size={18} color="#6b7280" />
                   <Box
@@ -238,6 +242,13 @@ export function StudentsTable({
                   >
                     COMPLETION %
                   </Box>
+                  {getSortIcon("completion_pct", sortBy, sortOrder) && (
+                    <IconWrapper
+                      icon={getSortIcon("completion_pct", sortBy, sortOrder)!}
+                      size={16}
+                      color="inherit"
+                    />
+                  )}
                 </Box>
               </TableCell>
               <TableCell
@@ -253,7 +264,11 @@ export function StudentsTable({
                     display: "flex",
                     alignItems: "center",
                     gap: 1,
+                    cursor: "pointer",
+                    "&:hover": { color: "#6366f1" },
+                    transition: "color 0.2s",
                   }}
+                  onClick={() => onSort("attendance_pct")}
                 >
                   <IconWrapper icon="mdi:chart-bar" size={18} color="#6b7280" />
                   <Box
@@ -262,6 +277,13 @@ export function StudentsTable({
                   >
                     ATTENDANCE %
                   </Box>
+                  {getSortIcon("attendance_pct", sortBy, sortOrder) && (
+                    <IconWrapper
+                      icon={getSortIcon("attendance_pct", sortBy, sortOrder)!}
+                      size={16}
+                      color="inherit"
+                    />
+                  )}
                 </Box>
               </TableCell>
               <TableCell
