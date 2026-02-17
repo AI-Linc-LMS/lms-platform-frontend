@@ -16,6 +16,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -65,11 +66,7 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       const data = await activityService.getLiveAttendance();
-      // Attendance page: code-based only; exclude Zoom sessions (they are on Live Sessions page)
-      const codeOnly = (data || []).filter(
-        (a) => !a.is_zoom && !a.zoom_join_url?.trim()
-      );
-      setAttendanceActivities(codeOnly);
+      setAttendanceActivities(data);
     } catch (error: any) {
       showToast(
         error?.response?.data?.detail ||
@@ -181,11 +178,10 @@ export default function AttendancePage() {
   };
 
   const isActivityActive = (activity: LiveAttendanceActivity) => {
-    const dateStr = activity.class_datetime ?? activity.expires_at;
-    if (!dateStr) return false;
-    const expiresAt = new Date(dateStr);
+    if (!activity.expires_at) return false;
+    const expiresAt = new Date(activity.expires_at);
     const now = new Date();
-    return now < expiresAt && (activity.time_remaining_minutes ?? 0) > 0;
+    return now < expiresAt && activity.time_remaining_minutes > 0;
   };
 
 
@@ -308,53 +304,18 @@ export default function AttendancePage() {
                               color: "#111827",
                             }}
                           >
-                            {activity.topic_name ?? activity.name ?? "—"}
+                            {activity.name}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ color: "#374151" }}>
-                            {activity.class_datetime ?? activity.expires_at
-                              ? formatDateTime(
-                                  activity.class_datetime ?? activity.expires_at ?? ""
-                                )
+                            {activity.expires_at
+                              ? formatDateTime(activity.expires_at)
                               : "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          {activity.meeting_status === "live" ? (
-                            <Chip
-                              label="Live"
-                              size="small"
-                              sx={{
-                                backgroundColor: "#d1fae5",
-                                color: "#065f46",
-                                fontWeight: 600,
-                                fontSize: "0.75rem",
-                              }}
-                            />
-                          ) : activity.meeting_status === "ended" ? (
-                            <Chip
-                              label="Class Ended"
-                              size="small"
-                              sx={{
-                                backgroundColor: "#9ca3af",
-                                color: "#1f2937",
-                                fontWeight: 600,
-                                fontSize: "0.75rem",
-                              }}
-                            />
-                          ) : activity.meeting_status === "expired" ? (
-                            <Chip
-                              label="Expired"
-                              size="small"
-                              sx={{
-                                backgroundColor: "#fed7aa",
-                                color: "#9a3412",
-                                fontWeight: 600,
-                                fontSize: "0.75rem",
-                              }}
-                            />
-                          ) : activity.time_remaining_minutes <= 0 ? (
+                          {activity.time_remaining_minutes <= 0 ? (
                             <Chip
                               label="Expired"
                               size="small"
@@ -368,7 +329,9 @@ export default function AttendancePage() {
                           ) : (
                             <Typography
                               variant="body2"
-                              sx={{ color: "#374151" }}
+                              sx={{
+                                color: "#374151",
+                              }}
                             >
                               {formatTimeRemaining(
                                 activity.time_remaining_minutes
@@ -377,103 +340,72 @@ export default function AttendancePage() {
                           )}
                         </TableCell>
                         <TableCell align="right">
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "flex-end",
-                              gap: 1,
-                            }}
-                          >
-                            {canMark ? (
-                              <Button
-                                variant="contained"
-                                size="small"
-                                onClick={() =>
-                                  handleMarkAttendanceClick(activity.id)
-                                }
-                                disabled={markingAttendance === activity.id}
-                                startIcon={
-                                  markingAttendance === activity.id ? (
-                                    <CircularProgress
-                                      size={16}
-                                      color="inherit"
-                                    />
-                                  ) : (
-                                    <IconWrapper
-                                      icon="mdi:check-circle"
-                                      size={18}
-                                    />
-                                  )
-                                }
-                                sx={{
-                                  backgroundColor: "#10b981",
-                                  color: "#ffffff",
-                                  textTransform: "none",
-                                  fontWeight: 600,
-                                  fontSize: "0.875rem",
-                                  px: 2,
-                                  "&:hover": {
-                                    backgroundColor: "#059669",
-                                  },
-                                  "&:disabled": {
-                                    backgroundColor: "#d1d5db",
-                                    color: "#9ca3af",
-                                  },
-                                }}
-                              >
-                                Mark Attendance
-                              </Button>
-                            ) : activity.has_marked_attendance ? (
-                              <Chip
-                                label="Marked"
-                                size="small"
-                                sx={{
-                                  backgroundColor: "#dbeafe",
-                                  color: "#1e40af",
-                                  fontWeight: 600,
-                                  fontSize: "0.75rem",
-                                }}
-                                icon={
+                          {canMark ? (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() =>
+                                handleMarkAttendanceClick(activity.id)
+                              }
+                              disabled={markingAttendance === activity.id}
+                              startIcon={
+                                markingAttendance === activity.id ? (
+                                  <CircularProgress size={16} color="inherit" />
+                                ) : (
                                   <IconWrapper
                                     icon="mdi:check-circle"
-                                    size={14}
-                                    color="#2563eb"
+                                    size={18}
                                   />
-                                }
-                              />
-                            ) : (activity.meeting_status === "ended" ||
-                                activity.meeting_status === "expired") ? (
-                              <Chip
-                                label={
-                                  activity.meeting_status === "ended"
-                                    ? "Class Ended"
-                                    : "Expired"
-                                }
-                                size="small"
-                                sx={{
-                                  backgroundColor:
-                                    activity.meeting_status === "ended"
-                                      ? "#9ca3af"
-                                      : "#ed4545",
-                                  color: "#ffffff",
-                                  fontWeight: 600,
-                                  fontSize: "0.75rem",
-                                }}
-                              />
-                            ) : (
-                              <Chip
-                                label="Absent"
-                                size="small"
-                                sx={{
-                                  backgroundColor: "#ed4545",
-                                  color: "#ffffff",
-                                  fontWeight: 600,
-                                  fontSize: "0.75rem",
-                                }}
-                              />
-                            )}
-                          </Box>
+                                )
+                              }
+                              sx={{
+                                backgroundColor: "#10b981",
+                                color: "#ffffff",
+                                textTransform: "none",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                px: 2,
+                                "&:hover": {
+                                  backgroundColor: "#059669",
+                                },
+                                "&:disabled": {
+                                  backgroundColor: "#d1d5db",
+                                  color: "#9ca3af",
+                                },
+                              }}
+                            >
+                              Mark Attendance
+                            </Button>
+                          ) : activity.has_marked_attendance ? (
+                            <Chip
+                              label="Marked"
+                              size="small"
+                              sx={{
+                                backgroundColor: "#dbeafe",
+                                color: "#1e40af",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                              icon={
+                                <IconWrapper
+                                  icon="mdi:check-circle"
+                                  size={14}
+                                  color="#2563eb"
+                                />
+                              }
+                            />
+                          ) : (
+                            <Chip
+                              label="Absent"
+                              size="small"
+                              sx={{
+                                backgroundColor: "#ed4545",
+                                color: "#ffffff",
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                              }}
+                            />
+                          )}
                         </TableCell>
                       </TableRow>
                     );
