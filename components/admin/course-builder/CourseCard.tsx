@@ -90,13 +90,10 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
       const courseData: CourseData = {
         title: editData.title.trim(),
         description: editData.description.trim(),
-        slug: course.title
-          .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, ""),
         rating: editData.rating,
         tags: editData.tags, // Send as array
       };
+      // Omit slug so backend keeps existing slug and does not run uniqueness check (which fails for same course)
 
       await adminCourseBuilderService.updateCourse(course.id, courseData);
       showToast("Course updated successfully", "success");

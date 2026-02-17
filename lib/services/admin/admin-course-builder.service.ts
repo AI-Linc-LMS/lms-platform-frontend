@@ -6,7 +6,7 @@ import { AxiosError } from "axios";
 export interface CourseData {
   title: string;
   description: string;
-  slug: string; // Required field
+  slug?: string; // Optional on update; omit when unchanged to avoid backend uniqueness false positive
   difficulty_level?: string; // Valid values: 'Easy', 'Medium', 'Hard'
   rating?: number; // Course rating 0-5
   is_pro?: boolean;
@@ -93,13 +93,16 @@ export const adminCourseBuilderService = {
       return res.data;
     } catch (error: unknown) {
       const apiError = error as AxiosError<ApiErrorPayload>;
-      throw new Error(
+      const data = apiError.response?.data as Record<string, unknown> | undefined;
+      const slugErrors = data?.slug as string[] | undefined;
+      const message =
+        (Array.isArray(slugErrors) && slugErrors[0]) ||
         apiError.response?.data?.detail ||
-          apiError.response?.data?.error ||
-          apiError.response?.data?.message ||
-          apiError.message ||
-          "Failed to update course"
-      );
+        apiError.response?.data?.error ||
+        apiError.response?.data?.message ||
+        apiError.message ||
+        "Failed to update course";
+      throw new Error(message);
     }
   },
 
