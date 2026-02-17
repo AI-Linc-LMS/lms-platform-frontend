@@ -37,11 +37,14 @@ interface UseTrackpadSwipeDetectorReturn {
 
 /**
  * Detects trackpad/touchpad horizontal swipes via wheel events.
- * - Mouse wheel: typically deltaY only, deltaX ≈ 0 → allowed (no error, no preventDefault).
- * - Trackpad horizontal swipe: deltaX significant → preventDefault (stops browser back/forward),
- *   record violation, show warning. Works on Linux, Windows, and macOS (macOS has no system
- *   control to disable swipe; we handle it in-app).
- * Vertical scroll (mouse or trackpad) is not prevented so content remains scrollable.
+ * - We cannot disable the laptop's physical trackpad or OS swipe gesture from a web app;
+ *   only the OS or device settings can do that. We can only:
+ *   (1) Block the result of the swipe: preventDefault() stops browser back/forward navigation.
+ *   (2) Detect, record, and show all trackpad swipe errors/toasts.
+ * - Mouse wheel: typically deltaY only → allowed (no error).
+ * - Trackpad horizontal swipe: deltaX significant → we preventDefault (no back/forward),
+ *   record violation, and show warning. All trackpad errors are shown.
+ * Vertical scroll (mouse or trackpad) is not blocked so content stays scrollable.
  */
 const TRACKPAD_SWIPE_MESSAGE =
   "Trackpad swipe detected. Please use the mouse wheel to scroll. Swipes are not allowed during the assessment.";

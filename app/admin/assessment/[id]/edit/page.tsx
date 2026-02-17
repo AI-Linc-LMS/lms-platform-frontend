@@ -59,22 +59,7 @@ function jsonToCsvRows<T extends Record<string, unknown>>(
   return [header, ...data].join("\n");
 }
 
-/** Convert ISO date string to datetime-local "YYYY-MM-DDTHH:mm" */
-function isoToDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso || !iso.trim()) return "";
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "";
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${y}-${m}-${day}T${h}:${min}`;
-  } catch {
-    return "";
-  }
-}
+
 
 /** Format ISO date string for display (e.g. "12 Feb 2026, 12:43") */
 function formatSubmissionDate(iso: string | null | undefined): string {
@@ -422,8 +407,8 @@ export default function AssessmentEditPage() {
         name: s.name ?? "",
         email: s.email ?? "",
         phone: s.phone ?? "",
-        started_at: s.started_at ?? "",
-        submitted_at: s.submitted_at ?? "",
+        started_at: formatToDDMMYYYYHHMMSS(s.started_at) || "",
+        submitted_at: formatToDDMMYYYYHHMMSS(s.submitted_at) || "",
         maximum_marks: s.maximum_marks ?? "",
         overall_score: s.overall_score ?? "",
         percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? s.percentage : "",
