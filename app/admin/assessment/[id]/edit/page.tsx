@@ -392,6 +392,13 @@ export default function AssessmentEditPage() {
       { key: "percentage", header: "Percentage" },
       { key: "total_questions", header: "Total Questions" },
       { key: "attempted_questions", header: "Attempted Questions" },
+      { key: "tab_switches_count", header: "Tab Switches Count" },
+      { key: "face_violations_count", header: "Face Violations Count" },
+      { key: "fullscreen_exits_count", header: "Fullscreen Exits Count" },
+      { key: "eye_movement_count", header: "Eye Movement Count" },
+      { key: "face_validation_failures_count", header: "Face Validation Failures Count" },
+      { key: "multiple_face_detections_count", header: "Multiple Face Detections Count" },
+      { key: "total_violation_count", header: "Total Violation Count" },
     ];
     const sectionColumns = sectionKeys.flatMap((k) => [
       { key: `section_wise_scores_${k}`, header: `Section-wise Scores-${k}` },
@@ -403,6 +410,7 @@ export default function AssessmentEditPage() {
     const columns = [...baseColumns, ...sectionColumns];
 
     const rows: Record<string, unknown>[] = subs.map((s) => {
+      const pd = s.proctoring_data;
       const base: Record<string, unknown> = {
         name: s.name ?? "",
         email: s.email ?? "",
@@ -414,6 +422,13 @@ export default function AssessmentEditPage() {
         percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? s.percentage : "",
         total_questions: s.total_questions ?? "",
         attempted_questions: s.attempted_questions ?? "",
+        tab_switches_count: pd?.tab_switches_count ?? 0,
+        face_violations_count: pd?.face_violations_count ?? 0,
+        fullscreen_exits_count: pd?.fullscreen_exits_count ?? 0,
+        eye_movement_count: pd?.eye_movement_count ?? 0,
+        face_validation_failures_count: pd?.face_validation_failures_count ?? 0,
+        multiple_face_detections_count: pd?.multiple_face_detections_count ?? 0,
+        total_violation_count: pd?.total_violation_count ?? 0,
       };
       const sectionCells: Record<string, unknown> = {};
       for (const k of sectionKeys) {

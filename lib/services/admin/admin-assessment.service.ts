@@ -574,6 +574,17 @@ export interface QuestionsExportResponse {
   sections: QuestionsExportSection[];
 }
 
+/** Proctoring data per submission (for CSV export) */
+export interface SubmissionsExportProctoringData {
+  tab_switches_count?: number;
+  face_violations_count?: number;
+  fullscreen_exits_count?: number;
+  eye_movement_count?: number;
+  face_validation_failures_count?: number;
+  multiple_face_detections_count?: number;
+  total_violation_count?: number;
+}
+
 /** Submissions export JSON shape (submissions-export API) */
 export interface SubmissionsExportSubmission {
   name: string;
@@ -588,6 +599,7 @@ export interface SubmissionsExportSubmission {
   attempted_questions?: number;
   section_wise_scores?: Record<string, number>;
   section_wise_max_scores?: Record<string, number>;
+  proctoring_data?: SubmissionsExportProctoringData;
 }
 
 export interface SubmissionsExportResponse {
