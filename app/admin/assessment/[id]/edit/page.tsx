@@ -59,35 +59,81 @@ function jsonToCsvRows<T extends Record<string, unknown>>(
   return [header, ...data].join("\n");
 }
 
-/** Convert ISO date string to datetime-local "YYYY-MM-DDTHH:mm" */
-function isoToDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso || !iso.trim()) return "";
+
+
+/** Format ISO date string for display (e.g. "12 Feb 2026, 12:43") */
+function formatSubmissionDate(iso: string | null | undefined): string {
+  if (!iso || !iso.trim()) return "—";
   try {
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+/** Convert datetime-local, ISO, or "dd mm yyyy hh:mm:ss" to "dd mm yyyy hh:mm:ss" (user-friendly) */
+function formatToDDMMYYYYHHMMSS(dateTimeString: string | null | undefined): string {
+  if (!dateTimeString?.trim()) return "";
+  try {
+    const s = dateTimeString.trim();
+    if (/^\d{1,2}\s+\d{1,2}\s+\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?$/.test(s)) {
+      const parts = s.match(/^(\d{1,2})\s+(\d{1,2})\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (parts) {
+        const [, d, mo, y, h, min, sec] = parts;
+        return `${d!.padStart(2, "0")} ${mo!.padStart(2, "0")} ${y} ${h!.padStart(2, "0")}:${min}:${(sec ?? "00").padStart(2, "0")}`;
+      }
+    }
+    let normalized = s;
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) normalized = normalized + ":00";
+    const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:.*)?$/);
+    if (isoMatch) {
+      const [, y, mo, d, h, min, sec] = isoMatch;
+      return `${d}/${mo}/${y} ${h}:${min}:${sec ?? "00"}`;
+    }
+    const d = new Date(s);
     if (isNaN(d.getTime())) return "";
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hr = String(d.getHours()).padStart(2, "0");
     const min = String(d.getMinutes()).padStart(2, "0");
-    return `${y}-${m}-${day}T${h}:${min}`;
+    const sec = String(d.getSeconds()).padStart(2, "0");
+    return `${day} ${month} ${year} ${hr}:${min}:${sec}`;
   } catch {
     return "";
   }
 }
 
-/** Convert datetime-local to IST "YYYY-MM-DDTHH:mm:ss+05:30" */
-function convertToIST(dateTimeString: string): string | undefined {
+/** Parse "dd mm yyyy hh:mm:ss" (or datetime-local) to IST "YYYY-MM-DDTHH:mm:ss+05:30" for API */
+function toISTForAPI(dateTimeString: string | null | undefined): string | undefined {
   if (!dateTimeString?.trim()) return undefined;
   try {
-    let s = dateTimeString.trim();
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) s = s + ":00";
-    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
-    if (!m) return undefined;
-    const [, y, mo, d, h, min, sec] = m;
-    const date = new Date(`${y}-${mo}-${d}T${h}:${min}:${sec}`);
-    if (isNaN(date.getTime())) return undefined;
-    return `${y}-${mo}-${d}T${h}:${min}:${sec}+05:30`;
+    const s = dateTimeString.trim();
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (m) {
+        const [, y, mo, d, h, min, sec] = m;
+        return `${y}-${mo}-${d}T${h}:${min}:${sec ?? "00"}+05:30`;
+      }
+    }
+    const parts = s.match(/^(\d{1,2})\s+(\d{1,2})\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (parts) {
+      const [, d, mo, y, h, min, sec] = parts;
+      const dd = d!.padStart(2, "0");
+      const mm = mo!.padStart(2, "0");
+      const hh = h!.padStart(2, "0");
+      const ss = (sec ?? "00").padStart(2, "0");
+      return `${y}-${mm}-${dd}T${hh}:${min}:${ss}+05:30`;
+    }
+    return undefined;
   } catch {
     return undefined;
   }
@@ -143,8 +189,8 @@ export default function AssessmentEditPage() {
       setInstructions(data.instructions ?? "");
       setDescription(data.description ?? "");
       setDurationMinutes(data.duration_minutes ?? 60);
-      setStartTime(isoToDatetimeLocal(data.start_time ?? null));
-      setEndTime(isoToDatetimeLocal(data.end_time ?? null));
+      setStartTime(formatToDDMMYYYYHHMMSS(data.start_time ?? "") || "");
+      setEndTime(formatToDDMMYYYYHHMMSS(data.end_time ?? "") || "");
       const anyData = data as any;
       setIsPaid(anyData.is_paid ?? false);
       setPrice(
@@ -237,8 +283,8 @@ export default function AssessmentEditPage() {
         instructions: instructions.trim(),
         description: description.trim() || undefined,
         duration_minutes: durationMinutes,
-        start_time: convertToIST(startTime),
-        end_time: convertToIST(endTime),
+        start_time: toISTForAPI(startTime),
+        end_time: toISTForAPI(endTime),
         is_paid: isPaid,
         price: isPaid ? (price ? Number(price) : null) : null,
         currency: isPaid ? currency : undefined,
@@ -339,6 +385,8 @@ export default function AssessmentEditPage() {
       { key: "name", header: "Name" },
       { key: "email", header: "Email" },
       { key: "phone", header: "Phone" },
+      { key: "started_at", header: "Started At" },
+      { key: "submitted_at", header: "Submitted At" },
       { key: "maximum_marks", header: "Maximum Marks" },
       { key: "overall_score", header: "Overall Score" },
       { key: "percentage", header: "Percentage" },
@@ -356,12 +404,14 @@ export default function AssessmentEditPage() {
 
     const rows: Record<string, unknown>[] = subs.map((s) => {
       const base: Record<string, unknown> = {
-        name: s.name,
-        email: s.email,
+        name: s.name ?? "",
+        email: s.email ?? "",
         phone: s.phone ?? "",
+        started_at: formatToDDMMYYYYHHMMSS(s.started_at) || "",
+        submitted_at: formatToDDMMYYYYHHMMSS(s.submitted_at) || "",
         maximum_marks: s.maximum_marks ?? "",
         overall_score: s.overall_score ?? "",
-        percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? `${s.percentage}%` : "",
+        percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? s.percentage : "",
         total_questions: s.total_questions ?? "",
         attempted_questions: s.attempted_questions ?? "",
       };
@@ -764,6 +814,12 @@ export default function AssessmentEditPage() {
                               Phone
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Started At
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                              Submitted At
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
                               Max Marks
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
@@ -784,6 +840,12 @@ export default function AssessmentEditPage() {
                               <TableCell sx={{ py: 1.5 }}>{s.email}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.phone ?? "—"}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {formatSubmissionDate(s.started_at)}
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                {formatSubmissionDate(s.submitted_at)}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.maximum_marks ?? "—"}

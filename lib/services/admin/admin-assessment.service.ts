@@ -579,6 +579,8 @@ export interface SubmissionsExportSubmission {
   name: string;
   email: string;
   phone?: string;
+  started_at?: string;
+  submitted_at?: string;
   maximum_marks?: number;
   overall_score?: number;
   percentage?: number;

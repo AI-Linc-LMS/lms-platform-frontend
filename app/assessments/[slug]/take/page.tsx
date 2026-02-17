@@ -162,6 +162,7 @@ export default function TakeAssessmentPage({
     status,
     metadata,
     latestViolation,
+    tabSwitchCount,
     startProctoring,
     stopProctoring,
     enterFullscreen,
@@ -175,6 +176,23 @@ export default function TakeAssessmentPage({
 
   // Track last violation timestamp per type to avoid duplicate toasts
   const lastViolationToastRef = useRef<Map<string, number>>(new Map());
+  const prevTabSwitchCountRef = useRef(0);
+  const lastTabSwitchToastRef = useRef(0);
+  const TAB_SWITCH_TOAST_COOLDOWN_MS = 4000;
+
+  // Show toast when tab switch is detected (user left and returned to the assessment tab)
+  useEffect(() => {
+    if (!assessmentStarted || submitting) return;
+    if (tabSwitchCount <= prevTabSwitchCountRef.current) return;
+    prevTabSwitchCountRef.current = tabSwitchCount;
+    const now = Date.now();
+    if (now - lastTabSwitchToastRef.current < TAB_SWITCH_TOAST_COOLDOWN_MS) return;
+    lastTabSwitchToastRef.current = now;
+    showToast(
+      "Tab switch detected. Please stay on the assessment tab for the duration of the test.",
+      "warning"
+    );
+  }, [tabSwitchCount, assessmentStarted, submitting, showToast]);
 
   // Show toast notifications for proctoring violations
   useEffect(() => {
@@ -182,6 +200,8 @@ export default function TakeAssessmentPage({
 
     // Skip NORMAL status violations
     if (latestViolation.type === "NORMAL") return;
+    // TRACKPAD_SWIPE toast is shown from useTrackpadSwipeDetector to avoid duplicate
+    if (latestViolation.type === "TRACKPAD_SWIPE") return;
 
     const now = Date.now();
     const violationType = latestViolation.type;
