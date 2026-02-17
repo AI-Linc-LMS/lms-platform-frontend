@@ -178,27 +178,21 @@ export function AssessmentSettingsSection({
         >
           <TextField
             label="Start date & time (optional)"
-            type="datetime-local"
+            type="text"
             value={startTime}
             onChange={(e) => onStartTimeChange(e.target.value)}
             fullWidth
-            InputLabelProps={{ shrink: true }}
-            inputProps={{
-              min: new Date().toISOString().slice(0, 16),
-            }}
-            helperText="When the assessment becomes available (IST timezone, 24-hour format)"
+            placeholder="DD MM YYYY HH:MM:SS"
+            helperText="e.g. 14 02 2026 12:30:00 (day month year, 24-hour). IST timezone."
           />
           <TextField
             label="End date & time (optional)"
-            type="datetime-local"
+            type="text"
             value={endTime}
             onChange={(e) => onEndTimeChange(e.target.value)}
             fullWidth
-            InputLabelProps={{ shrink: true }}
-            inputProps={{
-              min: startTime || new Date().toISOString().slice(0, 16),
-            }}
-            helperText="When the assessment closes (IST timezone, 24-hour format)"
+            placeholder="DD MM YYYY HH:MM:SS"
+            helperText="e.g. 15 02 2026 18:00:00 (day month year, 24-hour). IST timezone."
           />
         </Box>
         <Box

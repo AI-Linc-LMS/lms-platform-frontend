@@ -94,18 +94,61 @@ function formatSubmissionDate(iso: string | null | undefined): string {
   }
 }
 
-/** Convert datetime-local to IST "YYYY-MM-DDTHH:mm:ss+05:30" */
-function convertToIST(dateTimeString: string): string | undefined {
+/** Convert datetime-local, ISO, or "dd mm yyyy hh:mm:ss" to "dd mm yyyy hh:mm:ss" (user-friendly) */
+function formatToDDMMYYYYHHMMSS(dateTimeString: string | null | undefined): string {
+  if (!dateTimeString?.trim()) return "";
+  try {
+    const s = dateTimeString.trim();
+    if (/^\d{1,2}\s+\d{1,2}\s+\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?$/.test(s)) {
+      const parts = s.match(/^(\d{1,2})\s+(\d{1,2})\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (parts) {
+        const [, d, mo, y, h, min, sec] = parts;
+        return `${d!.padStart(2, "0")} ${mo!.padStart(2, "0")} ${y} ${h!.padStart(2, "0")}:${min}:${(sec ?? "00").padStart(2, "0")}`;
+      }
+    }
+    let normalized = s;
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) normalized = normalized + ":00";
+    const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:.*)?$/);
+    if (isoMatch) {
+      const [, y, mo, d, h, min, sec] = isoMatch;
+      return `${d} ${mo} ${y} ${h}:${min}:${sec ?? "00"}`;
+    }
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return "";
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hr = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    const sec = String(d.getSeconds()).padStart(2, "0");
+    return `${day} ${month} ${year} ${hr}:${min}:${sec}`;
+  } catch {
+    return "";
+  }
+}
+
+/** Parse "dd mm yyyy hh:mm:ss" (or datetime-local) to IST "YYYY-MM-DDTHH:mm:ss+05:30" for API */
+function toISTForAPI(dateTimeString: string | null | undefined): string | undefined {
   if (!dateTimeString?.trim()) return undefined;
   try {
-    let s = dateTimeString.trim();
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) s = s + ":00";
-    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
-    if (!m) return undefined;
-    const [, y, mo, d, h, min, sec] = m;
-    const date = new Date(`${y}-${mo}-${d}T${h}:${min}:${sec}`);
-    if (isNaN(date.getTime())) return undefined;
-    return `${y}-${mo}-${d}T${h}:${min}:${sec}+05:30`;
+    const s = dateTimeString.trim();
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (m) {
+        const [, y, mo, d, h, min, sec] = m;
+        return `${y}-${mo}-${d}T${h}:${min}:${sec ?? "00"}+05:30`;
+      }
+    }
+    const parts = s.match(/^(\d{1,2})\s+(\d{1,2})\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (parts) {
+      const [, d, mo, y, h, min, sec] = parts;
+      const dd = d!.padStart(2, "0");
+      const mm = mo!.padStart(2, "0");
+      const hh = h!.padStart(2, "0");
+      const ss = (sec ?? "00").padStart(2, "0");
+      return `${y}-${mm}-${dd}T${hh}:${min}:${ss}+05:30`;
+    }
+    return undefined;
   } catch {
     return undefined;
   }
@@ -161,8 +204,8 @@ export default function AssessmentEditPage() {
       setInstructions(data.instructions ?? "");
       setDescription(data.description ?? "");
       setDurationMinutes(data.duration_minutes ?? 60);
-      setStartTime(isoToDatetimeLocal(data.start_time ?? null));
-      setEndTime(isoToDatetimeLocal(data.end_time ?? null));
+      setStartTime(formatToDDMMYYYYHHMMSS(data.start_time ?? "") || "");
+      setEndTime(formatToDDMMYYYYHHMMSS(data.end_time ?? "") || "");
       const anyData = data as any;
       setIsPaid(anyData.is_paid ?? false);
       setPrice(
@@ -255,8 +298,8 @@ export default function AssessmentEditPage() {
         instructions: instructions.trim(),
         description: description.trim() || undefined,
         duration_minutes: durationMinutes,
-        start_time: convertToIST(startTime),
-        end_time: convertToIST(endTime),
+        start_time: toISTForAPI(startTime),
+        end_time: toISTForAPI(endTime),
         is_paid: isPaid,
         price: isPaid ? (price ? Number(price) : null) : null,
         currency: isPaid ? currency : undefined,
