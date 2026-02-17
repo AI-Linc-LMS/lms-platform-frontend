@@ -96,7 +96,7 @@ function formatToDDMMYYYYHHMMSS(dateTimeString: string | null | undefined): stri
     const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:.*)?$/);
     if (isoMatch) {
       const [, y, mo, d, h, min, sec] = isoMatch;
-      return `${d} ${mo} ${y} ${h}:${min}:${sec ?? "00"}`;
+      return `${d}/${mo}/${y} ${h}:${min}:${sec ?? "00"}`;
     }
     const d = new Date(s);
     if (isNaN(d.getTime())) return "";
