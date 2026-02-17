@@ -8,7 +8,6 @@ export interface AttendanceActivity {
   duration_minutes: number;
   is_active: boolean;
   is_valid: boolean;
-  meeting_status?: string | null;
   expires_at: string;
   attendees_count: number;
   created_by_name: string;
@@ -19,15 +18,6 @@ export interface AttendanceActivity {
   hands_on_coding?: string | null;
   additional_comments?: string | null;
   attendees?: Attendee[];
-  is_zoom?: boolean;
-  zoom_meeting_id?: string | null;
-  zoom_meeting_uuid?: string | null;
-  zoom_start_url?: string | null;
-  zoom_join_url?: string | null;
-  zoom_password?: string | null;
-  zoom_recording_url?: string | null;
-  zoom_recording_duration_seconds?: number | null;
-  zoom_participants?: ZoomParticipant[];
 }
 
 export interface Attendee {
@@ -37,20 +27,9 @@ export interface Attendee {
   marked_at: string;
 }
 
-export interface ZoomParticipant {
-  id?: number;
-  name: string;
-  user_email?: string | null;
-  email?: string | null;
-  join_time?: string | null;
-  leave_time?: string | null;
-  duration?: number | null;
-}
-
 export interface CreateAttendanceActivityData {
   name: string;
   duration_minutes: number;
-  is_zoom?: boolean;
 }
 
 export interface UpdateAttendanceActivityData {

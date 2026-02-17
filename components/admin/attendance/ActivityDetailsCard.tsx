@@ -2,7 +2,6 @@
 
 import { Box, Typography, Paper, Chip } from "@mui/material";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
-import { getAttendanceStatusDisplay } from "@/lib/utils/attendance-utils";
 
 interface ActivityDetailsCardProps {
   activity: AttendanceActivity;
@@ -97,22 +96,30 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Box
             sx={{ display: "flex", gap: 0.5, mt: 0.5, flexWrap: "wrap" }}
           >
-            {(() => {
-              const { label, chipSx } =
-                getAttendanceStatusDisplay(activity);
-              return (
-                <Chip
-                  label={label}
-                  size="small"
-                  sx={{
-                    ...chipSx,
-                    fontWeight: 600,
-                    fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                    height: { xs: 20, sm: 24 },
-                  }}
-                />
-              );
-            })()}
+            <Chip
+              label={activity.is_active ? "Active" : "Inactive"}
+              size="small"
+              sx={{
+                fontWeight: 600,
+                fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                height: { xs: 20, sm: 24 },
+                bgcolor: activity.is_active ? "#d1fae5" : "#fee2e2",
+                color: activity.is_active ? "#065f46" : "#991b1b",
+              }}
+            />
+            {activity.is_valid && (
+              <Chip
+                label="Valid"
+                size="small"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                  height: { xs: 20, sm: 24 },
+                  bgcolor: "#dbeafe",
+                  color: "#1e40af",
+                }}
+              />
+            )}
           </Box>
         </Box>
         <Box>

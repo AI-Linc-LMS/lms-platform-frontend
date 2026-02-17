@@ -130,28 +130,6 @@ export function ViewActivityPanel({
             {activity.name}
           </Typography>
 
-          {activity.is_zoom &&
-            activity.zoom_start_url &&
-            activity.meeting_status === "live" && (
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<IconWrapper icon="mdi:video" size={18} />}
-                onClick={() =>
-                  window.open(activity.zoom_start_url!, "_blank")
-                }
-                sx={{
-                  mr: 1,
-                  bgcolor: "#6366f1",
-                  "&:hover": { bgcolor: "#4f46e5" },
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Join as host
-              </Button>
-            )}
-
           <IconButton
             onClick={onClose}
             sx={{

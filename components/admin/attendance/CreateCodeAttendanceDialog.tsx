@@ -56,7 +56,6 @@ export function CreateCodeAttendanceDialog({
       await adminAttendanceService.createAttendanceActivity({
         name: name.trim(),
         duration_minutes: duration,
-        is_zoom: false,
       });
       showToast("Attendance activity created successfully", "success");
       setName("");

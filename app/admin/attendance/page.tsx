@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -26,7 +26,6 @@ import {
   adminAttendanceService,
   AttendanceActivity,
 } from "@/lib/services/admin/admin-attendance.service";
-import { getAttendanceStatusDisplay } from "@/lib/utils/attendance-utils";
 import { ViewActivityPanel } from "@/components/admin/attendance/ViewActivityPanel";
 import { CreateCodeAttendanceDialog } from "@/components/admin/attendance/CreateCodeAttendanceDialog";
 
@@ -75,20 +74,14 @@ export default function AttendancePage() {
     }
   };
 
-  // Code-only activities (no Zoom); Zoom is managed on Live Sessions
-  const codeOnlyActivities = useMemo(
-    () => (allActivities || []).filter((a) => !a.is_zoom),
-    [allActivities]
-  );
-
   // 🔥 FRONTEND PAGINATION LOGIC
   useEffect(() => {
     const start = (page - 1) * limit;
     const end = start + limit;
 
-    setActivities(codeOnlyActivities.slice(start, end));
-    setTotalPages(Math.max(1, Math.ceil(codeOnlyActivities.length / limit)));
-  }, [codeOnlyActivities, page, limit]);
+    setActivities(allActivities.slice(start, end));
+    setTotalPages(Math.max(1, Math.ceil(allActivities.length / limit)));
+  }, [allActivities, page, limit]);
 
   const handleViewActivity = async (activityId: number) => {
     try {
@@ -198,17 +191,11 @@ export default function AttendancePage() {
                     </TableCell>
                     <TableCell>{activity.duration_minutes} min</TableCell>
                     <TableCell>
-                      {(() => {
-                        const { label, chipSx } =
-                          getAttendanceStatusDisplay(activity);
-                        return (
-                          <Chip
-                            label={label}
-                            size="small"
-                            sx={{ ...chipSx, fontWeight: 600 }}
-                          />
-                        );
-                      })()}
+                      <Chip
+                        label={activity.is_active ? "Active" : "Inactive"}
+                        size="small"
+                        color={activity.is_active ? "success" : "error"}
+                      />
                     </TableCell>
                     <TableCell>{activity.attendees_count}</TableCell>
                     <TableCell>
@@ -228,7 +215,7 @@ export default function AttendancePage() {
           </TableContainer>
 
           {/* Pagination */}
-          {codeOnlyActivities.length > 0 && (
+          {allActivities.length > 0 && (
             <Box
               sx={{
                 p: 2,

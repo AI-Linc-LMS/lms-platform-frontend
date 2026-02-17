@@ -16,7 +16,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -66,7 +65,11 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       const data = await activityService.getLiveAttendance();
-      setAttendanceActivities(data);
+      // Attendance page: code-only (same as pre-Zoom staging). Zoom is on Live Sessions.
+      const codeOnly = (Array.isArray(data) ? data : []).filter(
+        (a) => !a.is_zoom && !a.zoom_join_url?.trim()
+      );
+      setAttendanceActivities(codeOnly);
     } catch (error: any) {
       showToast(
         error?.response?.data?.detail ||
