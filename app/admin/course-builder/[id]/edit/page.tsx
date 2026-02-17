@@ -66,15 +66,18 @@ export default function CourseEditPage() {
   const handleSave = async () => {
     try {
       setSaving(true);
+      const effectiveSlug = formData.slug.trim() || formData.title
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+      const slugChanged = course && effectiveSlug !== (course.slug ?? "");
       const courseData: CourseData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        slug: formData.slug.trim() || formData.title
-          .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, ""),
         ...(formData.difficulty_level && { difficulty_level: formData.difficulty_level }),
+        ...(slugChanged && { slug: effectiveSlug }),
       };
+      // Only send slug when user changed it to avoid backend "slug already exists" on same course
 
       await adminCourseBuilderService.updateCourse(courseId, courseData);
       showToast("Course updated successfully", "success");
