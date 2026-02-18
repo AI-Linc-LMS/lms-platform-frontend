@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Typography, IconButton, Drawer, Tabs, Tab } from "@mui/material";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Drawer,
+  Tabs,
+  Tab,
+} from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
 import { ActivityDetailsCard } from "./ActivityDetailsCard";

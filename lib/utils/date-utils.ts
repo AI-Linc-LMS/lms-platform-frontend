@@ -61,3 +61,22 @@ export function formatDateTime(date: string | Date): string {
   });
 }
 
+/**
+ * Format duration in seconds to a readable string (e.g. "54s", "1m 30s", "1h 5m").
+ */
+export function formatDurationSeconds(seconds: number | null | undefined): string {
+  if (seconds == null || Number.isNaN(seconds) || seconds < 0) return "—";
+  const s = Math.floor(seconds);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return sec > 0 ? `${m}m ${sec}s` : `${m}m`;
+  }
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (m === 0 && sec === 0) return `${h}h`;
+  if (sec === 0) return `${h}h ${m}m`;
+  return `${h}h ${m}m ${sec}s`;
+}

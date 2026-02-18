@@ -1,8 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Box, Typography, Paper, Button, TextField } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { useToast } from "@/components/common/Toast";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
 
 interface SessionSummaryCardProps {
@@ -20,6 +33,7 @@ export function SessionSummaryCard({
   activity,
   onSave,
 }: SessionSummaryCardProps) {
+  const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -74,6 +88,17 @@ export function SessionSummaryCard({
   const formatPoints = (text: string | null | undefined): string[] => {
     if (!text) return [];
     return text.split("\n").filter((line) => line.trim());
+  };
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (

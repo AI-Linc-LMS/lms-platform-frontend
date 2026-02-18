@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -160,6 +160,7 @@ export default function AttendancePage() {
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => setCreateDialogOpen(true)}
+            sx={{ bgcolor: "#10b981", "&:hover": { bgcolor: "#059669" } }}
           >
             Create Activity
           </Button>
@@ -192,8 +193,8 @@ export default function AttendancePage() {
                     <TableCell>
                       <Chip
                         label={activity.is_active ? "Active" : "Inactive"}
-                        color={activity.is_active ? "success" : "error"}
                         size="small"
+                        color={activity.is_active ? "success" : "error"}
                       />
                     </TableCell>
                     <TableCell>{activity.attendees_count}</TableCell>
@@ -245,6 +246,7 @@ export default function AttendancePage() {
                 page={page}
                 onChange={(_, value) => setPage(value)}
                 color="primary"
+                sx={{ "& .Mui-selected": { bgcolor: "#10b981" } }}
               />
             </Box>
           )}
@@ -267,7 +269,6 @@ export default function AttendancePage() {
           />
         )}
 
-        {/* Create Dialog */}
         <CreateActivityDialog
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
