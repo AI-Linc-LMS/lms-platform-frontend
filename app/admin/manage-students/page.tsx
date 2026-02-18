@@ -357,12 +357,53 @@ export default function ManageStudentsPage() {
     setShowJobHistory(true); // Show job history after successful enrollment
   };
 
+  const escapeCsvValue = (value: string | number): string => {
+    const str = String(value ?? "");
+    if (str.includes('"') || str.includes(",") || str.includes("\n") || str.includes("\r")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const handleDownloadCsv = () => {
+    const headers = [
+      "Name",
+      "Email",
+      "Status",
+      "Enrollment Count",
+      "Most Active Course",
+      "Completion %",
+      "Attendance %",
+    ];
+    const rows = filteredStudents.map((student) => {
+      const stats = completionStats[student.user_id] ?? completionStats[student.id];
+      return [
+        escapeCsvValue(student.name ?? ""),
+        escapeCsvValue(student.email ?? ""),
+        student.is_active ? "Active" : "Inactive",
+        escapeCsvValue(student.enrollment_count ?? 0),
+        escapeCsvValue(student.most_active_course ?? "No Activity"),
+        stats ? escapeCsvValue(stats.completion_percentage.toFixed(1)) : "N/A",
+        stats ? escapeCsvValue(stats.attendance_percentage.toFixed(1)) : "N/A",
+      ];
+    });
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `students${selectedCourse ? `-course-${selectedCourse}` : ""}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         <ManageStudentsHeader
           totalCount={totalCount}
           onBulkEnrollClick={() => setBulkEnrollDialogOpen(true)}
+          onDownloadCsv={selectedCourse ? handleDownloadCsv : undefined}
         />
 
         <StudentsFilters

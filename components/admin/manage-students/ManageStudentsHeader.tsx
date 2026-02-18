@@ -6,11 +6,13 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 interface ManageStudentsHeaderProps {
   totalCount: number;
   onBulkEnrollClick?: () => void;
+  onDownloadCsv?: () => void;
 }
 
 export function ManageStudentsHeader({
   totalCount,
   onBulkEnrollClick,
+  onDownloadCsv,
 }: ManageStudentsHeaderProps) {
   return (
     <Box sx={{ mb: { xs: 3, sm: 4 } }}>
@@ -55,21 +57,40 @@ export function ManageStudentsHeader({
             />
           )}
         </Box>
-        {onBulkEnrollClick && (
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:account-plus" size={20} />}
-            onClick={onBulkEnrollClick}
-            sx={{
-              backgroundColor: "#6366f1",
-              "&:hover": {
-                backgroundColor: "#4f46e5",
-              },
-            }}
-          >
-            Bulk Enroll
-          </Button>
-        )}
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          {onDownloadCsv && (
+            <Button
+              variant="outlined"
+              startIcon={<IconWrapper icon="mdi:download" size={20} />}
+              onClick={onDownloadCsv}
+              sx={{
+                borderColor: "#6366f1",
+                color: "#6366f1",
+                "&:hover": {
+                  borderColor: "#4f46e5",
+                  backgroundColor: "#eef2ff",
+                },
+              }}
+            >
+              Download CSV
+            </Button>
+          )}
+          {onBulkEnrollClick && (
+            <Button
+              variant="contained"
+              startIcon={<IconWrapper icon="mdi:account-plus" size={20} />}
+              onClick={onBulkEnrollClick}
+              sx={{
+                backgroundColor: "#6366f1",
+                "&:hover": {
+                  backgroundColor: "#4f46e5",
+                },
+              }}
+            >
+              Bulk Enroll
+            </Button>
+          )}
+        </Box>
       </Box>
       <Typography
         variant="body2"
