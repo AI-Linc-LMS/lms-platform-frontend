@@ -73,7 +73,12 @@ export function CreateLiveSessionDialog({
       return;
     }
     const classDate = new Date(classDatetime);
-    if (Number.isNaN(classDate.getTime()) || classDate.getTime() < Date.now()) {
+    const now = Date.now();
+    const oneMinuteMs = 60 * 1000;
+    if (
+      Number.isNaN(classDate.getTime()) ||
+      classDate.getTime() < now - oneMinuteMs
+    ) {
       showToast("Class date and time must be in the future", "error");
       return;
     }
@@ -252,7 +257,11 @@ export function CreateLiveSessionDialog({
               label="Duration (minutes)"
               type="number"
               value={durationMinutes}
-              onChange={(e) => setDurationMinutes(Number(e.target.value))}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (e.target.value.trim() === "") setDurationMinutes(60);
+                else setDurationMinutes(Math.min(480, Math.max(1, Number.isNaN(v) ? 60 : v)));
+              }}
               fullWidth
               inputProps={{ min: 1, max: 480 }}
               size="small"
@@ -347,6 +356,7 @@ export function CreateLiveSessionDialog({
         <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
           <Button onClick={handleClose}>Cancel</Button>
           <Button
+            type="button"
             variant="contained"
             onClick={handleCreateSession}
             disabled={
@@ -354,7 +364,11 @@ export function CreateLiveSessionDialog({
               !topicName.trim() ||
               topicName.trim().length < 2 ||
               !classDatetime.trim() ||
-              new Date(classDatetime).getTime() < Date.now() ||
+              (() => {
+                const t = new Date(classDatetime).getTime();
+                const now = Date.now();
+                return Number.isNaN(t) || t < now - 60 * 1000;
+              })() ||
               durationMinutes < 1 ||
               durationMinutes > 480 ||
               (instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1))

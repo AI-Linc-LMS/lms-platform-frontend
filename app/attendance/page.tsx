@@ -65,11 +65,7 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       const data = await activityService.getLiveAttendance();
-      // Attendance page: code-only (same as pre-Zoom staging). Zoom is on Live Sessions.
-      const codeOnly = (Array.isArray(data) ? data : []).filter(
-        (a) => !a.is_zoom && !a.zoom_join_url?.trim()
-      );
-      setAttendanceActivities(codeOnly);
+      setAttendanceActivities(Array.isArray(data) ? data : []);
     } catch (error: any) {
       showToast(
         error?.response?.data?.detail ||
@@ -181,8 +177,9 @@ export default function AttendancePage() {
   };
 
   const isActivityActive = (activity: LiveAttendanceActivity) => {
-    if (!activity.expires_at) return false;
-    const expiresAt = new Date(activity.expires_at);
+    const expiresAtValue = activity.expires_at ?? activity.class_datetime;
+    if (!expiresAtValue) return false;
+    const expiresAt = new Date(expiresAtValue);
     const now = new Date();
     return now < expiresAt && activity.time_remaining_minutes > 0;
   };
@@ -307,13 +304,15 @@ export default function AttendancePage() {
                               color: "#111827",
                             }}
                           >
-                            {activity.name}
+                            {activity.topic_name ?? activity.name ?? "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ color: "#374151" }}>
-                            {activity.expires_at
-                              ? formatDateTime(activity.expires_at)
+                            {(activity.expires_at ?? activity.class_datetime)
+                              ? formatDateTime(
+                                  activity.expires_at ?? activity.class_datetime ?? ""
+                                )
                               : "—"}
                           </Typography>
                         </TableCell>

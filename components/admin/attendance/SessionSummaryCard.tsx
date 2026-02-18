@@ -16,10 +16,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import {
-  AttendanceActivity,
-  adminAttendanceService,
-} from "@/lib/services/admin/admin-attendance.service";
+import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
 
 interface SessionSummaryCardProps {
   activity: AttendanceActivity;
@@ -30,13 +27,11 @@ interface SessionSummaryCardProps {
     hands_on_coding?: string;
     additional_comments?: string;
   }) => void;
-  onActivityUpdated?: (activity: AttendanceActivity) => void;
 }
 
 export function SessionSummaryCard({
   activity,
   onSave,
-  onActivityUpdated,
 }: SessionSummaryCardProps) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState(false);

@@ -8,7 +8,6 @@ import {
   Drawer,
   Tabs,
   Tab,
-  Button,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
@@ -27,7 +26,6 @@ interface ViewActivityPanelProps {
     hands_on_coding?: string;
     additional_comments?: string;
   }) => void;
-  onActivityUpdated?: (activity: AttendanceActivity) => void;
   studentsPage: number;
   studentsLimit: number;
   onStudentsPageChange: (page: number) => void;
@@ -41,7 +39,6 @@ export function ViewActivityPanel({
   activity,
   onClose,
   onSave,
-  onActivityUpdated,
   studentsPage,
   studentsLimit,
   onStudentsPageChange,
@@ -201,11 +198,7 @@ export function ViewActivityPanel({
           }}
         >
           {activeTab === 0 && (
-            <SessionSummaryCard
-              activity={activity}
-              onSave={onSave}
-              onActivityUpdated={onActivityUpdated}
-            />
+            <SessionSummaryCard activity={activity} onSave={onSave} />
           )}
 
           {activeTab === 1 && (

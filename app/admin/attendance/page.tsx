@@ -27,7 +27,7 @@ import {
   AttendanceActivity,
 } from "@/lib/services/admin/admin-attendance.service";
 import { ViewActivityPanel } from "@/components/admin/attendance/ViewActivityPanel";
-import { CreateCodeAttendanceDialog } from "@/components/admin/attendance/CreateCodeAttendanceDialog";
+import { CreateActivityDialog } from "@/components/admin/attendance/CreateActivityDialog";
 
 export default function AttendancePage() {
   const { showToast } = useToast();
@@ -262,7 +262,6 @@ export default function AttendancePage() {
               setSelectedActivity(null);
             }}
             onSave={handleUpdateActivity}
-            onActivityUpdated={(updated) => setSelectedActivity(updated)}
             studentsPage={studentsPage}
             studentsLimit={studentsLimit}
             onStudentsPageChange={setStudentsPage}
@@ -270,8 +269,7 @@ export default function AttendancePage() {
           />
         )}
 
-        {/* Create Dialog (code-only; Zoom is on Live Sessions) */}
-        <CreateCodeAttendanceDialog
+        <CreateActivityDialog
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
           onSuccess={() => {

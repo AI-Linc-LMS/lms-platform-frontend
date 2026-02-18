@@ -40,21 +40,6 @@ export interface UpdateAttendanceActivityData {
   additional_comments?: string;
 }
 
-export interface SyncRecordingResponse {
-  status: string;
-  message: string;
-  data?: {
-    zoom_recording_url?: string;
-    zoom_recording_file_id?: string;
-  } | null;
-}
-
-export interface SyncAttendanceResponse {
-  status: string;
-  message: string;
-  data?: { synced_count: number; meeting_ended?: boolean } | null;
-}
-
 export const adminAttendanceService = {
   // List/Create attendance activities
   getAttendanceActivities: async (params?: {
@@ -114,36 +99,6 @@ export const adminAttendanceService = {
     await apiClient.delete(
       `/activity/clients/${config.clientId}/admin/attendance-activities/${activityId}/`
     );
-  },
-
-  // Sync Zoom recording for an activity (200 = synced, 202 = still processing)
-  syncRecording: async (
-    activityId: number
-  ): Promise<SyncRecordingResponse> => {
-    const response = await apiClient.post<SyncRecordingResponse>(
-      `/activity/clients/${config.clientId}/admin/attendance-activities/${activityId}/sync-recording/`
-    );
-    return response.data;
-  },
-
-  // Sync Zoom attendance for an activity
-  syncAttendance: async (
-    activityId: number
-  ): Promise<SyncAttendanceResponse> => {
-    const response = await apiClient.post<SyncAttendanceResponse>(
-      `/activity/clients/${config.clientId}/zoom/activities/${activityId}/sync-attendance/`
-    );
-    return response.data;
-  },
-
-  // End Zoom meeting for an activity
-  endMeeting: async (
-    activityId: number
-  ): Promise<{ status: string; message: string }> => {
-    const response = await apiClient.post<{ status: string; message: string }>(
-      `/activity/clients/${config.clientId}/zoom/activities/${activityId}/end-meeting/`
-    );
-    return response.data;
   },
 };
 
