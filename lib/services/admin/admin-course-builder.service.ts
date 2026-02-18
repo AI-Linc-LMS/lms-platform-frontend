@@ -10,6 +10,7 @@ export interface CourseData {
   difficulty_level?: string; // Valid values: 'Easy', 'Medium', 'Hard'
   rating?: number; // Course rating 0-5
   is_pro?: boolean;
+  is_free?: boolean;
   tags?: string | string[]; // Tags as comma-separated string or array
   [key: string]: string | number | boolean | string[] | undefined;
 }
@@ -103,6 +104,24 @@ export const adminCourseBuilderService = {
         apiError.message ||
         "Failed to update course";
       throw new Error(message);
+    }
+  },
+
+  duplicateCourse: async (courseId: number) => {
+    try {
+      const res = await apiClient.post(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/duplicate/`
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to duplicate course"
+      );
     }
   },
 
