@@ -16,7 +16,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -66,7 +65,7 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       const data = await activityService.getLiveAttendance();
-      setAttendanceActivities(data);
+      setAttendanceActivities(Array.isArray(data) ? data : []);
     } catch (error: any) {
       showToast(
         error?.response?.data?.detail ||
@@ -178,7 +177,9 @@ export default function AttendancePage() {
   };
 
   const isActivityActive = (activity: LiveAttendanceActivity) => {
-    const expiresAt = new Date(activity.expires_at);
+    const expiresAtValue = activity.expires_at ?? activity.class_datetime;
+    if (!expiresAtValue) return false;
+    const expiresAt = new Date(expiresAtValue);
     const now = new Date();
     return now < expiresAt && activity.time_remaining_minutes > 0;
   };
@@ -303,12 +304,16 @@ export default function AttendancePage() {
                               color: "#111827",
                             }}
                           >
-                            {activity.name}
+                            {activity.topic_name ?? activity.name ?? "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ color: "#374151" }}>
-                            {formatDateTime(activity.expires_at)}
+                            {(activity.expires_at ?? activity.class_datetime)
+                              ? formatDateTime(
+                                  activity.expires_at ?? activity.class_datetime ?? ""
+                                )
+                              : "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>

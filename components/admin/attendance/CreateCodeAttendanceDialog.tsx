@@ -15,22 +15,20 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import {
-  adminAttendanceService,
-} from "@/lib/services/admin/admin-attendance.service";
+import { adminAttendanceService } from "@/lib/services/admin/admin-attendance.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
-interface CreateActivityDialogProps {
+interface CreateCodeAttendanceDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function CreateActivityDialog({
+export function CreateCodeAttendanceDialog({
   open,
   onClose,
   onSuccess,
-}: CreateActivityDialogProps) {
+}: CreateCodeAttendanceDialogProps) {
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
   const [name, setName] = useState("");
@@ -44,8 +42,7 @@ export function CreateActivityDialog({
         .split(" ")
         .map((word: string) => word.charAt(0).toUpperCase())
         .join("");
-      const generatedName = `${initials}-Classroom`;
-      setName(generatedName);
+      setName(`${initials}-Classroom`);
     }
   }, [open, clientInfo]);
 
@@ -63,7 +60,6 @@ export function CreateActivityDialog({
       showToast("Attendance activity created successfully", "success");
       setName("");
       setDuration(60);
-      onClose();
       onSuccess();
     } catch (error: any) {
       const detail =
@@ -100,13 +96,7 @@ export function CreateActivityDialog({
             alignItems: "center",
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
-              fontSize: { xs: "1rem", sm: "1.25rem" },
-            }}
-          >
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Create Attendance Activity
           </Typography>
           <IconButton onClick={onClose} size="small">
@@ -123,6 +113,11 @@ export function CreateActivityDialog({
             mt: { xs: 0.5, sm: 1 },
           }}
         >
+          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+            Create a code-based attendance activity. Students will mark
+            attendance using the 6-digit code. For Zoom live classes, use Live
+            Sessions.
+          </Typography>
           <TextField
             label="Activity Name"
             value={name}
@@ -130,13 +125,7 @@ export function CreateActivityDialog({
             placeholder="e.g., AB-Classroom"
             fullWidth
             required
-            helperText="Enter the activity name (e.g., AB-Classroom)"
             size="small"
-            sx={{
-              "& .MuiInputBase-root": {
-                fontSize: { xs: "0.875rem", sm: "1rem" },
-              },
-            }}
           />
           <TextField
             label="Duration (minutes)"
@@ -147,30 +136,16 @@ export function CreateActivityDialog({
             required
             inputProps={{ min: 1 }}
             size="small"
-            sx={{
-              "& .MuiInputBase-root": {
-                fontSize: { xs: "0.875rem", sm: "1rem" },
-              },
-            }}
           />
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}>
-        <Button
-          onClick={onClose}
-          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-        >
-          Cancel
-        </Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button
           variant="contained"
           onClick={handleCreate}
           disabled={creating || !name.trim()}
-          sx={{
-            bgcolor: "#10b981",
-            "&:hover": { bgcolor: "#059669" },
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-          }}
+          sx={{ bgcolor: "#10b981", "&:hover": { bgcolor: "#059669" } }}
         >
           {creating ? (
             <CircularProgress size={20} color="inherit" />
