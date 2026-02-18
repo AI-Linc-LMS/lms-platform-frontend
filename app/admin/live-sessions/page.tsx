@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -16,8 +17,12 @@ import { AdminLiveSessionsTable } from "@/components/admin/live-sessions/AdminLi
 import { useAdminLiveSessions } from "@/components/admin/live-sessions/useAdminLiveSessions";
 import { CreateLiveSessionDialog } from "@/components/admin/live-sessions/CreateLiveSessionDialog";
 import { LiveSessionDetailDrawer } from "@/components/admin/live-sessions/LiveSessionDetailDrawer";
+import { ZoomCredentialsDialog } from "@/components/admin/live-sessions/ZoomCredentialsDialog";
+import { accountsService } from "@/lib/services/accounts.service";
 
 export default function AdminLiveSessionsPage() {
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+  const [hasCheckedCredentials, setHasCheckedCredentials] = useState(false);
   const {
     authLoading,
     canAccessAdmin,
@@ -44,6 +49,27 @@ export default function AdminLiveSessionsPage() {
     formatDateTime,
     openViewSession,
   } = useAdminLiveSessions();
+
+  // Auto-open Zoom credentials dialog once for first-time users (no creds set). Must run before any conditional return (Rules of Hooks).
+  useEffect(() => {
+    if (hasCheckedCredentials || !hasAdminLiveSessionsFeature) return;
+    let cancelled = false;
+    setHasCheckedCredentials(true);
+    accountsService
+      .getZoomCredentials()
+      .then((data) => {
+        if (cancelled) return;
+        const empty =
+          data == null ||
+          (!(data.account_id && data.account_id.trim()) &&
+            !(data.zoom_client_id && data.zoom_client_id.trim()));
+        if (empty) setCredentialsDialogOpen(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAdminLiveSessionsFeature, hasCheckedCredentials]);
 
   if (!authLoading && !canAccessAdmin) {
     return null;
@@ -119,17 +145,27 @@ export default function AdminLiveSessionsPage() {
               link, sync attendance and recording.
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-            onClick={() => setCreateDialogOpen(true)}
-            sx={{
-              bgcolor: "#6366f1",
-              "&:hover": { bgcolor: "#4f46e5" },
-            }}
-          >
-            Create Live Session
-          </Button>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Button
+              variant="outlined"
+              startIcon={<IconWrapper icon="mdi:video-account" size={20} />}
+              onClick={() => setCredentialsDialogOpen(true)}
+              sx={{ borderColor: "#6366f1", color: "#6366f1" }}
+            >
+              Zoom credentials
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<IconWrapper icon="mdi:plus" size={20} />}
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{
+                bgcolor: "#6366f1",
+                "&:hover": { bgcolor: "#4f46e5" },
+              }}
+            >
+              Create Live Session
+            </Button>
+          </Box>
         </Box>
 
         {sessions.length === 0 ? (
@@ -171,6 +207,11 @@ export default function AdminLiveSessionsPage() {
             setSelectedLiveClassId(null);
           }}
           onUpdated={loadSessions}
+        />
+
+        <ZoomCredentialsDialog
+          open={credentialsDialogOpen}
+          onClose={() => setCredentialsDialogOpen(false)}
         />
       </Container>
     </MainLayout>
