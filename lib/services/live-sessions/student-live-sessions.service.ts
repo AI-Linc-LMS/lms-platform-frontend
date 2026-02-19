@@ -1,3 +1,10 @@
+/**
+ * Student live-sessions API (list + recording).
+ * Note: The backend does not currently expose these endpoints (neither under
+ * /activity/ nor under /live-class/api/). Calls will 404 until the backend
+ * adds student live-session routes. Do not point this service to
+ * /live-class/api/... for these two routes—they do not exist there.
+ */
 import apiClient from "../api";
 import { config } from "../../config";
 import type {
