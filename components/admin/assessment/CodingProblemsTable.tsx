@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -11,9 +12,15 @@ import {
   TableHead,
   TableRow,
   Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { PaginationControls } from "./PaginationControls";
+import { ProblemDescription } from "@/components/coding/ProblemDescription";
 
 interface CodingProblemWithSection extends CodingProblemListItem {
   sectionId: string;
@@ -36,9 +43,27 @@ export function CodingProblemsTable({
   onLimitChange,
   sectionName,
 }: CodingProblemsTableProps) {
+  const [previewProblem, setPreviewProblem] = useState<CodingProblemWithSection | null>(null);
   const startIndex = (page - 1) * limit;
   const paginatedProblems = problems.slice(startIndex, startIndex + limit);
   const totalPages = Math.max(1, Math.ceil(problems.length / limit));
+
+  const problemDataForPreview = (problem: CodingProblemWithSection) => {
+    const details: Record<string, unknown> = {
+      ...problem,
+      title: problem.title,
+      name: problem.title,
+      problem_title: problem.title,
+      problem_statement: problem.problem_statement ?? (problem as any).description ?? "",
+    };
+    const p = problem as Record<string, unknown>;
+    if (p.solution && typeof p.solution === "object" && !Array.isArray(p.solution)) {
+      details.pseudo_code = Object.entries(p.solution)
+        .map(([lang, code]) => `[${lang}]\n${code}`)
+        .join("\n\n");
+    }
+    return { content_title: problem.title, details };
+  };
 
   if (problems.length === 0) {
     return (
@@ -176,6 +201,16 @@ export function CodingProblemsTable({
                       {problem.programming_language || "-"}
                     </Typography>
                   </TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setPreviewProblem(problem)}
+                      sx={{ color: "#6366f1" }}
+                      title="Preview"
+                    >
+                      <IconWrapper icon="mdi:eye-outline" size={18} />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -193,6 +228,56 @@ export function CodingProblemsTable({
           itemLabel="problems"
         />
       )}
+
+      <Dialog
+        open={!!previewProblem}
+        onClose={() => setPreviewProblem(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { maxHeight: "90vh", borderRadius: 2 },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>Problem Preview</span>
+          <IconButton
+            size="small"
+            onClick={() => setPreviewProblem(null)}
+            aria-label="Close"
+          >
+            <IconWrapper icon="mdi:close" size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          dividers
+          sx={{
+            p: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {previewProblem && (
+            <Box
+              sx={{
+                overflow: "auto",
+                flex: 1,
+                minHeight: 0,
+              }}
+            >
+              <ProblemDescription
+                problemData={problemDataForPreview(previewProblem)}
+              />
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Paper>
   );
 }

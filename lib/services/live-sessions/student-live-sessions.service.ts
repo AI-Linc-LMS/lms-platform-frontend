@@ -5,7 +5,7 @@ import type {
   LiveSessionRecordingResponse,
 } from "./types";
 
-const BASE = `/activity/clients/${config.clientId}`;
+const BASE = `/live-class/api/clients/${config.clientId}`;
 
 function isZoomSession(item: StudentLiveSession): boolean {
   return item.is_zoom === true || Boolean(item.zoom_join_url?.trim());
@@ -14,7 +14,7 @@ function isZoomSession(item: StudentLiveSession): boolean {
 export const studentLiveSessionsService = {
   getSessions: async (): Promise<StudentLiveSession[]> => {
     const response = await apiClient.get<StudentLiveSession[]>(
-      `${BASE}/student/live-sessions/`
+      `${BASE}/live-activities/`
     );
     const data = response.data;
     const list = Array.isArray(data) ? data : [];
