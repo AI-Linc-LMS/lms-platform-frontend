@@ -18,7 +18,7 @@ import { useAdminLiveSessions } from "@/components/admin/live-sessions/useAdminL
 import { CreateLiveSessionDialog } from "@/components/admin/live-sessions/CreateLiveSessionDialog";
 import { LiveSessionDetailDrawer } from "@/components/admin/live-sessions/LiveSessionDetailDrawer";
 import { ZoomCredentialsDialog } from "@/components/admin/live-sessions/ZoomCredentialsDialog";
-import { accountsService } from "@/lib/services/accounts.service";
+import { zoomService } from "@/lib/services/zoom.service";
 
 export default function AdminLiveSessionsPage() {
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
@@ -55,7 +55,7 @@ export default function AdminLiveSessionsPage() {
     if (hasCheckedCredentials || !hasAdminLiveSessionsFeature) return;
     let cancelled = false;
     setHasCheckedCredentials(true);
-    accountsService
+    zoomService
       .getZoomCredentials()
       .then((data) => {
         if (cancelled) return;

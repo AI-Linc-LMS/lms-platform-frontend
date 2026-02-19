@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import { accountsService, ZoomCredentials } from "@/lib/services/accounts.service";
+import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
 
 export function ZoomCredentialsSection() {
   const { showToast } = useToast();
@@ -32,7 +32,7 @@ export function ZoomCredentialsSection() {
     setLoading(true);
     setError(null);
     try {
-      const data = await accountsService.getZoomCredentials();
+      const data = await zoomService.getZoomCredentials();
       setForm(
         data
           ? {
@@ -70,7 +70,7 @@ export function ZoomCredentialsSection() {
     setSaving(true);
     setError(null);
     try {
-      await accountsService.putZoomCredentials({
+      await zoomService.putZoomCredentials({
         account_id: form.account_id || undefined,
         zoom_client_id: form.zoom_client_id || undefined,
         zoom_client_secret: form.zoom_client_secret || undefined,

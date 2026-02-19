@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import { accountsService, ZoomCredentials } from "@/lib/services/accounts.service";
+import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
 
 interface ZoomCredentialsDialogProps {
   open: boolean;
@@ -59,7 +59,7 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
     setLoading(true);
     setError(null);
     try {
-      const data = await accountsService.getZoomCredentials();
+      const data = await zoomService.getZoomCredentials();
       setHasExistingConfig(data != null);
       setForm(
         data
@@ -109,7 +109,7 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
       if (form.zoom_client_secret?.trim()) payload.zoom_client_secret = form.zoom_client_secret.trim();
       if (form.timezone?.trim()) payload.timezone = form.timezone.trim(); // optional
 
-      await accountsService.putZoomCredentials(payload);
+      await zoomService.putZoomCredentials(payload);
       showToast("Zoom credentials saved successfully", "success");
       onClose();
     } catch (e: unknown) {
