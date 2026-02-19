@@ -1,7 +1,8 @@
 import apiClient from "../api";
 import { config } from "../../config";
 
-const BASE = `/activity/clients/${config.clientId}`;
+/** All Live Class and Zoom admin APIs are under the live-class app (not /activity/). */
+const BASE = `/live-class/api/clients/${config.clientId}`;
 
 export interface ZoomParticipant {
   id?: number;
@@ -55,11 +56,6 @@ export interface ZoomApiResponse<T = unknown> {
   data: T | null;
 }
 
-export interface SyncAttendanceData {
-  synced_count?: number;
-  meeting_ended?: boolean;
-}
-
 export interface SyncRecordingData {
   zoom_recording_url?: string;
   zoom_recording_file_id?: string;
@@ -97,15 +93,6 @@ export const adminLiveActivitiesService = {
     const response = await apiClient.post<ZoomApiResponse<unknown>>(
       `${BASE}/live-activities/${liveClassId}/zoom/end-meeting/`
     );
-    return response.data;
-  },
-
-  syncAttendance: async (
-    liveClassId: number
-  ): Promise<ZoomApiResponse<SyncAttendanceData>> => {
-    const response = await apiClient.post<
-      ZoomApiResponse<SyncAttendanceData>
-    >(`${BASE}/live-activities/${liveClassId}/zoom/sync-attendance/`);
     return response.data;
   },
 
