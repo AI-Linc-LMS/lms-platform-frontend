@@ -87,7 +87,7 @@ export default function CreateAssessmentPage() {
 
   // Coding problem input method (per section)
   const [codingInputMethodBySection, setCodingInputMethodBySection] =
-    useState<Record<string, "existing" | "ai">>({});
+    useState<Record<string, "existing" | "ai" | "raw">>({});
   const [sectionCodingProblemIds, setSectionCodingProblemIds] = useState<
     Record<string, number[]>
   >({});

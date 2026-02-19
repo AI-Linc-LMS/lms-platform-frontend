@@ -77,7 +77,6 @@ export default function CourseEditPage() {
         ...(formData.difficulty_level && { difficulty_level: formData.difficulty_level }),
         ...(slugChanged && { slug: effectiveSlug }),
       };
-      // Only send slug when user changed it to avoid backend "slug already exists" on same course
 
       await adminCourseBuilderService.updateCourse(courseId, courseData);
       showToast("Course updated successfully", "success");

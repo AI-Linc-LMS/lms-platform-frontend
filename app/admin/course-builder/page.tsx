@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Box, Paper, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Paper,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -27,6 +37,9 @@ export default function CourseBuilderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [courseToDuplicate, setCourseToDuplicate] = useState<Course | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
 
   useEffect(() => {
     loadCourses();
@@ -111,6 +124,35 @@ export default function CourseBuilderPage() {
 
   const handleEditCourse = (courseId: number) => {
     window.location.href = `/admin/course-builder/${courseId}/edit`;
+  };
+
+  const handleDuplicateClick = (course: Course) => {
+    setCourseToDuplicate(course);
+    setDuplicateDialogOpen(true);
+  };
+
+  const handleDuplicateDialogClose = () => {
+    if (!duplicatingId) {
+      setDuplicateDialogOpen(false);
+      setCourseToDuplicate(null);
+    }
+  };
+
+  const handleDuplicateConfirm = async () => {
+    if (!courseToDuplicate) return;
+    try {
+      setDuplicatingId(courseToDuplicate.id);
+      const duplicated = await adminCourseBuilderService.duplicateCourse(courseToDuplicate.id);
+      const title = duplicated?.title ?? courseToDuplicate.title + " - copy";
+      showToast(`Course duplicated successfully. New course: "${title}"`, "success");
+      setDuplicateDialogOpen(false);
+      setCourseToDuplicate(null);
+      loadCourses();
+    } catch (error: any) {
+      showToast(error?.message ?? "Failed to duplicate course", "error");
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   const draftCount = courses.filter((course) => !course.published).length;
@@ -215,6 +257,7 @@ export default function CourseBuilderPage() {
                   key={course.id}
                   course={course}
                   onEditClick={() => handleEditCourse(course.id)}
+                  onDuplicate={() => handleDuplicateClick(course)}
                   onUpdate={loadCourses}
                 />
               ))}
@@ -230,6 +273,54 @@ export default function CourseBuilderPage() {
           loading={creating}
           existingTitles={courses.map((c) => c.title)}
         />
+
+        {/* Duplicate Course Dialog */}
+        <Dialog
+          open={duplicateDialogOpen}
+          onClose={handleDuplicateDialogClose}
+          aria-labelledby="duplicate-course-dialog-title"
+          aria-describedby="duplicate-course-dialog-description"
+          PaperProps={{
+            sx: { borderRadius: 2, minWidth: 360 },
+          }}
+        >
+          <DialogTitle id="duplicate-course-dialog-title" sx={{ fontWeight: 600 }}>
+            Duplicate course?
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="duplicate-course-dialog-description">
+              {courseToDuplicate ? (
+                <>
+                  Create a copy of &quot;{courseToDuplicate.title}&quot;? The new course will
+                  include all modules and content.
+                </>
+              ) : null}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={handleDuplicateDialogClose}
+              disabled={!!duplicatingId}
+              color="inherit"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDuplicateConfirm}
+              disabled={!!duplicatingId}
+              variant="contained"
+              sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+              autoFocus
+              startIcon={
+                duplicatingId ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+            >
+              {duplicatingId ? "Duplicating…" : "Duplicate"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </MainLayout>
   );

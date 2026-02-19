@@ -410,7 +410,7 @@ export default function AssessmentEditPage() {
     const columns = [...baseColumns, ...sectionColumns];
 
     const rows: Record<string, unknown>[] = subs.map((s) => {
-      const pd = s.proctoring_data;
+      const pd = s.proctoring;
       const base: Record<string, unknown> = {
         name: s.name ?? "",
         email: s.email ?? "",

@@ -19,12 +19,13 @@ import { CSVUploadSection } from "./CSVUploadSection";
 import { AIGeneratedSection } from "./AIGeneratedSection";
 import { CodingProblemSelectionSection } from "./CodingProblemSelectionSection";
 import { AIGeneratedCodingSection } from "./AIGeneratedCodingSection";
+import { RawCodingProblemSection } from "./RawCodingProblemSection";
 import { MCQ, MCQListItem, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { Section } from "./MultipleSectionsSection";
 import { SectionQuestionsSidenav } from "./SectionQuestionsSidenav";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
-type CodingInputMethod = "existing" | "ai";
+type CodingInputMethod = "existing" | "ai" | "raw";
 
 interface SectionBasedQuestionsInputProps {
   sections: Section[];
@@ -400,6 +401,7 @@ export function SectionBasedQuestionsInput({
                   >
                     <MenuItem value="existing">Choose from Existing</MenuItem>
                     <MenuItem value="ai">AI Generated</MenuItem>
+                    <MenuItem value="raw">Add Your Problem</MenuItem>
                   </Select>
                 </FormControl>
                 {isCodingFormatLocked && (
@@ -422,6 +424,19 @@ export function SectionBasedQuestionsInput({
 
                 {currentCodingInputMethod === "ai" && (
                   <AIGeneratedCodingSection
+                    codingProblemIds={currentCodingProblemIds}
+                    onCodingProblemIdsChange={(ids) =>
+                      onSectionCodingProblemIdsChange(selectedCodingSectionId, ids)
+                    }
+                    generatedProblems={selectedCodingSectionId ? (aiCodingProblems[selectedCodingSectionId] || []) : []}
+                    onGeneratedProblemsChange={(problems) =>
+                      onAiCodingProblemsChange(selectedCodingSectionId, problems)
+                    }
+                  />
+                )}
+
+                {currentCodingInputMethod === "raw" && (
+                  <RawCodingProblemSection
                     codingProblemIds={currentCodingProblemIds}
                     onCodingProblemIdsChange={(ids) =>
                       onSectionCodingProblemIdsChange(selectedCodingSectionId, ids)

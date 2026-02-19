@@ -81,6 +81,20 @@ export interface GenerateCodingProblemRequest {
   number_of_problems?: number;
 }
 
+/** Request body for generating a single coding problem from raw problem text */
+export interface GenerateCodingProblemRawRequest {
+  raw_problem: string;
+  difficulty_level: "Easy" | "Medium" | "Hard";
+  programming_language: string;
+}
+
+/** Request body for generating multiple coding problems from raw problem texts (single request) */
+export interface GenerateCodingProblemsRawBatchRequest {
+  raw_problems: string[];
+  difficulty_level: "Easy" | "Medium" | "Hard";
+  programming_language: string;
+}
+
 export interface GenerateCodingProblemResponse {
   message: string;
   topic: string;
@@ -471,6 +485,80 @@ export const getCodingProblems = async (
 };
 
 /**
+ * Generate a single coding problem from raw problem text.
+ * POST same endpoint with raw_problem, difficulty_level, programming_language.
+ */
+export const generateCodingProblemFromRaw = async (
+  clientId: string | number,
+  payload: GenerateCodingProblemRawRequest
+): Promise<GenerateCodingProblemResponse> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/generate-coding-problems/`,
+      payload
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    if (error.response?.status === 400 && error.response?.data) {
+      const errorData = error.response.data;
+      const errorMessages = Object.entries(errorData)
+        .map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(", ")}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join("; ");
+      throw new Error(errorMessages || "Validation error");
+    }
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to generate coding problem from raw text";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Generate multiple coding problems in one request with raw_problems array.
+ * POST body: { raw_problems: string[], difficulty_level, programming_language }
+ */
+export const generateCodingProblemsFromRawBatch = async (
+  clientId: string | number,
+  payload: GenerateCodingProblemsRawBatchRequest
+): Promise<GenerateCodingProblemResponse> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/generate-coding-problems/`,
+      payload
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    if (error.response?.status === 400 && error.response?.data) {
+      const errorData = error.response.data;
+      const errorMessages = Object.entries(errorData)
+        .map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(", ")}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join("; ");
+      throw new Error(errorMessages || "Validation error");
+    }
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to generate coding problems from raw text";
+    throw new Error(message);
+  }
+};
+
+/**
  * Generate coding problems with AI
  */
 export const generateCodingProblemsWithAI = async (
@@ -599,7 +687,7 @@ export interface SubmissionsExportSubmission {
   attempted_questions?: number;
   section_wise_scores?: Record<string, number>;
   section_wise_max_scores?: Record<string, number>;
-  proctoring_data?: SubmissionsExportProctoringData;
+  proctoring?: SubmissionsExportProctoringData;
 }
 
 export interface SubmissionsExportResponse {
@@ -650,4 +738,6 @@ export const adminAssessmentService = {
   generateMCQsWithAI,
   getCodingProblems,
   generateCodingProblemsWithAI,
+  generateCodingProblemFromRaw,
+  generateCodingProblemsFromRawBatch,
 };

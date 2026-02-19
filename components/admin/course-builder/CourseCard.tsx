@@ -13,6 +13,8 @@ import {
   Rating,
   Autocomplete,
   CircularProgress,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -47,10 +49,11 @@ export interface Course {
 interface CourseCardProps {
   course: Course;
   onEditClick: () => void;
+  onDuplicate?: () => void;
   onUpdate?: () => void;
 }
 
-export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
+export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: CourseCardProps) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -60,6 +63,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
     description: course.description,
     tags: course.tags || [],
     rating: course.rating || 0,
+    is_free: course.is_free ?? true,
   });
 
   const getDifficultyColor = (level: string) => {
@@ -91,7 +95,8 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
         title: editData.title.trim(),
         description: editData.description.trim(),
         rating: editData.rating,
-        tags: editData.tags, // Send as array
+        tags: editData.tags,
+        is_free: editData.is_free,
       };
       // Omit slug so backend keeps existing slug and does not run uniqueness check (which fails for same course)
 
@@ -112,6 +117,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
       description: course.description,
       tags: course.tags || [],
       rating: course.rating || 0,
+      is_free: course.is_free ?? true,
     });
     setEditing(false);
   };
@@ -263,6 +269,19 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
                 >
                   <IconWrapper icon="mdi:open-in-new" size={18} />
                 </IconButton>
+                {onDuplicate && (
+                  <IconButton
+                    size="small"
+                    onClick={onDuplicate}
+                    sx={{
+                      color: "#6b7280",
+                      "&:hover": { bgcolor: "#f3f4f6" },
+                    }}
+                    title="Duplicate course"
+                  >
+                    <IconWrapper icon="mdi:content-copy" size={18} />
+                  </IconButton>
+                )}
                 {!course.published ? (
                   <IconButton
                     size="small"
@@ -356,6 +375,36 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
               </Typography>
             </Box>
           )
+        )}
+
+        {/* Is free */}
+        {editing ? (
+          <Box sx={{ mb: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editData.is_free}
+                  onChange={(e) => setEditData({ ...editData, is_free: e.target.checked })}
+                  color="primary"
+                  size="small"
+                />
+              }
+              label="Free course"
+              sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
+            />
+          </Box>
+        ) : (
+          <Box sx={{ mb: 2 }}>
+            <Chip
+              label={course.is_free ? "Free" : "Paid"}
+              size="small"
+              sx={{
+                bgcolor: course.is_free ? "#d1fae5" : "#fef3c7",
+                color: course.is_free ? "#065f46" : "#92400e",
+                fontSize: "0.75rem",
+              }}
+            />
+          </Box>
         )}
 
         {/* Tags */}
