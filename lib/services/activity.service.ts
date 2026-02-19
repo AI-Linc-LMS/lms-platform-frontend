@@ -48,9 +48,9 @@ export const activityService = {
     return response.data;
   },
 
-  // Get live attendance activities for student (live sessions)
+  // Get live attendance activities for student (code-based attendance list)
   getLiveAttendance: async (): Promise<LiveAttendanceActivity[]> => {
-    const endpoint = `/activity/clients/${config.clientId}/student/live-sessions/`;
+    const endpoint = `/activity/clients/${config.clientId}/student/live-attendance/`;
     const response = await apiClient.get<LiveAttendanceActivity[]>(endpoint);
     return response.data;
   },

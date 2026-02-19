@@ -57,7 +57,6 @@ export function LiveSessionDetailDrawer({
   const [sessionNotFound, setSessionNotFound] = useState(false);
   const [endMeetingConfirmOpen, setEndMeetingConfirmOpen] = useState(false);
   const [endingMeeting, setEndingMeeting] = useState(false);
-  const [syncingAttendance, setSyncingAttendance] = useState(false);
   const [syncingRecording, setSyncingRecording] = useState(false);
 
   useEffect(() => {
@@ -127,33 +126,6 @@ export function LiveSessionDetailDrawer({
       showToast(getLiveSessionErrorMessage(error), "error");
     } finally {
       setEndingMeeting(false);
-    }
-  };
-
-  const handleSyncAttendance = async () => {
-    if (liveClassId == null) return;
-    try {
-      setSyncingAttendance(true);
-      const result = await adminLiveActivitiesService.syncAttendance(
-        liveClassId
-      );
-      if (result.status === "error") {
-        showToast(
-          getZoomApiErrorMessage(result.message, "sync_attendance") ||
-            "Failed to sync attendance",
-          "error"
-        );
-        return;
-      }
-      const count = result.data?.synced_count;
-      let msg = result.message || "Attendance synced";
-      if (count != null) msg += ` (${count} participants)`;
-      showToast(msg, "success");
-      await refreshDetail();
-    } catch (error: unknown) {
-      showToast(getLiveSessionErrorMessage(error, "sync_attendance"), "error");
-    } finally {
-      setSyncingAttendance(false);
     }
   };
 
@@ -425,22 +397,6 @@ export function LiveSessionDetailDrawer({
             <Button
               variant="outlined"
               size="small"
-              disabled={syncingAttendance}
-              onClick={handleSyncAttendance}
-              startIcon={
-                syncingAttendance ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:sync" size={16} />
-                )
-              }
-              sx={{ textTransform: "none" }}
-            >
-              Sync attendance
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
               disabled={syncingRecording}
               onClick={handleSyncRecording}
               startIcon={
@@ -587,8 +543,7 @@ export function LiveSessionDetailDrawer({
           )}
           {participants.length === 0 && activity.is_zoom && (
             <Typography variant="body2" sx={{ color: "#9ca3af" }}>
-              No Zoom participants yet. Use &quot;Sync attendance&quot; after
-              the meeting to pull the list.
+              No Zoom participants in this session.
             </Typography>
           )}
         </Box>
