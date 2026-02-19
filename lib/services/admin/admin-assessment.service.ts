@@ -687,7 +687,7 @@ export interface SubmissionsExportSubmission {
   attempted_questions?: number;
   section_wise_scores?: Record<string, number>;
   section_wise_max_scores?: Record<string, number>;
-  proctoring_data?: SubmissionsExportProctoringData;
+  proctoring?: SubmissionsExportProctoringData;
 }
 
 export interface SubmissionsExportResponse {
