@@ -200,7 +200,13 @@ export default function AssessmentEditPage() {
       );
       setCurrency(anyData.currency ?? "INR");
       setIsActive(data.is_active ?? true);
-      setCourseIds(Array.isArray((data as any).course_ids) ? (data as any).course_ids : []);
+      const anyDataCourses = (data as any);
+      const loadedCourseIds = Array.isArray(anyDataCourses.course_ids)
+        ? anyDataCourses.course_ids
+        : Array.isArray(anyDataCourses.courses)
+          ? (anyDataCourses.courses as { id: number }[]).map((c) => c.id)
+          : [];
+      setCourseIds(loadedCourseIds);
       setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
       setSendCommunication((data as any).send_communication ?? false);
@@ -223,6 +229,17 @@ export default function AssessmentEditPage() {
       setLoadingCourses(false);
     }
   }, [showToast]);
+
+  // Merge assessment-linked courses into list so selected courses can be shown and removed
+  const coursesWithAssessment = useMemo(() => {
+    const byId = new Map<number, { id: number; title?: string; name?: string }>();
+    courses.forEach((c: any) => byId.set(c.id, { id: c.id, title: c.title, name: c.name }));
+    (assessment as any)?.courses?.forEach((c: any) => {
+      if (c?.id != null && !byId.has(c.id))
+        byId.set(c.id, { id: c.id, title: c.title, name: c.name });
+    });
+    return Array.from(byId.values());
+  }, [courses, assessment]);
 
   const loadQuestions = useCallback(async () => {
     if (!assessmentId || !config.clientId) return;
@@ -292,7 +309,7 @@ export default function AssessmentEditPage() {
         proctoring_enabled: proctoringEnabled,
         send_communication: sendCommunication,
         show_result: showResult,
-        course_ids: courseIds.length ? courseIds : undefined,
+        course_ids: courseIds,
         colleges: colleges.length ? colleges : undefined,
       };
       Object.keys(payload).forEach((k) => {
@@ -574,7 +591,7 @@ export default function AssessmentEditPage() {
                   currency={currency}
                   isActive={isActive}
                   courseIds={courseIds}
-                  courses={courses}
+                  courses={coursesWithAssessment}
                   loadingCourses={loadingCourses}
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}
