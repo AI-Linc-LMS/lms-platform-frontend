@@ -14,6 +14,16 @@ import {
   FormControl,
   InputLabel,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -22,15 +32,11 @@ import {
   CodingProblemListItem,
 } from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
+import { ProblemDescription } from "@/components/coding/ProblemDescription";
 
-const MAX_PROBLEMS = 3;
 const DIFFICULTY_LEVELS: Array<"Easy" | "Medium" | "Hard"> = ["Easy", "Medium", "Hard"];
-const LANGUAGES = ["Python", "Java", "JavaScript", "C++", "C", "Go", "Ruby", "Other"];
-
-export interface RawProblemSlot {
-  id: string;
-  raw_problem: string;
-}
+const LANGUAGES = ["Python", "Java", "JavaScript", "C++", "C", "Go", "Ruby", "SQL", "Other"];
+const ROWS_PER_PAGE_OPTIONS = [5, 10, 25];
 
 interface RawCodingProblemSectionProps {
   codingProblemIds: number[];
@@ -46,47 +52,33 @@ export function RawCodingProblemSection({
   onGeneratedProblemsChange,
 }: RawCodingProblemSectionProps) {
   const { showToast } = useToast();
-  const [slots, setSlots] = useState<RawProblemSlot[]>([
-    { id: "1", raw_problem: "" },
-  ]);
+  const [rawProblem, setRawProblem] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState<"Easy" | "Medium" | "Hard">("Easy");
   const [programmingLanguage, setProgrammingLanguage] = useState("Python");
+  const [customLanguage, setCustomLanguage] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [previewProblem, setPreviewProblem] = useState<CodingProblemListItem | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const addSlot = () => {
-    if (slots.length >= MAX_PROBLEMS) return;
-    setSlots((prev) => [...prev, { id: String(Date.now()), raw_problem: "" }]);
-  };
-
-  const removeSlot = (id: string) => {
-    if (slots.length <= 1) return;
-    setSlots((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  const updateSlot = (id: string, value: string) => {
-    setSlots((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, raw_problem: value } : s))
-    );
-  };
-
-  const rawProblemsStrings = slots
-    .map((s) => s.raw_problem.trim())
-    .filter((t) => t.length > 0);
+  const rawProblemTrimmed = rawProblem.trim();
 
   const handleGenerate = async () => {
-    if (rawProblemsStrings.length === 0) {
-      showToast("Enter at least one problem in the text area(s)", "error");
+    if (!rawProblemTrimmed) {
+      showToast("Enter the problem statement in the text area", "error");
       return;
     }
 
     try {
       setGenerating(true);
+      const languageToSend =
+        programmingLanguage === "Other" ? (customLanguage.trim() || "Other") : programmingLanguage;
       const data = await adminAssessmentService.generateCodingProblemsFromRawBatch(
         config.clientId,
         {
-          raw_problems: rawProblemsStrings,
+          raw_problems: [rawProblemTrimmed],
           difficulty_level: difficultyLevel,
-          programming_language: programmingLanguage,
+          programming_language: languageToSend,
         }
       );
 
@@ -102,7 +94,7 @@ export function RawCodingProblemSection({
         "success"
       );
 
-      setSlots([{ id: String(Date.now()), raw_problem: "" }]);
+      setRawProblem("");
     } catch (error: any) {
       showToast(
         error?.message || "Failed to create coding problem(s)",
@@ -119,7 +111,7 @@ export function RawCodingProblemSection({
         Add Your Problem
       </Typography>
       <Typography variant="body2" sx={{ color: "#6b7280" }}>
-        Paste your problem statement (title, description, I/O, constraints). You can add up to {MAX_PROBLEMS} problems.
+        Paste your problem statement (title, description, I/O, constraints). One problem per generation.
       </Typography>
 
       <Paper sx={{ p: 3, bgcolor: "#f9fafb" }}>
@@ -156,7 +148,11 @@ export function RawCodingProblemSection({
                     : "Other"
                 }
                 label="Programming language (applies to all)"
-                onChange={(e) => setProgrammingLanguage(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setProgrammingLanguage(v);
+                  if (v !== "Other") setCustomLanguage("");
+                }}
               >
                 {LANGUAGES.map((lang) => (
                   <MenuItem key={lang} value={lang}>
@@ -170,10 +166,8 @@ export function RawCodingProblemSection({
             <TextField
               size="small"
               label="Specify language"
-              value={
-                LANGUAGES.includes(programmingLanguage) ? "" : programmingLanguage
-              }
-              onChange={(e) => setProgrammingLanguage(e.target.value)}
+              value={customLanguage}
+              onChange={(e) => setCustomLanguage(e.target.value)}
               placeholder="e.g. Rust, Kotlin"
               fullWidth
             />
@@ -181,59 +175,42 @@ export function RawCodingProblemSection({
 
           <Divider />
 
-          {slots.map((slot, index) => (
-            <Box key={slot.id}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 1,
-                }}
-              >
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Problem {index + 1}
-                </Typography>
-                {slots.length > 1 && (
-                  <IconButton
-                    size="small"
-                    onClick={() => removeSlot(slot.id)}
-                    sx={{ color: "#ef4444" }}
-                    aria-label="Remove problem slot"
-                  >
-                    <IconWrapper icon="mdi:close" size={18} />
-                  </IconButton>
-                )}
-              </Box>
-              <TextField
-                label="Problem statement (raw text)"
-                value={slot.raw_problem}
-                onChange={(e) => updateSlot(slot.id, e.target.value)}
-                fullWidth
-                multiline
-                minRows={6}
-                maxRows={12}
-                placeholder={"Title: Two Sum\nGiven an array of integers nums and an integer target...\n\nInput/Output, constraints..."}
-                sx={{ mb: 2 }}
-              />
-            </Box>
-          ))}
+          <TextField
+            label="Problem statement (raw text)"
+            value={rawProblem}
+            onChange={(e) => setRawProblem(e.target.value)}
+            fullWidth
+            multiline
+            minRows={6}
+            maxRows={12}
+            placeholder={`Title: Two Sum
 
-          {slots.length < MAX_PROBLEMS && (
-            <Button
-              variant="outlined"
-              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
-              onClick={addSlot}
-              sx={{ alignSelf: "flex-start" }}
-            >
-              Add another problem
-            </Button>
-          )}
+Description:
+Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice.
+
+Input Format:
+- First line: space-separated integers (the array nums)
+- Second line: integer target
+
+Output Format:
+- Two space-separated indices (0-based), or -1 -1 if no solution exists
+
+Example:
+Input: nums = [2, 7, 11, 15], target = 9
+Output: [0, 1]
+Explanation: Because nums[0] + nums[1] == 9
+
+Constraints:
+- 2 <= nums.length <= 10^4
+- -10^9 <= nums[i] <= 10^9
+- Only one valid answer exists.`}
+            sx={{ mb: 2 }}
+          />
 
           <Button
             variant="contained"
             onClick={handleGenerate}
-            disabled={generating || rawProblemsStrings.length === 0}
+            disabled={generating || !rawProblemTrimmed}
             startIcon={
               generating ? (
                 <CircularProgress size={18} color="inherit" />
@@ -253,51 +230,131 @@ export function RawCodingProblemSection({
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
             Created problems ({generatedProblems.length})
           </Typography>
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-              {generatedProblems.map((p) => (
-                <Box
-                  component="li"
-                  key={p.id}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 1,
-                    py: 0.5,
-                  }}
-                >
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {p.title || `Problem #${p.id}`}
-                    </Typography>
-                    {p.difficulty_level && (
-                      <Typography variant="caption" sx={{ color: "#6b7280" }}>
-                        {p.difficulty_level}
-                        {p.programming_language && ` · ${p.programming_language}`}
-                      </Typography>
-                    )}
-                  </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      onGeneratedProblemsChange(
-                        generatedProblems.filter((x) => x.id !== p.id)
-                      );
-                      onCodingProblemIdsChange(
-                        codingProblemIds.filter((id) => id !== p.id)
-                      );
-                    }}
-                    sx={{ color: "#ef4444", flexShrink: 0 }}
-                  >
-                    <IconWrapper icon="mdi:delete-outline" size={18} />
-                  </IconButton>
-                </Box>
-              ))}
-            </Box>
+          <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+            <TableContainer>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                    <TableCell sx={{ fontWeight: 600, width: 48 }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Difficulty</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Language</TableCell>
+                    <TableCell sx={{ fontWeight: 600, width: 100, textAlign: "center" }}>
+                      Actions
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {generatedProblems
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((p, idx) => (
+                      <TableRow key={p.id} hover>
+                        <TableCell sx={{ color: "#6b7280", fontFamily: "monospace" }}>
+                          {page * rowsPerPage + idx + 1}
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 280 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
+                            {p.title || `Problem #${p.id}`}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{p.difficulty_level || "—"}</TableCell>
+                        <TableCell>{p.programming_language || "—"}</TableCell>
+                        <TableCell sx={{ textAlign: "center" }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => setPreviewProblem(p)}
+                            sx={{ color: "#6366f1" }}
+                            title="Preview"
+                          >
+                            <IconWrapper icon="mdi:eye-outline" size={18} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              onGeneratedProblemsChange(
+                                generatedProblems.filter((x) => x.id !== p.id)
+                              );
+                              onCodingProblemIdsChange(
+                                codingProblemIds.filter((id) => id !== p.id)
+                              );
+                              setPage((prev) =>
+                                Math.max(0, Math.min(prev, Math.ceil((generatedProblems.length - 1) / rowsPerPage) - 1))
+                              );
+                            }}
+                            sx={{ color: "#ef4444" }}
+                            title="Remove"
+                          >
+                            <IconWrapper icon="mdi:delete-outline" size={18} />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              component="div"
+              count={generatedProblems.length}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+              labelRowsPerPage="Rows:"
+            />
           </Paper>
         </Box>
       )}
+
+      <Dialog
+        open={!!previewProblem}
+        onClose={() => setPreviewProblem(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            maxHeight: "90vh",
+            borderRadius: 2,
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span>Problem Preview</span>
+          <IconButton size="small" onClick={() => setPreviewProblem(null)} aria-label="Close">
+            <IconWrapper icon="mdi:close" size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {previewProblem && (
+            <Box sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
+              <ProblemDescription
+                problemData={(() => {
+                  const p = previewProblem as Record<string, unknown>;
+                  const details: Record<string, unknown> = {
+                    ...previewProblem,
+                    title: previewProblem.title,
+                    name: previewProblem.title,
+                    problem_title: previewProblem.title,
+                    problem_statement:
+                      previewProblem.problem_statement ||
+                      (previewProblem as any).description ||
+                      "",
+                  };
+                  if (p.solution && typeof p.solution === "object" && !Array.isArray(p.solution)) {
+                    details.pseudo_code = Object.entries(p.solution)
+                      .map(([lang, code]) => `[${lang}]\n${code}`)
+                      .join("\n\n");
+                  }
+                  return { content_title: previewProblem.title, details };
+                })()}
+              />
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

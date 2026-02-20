@@ -420,6 +420,41 @@ export function ProblemDescription({
           />
         </Box>
       )}
+
+      {/* Pseudo code / Solution approach */}
+      {(problemData?.details?.pseudo_code ?? problemData?.details?.sample_solution ?? problemData?.details?.solution_approach) && (
+        <Box sx={{ mt: 3 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: 600, mb: 2, fontSize: "1rem" }}
+          >
+            Pseudo code
+          </Typography>
+          <Box
+            component="pre"
+            sx={{
+              p: 2,
+              backgroundColor: "#f3f4f6",
+              borderRadius: 1.5,
+              border: "1px solid #e5e7eb",
+              overflow: "auto",
+              fontSize: "0.875rem",
+              fontFamily: "monospace",
+              color: "#1f2937",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              lineHeight: 1.6,
+            }}
+          >
+            {String(
+              problemData.details.pseudo_code ??
+                problemData.details.sample_solution ??
+                problemData.details.solution_approach ??
+                ""
+            )}
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }
