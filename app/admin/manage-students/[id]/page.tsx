@@ -2,7 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Box, Typography, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  Pagination,
+  Select,
+  MenuItem,
+  FormControl,
+  CircularProgress,
+} from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -16,6 +33,7 @@ import { PersonalInformationCard } from "@/components/admin/manage-students/Pers
 import { AccountStatusCard } from "@/components/admin/manage-students/AccountStatusCard";
 import { EnrolledCoursesTable } from "@/components/admin/manage-students/EnrolledCoursesTable";
 import { CourseManagementCard } from "@/components/admin/manage-students/CourseManagementCard";
+import { formatDate } from "@/lib/utils/date-utils";
 
 export default function StudentDetailsPage() {
   const router = useRouter();
@@ -27,11 +45,60 @@ export default function StudentDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [assessmentPage, setAssessmentPage] = useState(1);
+  const [assessmentLimit, setAssessmentLimit] = useState(10);
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityLimit, setActivityLimit] = useState(10);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     email: "",
   });
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "-";
+    try {
+      return new Date(value).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });;
+    } catch {
+      return value;
+    }
+  };
+
+  const sectionPaperSx = {
+    p: 3,
+    borderRadius: 3,
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
+    border: "1px solid #e5e7eb",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(249,250,251,0.8) 100%)",
+  } as const;
+
+  const tableHeaderRowSx = {
+    backgroundColor: "#f8fafc",
+    "& .MuiTableCell-root": {
+      fontWeight: 700,
+      color: "#334155",
+      borderBottom: "1px solid #e2e8f0",
+    },
+  } as const;
+
+  const tableContainerSx = {
+    border: "1px solid #e5e7eb",
+    borderRadius: 2,
+    overflowX: "auto",
+    "&::-webkit-scrollbar": { height: 8, width: 8 },
+    "&::-webkit-scrollbar-track": { backgroundColor: "#f1f5f9" },
+    "&::-webkit-scrollbar-thumb": {
+      backgroundColor: "#cbd5e1",
+      borderRadius: 4,
+    },
+  } as const;
 
   useEffect(() => {
     if (!studentId) return;
@@ -134,19 +201,86 @@ export default function StudentDetailsPage() {
   };
 
 
-  if (!student) {
+  if (loading) {
     return (
       <MainLayout>
-        <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-          <Typography variant="h6" sx={{ color: "#6b7280" }}>
-            Student not found
+        <Box
+          sx={{
+            minHeight: "60vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          <CircularProgress size={36} />
+          <Typography variant="body1" sx={{ color: "#64748b", fontWeight: 500 }}>
+            Loading student profile...
           </Typography>
         </Box>
       </MainLayout>
     );
   }
 
+  if (!student) {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            minHeight: "50vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Paper
+            sx={{
+              px: 4,
+              py: 5,
+              textAlign: "center",
+              borderRadius: 3,
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
+            }}
+          >
+            <Box sx={{ mb: 1.5 }}>
+              <IconWrapper icon="mdi:account-alert-outline" size={38} color="#94a3b8" />
+            </Box>
+            <Typography variant="h6" sx={{ color: "#334155", fontWeight: 600 }}>
+              Student not found
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
+              The requested student profile is unavailable.
+            </Typography>
+          </Paper>
+        </Box>
+      </MainLayout>
+    );
+  }
+
   const { personal_info, academic_summary, enrolled_courses } = student;
+  const assessmentTotalPages = Math.max(
+    1,
+    Math.ceil((student.assessments?.length || 0) / assessmentLimit)
+  );
+  const assessmentStartIndex = (assessmentPage - 1) * assessmentLimit;
+  const assessmentEndIndex = assessmentStartIndex + assessmentLimit;
+  const paginatedAssessments = (student.assessments || []).slice(
+    assessmentStartIndex,
+    assessmentEndIndex
+  );
+  const activityTotalPages = Math.max(
+    1,
+    Math.ceil((student.activity_pattern_30_days?.length || 0) / activityLimit)
+  );
+  const activityStartIndex = (activityPage - 1) * activityLimit;
+  const activityEndIndex = activityStartIndex + activityLimit;
+  const paginatedActivity = (student.activity_pattern_30_days || []).slice(
+    activityStartIndex,
+    activityEndIndex
+  );
 
   return (
     <MainLayout>
@@ -196,6 +330,27 @@ export default function StudentDetailsPage() {
                 saving={saving}
                 onToggle={handleToggleActive}
               />
+                 {/* Activity Breakdown */}
+                 <Paper sx={sectionPaperSx}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
+                >
+                  Activity Breakdown
+                </Typography>
+                {student.activity_breakdown &&
+                Object.keys(student.activity_breakdown).length > 0 ? (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                    {Object.entries(student.activity_breakdown).map(([type, count]) => (
+                      <Chip key={type} label={`${type}: ${count}`} sx={{ fontWeight: 500 }} />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    No activity breakdown available.
+                  </Typography>
+                )}
+              </Paper>
             </Box>
           </Box>
 
@@ -232,6 +387,244 @@ export default function StudentDetailsPage() {
 
               {/* Enrolled Courses Table */}
               <EnrolledCoursesTable courses={enrolled_courses} />
+
+              {/* Assessment History */}
+              <Paper sx={sectionPaperSx}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
+                >
+                  Assessment History
+                </Typography>
+                {student.assessments?.length ? (
+                  <>
+                    <TableContainer sx={tableContainerSx}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow sx={tableHeaderRowSx}>
+                            <TableCell>Assessment</TableCell>
+                            <TableCell>Score</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Started At</TableCell>
+                            <TableCell>Submitted At</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {paginatedAssessments.map((assessment) => (
+                            <TableRow
+                              key={assessment.id}
+                              sx={{
+                                "&:nth-of-type(odd)": { backgroundColor: "#fcfdff" },
+                                "&:hover": { backgroundColor: "#f8fafc" },
+                              }}
+                            >
+                              <TableCell>
+                                {assessment.assessment_title || assessment.title || `Assessment #${assessment.id}`}
+                              </TableCell>
+                              <TableCell>{assessment.score ?? "-"}</TableCell>
+                              <TableCell>
+                                <Chip
+                                  size="small"
+                                  label={assessment.status || "N/A"}
+                                  sx={{
+                                    backgroundColor:
+                                      assessment.status === "submitted" ? "#d1fae5" : "#f3f4f6",
+                                    color:
+                                      assessment.status === "submitted" ? "#065f46" : "#6b7280",
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell>{formatDateTime(assessment.started_at || assessment.date)}</TableCell>
+                              <TableCell>{formatDateTime(assessment.submitted_at || assessment.date)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+
+                    <Box
+                      sx={{
+                        mt: 2,
+                        pt: 2,
+                        borderTop: "1px solid #e5e7eb",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexDirection: { xs: "column", sm: "row" },
+                        gap: 2,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#6b7280",
+                            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                          }}
+                        >
+                          Showing{" "}
+                          {paginatedAssessments.length === 0 ? 0 : assessmentStartIndex + 1} to{" "}
+                          {Math.min(assessmentEndIndex, student.assessments.length)} of{" "}
+                          {student.assessments.length} assessments
+                        </Typography>
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                          <Select
+                            value={assessmentLimit}
+                            onChange={(e) => {
+                              setAssessmentLimit(Number(e.target.value));
+                              setAssessmentPage(1);
+                            }}
+                            displayEmpty
+                            inputProps={{ "aria-label": "Assessments per page" }}
+                            sx={{
+                              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                            }}
+                          >
+                            <MenuItem value={5}>5 per page</MenuItem>
+                            <MenuItem value={10}>10 per page</MenuItem>
+                            <MenuItem value={15}>15 per page</MenuItem>
+                            <MenuItem value={30}>30 per page</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
+                      <Pagination
+                        count={assessmentTotalPages}
+                        page={assessmentPage}
+                        onChange={(_, value) => setAssessmentPage(value)}
+                        color="primary"
+                        size="small"
+                        showFirstButton
+                        showLastButton
+                      />
+                    </Box>
+                  </>
+                ) : (
+                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    No assessments found for this student.
+                  </Typography>
+                )}
+              </Paper>
+
+           
+
+              {/* Activity Pattern - 30 Days */}
+              <Paper sx={sectionPaperSx}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
+                >
+                  Last 30 Days Activity
+                </Typography>
+                {student.activity_pattern_30_days?.length ? (
+                  <>
+                    <TableContainer sx={tableContainerSx}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow sx={tableHeaderRowSx}>
+                            <TableCell>Date</TableCell>
+                            <TableCell>Activities</TableCell>
+                            <TableCell>Time Spent (hrs)</TableCell>
+                            <TableCell>Marks Earned</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {paginatedActivity.map((day) => (
+                            <TableRow
+                              key={day.date}
+                              sx={{
+                                "&:nth-of-type(odd)": { backgroundColor: "#fcfdff" },
+                                "&:hover": { backgroundColor: "#f8fafc" },
+                              }}
+                            >
+                              <TableCell>{formatDate(day.date)}</TableCell>
+                              <TableCell>{day.activity_count}</TableCell>
+                              <TableCell>{day.time_spent_hours}</TableCell>
+                              <TableCell>{day.marks_earned}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+
+                    <Box
+                    sx={{
+                      mt: 2,
+                      pt: 2,
+                      borderTop: "1px solid #e5e7eb",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: 2,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "#6b7280",
+                          fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                        }}
+                      >
+                        Showing{" "}
+                        {paginatedActivity.length === 0 ? 0 : activityStartIndex + 1} to{" "}
+                        {Math.min(
+                          activityEndIndex,
+                          student.activity_pattern_30_days.length
+                        )}{" "}
+                        of {student.activity_pattern_30_days.length} days
+                      </Typography>
+                      <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <Select
+                          value={activityLimit}
+                          onChange={(e) => {
+                            setActivityLimit(Number(e.target.value));
+                            setActivityPage(1);
+                          }}
+                          displayEmpty
+                          inputProps={{ "aria-label": "Days per page" }}
+                          sx={{
+                            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                          }}
+                        >
+                          <MenuItem value={5}>5 per page</MenuItem>
+                          <MenuItem value={10}>10 per page</MenuItem>
+                          <MenuItem value={15}>15 per page</MenuItem>
+                          <MenuItem value={30}>30 per page</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    <Pagination
+                      count={activityTotalPages}
+                      page={activityPage}
+                      onChange={(_, value) => setActivityPage(value)}
+                      color="primary"
+                      size="small"
+                      showFirstButton
+                      showLastButton
+                    />
+                    </Box>
+                  </>
+                ) : (
+                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    No 30-day activity data available.
+                  </Typography>
+                )}
+              </Paper>
             </Box>
           </Box>
         </Box>

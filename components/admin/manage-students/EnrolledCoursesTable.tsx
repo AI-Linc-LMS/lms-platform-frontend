@@ -22,6 +22,14 @@ import { useState } from "react";
 interface Course {
   id: number;
   title?: string;
+  description?: string;
+  enrollment_date?: string | null;
+  marks?: number;
+  progress_percentage?: number;
+  total_contents?: number;
+  completed_contents?: number;
+  last_activity?: string | null;
+  activity_count?: number;
   category?: string;
   level?: string;
   progress?: number;
@@ -74,6 +82,30 @@ export function EnrolledCoursesTable({
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
   const paginatedCourses = courses.slice(startIndex, endIndex);
+
+  const getProgress = (course: Course) => {
+    if (typeof course.progress === "number") return course.progress;
+    if (typeof course.progress_percentage === "number")
+      return course.progress_percentage;
+    if (
+      typeof course.completed_contents === "number" &&
+      typeof course.total_contents === "number" &&
+      course.total_contents > 0
+    ) {
+      return Number(
+        ((course.completed_contents / course.total_contents) * 100).toFixed(2)
+      );
+    }
+    return 0;
+  };
+
+  const getDerivedStatus = (course: Course) => {
+    if (course.status) return course.status;
+    const progress = getProgress(course);
+    if (progress >= 100) return "Completed";
+    if (progress > 0) return "Ongoing";
+    return "Not Started";
+  };
 
   return (
     <Paper
@@ -151,16 +183,7 @@ export function EnrolledCoursesTable({
                   >
                     Course
                   </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      display: { xs: "none", md: "table-cell" },
-                    }}
-                  >
-                    Category
-                  </TableCell>
+
                   <TableCell
                     sx={{
                       fontWeight: 600,
@@ -228,7 +251,7 @@ export function EnrolledCoursesTable({
                           >
                             {course.title || "N/A"}
                           </Typography>
-                          {course.lessons_count && course.hours && (
+                          {course.lessons_count && course.hours ? (
                             <Typography
                               variant="caption"
                               sx={{
@@ -238,20 +261,24 @@ export function EnrolledCoursesTable({
                             >
                               {course.lessons_count} lessons • {course.hours}h
                             </Typography>
+                          ) : (
+                            typeof course.completed_contents === "number" &&
+                            typeof course.total_contents === "number" && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "#6b7280",
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {course.completed_contents}/{course.total_contents} contents
+                              </Typography>
+                            )
                           )}
                         </Box>
                       </Box>
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        display: { xs: "none", md: "table-cell" },
-                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ color: "#374151" }}>
-                        {course.category || ""} {course.level || ""}
-                      </Typography>
-                    </TableCell>
+                    
                     <TableCell>
                       <Box
                         sx={{
@@ -270,15 +297,13 @@ export function EnrolledCoursesTable({
                             alignItems: "center",
                             justifyContent: "center",
                             background: `conic-gradient(from 0deg, #6366f1 0deg ${
-                              (course.progress || 0) * 3.6
-                            }deg, #e5e7eb ${
-                              (course.progress || 0) * 3.6
-                            }deg 360deg)`,
+                              getProgress(course) * 3.6
+                            }deg, #e5e7eb ${getProgress(course) * 3.6}deg 360deg)`,
                             "&::before": {
                               content: '""',
                               position: "absolute",
-                              width: "70%",
-                              height: "70%",
+                              width: "80%",
+                              height: "80%",
                               borderRadius: "50%",
                               backgroundColor: "white",
                             },
@@ -287,24 +312,24 @@ export function EnrolledCoursesTable({
                           <Typography
                             variant="caption"
                             sx={{
-                              fontWeight: 600,
+                              fontWeight: 500,
                               color: "#111827",
-                              fontSize: "0.7rem",
+                              fontSize: "0.6rem",
                               zIndex: 1,
                             }}
                           >
-                            {course.progress || 0}%
+                            {getProgress(course)}%
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={course.status || "N/A"}
+                        label={getDerivedStatus(course)}
                         size="small"
                         sx={{
-                          backgroundColor: getStatusBgColor(course.status),
-                          color: getStatusColor(course.status),
+                          backgroundColor: getStatusBgColor(getDerivedStatus(course)),
+                          color: getStatusColor(getDerivedStatus(course)),
                           fontWeight: 600,
                           fontSize: "0.75rem",
                         }}
@@ -315,7 +340,7 @@ export function EnrolledCoursesTable({
                         variant="body2"
                         sx={{ fontWeight: 600, color: "#111827" }}
                       >
-                        {course.score || 0}/100
+                        {course.score ?? course.marks ?? 0}
                       </Typography>
                     </TableCell>
                     <TableCell
