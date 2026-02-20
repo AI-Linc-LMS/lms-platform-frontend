@@ -19,9 +19,15 @@ import {
   Select,
   MenuItem,
   FormControl,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
+import { ProblemDescription } from "@/components/coding/ProblemDescription";
+import { EyeIcon } from "lucide-react";
 
 interface CodingProblemSelectionSectionProps {
   selectedIds: number[];
@@ -39,6 +45,24 @@ export function CodingProblemSelectionSection({
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [previewProblem, setPreviewProblem] = useState<CodingProblemListItem | null>(null);
+
+  const problemDataForPreview = (problem: CodingProblemListItem) => {
+    const details = { ...problem } as Record<string, unknown>;
+    details.title = problem.title;
+    details.name = problem.title;
+    details.problem_title = problem.title;
+    details.problem_statement = problem.problem_statement ?? (problem as any).description ?? "";
+    if (problem.solution && typeof problem.solution === "object" && !Array.isArray(problem.solution)) {
+      details.pseudo_code = Object.entries(problem.solution)
+        .map(([lang, code]) => `[${lang}]\n${code}`)
+        .join("\n\n");
+    }
+    return {
+      content_title: problem.title,
+      details,
+    };
+  };
 
   const filteredProblems = useMemo(() => {
     if (!searchTerm.trim()) return codingProblems;
@@ -164,8 +188,8 @@ export function CodingProblemSelectionSection({
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Topic
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                    Language
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 80, textAlign: "center" }}>
+                    Actions
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -242,12 +266,19 @@ export function CodingProblemSelectionSection({
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                        {problem.topic || "-"}
+                        {problem.tags || "-"}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                        {problem.programming_language || "-"}
+                      <IconButton
+                            size="small"
+                            onClick={() => setPreviewProblem(problem)}
+                            sx={{ color: "#6366f1" }}
+                            title="Preview"
+                          >
+                            <IconWrapper icon="mdi:eye-outline" size={18} />
+                          </IconButton>
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -334,6 +365,43 @@ export function CodingProblemSelectionSection({
           )}
         </Paper>
       )}
+
+      <Dialog
+        open={!!previewProblem}
+        onClose={() => setPreviewProblem(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { maxHeight: "90vh", borderRadius: 2 } }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>Problem Preview</span>
+          <IconButton
+            size="small"
+            onClick={() => setPreviewProblem(null)}
+            aria-label="Close"
+          >
+            <IconWrapper icon="mdi:close" size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          dividers
+          sx={{ p: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}
+        >
+          {previewProblem && (
+            <Box sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
+              <ProblemDescription
+                problemData={problemDataForPreview(previewProblem)}
+              />
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
