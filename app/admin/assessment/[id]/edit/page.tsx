@@ -230,7 +230,7 @@ export default function AssessmentEditPage() {
     }
   }, [showToast]);
 
-  // Merge assessment-linked courses into list so selected courses can be shown and removed
+  
   const coursesWithAssessment = useMemo(() => {
     const byId = new Map<number, { id: number; title?: string; name?: string }>();
     courses.forEach((c: any) => byId.set(c.id, { id: c.id, title: c.title, name: c.name }));
