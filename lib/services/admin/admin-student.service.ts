@@ -98,6 +98,14 @@ export interface StudentDetail {
   enrolled_courses: Array<{
     id: number;
     title?: string;
+    description?: string;
+    enrollment_date?: string | null;
+    marks?: number;
+    progress_percentage?: number;
+    total_contents?: number;
+    completed_contents?: number;
+    last_activity?: string | null;
+    activity_count?: number;
     category?: string;
     level?: string;
     progress?: number;
@@ -115,10 +123,15 @@ export interface StudentDetail {
   }>;
   assessments: Array<{
     id: number;
-    title: string;
-    score: number;
-    max_score: number;
-    date: string;
+    title?: string;
+    assessment_title?: string;
+    score?: number;
+    max_score?: number;
+    date?: string;
+    status?: string;
+    submitted_at?: string | null;
+    started_at?: string | null;
+    offered_scholarship_percentage?: number | null;
   }>;
   activity_breakdown: Record<string, number>;
 }
