@@ -122,6 +122,11 @@ export function AssessmentSettingsSection({
           }}
           loading={loadingCourses}
           disabled={loadingCourses}
+          renderOption={(props, option: any) => (
+            <li {...props} key={option?.id != null ? option.id : props.id}>
+              {option?.title ?? option?.name ?? `Course ${option?.id}`}
+            </li>
+          )}
           renderInput={(params) => (
             <TextField
               {...params}

@@ -233,11 +233,13 @@ export default function AssessmentEditPage() {
   
   const coursesWithAssessment = useMemo(() => {
     const byId = new Map<number, { id: number; title?: string; name?: string }>();
-    courses.forEach((c: any) => byId.set(c.id, { id: c.id, title: c.title, name: c.name }));
-    (assessment as any)?.courses?.forEach((c: any) => {
-      if (c?.id != null && !byId.has(c.id))
-        byId.set(c.id, { id: c.id, title: c.title, name: c.name });
-    });
+    const add = (c: any) => {
+      if (c?.id == null) return;
+      const id = Number(c.id);
+      if (!byId.has(id)) byId.set(id, { id, title: c.title, name: c.name });
+    };
+    courses.forEach(add);
+    (assessment as any)?.courses?.forEach(add);
     return Array.from(byId.values());
   }, [courses, assessment]);
 
