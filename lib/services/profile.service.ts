@@ -149,7 +149,7 @@ export const profileService = {
   updateUserProfile: async (
     data: Partial<UserProfile>
   ): Promise<UserProfile> => {
-    const response = await apiClient.post<UserProfile>(
+    const response = await apiClient.put<UserProfile>(
       `/accounts/clients/${config.clientId}/user-profile/`,
       data
     );

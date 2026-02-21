@@ -353,6 +353,7 @@ export function ProfileHeader({
             placeholder="e.g., Software Engineer | Full Stack Developer | React Specialist"
             helperText={
               <Box
+                component="span"
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
