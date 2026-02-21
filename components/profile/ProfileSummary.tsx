@@ -2,7 +2,7 @@
 
 import { Box, Paper, Typography, Button, TextField } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface ProfileSummaryProps {
@@ -22,6 +22,10 @@ export function ProfileSummary({
   const [formData, setFormData] = useState({
     bio: profile.bio || "",
   });
+
+  useEffect(() => {
+    if (!editing) setFormData({ bio: profile.bio || "" });
+  }, [profile.bio, editing]);
 
   const bio = profile.bio || "";
   const shouldTruncate = bio.length > MAX_PREVIEW_LENGTH;
@@ -88,7 +92,10 @@ export function ProfileSummary({
             variant="text"
             size="small"
             startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setFormData({ bio: profile.bio || "" });
+              setEditing(true);
+            }}
             sx={{
               textTransform: "none",
               color: "#0a66c2",

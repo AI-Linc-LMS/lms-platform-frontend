@@ -2,7 +2,7 @@
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, Autocomplete } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserProfile, Project } from "@/lib/services/profile.service";
 
 interface ProjectsSectionProps {
@@ -29,6 +29,10 @@ export function ProjectsSection({
     end_date: "",
     current: false,
   });
+
+  useEffect(() => {
+    if (!editing && editingIndex === null) setProjects(profile.projects || []);
+  }, [profile.projects, editing, editingIndex]);
 
   const handleSave = async () => {
     try {
@@ -389,6 +393,7 @@ export function ProjectsSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -405,6 +410,7 @@ export function ProjectsSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
