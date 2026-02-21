@@ -194,7 +194,7 @@ export default function ProfilePage() {
             userName={profile.first_name + " " + profile.last_name}
             profilePicUrl={profile.profile_picture}
             role={profile.role || "Student"}
-            headline={profile.headline}
+            headline={profile.headline ?? undefined}
             location={location}
             onEditProfilePic={async (file: File) => {
               try {
@@ -287,13 +287,16 @@ export default function ProfilePage() {
                 <UserDetailsCard
                   username={profile.username}
                   emailAddress={profile.email}
-                  socialLinks={profile.social_links}
+                  socialLinks={{
+                    github: profile.social_links?.github || "",
+                    linkedin: profile.social_links?.linkedin || "",
+                  }}
                   externalProfiles={{
-                    portfolio_website_url: profile.portfolio_website_url,
-                    leetcode_url: profile.leetcode_url,
-                    hackerrank_url: profile.hackerrank_url,
-                    kaggle_url: profile.kaggle_url,
-                    medium_url: profile.medium_url,
+                    portfolio_website_url: profile.portfolio_website_url ?? undefined,
+                    leetcode_url: profile.leetcode_url ?? undefined,
+                    hackerrank_url: profile.hackerrank_url ?? undefined,
+                    kaggle_url: profile.kaggle_url ?? undefined,
+                    medium_url: profile.medium_url ?? undefined,
                   }}
                 />
 
@@ -426,7 +429,7 @@ export default function ProfilePage() {
                   phone: profile.phone_number,
                   location: "",
                   photo: profile.profile_picture,
-                  summary: profile.bio,
+                  summary: profile.bio ?? "",
                 },
               }}
             />
