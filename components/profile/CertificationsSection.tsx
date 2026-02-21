@@ -2,7 +2,7 @@
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserProfile, Certification } from "@/lib/services/profile.service";
 
 interface CertificationsSectionProps {
@@ -28,6 +28,10 @@ export function CertificationsSection({
     credential_id: "",
     credential_url: "",
   });
+
+  useEffect(() => {
+    if (!editing && editingIndex === null) setCertifications(profile.certifications || []);
+  }, [profile.certifications, editing, editingIndex]);
 
   const handleSave = async () => {
     try {
@@ -366,6 +370,7 @@ export function CertificationsSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -382,6 +387,7 @@ export function CertificationsSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,

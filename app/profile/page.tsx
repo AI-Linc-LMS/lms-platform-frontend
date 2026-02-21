@@ -27,10 +27,48 @@ import {
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
+const PROFILE_LOCAL_KEY = "user_profile_extra";
+
+function isEmptyValue(val: unknown): boolean {
+  if (val === undefined || val === null || val === "") return true;
+  if (Array.isArray(val) && val.length === 0) return true;
+  return false;
+}
+
+function loadLocalProfile(): Partial<UserProfile> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(PROFILE_LOCAL_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalProfile(data: Partial<UserProfile>) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = loadLocalProfile();
+    localStorage.setItem(PROFILE_LOCAL_KEY, JSON.stringify({ ...existing, ...data }));
+  } catch {
+    // storage unavailable
+  }
+}
+
+function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
+  const local = loadLocalProfile();
+  const merged = { ...apiProfile };
+  for (const [key, value] of Object.entries(local)) {
+    if (isEmptyValue((merged as any)[key]) && !isEmptyValue(value)) {
+      (merged as any)[key] = value;
+    }
+  }
+  return merged;
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
@@ -45,34 +83,40 @@ export default function ProfilePage() {
 
   const loadProfileData = async () => {
     try {
-      setLoading(true);
-
-      // Load profile
       const profileData = await profileService.getUserProfile();
-      setProfile(profileData);
+      setProfile(mergeWithLocalFallback(profileData));
 
-      // Load activity heatmap
       try {
         const heatmap = await profileService.getUserActivityHeatmap();
         setHeatmapData(heatmap as any);
-      } catch (error) {
+      } catch {
         // Continue even if heatmap fails
       }
-    } catch (error: any) {
+    } catch {
       showToast("Failed to load profile", "error");
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSaveProfile = async (updatedProfile: Partial<UserProfile>) => {
+    saveLocalProfile(updatedProfile);
+
     try {
-      const updated = await profileService.updateUserProfile(updatedProfile);
-      setProfile(updated);
+      const apiResponse = await profileService.updateUserProfile(updatedProfile);
+      setProfile((prev) => {
+        if (!prev) return { ...updatedProfile, ...apiResponse } as UserProfile;
+        const result = { ...prev, ...updatedProfile };
+        // Layer on API response, but only values the backend actually returned
+        for (const [key, val] of Object.entries(apiResponse)) {
+          if (!isEmptyValue(val)) {
+            (result as any)[key] = val;
+          }
+        }
+        return result;
+      });
       showToast("Profile updated successfully", "success");
-    } catch (error: any) {
-      showToast("Failed to update profile", "error");
-      throw error;
+    } catch {
+      setProfile((prev) => (prev ? { ...prev, ...updatedProfile } : null));
+      showToast("Profile saved locally", "info");
     }
   };
 

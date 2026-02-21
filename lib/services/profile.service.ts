@@ -78,30 +78,23 @@ export interface UserProfile {
   username: string;
   profile_picture: string;
   phone_number: string;
-  bio: string;
-  social_links: {
-    github: string;
-    linkedin: string;
-  };
+  bio: string | null;
+  social_links: Record<string, string>;
   date_of_birth: string | null;
-  role?: string;
-  headline?: string;
-  cover_photo_url?: string;
-  // Education fields
-  college_name?: string;
-  degree_type?: string; // B.Tech, BCA, B.Sc, MCA, M.Tech, Other
-  branch?: string;
-  graduation_year?: string;
-  // Location
-  city?: string;
-  state?: string;
-  // External profiles
-  portfolio_website_url?: string;
-  leetcode_url?: string;
-  hackerrank_url?: string;
-  kaggle_url?: string;
-  medium_url?: string;
-  // Arrays
+  role?: string | null;
+  headline?: string | null;
+  cover_photo_url?: string | null;
+  college_name?: string | null;
+  degree_type?: string | null;
+  branch?: string | null;
+  graduation_year?: string | null;
+  city?: string | null;
+  state?: string | null;
+  portfolio_website_url?: string | null;
+  leetcode_url?: string | null;
+  hackerrank_url?: string | null;
+  kaggle_url?: string | null;
+  medium_url?: string | null;
   skills?: Skill[];
   projects?: Project[];
   experience?: Experience[];

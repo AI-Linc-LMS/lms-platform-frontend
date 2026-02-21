@@ -2,7 +2,7 @@
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserProfile, Achievement } from "@/lib/services/profile.service";
 
 interface AchievementsSectionProps {
@@ -26,6 +26,10 @@ export function AchievementsSection({
     date: "",
     organization: "",
   });
+
+  useEffect(() => {
+    if (!editing && editingIndex === null) setAchievements(profile.achievements || []);
+  }, [profile.achievements, editing, editingIndex]);
 
   const handleSave = async () => {
     try {
@@ -354,6 +358,7 @@ export function AchievementsSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -370,6 +375,7 @@ export function AchievementsSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
