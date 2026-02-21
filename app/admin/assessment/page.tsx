@@ -433,7 +433,7 @@ export default function AssessmentPage() {
   // Filter assessments
   const filteredAssessments = useMemo(() => {
     return assessments.filter((assessment) => {
-      // Search filter (title, courses, colleges)
+      // Search filter (title, courses)
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchesTitle =
@@ -444,12 +444,8 @@ export default function AssessmentPage() {
         const matchesCourses = assessment.courses?.some(
           (course) => course.title.toLowerCase().includes(query)
         ) || false;
-        
-        const matchesColleges = assessment.colleges?.some(
-          (college) => college.toLowerCase().includes(query)
-        ) || false;
-        
-        if (!matchesTitle && !matchesCourses && !matchesColleges) return false;
+
+        if (!matchesTitle && !matchesCourses) return false;
       }
 
       // Status filter
@@ -590,7 +586,7 @@ export default function AssessmentPage() {
             }}
           >
             <TextField
-              placeholder="Search by title, courses, or colleges..."
+              placeholder="Search by title or courses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{

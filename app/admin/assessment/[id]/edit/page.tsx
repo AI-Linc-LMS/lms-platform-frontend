@@ -200,7 +200,13 @@ export default function AssessmentEditPage() {
       );
       setCurrency(anyData.currency ?? "INR");
       setIsActive(data.is_active ?? true);
-      setCourseIds(Array.isArray((data as any).course_ids) ? (data as any).course_ids : []);
+      const anyDataCourses = (data as any);
+      const loadedCourseIds = Array.isArray(anyDataCourses.course_ids)
+        ? anyDataCourses.course_ids
+        : Array.isArray(anyDataCourses.courses)
+          ? (anyDataCourses.courses as { id: number }[]).map((c) => c.id)
+          : [];
+      setCourseIds(loadedCourseIds);
       setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
       setSendCommunication((data as any).send_communication ?? false);
@@ -223,6 +229,19 @@ export default function AssessmentEditPage() {
       setLoadingCourses(false);
     }
   }, [showToast]);
+
+  
+  const coursesWithAssessment = useMemo(() => {
+    const byId = new Map<number, { id: number; title?: string; name?: string }>();
+    const add = (c: any) => {
+      if (c?.id == null) return;
+      const id = Number(c.id);
+      if (!byId.has(id)) byId.set(id, { id, title: c.title, name: c.name });
+    };
+    courses.forEach(add);
+    (assessment as any)?.courses?.forEach(add);
+    return Array.from(byId.values());
+  }, [courses, assessment]);
 
   const loadQuestions = useCallback(async () => {
     if (!assessmentId || !config.clientId) return;
@@ -292,7 +311,7 @@ export default function AssessmentEditPage() {
         proctoring_enabled: proctoringEnabled,
         send_communication: sendCommunication,
         show_result: showResult,
-        course_ids: courseIds.length ? courseIds : undefined,
+        course_ids: courseIds,
         colleges: colleges.length ? colleges : undefined,
       };
       Object.keys(payload).forEach((k) => {
@@ -574,7 +593,7 @@ export default function AssessmentEditPage() {
                   currency={currency}
                   isActive={isActive}
                   courseIds={courseIds}
-                  courses={courses}
+                  courses={coursesWithAssessment}
                   loadingCourses={loadingCourses}
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}

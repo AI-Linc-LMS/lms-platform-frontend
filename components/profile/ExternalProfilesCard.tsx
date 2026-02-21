@@ -2,7 +2,7 @@
 
 import { Box, Paper, Typography, TextField, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface ExternalProfilesCardProps {
@@ -23,6 +23,18 @@ export function ExternalProfilesCard({
   });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const syncFormFromProfile = () => ({
+    portfolio_website_url: profile.portfolio_website_url || "",
+    leetcode_url: profile.leetcode_url || "",
+    hackerrank_url: profile.hackerrank_url || "",
+    kaggle_url: profile.kaggle_url || "",
+    medium_url: profile.medium_url || "",
+  });
+
+  useEffect(() => {
+    if (!editing) setFormData(syncFormFromProfile());
+  }, [profile, editing]);
 
   const handleChange =
     (field: keyof typeof formData) =>
@@ -264,7 +276,10 @@ export function ExternalProfilesCard({
             variant="text"
             size="small"
             startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setFormData(syncFormFromProfile());
+              setEditing(true);
+            }}
             sx={{
               textTransform: "none",
               color: "#0a66c2",

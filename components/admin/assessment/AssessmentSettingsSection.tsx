@@ -16,6 +16,7 @@ import {
   CircularProgress,
   Autocomplete,
   Chip,
+  Button,
 } from "@mui/material";
 
 interface AssessmentSettingsSectionProps {
@@ -104,44 +105,48 @@ export function AssessmentSettingsSection({
           required
           inputProps={{ min: 0 }}
         />
-        <FormControl fullWidth>
-          <InputLabel>Courses (optional)</InputLabel>
-          <Select
-            multiple
-            value={courseIds}
-            onChange={(e) => {
-              const value = e.target.value;
-              onCourseIdsChange(typeof value === "string" ? [] : value);
-            }}
-            input={<OutlinedInput label="Courses (optional)" />}
-            renderValue={(selected) => {
-              if (selected.length === 0) return "";
-              return selected
-                .map((id) => {
-                  const course = courses.find((c) => c.id === id);
-                  return course?.title || course?.name || `Course ${id}`;
-                })
-                .join(", ");
-            }}
-            disabled={loadingCourses}
-          >
-            {loadingCourses ? (
-              <MenuItem disabled>
-                <CircularProgress size={20} sx={{ mr: 1 }} />
-                Loading courses...
-              </MenuItem>
-            ) : courses.length === 0 ? (
-              <MenuItem disabled>No courses available</MenuItem>
-            ) : (
-              courses.map((course) => (
-                <MenuItem key={course.id} value={course.id}>
-                  <Checkbox checked={courseIds.indexOf(course.id) > -1} />
-                  <ListItemText primary={course.title || course.name || `Course ${course.id}`} />
-                </MenuItem>
-              ))
-            )}
-          </Select>
-        </FormControl>
+        <Autocomplete
+          multiple
+          options={courses}
+          getOptionLabel={(option: any) =>
+            option?.title ?? option?.name ?? `Course ${option?.id ?? ""}`
+          }
+          isOptionEqualToValue={(option: any, value: any) =>
+            option?.id === value?.id
+          }
+          value={courseIds
+            .map((id) => courses.find((c: any) => Number(c?.id) === Number(id)))
+            .filter(Boolean)}
+          onChange={(_, newValue: any[]) => {
+            onCourseIdsChange(newValue.map((c) => c.id));
+          }}
+          loading={loadingCourses}
+          disabled={loadingCourses}
+          renderOption={(props, option: any) => (
+            <li {...props} key={option?.id != null ? option.id : props.id}>
+              {option?.title ?? option?.name ?? `Course ${option?.id}`}
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Courses (optional)"
+              placeholder="Select courses or remove selected"
+              helperText="Select multiple courses. Click × on a chip to remove."
+            />
+          )}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip
+                label={option?.title ?? option?.name ?? `Course ${option?.id}`}
+                {...getTagProps({ index })}
+                key={option?.id ?? index}
+                size="small"
+                onDelete={getTagProps({ index }).onDelete}
+              />
+            ))
+          }
+        />
         <Autocomplete
           multiple
           freeSolo
@@ -169,31 +174,45 @@ export function AssessmentSettingsSection({
             ))
           }
         />
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-            gap: 2,
-          }}
-        >
-          <TextField
-            label="Start date & time (optional)"
-            type="text"
-            value={startTime}
-            onChange={(e) => onStartTimeChange(e.target.value)}
-            fullWidth
-            placeholder="DD MM YYYY HH:MM:SS"
-            helperText="e.g. 14 02 2026 12:30:00 (day month year, 24-hour). IST timezone."
-          />
-          <TextField
-            label="End date & time (optional)"
-            type="text"
-            value={endTime}
-            onChange={(e) => onEndTimeChange(e.target.value)}
-            fullWidth
-            placeholder="DD MM YYYY HH:MM:SS"
-            helperText="e.g. 15 02 2026 18:00:00 (day month year, 24-hour). IST timezone."
-          />
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            <TextField
+              label="Start date & time (optional)"
+              type="text"
+              value={startTime}
+              onChange={(e) => onStartTimeChange(e.target.value)}
+              fullWidth
+              placeholder="DD MM YYYY HH:MM:SS"
+              helperText="e.g. 14 02 2026 12:30:00 (day month year, 24-hour). IST timezone."
+            />
+            <TextField
+              label="End date & time (optional)"
+              type="text"
+              value={endTime}
+              onChange={(e) => onEndTimeChange(e.target.value)}
+              fullWidth
+              placeholder="DD MM YYYY HH:MM:SS"
+              helperText="e.g. 15 02 2026 18:00:00 (day month year, 24-hour). IST timezone."
+            />
+          </Box>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              onStartTimeChange("");
+              onEndTimeChange("");
+            }}
+            disabled={!startTime && !endTime}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            Reset date & time
+          </Button>
         </Box>
         <Box
           sx={{

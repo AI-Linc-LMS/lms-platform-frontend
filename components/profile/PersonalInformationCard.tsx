@@ -2,7 +2,7 @@
 
 import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface PersonalInformationCardProps {
@@ -31,6 +31,25 @@ export function PersonalInformationCard({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const syncFormFromProfile = () => ({
+    first_name: profile.first_name || "",
+    last_name: profile.last_name || "",
+    phone_number: profile.phone_number || "",
+    date_of_birth: profile.date_of_birth || "",
+    github: profile.social_links?.github || "",
+    linkedin: profile.social_links?.linkedin || "",
+    college_name: profile.college_name || "",
+    degree_type: profile.degree_type || "",
+    branch: profile.branch || "",
+    graduation_year: profile.graduation_year || "",
+    city: profile.city || "",
+    state: profile.state || "",
+  });
+
+  useEffect(() => {
+    if (!editing) setFormData(syncFormFromProfile());
+  }, [profile, editing]);
+
   const handleChange =
     (field: keyof typeof formData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -51,13 +70,11 @@ export function PersonalInformationCard({
     try {
       setSaving(true);
       // Prepare data in the exact format required by API
-      const dataToSave = {
+      const dataToSave: Partial<UserProfile> = {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone_number: formData.phone_number,
         date_of_birth: formData.date_of_birth || null,
-        emailNotification: false,
-        inAppNotification: true,
         social_links: {
           linkedin: formData.linkedin || "",
           github: formData.github || "",
@@ -134,7 +151,10 @@ export function PersonalInformationCard({
             variant="text"
             size="small"
             startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setFormData(syncFormFromProfile());
+              setEditing(true);
+            }}
             sx={{
               textTransform: "none",
               color: "#0a66c2",
