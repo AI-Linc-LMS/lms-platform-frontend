@@ -79,34 +79,49 @@ function formatSubmissionDate(iso: string | null | undefined): string {
   }
 }
 
-/** Convert datetime-local, ISO, or "dd mm yyyy hh:mm:ss" to "dd mm yyyy hh:mm:ss" (user-friendly) */
-function formatToDDMMYYYYHHMMSS(dateTimeString: string | null | undefined): string {
+function formatToDatetimeLocal(dateTimeString: string | null | undefined): string {
   if (!dateTimeString?.trim()) return "";
   try {
     const s = dateTimeString.trim();
-    if (/^\d{1,2}\s+\d{1,2}\s+\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?$/.test(s)) {
-      const parts = s.match(/^(\d{1,2})\s+(\d{1,2})\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-      if (parts) {
-        const [, d, mo, y, h, min, sec] = parts;
-        return `${d!.padStart(2, "0")} ${mo!.padStart(2, "0")} ${y} ${h!.padStart(2, "0")}:${min}:${(sec ?? "00").padStart(2, "0")}`;
-      }
+
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(s)) {
+      return s.slice(0, 16); 
     }
-    let normalized = s;
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) normalized = normalized + ":00";
-    const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:.*)?$/);
+    const ddParts = s.match(/^(\d{1,2})\s+(\d{1,2})\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (ddParts) {
+      const [, d, mo, y, h, min] = ddParts;
+      return `${y}-${mo!.padStart(2, "0")}-${d!.padStart(2, "0")}T${h!.padStart(2, "0")}:${min}`;
+    }
+    const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:.*)?$/);
     if (isoMatch) {
-      const [, y, mo, d, h, min, sec] = isoMatch;
-      return `${d}/${mo}/${y} ${h}:${min}:${sec ?? "00"}`;
+      const [, y, mo, d, h, min] = isoMatch;
+      return `${y}-${mo}-${d}T${h}:${min}`;
     }
     const d = new Date(s);
     if (isNaN(d.getTime())) return "";
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hr = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hr}:${min}`;
+  } catch {
+    return "";
+  }
+}
+
+function formatDateForDisplay(dateTimeString: string | null | undefined): string {
+  if (!dateTimeString?.trim()) return "";
+  try {
+    const d = new Date(dateTimeString.trim());
+    if (isNaN(d.getTime())) return dateTimeString?.trim() ?? "";
     const day = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
     const hr = String(d.getHours()).padStart(2, "0");
     const min = String(d.getMinutes()).padStart(2, "0");
     const sec = String(d.getSeconds()).padStart(2, "0");
-    return `${day} ${month} ${year} ${hr}:${min}:${sec}`;
+    return `${day}/${month}/${year} ${hr}:${min}:${sec}`;
   } catch {
     return "";
   }
@@ -189,8 +204,8 @@ export default function AssessmentEditPage() {
       setInstructions(data.instructions ?? "");
       setDescription(data.description ?? "");
       setDurationMinutes(data.duration_minutes ?? 60);
-      setStartTime(formatToDDMMYYYYHHMMSS(data.start_time ?? "") || "");
-      setEndTime(formatToDDMMYYYYHHMMSS(data.end_time ?? "") || "");
+      setStartTime(formatToDatetimeLocal(data.start_time ?? "") || "");
+      setEndTime(formatToDatetimeLocal(data.end_time ?? "") || "");
       const anyData = data as any;
       setIsPaid(anyData.is_paid ?? false);
       setPrice(
@@ -433,8 +448,8 @@ export default function AssessmentEditPage() {
         name: s.name ?? "",
         email: s.email ?? "",
         phone: s.phone ?? "",
-        started_at: formatToDDMMYYYYHHMMSS(s.started_at) || "",
-        submitted_at: formatToDDMMYYYYHHMMSS(s.submitted_at) || "",
+        started_at: formatDateForDisplay(s.started_at) || "",
+        submitted_at: formatDateForDisplay(s.submitted_at) || "",
         maximum_marks: s.maximum_marks ?? "",
         overall_score: s.overall_score ?? "",
         percentage: s.percentage??"",
