@@ -26,8 +26,13 @@ import {
 } from "@/lib/services/profile.service";
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { config } from "@/lib/config";
 
-const PROFILE_LOCAL_KEY = "user_profile_extra";
+const PROFILE_LOCAL_KEY_PREFIX = "user_profile_extra";
+
+function getProfileLocalKey(): string {
+  return `${PROFILE_LOCAL_KEY_PREFIX}_${config.clientId}`;
+}
 
 function isEmptyValue(val: unknown): boolean {
   if (val === undefined || val === null || val === "") return true;
@@ -38,7 +43,7 @@ function isEmptyValue(val: unknown): boolean {
 function loadLocalProfile(): Partial<UserProfile> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(PROFILE_LOCAL_KEY);
+    const raw = localStorage.getItem(getProfileLocalKey());
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -49,7 +54,7 @@ function saveLocalProfile(data: Partial<UserProfile>) {
   if (typeof window === "undefined") return;
   try {
     const existing = loadLocalProfile();
-    localStorage.setItem(PROFILE_LOCAL_KEY, JSON.stringify({ ...existing, ...data }));
+    localStorage.setItem(getProfileLocalKey(), JSON.stringify({ ...existing, ...data }));
   } catch {
     // storage unavailable
   }

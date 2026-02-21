@@ -5,6 +5,25 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Project } from "@/lib/services/profile.service";
 
+function getProjectLinkUrl(url: string | undefined): string | null {
+  if (typeof url !== "string" || !url.trim()) return null;
+  const u = url.trim();
+  if (u.startsWith("/")) return null;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  if (origin && u.startsWith(origin)) {
+    try {
+      const parsed = new URL(u);
+      const target = parsed.searchParams.get("url") ?? parsed.searchParams.get("to") ?? parsed.searchParams.get("redirect") ?? parsed.searchParams.get("target");
+      if (target && (target.startsWith("http://") || target.startsWith("https://"))) return target;
+    } catch {
+      
+    }
+    return null;
+  }
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return `https://${u}`;
+}
+
 interface ProjectsSectionProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
@@ -286,28 +305,31 @@ export function ProjectsSection({
                         ))}
                       </Box>
                     )}
-                    {project.url && (
-                      <Box
-                        component="a"
-                        href={project.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          color: "#0a66c2",
-                          textDecoration: "none",
-                          fontSize: "0.875rem",
-                          "&:hover": {
-                            textDecoration: "underline",
-                          },
-                        }}
-                      >
-                        <IconWrapper icon="mdi:link" size={16} color="#6366f1" />
-                        View Project
-                      </Box>
-                    )}
+                    {(() => {
+                      const linkUrl = getProjectLinkUrl(project.url);
+                      return linkUrl ? (
+                        <Box
+                          component="a"
+                          href={linkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            color: "#0a66c2",
+                            textDecoration: "none",
+                            fontSize: "0.875rem",
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
+                          }}
+                        >
+                          <IconWrapper icon="mdi:link" size={16} color="#6366f1" />
+                          View Project
+                        </Box>
+                      ) : null;
+                    })()}
                   </Box>
                   {editing && (
                     <Box sx={{ display: "flex", gap: 0.5 }}>
