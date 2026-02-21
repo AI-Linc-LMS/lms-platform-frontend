@@ -163,7 +163,7 @@ export default function ProfilePage() {
             }}
           >
             <CoverPhoto 
-              coverPhotoUrl={profile.cover_photo_url}
+              coverPhotoUrl={profile.cover_photo_url ?? undefined}
               onEditCover={async (file: File) => {
                 try {
                   const result = await profileService.uploadCoverPhoto(file);
