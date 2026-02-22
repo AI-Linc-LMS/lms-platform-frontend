@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, Checkbox, FormControlLabel, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Experience } from "@/lib/services/profile.service";
@@ -393,15 +394,14 @@ export function ExperienceSection({
             {editingIndex !== null ? "Edit Experience" : "Add Experience"}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Position *"
+              label="Position"
               value={formData.position}
               onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -410,12 +410,11 @@ export function ExperienceSection({
               }}
             />
             <TextField
-              label="Company *"
+              label="Company"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -438,26 +437,26 @@ export function ExperienceSection({
             />
             <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
               <TextField
-                label="Start Date *"
+                label="Start Date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
-                required
                 InputLabelProps={{ shrink: true }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
+                  ...datePlaceholderSx(formData.start_date, "DD / MM / YYYY"),
                 }}
               />
               <TextField
                 label="End Date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 disabled={formData.current}
@@ -467,6 +466,7 @@ export function ExperienceSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
+                  ...datePlaceholderSx(formData.end_date, "DD / MM / YYYY"),
                 }}
               />
             </Box>
