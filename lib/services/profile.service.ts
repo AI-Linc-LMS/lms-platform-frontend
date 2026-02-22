@@ -104,7 +104,7 @@ export interface UserProfile {
 }
 
 /** Update payload: partial profile; clearable fields may be null to clear. */
-export type UserProfileUpdate = Partial<UserProfile> & {
+export type UserProfileUpdate = Omit<Partial<UserProfile>, "profile_picture" | "cover_photo_url" | "headline"> & {
   profile_picture?: string | null;
   cover_photo_url?: string | null;
   headline?: string | null;

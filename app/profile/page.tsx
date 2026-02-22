@@ -51,7 +51,7 @@ function loadLocalProfile(): Partial<UserProfile> {
   }
 }
 
-function saveLocalProfile(data: Partial<UserProfile>) {
+function saveLocalProfile(data: Partial<UserProfileUpdate>) {
   if (typeof window === "undefined") return;
   try {
     const existing = loadLocalProfile();
@@ -117,11 +117,18 @@ export default function ProfilePage() {
             (result as any)[key] = val;
           }
         }
-        return result;
+        // Normalize required string field so state matches UserProfile
+        result.profile_picture = result.profile_picture ?? "";
+        return result as UserProfile;
       });
       showToast("Profile updated successfully", "success");
     } catch {
-      setProfile((prev) => (prev ? { ...prev, ...updatedProfile } : null));
+      setProfile((prev) => {
+        if (!prev) return null;
+        const merged = { ...prev, ...updatedProfile };
+        merged.profile_picture = merged.profile_picture ?? "";
+        return merged as UserProfile;
+      });
       showToast("Profile saved locally", "info");
     }
   };
