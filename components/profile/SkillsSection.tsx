@@ -58,7 +58,10 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await onSave({ skills: skills as any });
+      // API expects skills as array of { id?: string, name: string }; send full array to replace
+      await onSave({
+        skills: skills.map((name) => ({ name })),
+      });
       setEditing(false);
     } catch {
       // handled by parent
