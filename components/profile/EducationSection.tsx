@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Education } from "@/lib/services/profile.service";
@@ -389,15 +390,14 @@ export function EducationSection({
             {editingIndex !== null ? "Edit Education" : "Add Education"}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Institution *"
+              label="Institution"
               value={formData.institution}
               onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -406,12 +406,11 @@ export function EducationSection({
               }}
             />
             <TextField
-              label="Degree *"
+              label="Degree"
               value={formData.degree}
               onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -437,7 +436,7 @@ export function EducationSection({
                 label="Start Date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
@@ -446,13 +445,14 @@ export function EducationSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
+                  ...datePlaceholderSx(formData.start_date, "DD / MM / YYYY"),
                 }}
               />
               <TextField
                 label="End Date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
@@ -461,6 +461,7 @@ export function EducationSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
+                  ...datePlaceholderSx(formData.end_date, "DD / MM / YYYY"),
                 }}
               />
             </Box>

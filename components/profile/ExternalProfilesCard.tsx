@@ -45,20 +45,43 @@ export function ExternalProfilesCard({
       });
     };
 
+  const platformBaseUrls: Record<string, string> = {
+    leetcode_url: "https://leetcode.com/",
+    hackerrank_url: "https://www.hackerrank.com/",
+    kaggle_url: "https://www.kaggle.com/",
+    medium_url: "https://medium.com/@",
+  };
+
+  const normalizeUrl = (field: string, value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed;
+    }
+    if (trimmed.includes(".")) {
+      return `https://${trimmed}`;
+    }
+    const base = platformBaseUrls[field];
+    if (base) {
+      return `${base}${trimmed}`;
+    }
+    return `https://${trimmed}`;
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       const dataToSave = {
-        portfolio_website_url: formData.portfolio_website_url || null,
-        leetcode_url: formData.leetcode_url || null,
-        hackerrank_url: formData.hackerrank_url || null,
-        kaggle_url: formData.kaggle_url || null,
-        medium_url: formData.medium_url || null,
+        portfolio_website_url: normalizeUrl("portfolio_website_url", formData.portfolio_website_url),
+        leetcode_url: normalizeUrl("leetcode_url", formData.leetcode_url),
+        hackerrank_url: normalizeUrl("hackerrank_url", formData.hackerrank_url),
+        kaggle_url: normalizeUrl("kaggle_url", formData.kaggle_url),
+        medium_url: normalizeUrl("medium_url", formData.medium_url),
       };
       await onSave(dataToSave);
       setEditing(false);
-    } catch (error) {
-      // Silently handle profile save error
+    } catch {
+      // handled by parent
     } finally {
       setSaving(false);
     }
