@@ -22,6 +22,7 @@ import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
 import {
   profileService,
   UserProfile,
+  UserProfileUpdate,
   HeatmapData,
 } from "@/lib/services/profile.service";
 import { useToast } from "@/components/common/Toast";
@@ -50,7 +51,7 @@ function loadLocalProfile(): Partial<UserProfile> {
   }
 }
 
-function saveLocalProfile(data: Partial<UserProfile>) {
+function saveLocalProfile(data: Partial<UserProfileUpdate>) {
   if (typeof window === "undefined") return;
   try {
     const existing = loadLocalProfile();
@@ -102,7 +103,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSaveProfile = async (updatedProfile: Partial<UserProfile>) => {
+  const handleSaveProfile = async (updatedProfile: UserProfileUpdate) => {
     saveLocalProfile(updatedProfile);
 
     try {
@@ -116,11 +117,18 @@ export default function ProfilePage() {
             (result as any)[key] = val;
           }
         }
-        return result;
+        // Normalize required string field so state matches UserProfile
+        result.profile_picture = result.profile_picture ?? "";
+        return result as UserProfile;
       });
       showToast("Profile updated successfully", "success");
     } catch {
-      setProfile((prev) => (prev ? { ...prev, ...updatedProfile } : null));
+      setProfile((prev) => {
+        if (!prev) return null;
+        const merged = { ...prev, ...updatedProfile };
+        merged.profile_picture = merged.profile_picture ?? "";
+        return merged as UserProfile;
+      });
       showToast("Profile saved locally", "info");
     }
   };
@@ -167,17 +175,11 @@ export default function ProfilePage() {
               mx: "auto",
             }}
           >
-            <CoverPhoto 
+            <CoverPhoto
               coverPhotoUrl={profile.cover_photo_url ?? undefined}
-              onEditCover={async (file: File) => {
-                try {
-                  const result = await profileService.uploadCoverPhoto(file);
-                  await handleSaveProfile({ cover_photo_url: result.cover_photo_url });
-                  showToast("Cover photo updated successfully", "success");
-                } catch (error: any) {
-                  showToast(error.message || "Failed to upload cover photo", "error");
-                  throw error;
-                }
+              onEditCoverUrl={async (url: string) => {
+                await handleSaveProfile({ cover_photo_url: url || null });
+                showToast(url ? "Cover photo updated successfully" : "Cover photo cleared", "success");
               }}
             />
           </Box>
@@ -201,18 +203,12 @@ export default function ProfilePage() {
             role={profile.role || "Student"}
             headline={profile.headline ?? undefined}
             location={location}
-            onEditProfilePic={async (file: File) => {
-              try {
-                const result = await profileService.uploadProfilePicture(file);
-                await handleSaveProfile({ profile_picture: result.profile_picture });
-                showToast("Profile picture updated successfully", "success");
-              } catch (error: any) {
-                showToast(error.message || "Failed to upload profile picture", "error");
-                throw error;
-              }
+            onEditProfilePicUrl={async (url: string) => {
+              await handleSaveProfile({ profile_picture: url || null });
+              showToast(url ? "Profile picture updated successfully" : "Profile picture cleared", "success");
             }}
             onEditHeadline={async (newHeadline: string) => {
-              await handleSaveProfile({ headline: newHeadline });
+              await handleSaveProfile({ headline: newHeadline.trim() || null });
             }}
           />
         </Box>

@@ -179,7 +179,7 @@ export interface LikeResponse {
 
 export interface LeaderboardEntry {
   name: string;
-
+  profile_pic_url?: string;
   score: number;
   rank: number;
 }

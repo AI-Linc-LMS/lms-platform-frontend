@@ -69,7 +69,7 @@ export function PersonalInformationCard({
   const handleSave = async () => {
     try {
       setSaving(true);
-      // Prepare data in the exact format required by API
+      // API: partial body OK; optional fields use null when empty (matches GET response shape)
       const dataToSave: Partial<UserProfile> = {
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -79,12 +79,12 @@ export function PersonalInformationCard({
           linkedin: formData.linkedin || "",
           github: formData.github || "",
         },
-        college_name: formData.college_name || "",
-        degree_type: formData.degree_type || "",
-        branch: formData.branch || "",
-        graduation_year: formData.graduation_year || "",
-        city: formData.city || "",
-        state: formData.state || "",
+        college_name: formData.college_name || null,
+        degree_type: formData.degree_type || null,
+        branch: formData.branch || null,
+        graduation_year: formData.graduation_year || null,
+        city: formData.city || null,
+        state: formData.state || null,
       };
       await onSave(dataToSave);
       setEditing(false);

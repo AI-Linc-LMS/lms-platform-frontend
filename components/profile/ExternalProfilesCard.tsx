@@ -49,11 +49,11 @@ export function ExternalProfilesCard({
     try {
       setSaving(true);
       const dataToSave = {
-        portfolio_website_url: formData.portfolio_website_url || "",
-        leetcode_url: formData.leetcode_url || "",
-        hackerrank_url: formData.hackerrank_url || "",
-        kaggle_url: formData.kaggle_url || "",
-        medium_url: formData.medium_url || "",
+        portfolio_website_url: formData.portfolio_website_url || null,
+        leetcode_url: formData.leetcode_url || null,
+        hackerrank_url: formData.hackerrank_url || null,
+        kaggle_url: formData.kaggle_url || null,
+        medium_url: formData.medium_url || null,
       };
       await onSave(dataToSave);
       setEditing(false);
