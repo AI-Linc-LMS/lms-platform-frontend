@@ -3,22 +3,16 @@
 import { Box, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState } from "react";
-import { ImageUploadDialog } from "./ImageUploadDialog";
+import { ImageUrlDialog } from "./ImageUrlDialog";
 
 interface CoverPhotoProps {
   coverPhotoUrl?: string;
-  onEditCover?: (file: File) => Promise<void>;
+  onEditCoverUrl?: (url: string) => Promise<void>;
 }
 
-export function CoverPhoto({ coverPhotoUrl, onEditCover }: CoverPhotoProps) {
+export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
   const [hovered, setHovered] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-
-  const handleUpload = async (file: File) => {
-    if (onEditCover) {
-      await onEditCover(file);
-    }
-  };
+  const [urlDialogOpen, setUrlDialogOpen] = useState(false);
 
   return (
     <>
@@ -28,10 +22,8 @@ export function CoverPhoto({ coverPhotoUrl, onEditCover }: CoverPhotoProps) {
           width: "100%",
           height: { xs: 200, sm: 250, md: 300 },
           overflow: "hidden",
-          backgroundColor: coverPhotoUrl ? "transparent" : "#e0e0e0", // LinkedIn-style gray background
-          backgroundImage: coverPhotoUrl
-            ? `url(${coverPhotoUrl})`
-            : "none",
+          backgroundColor: coverPhotoUrl ? "transparent" : "#e0e0e0",
+          backgroundImage: coverPhotoUrl ? `url(${coverPhotoUrl})` : "none",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -41,7 +33,7 @@ export function CoverPhoto({ coverPhotoUrl, onEditCover }: CoverPhotoProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {onEditCover && (
+        {onEditCoverUrl && (
           <Box
             sx={{
               position: "absolute",
@@ -54,8 +46,8 @@ export function CoverPhoto({ coverPhotoUrl, onEditCover }: CoverPhotoProps) {
           >
             <Button
               variant="contained"
-              startIcon={<IconWrapper icon="mdi:camera" size={18} />}
-              onClick={() => setUploadDialogOpen(true)}
+              startIcon={<IconWrapper icon="mdi:link-variant" size={18} />}
+              onClick={() => setUrlDialogOpen(true)}
               sx={{
                 backgroundColor: "rgba(0, 0, 0, 0.65)",
                 backdropFilter: "blur(8px)",
@@ -86,16 +78,15 @@ export function CoverPhoto({ coverPhotoUrl, onEditCover }: CoverPhotoProps) {
         )}
       </Box>
 
-      {onEditCover && (
-        <ImageUploadDialog
-          open={uploadDialogOpen}
-          onClose={() => setUploadDialogOpen(false)}
-          onUpload={handleUpload}
+      {onEditCoverUrl && (
+        <ImageUrlDialog
+          open={urlDialogOpen}
+          onClose={() => setUrlDialogOpen(false)}
+          onSave={onEditCoverUrl}
           title="Edit Cover Photo"
-          subtitle="Upload a cover photo to personalize your profile"
+          subtitle="Paste an image URL to use as your cover photo"
           currentImageUrl={coverPhotoUrl}
-          aspectRatio={16 / 9} // Cover photos typically have a wide aspect ratio
-          maxSizeMB={10}
+          placeholder="https://example.com/cover-image.jpg"
         />
       )}
     </>

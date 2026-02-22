@@ -136,8 +136,13 @@ export interface MonthlyStreak {
   monthly_days?: number[]; // Array of day numbers with activity (deprecated, use streak object)
 }
 
+/**
+ * User Profile API: .../clients/<client_id>/user-profile/
+ * - GET: full profile (29 keys; scalars may be null, arrays may be [])
+ * - POST/PATCH: partial body OK; response = full profile same as GET
+ * - Arrays (skills, projects, experience, education, certifications, achievements): send full array to replace
+ */
 export const profileService = {
-  // Get user profile
   getUserProfile: async (): Promise<UserProfile> => {
     const response = await apiClient.get<UserProfile>(
       `/accounts/clients/${config.clientId}/user-profile/`
@@ -145,11 +150,8 @@ export const profileService = {
     return response.data;
   },
 
-  // Update user profile
-  updateUserProfile: async (
-    data: Partial<UserProfile>
-  ): Promise<UserProfile> => {
-    const response = await apiClient.put<UserProfile>(
+  updateUserProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
+    const response = await apiClient.patch<UserProfile>(
       `/accounts/clients/${config.clientId}/user-profile/`,
       data
     );

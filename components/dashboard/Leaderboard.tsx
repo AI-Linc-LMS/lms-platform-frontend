@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { Box, Typography, Card, Avatar, LinearProgress, Tooltip } from "@mui/material";
+import { Box, Typography, Card, Avatar, LinearProgress } from "@mui/material";
 import {
   dashboardService,
   OverallLeaderboardEntry,
 } from "@/lib/services/dashboard.service";
-import { useToast } from "@/components/common/Toast";
-import { getUserInitials } from "@/lib/utils/user-utils";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 const LEADERBOARD_STORAGE_KEY = "leaderboard_data";
@@ -49,7 +47,6 @@ interface LeaderboardProps {
 }
 
 export const Leaderboard = ({ courseId }: LeaderboardProps) => {
-  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<OverallLeaderboardEntry[]>([]);
   const hasLoadedRef = useRef(false);
@@ -77,7 +74,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
       // Update state and localStorage with fresh data
       setLeaderboard(data);
       setStoredLeaderboard(data);
-    } catch (error: any) {
+    } catch {
       // On error, try to load from localStorage if available
       const storedData = getStoredLeaderboard();
       if (storedData) {
@@ -256,7 +253,6 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
               const rank = entry?.rank ?? 0;
               const totalScore = entry?.marks ?? 0;
               const profilePicUrl = entry?.profile_pic_url;
-              const college = entry?.college;
               const linkedinUrl = entry?.linkedin_url;
 
               const handleClick = (e: React.MouseEvent) => {
@@ -272,22 +268,8 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
               };
 
               return (
-                <Tooltip
+                <Box
                   key={rank || index}
-                  title={
-                    linkedinUrl
-                      ? college
-                        ? `College: ${college} - Click to view LinkedIn`
-                        : "Click to view LinkedIn profile"
-                      : college
-                      ? `College: ${college}`
-                      : "No college information available"
-                  }
-                  arrow
-                  placement="top"
-                  disableInteractive
-                >
-                  <Box
                     onClick={handleClick}
                     onKeyDown={(e) => {
                       if ((e.key === "Enter" || e.key === " ") && linkedinUrl) {
@@ -400,7 +382,6 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                     </Box>
                   )}
                 </Box>
-                </Tooltip>
               );
             })}
           </Box>

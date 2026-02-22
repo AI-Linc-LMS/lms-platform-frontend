@@ -167,17 +167,11 @@ export default function ProfilePage() {
               mx: "auto",
             }}
           >
-            <CoverPhoto 
+            <CoverPhoto
               coverPhotoUrl={profile.cover_photo_url ?? undefined}
-              onEditCover={async (file: File) => {
-                try {
-                  const result = await profileService.uploadCoverPhoto(file);
-                  await handleSaveProfile({ cover_photo_url: result.cover_photo_url });
-                  showToast("Cover photo updated successfully", "success");
-                } catch (error: any) {
-                  showToast(error.message || "Failed to upload cover photo", "error");
-                  throw error;
-                }
+              onEditCoverUrl={async (url: string) => {
+                await handleSaveProfile({ cover_photo_url: url || null });
+                showToast(url ? "Cover photo updated successfully" : "Cover photo cleared", "success");
               }}
             />
           </Box>
@@ -201,18 +195,12 @@ export default function ProfilePage() {
             role={profile.role || "Student"}
             headline={profile.headline ?? undefined}
             location={location}
-            onEditProfilePic={async (file: File) => {
-              try {
-                const result = await profileService.uploadProfilePicture(file);
-                await handleSaveProfile({ profile_picture: result.profile_picture });
-                showToast("Profile picture updated successfully", "success");
-              } catch (error: any) {
-                showToast(error.message || "Failed to upload profile picture", "error");
-                throw error;
-              }
+            onEditProfilePicUrl={async (url: string) => {
+              await handleSaveProfile({ profile_picture: url || null });
+              showToast(url ? "Profile picture updated successfully" : "Profile picture cleared", "success");
             }}
             onEditHeadline={async (newHeadline: string) => {
-              await handleSaveProfile({ headline: newHeadline });
+              await handleSaveProfile({ headline: newHeadline.trim() || null });
             }}
           />
         </Box>
