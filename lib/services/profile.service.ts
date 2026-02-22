@@ -103,6 +103,13 @@ export interface UserProfile {
   achievements?: Achievement[];
 }
 
+/** Update payload: partial profile; clearable fields may be null to clear. */
+export type UserProfileUpdate = Partial<UserProfile> & {
+  profile_picture?: string | null;
+  cover_photo_url?: string | null;
+  headline?: string | null;
+};
+
 export interface UserActivityHeatmap {
   heatmap_data: HeatmapData;
 }
@@ -150,7 +157,7 @@ export const profileService = {
     return response.data;
   },
 
-  updateUserProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
+  updateUserProfile: async (data: UserProfileUpdate): Promise<UserProfile> => {
     const response = await apiClient.patch<UserProfile>(
       `/accounts/clients/${config.clientId}/user-profile/`,
       data

@@ -22,6 +22,7 @@ import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
 import {
   profileService,
   UserProfile,
+  UserProfileUpdate,
   HeatmapData,
 } from "@/lib/services/profile.service";
 import { useToast } from "@/components/common/Toast";
@@ -102,7 +103,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSaveProfile = async (updatedProfile: Partial<UserProfile>) => {
+  const handleSaveProfile = async (updatedProfile: UserProfileUpdate) => {
     saveLocalProfile(updatedProfile);
 
     try {
