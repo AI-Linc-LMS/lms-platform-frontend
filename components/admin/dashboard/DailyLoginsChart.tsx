@@ -65,17 +65,17 @@ export function DailyLoginsChart({ data }: DailyLoginsChartProps) {
           <Typography variant="body2">No login data available</Typography>
         </Box>
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={formattedData}>
+        <ResponsiveContainer width="100%" height={380}>
+          <LineChart data={formattedData} margin={{ bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="label"
               stroke="#6b7280"
-              fontSize={12}
+              fontSize={11}
               tick={{ fill: "#6b7280" }}
               angle={-45}
               textAnchor="end"
-              height={80}
+              height={100}
             />
             <YAxis
               stroke="#6b7280"

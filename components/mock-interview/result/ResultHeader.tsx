@@ -14,6 +14,7 @@ interface ResultHeaderProps {
   performanceLabel: string;
   scoreColors: { bg: string; color: string; main: string };
   onBack: () => void;
+  backLabel?: string;
 }
 
 const ResultHeaderComponent = ({
@@ -26,6 +27,7 @@ const ResultHeaderComponent = ({
   performanceLabel,
   scoreColors,
   onBack,
+  backLabel = "Back to Previous Interviews",
 }: ResultHeaderProps) => {
   return (
     <Box
@@ -53,7 +55,7 @@ const ResultHeaderComponent = ({
                 "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
               }}
             >
-              Back to Previous Interviews
+              {backLabel}
             </Button>
             <Typography
               variant="h4"

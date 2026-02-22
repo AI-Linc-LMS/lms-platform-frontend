@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Typography, Select, MenuItem, FormControl, Pagination } from "@mui/material";
+import { Box, Typography, Pagination } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 
 interface PaginationControlsProps {
   totalItems: number;
@@ -42,20 +43,13 @@ export function PaginationControls({
           Showing {Math.min(totalItems, (page - 1) * limit + 1)} to{" "}
           {Math.min(totalItems, page * limit)} of {totalItems} {itemLabel}
         </Typography>
-        <FormControl size="small" sx={{ minWidth: { xs: 100, sm: 120 } }}>
-          <Select
-            value={limit}
-            onChange={(e) => {
-              onLimitChange(Number(e.target.value));
-              onPageChange(1);
-            }}
-          >
-            <MenuItem value={10}>10 per page</MenuItem>
-            <MenuItem value={25}>25 per page</MenuItem>
-            <MenuItem value={50}>50 per page</MenuItem>
-            <MenuItem value={100}>100 per page</MenuItem>
-          </Select>
-        </FormControl>
+        <PerPageSelect
+          value={limit}
+          onChange={(v) => {
+            onLimitChange(v);
+            onPageChange(1);
+          }}
+        />
       </Box>
       <Pagination
         count={Math.max(1, Math.ceil(totalItems / limit))}

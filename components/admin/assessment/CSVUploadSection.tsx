@@ -15,10 +15,8 @@ import {
   TableRow,
   IconButton,
   Pagination,
-  FormControl,
-  Select,
-  MenuItem,
 } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
@@ -426,20 +424,14 @@ export function CSVUploadSection({
                 Showing {(page - 1) * limit + 1} to{" "}
                 {Math.min(totalCount, page * limit)} of {totalCount}
               </Typography>
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <Select
-                  value={limit}
-                  onChange={(e) => {
-                    setLimit(Number(e.target.value));
-                    setPage(1);
-                  }}
-                >
-                  <MenuItem value={5}>5 per page</MenuItem>
-                  <MenuItem value={10}>10 per page</MenuItem>
-                  <MenuItem value={25}>25 per page</MenuItem>
-                  <MenuItem value={50}>50 per page</MenuItem>
-                </Select>
-              </FormControl>
+              <PerPageSelect
+                value={limit}
+                onChange={(v) => {
+                  setLimit(v);
+                  setPage(1);
+                }}
+                options={[5, 10, 25, 50]}
+              />
             </Box>
             <Pagination
               count={pageCount}

@@ -17,11 +17,14 @@ import {
   TableRow,
   CircularProgress,
   Pagination,
-  Select,
-  MenuItem,
-  FormControl,
   Divider,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Chip,
 } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -31,13 +34,20 @@ import {
   SubmissionsExportResponse,
   AssessmentDetail,
   CreateAssessmentPayload,
+  isMCQQuestion,
+  isCodingQuestion,
+  QuestionsExportMCQQuestion,
+  QuestionsExportCodingQuestion,
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
+import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
+import { ProblemDescription } from "@/components/coding/ProblemDescription";
 
 type TabValue = "details" | "questions" | "submissions";
+type QuestionsSubTab = "mcq" | "coding";
 
 function escapeCsv(val: unknown): string {
   if (val == null || val === undefined) return "";
@@ -57,6 +67,23 @@ function jsonToCsvRows<T extends Record<string, unknown>>(
     columns.map((c) => escapeCsv(row[c.key])).join(",")
   );
   return [header, ...data].join("\n");
+}
+
+/** Convert HTML to plain text for CSV: preserve superscripts (10^5), decode entities, keep line breaks */
+function htmlToPlainText(html: string): string {
+  if (!html || typeof html !== "string") return "";
+  let s = html;
+  s = s.replace(/<\/p>\s*<p>/gi, "\n");
+  s = s.replace(/<br\s*\/?>/gi, "\n");
+  s = s.replace(/<sup>(\d+)<\/sup>/gi, "^$1");
+  s = s.replace(/<sub>(\d+)<\/sub>/gi, "_$1");
+  s = s.replace(/&le;/g, "≤").replace(/&ge;/g, "≥");
+  s = s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ");
+  s = s.replace(/<[^>]*>/g, " ");
+  s = s.replace(/[ \t]+/g, " ");
+  s = s.replace(/^\s+|\s+$/gm, "");
+  s = s.replace(/\n\s*\n/g, "\n").trim();
+  return s;
 }
 
 
@@ -189,8 +216,19 @@ export default function AssessmentEditPage() {
 
   const [questionsPage, setQuestionsPage] = useState(1);
   const [questionsLimit, setQuestionsLimit] = useState(10);
+  const [codingQuestionsPage, setCodingQuestionsPage] = useState(1);
+  const [codingQuestionsLimit, setCodingQuestionsLimit] = useState(10);
   const [submissionsPage, setSubmissionsPage] = useState(1);
   const [submissionsLimit, setSubmissionsLimit] = useState(10);
+  const [previewMCQ, setPreviewMCQ] = useState<{
+    section: { section_title: string };
+    question: QuestionsExportMCQQuestion;
+  } | null>(null);
+  const [previewCoding, setPreviewCoding] = useState<{
+    section: { section_title: string };
+    question: QuestionsExportCodingQuestion;
+  } | null>(null);
+  const [questionsSubTab, setQuestionsSubTab] = useState<QuestionsSubTab>("mcq");
 
   const loadAssessment = useCallback(async () => {
     if (!assessmentId || !config.clientId) return;
@@ -346,57 +384,114 @@ export default function AssessmentEditPage() {
     }
   };
 
-  const handleDownloadQuestions = () => {
+  const handleDownloadMCQQuestions = () => {
     if (!questionsData) return;
     const flat: Record<string, unknown>[] = [];
-    for (const sec of questionsData.sections) {
+    for (const sec of quizSections) {
       for (const q of sec.questions) {
-        flat.push({
-          section_id: sec.section_id,
-          section_title: sec.section_title,
-          section_type: sec.section_type,
-          section_order: sec.order,
-          id: q.id,
-          question_text: q.question_text,
-          option_a: q.option_a,
-          option_b: q.option_b,
-          option_c: q.option_c,
-          option_d: q.option_d,
-          correct_option: q.correct_option,
-          explanation: q.explanation ?? "",
-          difficulty_level: q.difficulty_level ?? "",
-          topic: q.topic ?? "",
-          skills: q.skills ?? "",
-        });
+        if (isMCQQuestion(q)) {
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            option_a: q.option_a,
+            option_b: q.option_b,
+            option_c: q.option_c,
+            option_d: q.option_d,
+            correct_option: q.correct_option,
+            explanation: q.explanation ?? "",
+            difficulty_level: q.difficulty_level ?? "",
+            topic: q.topic ?? "",
+            skills: q.skills ?? "",
+          });
+        }
       }
     }
-    const columns = [
-      { key: "section_id" as const, header: "Section ID" },
-      { key: "section_title" as const, header: "Section Title" },
-      { key: "section_type" as const, header: "Section Type" },
-      { key: "section_order" as const, header: "Section Order" },
-      { key: "id" as const, header: "Question ID" },
-      { key: "question_text" as const, header: "Question Text" },
-      { key: "option_a" as const, header: "Option A" },
-      { key: "option_b" as const, header: "Option B" },
-      { key: "option_c" as const, header: "Option C" },
-      { key: "option_d" as const, header: "Option D" },
-      { key: "correct_option" as const, header: "Correct Option" },
-      { key: "explanation" as const, header: "Explanation" },
-      { key: "difficulty_level" as const, header: "Difficulty" },
-      { key: "topic" as const, header: "Topic" },
-      { key: "skills" as const, header: "Skills" },
+    const columns: { key: string; header: string }[] = [
+      { key: "section_id", header: "Section ID" },
+      { key: "section_title", header: "Section Title" },
+      { key: "section_order", header: "Section Order" },
+      { key: "id", header: "Question ID" },
+      { key: "question_text", header: "Question Text" },
+      { key: "option_a", header: "Option A" },
+      { key: "option_b", header: "Option B" },
+      { key: "option_c", header: "Option C" },
+      { key: "option_d", header: "Option D" },
+      { key: "correct_option", header: "Correct Option" },
+      { key: "explanation", header: "Explanation" },
+      { key: "difficulty_level", header: "Difficulty" },
+      { key: "topic", header: "Topic" },
+      { key: "skills", header: "Skills" },
     ];
     const csv = jsonToCsvRows(flat, columns);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    downloadCsv(csv, `assessment-${questionsData.assessment.slug || assessmentId}-mcq-questions.csv`);
+    showToast("MCQ questions exported", "success");
+  };
+
+  const handleDownloadCodingQuestions = () => {
+    if (!questionsData) return;
+    const flat: Record<string, unknown>[] = [];
+    for (const sec of codingSections) {
+      for (const q of sec.questions) {
+        if (isCodingQuestion(q)) {
+          const ps = typeof q.problem_statement === "string" ? q.problem_statement : "";
+          const inp = typeof q.input_format === "string" ? q.input_format : "";
+          const out = typeof q.output_format === "string" ? q.output_format : "";
+          const con = typeof q.constraints === "string" ? q.constraints : "";
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            title: q.title ?? "",
+            problem_statement: htmlToPlainText(ps),
+            input_format: htmlToPlainText(inp),
+            output_format: htmlToPlainText(out),
+            sample_input: q.sample_input ?? "",
+            sample_output: q.sample_output ?? "",
+            constraints: htmlToPlainText(con),
+            difficulty_level: q.difficulty_level ?? "",
+            tags: q.tags ?? "",
+            time_limit: q.time_limit ?? "",
+            memory_limit: q.memory_limit ?? "",
+          });
+        }
+      }
+    }
+    const columns: { key: string; header: string }[] = [
+      { key: "section_id", header: "Section ID" },
+      { key: "section_title", header: "Section Title" },
+      { key: "section_order", header: "Section Order" },
+      { key: "id", header: "Question ID" },
+      { key: "title", header: "Title" },
+      { key: "problem_statement", header: "Problem Statement" },
+      { key: "input_format", header: "Input Format" },
+      { key: "output_format", header: "Output Format" },
+      { key: "sample_input", header: "Sample Input" },
+      { key: "sample_output", header: "Sample Output" },
+      { key: "constraints", header: "Constraints" },
+      { key: "difficulty_level", header: "Difficulty" },
+      { key: "tags", header: "Tags" },
+      { key: "time_limit", header: "Time Limit (sec)" },
+      { key: "memory_limit", header: "Memory Limit (MB)" },
+    ];
+    const csv = jsonToCsvRows(flat, columns);
+    downloadCsv(csv, `assessment-${questionsData.assessment.slug || assessmentId}-coding-questions.csv`);
+    showToast("Coding questions exported", "success");
+  };
+
+  function downloadCsv(csv: string, filename: string) {
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `assessment-${questionsData.assessment.slug || assessmentId}-questions.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("Questions exported", "success");
-  };
+  }
 
   const handleDownloadSubmissions = () => {
     if (!submissionsData) return;
@@ -483,22 +578,49 @@ export default function AssessmentEditPage() {
     showToast("Submissions exported", "success");
   };
 
-  const paginatedQuestions = useMemo(() => {
+  const quizSections = useMemo(() => {
     if (!questionsData?.sections) return [];
-    const all = questionsData.sections.flatMap((sec) =>
-      sec.questions.map((q) => ({ section: sec, question: q }))
-    );
-    const start = (questionsPage - 1) * questionsLimit;
-    return all.slice(start, start + questionsLimit);
-  }, [questionsData, questionsPage, questionsLimit]);
-
-  const totalQuestions = useMemo(() => {
-    if (!questionsData?.sections) return 0;
-    return questionsData.sections.reduce(
-      (sum, s) => sum + s.questions.length,
-      0
+    return questionsData.sections.filter(
+      (s) => (s.section_type ?? "quiz").toLowerCase() === "quiz"
     );
   }, [questionsData]);
+
+  const codingSections = useMemo(() => {
+    if (!questionsData?.sections) return [];
+    return questionsData.sections.filter(
+      (s) => (s.section_type ?? "").toLowerCase() === "coding"
+    );
+  }, [questionsData]);
+
+  const allQuizItems = useMemo(() => {
+    return quizSections.flatMap((sec) =>
+      sec.questions
+        .filter((q): q is QuestionsExportMCQQuestion => isMCQQuestion(q))
+        .map((q) => ({ section: sec, question: q }))
+    );
+  }, [quizSections]);
+
+  const allCodingItems = useMemo(() => {
+    return codingSections.flatMap((sec) =>
+      sec.questions
+        .filter((q): q is QuestionsExportCodingQuestion => isCodingQuestion(q))
+        .map((q) => ({ section: sec, question: q }))
+    );
+  }, [codingSections]);
+
+  const paginatedQuizQuestions = useMemo(() => {
+    const start = (questionsPage - 1) * questionsLimit;
+    return allQuizItems.slice(start, start + questionsLimit);
+  }, [allQuizItems, questionsPage, questionsLimit]);
+
+  const paginatedCodingQuestions = useMemo(() => {
+    const start = (codingQuestionsPage - 1) * codingQuestionsLimit;
+    return allCodingItems.slice(start, start + codingQuestionsLimit);
+  }, [allCodingItems, codingQuestionsPage, codingQuestionsLimit]);
+
+  const totalQuizQuestions = allQuizItems.length;
+  const totalCodingQuestions = allCodingItems.length;
+  const totalQuestions = totalQuizQuestions + totalCodingQuestions;
 
   const paginatedSubmissions = useMemo(() => {
     if (!submissionsData?.submissions) return [];
@@ -510,8 +632,36 @@ export default function AssessmentEditPage() {
 
   useEffect(() => {
     setQuestionsPage(1);
+    setCodingQuestionsPage(1);
     setSubmissionsPage(1);
   }, [tab]);
+
+  useEffect(() => {
+    if (tab !== "questions" || !questionsData) return;
+    if (questionsSubTab === "mcq" && totalQuizQuestions === 0 && totalCodingQuestions > 0) {
+      setQuestionsSubTab("coding");
+    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0 && totalQuizQuestions > 0) {
+      setQuestionsSubTab("mcq");
+    }
+  }, [tab, questionsData, questionsSubTab, totalQuizQuestions, totalCodingQuestions]);
+
+  const codingProblemDataForPreview = (q: QuestionsExportCodingQuestion) => ({
+    content_title: q.title,
+    details: {
+      title: q.title,
+      name: q.title,
+      problem_title: q.title,
+      problem_statement: q.problem_statement ?? "",
+      input_format: q.input_format,
+      output_format: q.output_format,
+      sample_input: q.sample_input,
+      sample_output: q.sample_output,
+      constraints: q.constraints,
+      difficulty_level: q.difficulty_level,
+      tags: q.tags,
+      test_cases: q.test_cases,
+    },
+  });
 
   if (loading) {
     return (
@@ -649,166 +799,365 @@ export default function AssessmentEditPage() {
 
             {tab === "questions" && (
               <>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: 2,
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    Export questions · View and download table
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<IconWrapper icon="mdi:download" size={18} />}
-                    onClick={handleDownloadQuestions}
-                    disabled={!questionsData?.sections?.length}
-                    sx={{
-                      bgcolor: "#6366f1",
-                      "&:hover": { bgcolor: "#4f46e5" },
-                    }}
-                  >
-                    Download table
-                  </Button>
-                </Box>
                 {!questionsData?.sections?.length ? (
-                  <Typography color="text.secondary">
-                    No questions to display.
-                  </Typography>
+                  <Box sx={{ py: 6, textAlign: "center" }}>
+                    <Typography color="text.secondary" variant="body1">
+                      No questions to display.
+                    </Typography>
+                  </Box>
                 ) : (
-                  <>
-                    <TableContainer sx={{ maxHeight: 480, overflow: "auto" }}>
-                      <Table size="small" stickyHeader>
-                        <TableHead>
-                          <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              Section
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              Order
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              ID
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              Question
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              A
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              B
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              C
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              D
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              Correct
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              Difficulty
-                            </TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {paginatedQuestions.map(({ section: sec, question: q }) => (
-                            <TableRow key={q.id} hover>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {sec.section_title}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{q.id}</TableCell>
-                              <TableCell sx={{ maxWidth: 200, py: 1.5 }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                    maxWidth: 200,
-                                  }}
-                                  title={q.question_text}
-                                >
-                                  {q.question_text}
-                                </Typography>
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{q.option_a}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{q.option_b}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{q.option_c}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{q.option_d}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {q.correct_option}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {q.difficulty_level ?? "—"}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                    {totalQuestions > 0 && (
-                      <Box
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <Tabs
+                      value={questionsSubTab}
+                      onChange={(_, v: QuestionsSubTab) => setQuestionsSubTab(v)}
+                      sx={{
+                        minHeight: 40,
+                        "& .MuiTab-root": { textTransform: "none", fontWeight: 600, minHeight: 40, py: 0 },
+                        "& .MuiTabs-indicator": { height: 3, borderRadius: "3px 3px 0 0" },
+                      }}
+                    >
+                      <Tab
+                        value="mcq"
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            MCQ / Quiz
+                            {totalQuizQuestions > 0 && (
+                              <Chip
+                                label={totalQuizQuestions}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  bgcolor: questionsSubTab === "mcq" ? "primary.main" : "action.hover",
+                                  color: questionsSubTab === "mcq" ? "primary.contrastText" : "text.secondary",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        }
+                      />
+                      <Tab
+                        value="coding"
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            Coding
+                            {totalCodingQuestions > 0 && (
+                              <Chip
+                                label={totalCodingQuestions}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  bgcolor: questionsSubTab === "coding" ? "primary.main" : "action.hover",
+                                  color: questionsSubTab === "coding" ? "primary.contrastText" : "text.secondary",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        }
+                      />
+                    </Tabs>
+
+                    {questionsSubTab === "mcq" && (
+                      <Paper
+                        variant="outlined"
                         sx={{
-                          pt: 2,
-                          borderTop: "1px solid #e5e7eb",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          gap: 2,
+                          borderRadius: 2,
+                          overflow: "hidden",
+                          borderColor: "#e5e7eb",
+                          bgcolor: "#fafafa",
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1.5,
+                            borderBottom: "1px solid #e5e7eb",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            bgcolor: "#fff",
+                          }}
+                        >
                           <Typography variant="body2" color="text.secondary">
-                            Showing {(questionsPage - 1) * questionsLimit + 1} to{" "}
-                            {Math.min(
-                              totalQuestions,
-                              questionsPage * questionsLimit
-                            )}{" "}
-                            of {totalQuestions}
+                            {totalQuizQuestions} MCQ question{totalQuizQuestions !== 1 ? "s" : ""}
                           </Typography>
-                          <FormControl size="small" sx={{ minWidth: 120 }}>
-                            <Select
-                              value={questionsLimit}
-                              onChange={(e) => {
-                                setQuestionsLimit(Number(e.target.value));
-                                setQuestionsPage(1);
-                              }}
-                            >
-                              <MenuItem value={10}>10 per page</MenuItem>
-                              <MenuItem value={25}>25 per page</MenuItem>
-                              <MenuItem value={50}>50 per page</MenuItem>
-                              <MenuItem value={100}>100 per page</MenuItem>
-                            </Select>
-                          </FormControl>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                            onClick={handleDownloadMCQQuestions}
+                            disabled={totalQuizQuestions === 0}
+                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                          >
+                            Download MCQ CSV
+                          </Button>
                         </Box>
-                        <Pagination
-                          count={Math.ceil(totalQuestions / questionsLimit)}
-                          page={questionsPage}
-                          onChange={(_, v) => setQuestionsPage(v)}
-                          color="primary"
-                          size="small"
-                          showFirstButton={false}
-                          showLastButton={false}
-                          boundaryCount={1}
-                          siblingCount={0}
-                          disabled={
-                            Math.ceil(totalQuestions / questionsLimit) <= 1
-                          }
-                        />
+                        {totalQuizQuestions === 0 ? (
+                          <Box sx={{ py: 6, textAlign: "center" }}>
+                            <Typography color="text.secondary">No MCQ questions.</Typography>
+                          </Box>
+                        ) : (
+                          <>
+                            <TableContainer sx={{ maxHeight: 440 }}>
+                              <Table size="small" stickyHeader>
+                                <TableHead>
+                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem", minWidth: 220 }}>Question</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Correct</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Difficulty</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, width: 56, textAlign: "center", fontSize: "0.8rem" }} />
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {paginatedQuizQuestions.map(({ section: sec, question: q }) => (
+                                    <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell sx={{ py: 1.5, maxWidth: 280 }}>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: "vertical",
+                                          }}
+                                          title={q.question_text}
+                                        >
+                                          {q.question_text}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5, fontWeight: 600 }}>{q.correct_option}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{q.difficulty_level ?? "—"}</TableCell>
+                                      <TableCell sx={{ py: 1.5, textAlign: "center" }}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => setPreviewMCQ({ section: sec, question: q })}
+                                          sx={{ color: "#6366f1" }}
+                                          title="Preview"
+                                        >
+                                          <IconWrapper icon="mdi:eye-outline" size={18} />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                            <PaginationControls
+                              totalItems={totalQuizQuestions}
+                              page={questionsPage}
+                              limit={questionsLimit}
+                              onPageChange={setQuestionsPage}
+                              onLimitChange={(l) => { setQuestionsLimit(l); setQuestionsPage(1); }}
+                              itemLabel="questions"
+                            />
+                          </>
+                        )}
+                      </Paper>
+                    )}
+
+                    {questionsSubTab === "coding" && (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 2,
+                          overflow: "hidden",
+                          borderColor: "#e5e7eb",
+                          bgcolor: "#fafafa",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1.5,
+                            borderBottom: "1px solid #e5e7eb",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            bgcolor: "#fff",
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {totalCodingQuestions} coding question{totalCodingQuestions !== 1 ? "s" : ""}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                            onClick={handleDownloadCodingQuestions}
+                            disabled={totalCodingQuestions === 0}
+                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                          >
+                            Download Coding CSV
+                          </Button>
+                        </Box>
+                        {totalCodingQuestions === 0 ? (
+                          <Box sx={{ py: 6, textAlign: "center" }}>
+                            <Typography color="text.secondary">No coding questions.</Typography>
+                          </Box>
+                        ) : (
+                          <>
+                            <TableContainer sx={{ maxHeight: 440 }}>
+                              <Table size="small" stickyHeader>
+                                <TableHead>
+                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem", minWidth: 260 }}>Title</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Difficulty</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Tags</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, width: 56, textAlign: "center", fontSize: "0.8rem" }} />
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {paginatedCodingQuestions.map(({ section: sec, question: q }) => (
+                                    <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell sx={{ py: 1.5, maxWidth: 300 }}>
+                                        <Typography variant="body2" fontWeight={500}>
+                                          {q.title}
+                                        </Typography>
+                                        {q.problem_statement && (
+                                          <Typography
+                                            variant="caption"
+                                            sx={{ color: "#6b7280", display: "block", mt: 0.25 }}
+                                          >
+                                            {(() => {
+                                              const text = htmlToPlainText(String(q.problem_statement));
+                                              return text.length > 90 ? text.slice(0, 90) + "…" : text;
+                                            })()}
+                                          </Typography>
+                                        )}
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>
+                                        {q.difficulty_level ? (
+                                          <Chip
+                                            label={q.difficulty_level}
+                                            size="small"
+                                            sx={{
+                                              bgcolor:
+                                                q.difficulty_level === "Easy"
+                                                  ? "#d1fae5"
+                                                  : q.difficulty_level === "Medium"
+                                                  ? "#fde68a"
+                                                  : "#fed7aa",
+                                              color:
+                                                q.difficulty_level === "Easy"
+                                                  ? "#065f46"
+                                                  : q.difficulty_level === "Medium"
+                                                  ? "#92400e"
+                                                  : "#7c2d12",
+                                              fontWeight: 600,
+                                              fontSize: "0.7rem",
+                                            }}
+                                          />
+                                        ) : (
+                                          "—"
+                                        )}
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{q.tags ?? "—"}</TableCell>
+                                      <TableCell sx={{ py: 1.5, textAlign: "center" }}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => setPreviewCoding({ section: sec, question: q })}
+                                          sx={{ color: "#6366f1" }}
+                                          title="Preview"
+                                        >
+                                          <IconWrapper icon="mdi:eye-outline" size={18} />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                            <PaginationControls
+                              totalItems={totalCodingQuestions}
+                              page={codingQuestionsPage}
+                              limit={codingQuestionsLimit}
+                              onPageChange={setCodingQuestionsPage}
+                              onLimitChange={(l) => { setCodingQuestionsLimit(l); setCodingQuestionsPage(1); }}
+                              itemLabel="questions"
+                            />
+                          </>
+                        )}
+                      </Paper>
+                    )}
+                  </Box>
+                )}
+
+                {/* MCQ Preview Dialog */}
+                <Dialog
+                  open={!!previewMCQ}
+                  onClose={() => setPreviewMCQ(null)}
+                  maxWidth="sm"
+                  fullWidth
+                  PaperProps={{ sx: { borderRadius: 2 } }}
+                >
+                  <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span>MCQ Preview · {previewMCQ?.section.section_title}</span>
+                    <IconButton size="small" onClick={() => setPreviewMCQ(null)} aria-label="Close">
+                      <IconWrapper icon="mdi:close" size={20} />
+                    </IconButton>
+                  </DialogTitle>
+                  <DialogContent dividers>
+                    {previewMCQ && (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Typography variant="body1">{previewMCQ.question.question_text}</Typography>
+                        <Box sx={{ pl: 2 }}>
+                          <Typography variant="body2"><strong>A:</strong> {previewMCQ.question.option_a}</Typography>
+                          <Typography variant="body2"><strong>B:</strong> {previewMCQ.question.option_b}</Typography>
+                          <Typography variant="body2"><strong>C:</strong> {previewMCQ.question.option_c}</Typography>
+                          <Typography variant="body2"><strong>D:</strong> {previewMCQ.question.option_d}</Typography>
+                        </Box>
+                        <Typography variant="body2" color="primary"><strong>Correct:</strong> {previewMCQ.question.correct_option}</Typography>
+                        {previewMCQ.question.explanation && (
+                          <Typography variant="body2" color="text.secondary">{previewMCQ.question.explanation}</Typography>
+                        )}
+                        {previewMCQ.question.difficulty_level && (
+                          <Chip label={previewMCQ.question.difficulty_level} size="small" />
+                        )}
                       </Box>
                     )}
-                  </>
-                )}
+                  </DialogContent>
+                </Dialog>
+
+                {/* Coding Preview Dialog */}
+                <Dialog
+                  open={!!previewCoding}
+                  onClose={() => setPreviewCoding(null)}
+                  maxWidth="md"
+                  fullWidth
+                  PaperProps={{ sx: { maxHeight: "90vh", borderRadius: 2 } }}
+                >
+                  <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span>Coding Problem Preview · {previewCoding?.section.section_title}</span>
+                    <IconButton size="small" onClick={() => setPreviewCoding(null)} aria-label="Close">
+                      <IconWrapper icon="mdi:close" size={20} />
+                    </IconButton>
+                  </DialogTitle>
+                  <DialogContent dividers sx={{ p: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                    {previewCoding && (
+                      <Box sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
+                        <ProblemDescription problemData={codingProblemDataForPreview(previewCoding.question)} />
+                      </Box>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </>
             )}
 
@@ -933,20 +1282,13 @@ export default function AssessmentEditPage() {
                             )}{" "}
                             of {totalSubmissions}
                           </Typography>
-                          <FormControl size="small" sx={{ minWidth: 120 }}>
-                            <Select
-                              value={submissionsLimit}
-                              onChange={(e) => {
-                                setSubmissionsLimit(Number(e.target.value));
-                                setSubmissionsPage(1);
-                              }}
-                            >
-                              <MenuItem value={10}>10 per page</MenuItem>
-                              <MenuItem value={25}>25 per page</MenuItem>
-                              <MenuItem value={50}>50 per page</MenuItem>
-                              <MenuItem value={100}>100 per page</MenuItem>
-                            </Select>
-                          </FormControl>
+                          <PerPageSelect
+                            value={submissionsLimit}
+                            onChange={(v) => {
+                              setSubmissionsLimit(v);
+                              setSubmissionsPage(1);
+                            }}
+                          />
                         </Box>
                         <Pagination
                           count={Math.ceil(totalSubmissions / submissionsLimit)}

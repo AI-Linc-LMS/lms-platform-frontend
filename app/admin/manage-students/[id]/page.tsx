@@ -15,11 +15,9 @@ import {
   TableRow,
   Chip,
   Pagination,
-  Select,
-  MenuItem,
-  FormControl,
   CircularProgress,
 } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -474,25 +472,18 @@ export default function StudentDetailsPage() {
                           {Math.min(assessmentEndIndex, student.assessments.length)} of{" "}
                           {student.assessments.length} assessments
                         </Typography>
-                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                          <Select
-                            value={assessmentLimit}
-                            onChange={(e) => {
-                              setAssessmentLimit(Number(e.target.value));
-                              setAssessmentPage(1);
-                            }}
-                            displayEmpty
-                            inputProps={{ "aria-label": "Assessments per page" }}
-                            sx={{
-                              fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                            }}
-                          >
-                            <MenuItem value={5}>5 per page</MenuItem>
-                            <MenuItem value={10}>10 per page</MenuItem>
-                            <MenuItem value={15}>15 per page</MenuItem>
-                            <MenuItem value={30}>30 per page</MenuItem>
-                          </Select>
-                        </FormControl>
+                        <PerPageSelect
+                          value={assessmentLimit}
+                          onChange={(v) => {
+                            setAssessmentLimit(v);
+                            setAssessmentPage(1);
+                          }}
+                          options={[5, 10, 15, 30]}
+                          displayEmpty
+                          ariaLabel="Assessments per page"
+                          minWidth={120}
+                          SelectSx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                        />
                       </Box>
                       <Pagination
                         count={assessmentTotalPages}
@@ -588,25 +579,18 @@ export default function StudentDetailsPage() {
                         )}{" "}
                         of {student.activity_pattern_30_days.length} days
                       </Typography>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <Select
-                          value={activityLimit}
-                          onChange={(e) => {
-                            setActivityLimit(Number(e.target.value));
-                            setActivityPage(1);
-                          }}
-                          displayEmpty
-                          inputProps={{ "aria-label": "Days per page" }}
-                          sx={{
-                            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                          }}
-                        >
-                          <MenuItem value={5}>5 per page</MenuItem>
-                          <MenuItem value={10}>10 per page</MenuItem>
-                          <MenuItem value={15}>15 per page</MenuItem>
-                          <MenuItem value={30}>30 per page</MenuItem>
-                        </Select>
-                      </FormControl>
+                      <PerPageSelect
+                        value={activityLimit}
+                        onChange={(v) => {
+                          setActivityLimit(v);
+                          setActivityPage(1);
+                        }}
+                        options={[5, 10, 15, 30]}
+                        displayEmpty
+                        ariaLabel="Days per page"
+                        minWidth={120}
+                        SelectSx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                      />
                     </Box>
                     <Pagination
                       count={activityTotalPages}

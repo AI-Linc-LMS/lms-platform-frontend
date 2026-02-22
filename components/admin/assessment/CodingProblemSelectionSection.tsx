@@ -16,14 +16,12 @@ import {
   TableRow,
   Chip,
   Pagination,
-  Select,
-  MenuItem,
-  FormControl,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
 } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
@@ -320,29 +318,15 @@ export function CodingProblemSelectionSection({
                   {Math.min(filteredProblems.length, page * limit)} of{" "}
                   {filteredProblems.length} problems
                 </Typography>
-                <FormControl
-                  size="small"
-                  sx={{
-                    minWidth: { xs: 100, sm: 120 },
-                    "& .MuiInputBase-root": {
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    },
+                <PerPageSelect
+                  value={limit}
+                  onChange={(v) => {
+                    setLimit(v);
+                    setPage(1);
                   }}
-                >
-                  <Select
-                    value={limit}
-                    onChange={(e) => {
-                      setLimit(Number(e.target.value));
-                      setPage(1);
-                    }}
-                    displayEmpty
-                  >
-                    <MenuItem value={10}>10 per page</MenuItem>
-                    <MenuItem value={25}>25 per page</MenuItem>
-                    <MenuItem value={50}>50 per page</MenuItem>
-                    <MenuItem value={100}>100 per page</MenuItem>
-                  </Select>
-                </FormControl>
+                  displayEmpty
+                  SelectSx={{ "& .MuiInputBase-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}
+                />
               </Box>
               <Pagination
                 count={totalPages}

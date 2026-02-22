@@ -1,6 +1,13 @@
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 
+export interface DashboardPdfOptions {
+  element: HTMLElement;
+  fileName?: string;
+  backgroundColor?: string;
+  sectionSelector?: string;
+}
+
 interface PdfGenerationOptions {
   element: HTMLElement;
   fileName?: string;
@@ -268,6 +275,83 @@ export const generatePdfFromElement = async ({
     throw error;
   } finally {
     // Always restore CSS patch
+    restoreCssRulesPatch(cssPatch);
+  }
+};
+
+/**
+ * Generates a PDF from dashboard content by capturing each section separately.
+ * Ensures no content is cut at page boundaries - each section is scaled to fit.
+ * Excludes elements with 'exclude-from-pdf' class (e.g. download button).
+ */
+export const generateDashboardPdf = async ({
+  element,
+  fileName = "admin-dashboard.pdf",
+  backgroundColor = "#ffffff",
+  sectionSelector = ".pdf-section",
+}: DashboardPdfOptions): Promise<void> => {
+  const cssPatch = applyCssRulesPatch();
+
+  try {
+    const sections = element.querySelectorAll<HTMLElement>(sectionSelector);
+    if (sections.length === 0) {
+      throw new Error("No PDF sections found");
+    }
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+    const pageWidth = 220;
+    const pageHeight = 297;
+    const margin = 10;
+    const usableWidth = pageWidth - margin * 2;
+    const usableHeight = pageHeight - margin * 2;
+    let isFirstPage = true;
+
+    for (const section of Array.from(sections)) {
+      // Use html-to-image (better Recharts/SVG support) instead of html2canvas
+      const imgData = await toPng(section, {
+        pixelRatio: 2,
+        backgroundColor,
+        cacheBust: true,
+        filter: (node) =>
+          !(node instanceof HTMLElement && node.classList.contains("exclude-from-pdf")),
+      });
+
+      const img = new Image();
+      img.src = imgData;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Image load failed"));
+      });
+      const imgAspect = img.height / img.width;
+
+      // Scale to fit page width
+      let imgWidthMm = usableWidth;
+      let imgHeightMm = imgWidthMm * imgAspect;
+
+      // If section is taller than page, scale down to fit (no cutting)
+      const scaledDown = imgHeightMm > usableHeight;
+      if (scaledDown) {
+        imgHeightMm = usableHeight;
+        imgWidthMm = imgHeightMm / imgAspect;
+      }
+      if (!isFirstPage) {
+        pdf.addPage();
+      }
+      isFirstPage = false;
+
+      // Center horizontally if narrower than page
+      const xOffset = margin + (usableWidth - imgWidthMm) / 2;
+      pdf.addImage(imgData, "PNG", xOffset, margin, imgWidthMm, imgHeightMm, undefined, "FAST");
+    }
+
+    pdf.save(fileName);
+  } catch (error) {
+    throw error;
+  } finally {
     restoreCssRulesPatch(cssPatch);
   }
 };
