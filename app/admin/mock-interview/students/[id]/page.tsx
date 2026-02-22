@@ -150,7 +150,7 @@ export default function AdminStudentDetailPage() {
         </Paper>
 
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Total
@@ -159,7 +159,7 @@ export default function AdminStudentDetailPage() {
               <Typography variant="caption">interviews</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Completed
@@ -167,7 +167,7 @@ export default function AdminStudentDetailPage() {
               <Typography variant="h6">{summary.completed_interviews}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Avg Score
@@ -187,7 +187,7 @@ export default function AdminStudentDetailPage() {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Paper sx={{ p: 2, textAlign: "center", borderRadius: 2 }}>
               <Typography variant="caption" color="textSecondary">
                 Completion
