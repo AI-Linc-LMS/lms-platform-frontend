@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, Checkbox, FormControlLabel, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Experience } from "@/lib/services/profile.service";
@@ -38,8 +37,17 @@ export function ExperienceSection({
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        experience: experiences,
+      const dataToSave: Partial<UserProfile> = {
+        experience: experiences.map((exp): Experience => ({
+          id: exp.id,
+          company: exp.company,
+          position: exp.position,
+          current: exp.current,
+          start_date: exp.start_date ?? "",
+          end_date: exp.end_date || undefined,
+          location: exp.location || undefined,
+          description: exp.description || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -82,10 +90,20 @@ export function ExperienceSection({
     setExperiences(experiences.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newExperience: Experience = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      start_date: toISODate(formData.start_date ?? ""),
+      end_date: formData.end_date ? toISODate(formData.end_date) : undefined,
     };
 
     if (editingIndex !== null) {
@@ -449,7 +467,6 @@ export function ExperienceSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
-                  ...datePlaceholderSx(formData.start_date, "DD / MM / YYYY"),
                 }}
               />
               <TextField
@@ -466,7 +483,6 @@ export function ExperienceSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
-                  ...datePlaceholderSx(formData.end_date, "DD / MM / YYYY"),
                 }}
               />
             </Box>
