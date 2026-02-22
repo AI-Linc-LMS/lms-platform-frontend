@@ -118,7 +118,7 @@ export function CodingProblemsTable({
               <TableCell
                 sx={{ fontWeight: 600, fontSize: "0.875rem", width: 120 }}
               >
-                Language
+                Actions
               </TableCell>
             </TableRow>
           </TableHead>
@@ -193,12 +193,7 @@ export function CodingProblemsTable({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                      {problem.topic || "-"}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                      {problem.programming_language || "-"}
+                      {problem.tags || "-"}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>

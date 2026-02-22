@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Certification } from "@/lib/services/profile.service";
@@ -420,15 +421,14 @@ export function CertificationsSection({
             {editingIndex !== null ? "Edit Certification" : "Add Certification"}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Certification Name *"
+              label="Certification Name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -437,12 +437,11 @@ export function CertificationsSection({
               }}
             />
             <TextField
-              label="Issuing Organization *"
+              label="Issuing Organization"
               value={formData.issuing_organization}
               onChange={(e) => setFormData({ ...formData, issuing_organization: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -451,26 +450,26 @@ export function CertificationsSection({
               }}
             />
             <TextField
-              label="Issue Date *"
+              label="Issue Date"
               value={formData.issue_date}
               onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-              type="month"
+              type="date"
               fullWidth
               size="small"
-              required
               InputLabelProps={{ shrink: true }}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
                   fontSize: "0.9375rem",
                 },
+                ...datePlaceholderSx(formData.issue_date, "DD / MM / YYYY"),
               }}
             />
             <TextField
               label="Expiration Date"
               value={formData.expiration_date}
               onChange={(e) => setFormData({ ...formData, expiration_date: e.target.value })}
-              type="month"
+              type="date"
               fullWidth
               size="small"
               InputLabelProps={{ shrink: true }}
@@ -479,6 +478,7 @@ export function CertificationsSection({
                   borderRadius: 1.5,
                   fontSize: "0.9375rem",
                 },
+                ...datePlaceholderSx(formData.expiration_date, "DD / MM / YYYY"),
               }}
             />
             <TextField

@@ -14,20 +14,6 @@ export function MockInterviewHeader({
 }: MockInterviewHeaderProps) {
   return (
     <Box sx={{ mb: 4 }}>
-      {/* Breadcrumb / context */}
-      <Typography
-        variant="caption"
-        sx={{
-          display: "block",
-          color: "#9ca3af",
-          mb: 1,
-          fontSize: "0.8125rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        Admin / Mock Interviews
-      </Typography>
 
       {/* Main header row */}
       <Box
