@@ -17,13 +17,11 @@ import {
   TableRow,
   Chip,
   Pagination,
-  Select,
-  MenuItem,
-  FormControl,
   Dialog,
   DialogTitle,
   DialogContent,
 } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -192,9 +190,9 @@ export function AIGeneratedCodingSection({
               label="Number of Problems"
               type="number"
               value={count}
-              onChange={(e) => setCount(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setCount(Math.max(0, Number(e.target.value)))}
               fullWidth
-              inputProps={{ min: 1, max: 50 }}
+              inputProps={{ min: 0, max: 50 }}
             />
             <TextField
               label="Difficulty Level"
@@ -427,29 +425,15 @@ export function AIGeneratedCodingSection({
                     to {Math.min(generatedProblems.length, page * limit)} of{" "}
                     {generatedProblems.length} problems
                   </Typography>
-                  <FormControl
-                    size="small"
-                    sx={{
-                      minWidth: { xs: 100, sm: 120 },
-                      "& .MuiInputBase-root": {
-                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      },
+                  <PerPageSelect
+                    value={limit}
+                    onChange={(v) => {
+                      setLimit(v);
+                      setPage(1);
                     }}
-                  >
-                    <Select
-                      value={limit}
-                      onChange={(e) => {
-                        setLimit(Number(e.target.value));
-                        setPage(1);
-                      }}
-                      displayEmpty
-                    >
-                      <MenuItem value={10}>10 per page</MenuItem>
-                      <MenuItem value={25}>25 per page</MenuItem>
-                      <MenuItem value={50}>50 per page</MenuItem>
-                      <MenuItem value={100}>100 per page</MenuItem>
-                    </Select>
-                  </FormControl>
+                    displayEmpty
+                    SelectSx={{ "& .MuiInputBase-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}
+                  />
                 </Box>
                 <Pagination
                   count={totalPages}

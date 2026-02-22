@@ -106,6 +106,12 @@ const adminNavigationItems: NavigationItem[] = [
     featureName: "admin_attendance",
   },
   {
+    label: "Mock Interview",
+    path: "/admin/admin-mock-interview",
+    icon: "mdi:account-voice",
+    featureName: "admin_mock_interview",
+  },
+  {
     label: "Live Sessions",
     path: "/admin/live-sessions",
     icon: "mdi:video-box",

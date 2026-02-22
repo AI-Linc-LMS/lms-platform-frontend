@@ -24,6 +24,7 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -278,20 +279,14 @@ function JobsTable({
                   Showing {(page - 1) * limit + 1} to{" "}
                   {Math.min(filteredJobs.length, page * limit)} of {filteredJobs.length}
                 </Typography>
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <Select
-                    value={limit}
-                    onChange={(e) => {
-                      setLimit(Number(e.target.value));
-                      setPage(1);
-                    }}
-                  >
-                    <MenuItem value={10}>10 per page</MenuItem>
-                    <MenuItem value={25}>25 per page</MenuItem>
-                    <MenuItem value={50}>50 per page</MenuItem>
-                    <MenuItem value={100}>100 per page</MenuItem>
-                  </Select>
-                </FormControl>
+                <PerPageSelect
+                  value={limit}
+                  onChange={(v) => {
+                    setLimit(v);
+                    setPage(1);
+                  }}
+                  minWidth={100}
+                />
               </Box>
               <Pagination
                 count={totalPages}

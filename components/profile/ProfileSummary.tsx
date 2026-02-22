@@ -35,7 +35,7 @@ export function ProfileSummary({
     try {
       setSaving(true);
       const dataToSave = {
-        bio: formData.bio || "",
+        bio: formData.bio || null,
       };
       await onSave(dataToSave);
       setEditing(false);

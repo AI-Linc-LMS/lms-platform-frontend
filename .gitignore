@@ -25,6 +25,7 @@ dist-ssr
 *.sw?
 .next
 next-env.d.ts
+*.tsbuildinfo
 
 # Windows reserved filename — ignore to avoid git add errors
 /CON

@@ -12,10 +12,8 @@ import {
   TableRow,
   Chip,
   Pagination,
-  Select,
-  MenuItem,
-  FormControl,
 } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState } from "react";
 
@@ -406,29 +404,21 @@ export function EnrolledCoursesTable({
                 {Math.min(endIndex, courses.length)} of {courses.length} course
                 {courses.length !== 1 ? "s" : ""}
               </Typography>
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <Select
-                  value={limit}
-                  onChange={(e) => {
-                    setLimit(Number(e.target.value));
-                    setPage(1);
-                  }}
-                  displayEmpty
-                  inputProps={{ "aria-label": "Courses per page" }}
-                  sx={{
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    "& .MuiSelect-select": {
-                      py: { xs: 0.5, sm: 1 },
-                      px: { xs: 1, sm: 1.5 },
-                    },
-                  }}
-                >
-                  <MenuItem value={5}>5 per page</MenuItem>
-                  <MenuItem value={10}>10 per page</MenuItem>
-                  <MenuItem value={25}>25 per page</MenuItem>
-                  <MenuItem value={50}>50 per page</MenuItem>
-                </Select>
-              </FormControl>
+              <PerPageSelect
+                value={limit}
+                onChange={(v) => {
+                  setLimit(v);
+                  setPage(1);
+                }}
+                options={[5, 10, 25, 50]}
+                displayEmpty
+                ariaLabel="Courses per page"
+                minWidth={120}
+                SelectSx={{
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  "& .MuiSelect-select": { py: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 1.5 } },
+                }}
+              />
             </Box>
             {totalPages > 0 && (
               <Pagination

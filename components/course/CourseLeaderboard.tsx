@@ -263,7 +263,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
               const userName = getDisplayName(entry);
               const rank = entry.rank ?? 0;
               const totalScore = entry.score ?? 0;
-              const profilePicUrl = undefined;
+              const profilePicUrl = entry.profile_pic_url ?? undefined;
 
               return (
                 <Box

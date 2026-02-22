@@ -175,11 +175,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     //   icon: "mdi:video",
     //   featureName: "admin_webinar_management",
     // },
+    
     {
       label: "Live Sessions",
       path: "/admin/live-sessions",
       icon: "mdi:video-box",
       featureName: "admin_live_sessions",
+    },
+    {
+      label: "Mock Interview",
+      path: "/admin/admin-mock-interview",
+      icon: "mdi:account-voice",
+      featureName: "admin_mock_interview",
     },
     {
       label: "Verify Content",
@@ -199,6 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:calendar-check",
       featureName: "admin_attendance",
     },
+
     // {
     //   label: "E-Book",
     //   path: "/admin/ebook",

@@ -629,8 +629,8 @@ export const getQuestionsExport = async (
   return response.data as Blob;
 };
 
-/** Questions export JSON shape (export-questions API) */
-export interface QuestionsExportQuestion {
+/** Questions export JSON shape (export-questions API) – MCQ/quiz question */
+export interface QuestionsExportMCQQuestion {
   id: number;
   question_text: string;
   option_a: string;
@@ -642,6 +642,35 @@ export interface QuestionsExportQuestion {
   difficulty_level?: string;
   topic?: string;
   skills?: string;
+}
+
+/** Questions export – coding question shape */
+export interface QuestionsExportCodingQuestion {
+  id: number;
+  title: string;
+  problem_statement?: string;
+  input_format?: string;
+  output_format?: string;
+  sample_input?: string;
+  sample_output?: string;
+  constraints?: string;
+  difficulty_level?: string;
+  tags?: string;
+  test_cases?: Array<{ input: string; expected_output: string }>;
+  time_limit?: number;
+  memory_limit?: number;
+  [key: string]: unknown;
+}
+
+/** Union type for quiz or coding question in export */
+export type QuestionsExportQuestion = QuestionsExportMCQQuestion | QuestionsExportCodingQuestion;
+
+export function isCodingQuestion(q: QuestionsExportQuestion): q is QuestionsExportCodingQuestion {
+  return "title" in q && typeof (q as QuestionsExportCodingQuestion).title === "string";
+}
+
+export function isMCQQuestion(q: QuestionsExportQuestion): q is QuestionsExportMCQQuestion {
+  return "question_text" in q && "option_a" in q;
 }
 
 export interface QuestionsExportSection {

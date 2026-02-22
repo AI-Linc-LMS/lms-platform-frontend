@@ -68,7 +68,7 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
           Top 20 Students
         </Typography>
       </Box>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={380}>
         <BarChart
           data={
             topStudents.length > 0
@@ -100,7 +100,7 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
               borderRadius: "8px",
             }}
           />
-          <Legend iconType="square" />
+          <Legend iconType="square" wrapperStyle={{ paddingTop: 16 }} />
           {topStudents.length > 0 && (
             <>
               <Bar

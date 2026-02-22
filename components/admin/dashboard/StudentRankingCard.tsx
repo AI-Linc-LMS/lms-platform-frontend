@@ -4,6 +4,7 @@ import { Box, Typography, Paper } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface StudentRankingCardProps {
+  expandForPdf?: boolean;
   leaderboard: Array<{
     name?: string;
     studentName?: string;
@@ -15,7 +16,7 @@ interface StudentRankingCardProps {
   }>;
 }
 
-export function StudentRankingCard({ leaderboard }: StudentRankingCardProps) {
+export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRankingCardProps) {
   return (
     <Paper
       sx={{
@@ -86,8 +87,8 @@ export function StudentRankingCard({ leaderboard }: StudentRankingCardProps) {
           sx={{
             display: "flex",
             flexDirection: "column",
-            height: "240px", // Fixed height to show exactly 3 records (80px each)
-            overflowY: "auto",
+            height: expandForPdf ? "auto" : "240px", // Expand to show all records during PDF capture
+            overflowY: expandForPdf ? "visible" : "auto",
             gap: 1,
             pr: 0.5,
             "&::-webkit-scrollbar": {
