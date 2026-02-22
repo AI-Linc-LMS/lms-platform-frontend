@@ -12,7 +12,7 @@ export interface PerPageSelectProps {
   size?: "small" | "medium";
   displayEmpty?: boolean;
   ariaLabel?: string;
-  minWidth?: number | string | { xs?: number; sm?: number };
+  minWidth?: number | string | { xs?: number | string; sm?: number | string; md?: number | string; lg?: number | string; xl?: number | string };
   FormControlSx?: SxProps<Theme>;
   SelectSx?: SxProps<Theme>;
   MenuItemSx?: SxProps<Theme>;
