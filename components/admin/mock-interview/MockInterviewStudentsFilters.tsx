@@ -115,7 +115,7 @@ export function MockInterviewStudentsFilters({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") onSearch?.();
+            if (e.key === "Enter") onSearchChange(search);
           }}
           InputProps={{
             startAdornment: (
