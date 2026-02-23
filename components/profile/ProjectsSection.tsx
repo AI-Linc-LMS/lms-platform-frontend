@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, Autocomplete } from "@mui/material";
-import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Project } from "@/lib/services/profile.service";
@@ -57,8 +56,17 @@ export function ProjectsSection({
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        projects: projects,
+      const dataToSave: Partial<UserProfile> = {
+        projects: projects.map((proj): Project => ({
+          id: proj.id,
+          name: proj.name,
+          description: proj.description ?? "",
+          technologies: proj.technologies,
+          url: proj.url || undefined,
+          start_date: proj.start_date || undefined,
+          end_date: proj.end_date || undefined,
+          current: proj.current,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -101,10 +109,20 @@ export function ProjectsSection({
     setProjects(projects.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newProject: Project = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      start_date: toISODate(formData.start_date || ""),
+      end_date: toISODate(formData.end_date || ""),
     };
 
     if (editingIndex !== null) {
@@ -542,7 +560,6 @@ export function ProjectsSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
-                  ...datePlaceholderSx(formData.start_date, "DD / MM / YYYY"),
                 }}
               />
               <TextField
@@ -559,7 +576,6 @@ export function ProjectsSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
-                  ...datePlaceholderSx(formData.end_date, "DD / MM / YYYY"),
                 }}
               />
             </Box>

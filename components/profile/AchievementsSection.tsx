@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Achievement } from "@/lib/services/profile.service";
@@ -35,8 +34,14 @@ export function AchievementsSection({
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        achievements: achievements,
+      const dataToSave: Partial<UserProfile> = {
+        achievements: achievements.map((ach): Achievement => ({
+          id: ach.id,
+          title: ach.title,
+          description: ach.description || undefined,
+          date: ach.date || undefined,
+          organization: ach.organization || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -76,10 +81,19 @@ export function AchievementsSection({
     setAchievements(achievements.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newAchievement: Achievement = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      date: toISODate(formData.date || ""),
     };
 
     if (editingIndex !== null) {
@@ -429,7 +443,6 @@ export function AchievementsSection({
                   borderRadius: 1.5,
                   fontSize: "0.9375rem",
                 },
-                ...datePlaceholderSx(formData.date, "DD / MM / YYYY"),
               }}
             />
             <TextField

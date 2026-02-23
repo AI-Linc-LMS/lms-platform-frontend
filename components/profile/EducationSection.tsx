@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Education } from "@/lib/services/profile.service";
@@ -38,8 +37,17 @@ export function EducationSection({
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        education: educations,
+      const dataToSave: Partial<UserProfile> = {
+        education: educations.map((edu): Education => ({
+          id: edu.id,
+          institution: edu.institution,
+          degree: edu.degree,
+          field_of_study: edu.field_of_study || undefined,
+          start_date: edu.start_date || undefined,
+          end_date: edu.end_date || undefined,
+          gpa: edu.gpa || undefined,
+          description: edu.description || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -82,10 +90,20 @@ export function EducationSection({
     setEducations(educations.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newEducation: Education = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      start_date: toISODate(formData.start_date || ""),
+      end_date: toISODate(formData.end_date || ""),
     };
 
     if (editingIndex !== null) {
@@ -445,7 +463,6 @@ export function EducationSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
-                  ...datePlaceholderSx(formData.start_date, "DD / MM / YYYY"),
                 }}
               />
               <TextField
@@ -461,7 +478,6 @@ export function EducationSection({
                     borderRadius: 1.5,
                     fontSize: "0.9375rem",
                   },
-                  ...datePlaceholderSx(formData.end_date, "DD / MM / YYYY"),
                 }}
               />
             </Box>

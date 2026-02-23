@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { datePlaceholderSx } from "./dateFieldSx";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useEffect } from "react";
 import { UserProfile, Certification } from "@/lib/services/profile.service";
@@ -56,8 +55,16 @@ export function CertificationsSection({
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        certifications: certifications,
+      const dataToSave: Partial<UserProfile> = {
+        certifications: certifications.map((cert): Certification => ({
+          id: cert.id,
+          name: cert.name,
+          issuing_organization: cert.issuing_organization,
+          issue_date: cert.issue_date ?? "",
+          expiration_date: cert.expiration_date || undefined,
+          credential_id: cert.credential_id || undefined,
+          credential_url: cert.credential_url || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -99,10 +106,20 @@ export function CertificationsSection({
     setCertifications(certifications.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newCertification: Certification = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      issue_date: toISODate(formData.issue_date),
+      expiration_date: toISODate(formData.expiration_date || ""),
     };
 
     if (editingIndex !== null) {
@@ -462,7 +479,6 @@ export function CertificationsSection({
                   borderRadius: 1.5,
                   fontSize: "0.9375rem",
                 },
-                ...datePlaceholderSx(formData.issue_date, "DD / MM / YYYY"),
               }}
             />
             <TextField
@@ -478,7 +494,6 @@ export function CertificationsSection({
                   borderRadius: 1.5,
                   fontSize: "0.9375rem",
                 },
-                ...datePlaceholderSx(formData.expiration_date, "DD / MM / YYYY"),
               }}
             />
             <TextField
