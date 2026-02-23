@@ -8,8 +8,11 @@ export interface ZoomCredentials {
   account_id?: string | null;
   zoom_client_id?: string | null;
   zoom_client_secret?: string | null;
+  zoom_webhook_secret?: string | null;
   is_active?: boolean;
   timezone?: string | null;
+  webhook_configured?: boolean;
+  webhook_url?: string | null;
   created_at?: string;
   updated_at?: string;
 }

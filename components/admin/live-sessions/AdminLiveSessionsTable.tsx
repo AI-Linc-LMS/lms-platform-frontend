@@ -23,6 +23,7 @@ import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.se
 
 interface AdminLiveSessionsTableProps {
   sessions: LiveActivity[];
+  uniqueAttendanceCounts?: Record<number, number>;
   page: number;
   rowsPerPage: number;
   onPageChange: (event: unknown, newPage: number) => void;
@@ -38,6 +39,7 @@ interface AdminLiveSessionsTableProps {
 
 export function AdminLiveSessionsTable({
   sessions,
+  uniqueAttendanceCounts = {},
   page,
   rowsPerPage,
   onPageChange,
@@ -92,7 +94,25 @@ export function AdminLiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
+                Course
+              </TableCell>
+              <TableCell
+                sx={{
+                  fontWeight: 600,
+                  color: "#374151",
+                  fontSize: "0.875rem",
+                }}
+              >
                 Status
+              </TableCell>
+              <TableCell
+                sx={{
+                  fontWeight: 600,
+                  color: "#374151",
+                  fontSize: "0.875rem",
+                }}
+              >
+                Attended
               </TableCell>
               <TableCell
                 sx={{
@@ -139,6 +159,11 @@ export function AdminLiveSessionsTable({
                   </Typography>
                 </TableCell>
                 <TableCell>
+                  <Typography variant="body2" sx={{ color: "#374151" }}>
+                    {activity.course_detail?.title ?? "—"}
+                  </Typography>
+                </TableCell>
+                <TableCell>
                   {activity.meeting_status === "live" ? (
                     <Chip
                       label="Live"
@@ -177,6 +202,13 @@ export function AdminLiveSessionsTable({
                       —
                     </Typography>
                   )}
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" sx={{ color: "#374151" }}>
+                    {uniqueAttendanceCounts[activity.id] != null && uniqueAttendanceCounts[activity.id] > 0
+                      ? uniqueAttendanceCounts[activity.id]
+                      : "—"}
+                  </Typography>
                 </TableCell>
                 <TableCell>
                   <Box
