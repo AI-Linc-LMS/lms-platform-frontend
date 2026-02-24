@@ -14,6 +14,8 @@ export interface LiveClassSession {
   instructor?: { id: number; name?: string } | number;
   status?: string;
   meeting_link?: string;
+  course?: number | null;
+  course_detail?: { id: number; title: string; slug: string } | null;
 }
 
 export interface CreateLiveClassSessionPayload {
@@ -23,6 +25,7 @@ export interface CreateLiveClassSessionPayload {
   duration_minutes: number;
   instructor_id?: number;
   instructor?: number;
+  course?: number | null;
 }
 
 export interface UpdateLiveClassSessionPayload {
@@ -32,6 +35,7 @@ export interface UpdateLiveClassSessionPayload {
   duration_minutes?: number;
   meeting_link?: string;
   status?: string;
+  course?: number | null;
 }
 
 export const liveClassService = {

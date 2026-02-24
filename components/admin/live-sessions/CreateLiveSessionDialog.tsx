@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -12,11 +12,13 @@ import {
   TextField,
   IconButton,
   CircularProgress,
+  MenuItem,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { liveClassService, LiveClassSession } from "@/lib/services/live-class.service";
 import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
+import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import {
   getLiveSessionErrorMessage,
   getZoomApiErrorMessage,
@@ -49,6 +51,31 @@ export function CreateLiveSessionDialog({
   );
   const [zoomStartUrl, setZoomStartUrl] = useState<string | null>(null);
   const [zoomPassword, setZoomPassword] = useState<string | null>(null);
+  const [courseId, setCourseId] = useState<number | null>(null);
+  const [courses, setCourses] = useState<{ id: number; title: string }[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoadingCourses(true);
+    adminCoursesService
+      .getCourses({ limit: 1000 })
+      .then((data: unknown) => {
+        if (cancelled) return;
+        const list = Array.isArray(data)
+          ? data
+          : (data as { results?: unknown[] })?.results ?? [];
+        setCourses(
+          list
+            .filter((c: unknown) => c && typeof c === "object" && "id" in c && "title" in c)
+            .map((c: unknown) => ({ id: (c as { id: number }).id, title: (c as { title: string }).title }))
+        );
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoadingCourses(false); });
+    return () => { cancelled = true; };
+  }, [open]);
 
   const getValidInstructorId = (): number | undefined => {
     const trimmed = instructorId.trim();
@@ -94,6 +121,7 @@ export function CreateLiveSessionDialog({
         class_datetime: classDatetime,
         duration_minutes: duration,
         instructor_id: getValidInstructorId(),
+        course: courseId ?? undefined,
       });
       setCreatedSession(session);
       setStep("create-zoom");
@@ -162,6 +190,7 @@ export function CreateLiveSessionDialog({
     setClassDatetime("");
     setDurationMinutes(60);
     setInstructorId("");
+    setCourseId(null);
     onSuccess();
     onClose();
   };
@@ -178,6 +207,7 @@ export function CreateLiveSessionDialog({
     setClassDatetime("");
     setDurationMinutes(60);
     setInstructorId("");
+    setCourseId(null);
     onClose();
   };
 
@@ -278,6 +308,25 @@ export function CreateLiveSessionDialog({
               error={instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1)}
               helperText={instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1) ? "Enter a positive number" : undefined}
             />
+            <TextField
+              select
+              label="Course (optional)"
+              value={courseId ?? ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                setCourseId(v === "" ? null : Number(v));
+              }}
+              fullWidth
+              size="small"
+              disabled={loadingCourses}
+            >
+              <MenuItem value="">None</MenuItem>
+              {courses.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.title}
+                </MenuItem>
+              ))}
+            </TextField>
           </Box>
         )}
 

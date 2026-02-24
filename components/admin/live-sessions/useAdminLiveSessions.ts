@@ -15,6 +15,7 @@ import {
   getZoomApiErrorMessage,
   copyToClipboard,
 } from "@/lib/utils/live-session-errors";
+import { getUniqueAttendanceCount } from "@/lib/utils/attendance-utils";
 
 const ADMIN_LIVE_SESSIONS_FEATURE = "admin_live_sessions";
 
@@ -36,6 +37,7 @@ export function useAdminLiveSessions() {
     number | null
   >(null);
   const [creatingZoomId, setCreatingZoomId] = useState<number | null>(null);
+  const [uniqueAttendanceCounts, setUniqueAttendanceCounts] = useState<Record<number, number>>({});
 
   const isAdminOrInstructor =
     user?.role === "admin" || user?.role === "instructor";
@@ -77,6 +79,36 @@ export function useAdminLiveSessions() {
       setLoading(false);
     }
   };
+
+  // Fetch unique attendee count per session (one person = one count, no re-joins)
+  useEffect(() => {
+    const withAttendance = sessions.filter((s) => (s.attendance_count ?? 0) > 0);
+    if (withAttendance.length === 0) {
+      setUniqueAttendanceCounts({});
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      withAttendance.map(async (a) => {
+        try {
+          const res = await adminLiveActivitiesService.getZoomAttendance(a.id);
+          return { id: a.id, count: getUniqueAttendanceCount(res.participants ?? []) };
+        } catch {
+          return { id: a.id, count: 0 };
+        }
+      })
+    ).then((results) => {
+      if (cancelled) return;
+      const map: Record<number, number> = {};
+      results.forEach((r) => {
+        map[r.id] = r.count;
+      });
+      setUniqueAttendanceCounts(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessions]);
 
   const handleCopyPassword = (password: string) => {
     copyToClipboard(password, showToast, "Password copied");
@@ -140,6 +172,7 @@ export function useAdminLiveSessions() {
     hasAdminLiveSessionsFeature,
     loading,
     sessions,
+    uniqueAttendanceCounts,
     page,
     setPage,
     rowsPerPage,

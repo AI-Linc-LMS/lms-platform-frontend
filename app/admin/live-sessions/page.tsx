@@ -23,6 +23,7 @@ import { zoomService } from "@/lib/services/zoom.service";
 export default function AdminLiveSessionsPage() {
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [hasCheckedCredentials, setHasCheckedCredentials] = useState(false);
+  const [webhookConfigured, setWebhookConfigured] = useState(false);
   const {
     authLoading,
     canAccessAdmin,
@@ -30,6 +31,7 @@ export default function AdminLiveSessionsPage() {
     hasAdminLiveSessionsFeature,
     loading,
     sessions,
+    uniqueAttendanceCounts,
     page,
     setPage,
     rowsPerPage,
@@ -59,6 +61,7 @@ export default function AdminLiveSessionsPage() {
       .getZoomCredentials()
       .then((data) => {
         if (cancelled) return;
+        setWebhookConfigured(data?.webhook_configured ?? false);
         const empty =
           data == null ||
           (!(data.account_id && data.account_id.trim()) &&
@@ -173,6 +176,7 @@ export default function AdminLiveSessionsPage() {
         ) : (
           <AdminLiveSessionsTable
             sessions={sessions}
+            uniqueAttendanceCounts={uniqueAttendanceCounts}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={(_, newPage) => setPage(newPage)}
@@ -207,11 +211,17 @@ export default function AdminLiveSessionsPage() {
             setSelectedLiveClassId(null);
           }}
           onUpdated={loadSessions}
+          webhookConfigured={webhookConfigured}
         />
 
         <ZoomCredentialsDialog
           open={credentialsDialogOpen}
-          onClose={() => setCredentialsDialogOpen(false)}
+          onClose={() => {
+            setCredentialsDialogOpen(false);
+            zoomService.getZoomCredentials().then((data) => {
+              setWebhookConfigured(data?.webhook_configured ?? false);
+            }).catch(() => {});
+          }}
         />
       </Container>
     </MainLayout>
