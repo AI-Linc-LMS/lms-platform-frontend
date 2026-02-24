@@ -7,13 +7,6 @@ import {
   Drawer,
   IconButton,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   CircularProgress,
   Chip,
   Dialog,
@@ -29,20 +22,20 @@ import {
   LiveActivity,
 } from "@/lib/services/admin/admin-live-activities.service";
 import {
-  MEETING_NOT_FINALIZED_MESSAGE,
   RECORDING_PROCESSING_MESSAGE,
   RECORDING_NOT_AVAILABLE_FRIENDLY_MESSAGE,
   SESSION_NOT_FOUND_MESSAGE,
   getLiveSessionErrorMessage,
   getZoomApiErrorMessage,
 } from "@/lib/utils/live-session-errors";
-import { formatDurationSeconds } from "@/lib/utils/date-utils";
+import { ZoomAttendanceSection } from "./ZoomAttendanceSection";
 
 interface LiveSessionDetailDrawerProps {
   liveClassId: number | null;
   open: boolean;
   onClose: () => void;
   onUpdated?: () => void;
+  webhookConfigured?: boolean;
 }
 
 export function LiveSessionDetailDrawer({
@@ -50,6 +43,7 @@ export function LiveSessionDetailDrawer({
   open,
   onClose,
   onUpdated,
+  webhookConfigured = false,
 }: LiveSessionDetailDrawerProps) {
   const { showToast } = useToast();
   const [activity, setActivity] = useState<LiveActivity | null>(null);
@@ -178,31 +172,6 @@ export function LiveSessionDetailDrawer({
     });
   };
 
-  /** Shorter date/time for table cells so everything fits without horizontal scroll */
-  const formatDateTimeShort = (s: string | null | undefined) => {
-    if (!s) return "—";
-    return new Date(s).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const tableCellSx = {
-    fontSize: "0.75rem",
-    verticalAlign: "middle",
-  } as const;
-
-  const colWidths = {
-    name: "24%",
-    email: "24%",
-    join: "18%",
-    leave: "18%",
-    duration: "16%",
-  };
-
-  const participants = activity?.zoom_participants ?? [];
   const hasRecording = Boolean(activity?.zoom_recording_url?.trim());
 
   return (
@@ -244,8 +213,11 @@ export function LiveSessionDetailDrawer({
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
             {activity.topic_name ?? "—"}
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+          <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5 }}>
             {formatDateTime(activity.class_datetime)} · {activity.duration_minutes} min
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+            Course: {activity.course_detail?.title ?? "No course"}
           </Typography>
 
           <Chip
@@ -346,7 +318,7 @@ export function LiveSessionDetailDrawer({
           </Box>
 
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
-            {activity.meeting_status === "live" && (
+            {activity.meeting_status === "live" && !webhookConfigured && (
               <>
                 <Button
                   variant="outlined"
@@ -412,139 +384,8 @@ export function LiveSessionDetailDrawer({
             </Button>
           </Box>
 
-          {participants.length > 0 && (
-            <>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 600, mb: 1, color: "#374151" }}
-              >
-                Zoom participants
-              </Typography>
-              <TableContainer
-                component={Paper}
-                variant="outlined"
-                sx={{ mb: 2, overflow: "hidden" }}
-              >
-                <Table
-                  size="small"
-                  sx={{ tableLayout: "fixed", width: "100%" }}
-                >
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          ...tableCellSx,
-                          width: colWidths.name,
-                          maxWidth: 0,
-                        }}
-                      >
-                        Name
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          ...tableCellSx,
-                          width: colWidths.email,
-                          maxWidth: 0,
-                        }}
-                      >
-                        Email
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          ...tableCellSx,
-                          width: colWidths.join,
-                        }}
-                      >
-                        Join
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          ...tableCellSx,
-                          width: colWidths.leave,
-                        }}
-                      >
-                        Leave
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          ...tableCellSx,
-                          width: colWidths.duration,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Duration
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {participants.map((p, idx) => (
-                      <TableRow
-                        key={
-                          p.id != null && String(p.id).trim() !== ""
-                            ? p.id
-                            : `participant-${idx}`
-                        }
-                      >
-                        <TableCell
-                          sx={{
-                            ...tableCellSx,
-                            maxWidth: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={p.name ?? undefined}
-                        >
-                          {p.name ?? "—"}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            ...tableCellSx,
-                            maxWidth: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={
-                            p.user_email?.trim() || p.email?.trim() || undefined
-                          }
-                        >
-                          {p.user_email?.trim() || p.email?.trim() || "—"}
-                        </TableCell>
-                        <TableCell
-                          sx={{ ...tableCellSx, whiteSpace: "nowrap" }}
-                        >
-                          {formatDateTimeShort(p.join_time)}
-                        </TableCell>
-                        <TableCell
-                          sx={{ ...tableCellSx, whiteSpace: "nowrap" }}
-                        >
-                          {formatDateTimeShort(p.leave_time)}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            ...tableCellSx,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {formatDurationSeconds(p.duration)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </>
-          )}
-          {participants.length === 0 && activity.is_zoom && (
-            <Typography variant="body2" sx={{ color: "#9ca3af" }}>
-              No Zoom participants in this session.
-            </Typography>
+          {activity.is_zoom && (
+            <ZoomAttendanceSection liveClassId={activity.id} />
           )}
         </Box>
       ) : null}

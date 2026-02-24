@@ -14,6 +14,12 @@ export interface ZoomParticipant {
   duration?: number | null;
 }
 
+export interface CourseDetail {
+  id: number;
+  title: string;
+  slug: string;
+}
+
 export interface LiveActivity {
   id: number;
   client?: number;
@@ -36,6 +42,10 @@ export interface LiveActivity {
   zoom_meeting_ended_at?: string | null;
   meeting_status?: "live" | "ended" | "expired" | null;
   zoom_participants?: ZoomParticipant[];
+  course?: number | null;
+  course_detail?: CourseDetail | null;
+  attendance_count?: number;
+  zoom_attendance_synced_at?: string | null;
 }
 
 export interface ZoomCreateSuccessData {
@@ -59,6 +69,37 @@ export interface ZoomApiResponse<T = unknown> {
 export interface SyncRecordingData {
   zoom_recording_url?: string;
   zoom_recording_file_id?: string;
+}
+
+export interface ZoomAttendanceParticipant {
+  id: number;
+  email: string;
+  name: string;
+  join_time: string | null;
+  leave_time: string | null;
+  duration_seconds: number;
+  zoom_participant_id: string;
+  user_profile: number | null;
+  user_profile_detail: { id: number; email: string; role: string } | null;
+}
+
+export interface ZoomAttendanceResponse {
+  count: number;
+  participants: ZoomAttendanceParticipant[];
+  synced_at: string | null;
+  sync_available: boolean;
+}
+
+export interface SyncAttendanceData {
+  synced: boolean;
+  total_participants: number;
+  new_records: number;
+}
+
+export interface SyncAttendanceResponse {
+  status: "success" | "error";
+  message: string;
+  data: SyncAttendanceData | null;
 }
 
 export const adminLiveActivitiesService = {
@@ -110,6 +151,24 @@ export const adminLiveActivitiesService = {
   ): Promise<ZoomStatusResponse> => {
     const response = await apiClient.get<ZoomStatusResponse>(
       `${BASE}/live-activities/${liveClassId}/zoom/status/`
+    );
+    return response.data;
+  },
+
+  getZoomAttendance: async (
+    liveClassId: number
+  ): Promise<ZoomAttendanceResponse> => {
+    const response = await apiClient.get<ZoomAttendanceResponse>(
+      `${BASE}/live-activities/${liveClassId}/zoom/attendance/`
+    );
+    return response.data;
+  },
+
+  syncAttendance: async (
+    liveClassId: number
+  ): Promise<SyncAttendanceResponse> => {
+    const response = await apiClient.post<SyncAttendanceResponse>(
+      `${BASE}/live-activities/${liveClassId}/zoom/sync-attendance/`
     );
     return response.data;
   },

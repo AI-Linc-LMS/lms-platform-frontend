@@ -28,6 +28,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminAssessmentService,
   Assessment,
+  isMCQQuestion,
+  isCodingQuestion,
 } from "@/lib/services/admin/admin-assessment.service";
 import {
   adminAssessmentEmailJobsService,
@@ -116,6 +118,24 @@ export default function AssessmentPage() {
     return s;
   };
 
+  function formatDateForDisplay(dateTimeString: string | null | undefined): string {
+    if (!dateTimeString?.trim()) return "";
+    try {
+      const d = new Date(dateTimeString.trim());
+      if (isNaN(d.getTime())) return dateTimeString?.trim() ?? "";
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      const hr = String(d.getHours()).padStart(2, "0");
+      const min = String(d.getMinutes()).padStart(2, "0");
+      const sec = String(d.getSeconds()).padStart(2, "0");
+      return `${day}/${month}/${year} ${hr}:${min}:${sec}`;
+    } catch {
+      return "";
+    }
+  }
+  
+
   // Helper function to convert rows to CSV with specific columns
   const jsonToCsvRows = <T extends Record<string, unknown>>(
     rows: T[],
@@ -127,6 +147,34 @@ export default function AssessmentPage() {
       columns.map((c) => escapeCsv(row[c.key])).join(",")
     );
     return [header, ...data].join("\n");
+  };
+
+  /** Convert HTML to plain text for CSV (match edit page) */
+  const htmlToPlainText = (html: string): string => {
+    if (!html || typeof html !== "string") return "";
+    let s = html;
+    s = s.replace(/<\/p>\s*<p>/gi, "\n");
+    s = s.replace(/<br\s*\/?>/gi, "\n");
+    s = s.replace(/<sup>(\d+)<\/sup>/gi, "^$1");
+    s = s.replace(/<sub>(\d+)<\/sub>/gi, "_$1");
+    s = s.replace(/&le;/g, "≤").replace(/&ge;/g, "≥");
+    s = s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ");
+    s = s.replace(/<[^>]*>/g, " ");
+    s = s.replace(/[ \t]+/g, " ");
+    s = s.replace(/^\s+|\s+$/gm, "");
+    s = s.replace(/\n\s*\n/g, "\n").trim();
+    return s;
+  };
+
+  const downloadCsv = (csv: string, filename: string) => {
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleExportSubmissions = async (assessment: Assessment) => {
@@ -155,11 +203,19 @@ export default function AssessmentPage() {
         { key: "name", header: "Name" },
         { key: "email", header: "Email" },
         { key: "phone", header: "Phone" },
+        { key: "started_at", header: "Started At" },
+        { key: "submitted_at", header: "Submitted At" },
         { key: "maximum_marks", header: "Maximum Marks" },
         { key: "overall_score", header: "Overall Score" },
         { key: "percentage", header: "Percentage" },
         { key: "total_questions", header: "Total Questions" },
         { key: "attempted_questions", header: "Attempted Questions" },
+        { key: "tab_switches_count", header: "Tab Switches Count" },
+        { key: "face_violations_count", header: "Face Violations Count" },
+        { key: "fullscreen_exits_count", header: "Fullscreen Exits Count" },
+        { key: "face_validation_failures_count", header: "Face Validation Failures Count" },
+        { key: "multiple_face_detections_count", header: "Multiple Face Detections Count" },
+        { key: "total_violation_count", header: "Total Violation Count" },
       ];
       const sectionColumns = sectionKeys.flatMap((k) => [
         { key: `section_wise_scores_${k}`, header: `Section-wise Scores-${k}` },
@@ -171,15 +227,24 @@ export default function AssessmentPage() {
       const columns = [...baseColumns, ...sectionColumns];
 
       const rows: Record<string, unknown>[] = data.submissions.map((s) => {
+        const pd = s.proctoring;
         const base: Record<string, unknown> = {
-          name: s.name,
-          email: s.email,
-          phone: s.phone ?? "",
-          maximum_marks: s.maximum_marks ?? "",
-          overall_score: s.overall_score ?? "",
-          percentage: s.percentage != null && !isNaN(Number(s.percentage)) ? `${s.percentage}%` : "",
-          total_questions: s.total_questions ?? "",
-          attempted_questions: s.attempted_questions ?? "",
+          name: s.name ?? "",
+        email: s.email ?? "",
+        phone: s.phone ?? "",
+        started_at: formatDateForDisplay(s.started_at) || "",
+        submitted_at: formatDateForDisplay(s.submitted_at) || "",
+        maximum_marks: s.maximum_marks ?? "",
+        overall_score: s.overall_score ?? "",
+        percentage: s.percentage??"",
+        total_questions: s.total_questions ?? "",
+        attempted_questions: s.attempted_questions ?? "",
+        tab_switches_count: pd?.tab_switches_count ?? 0,
+        face_violations_count: pd?.face_violations_count ?? 0,
+        fullscreen_exits_count: pd?.fullscreen_exits_count ?? 0,
+        face_validation_failures_count: pd?.face_validation_failures_count ?? 0,
+        multiple_face_detections_count: pd?.multiple_face_detections_count ?? 0,
+        total_violation_count: pd?.total_violation_count ?? 0,
         };
         const sectionCells: Record<string, unknown> = {};
         for (const k of sectionKeys) {
@@ -218,57 +283,121 @@ export default function AssessmentPage() {
         assessment.id
       );
 
-      // Flatten sections/questions into table rows (same format as edit page)
-      const flat: Record<string, unknown>[] = [];
+      const baseSlug = data.assessment.slug || String(assessment.id);
+
+      // MCQ rows (same format as edit page)
+      const mcqFlat: Record<string, unknown>[] = [];
+      const codingFlat: Record<string, unknown>[] = [];
       for (const sec of data.sections) {
         for (const q of sec.questions) {
-          flat.push({
-            section_id: sec.section_id,
-            section_title: sec.section_title,
-            section_type: sec.section_type,
-            section_order: sec.order,
-            id: q.id,
-            question_text: q.question_text,
-            option_a: q.option_a,
-            option_b: q.option_b,
-            option_c: q.option_c,
-            option_d: q.option_d,
-            correct_option: q.correct_option,
-            explanation: q.explanation ?? "",
-            difficulty_level: q.difficulty_level ?? "",
-            topic: q.topic ?? "",
-            skills: q.skills ?? "",
-          });
+          if (isMCQQuestion(q)) {
+            mcqFlat.push({
+              section_id: sec.section_id,
+              section_title: sec.section_title,
+              section_order: sec.order,
+              id: q.id,
+              question_text: q.question_text,
+              option_a: q.option_a,
+              option_b: q.option_b,
+              option_c: q.option_c,
+              option_d: q.option_d,
+              correct_option: q.correct_option,
+              explanation: q.explanation ?? "",
+              difficulty_level: q.difficulty_level ?? "",
+              topic: q.topic ?? "",
+              skills: q.skills ?? "",
+            });
+          } else if (isCodingQuestion(q)) {
+            const ps = typeof q.problem_statement === "string" ? q.problem_statement : "";
+            const inp = typeof q.input_format === "string" ? q.input_format : "";
+            const out = typeof q.output_format === "string" ? q.output_format : "";
+            const con = typeof q.constraints === "string" ? q.constraints : "";
+            codingFlat.push({
+              section_id: sec.section_id,
+              section_title: sec.section_title,
+              section_order: sec.order,
+              id: q.id,
+              title: q.title ?? "",
+              problem_statement: htmlToPlainText(ps),
+              input_format: htmlToPlainText(inp),
+              output_format: htmlToPlainText(out),
+              sample_input: q.sample_input ?? "",
+              sample_output: q.sample_output ?? "",
+              constraints: htmlToPlainText(con),
+              difficulty_level: q.difficulty_level ?? "",
+              tags: q.tags ?? "",
+              time_limit: q.time_limit ?? "",
+              memory_limit: q.memory_limit ?? "",
+            });
+          }
         }
       }
 
-      const columns = [
-        { key: "section_id" as const, header: "Section ID" },
-        { key: "section_title" as const, header: "Section Title" },
-        { key: "section_type" as const, header: "Section Type" },
-        { key: "section_order" as const, header: "Section Order" },
-        { key: "id" as const, header: "Question ID" },
-        { key: "question_text" as const, header: "Question Text" },
-        { key: "option_a" as const, header: "Option A" },
-        { key: "option_b" as const, header: "Option B" },
-        { key: "option_c" as const, header: "Option C" },
-        { key: "option_d" as const, header: "Option D" },
-        { key: "correct_option" as const, header: "Correct Option" },
-        { key: "explanation" as const, header: "Explanation" },
-        { key: "difficulty_level" as const, header: "Difficulty" },
-        { key: "topic" as const, header: "Topic" },
-        { key: "skills" as const, header: "Skills" },
+      const mcqColumns: { key: string; header: string }[] = [
+        { key: "section_id", header: "Section ID" },
+        { key: "section_title", header: "Section Title" },
+        { key: "section_order", header: "Section Order" },
+        { key: "id", header: "Question ID" },
+        { key: "question_text", header: "Question Text" },
+        { key: "option_a", header: "Option A" },
+        { key: "option_b", header: "Option B" },
+        { key: "option_c", header: "Option C" },
+        { key: "option_d", header: "Option D" },
+        { key: "correct_option", header: "Correct Option" },
+        { key: "explanation", header: "Explanation" },
+        { key: "difficulty_level", header: "Difficulty" },
+        { key: "topic", header: "Topic" },
+        { key: "skills", header: "Skills" },
+      ];
+      const codingColumns: { key: string; header: string }[] = [
+        { key: "section_id", header: "Section ID" },
+        { key: "section_title", header: "Section Title" },
+        { key: "section_order", header: "Section Order" },
+        { key: "id", header: "Question ID" },
+        { key: "title", header: "Title" },
+        { key: "problem_statement", header: "Problem Statement" },
+        { key: "input_format", header: "Input Format" },
+        { key: "output_format", header: "Output Format" },
+        { key: "sample_input", header: "Sample Input" },
+        { key: "sample_output", header: "Sample Output" },
+        { key: "constraints", header: "Constraints" },
+        { key: "difficulty_level", header: "Difficulty" },
+        { key: "tags", header: "Tags" },
+        { key: "time_limit", header: "Time Limit (sec)" },
+        { key: "memory_limit", header: "Memory Limit (MB)" },
       ];
 
-      const csv = jsonToCsvRows(flat, columns);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `assessment-${data.assessment.slug || assessment.id}-questions.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("Questions exported successfully", "success");
+      const downloads: Array<() => void> = [];
+      if (mcqFlat.length > 0) {
+        downloads.push(() =>
+          downloadCsv(
+            jsonToCsvRows(mcqFlat, mcqColumns),
+            `assessment-${baseSlug}-mcq-questions.csv`
+          )
+        );
+      }
+      if (codingFlat.length > 0) {
+        downloads.push(() =>
+          downloadCsv(
+            jsonToCsvRows(codingFlat, codingColumns),
+            `assessment-${baseSlug}-coding-questions.csv`
+          )
+        );
+      }
+      downloads[0]?.();
+      if (downloads.length > 1) {
+        setTimeout(() => downloads[1](), 100);
+      }
+
+      const fileCount = downloads.length;
+      showToast(
+        fileCount === 2
+          ? "MCQ and coding questions exported (2 files)"
+          : fileCount === 1
+            ? "Questions exported successfully"
+            : "No questions to export",
+        fileCount > 0 ? "success" : "info"
+      );
     } catch (error: any) {
       showToast(
         error?.message || "Failed to export questions",

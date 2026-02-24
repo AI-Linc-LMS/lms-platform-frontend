@@ -426,5 +426,29 @@ export const adminCourseBuilderService = {
       );
     }
   },
+
+  updateSubmoduleContent: async (
+    courseId: number,
+    submoduleId: number,
+    contentId: number,
+    contentData: Partial<ContentData>
+  ) => {
+    try {
+      const res = await apiClient.patch(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`,
+        contentData
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to update submodule content"
+      );
+    }
+  },
 };
 
