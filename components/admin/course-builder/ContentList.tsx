@@ -114,11 +114,11 @@ export function ContentList({ courseId, submoduleId }: ContentListProps) {
   const openEdit = (item: ContentItem) => {
     setEditingId(item.id);
     setFormData({
-      title: item.title,
+      title: item.title ?? "",
       content_type: normalizeContentType(item.content_type),
-      contentId: item.contentId,
-      order: item.order,
-      duration_in_minutes: item.duration_in_minutes,
+      contentId: Number(item.contentId) || 0,
+      order: Number(item.order) || 1,
+      duration_in_minutes: Number(item.duration_in_minutes) || 0,
     });
     setDialogOpen(true);
   };
@@ -279,7 +279,7 @@ export function ContentList({ courseId, submoduleId }: ContentListProps) {
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "16px !important" }}>
           <TextField
             label="Title"
-            value={formData.title}
+            value={formData.title ?? ""}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             fullWidth
             required
@@ -288,8 +288,8 @@ export function ContentList({ courseId, submoduleId }: ContentListProps) {
           <FormControl fullWidth>
             <InputLabel>Content Type</InputLabel>
             <Select
-              value={formData.content_type}
-              onChange={(e) => setFormData({ ...formData, content_type: e.target.value as ContentIdType })}
+              value={formData.content_type ?? "article"}
+              onChange={(e) => setFormData({ ...formData, content_type: (e.target.value as ContentIdType) || "article" })}
               label="Content Type"
             >
               {Object.entries(CONTENT_TYPE_CONFIG).map(([key, cfg]) => (
@@ -306,24 +306,24 @@ export function ContentList({ courseId, submoduleId }: ContentListProps) {
             <TextField
               label="Content ID"
               type="number"
-              value={formData.contentId}
-              onChange={(e) => setFormData({ ...formData, contentId: Number(e.target.value) })}
+              value={formData.contentId ?? 0}
+              onChange={(e) => setFormData({ ...formData, contentId: Number(e.target.value) || 0 })}
               fullWidth
               slotProps={{ htmlInput: { min: 0 } }}
             />
             <TextField
               label="Order"
               type="number"
-              value={formData.order}
-              onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
+              value={formData.order ?? 1}
+              onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) || 1 })}
               fullWidth
               slotProps={{ htmlInput: { min: 1 } }}
             />
             <TextField
               label="Duration (min)"
               type="number"
-              value={formData.duration_in_minutes}
-              onChange={(e) => setFormData({ ...formData, duration_in_minutes: Number(e.target.value) })}
+              value={formData.duration_in_minutes ?? 0}
+              onChange={(e) => setFormData({ ...formData, duration_in_minutes: Number(e.target.value) || 0 })}
               fullWidth
               slotProps={{ htmlInput: { min: 0 } }}
             />
