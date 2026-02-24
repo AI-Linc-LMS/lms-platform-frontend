@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Paper,
@@ -32,6 +33,7 @@ import { EmptyState } from "@/components/admin/course-builder/EmptyState";
 
 export default function CourseBuilderPage() {
   const { showToast } = useToast();
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +59,6 @@ export default function CourseBuilderPage() {
     }
   };
 
-  // Filter courses based on search query
   const filteredCourses = useMemo(() => {
     if (!searchQuery.trim()) return courses;
 
@@ -97,7 +98,6 @@ export default function CourseBuilderPage() {
     } catch (error: any) {
       let errorMessage = error?.message || "Failed to create course";
 
-      // Try to parse and format the error message
       try {
         if (errorMessage.includes("{")) {
           const errorJson = JSON.parse(
@@ -123,7 +123,7 @@ export default function CourseBuilderPage() {
   };
 
   const handleEditCourse = (courseId: number) => {
-    window.location.href = `/admin/course-builder/${courseId}/edit`;
+    router.push(`/admin/course-builder/${courseId}/edit`);
   };
 
   const handleDuplicateClick = (course: Course) => {

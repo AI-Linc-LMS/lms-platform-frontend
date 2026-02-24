@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Typography,
@@ -15,6 +16,8 @@ import {
   CircularProgress,
   Switch,
   FormControlLabel,
+  Button,
+  Tooltip,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -55,6 +58,7 @@ interface CourseCardProps {
 
 export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: CourseCardProps) {
   const { showToast } = useToast();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -88,6 +92,10 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
     (course.stats?.assignment?.total || 0) +
     (course.stats?.coding_problem?.total || 0);
 
+  const handleViewCourse = () => {
+    router.push(`/admin/course-builder/${course.id}`);
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -98,7 +106,6 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
         tags: editData.tags,
         is_free: editData.is_free,
       };
-      // Omit slug so backend keeps existing slug and does not run uniqueness check (which fails for same course)
 
       await adminCourseBuilderService.updateCourse(course.id, courseData);
       showToast("Course updated successfully", "success");
@@ -155,13 +162,15 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
         overflow: "hidden",
         transition: "all 0.2s",
+        cursor: editing ? "default" : "pointer",
         "&:hover": {
           boxShadow: editing ? "0 1px 3px rgba(0,0,0,0.1)" : "0 4px 12px rgba(0,0,0,0.15)",
           transform: editing ? "none" : "translateY(-2px)",
         },
         maxWidth: 500,
-        border: editing ? "2px solid #6366f1" : "none",
+        border: editing ? "2px solid #6366f1" : "1px solid transparent",
       }}
+      onClick={editing ? undefined : handleViewCourse}
     >
       <Box sx={{ p: 3 }}>
         {/* Header */}
@@ -182,6 +191,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                 size="small"
                 sx={{ mb: 1 }}
                 inputProps={{ maxLength: 255 }}
+                onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <>
@@ -216,7 +226,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
               </>
             )}
           </Box>
-          <Box sx={{ display: "flex", gap: 0.5, ml: 1 }}>
+          <Box sx={{ display: "flex", gap: 0.5, ml: 1 }} onClick={(e) => e.stopPropagation()}>
             {editing ? (
               <>
                 <IconButton
@@ -248,74 +258,68 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
               </>
             ) : (
               <>
-                <IconButton
-                  size="small"
-                  onClick={() => setEditing(true)}
-                  sx={{
-                    color: "#6366f1",
-                    "&:hover": { bgcolor: "#eef2ff" },
-                  }}
-                >
-                  <IconWrapper icon="mdi:pencil" size={18} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={onEditClick}
-                  sx={{
-                    color: "#6b7280",
-                    "&:hover": { bgcolor: "#f3f4f6" },
-                  }}
-                  title="Full Edit"
-                >
-                  <IconWrapper icon="mdi:open-in-new" size={18} />
-                </IconButton>
-                {onDuplicate && (
+                <Tooltip title="Quick edit">
                   <IconButton
                     size="small"
-                    onClick={onDuplicate}
+                    onClick={() => setEditing(true)}
                     sx={{
-                      color: "#6b7280",
-                      "&:hover": { bgcolor: "#f3f4f6" },
+                      color: "#6366f1",
+                      "&:hover": { bgcolor: "#eef2ff" },
                     }}
-                    title="Duplicate course"
                   >
-                    <IconWrapper icon="mdi:content-copy" size={18} />
+                    <IconWrapper icon="mdi:pencil" size={18} />
                   </IconButton>
+                </Tooltip>
+                {onDuplicate && (
+                  <Tooltip title="Duplicate course">
+                    <IconButton
+                      size="small"
+                      onClick={onDuplicate}
+                      sx={{
+                        color: "#6b7280",
+                        "&:hover": { bgcolor: "#f3f4f6" },
+                      }}
+                    >
+                      <IconWrapper icon="mdi:content-copy" size={18} />
+                    </IconButton>
+                  </Tooltip>
                 )}
                 {!course.published ? (
-                  <IconButton
-                    size="small"
-                    onClick={handlePublish}
-                    disabled={publishing}
-                    sx={{
-                      color: "#059669",
-                      "&:hover": { bgcolor: "#d1fae5" },
-                    }}
-                    title="Publish course"
-                  >
-                    {publishing ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <IconWrapper icon="mdi:publish" size={18} />
-                    )}
-                  </IconButton>
+                  <Tooltip title="Publish course">
+                    <IconButton
+                      size="small"
+                      onClick={handlePublish}
+                      disabled={publishing}
+                      sx={{
+                        color: "#059669",
+                        "&:hover": { bgcolor: "#d1fae5" },
+                      }}
+                    >
+                      {publishing ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <IconWrapper icon="mdi:publish" size={18} />
+                      )}
+                    </IconButton>
+                  </Tooltip>
                 ) : (
-                  <IconButton
-                    size="small"
-                    onClick={handleUnpublish}
-                    disabled={publishing}
-                    sx={{
-                      color: "#b45309",
-                      "&:hover": { bgcolor: "#fef3c7" },
-                    }}
-                    title="Unpublish course"
-                  >
-                    {publishing ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <IconWrapper icon="mdi:publish-off" size={18} />
-                    )}
-                  </IconButton>
+                  <Tooltip title="Unpublish course">
+                    <IconButton
+                      size="small"
+                      onClick={handleUnpublish}
+                      disabled={publishing}
+                      sx={{
+                        color: "#b45309",
+                        "&:hover": { bgcolor: "#fef3c7" },
+                      }}
+                    >
+                      {publishing ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <IconWrapper icon="mdi:publish-off" size={18} />
+                      )}
+                    </IconButton>
+                  </Tooltip>
                 )}
               </>
             )}
@@ -332,6 +336,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
             rows={3}
             size="small"
             sx={{ mb: 2 }}
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <Typography
@@ -353,7 +358,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
 
         {/* Rating */}
         {editing ? (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
             <Typography variant="caption" sx={{ color: "#6b7280", mb: 0.5, display: "block" }}>
               Rating
             </Typography>
@@ -379,7 +384,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
 
         {/* Is free */}
         {editing ? (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
             <FormControlLabel
               control={
                 <Switch
@@ -409,7 +414,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
 
         {/* Tags */}
         {editing ? (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
             <Autocomplete
               multiple
               freeSolo
@@ -582,6 +587,22 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                 height: { xs: 20, sm: 24 },
               }}
             />
+          </Box>
+          <Box onClick={(e) => e.stopPropagation()}>
+            <Button
+              size="small"
+              variant="text"
+              endIcon={<IconWrapper icon="mdi:arrow-right" size={16} />}
+              onClick={handleViewCourse}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                color: "#6366f1",
+                fontSize: "0.8rem",
+              }}
+            >
+              Manage
+            </Button>
           </Box>
         </Box>
       </Box>
