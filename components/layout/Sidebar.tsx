@@ -347,7 +347,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </Box>
 
       {/* Navigation Items */}
-      <Box sx={{ flex: 1, py: 1.5, overflow: "hidden", minHeight: 0 }}>
+      <Box sx={{ flex: 1, py: 1.5, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column" }}>
+        <Box
+          sx={(theme) => ({
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
+            ...(navigationItems.length > 9 && {
+              [theme.breakpoints.down("md")]: {
+                maxHeight: 432, // ~9 items (48px each)
+              },
+            }),
+          })}
+        >
         <List sx={{ py: 0, px: 1.5 }}>
           {loadingClientInfo ? (
             // Show loading skeletons while features are being loaded
@@ -470,6 +483,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })
           )}
         </List>
+        </Box>
       </Box>
 
       {/* User Profile & Settings */}
