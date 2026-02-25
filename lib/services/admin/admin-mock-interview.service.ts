@@ -142,6 +142,9 @@ export interface EvaluationScore {
   problem_solving?: number;
   code_quality?: number;
   feedback?: string;
+  /** From API: overall_feedback */
+  areas_for_improvement?: string[];
+  max_possible_score?: number;
 }
 
 export interface TranscriptResponse {
@@ -181,6 +184,139 @@ export interface AdminInterviewDetail {
   evaluation_score?: EvaluationScore;
   interview_transcript?: InterviewTranscript;
   time_taken_minutes?: number;
+}
+
+// Raw API response shape for interview detail (backend may use different field names)
+export interface RawQuestionForInterview {
+  id: number;
+  type?: string;
+  question_text: string;
+  expected_key_points?: string[];
+}
+
+export interface RawTranscriptResponse {
+  question_id: number;
+  answer: string;
+}
+
+export interface RawEvaluationScore {
+  overall_score: number;
+  overall_feedback?: string;
+  max_possible_score?: number;
+  overall_percentage?: number;
+  areas_for_improvement?: string[];
+  question_scores?: Record<string, unknown>;
+  strengths?: unknown[];
+}
+
+export interface RawInterviewDetail {
+  id: number;
+  title: string;
+  topic: string;
+  subtopic?: string;
+  difficulty: string;
+  status: string;
+  duration_minutes: number;
+  scheduled_date_time?: string;
+  started_at?: string;
+  submitted_at?: string;
+  created_at: string;
+  updated_at?: string;
+  student_name: string;
+  student_email: string;
+  student_id: number;
+  questions_for_interview: RawQuestionForInterview[];
+  grading_scheme?: unknown;
+  evaluation_score?: RawEvaluationScore;
+  interview_transcript?: {
+    responses: RawTranscriptResponse[];
+    metadata?: InterviewTranscript["metadata"];
+    logs?: unknown[];
+    total_duration_seconds?: number;
+  };
+  time_taken_minutes?: number;
+}
+
+/** Normalize payload: API may return interview at top level or under .data / .result */
+function unwrapInterviewPayload(body: unknown): RawInterviewDetail {
+  if (body && typeof body === "object") {
+    const obj = body as Record<string, unknown>;
+    if (obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)) {
+      return obj.data as RawInterviewDetail;
+    }
+    if (obj.result && typeof obj.result === "object" && !Array.isArray(obj.result)) {
+      return obj.result as RawInterviewDetail;
+    }
+  }
+  return body as RawInterviewDetail;
+}
+
+/** Map raw API interview detail response to AdminInterviewDetail */
+export function mapInterviewDetailResponse(raw: RawInterviewDetail): AdminInterviewDetail {
+  const rawPayload = raw as RawInterviewDetail & { questions?: RawQuestionForInterview[] };
+  const rawQuestions = Array.isArray(raw.questions_for_interview)
+    ? raw.questions_for_interview
+    : Array.isArray(rawPayload.questions)
+      ? rawPayload.questions
+      : [];
+  const questions_for_interview: AdminQuestionForInterview[] = rawQuestions.map((q) => {
+    const item = q as RawQuestionForInterview & { question?: string; question_number?: number };
+    return {
+      question: item.question_text ?? item.question ?? "",
+      question_number: item.id ?? item.question_number ?? 0,
+    };
+  });
+
+  const rawResponses = Array.isArray(raw.interview_transcript?.responses)
+    ? raw.interview_transcript.responses
+    : [];
+  const responses: TranscriptResponse[] = rawResponses.map((r) => {
+    const item = r as RawTranscriptResponse & { question_number?: number; response?: string };
+    return {
+      question_number: item.question_id ?? item.question_number ?? 0,
+      response: item.answer ?? item.response ?? "",
+    };
+  });
+
+  const evaluation_score: EvaluationScore | undefined = raw.evaluation_score
+    ? {
+        overall_score: raw.evaluation_score.overall_score,
+        feedback: raw.evaluation_score.overall_feedback,
+        areas_for_improvement: raw.evaluation_score.areas_for_improvement,
+        max_possible_score: raw.evaluation_score.max_possible_score,
+      }
+    : undefined;
+
+  const maxPossible = raw.evaluation_score?.max_possible_score ?? 100;
+  const grading_scheme: GradingScheme = {
+    criteria: { total: maxPossible },
+  };
+
+  return {
+    id: raw.id,
+    title: raw.title,
+    topic: raw.topic,
+    subtopic: raw.subtopic,
+    difficulty: raw.difficulty,
+    status: raw.status,
+    duration_minutes: raw.duration_minutes,
+    scheduled_date_time: raw.scheduled_date_time,
+    started_at: raw.started_at,
+    submitted_at: raw.submitted_at,
+    created_at: raw.created_at,
+    updated_at: raw.updated_at,
+    student_name: raw.student_name,
+    student_email: raw.student_email,
+    student_id: raw.student_id,
+    questions_for_interview,
+    grading_scheme,
+    evaluation_score,
+    interview_transcript: {
+      responses,
+      metadata: raw.interview_transcript?.metadata,
+    },
+    time_taken_minutes: raw.time_taken_minutes,
+  };
 }
 
 // Student list types
@@ -350,15 +486,17 @@ const adminMockInterviewService = {
   },
 
   /**
-   * Get full details of a single mock interview
+   * Get full details of a single mock interview.
+   * Normalizes the API response (question_text -> question, question_id -> question_number, etc.) for UI consumption.
    */
   getInterviewDetail: async (
     interviewId: number
   ): Promise<AdminInterviewDetail> => {
-    const response = await apiClient.get(
+    const response = await apiClient.get<RawInterviewDetail | { data?: RawInterviewDetail; result?: RawInterviewDetail }>(
       `${BASE_URL}/${interviewId}/`
     );
-    return response.data;
+    const raw = unwrapInterviewPayload(response.data);
+    return mapInterviewDetailResponse(raw);
   },
 
   /**
