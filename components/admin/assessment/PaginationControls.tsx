@@ -40,8 +40,9 @@ export function PaginationControls({
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
-          Showing {Math.min(totalItems, (page - 1) * limit + 1)} to{" "}
-          {Math.min(totalItems, page * limit)} of {totalItems} {itemLabel}
+          {totalItems === 0
+            ? `Showing 0 to 0 of 0 ${itemLabel}`
+            : `Showing ${(page - 1) * limit + 1} to ${Math.min(totalItems, page * limit)} of ${totalItems} ${itemLabel}`}
         </Typography>
         <PerPageSelect
           value={limit}

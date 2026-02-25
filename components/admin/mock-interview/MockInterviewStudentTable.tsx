@@ -12,6 +12,7 @@ import {
   Paper,
   Chip,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -217,21 +218,14 @@ export function MockInterviewStudentTable({
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
                     Last Interview
                   </TableCell>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb", width: 100 }}>
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {students.map((row) => (
-                  <TableRow
-                    key={row.student_id}
-                    hover
-                    sx={{
-                      cursor: "pointer",
-                      transition: "background-color 0.15s ease",
-                      "&:hover": { backgroundColor: "#eef2ff" },
-                      "&:active": { backgroundColor: "#e0e7ff" },
-                    }}
-                    onClick={() => handleRowClick(row.student_id)}
-                  >
+                  <TableRow key={row.student_id} hover>
                     <TableCell>
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -294,6 +288,28 @@ export function MockInterviewStudentTable({
                         {formatDate(row.last_interview_date)}
                       </Typography>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRowClick(row.student_id);
+                        }}
+                        sx={{
+                          borderColor: "#6366f1",
+                          color: "#6366f1",
+                          textTransform: "none",
+                          fontWeight: 600,
+                          "&:hover": {
+                            borderColor: "#4f46e5",
+                            backgroundColor: "#eef2ff",
+                          },
+                        }}
+                      >
+                        View
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -301,7 +317,7 @@ export function MockInterviewStudentTable({
           </TableContainer>
           <PaginationControls
             totalItems={pagination.total_students}
-            page={pagination.current_page}
+            page={Math.max(1, pagination.current_page)}
             limit={pagination.limit}
             onPageChange={onPageChange}
             onLimitChange={(v) => {
