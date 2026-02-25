@@ -1,6 +1,7 @@
 "use client";
 
 import { Paper, Typography, Box, Chip, LinearProgress, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { ContentDetail } from "@/lib/services/courses.service";
 import { useEffect, useRef, useState } from "react";
 import { AccessTime, CheckCircleOutline } from "@mui/icons-material";
@@ -71,9 +72,9 @@ const articleBodySx = {
     mt: 2,
   },
   "& blockquote": {
-    borderLeft: "4px solid #3b82f6",
-    pl: 2,
-    ml: 0,
+    borderInlineStart: "4px solid #3b82f6",
+    paddingInlineStart: 16,
+    marginInlineStart: 0,
     fontStyle: "italic",
     color: "#6b7280",
     mb: 2,
@@ -107,7 +108,7 @@ const articleBodySx = {
   "& th, & td": {
     border: "1px solid #e5e7eb",
     padding: 1,
-    textAlign: "left",
+    textAlign: "start",
   },
   "& th": {
     backgroundColor: "#f9fafb",
@@ -127,6 +128,7 @@ export function ArticleContent({
   courseId,
   onArticleComplete 
 }: ArticleContentProps) {
+  const { t } = useTranslation("common");
   const articleRef = useRef<HTMLDivElement>(null);
   const [readProgress, setReadProgress] = useState(0);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
@@ -218,7 +220,7 @@ export function ArticleContent({
       <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
         <Chip
           icon={<AccessTime sx={{ fontSize: 16 }} />}
-          label={`${readingTimeMinutes} min read`}
+          label={t("courses.minRead", { count: readingTimeMinutes })}
           size="small"
           sx={{
             backgroundColor: "#eff6ff",
@@ -252,7 +254,7 @@ export function ArticleContent({
               },
             }}
           >
-            Mark as read
+            {t("courses.markAsRead")}
           </Button>
         )}
       </Box>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Card, CircularProgress, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { dashboardService } from "@/lib/services/dashboard.service";
@@ -14,6 +15,7 @@ export const StreakTable = ({
   streakDays: propStreakDays,
   currentStreak: propCurrentStreak,
 }: StreakTableProps) => {
+  const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
   const [streakDays, setStreakDays] = useState<number[]>(propStreakDays || []);
   const [streakData, setStreakData] = useState<{ [date: string]: boolean }>({});
@@ -71,22 +73,12 @@ export const StreakTable = ({
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
   const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+  const monthKeys = [
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december",
   ];
-
-  const daysOfWeek = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const monthName = t(`dashboard.months.${monthKeys[currentMonth]}`);
+  const daysOfWeek = t("dashboard.daysOfWeek", { returnObjects: true }) as string[];
 
   // Generate all days for the month
   const days = [];
@@ -139,8 +131,8 @@ export const StreakTable = ({
             fontWeight: 600,
             color: "#111827",
           }}
-        >
-          My Streak
+          >
+            {t("dashboard.myStreak")}
         </Typography>
         {currentStreak > 0 && (
           <Box
@@ -167,7 +159,7 @@ export const StreakTable = ({
                 color: "#92400E",
               }}
             >
-              {currentStreak} day streak
+              {t("dashboard.dayStreak", { count: currentStreak })}
             </Typography>
           </Box>
         )}
@@ -196,7 +188,7 @@ export const StreakTable = ({
                 mb: 2,
               }}
             >
-              {monthNames[currentMonth]} {currentYear}
+              {monthName} {currentYear}
             </Typography>
 
             {/* Days of week header */}
@@ -208,9 +200,9 @@ export const StreakTable = ({
                 mb: 1,
               }}
             >
-              {daysOfWeek.map((day) => (
+              {daysOfWeek.map((day, dayIndex) => (
                 <Typography
-                  key={day}
+                  key={dayIndex}
                   sx={{
                     textAlign: "center",
                     fontSize: "0.75rem",
@@ -295,7 +287,7 @@ export const StreakTable = ({
                 return (
                   <Tooltip
                     key={index}
-                    title={hasStreak ? "Streak" : "No streak"}
+                    title={hasStreak ? t("dashboard.streak") : t("dashboard.noStreak")}
                     arrow
                     placement="top"
                     componentsProps={{

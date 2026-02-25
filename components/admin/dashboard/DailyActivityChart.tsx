@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import {
   BarChart,
@@ -26,6 +27,7 @@ interface DailyActivityChartProps {
 }
 
 export function DailyActivityChart({ data }: DailyActivityChartProps) {
+  const { t } = useTranslation("common");
   const formattedData = (data || []).map((item) => {
     const date = new Date(item.date);
     const day = date.getDate();
@@ -61,7 +63,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
       >
-        Student Daily Activity
+        {t("admin.dashboard.studentDailyActivity")}
       </Typography>
       {formattedData.length === 0 ? (
         <Box
@@ -73,7 +75,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
             color: "#6b7280",
           }}
         >
-          <Typography variant="body2">No activity data available</Typography>
+          <Typography variant="body2">{t("admin.dashboard.noActivityData")}</Typography>
         </Box>
       ) : (
         <ResponsiveContainer width="100%" height={380}>

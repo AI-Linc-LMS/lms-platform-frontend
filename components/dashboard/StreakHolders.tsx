@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Card, Avatar, LinearProgress, Tooltip } from "@mui/material";
 import { dashboardService } from "@/lib/services/dashboard.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -40,6 +41,7 @@ const getInitialsFromName = (name: string): string => {
 };
 
 export const StreakHolders = () => {
+  const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
   const [streakHolders, setStreakHolders] = useState<StreakHolder[]>([]);
   const hasLoadedRef = useRef(false);
@@ -122,7 +124,7 @@ export const StreakHolders = () => {
           mb: 2,
         }}
       >
-        Top Streak Holders
+        {t("dashboard.topStreakHolders")}
       </Typography>
       
       {/* Loading Progress Bar */}
@@ -157,7 +159,7 @@ export const StreakHolders = () => {
             variant="body2"
             sx={{ color: "#6B7280", textAlign: "center", py: 2, p: 2 }}
           >
-            No streak data available
+            {t("dashboard.noStreakData")}
           </Typography>
         ) : (
           <Box
@@ -207,11 +209,11 @@ export const StreakHolders = () => {
                   title={
                     linkedinUrl
                       ? college
-                        ? `College: ${college} - Click to view LinkedIn`
-                        : "Click to view LinkedIn profile"
+                        ? t("dashboard.collegeLabel", { college })
+                        : t("dashboard.clickLinkedIn")
                       : college
-                      ? `College: ${college}`
-                      : "No college information available"
+                      ? t("dashboard.collegeOnly", { college })
+                      : t("dashboard.noCollegeInfo")
                   }
                   arrow
                   placement="top"
@@ -319,7 +321,7 @@ export const StreakHolders = () => {
                           lineHeight: 1.2,
                         }}
                       >
-                        {streak} day{streak !== 1 ? "s" : ""}
+                        {t("dashboard.streakDays", { count: streak })}
                       </Typography>
                     </Box>
                   </Box>

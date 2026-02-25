@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Paper, LinearProgress, Chip } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CourseDashboard } from "@/lib/services/courses.service";
 
@@ -16,40 +17,15 @@ interface ContentProgressItem {
 }
 
 export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
-  // Use completion_percentage for overall progress
+  const { t } = useTranslation("common");
   const overallProgressPercentage = dashboard.total_progress ?? 0;
 
   const contentProgressItems: ContentProgressItem[] = [
-    {
-      label: "Videos",
-      value: dashboard.video_progress,
-      icon: "mdi:video-outline",
-      color: "#ef4444",
-    },
-    {
-      label: "Quizzes",
-      value: dashboard.quiz_progress,
-      icon: "mdi:star-outline",
-      color: "#f59e0b",
-    },
-    {
-      label: "Articles",
-      value: dashboard.article_progress,
-      icon: "mdi:file-document-outline",
-      color: "#3b82f6",
-    },
-    {
-      label: "Assignments",
-      value: dashboard.assignment_progress,
-      icon: "mdi:file-check-outline",
-      color: "#8b5cf6",
-    },
-    {
-      label: "Coding",
-      value: dashboard.coding_problem_progress,
-      icon: "mdi:code-tags",
-      color: "#10b981",
-    },
+    { label: t("courses.videos"), value: dashboard.video_progress, icon: "mdi:video-outline", color: "#ef4444" },
+    { label: t("courses.quizzes"), value: dashboard.quiz_progress, icon: "mdi:star-outline", color: "#f59e0b" },
+    { label: t("courses.articles"), value: dashboard.article_progress, icon: "mdi:file-document-outline", color: "#3b82f6" },
+    { label: t("courses.assignments"), value: dashboard.assignment_progress, icon: "mdi:file-check-outline", color: "#8b5cf6" },
+    { label: t("courses.coding"), value: dashboard.coding_problem_progress, icon: "mdi:code-tags", color: "#10b981" },
   ].filter((item) => item.value !== undefined && item.value > 0);
 
   const hasContentProgress = contentProgressItems.length > 0;
@@ -95,13 +71,13 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
             variant="h6"
             sx={{ fontWeight: 700, color: "#1a1f2e", fontSize: "1.125rem" }}
           >
-            Your Progress
+            {t("courses.yourProgress")}
           </Typography>
           <Typography
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Track your learning journey
+            {t("courses.trackYourLearning")}
           </Typography>
         </Box>
       </Box>
@@ -132,7 +108,7 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
               fontWeight: 500,
             }}
           >
-            Overall Completion
+            {t("courses.overallCompletion")}
           </Typography>
           <Typography
             variant="h5"
@@ -172,12 +148,12 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
               mb: 2,
             }}
           >
-            Content Breakdown
+            {t("courses.contentBreakdown")}
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             {contentProgressItems.map((item) => (
               <Box
-                key={item.label}
+                key={item.icon}
                 sx={{
                   display: "flex",
                   alignItems: "center",

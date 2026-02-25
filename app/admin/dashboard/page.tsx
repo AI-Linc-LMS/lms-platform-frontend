@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { flushSync } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   Box,
@@ -34,6 +35,7 @@ import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
 type TimePeriod = "weekly" | "bimonthly" | "monthly";
 
 function AdminDashboardPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("weekly");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
@@ -113,7 +115,7 @@ function AdminDashboardPage() {
       setCoreData(data);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load dashboard data",
+        error?.response?.data?.detail || t("admin.dashboard.failedToLoad"),
         "error"
       );
     }
@@ -149,11 +151,11 @@ function AdminDashboardPage() {
       setAttendanceData(data);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load attendance data",
+        error?.response?.data?.detail || t("admin.dashboard.failedToLoadAttendance"),
         "error"
       );
     }
-  }, [dateRange.start, dateRange.end, selectedCourse, showToast]);
+  }, [dateRange.start, dateRange.end, selectedCourse, showToast, t]);
 
   // Load core data immediately (doesn't require date range)
   useEffect(() => {
@@ -303,9 +305,9 @@ function AdminDashboardPage() {
         element: dashboardPdfRef.current,
         fileName: `admin-dashboard-${dateRange.start}-${dateRange.end}.pdf`,
       });
-      showToast("PDF downloaded successfully", "success");
+      showToast(t("admin.dashboard.pdfDownloaded"), "success");
     } catch {
-      showToast("Failed to generate PDF", "error");
+      showToast(t("admin.dashboard.failedToGeneratePdf"), "error");
     } finally {
       setPdfGenerating(false);
     }
@@ -355,11 +357,11 @@ function AdminDashboardPage() {
                     fontSize: { xs: "1.5rem", sm: "2rem" },
                   }}
                 >
-                  Dashboard
+                  {t("admin.dashboard.title")}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                   <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
-                    <InputLabel>All Courses</InputLabel>
+                    <InputLabel>{t("admin.dashboard.allCourses")}</InputLabel>
                     <Select
                       value={selectedCourse}
                       onChange={(e) => {
@@ -410,8 +412,10 @@ function AdminDashboardPage() {
                         }}
                       >
                         {period === "bimonthly"
-                          ? "Bimonthly"
-                          : period.charAt(0).toUpperCase() + period.slice(1)}
+                          ? t("admin.dashboard.bimonthly")
+                          : period === "weekly"
+                            ? t("admin.dashboard.weekly")
+                            : t("admin.dashboard.monthly")}
                       </Box>
                     ))}
                   </Box>
@@ -445,7 +449,7 @@ function AdminDashboardPage() {
                 }}
               >
               <DashboardMetricCard
-                title="Number of students"
+                title={t("admin.dashboard.numberOfStudents")}
                 value={dashboardData?.number_of_students || 0}
                 icon="mdi:account-group"
                 iconColor="#6366f1"
@@ -459,7 +463,7 @@ function AdminDashboardPage() {
                 tooltip={getMetricTooltip("active_students")}
               />
               <DashboardMetricCard
-                title="Time Spent by Student"
+                title={t("admin.dashboard.timeSpentByStudent")}
                 value={`${calculatedTimeSpent.value} ${calculatedTimeSpent.unit}`}
                 icon="mdi:clock-outline"
                 iconColor="#f59e0b"

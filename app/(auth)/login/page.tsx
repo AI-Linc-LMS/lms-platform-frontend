@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { SignInLoader } from "@/components/common/SignInLoader";
 import {
   TextField,
@@ -29,7 +30,7 @@ interface LoginFormValues {
 }
 
 export default function LoginPage() {
-  // All hooks must be called before any conditional returns
+  const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated } = useAuth();
@@ -57,7 +58,7 @@ export default function LoginPage() {
 
     try {
       await login(values.email, values.password);
-      showToast("Login successful!", "success");
+      showToast(t("auth.loginSuccess"), "success");
       setIsRedirecting(true);
 
       // Get redirect URL from query params or default to dashboard
@@ -71,7 +72,7 @@ export default function LoginPage() {
       }, 500);
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.detail || "Login failed. Please try again.";
+        err.response?.data?.detail || t("auth.loginFailed");
       showToast(errorMessage, "error");
       setLoading(false);
       setIsRedirecting(false);
@@ -84,13 +85,14 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout slogan="Changing the  way  the  world  learns">
+    <AuthLayout slogan={t("auth.slogan")}>
       <Box
         sx={{
           width: "100%",
           maxWidth: 440,
           display: "flex",
           flexDirection: "column",
+          textAlign: "start",
         }}
       >
         {/* Logo */}
@@ -106,7 +108,7 @@ export default function LoginPage() {
             fontSize: { xs: "1.75rem", sm: "2rem" },
           }}
         >
-          Login
+          {t("auth.login")}
         </Typography>
 
         {/* Google Sign In Button */}
@@ -121,7 +123,7 @@ export default function LoginPage() {
             variant="body2"
             sx={{ px: 2, color: "text.secondary", fontSize: "0.875rem" }}
           >
-            Or sign in with email
+            {t("auth.orSignInWithEmail")}
           </Typography>
           <Divider sx={{ flexGrow: 1 }} />
         </Box>
@@ -141,8 +143,8 @@ export default function LoginPage() {
                     fullWidth
                     required
                     id="email"
-                    label="Email"
-                    placeholder="Email"
+                    label={t("auth.email")}
+                    placeholder={t("auth.email")}
                     autoComplete="username"
                     size="small"
                     error={touched.email && !!errors.email}
@@ -164,8 +166,8 @@ export default function LoginPage() {
                     {...field}
                     fullWidth
                     required
-                    label="Password"
-                    placeholder="Password"
+                    label={t("auth.password")}
+                    placeholder={t("auth.password")}
                     type={showPassword ? "text" : "password"}
                     id="password"
                     autoComplete="current-password"
@@ -232,7 +234,7 @@ export default function LoginPage() {
                         fontWeight: 400,
                       }}
                     >
-                      Keep me logged in
+                      {t("auth.keepMeLoggedIn")}
                     </Typography>
                   }
                 />
@@ -255,7 +257,7 @@ export default function LoginPage() {
                       },
                     }}
                   >
-                    Forgot password?
+                    {t("auth.forgotPasswordLink")}
                   </Typography>
                 </Link>
               </Box>
@@ -288,7 +290,7 @@ export default function LoginPage() {
                   },
                 }}
               >
-                {loading ? "Signing in..." : "Login"}
+                {loading ? t("auth.signingIn") : t("auth.login")}
               </Button>
 
               {/* Sign up link */}
@@ -298,7 +300,7 @@ export default function LoginPage() {
                   component="span"
                   sx={{ color: "text.secondary", fontSize: "0.875rem" }}
                 >
-                  Don't have an account?{" "}
+                  {t("auth.noAccount")}{" "}
                 </Typography>
                 <Link
                   href="/signup"
@@ -320,7 +322,7 @@ export default function LoginPage() {
                       },
                     }}
                   >
-                    Sign up
+                    {t("auth.signUp")}
                   </Typography>
                 </Link>
               </Box>

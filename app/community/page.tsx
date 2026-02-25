@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Box,
@@ -30,6 +31,7 @@ import {
 import { useToast } from "@/components/common/Toast";
 
 export default function CommunityPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -180,7 +182,7 @@ export default function CommunityPage() {
       setThreads(mergedThreads);
       setTags(tagsData);
     } catch (error) {
-      showToast("Failed to load community data", "error");
+      showToast(t("community.failedToLoad"), "error");
     } finally {
       setLoading(false);
     }
@@ -196,7 +198,7 @@ export default function CommunityPage() {
       setThreads([newThread, ...threads]);
       showToast("Thread created successfully!", "success");
     } catch (error) {
-      showToast("Failed to create thread", "error");
+      showToast(t("community.failedToCreateThread"), "error");
       throw error;
     }
   };

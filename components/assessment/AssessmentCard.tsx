@@ -9,6 +9,7 @@ import {
   Chip,
   Button,
   Tooltip,
+  useTheme,
 } from "@mui/material";
 import { Assessment } from "@/lib/services/assessment.service";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,8 @@ import {
   isPsychometricAssessment,
   getPsychometricTags,
 } from "@/lib/utils/psychometric-utils";
+import { stripHtmlTags } from "@/lib/utils/html-utils";
+import { useTranslation } from "react-i18next";
 
 interface AssessmentCardProps {
   assessment: Assessment;
@@ -35,34 +38,40 @@ function formatDateTimeDisplay(d: Date): string {
   });
 }
 
-function formatRemainingTime(startDate: Date): string {
+function formatRemainingTime(
+  startDate: Date,
+  t: (key: string, opts?: Record<string, number | string>) => string
+): string {
   const now = new Date();
   const diff = startDate.getTime() - now.getTime();
-  
+
   if (diff <= 0) {
-    return "Available now";
+    return t("assessments.availableNow");
   }
-  
+
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  
+
   if (days > 0) {
-    return `Starts in ${days} day${days > 1 ? "s" : ""}, ${hours} hour${hours !== 1 ? "s" : ""}`;
+    return t("assessments.startsInDaysHours", { days, hours });
   }
   if (hours > 0) {
-    return `Starts in ${hours} hour${hours > 1 ? "s" : ""}, ${minutes} minute${minutes !== 1 ? "s" : ""}`;
+    return t("assessments.startsInHoursMinutes", { hours, minutes });
   }
   if (minutes > 0) {
-    return `Starts in ${minutes} minute${minutes > 1 ? "s" : ""}, ${seconds} second${seconds !== 1 ? "s" : ""}`;
+    return t("assessments.startsInMinutesSeconds", { minutes, seconds });
   }
-  return `Starts in ${seconds} second${seconds !== 1 ? "s" : ""}`;
+  return t("assessments.startsInSeconds", { seconds });
 }
 
 export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   assessment,
 }) => {
+  const { t } = useTranslation("common");
+  const theme = useTheme();
+  const isRtl = theme.direction === "rtl";
   const router = useRouter();
   const showResults = assessment.status === "submitted";
   const isPsychometric = isPsychometricAssessment(assessment);
@@ -77,23 +86,23 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       setRemainingTime("");
       return;
     }
-    
+
     const updateRemainingTime = () => {
-      setRemainingTime(formatRemainingTime(startDate));
+      setRemainingTime(formatRemainingTime(startDate, t));
     };
-    
+
     // Update immediately
     updateRemainingTime();
-    
+
     // Update every second if less than 1 hour remaining, otherwise every minute
     const now = new Date();
     const diff = startDate.getTime() - now.getTime();
     const interval = diff < 3600000 ? 1000 : 60000; // 1 second if < 1 hour, else 1 minute
-    
+
     const intervalId = setInterval(updateRemainingTime, interval);
-    
+
     return () => clearInterval(intervalId);
-  }, [startDate]);
+  }, [startDate, t]);
 
   const { canStartNow, availabilityLabel, isExpired } = useMemo(() => {
     const now = Date.now();
@@ -208,47 +217,22 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       }}
       onClick={handleClick}
     >
-      {/* Status Badge */}
-      {showResults && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 10,
-            right: 10,
-            zIndex: 2,
-          }}
-        >
-          <Chip
-            icon={<IconWrapper icon="mdi:check-circle" size={14} />}
-            label="Completed"
-            size="small"
-            sx={{
-              backgroundColor: "#d1fae5",
-              color: "#065f46",
-              fontWeight: 600,
-              fontSize: "0.7rem",
-              height: 22,
-              "& .MuiChip-icon": {
-                color: "#065f46",
-              },
-            }}
-          />
-        </Box>
-      )}
-
-      {/* Proctored Badge */}
-      {assessment.proctoring_enabled && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 10,
-            right: showResults ? 100 : 10,
-            zIndex: 2,
-          }}
-        >
+      {/* Status Badges - RTL-aware position and icon order */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 10,
+          insetInlineEnd: 10,
+          zIndex: 2,
+          display: "flex",
+          flexDirection: "row",
+          gap: 1,
+        }}
+      >
+        {assessment.proctoring_enabled && (
           <Chip
             icon={<IconWrapper icon="mdi:shield-account" size={14} />}
-            label="Proctored"
+            label={t("assessments.proctored")}
             size="small"
             sx={{
               backgroundColor: "#fef3c7",
@@ -256,13 +240,36 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               fontWeight: 600,
               fontSize: "0.7rem",
               height: 22,
+              flexDirection: isRtl ? "row-reverse" : "row",
               "& .MuiChip-icon": {
                 color: "#92400e",
+                marginInlineStart: isRtl ? "4px" : 0,
+                marginInlineEnd: isRtl ? 0 : "4px",
               },
             }}
           />
-        </Box>
-      )}
+        )}
+        {showResults && (
+          <Chip
+            icon={<IconWrapper icon="mdi:check-circle" size={14} />}
+            label={t("assessments.completed")}
+            size="small"
+            sx={{
+              backgroundColor: "#d1fae5",
+              color: "#065f46",
+              fontWeight: 600,
+              fontSize: "0.7rem",
+              height: 22,
+              flexDirection: isRtl ? "row-reverse" : "row",
+              "& .MuiChip-icon": {
+                color: "#065f46",
+                marginInlineStart: isRtl ? "4px" : 0,
+                marginInlineEnd: isRtl ? 0 : "4px",
+              },
+            }}
+          />
+        )}
+      </Box>
 
       {/* Header Section */}
       <Box
@@ -313,7 +320,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               lineHeight: 1.3,
             }}
           >
-            {assessment.title}
+            {stripHtmlTags(assessment.title || "").trim() || assessment.title || "\u00A0"}
           </Typography>
           <Typography
             variant="body2"
@@ -327,7 +334,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               overflow: "hidden",
             }}
           >
-            {assessment.instructions || "\u00A0"}
+            {(stripHtmlTags(assessment.instructions || "").trim() || "\u00A0")}
           </Typography>
           
           {/* Tags for psychometric assessments */}
@@ -415,10 +422,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             overflow: "hidden",
           }}
         >
-          {assessment.description || "\u00A0"}
+          {(stripHtmlTags(assessment.description || "").trim() || "\u00A0")}
         </Typography>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - RTL: column order flips (Duration right, Questions left) */}
         <Box
           sx={{
             display: "grid",
@@ -426,12 +433,14 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             gap: 1.5,
             mb: 2,
             minHeight: 60,
+            ...(isRtl && { direction: "rtl" }),
           }}
         >
-          {/* Duration */}
+          {/* Duration - RTL: icon to the left of value */}
           <Box
             sx={{
               display: "flex",
+              flexDirection: isRtl ? "row-reverse" : "row",
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
@@ -469,10 +478,11 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             </Box>
           </Box>
 
-          {/* Questions */}
+          {/* Questions - RTL: icon to the left of value */}
           <Box
             sx={{
               display: "flex",
+              flexDirection: isRtl ? "row-reverse" : "row",
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
@@ -498,7 +508,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                   lineHeight: 1.2,
                 }}
               >
-                Questions
+                {t("assessments.questions")}
               </Typography>
               <Typography
                 variant="body2"
@@ -530,7 +540,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                 variant="contained"
                 size="large"
                 disabled={!isClickable}
-                startIcon={
+                endIcon={
                   <IconWrapper
                     icon={
                       status === "submitted"
@@ -543,6 +553,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                   />
                 }
                 sx={{
+                  flexDirection: isRtl ? "row-reverse" : "row",
                   backgroundColor:
                     !isClickable
                       ? "#9ca3af"
@@ -602,7 +613,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               variant="contained"
               size="large"
               disabled={!isClickable}
-              startIcon={
+              endIcon={
                 <IconWrapper
                   icon={
                     status === "submitted"
@@ -615,6 +626,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                 />
               }
               sx={{
+                flexDirection: isRtl ? "row-reverse" : "row",
                 backgroundColor:
                   !isClickable
                     ? "#9ca3af"

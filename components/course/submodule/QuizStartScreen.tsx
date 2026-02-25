@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography, Button, Grid } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { ContentDetail } from "@/lib/services/courses.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -13,6 +14,7 @@ export function QuizStartScreen({
   content,
   onStartQuiz,
 }: QuizStartScreenProps) {
+  const { t } = useTranslation("common");
   const duration =
     content.duration_in_minutes ||
     content.details?.durating_in_minutes ||
@@ -108,7 +110,7 @@ export function QuizStartScreen({
                 letterSpacing: "0.5px",
               }}
             >
-              Minutes
+              {t("courses.minutes")}
             </Typography>
           </Box>
         </Grid>
@@ -145,7 +147,7 @@ export function QuizStartScreen({
                 letterSpacing: "0.5px",
               }}
             >
-              Questions
+              {t("courses.questions")}
             </Typography>
           </Box>
         </Grid>
@@ -182,7 +184,7 @@ export function QuizStartScreen({
                 letterSpacing: "0.5px",
               }}
             >
-              Total Marks
+              {t("courses.totalMarks")}
             </Typography>
           </Box>
         </Grid>
@@ -220,7 +222,7 @@ export function QuizStartScreen({
                 letterSpacing: "0.5px",
               }}
             >
-              Type
+              {t("courses.typeLabel")}
             </Typography>
           </Box>
         </Grid>
@@ -256,7 +258,7 @@ export function QuizStartScreen({
         }}
       >
         <IconWrapper icon="mdi:play-circle" size={20} color="#ffffff" />
-        Start Quiz
+        {t("courses.startQuiz")}
       </Button>
     </Paper>
   );

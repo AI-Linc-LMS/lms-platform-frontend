@@ -2,16 +2,16 @@
 
 import { Box, Typography } from "@mui/material";
 import { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface AuthLayoutProps {
   children: ReactNode;
   slogan?: string;
 }
 
-export function AuthLayout({
-  children,
-  slogan = "Changing the  way  the  world  learns",
-}: AuthLayoutProps) {
+export function AuthLayout({ children, slogan }: AuthLayoutProps) {
+  const { t } = useTranslation("common");
+  const sloganText = slogan ?? t("auth.slogan");
   return (
     <Box
       sx={{
@@ -153,7 +153,7 @@ export function AuthLayout({
               zIndex: 2,
             }}
           >
-            {slogan.split(" ").map((word, index) => {
+            {sloganText.split(" ").map((word, index) => {
               if (word === "the" || word === "world") {
                 return (
                   <Box

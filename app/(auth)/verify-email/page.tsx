@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { TextField, Button, Typography, Box } from "@mui/material";
 import Link from "next/link";
 import { Formik, Form, Field } from "formik";
@@ -16,6 +17,7 @@ interface VerifyFormValues {
 }
 
 export default function VerifyEmailPage() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -34,11 +36,11 @@ export default function VerifyEmailPage() {
 
     try {
       await accountsService.verifyEmail(values.email, values.otp);
-      showToast("Email verified successfully!", "success");
+      showToast(t("auth.verifySuccess"), "success");
       router.push("/login");
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.detail || "Verification failed. Please try again.";
+        err.response?.data?.detail || t("auth.verifyFailed");
       showToast(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -47,7 +49,7 @@ export default function VerifyEmailPage() {
 
   const handleResend = async (email: string) => {
     if (!email) {
-      showToast("Email is required", "error");
+      showToast(t("auth.emailRequired"), "error");
       return;
     }
 
@@ -56,7 +58,7 @@ export default function VerifyEmailPage() {
       await accountsService.resendVerificationEmail(email);
       showToast("OTP resent to your email", "success");
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || "Failed to resend OTP";
+      const errorMessage = err.response?.data?.detail || t("auth.resendFailed");
       showToast(errorMessage, "error");
     } finally {
       setResending(false);
@@ -84,7 +86,7 @@ export default function VerifyEmailPage() {
             fontSize: { xs: "1.75rem", sm: "2rem" },
           }}
         >
-          Verify Email
+          {t("auth.verifyEmail")}
         </Typography>
 
         {/* Description */}
@@ -117,8 +119,8 @@ export default function VerifyEmailPage() {
                     fullWidth
                     required
                     id="email"
-                    label="Email"
-                    placeholder="Email"
+                    label={t("auth.email")}
+                    placeholder={t("auth.email")}
                     autoComplete="username"
                     size="small"
                     error={touched.email && !!errors.email}
@@ -141,8 +143,8 @@ export default function VerifyEmailPage() {
                     fullWidth
                     required
                     id="otp"
-                    label="OTP Code"
-                    placeholder="Enter 6-digit OTP"
+                    label={t("auth.otpCode")}
+                    placeholder={t("auth.enterOtp")}
                     size="small"
                     error={touched.otp && !!errors.otp}
                     helperText={touched.otp && errors.otp}
@@ -219,7 +221,7 @@ export default function VerifyEmailPage() {
                   },
                 }}
               >
-                {resending ? "Resending..." : "Resend OTP"}
+                {resending ? t("auth.resending") : t("auth.resendOtp")}
               </Button>
 
               {/* Back to login link */}
@@ -229,7 +231,7 @@ export default function VerifyEmailPage() {
                   component="span"
                   sx={{ color: "text.secondary" }}
                 >
-                  Already verified?{" "}
+                  {t("auth.alreadyVerified")}{" "}
                 </Typography>
                 <Link
                   href="/login"
@@ -250,7 +252,7 @@ export default function VerifyEmailPage() {
                       },
                     }}
                   >
-                    Login
+                    {t("auth.login")}
                   </Typography>
                 </Link>
               </Box>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Chip } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { SubModuleContentItem } from "@/lib/services/courses.service";
 
@@ -25,6 +26,7 @@ export function SubmoduleContentList({
   getContentColor,
   formatDuration,
 }: SubmoduleContentListProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -103,7 +105,7 @@ export function SubmoduleContentList({
                   backgroundColor: isActive
                     ? "rgba(99, 102, 241, 0.08)"
                     : "transparent",
-                  borderLeft: isActive ? "3px solid #6366f1" : "none",
+                  borderInlineStart: isActive ? "3px solid #6366f1" : "none",
                   cursor: "pointer",
                   "&:hover": {
                     backgroundColor: isActive
@@ -225,7 +227,7 @@ export function SubmoduleContentList({
                       {showMarksInfo && (
                         <>
                           <span style={{ color: "#d1d5db", fontSize: "0.625rem" }}>•</span>
-                          <span>Total Marks: {contentItem.marks}</span>
+                          <span>{t("courses.totalMarks")}: {contentItem.marks}</span>
                         </>
                       )}
                       {obtainedMarks !== null && (
@@ -237,7 +239,7 @@ export function SubmoduleContentList({
                       {submissions > 0 && obtainedMarks !== null && (
                         <>
                           <span style={{ color: "#d1d5db", fontSize: "0.625rem" }}>•</span>
-                          <span style={{ color: "#6b7280" }}>Submissions: {submissions}</span>
+                          <span style={{ color: "#6b7280" }}>{t("courses.submissions")}: {submissions}</span>
                         </>
                       )}
                     </Typography>

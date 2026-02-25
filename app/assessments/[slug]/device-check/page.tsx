@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -31,6 +32,7 @@ export default function DeviceCheckPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false); // Start with false - don't block initial render
@@ -87,10 +89,10 @@ export default function DeviceCheckPage({
     onFaceCountChange: (count) => {
       if (count === 0) {
         setFaceValidationPassed(false);
-        setFaceValidationMessage("No face detected. Please position yourself in front of the camera.");
+        setFaceValidationMessage(t("assessments.deviceCheck.noFaceDetected"));
       } else if (count > 1) {
         setFaceValidationPassed(false);
-        setFaceValidationMessage(`${count} faces detected. Only one person should be visible.`);
+        setFaceValidationMessage(t("assessments.deviceCheck.multipleFaces", { count }));
       }
       // For count === 1, useEffect below will check status
     },

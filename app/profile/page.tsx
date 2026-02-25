@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Container, Tabs, Tab } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CoverPhoto } from "@/components/profile/CoverPhoto";
@@ -73,6 +74,7 @@ function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslation("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
@@ -121,7 +123,7 @@ export default function ProfilePage() {
         result.profile_picture = result.profile_picture ?? "";
         return result as UserProfile;
       });
-      showToast("Profile updated successfully", "success");
+      showToast(t("profile.updatedSuccess"), "success");
     } catch {
       setProfile((prev) => {
         if (!prev) return null;
@@ -138,7 +140,7 @@ export default function ProfilePage() {
       <MainLayout>
         <Container maxWidth="lg">
           <Box sx={{ py: 8, textAlign: "center" }}>
-            <Box sx={{ color: "#6b7280" }}>Profile not found</Box>
+            <Box sx={{ color: "#6b7280" }}>{t("profile.notFound")}</Box>
           </Box>
         </Container>
       </MainLayout>
