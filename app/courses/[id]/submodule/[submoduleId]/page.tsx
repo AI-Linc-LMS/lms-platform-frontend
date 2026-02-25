@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -67,6 +68,7 @@ export default function SubmoduleDetailPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     if (!courseId || !submoduleId) return;
@@ -251,7 +253,7 @@ export default function SubmoduleDetailPage() {
 
       return data;
     } catch (error: any) {
-      showToast("Failed to load submodule data", "error");
+      showToast(t("courses.failedToLoadSubmodule"), "error");
       return null;
     } finally {
       if (!preserveSelectedContent) {
@@ -296,7 +298,7 @@ export default function SubmoduleDetailPage() {
         setComments([]);
       }
     } catch (error: any) {
-      showToast("Failed to load content", "error");
+      showToast(t("courses.failedToLoadContent"), "error");
     } finally {
       setContentLoading(false);
     }
@@ -455,7 +457,7 @@ export default function SubmoduleDetailPage() {
       (item) => item.id === selectedContentId
     );
     if (currentItem?.content_type !== "VideoTutorial") {
-      showToast("Comments are only available for videos", "info");
+      showToast(t("courses.commentsOnlyForVideos"), "info");
       return;
     }
 
@@ -473,7 +475,7 @@ export default function SubmoduleDetailPage() {
         error.response?.data?.detail ||
           error.response?.data?.comment?.[0] ||
           error.response?.data?.message ||
-          "Failed to add comment",
+          t("courses.failedToAddComment"),
         "error"
       );
     } finally {
@@ -491,7 +493,7 @@ export default function SubmoduleDetailPage() {
 
   const handleNavigateContent = (direction: "next" | "previous") => {
     if (!currentContent || !submoduleData) {
-      showToast("Cannot navigate: Content not loaded", "error");
+      showToast(t("courses.cannotNavigateContent"), "error");
       return;
     }
 
@@ -532,8 +534,8 @@ export default function SubmoduleDetailPage() {
     } else {
       showToast(
         direction === "next"
-          ? "No next content available"
-          : "No previous content available",
+          ? t("courses.noNextContent")
+          : t("courses.noPreviousContent"),
         "info"
       );
     }
@@ -702,7 +704,7 @@ export default function SubmoduleDetailPage() {
                   size="small"
                   sx={{ mr: 2 }}
                 >
-                  TEST Dialog
+                  {t("courses.testDialog")}
                 </Button>
               )}
             {/* Mobile Menu Button */}
@@ -758,7 +760,7 @@ export default function SubmoduleDetailPage() {
                           fontWeight: 600,
                         }}
                       >
-                        Week {submoduleData.weekNo}
+                        {t("courses.weekNo", { number: submoduleData.weekNo })}
                       </Typography>
                     </Box>
                   )}
@@ -769,7 +771,10 @@ export default function SubmoduleDetailPage() {
                       fontSize: "0.75rem",
                     }}
                   >
-                    Content {currentIndex} of {totalContents}
+                    {t("courses.contentOf", {
+                      current: currentIndex,
+                      total: totalContents,
+                    })}
                   </Typography>
                 </Box>
                 <Typography
@@ -961,7 +966,7 @@ export default function SubmoduleDetailPage() {
                           handleContentSelect(nextContentId);
                         } catch (error) {
                           // Failed to load next content
-                          showToast("Failed to load next content", "error");
+                          showToast(t("courses.failedToLoadNextContent"), "error");
                         } finally {
                           // Close dialog and reset flag after navigation
                           setTimeout(() => {
@@ -1111,7 +1116,7 @@ export default function SubmoduleDetailPage() {
                 fontSize: { xs: "1rem", sm: "1.25rem" },
               }}
             >
-              Video Completed!
+              {t("courses.videoCompleted")}
             </Typography>
             <Typography
               variant="caption"
@@ -1120,7 +1125,7 @@ export default function SubmoduleDetailPage() {
                 fontSize: { xs: "0.7rem", sm: "0.75rem" },
               }}
             >
-              Great job finishing this content
+              {t("courses.greatJobFinishing")}
             </Typography>
           </Box>
         </DialogTitle>
@@ -1149,7 +1154,7 @@ export default function SubmoduleDetailPage() {
                     fontWeight: 500,
                   }}
                 >
-                  Up Next:
+                  {t("courses.upNext")}
                 </Typography>
                 <Box
                   sx={{
@@ -1199,7 +1204,9 @@ export default function SubmoduleDetailPage() {
                         fontSize: { xs: "0.7rem", sm: "0.75rem" },
                       }}
                     >
-                      Auto-starting in {autoRedirectCountdown} seconds...
+                      {t("courses.autoStartingIn", {
+                        count: autoRedirectCountdown,
+                      })}
                     </Typography>
                   </Box>
                 </Box>
@@ -1234,7 +1241,7 @@ export default function SubmoduleDetailPage() {
                 },
               }}
             >
-              Continue to Next Content
+              {t("courses.continueToNextContent")}
             </Button>
           </Box>
         </DialogContent>

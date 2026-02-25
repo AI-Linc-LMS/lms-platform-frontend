@@ -5,6 +5,7 @@ import arCommon from "@/locales/ar/common.json";
 
 const STORAGE_KEY = "i18nextLng";
 
+
 export const supportedLngs = ["en", "ar"] as const;
 export type SupportedLng = (typeof supportedLngs)[number];
 

@@ -103,7 +103,7 @@ export function SubmoduleItem({
             mb: 1,
           }}
         >
-          Content Breakdown
+          {t("courses.contentBreakdown")}
         </Typography>
         {contentBreakdown.map((item, index) => (
           <Box
@@ -304,7 +304,7 @@ export function SubmoduleItem({
             fontSize: { xs: "0.6875rem", sm: "0.75rem" },
           }}
         >
-          {contentCount > 0 ? `${contentCount} items` : "0 items"}
+          {contentCount > 0 ? `${contentCount} ${t("courses.items")}` : `0 ${t("courses.items")}`}
         </Typography>
         {contentBreakdown.length > 0 && (
           <Tooltip

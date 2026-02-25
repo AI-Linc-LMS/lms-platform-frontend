@@ -159,7 +159,7 @@ export const StreakHolders = () => {
             variant="body2"
             sx={{ color: "#6B7280", textAlign: "center", py: 2, p: 2 }}
           >
-            No streak data available
+            {t("dashboard.noStreakData")}
           </Typography>
         ) : (
           <Box

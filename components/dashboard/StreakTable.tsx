@@ -73,22 +73,12 @@ export const StreakTable = ({
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
   const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+  const monthKeys = [
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december",
   ];
-
-  const daysOfWeek = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const monthName = t(`dashboard.months.${monthKeys[currentMonth]}`);
+  const daysOfWeek = t("dashboard.daysOfWeek", { returnObjects: true }) as string[];
 
   // Generate all days for the month
   const days = [];
@@ -198,7 +188,7 @@ export const StreakTable = ({
                 mb: 2,
               }}
             >
-              {monthNames[currentMonth]} {currentYear}
+              {monthName} {currentYear}
             </Typography>
 
             {/* Days of week header */}
@@ -210,9 +200,9 @@ export const StreakTable = ({
                 mb: 1,
               }}
             >
-              {daysOfWeek.map((day) => (
+              {daysOfWeek.map((day, dayIndex) => (
                 <Typography
-                  key={day}
+                  key={dayIndex}
                   sx={{
                     textAlign: "center",
                     fontSize: "0.75rem",

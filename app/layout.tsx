@@ -52,8 +52,10 @@ export default async function RootLayout({
     ? `${client.app_icon_url}?v=${client.id}-${Date.now()}`
     : `/favicon.ico?v=${Date.now()}`;
 
+  const defaultLang = client?.id === 28 ? "ar" : "en";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={defaultLang} suppressHydrationWarning>
       <head>
         <link rel="icon" href={favicon} />
         <link rel="shortcut icon" href={favicon} />
@@ -74,7 +76,7 @@ export default async function RootLayout({
         <ClientThemeProvider client={client} />
 
         <ErrorBoundary>
-          <I18nProvider>
+          <I18nProvider clientId={client?.id}>
             <EmotionCacheProvider>
               <ThemeProvider>
                 <DirectionSync />

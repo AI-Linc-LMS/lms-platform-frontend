@@ -2,6 +2,7 @@
 
 import { Box, Paper, IconButton, Typography, Tabs, Tab } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { SubmoduleContentList } from "./SubmoduleContentList";
 import { SubmoduleProgress } from "./SubmoduleProgress";
@@ -39,8 +40,8 @@ export function SubmoduleSidebar({
   getContentColor,
   formatDuration,
 }: SubmoduleSidebarProps) {
+  const { t } = useTranslation("common");
   const router = useRouter();
-
   return (
     <Paper
       elevation={0}
@@ -111,7 +112,7 @@ export function SubmoduleSidebar({
               }}
             >
               {contentItems.length}{" "}
-              {contentItems.length === 1 ? "item" : "items"}
+              {contentItems.length === 1 ? t("courses.item") : t("courses.items")}
             </Typography>
           </Box>
         </Box>
@@ -149,12 +150,12 @@ export function SubmoduleSidebar({
           }}
         >
           <Tab
-            label="Materials"
+            label={t("courses.materials")}
             icon={<IconWrapper icon="mdi:home-outline" size={20} />}
             iconPosition="start"
           />
           <Tab
-            label="Progress"
+            label={t("courses.progressTab")}
             icon={<IconWrapper icon="mdi:chart-line" size={20} />}
             iconPosition="start"
           />

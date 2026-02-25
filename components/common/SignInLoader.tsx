@@ -1,8 +1,10 @@
 "use client";
 
 import { Box, CircularProgress, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 export const SignInLoader: React.FC = () => {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -21,7 +23,7 @@ export const SignInLoader: React.FC = () => {
     >
       <CircularProgress size={48} sx={{ mb: 3 }} />
       <Typography variant="body1" color="text.secondary">
-        Signing you in...
+        {t("auth.signingYouIn")}
       </Typography>
     </Box>
   );

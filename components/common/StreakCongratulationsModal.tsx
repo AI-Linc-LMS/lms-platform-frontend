@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent, Box, Typography, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { IconWrapper } from "./IconWrapper";
 
@@ -15,6 +16,7 @@ export function StreakCongratulationsModal({
   onClose,
   streakCount,
 }: StreakCongratulationsModalProps) {
+  const { t } = useTranslation("common");
   return (
     <Dialog
       open={open}
@@ -145,7 +147,7 @@ export function StreakCongratulationsModal({
                 fontSize: { xs: "1.75rem", sm: "2rem" },
               }}
             >
-              {streakCount} Day{streakCount !== 1 ? "s" : ""} Streak!
+              {t("dashboard.streakCount", { count: streakCount })}
             </Typography>
             <Typography
               variant="body1"
@@ -155,7 +157,7 @@ export function StreakCongratulationsModal({
                 fontSize: { xs: "0.9rem", sm: "1rem" },
               }}
             >
-              Keep up the amazing work! You're building a great learning habit.
+              {t("dashboard.streakKeepUpMessage")}
             </Typography>
           </motion.div>
 
@@ -186,7 +188,7 @@ export function StreakCongratulationsModal({
                 transition: "all 0.2s ease",
               }}
             >
-              Continue Learning
+              {t("dashboard.continueLearning")}
             </Button>
           </motion.div>
         </Box>

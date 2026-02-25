@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 interface ContentMarksInfoProps {
   marks: number;
@@ -13,6 +14,7 @@ export function ContentMarksInfo({
   obtainedMarks,
   submissions,
 }: ContentMarksInfoProps) {
+  const { t } = useTranslation("common");
   if (marks === 0) return null;
 
   return (
@@ -33,7 +35,7 @@ export function ContentMarksInfo({
           variant="body2"
           sx={{ color: "#6b7280", fontWeight: 500, fontSize: "0.875rem" }}
         >
-          Total Marks:
+          {t("courses.totalMarks")}:
         </Typography>
         <Typography
           variant="body2"
@@ -56,7 +58,7 @@ export function ContentMarksInfo({
               variant="body2"
               sx={{ color: "#6b7280", fontWeight: 500, fontSize: "0.875rem" }}
             >
-              Obtained Marks:
+              {t("courses.obtainedMarks")}:
             </Typography>
             <Typography
               variant="body2"
@@ -90,7 +92,7 @@ export function ContentMarksInfo({
               variant="body2"
               sx={{ color: "#6b7280", fontWeight: 500, fontSize: "0.875rem" }}
             >
-              Submissions:
+              {t("courses.submissions")}:
             </Typography>
             <Typography
               variant="body2"

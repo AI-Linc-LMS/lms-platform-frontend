@@ -6,13 +6,33 @@ import i18n, { supportedLngs } from "@/lib/i18n";
 
 const STORAGE_KEY = "i18nextLng";
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
+const DEFAULT_AR_CLIENT_ID = 28;
+
+function getInitialLanguage(clientId?: number): "en" | "ar" {
+  return clientId === DEFAULT_AR_CLIENT_ID ? "ar" : "en";
+}
+
+export function I18nProvider({
+  children,
+  clientId,
+}: {
+  children: React.ReactNode;
+  clientId?: number;
+}) {
+  // Set initial language synchronously so server and client first render match (avoids hydration mismatch).
+  const initialLang = getInitialLanguage(clientId);
+  if (i18n.language !== initialLang) {
+    i18n.language = initialLang;
+  }
+
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    if (stored && supportedLngs.includes(stored as (typeof supportedLngs)[number])) {
-      i18n.changeLanguage(stored);
+   if (clientId === DEFAULT_AR_CLIENT_ID) {
+      i18n.changeLanguage("ar");
     }
-  }, []);
+    else if (clientId !== DEFAULT_AR_CLIENT_ID) {
+      i18n.changeLanguage("en");
+    }
+  }, [clientId]);
 
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
 }

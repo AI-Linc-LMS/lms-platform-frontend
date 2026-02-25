@@ -72,7 +72,7 @@ export default function LoginPage() {
       }, 500);
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.detail || "Login failed. Please try again.";
+        err.response?.data?.detail || t("auth.loginFailed");
       showToast(errorMessage, "error");
       setLoading(false);
       setIsRedirecting(false);
@@ -92,6 +92,7 @@ export default function LoginPage() {
           maxWidth: 440,
           display: "flex",
           flexDirection: "column",
+          textAlign: "start",
         }}
       >
         {/* Logo */}
@@ -107,7 +108,7 @@ export default function LoginPage() {
             fontSize: { xs: "1.75rem", sm: "2rem" },
           }}
         >
-          Login
+          {t("auth.login")}
         </Typography>
 
         {/* Google Sign In Button */}

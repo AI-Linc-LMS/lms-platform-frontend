@@ -22,11 +22,20 @@ interface CourseCardProps {
   enrolling?: boolean;
 }
 
+const DIFFICULTY_KEYS: Record<string, string> = {
+  Easy: "courses.difficultyEasy",
+  Medium: "courses.difficultyMedium",
+  Hard: "courses.difficultyHard",
+  Beginner: "courses.difficultyBeginner",
+};
+
 export const CourseCard = memo(
   function CourseCard({ course, onEnroll, enrolling }: CourseCardProps) {
     const { t } = useTranslation("common");
     const router = useRouter();
     const isEnrolled = course.is_enrolled;
+    const difficultyKey = course.difficulty_level && DIFFICULTY_KEYS[course.difficulty_level];
+    const difficultyLabel = difficultyKey ? t(difficultyKey) : t("courses.difficultyBeginner");
 
     const handleClick = useCallback(() => {
       router.push(`/courses/${course.id}`);
@@ -154,7 +163,7 @@ export const CourseCard = memo(
         >
           {/* Description - Always same height */}
           <Tooltip
-            title={course.description || "No description available"}
+            title={course.description || t("courses.noDescription")}
             arrow
             placement="top"
             enterDelay={300}
@@ -204,7 +213,7 @@ export const CourseCard = memo(
                 size={18}
                 color="#6366f1"
               />
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, minWidth: 0, textAlign: "start" }}>
                 <Typography
                   variant="caption"
                   sx={{
@@ -245,7 +254,7 @@ export const CourseCard = memo(
               }}
             >
               <IconWrapper icon="mdi:speedometer" size={18} color="#6366f1" />
-              <Box>
+              <Box sx={{ minWidth: 0, textAlign: "start" }}>
                 <Typography
                   variant="caption"
                   sx={{
@@ -267,9 +276,10 @@ export const CourseCard = memo(
                     fontWeight: 600,
                     fontSize: "0.8125rem",
                     lineHeight: 1.2,
+                    textAlign: "start",
                   }}
                 >
-                  {course.difficulty_level}
+                  {difficultyLabel}
                 </Typography>
               </Box>
             </Box>

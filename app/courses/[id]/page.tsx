@@ -215,7 +215,7 @@ export default function CourseDetailPage() {
     return (
       <MainLayout>
         <Box sx={{ p: 3 }}>
-          <Typography>Course not found</Typography>
+          <Typography>{t("courses.courseNotFound")}</Typography>
         </Box>
       </MainLayout>
     );

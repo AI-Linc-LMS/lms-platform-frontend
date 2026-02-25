@@ -265,7 +265,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     color: "#92400e",
                   }}
                 >
-                  Admin Mode
+                  {t("common.adminMode")}
                 </Typography>
               </Box>
               {/* Mobile: Icon Only */}
@@ -824,10 +824,12 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           </React.Fragment>
           )}
 
-          {/* Language selector - always on navbar */}
-          <Box sx={{ minWidth: 100 }}>
-            <LanguageSelect size="small" variant="outlined" />
-          </Box>
+          {/* Language selector - only for client id 28 */}
+          {clientInfo?.id === 28 && (
+            <Box sx={{ minWidth: 100 }}>
+              <LanguageSelect size="small" variant="outlined" />
+            </Box>
+          )}
 
           {/* Notifications */}
           <IconButton
@@ -933,7 +935,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 }}
               >
                 <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><Settings size={18} /></Box>
-                {isAdminMode ? "Exit Admin Mode" : "Switch to Admin"}
+                {isAdminMode ? t("common.exitAdminMode") : t("common.switchToAdmin")}
               </MenuItem>
             )}
 
