@@ -3,7 +3,7 @@
 import { Select, MenuItem, FormControl } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
 
-export const DEFAULT_PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
+export const DEFAULT_PER_PAGE_OPTIONS = [10, 20, 25, 50, 100] as const;
 
 export interface PerPageSelectProps {
   value: number;

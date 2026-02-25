@@ -175,11 +175,11 @@ export default function AdminMockInterviewPage() {
 
   useEffect(() => {
     if (tab === "interviews") loadInterviews();
-  }, [tab, loadInterviews]);
+  }, [tab, loadInterviews, interviewPage, interviewLimit]);
 
   useEffect(() => {
     if (tab === "students") loadStudents();
-  }, [tab, loadStudents]);
+  }, [tab, loadStudents, studentPage, studentLimit]);
 
   useEffect(() => {
     if (tab === "topics") loadTopics();
@@ -297,7 +297,7 @@ export default function AdminMockInterviewPage() {
               interviews={interviewsData?.interviews ?? []}
               loading={interviewsLoading}
               pagination={{
-                current_page: interviewsData?.pagination?.current_page ?? 1,
+                current_page: (interviewsData?.pagination?.current_page ?? 0) + 1,
                 total_pages: interviewsData?.pagination?.total_pages ?? 1,
                 total_interviews: interviewsData?.pagination?.total_interviews ?? 0,
                 limit: interviewLimit,
@@ -351,9 +351,10 @@ export default function AdminMockInterviewPage() {
                 <InputLabel>Order</InputLabel>
                 <Select
                   value={studentSortOrder}
-                  onChange={(e) =>
-                    setStudentSortOrder(e.target.value as "asc" | "desc")
-                  }
+                  onChange={(e) => {
+                    setStudentSortOrder(e.target.value as "asc" | "desc");
+                    setStudentPage(1);
+                  }}
                   label="Order"
                 >
                   <MenuItem value="asc">Asc</MenuItem>

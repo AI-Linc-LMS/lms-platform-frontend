@@ -169,7 +169,7 @@ export function AdminInterviewResultAdapter({
         />
 
         <OverallFeedback
-          areas_for_improvement={[]}
+          areas_for_improvement={evaluationScore?.areas_for_improvement ?? []}
           overall_feedback={evaluationScore?.feedback ?? "No feedback available."}
         />
       </Container>

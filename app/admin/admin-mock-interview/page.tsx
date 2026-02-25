@@ -49,7 +49,7 @@ export default function AdminMockInterviewPage() {
   const [interviewsLoading, setInterviewsLoading] = useState(false);
   const [interviewFilters, setInterviewFilters] = useState<InterviewFiltersState>(DEFAULT_FILTERS);
   const [interviewPage, setInterviewPage] = useState(1);
-  const [interviewLimit, setInterviewLimit] = useState(20);
+  const [interviewLimit, setInterviewLimit] = useState(10);
   const [exporting, setExporting] = useState(false);
 
   // Students tab
@@ -59,7 +59,7 @@ export default function AdminMockInterviewPage() {
   const [studentSortBy, setStudentSortBy] = useState("total_interviews");
   const [studentSortOrder, setStudentSortOrder] = useState<"asc" | "desc">("desc");
   const [studentPage, setStudentPage] = useState(1);
-  const [studentLimit, setStudentLimit] = useState(20);
+  const [studentLimit, setStudentLimit] = useState(10);
 
   // Topics tab
   const [topicsData, setTopicsData] = useState<TopicsResponse | null>(null);
@@ -360,7 +360,7 @@ export default function AdminMockInterviewPage() {
               interviews={interviewsData?.interviews ?? []}
               loading={interviewsLoading}
               pagination={{
-                current_page: interviewsData?.pagination?.current_page ?? 1,
+                current_page: interviewPage,
                 total_pages: interviewsData?.pagination?.total_pages ?? 1,
                 total_interviews: interviewsData?.pagination?.total_interviews ?? 0,
                 limit: interviewLimit,
@@ -391,7 +391,7 @@ export default function AdminMockInterviewPage() {
               students={studentsData?.students ?? []}
               loading={studentsLoading}
               pagination={{
-                current_page: studentsData?.pagination?.current_page ?? 1,
+                current_page: studentPage,
                 total_pages: studentsData?.pagination?.total_pages ?? 1,
                 total_students: studentsData?.pagination?.total_students ?? 0,
                 limit: studentLimit,

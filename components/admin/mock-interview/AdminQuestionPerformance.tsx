@@ -10,7 +10,7 @@ import {
   Divider,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { memo } from "react";
+import { memo, Fragment } from "react";
 import type {
   AdminQuestionForInterview,
   TranscriptResponse,
@@ -64,19 +64,20 @@ const AdminQuestionPerformanceComponent = ({
         {questions.map((q, index) => {
           const response = getResponseForQuestion(responses, q.question_number);
           const isExpanded = expandedQuestion === q.question_number;
+          const itemKey = `question-${q.question_number}-${index}`;
 
           return (
-            <Accordion
-              key={q.question_number}
-              expanded={isExpanded}
-              onChange={() => onQuestionToggle(q.question_number)}
-              sx={{
-                borderRadius: 2,
-                border: "1px solid #e5e7eb",
-                "&:before": { display: "none" },
-                boxShadow: "none",
-              }}
-            >
+            <Fragment key={itemKey}>
+              <Accordion
+                expanded={isExpanded}
+                onChange={() => onQuestionToggle(q.question_number)}
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid #e5e7eb",
+                  "&:before": { display: "none" },
+                  boxShadow: "none",
+                }}
+              >
               <AccordionSummary
                 expandIcon={<IconWrapper icon="mdi:chevron-down" size={24} />}
                 sx={{ "&:hover": { backgroundColor: "#f9fafb" } }}
@@ -128,6 +129,7 @@ const AdminQuestionPerformanceComponent = ({
                 </Box>
               </AccordionDetails>
             </Accordion>
+            </Fragment>
           );
         })}
       </Box>
