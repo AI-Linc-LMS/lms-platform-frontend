@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -55,6 +56,7 @@ export default function AttendancePage() {
   const codeInputRefs = useRef<(HTMLInputElement | null)[]>(
     Array(6).fill(null)
   );
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function AttendancePage() {
       showToast(
         error?.response?.data?.detail ||
           error?.message ||
-          "Failed to load attendance activities",
+          t("attendance.failedToLoad"),
         "error"
       );
     } finally {
@@ -132,14 +134,14 @@ export default function AttendancePage() {
 
     const codeString = attendanceCode.join("");
     if (!codeString.trim() || codeString.length !== 6) {
-      showToast("Please enter the complete 6-digit attendance code", "error");
+      showToast(t("attendance.enterCode"), "error");
       return;
     }
 
     try {
       setMarkingAttendance(selectedActivityId);
       await activityService.markAttendance(selectedActivityId, codeString);
-      showToast("Attendance marked successfully!", "success");
+      showToast(t("attendance.markedSuccess"), "success");
       handleCodeDialogClose();
       // Reload activities to update the status
       await loadAttendanceActivities();
@@ -167,7 +169,7 @@ export default function AttendancePage() {
   };
 
   const formatTimeRemaining = (minutes: number) => {
-    if (minutes <= 0) return "Expired";
+    if (minutes <= 0) return t("attendance.expired");
     if (minutes < 60) {
       return `${minutes} min left`;
     }
@@ -202,11 +204,10 @@ export default function AttendancePage() {
               mb: 1,
             }}
           >
-            Attendance
+            {t("attendance.title")}
           </Typography>
           <Typography variant="body1" sx={{ color: "#6b7280" }}>
-            Mark your attendance by entering the code provided by your
-            instructor
+            {t("attendance.subtitle")}
           </Typography>
         </Box>
 
@@ -250,7 +251,7 @@ export default function AttendancePage() {
                         fontSize: "0.875rem",
                       }}
                     >
-                      Name
+                      {t("attendance.name")}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -259,7 +260,7 @@ export default function AttendancePage() {
                         fontSize: "0.875rem",
                       }}
                     >
-                      Expires At
+                      {t("attendance.expiresAt")}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -268,7 +269,7 @@ export default function AttendancePage() {
                         fontSize: "0.875rem",
                       }}
                     >
-                      Time Remaining
+                      {t("attendance.timeRemaining")}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -278,7 +279,7 @@ export default function AttendancePage() {
                       }}
                       align="right"
                     >
-                      Action
+                      {t("attendance.action")}
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -380,7 +381,7 @@ export default function AttendancePage() {
                             </Button>
                           ) : activity.has_marked_attendance ? (
                             <Chip
-                              label="Marked"
+                              label={t("attendance.marked")}
                               size="small"
                               sx={{
                                 backgroundColor: "#dbeafe",
@@ -398,7 +399,7 @@ export default function AttendancePage() {
                             />
                           ) : (
                             <Chip
-                              label="Absent"
+                              label={t("attendance.absent")}
                               size="small"
                               sx={{
                                 backgroundColor: "#ed4545",

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -17,6 +18,7 @@ interface StudentRankingCardProps {
 }
 
 export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRankingCardProps) {
+  const { t } = useTranslation("common");
   return (
     <Paper
       sx={{
@@ -35,7 +37,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
       >
-        Student Ranking
+        {t("admin.dashboard.studentRanking")}
       </Typography>
       {leaderboard.length === 0 ? (
         <Box
@@ -56,7 +58,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
               fontSize: { xs: "0.875rem", sm: "1rem" },
             }}
           >
-            No leaderboard available
+            {t("admin.dashboard.noLeaderboardAvailable")}
           </Typography>
           <Box
             sx={{
@@ -77,8 +79,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
-              As you complete modules you will move to the top of the leaderboard
-              and earn exciting rewards.
+              {t("admin.dashboard.leaderboardHint")}
             </Typography>
           </Box>
         </Box>

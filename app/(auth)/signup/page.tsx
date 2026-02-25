@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   TextField,
   Button,
@@ -31,6 +32,7 @@ interface SignupFormValues {
 }
 
 export default function SignupPage() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -51,10 +53,7 @@ export default function SignupPage() {
 
     try {
       await accountsService.signup(values);
-      showToast(
-        "OTP sent to your email. Please verify your account.",
-        "success"
-      );
+      showToast(t("auth.otpSent"), "success");
       setTimeout(() => {
         router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
       }, 2000);
@@ -70,7 +69,7 @@ export default function SignupPage() {
   };
 
   return (
-    <AuthLayout slogan="Changing the  way  the  world  learns">
+    <AuthLayout slogan={t("auth.slogan")}>
       <Box
         sx={{
           width: "100%",
@@ -90,7 +89,7 @@ export default function SignupPage() {
             fontSize: { xs: "1.75rem", sm: "2rem" },
           }}
         >
-          Sign Up
+          {t("auth.signUp")}
         </Typography>
 
         {/* Google Sign In Button */}
@@ -105,7 +104,7 @@ export default function SignupPage() {
             variant="body2"
             sx={{ px: 2, color: "text.secondary", fontSize: "0.875rem" }}
           >
-            Or sign up with email
+            {t("auth.orSignUpWithEmail")}
           </Typography>
           <Divider sx={{ flexGrow: 1 }} />
         </Box>
@@ -154,8 +153,8 @@ export default function SignupPage() {
                       fullWidth
                       required
                       id="last_name"
-                      label="Last Name"
-                      placeholder="Last Name"
+                      label={t("auth.lastName")}
+                      placeholder={t("auth.lastName")}
                       size="small"
                       error={touched.last_name && !!errors.last_name}
                       helperText={touched.last_name && errors.last_name}
@@ -203,8 +202,8 @@ export default function SignupPage() {
                   fullWidth
                   required
                   size="small"
-                  label="Phone Number"
-                  placeholder="Phone Number"
+                  label={t("auth.phoneNumber")}
+                  placeholder={t("auth.phoneNumber")}
                   error={touched.phone && !!errors.phone}
                   helperText={touched.phone && errors.phone}
                   sx={{
@@ -264,8 +263,8 @@ export default function SignupPage() {
                     {...field}
                     fullWidth
                     required
-                    label="Confirm Password"
-                    placeholder="Confirm Password"
+                    label={t("auth.confirmPassword")}
+                    placeholder={t("auth.confirmPassword")}
                     type={showConfirmPassword ? "text" : "password"}
                     id="confirm_password"
                     size="small"
@@ -334,7 +333,7 @@ export default function SignupPage() {
                   },
                 }}
               >
-                {loading ? "Creating Account..." : "Sign Up"}
+                {loading ? t("auth.creatingAccount") : t("auth.signUp")}
               </Button>
 
               {/* Sign in link */}
@@ -366,7 +365,7 @@ export default function SignupPage() {
                       },
                     }}
                   >
-                    Sign in
+                    {t("auth.signIn")}
                   </Typography>
                 </Link>
               </Box>

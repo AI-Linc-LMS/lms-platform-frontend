@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -29,6 +30,7 @@ export default function AssessmentDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
@@ -60,7 +62,7 @@ export default function AssessmentDetailPage({
 
       setAssessment(data);
     } catch (error: any) {
-      showToast("Failed to load assessment details", "error");
+      showToast(t("assessments.failedToLoadDetails"), "error");
     } finally {
       setLoading(false);
     }
@@ -387,9 +389,7 @@ export default function AssessmentDetailPage({
                   fontWeight={600}
                   sx={{ color: "#92400e" }}
                 >
-                  By clicking &quot;Start Assessment&quot;, you acknowledge that
-                  you have read and understood all instructions and agree to abide
-                  by the examination rules and proctoring policies.
+                  {t("assessments.startAcknowledgment")}
                 </Typography>
               </Alert>
             </Paper>
@@ -465,7 +465,7 @@ export default function AssessmentDetailPage({
               },
             }}
           >
-            Start Assessment
+            {t("assessments.startAssessment")}
           </Button>
         </Paper>
       </Box>

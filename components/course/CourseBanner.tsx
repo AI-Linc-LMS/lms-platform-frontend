@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, IconButton, Button, CircularProgress } from "@mui/material";
 import { CourseDetail, CourseDashboard } from "@/lib/services/courses.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -21,8 +22,10 @@ export function CourseBanner({
   onEnroll,
   isEnrolling,
 }: CourseBannerProps) {
+  const { t, i18n } = useTranslation("common");
+  const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
   const updatedDate = course.updated_at
-    ? new Date(course.updated_at).toLocaleDateString("en-US", {
+    ? new Date(course.updated_at).toLocaleDateString(locale, {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -133,7 +136,7 @@ export function CourseBanner({
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
-              Updated: {updatedDate}
+              {t("courses.updated")}: {updatedDate}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -169,7 +172,7 @@ export function CourseBanner({
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
-              {course.is_certified ? "Certified" : "No Certificate"}
+              {course.is_certified ? t("courses.certified") : t("courses.noCertificate")}
             </Typography>
           </Box>
           {/* Like Button */}
@@ -228,7 +231,7 @@ export function CourseBanner({
                     fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   }}
                 >
-                  Your Progress
+                  {t("courses.yourProgress")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -276,8 +279,10 @@ export function CourseBanner({
                     fontSize: { xs: "0.7rem", sm: "0.75rem" },
                   }}
                 >
-                  {dashboard.completed_modules ?? 0}/
-                  {dashboard.total_modules ?? 0} Modules
+                  {t("courses.modulesCompleted", {
+                    completed: dashboard.completed_modules ?? 0,
+                    total: dashboard.total_modules ?? 0,
+                  })}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -286,8 +291,10 @@ export function CourseBanner({
                     fontSize: { xs: "0.7rem", sm: "0.75rem" },
                   }}
                 >
-                  {dashboard.completed_contents ?? 0}/
-                  {dashboard.total_contents ?? 0} Contents
+                  {t("courses.contentsCompleted", {
+                    completed: dashboard.completed_contents ?? 0,
+                    total: dashboard.total_contents ?? 0,
+                  })}
                 </Typography>
               </Box>
             </Box>

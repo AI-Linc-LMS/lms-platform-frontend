@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface AssessmentStatsProps {
@@ -14,6 +15,7 @@ export function AssessmentStats({
   availableCount,
   completedCount,
 }: AssessmentStatsProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -173,7 +175,7 @@ export function AssessmentStats({
                 fontWeight: 500,
               }}
             >
-              Completed
+              {t("assessments.completed")}
             </Typography>
           </Box>
         </Box>

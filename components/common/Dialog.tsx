@@ -39,8 +39,8 @@ export const Dialog: React.FC<CustomDialogProps> = ({
               aria-label="close"
               onClick={onClose}
               sx={{
-                position: 'absolute',
-                right: 8,
+                position: "absolute",
+                insetInlineEnd: 8,
                 top: 8,
               }}
             >

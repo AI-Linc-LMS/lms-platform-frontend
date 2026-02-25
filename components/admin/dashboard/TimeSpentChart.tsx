@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import {
   LineChart,
@@ -20,6 +21,7 @@ interface TimeSpentChartProps {
 }
 
 export function TimeSpentChart({ data }: TimeSpentChartProps) {
+  const { t } = useTranslation("common");
   const formattedData = (data || []).map((item) => {
     const date = new Date(item.date);
     const day = date.getDate();
@@ -50,7 +52,7 @@ export function TimeSpentChart({ data }: TimeSpentChartProps) {
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
       >
-        Total Time Spent by Students
+        {t("admin.dashboard.totalTimeSpentByStudents")}
       </Typography>
       {formattedData.length === 0 ? (
         <Box
@@ -62,7 +64,7 @@ export function TimeSpentChart({ data }: TimeSpentChartProps) {
             color: "#6b7280",
           }}
         >
-          <Typography variant="body2">No time spent data available</Typography>
+          <Typography variant="body2">{t("admin.dashboard.noTimeSpentData")}</Typography>
         </Box>
       ) : (
         <ResponsiveContainer width="100%" height={300}>

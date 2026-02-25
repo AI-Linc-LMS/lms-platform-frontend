@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -13,6 +14,7 @@ import { LiveSessionsTable } from "@/components/live-sessions/LiveSessionsTable"
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 
 export default function LiveSessionsPage() {
+  const { t } = useTranslation("common");
   const {
     loadingClientInfo,
     hasLiveSessionsFeature,
@@ -62,10 +64,10 @@ export default function LiveSessionsPage() {
             variant="h4"
             sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
           >
-            Live Sessions
+            {t("liveSessions.title")}
           </Typography>
           <Typography variant="body1" sx={{ color: "#6b7280" }}>
-            Join live Zoom classes and watch recordings
+            {t("liveSessions.subtitle")}
           </Typography>
         </Box>
 

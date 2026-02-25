@@ -8,6 +8,7 @@ import {
   Tooltip,
   IconButton,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LeaderboardEntry } from "@/lib/services/courses.service";
 
@@ -16,6 +17,7 @@ interface CourseLeaderboardProps {
 }
 
 export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
+  const { t } = useTranslation("common");
   const getRankColor = (rank?: number | null) => {
     if (!rank || rank === 0) return "#6B7280";
     if (rank === 1) return "#FFD700"; // Gold
@@ -64,7 +66,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
           mb: 0.5,
         }}
       >
-        Marking Scheme
+        {t("courses.markingScheme")}
       </Typography>
       {markingScheme.map((item, index) => (
         <Box
@@ -98,7 +100,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
               fontWeight: 600,
             }}
           >
-            {item.marks} Marks
+            {item.marks} {t("courses.marks")}
           </Typography>
         </Box>
       ))}
@@ -149,13 +151,13 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
             variant="h6"
             sx={{ fontWeight: 700, color: "#1a1f2e", fontSize: "1.125rem" }}
           >
-            Leaderboard
+            {t("courses.leaderboardTitle")}
           </Typography>
           <Typography
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Top performers in this course
+            {t("courses.topPerformersInCourse")}
           </Typography>
         </Box>
         <Tooltip
@@ -230,7 +232,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
               variant="body2"
               sx={{ color: "#9ca3af", fontSize: "0.875rem" }}
             >
-              No leaderboard data available
+              {t("courses.noLeaderboardDataAvailable")}
             </Typography>
           </Box>
         ) : (
@@ -342,7 +344,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                         lineHeight: 1.2,
                       }}
                     >
-                      Score: {totalScore.toFixed(0)}
+                      {t("courses.scoreLabel")}: {totalScore.toFixed(0)}
                     </Typography>
                   </Box>
                   <Box

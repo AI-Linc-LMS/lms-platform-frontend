@@ -8,6 +8,7 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Module } from "@/lib/services/courses.service";
 import { SubmoduleItem } from "./SubmoduleItem";
@@ -44,6 +45,7 @@ export function ModuleAccordion({
   onNavigate,
   getSubmoduleContentCount,
 }: ModuleAccordionProps) {
+  const { t } = useTranslation("common");
   /* ---------------- content count ---------------- */
   const totalSubmoduleLectures =
     module.submodules?.reduce(
@@ -192,7 +194,7 @@ export function ModuleAccordion({
                 color: "#6b7280",
               }}
             >
-              {totalSubmoduleLectures} items
+              {totalSubmoduleLectures} {t("courses.items")}
             </Typography>
           </Box>
 

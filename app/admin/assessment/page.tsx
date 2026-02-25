@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -21,6 +22,7 @@ import {
   MenuItem,
   InputAdornment,
   Chip,
+  useTheme,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -40,8 +42,11 @@ import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
 import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPagination";
 
 export default function AssessmentPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
+  const theme = useTheme();
+  const rtl = theme.direction === "rtl";
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -400,7 +405,7 @@ export default function AssessmentPage() {
       );
     } catch (error: any) {
       showToast(
-        error?.message || "Failed to export questions",
+        error?.message || t("admin.assessment.failedToExportQuestions"),
         "error"
       );
     } finally {
@@ -546,14 +551,14 @@ export default function AssessmentPage() {
         assessmentToDuplicate.id
       );
       showToast(
-        `Assessment duplicated successfully. New assessment: "${duplicatedAssessment.title}"`,
+        t("admin.assessment.duplicateSuccess", { title: duplicatedAssessment.title }),
         "success"
       );
       setDuplicateDialogOpen(false);
       setAssessmentToDuplicate(null);
       loadAssessments();
     } catch (error: any) {
-      showToast(error?.message || "Failed to duplicate assessment", "error");
+      showToast(error?.message || t("admin.assessment.failedToDuplicate"), "error");
     } finally {
       setDuplicatingId(null);
     }
@@ -635,7 +640,7 @@ export default function AssessmentPage() {
             justifyContent: "space-between",
             alignItems: { xs: "flex-start", sm: "center" },
             mb: 4,
-            flexDirection: { xs: "column", sm: "row" },
+            flexDirection: { xs: "column", sm: rtl ? "row-reverse" : "row" },
             gap: 3,
           }}
         >
@@ -653,7 +658,7 @@ export default function AssessmentPage() {
                 backgroundClip: "text",
               }}
             >
-              Assessment Management
+              {t("admin.assessment.title")}
             </Typography>
             <Typography
               variant="body2"
@@ -663,7 +668,7 @@ export default function AssessmentPage() {
                 mt: 0.5,
               }}
             >
-              Manage and monitor all your assessments in one place
+              {t("admin.assessment.subtitle")}
             </Typography>
           </Box>
           <Button
@@ -688,7 +693,7 @@ export default function AssessmentPage() {
               transition: "all 0.2s ease",
             }}
           >
-            Create Assessment
+            {t("admin.assessment.createAssessment")}
           </Button>
         </Box>
 
@@ -712,10 +717,11 @@ export default function AssessmentPage() {
               },
               gap: 2,
               alignItems: "center",
+              direction: rtl ? "rtl" : "ltr",
             }}
           >
             <TextField
-              placeholder="Search by title or courses..."
+              placeholder={t("admin.assessment.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{

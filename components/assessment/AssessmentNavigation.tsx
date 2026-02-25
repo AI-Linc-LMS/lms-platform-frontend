@@ -45,8 +45,8 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
       sx={{
         position: "fixed",
         top: 90,
-        left: 0,
-        right: 0,
+        insetInlineStart: 0,
+        insetInlineEnd: 0,
         zIndex: 1200,
         px: { xs: 2, md: 3 },
         py: 1.5,

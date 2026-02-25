@@ -212,8 +212,8 @@ export function ProctoredAssessment({
         sx={{
           position: "fixed",
           top: 0,
-          left: 0,
-          right: 0,
+          insetInlineStart: 0,
+          insetInlineEnd: 0,
           zIndex: 1200,
           p: 1.5,
           borderRadius: 0,
@@ -260,7 +260,7 @@ export function ProctoredAssessment({
         sx={{
           position: "fixed",
           bottom: 16,
-          right: 16,
+          insetInlineEnd: 16,
           zIndex: 1200,
           overflow: "hidden",
           borderRadius: 2,
@@ -283,7 +283,7 @@ export function ProctoredAssessment({
           sx={{
             position: "absolute",
             top: 8,
-            left: 8,
+            insetInlineStart: 8,
             backgroundColor: "rgba(0, 0, 0, 0.7)",
             borderRadius: 1,
             px: 1,
@@ -294,12 +294,9 @@ export function ProctoredAssessment({
             variant="caption"
             sx={{ color: "#fff", fontWeight: 600, fontSize: "0.7rem" }}
           >
-            <IconWrapper
-              icon="mdi:record-circle"
-              size={12}
-              color="#ef4444"
-              style={{ marginRight: 4, animation: "pulse 2s infinite" }}
-            />
+            <Box component="span" sx={{ marginInlineEnd: 0.5, display: "inline-flex", animation: "pulse 2s infinite" }}>
+              <IconWrapper icon="mdi:record-circle" size={12} color="#ef4444" />
+            </Box>
             RECORDING
           </Typography>
         </Box>

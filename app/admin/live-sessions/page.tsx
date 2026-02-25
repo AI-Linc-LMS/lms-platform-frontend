@@ -119,8 +119,8 @@ export default function AdminLiveSessionsPage() {
           <LinearProgress
             sx={{
               position: "absolute",
-              left: 0,
-              right: 0,
+              insetInlineStart: 0,
+              insetInlineEnd: 0,
               top: 0,
               zIndex: 1,
             }}

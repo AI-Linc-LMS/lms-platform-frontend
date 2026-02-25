@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Course } from "./interfaces";
 
@@ -21,10 +22,20 @@ interface CourseCardProps {
   enrolling?: boolean;
 }
 
+const DIFFICULTY_KEYS: Record<string, string> = {
+  Easy: "courses.difficultyEasy",
+  Medium: "courses.difficultyMedium",
+  Hard: "courses.difficultyHard",
+  Beginner: "courses.difficultyBeginner",
+};
+
 export const CourseCard = memo(
   function CourseCard({ course, onEnroll, enrolling }: CourseCardProps) {
+    const { t } = useTranslation("common");
     const router = useRouter();
     const isEnrolled = course.is_enrolled;
+    const difficultyKey = course.difficulty_level && DIFFICULTY_KEYS[course.difficulty_level];
+    const difficultyLabel = difficultyKey ? t(difficultyKey) : t("courses.difficultyBeginner");
 
     const handleClick = useCallback(() => {
       router.push(`/courses/${course.id}`);
@@ -71,13 +82,13 @@ export const CourseCard = memo(
             sx={{
               position: "absolute",
               top: 10,
-              right: 10,
+              insetInlineEnd: 10,
               zIndex: 1,
             }}
           >
             <Chip
               icon={<IconWrapper icon="mdi:check-circle" size={14} />}
-              label="Enrolled"
+              label={t("courses.enrolled")}
               size="small"
               sx={{
                 backgroundColor: "#d1fae5",
@@ -152,7 +163,7 @@ export const CourseCard = memo(
         >
           {/* Description - Always same height */}
           <Tooltip
-            title={course.description || "No description available"}
+            title={course.description || t("courses.noDescription")}
             arrow
             placement="top"
             enterDelay={300}
@@ -202,7 +213,7 @@ export const CourseCard = memo(
                 size={18}
                 color="#6366f1"
               />
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, minWidth: 0, textAlign: "start" }}>
                 <Typography
                   variant="caption"
                   sx={{
@@ -215,7 +226,7 @@ export const CourseCard = memo(
                     lineHeight: 1.2,
                   }}
                 >
-                  {isEnrolled ? "Progress" : "Lessons"}
+                  {isEnrolled ? t("courses.progress") : t("courses.lessons")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -243,7 +254,7 @@ export const CourseCard = memo(
               }}
             >
               <IconWrapper icon="mdi:speedometer" size={18} color="#6366f1" />
-              <Box>
+              <Box sx={{ minWidth: 0, textAlign: "start" }}>
                 <Typography
                   variant="caption"
                   sx={{
@@ -256,7 +267,7 @@ export const CourseCard = memo(
                     lineHeight: 1.2,
                   }}
                 >
-                  Level
+                  {t("courses.level")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -265,9 +276,10 @@ export const CourseCard = memo(
                     fontWeight: 600,
                     fontSize: "0.8125rem",
                     lineHeight: 1.2,
+                    textAlign: "start",
                   }}
                 >
-                  {course.difficulty_level}
+                  {difficultyLabel}
                 </Typography>
               </Box>
             </Box>
@@ -315,12 +327,12 @@ export const CourseCard = memo(
               }}
             >
               {enrolling
-                ? "Enrolling..."
+                ? t("courses.enrolling")
                 : isEnrolled
-                ? "Continue Learning"
+                ? t("courses.continueLearning")
                 : course.is_free
-                ? "Enroll Now"
-                :parseFloat(course.price) > 0 ? `Enroll - ₹${course.price}` : "Enroll Now"}
+                ? t("courses.enrollNow")
+                : parseFloat(course.price) > 0 ? t("courses.enrollPrice", { price: course.price }) : t("courses.enrollNow")}
             </Button>
           </Box>
         </CardContent>

@@ -194,7 +194,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
 
             {/* Bookmark Button */}
             {onBookmark && (
-              <Box sx={{ marginLeft: "auto" }}>
+              <Box sx={{ marginInlineStart: "auto" }}>
                 <Tooltip title={thread.user_bookmarked ? "Remove bookmark" : "Bookmark"}>
                   <IconButton
                     size="small"

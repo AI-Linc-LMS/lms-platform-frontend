@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Fab, Tooltip, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -24,6 +25,7 @@ import { PaymentType } from "@/lib/services/payment.service";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 
 export default function CourseDetailPage() {
+  const { t } = useTranslation("common");
   const params = useParams();
   const router = useRouter();
   const courseId = Number(params.id);
@@ -63,7 +65,7 @@ export default function CourseDetailPage() {
         setExpandedModules(initialExpanded);
       }
     } catch (error: any) {
-      showToast("Failed to load course details", "error");
+      showToast(t("courses.failedToLoadDetails"), "error");
     } finally {
       setLoading(false);
     }
@@ -106,7 +108,7 @@ export default function CourseDetailPage() {
         description: `Access for ${course.course_title}`,
         onSuccess: (res) => {
           showToast(
-            "Payment verified! You have successfully enrolled.",
+            t("courses.paymentVerified"),
             "success"
           );
           loadCourseDetail();
@@ -124,11 +126,11 @@ export default function CourseDetailPage() {
 
     try {
       await coursesService.enrollInCourse(courseId);
-      showToast("Successfully enrolled in course!", "success");
+      showToast(t("courses.enrolledSuccess"), "success");
       loadCourseDetail();
       loadDashboard();
     } catch (error: any) {
-      showToast(error.response?.data?.detail || "Failed to enroll", "error");
+      showToast(error.response?.data?.detail || t("courses.failedToEnroll"), "error");
     }
   };
 
@@ -177,7 +179,7 @@ export default function CourseDetailPage() {
           liked_count: previousCount,
         };
       });
-      showToast("Failed to toggle like", "error");
+      showToast(t("courses.failedToToggleLike"), "error");
     }
   };
 
@@ -213,7 +215,7 @@ export default function CourseDetailPage() {
     return (
       <MainLayout>
         <Box sx={{ p: 3 }}>
-          <Typography>Course not found</Typography>
+          <Typography>{t("courses.courseNotFound")}</Typography>
         </Box>
       </MainLayout>
     );
@@ -242,7 +244,7 @@ export default function CourseDetailPage() {
               variant="body2"
               sx={{ color: "#6b7280", "&:hover": { color: "#1a1f2e" } }}
             >
-              My Courses / {course.course_title}
+              {t("courses.myCourses")} / {course.course_title}
             </Typography>
           </Link>
         </Box>

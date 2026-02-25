@@ -64,7 +64,7 @@ export const StatusCards = ({
             border: "1px solid #FDE68A",
           }}
         >
-          <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+          <Box sx={{ position: "absolute", top: 16, insetInlineEnd: 16 }}>
             <CircularProgress
               variant="determinate"
               value={lessonsPercentage}
@@ -123,7 +123,7 @@ export const StatusCards = ({
             border: "1px solid #FBCFE8",
           }}
         >
-          <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+          <Box sx={{ position: "absolute", top: 16, insetInlineEnd: 16 }}>
             <CircularProgress
               variant="determinate"
               value={assignmentsPercentage}
@@ -182,7 +182,7 @@ export const StatusCards = ({
             border: "1px solid #A7F3D0",
           }}
         >
-          <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+          <Box sx={{ position: "absolute", top: 16, insetInlineEnd: 16 }}>
             <CircularProgress
               variant="determinate"
               value={testsPercentage}

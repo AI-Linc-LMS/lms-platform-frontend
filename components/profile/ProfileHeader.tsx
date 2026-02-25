@@ -92,7 +92,7 @@ export function ProfileHeader({
               sx={{
                 position: "absolute",
                 bottom: 0,
-                right: 0,
+                insetInlineEnd: 0,
                 width: { xs: 36, sm: 40, md: 48 },
                 height: { xs: 36, sm: 40, md: 48 },
                 borderRadius: "50%",
