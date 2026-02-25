@@ -70,13 +70,21 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
           </Typography>
 
           {data.basicInfo.email && (
-            <Typography sx={{ fontSize: "0.75rem", mb: 1.5, wordBreak: "break-word" }}>
+            <Typography
+              component="a"
+              href={`mailto:${data.basicInfo.email}`}
+              sx={{ fontSize: "0.75rem", mb: 1.5, wordBreak: "break-word", textDecoration: "none", color: "inherit" }}
+            >
               {data.basicInfo.email}
             </Typography>
           )}
 
           {data.basicInfo.phone && (
-            <Typography sx={{ fontSize: "0.75rem", mb: 1.5 }}>
+            <Typography
+              component="a"
+              href={`tel:${data.basicInfo.phone}`}
+              sx={{ fontSize: "0.75rem", mb: 1.5, textDecoration: "none", color: "inherit" }}
+            >
               {data.basicInfo.phone}
             </Typography>
           )}
@@ -112,17 +120,23 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   sx={{
                     width: "100%",
                     height: 6,
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                    backgroundColor: "rgba(255, 255, 255, 0.2) !important",
                     borderRadius: 3,
                     overflow: "hidden",
+                    WebkitPrintColorAdjust: "exact !important",
+                    printColorAdjust: "exact !important",
+                    colorAdjust: "exact !important",
                   }}
                 >
                   <Box
                     sx={{
                       width: `${(skill.level || 3) * 20}%`,
                       height: "100%",
-                      backgroundColor: "#fbbf24",
+                      backgroundColor: "#fbbf24 !important",
                       borderRadius: 3,
+                      WebkitPrintColorAdjust: "exact !important",
+                      printColorAdjust: "exact !important",
+                      colorAdjust: "exact !important",
                     }}
                   />
                 </Box>
@@ -236,7 +250,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   letterSpacing: "0.05em",
                 }}
               >
-                Experience
+                Work Experience
               </Typography>
             </Box>
 
@@ -342,11 +356,37 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   borderLeft: "2px solid #e5e7eb",
                 }}
               >
-                <Typography
-                  sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#1f2937", mb: 0.5 }}
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 0.5,
+                    gap: 1,
+                  }}
                 >
-                  {project.name}
-                </Typography>
+                  <Typography
+                    sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#1f2937" }}
+                  >
+                    {project.name}
+                  </Typography>
+                  {project.link && (
+                    <Typography
+                      component="a"
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.75rem",
+                        color: "#667eea",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
 
                 {project.description && (
                   <Typography
@@ -418,11 +458,30 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
             <Box sx={{ pl: 2.5, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
               {data.certifications.map((cert) => (
                 <Box key={cert.id}>
-                  <Typography
-                    sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#1f2937" }}
-                  >
-                    {cert.name}
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography
+                      sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#1f2937", flex: 1, minWidth: 0 }}
+                    >
+                      {cert.name}
+                    </Typography>
+                    {cert.link && (
+                      <Typography
+                        component="a"
+                        href={cert.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          fontSize: "0.65rem",
+                          color: "#667eea",
+                          fontWeight: 600,
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        🔗Link
+                      </Typography>
+                    )}
+                  </Box>
                   <Typography sx={{ fontSize: "0.75rem", color: "#6b7280" }}>
                     {cert.issuer}
                   </Typography>

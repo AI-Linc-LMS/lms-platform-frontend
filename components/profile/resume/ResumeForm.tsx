@@ -363,6 +363,85 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
               placeholder="e.g., San Francisco, CA"
             />
 
+            {/* Profile Photo / Logo - used by templates that support it (e.g. Western = photo, IIIT Vadodara = logo); stored as data URL so it appears in PDF */}
+            <Box>
+              <Typography sx={{ fontSize: "0.875rem", color: "#374151", mb: 1 }}>
+                Profile Photo / Logo
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                {resumeData.basicInfo.photo ? (
+                  <Avatar
+                    src={resumeData.basicInfo.photo}
+                    alt="Profile"
+                    sx={{ width: 64, height: 64 }}
+                  />
+                ) : (
+                  <Avatar sx={{ width: 64, height: 64, bgcolor: "#e5e7eb" }}>
+                    <IconWrapper icon="mdi:account" color="#9ca3af" />
+                  </Avatar>
+                )}
+                <Box>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    component="label"
+                    startIcon={<IconWrapper icon="mdi:upload" size={20} />}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Upload photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const dataUrl = reader.result as string;
+                          setResumeData({
+                            ...resumeData,
+                            basicInfo: {
+                              ...resumeData.basicInfo,
+                              photo: dataUrl,
+                            },
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </Button>
+                  {resumeData.basicInfo.photo && (
+                    <Button
+                      size="small"
+                      onClick={() =>
+                        setResumeData({
+                          ...resumeData,
+                          basicInfo: {
+                            ...resumeData.basicInfo,
+                            photo: "",
+                          },
+                        })
+                      }
+                      sx={{
+                        textTransform: "none",
+                        color: "#dc2626",
+                        ml: 1,
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+              <Typography
+                sx={{ fontSize: "0.75rem", color: "#6b7280", mt: 0.5 }}
+              >
+                Used as profile picture (e.g. Western) or logo (e.g. IIIT Vadodara). Stored so it appears in the PDF.
+              </Typography>
+            </Box>
+
             <Box
               sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
             >

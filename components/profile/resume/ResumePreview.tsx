@@ -9,6 +9,12 @@ import { MinimalTemplate } from "./templates/MinimalTemplate";
 import { ExecutiveTemplate } from "./templates/ExecutiveTemplate";
 import { CreativeTemplate } from "./templates/CreativeTemplate";
 import { TechnicalTemplate } from "./templates/TechnicalTemplate";
+import { WesternTemplate } from "./templates/WesternTemplate";
+import { LuxSleekTemplate } from "./templates/LuxSleekTemplate";
+import { TwoColumnTemplate } from "./templates/TwoColumnTemplate";
+import { AccentBarTemplate } from "./templates/AccentBarTemplate";
+import { RightSidebarTemplate } from "./templates/RightSidebarTemplate";
+import { BubbleTemplate } from "./templates/BubbleTemplate";
 
 interface ResumePreviewProps {
   resumeData: ResumeData;
@@ -18,7 +24,13 @@ interface ResumePreviewProps {
     | "minimal"
     | "executive"
     | "creative"
-    | "technical";
+    | "technical"
+    | "western"
+    | "luxsleek"
+    | "twocolumn"
+    | "accentbar"
+    | "rightsidebar"
+    | "bubble";
 }
 
 export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
@@ -81,6 +93,12 @@ export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
           {template === "executive" && <ExecutiveTemplate data={resumeData} />}
           {template === "creative" && <CreativeTemplate data={resumeData} />}
           {template === "technical" && <TechnicalTemplate data={resumeData} />}
+          {template === "western" && <WesternTemplate data={resumeData} />}
+          {template === "luxsleek" && <LuxSleekTemplate data={resumeData} />}
+          {template === "twocolumn" && <TwoColumnTemplate data={resumeData} />}
+          {template === "accentbar" && <AccentBarTemplate data={resumeData} />}
+          {template === "rightsidebar" && <RightSidebarTemplate data={resumeData} />}
+          {template === "bubble" && <BubbleTemplate data={resumeData} />}
         </Box>
       </Box>
     );

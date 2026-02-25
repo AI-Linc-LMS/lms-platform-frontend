@@ -7,7 +7,7 @@ import { ResumeForm } from "./ResumeForm";
 import { ResumePreview } from "./ResumePreview";
 import { ResumeData } from "./types";
 import { useToast } from "@/components/common/Toast";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 
 interface ResumeBuilderProps {
@@ -122,7 +122,7 @@ const getDummyData = (initialData?: Partial<ResumeData>): ResumeData => ({
 export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   const { showToast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<
-    "modern" | "classic" | "minimal" | "executive" | "creative" | "technical"
+    "modern" | "classic" | "minimal" | "executive" | "creative" | "technical" | "western" | "luxsleek" | "twocolumn" | "accentbar" | "rightsidebar" | "bubble"
   >("modern");
   const [templateMenuAnchor, setTemplateMenuAnchor] =
     useState<null | HTMLElement>(null);
@@ -173,82 +173,179 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
     return () => clearTimeout(timeoutId);
   }, [resumeData]);
 
+  /** Convert img elements to data URLs so they can be embedded in the PDF (avoids CORS issues). */
+  const convertImagesInElementToDataUrls = async (el: HTMLElement) => {
+    const imgs = el.querySelectorAll("img[src]");
+    await Promise.all(
+      Array.from(imgs).map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            const src = (img as HTMLImageElement).getAttribute("src");
+            if (!src || src.startsWith("data:")) {
+              resolve();
+              return;
+            }
+            const image = new Image();
+            image.crossOrigin = "anonymous";
+            image.onload = () => {
+              try {
+                const canvas = document.createElement("canvas");
+                canvas.width = image.naturalWidth;
+                canvas.height = image.naturalHeight;
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                  ctx.drawImage(image, 0, 0);
+                  (img as HTMLImageElement).setAttribute(
+                    "src",
+                    canvas.toDataURL("image/png")
+                  );
+                }
+              } finally {
+                resolve();
+              }
+            };
+            image.onerror = () => resolve();
+            image.src = src;
+          })
+      )
+    );
+  };
+
   const handleDownloadPDF = async () => {
     if (!previewRef.current) return;
+
+    // Patch CSSStyleSheet.cssRules to prevent SecurityError on cross-origin
+    // stylesheets (Google Fonts, CDN CSS) — html-to-image reads all rules.
+    const origDescriptor = Object.getOwnPropertyDescriptor(
+      CSSStyleSheet.prototype,
+      "cssRules"
+    );
+    let patched = false;
+    try {
+      Object.defineProperty(CSSStyleSheet.prototype, "cssRules", {
+        get: function () {
+          try {
+            return origDescriptor?.get?.call(this) ?? [];
+          } catch {
+            return [];
+          }
+        },
+        configurable: true,
+        enumerable: origDescriptor?.enumerable ?? true,
+      });
+      patched = true;
+    } catch {
+      /* continue without patch */
+    }
 
     try {
       showToast("Generating PDF...", "info");
 
-      // Get the element to capture
       const element = previewRef.current;
 
-      // Wait a bit for any rendering to complete
       await new Promise((resolve) => setTimeout(resolve, 300));
+      await convertImagesInElementToDataUrls(element);
 
-      // Capture the element as canvas
-      // html2canvas captures the full element including scrollHeight
-      const canvas = await html2canvas(element, {
-        scale: 2, // Higher quality for better text rendering
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        allowTaint: true,
-        scrollX: 0,
-        scrollY: 0,
+      // Off-screen wrapper at left:-9999px avoids any visible flash.
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText =
+        "position:fixed;left:-9999px;top:0;width:210mm;height:297mm;overflow:visible;pointer-events:none;z-index:-1;";
+      document.body.appendChild(wrapper);
+
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.style.setProperty("transform", "none", "important");
+      clone.style.setProperty("box-shadow", "none", "important");
+      clone.style.setProperty("width", "210mm", "important");
+      clone.style.setProperty("height", "297mm", "important");
+      clone.style.setProperty("overflow", "hidden");
+      wrapper.appendChild(clone);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Measure link positions from the untransformed clone
+      const cloneRect = clone.getBoundingClientRect();
+      const linkAnnotations: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        url: string;
+      }[] = [];
+
+      clone.querySelectorAll("a[href]").forEach((a) => {
+        const href = (a as HTMLAnchorElement).getAttribute("href");
+        if (!href) return;
+        const r = a.getBoundingClientRect();
+        linkAnnotations.push({
+          x: ((r.left - cloneRect.left) / cloneRect.width) * 210,
+          y: ((r.top - cloneRect.top) / cloneRect.height) * 297,
+          w: (r.width / cloneRect.width) * 210,
+          h: (r.height / cloneRect.height) * 297,
+          url: href,
+        });
       });
 
-      // Calculate PDF dimensions (A4 size in mm)
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // html-to-image uses SVG foreignObject — the browser's own CSS engine
+      // handles rendering, so the output is pixel-perfect.
+      // The cssRules patch above handles CORS for cross-origin stylesheets.
+      const dataUrl = await toPng(clone, {
+        pixelRatio: 3,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+      });
+
+      document.body.removeChild(wrapper);
+
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Image load failed"));
+      });
+
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const rawHeight = (img.naturalHeight * imgWidth) / img.naturalWidth;
+      const imgHeight = Math.min(rawHeight, pageHeight);
+
+      // Compress to JPEG (quality 0.92) to keep PDF under 5 MB with minimal visual loss.
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context unavailable");
+      ctx.drawImage(img, 0, 0);
+      const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.97);
+
       const pdf = new jsPDF("p", "mm", "a4");
+      pdf.addImage(jpegDataUrl, "JPEG", 0, 0, imgWidth, imgHeight);
 
-      // Add the image to PDF
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pageHeight = 297; // A4 height in mm
+      linkAnnotations.forEach((link) => {
+        const pageIndex = Math.floor(link.y / pageHeight);
+        const yOnPage = link.y - pageIndex * pageHeight;
+        pdf.setPage(pageIndex + 1);
+        pdf.link(link.x, yOnPage, link.w, link.h, { url: link.url });
+      });
 
-      // If content fits on one page
-      if (imgHeight <= pageHeight) {
-        pdf.addImage(
-          imgData,
-          "PNG",
-          0,
-          0,
-          imgWidth,
-          imgHeight,
-          undefined,
-          "FAST"
-        );
-      } else {
-        // Split into multiple pages if content is taller than one page
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        while (heightLeft > 0) {
-          if (position !== 0) {
-            pdf.addPage();
-          }
-          pdf.addImage(
-            imgData,
-            "PNG",
-            0,
-            -position,
-            imgWidth,
-            imgHeight,
-            undefined,
-            "FAST"
-          );
-          heightLeft -= pageHeight;
-          position -= pageHeight;
-        }
-      }
-
-      // Save the PDF
       const fileName = `${resumeData.basicInfo.firstName}_${resumeData.basicInfo.lastName}_Resume.pdf`;
       pdf.save(fileName);
 
       showToast("PDF downloaded successfully!", "success");
     } catch (error) {
+      console.error("PDF generation error:", error);
       showToast("Failed to generate PDF. Please try again.", "error");
+    } finally {
+      if (patched && origDescriptor) {
+        try {
+          Object.defineProperty(
+            CSSStyleSheet.prototype,
+            "cssRules",
+            origDescriptor
+          );
+        } catch {
+          /* ignore */
+        }
+      }
     }
   };
 
@@ -268,6 +365,12 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
       | "executive"
       | "creative"
       | "technical"
+      | "western"
+      | "luxsleek"
+      | "twocolumn"
+      | "accentbar"
+      | "rightsidebar"
+      | "bubble"
   ) => {
     setSelectedTemplate(template);
     handleTemplateMenuClose();
@@ -371,6 +474,24 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("technical")}>
               Technical Template
+            </MenuItem>
+            <MenuItem onClick={() => handleTemplateSelect("western")}>
+              Western Template
+            </MenuItem>
+            <MenuItem onClick={() => handleTemplateSelect("luxsleek")}>
+              LuxSleek Template
+            </MenuItem>
+            <MenuItem onClick={() => handleTemplateSelect("twocolumn")}>
+              Two Column Template
+            </MenuItem>
+            <MenuItem onClick={() => handleTemplateSelect("accentbar")}>
+              Accent Bar Template
+            </MenuItem>
+            <MenuItem onClick={() => handleTemplateSelect("rightsidebar")}>
+              Right Sidebar Template
+            </MenuItem>
+            <MenuItem onClick={() => handleTemplateSelect("bubble")}>
+              Bubble Template
             </MenuItem>
           </Menu>
         </Box>

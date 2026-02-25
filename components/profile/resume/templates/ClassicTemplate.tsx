@@ -87,7 +87,11 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
           }}
         >
           {data.basicInfo.email && (
-            <Typography sx={{ fontSize: "0.625rem" }}>
+            <Typography
+              component="a"
+              href={`mailto:${data.basicInfo.email}`}
+              sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}
+            >
               {data.basicInfo.email}
             </Typography>
           )}
@@ -95,7 +99,11 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             <Typography sx={{ fontSize: "0.625rem" }}>•</Typography>
           )}
           {data.basicInfo.phone && (
-            <Typography sx={{ fontSize: "0.625rem" }}>
+            <Typography
+              component="a"
+              href={`tel:${data.basicInfo.phone}`}
+              sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}
+            >
               {data.basicInfo.phone}
             </Typography>
           )}
@@ -111,7 +119,13 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             <Typography sx={{ fontSize: "0.625rem" }}>•</Typography>
           )}
           {data.basicInfo.github && (
-            <Typography sx={{ fontSize: "0.625rem" }}>
+            <Typography
+              component="a"
+              href={`https://github.com/${data.basicInfo.github}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}
+            >
               github.com/{data.basicInfo.github}
             </Typography>
           )}
@@ -119,7 +133,13 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             <Typography sx={{ fontSize: "0.625rem" }}>•</Typography>
           )}
           {data.basicInfo.linkedin && (
-            <Typography sx={{ fontSize: "0.625rem" }}>
+            <Typography
+              component="a"
+              href={`https://linkedin.com/in/${data.basicInfo.linkedin}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}
+            >
               linkedin.com/in/{data.basicInfo.linkedin}
             </Typography>
           )}
@@ -167,7 +187,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
               textTransform: "uppercase",
             }}
           >
-            Professional Experience
+            Work Experience
           </Typography>
 
           {data.workExperience.map((exp, index) => (
@@ -382,16 +402,41 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 mb: index < Math.min(data.projects.length, 2) - 1 ? 1.5 : 0,
               }}
             >
-              <Typography
+              <Box
                 sx={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  color: "#1f2937",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   mb: 0.3,
+                  gap: 1,
                 }}
               >
-                {project.name}
-              </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    color: "#1f2937",
+                  }}
+                >
+                  {project.name}
+                </Typography>
+                {project.link && (
+                  <Typography
+                    component="a"
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      fontSize: "0.625rem",
+                      color: "#1d4ed8",
+                      fontWeight: 600,
+                      flexShrink: 0,
+                    }}
+                  >
+                    🔗Link
+                  </Typography>
+                )}
+              </Box>
 
               {project.description && (
                 <Typography
@@ -451,15 +496,36 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
               }}
             >
               <Box>
-                <Typography
-                  sx={{
-                    fontSize: "0.625rem",
-                    fontWeight: 600,
-                    color: "#1f2937",
-                  }}
-                >
-                  {cert.name}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography
+                    sx={{
+                      fontSize: "0.625rem",
+                      fontWeight: 600,
+                      color: "#1f2937",
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {cert.name}
+                  </Typography>
+                  {cert.link && (
+                    <Typography
+                      component="a"
+                      href={cert.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.55rem",
+                        color: "#1d4ed8",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
                 <Typography sx={{ fontSize: "0.625rem", color: "#4b5563" }}>
                   {cert.issuer}
                 </Typography>
