@@ -41,8 +41,8 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
       sx={{
         position: "fixed",
         top: 0,
-        left: 0,
-        right: 0,
+        insetInlineStart: 0,
+        insetInlineEnd: 0,
         zIndex: 1300,
         p: 1.2,
         backgroundColor: "#fff",

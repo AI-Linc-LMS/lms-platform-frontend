@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, IconButton, Button, CircularProgress } from "@mui/material";
 import { CourseDetail, CourseDashboard } from "@/lib/services/courses.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -21,6 +22,7 @@ export function CourseBanner({
   onEnroll,
   isEnrolling,
 }: CourseBannerProps) {
+  const { t } = useTranslation("common");
   const updatedDate = course.updated_at
     ? new Date(course.updated_at).toLocaleDateString("en-US", {
         year: "numeric",
@@ -169,7 +171,7 @@ export function CourseBanner({
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
-              {course.is_certified ? "Certified" : "No Certificate"}
+              {course.is_certified ? t("courses.certified") : t("courses.noCertificate")}
             </Typography>
           </Box>
           {/* Like Button */}

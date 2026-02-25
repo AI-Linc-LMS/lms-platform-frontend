@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Button, Container, Paper } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 export default function NotFound() {
+  const { t } = useTranslation("common");
   const router = useRouter();
 
   return (
@@ -87,7 +89,7 @@ export default function NotFound() {
                 letterSpacing: "-0.02em",
               }}
             >
-              Page Not Found
+              {t("common.notFoundTitle")}
             </Typography>
 
             {/* Description */}
@@ -102,8 +104,7 @@ export default function NotFound() {
                 lineHeight: 1.7,
               }}
             >
-              Oops! The page you're looking for doesn't exist or has been moved. 
-              Please check the URL or return to the dashboard to continue.
+              {t("notFoundDescription")}
             </Typography>
 
             {/* Action Buttons */}
@@ -140,7 +141,7 @@ export default function NotFound() {
                   transition: "all 0.2s ease",
                 }}
               >
-                Return to Dashboard
+                {t("common.backToDashboard")}
               </Button>
               <Button
                 variant="outlined"
@@ -165,7 +166,7 @@ export default function NotFound() {
                   transition: "all 0.2s ease",
                 }}
               >
-                Go Back
+                {t("common.goBack")}
               </Button>
             </Box>
 
@@ -186,7 +187,7 @@ export default function NotFound() {
                   display: "block",
                 }}
               >
-                Quick Links
+                {t("common.quickLinks")}
               </Typography>
               <Box
                 sx={{
@@ -209,7 +210,7 @@ export default function NotFound() {
                     },
                   }}
                 >
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Button>
                 <Button
                   variant="text"
@@ -224,7 +225,7 @@ export default function NotFound() {
                     },
                   }}
                 >
-                  Courses
+                  {t("nav.courses")}
                 </Button>
                 <Button
                   variant="text"
@@ -239,7 +240,7 @@ export default function NotFound() {
                     },
                   }}
                 >
-                  Assessments
+                  {t("nav.assessments")}
                 </Button>
                 <Button
                   variant="text"
@@ -254,7 +255,7 @@ export default function NotFound() {
                     },
                   }}
                 >
-                  Profile
+                  {t("nav.profile")}
                 </Button>
               </Box>
             </Box>

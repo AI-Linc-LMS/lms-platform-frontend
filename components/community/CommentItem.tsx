@@ -58,8 +58,8 @@ export function CommentItem({
   return (
     <Box
       sx={{
-        pl: depth > 0 ? 4 : 0,
-        borderLeft: depth > 0 ? "2px solid #e5e7eb" : "none",
+        paddingInlineStart: depth > 0 ? 32 : 0,
+        borderInlineStart: depth > 0 ? "2px solid #e5e7eb" : "none",
       }}
     >
       <Paper

@@ -7,6 +7,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Module } from "@/lib/services/courses.service";
 
@@ -31,6 +32,7 @@ export function SubmoduleItem({
   courseId,
   onNavigate,
 }: SubmoduleItemProps) {
+  const { t } = useTranslation("common");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -38,35 +40,35 @@ export function SubmoduleItem({
     const breakdown = [];
     if (submodule.video_count > 0) {
       breakdown.push({
-        label: "Videos",
+        label: t("courses.videos"),
         count: submodule.video_count,
         icon: "mdi:video-outline",
       });
     }
     if (submodule.quiz_count > 0) {
       breakdown.push({
-        label: "Quizzes",
+        label: t("courses.quizzes"),
         count: submodule.quiz_count,
         icon: "mdi:help-circle-outline",
       });
     }
     if (submodule.assignment_count > 0) {
       breakdown.push({
-        label: "Assignments",
+        label: t("courses.assignments"),
         count: submodule.assignment_count,
         icon: "mdi:file-check-outline",
       });
     }
     if (submodule.coding_problem_count > 0) {
       breakdown.push({
-        label: "Problems",
+        label: t("courses.problems"),
         count: submodule.coding_problem_count,
         icon: "mdi:code-tags",
       });
     }
     if (submodule.article_count > 0) {
       breakdown.push({
-        label: "Articles",
+        label: t("courses.articles"),
         count: submodule.article_count,
         icon: "mdi:file-document-outline",
       });

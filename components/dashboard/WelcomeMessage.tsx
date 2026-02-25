@@ -2,10 +2,12 @@
 
 import { Typography, Box } from "@mui/material";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { getUserDisplayName } from "@/lib/utils/user-utils";
 
 export const WelcomeMessage: React.FC = () => {
+  const { t } = useTranslation("common");
   const { user } = useAuth();
   const displayName = getUserDisplayName(user);
 
@@ -20,7 +22,7 @@ export const WelcomeMessage: React.FC = () => {
           mb: 1,
         }}
       >
-        Hello {displayName}!{" "}
+        {t("dashboard.welcomeHello", { name: displayName })}{" "}
         <motion.span
           style={{ display: "inline-block" }}
           animate={{
@@ -44,8 +46,7 @@ export const WelcomeMessage: React.FC = () => {
           maxWidth: "600px",
         }}
       >
-        Nice to have you back, what an exciting day! Get ready and continue
-        your lesson today.
+        {t("dashboard.welcomeSubtitle")}
       </Typography>
     </Box>
   );

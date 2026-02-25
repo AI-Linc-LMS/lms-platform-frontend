@@ -189,8 +189,8 @@ export const BottomNavigation: React.FC = () => {
       sx={{
         position: "fixed",
         bottom: 0,
-        left: 0,
-        right: 0,
+        insetInlineStart: 0,
+        insetInlineEnd: 0,
         zIndex: 1000,
         display: { xs: "flex", md: "none" },
         borderTop: "1px solid",

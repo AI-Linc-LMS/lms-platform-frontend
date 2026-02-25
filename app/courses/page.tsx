@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -34,6 +35,7 @@ type FilterType = "all" | "enrolled" | "available";
 type SortType = "recent" | "oldest" | "title";
 
 export default function CoursesPage() {
+  const { t } = useTranslation("common");
   const [courses, setCourses] = useState<CourseCardCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,7 +99,7 @@ export default function CoursesPage() {
       );
       setCourses(mappedCourses);
     } catch (error: any) {
-      showToast("Failed to load courses", "error");
+      showToast(t("courses.failedToLoad"), "error");
     } finally {
       setLoading(false);
     }
@@ -249,10 +251,7 @@ export default function CoursesPage() {
         paymentType: PaymentType.COURSE,
         description: `Access for ${course.title}`,
         onSuccess: (res) => {
-          showToast(
-            "Payment verified! You have successfully enrolled.",
-            "success"
-          );
+          showToast(t("courses.paymentVerified"), "success");
           setEnrollingCourseId(null);
           loadCourses(); // Reload to update UI
         },
@@ -273,7 +272,7 @@ export default function CoursesPage() {
     // Standard free enrollment
     try {
       await coursesService.enrollInCourse(courseId);
-      showToast("Successfully enrolled in course", "success");
+      showToast(t("courses.enrolledSuccess"), "success");
       loadCourses();
     } catch (error: any) {
       showToast("Failed to enroll in course", "error");
@@ -304,10 +303,10 @@ export default function CoursesPage() {
           </Box>
           <Box>
             <Typography variant="h4" fontWeight={700}>
-              Course List
+              {t("courses.courseList")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Explore and enroll in courses to enhance your skills
+              {t("courses.exploreEnroll")}
             </Typography>
           </Box>
         </Box>
@@ -357,7 +356,7 @@ export default function CoursesPage() {
                   {totalCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Total Courses
+                  {t("courses.totalCourses")}
                 </Typography>
               </Box>
             </Box>
@@ -394,7 +393,7 @@ export default function CoursesPage() {
                   {enrolledCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Enrolled
+                  {t("courses.enrolled")}
                 </Typography>
               </Box>
             </Box>
@@ -427,7 +426,7 @@ export default function CoursesPage() {
                   {availableCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Available
+                  {t("courses.allAvailable")}
                 </Typography>
               </Box>
             </Box>
@@ -469,9 +468,9 @@ export default function CoursesPage() {
               },
             }}
           >
-            <Tab label={`All (${totalCount})`} value="all" />
-            <Tab label={`Enrolled (${enrolledCount})`} value="enrolled" />
-            <Tab label={`Available (${availableCount})`} value="available" />
+            <Tab label={`${t("courses.all")} (${totalCount})`} value="all" />
+            <Tab label={`${t("courses.enrolledTab")} (${enrolledCount})`} value="enrolled" />
+            <Tab label={`${t("courses.availableTab")} (${availableCount})`} value="available" />
           </Tabs>
 
           {/* Search and Sort */}
@@ -486,7 +485,7 @@ export default function CoursesPage() {
           >
             <TextField
               fullWidth
-              placeholder="Search courses..."
+              placeholder={t("courses.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -537,15 +536,15 @@ export default function CoursesPage() {
                 <MenuItem value="recent">
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Sort By:
+                      {t("courses.sortBy")}
                     </Typography>
                     <Typography variant="body2" fontWeight={600}>
-                      Most Recent
+                      {t("courses.mostRecent")}
                     </Typography>
                   </Box>
                 </MenuItem>
-                <MenuItem value="oldest">Oldest First</MenuItem>
-                <MenuItem value="title">Title (A-Z)</MenuItem>
+                <MenuItem value="oldest">{t("courses.oldestFirst")}</MenuItem>
+                <MenuItem value="title">{t("courses.titleAZ")}</MenuItem>
               </Select>
             </FormControl>
           </Box>
@@ -570,7 +569,7 @@ export default function CoursesPage() {
             }}
           >
             <Typography variant="subtitle2" fontWeight={600} color="#1f2937">
-              Advanced Filters
+              {t("courses.advancedFilters")}
             </Typography>
             <Button
               size="small"
@@ -585,7 +584,7 @@ export default function CoursesPage() {
                 },
               }}
             >
-              Clear All
+              {t("courses.clearAll")}
             </Button>
           </Box>
           <Box
@@ -610,7 +609,7 @@ export default function CoursesPage() {
                   fontSize: "0.75rem",
                 }}
               >
-                Category
+                {t("courses.category")}
               </Typography>
               <Select
                 value={filters.category || "All"}
@@ -628,22 +627,22 @@ export default function CoursesPage() {
                   },
                 }}
               >
-                <MenuItem value="All">All Categories</MenuItem>
+                <MenuItem value="All">{t("courses.allCategories")}</MenuItem>
                 <MenuItem value="Full Stack Development">
-                  Full Stack Development
+                  {t("courses.fullStack")}
                 </MenuItem>
                 <MenuItem value="Front-End Development">
-                  Front-End Development
+                  {t("courses.frontEnd")}
                 </MenuItem>
                 <MenuItem value="Back-End Development">
-                  Back-End Development
+                  {t("courses.backEnd")}
                 </MenuItem>
-                <MenuItem value="UI/UX Design">UI/UX Design</MenuItem>
+                <MenuItem value="UI/UX Design">{t("courses.uiUx")}</MenuItem>
                 <MenuItem value="Data Science & Analytics">
-                  Data Science & Analytics
+                  {t("courses.dataScience")}
                 </MenuItem>
-                <MenuItem value="Marketing">Marketing</MenuItem>
-                <MenuItem value="Business">Business</MenuItem>
+                <MenuItem value="Marketing">{t("courses.marketing")}</MenuItem>
+                <MenuItem value="Business">{t("courses.business")}</MenuItem>
               </Select>
             </FormControl>
 
@@ -658,7 +657,7 @@ export default function CoursesPage() {
                   fontSize: "0.75rem",
                 }}
               >
-                Price
+                {t("courses.price")}
               </Typography>
               <Select
                 value={filters.price || "All"}
@@ -676,9 +675,9 @@ export default function CoursesPage() {
                   },
                 }}
               >
-                <MenuItem value="All">All Prices</MenuItem>
-                <MenuItem value="Free">Free</MenuItem>
-                <MenuItem value="Paid">Paid</MenuItem>
+                <MenuItem value="All">{t("courses.allPrices")}</MenuItem>
+                <MenuItem value="Free">{t("courses.free")}</MenuItem>
+                <MenuItem value="Paid">{t("courses.paid")}</MenuItem>
               </Select>
             </FormControl>
 
@@ -693,7 +692,7 @@ export default function CoursesPage() {
         ) : paginatedCourses.length === 0 ? (
           <Box sx={{ textAlign: "center", py: 8 }}>
             <Typography variant="body1" color="text.secondary">
-              No courses found
+              {t("courses.noCoursesFound")}
             </Typography>
           </Box>
         ) : (
@@ -740,9 +739,11 @@ export default function CoursesPage() {
                 textAlign: { xs: "center", sm: "left" },
               }}
             >
-              Showing result {(page - 1) * pageSize + 1}-
-              {Math.min(page * pageSize, filteredCourses.length)} of{" "}
-              {filteredCourses.length} Entries
+              {t("courses.showingResult", {
+                from: (page - 1) * pageSize + 1,
+                to: Math.min(page * pageSize, filteredCourses.length),
+                total: filteredCourses.length,
+              })}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Button
@@ -774,7 +775,7 @@ export default function CoursesPage() {
                   component="span"
                   sx={{ display: { xs: "none", sm: "inline" } }}
                 >
-                  Previous
+                  {t("courses.previous")}
                 </Box>
               </Button>
               <Pagination
@@ -829,7 +830,7 @@ export default function CoursesPage() {
                   component="span"
                   sx={{ display: { xs: "none", sm: "inline" } }}
                 >
-                  Next
+                  {t("courses.next")}
                 </Box>
               </Button>
             </Box>

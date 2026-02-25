@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button } from "@mui/material";
 
 interface StartAssessmentButtonProps {
@@ -13,6 +14,7 @@ export function StartAssessmentButton({
   onStart,
   isInitializing,
 }: StartAssessmentButtonProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -53,7 +55,7 @@ export function StartAssessmentButton({
             },
           }}
         >
-          {isInitializing ? "Starting..." : "Start Assessment"}
+          {isInitializing ? t("assessments.starting") : t("assessments.startAssessment")}
         </Button>
       </Paper>
     </Box>

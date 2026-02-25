@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Chip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -12,6 +13,7 @@ export function AssessmentResultHeader({
   assessmentTitle,
   status = "submitted",
 }: AssessmentResultHeaderProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -63,7 +65,7 @@ export function AssessmentResultHeader({
           >
             <Chip
               icon={<IconWrapper icon="mdi:check-circle" size={16} />}
-              label={status === "submitted" ? "Assessment Completed" : status}
+              label={status === "submitted" ? t("assessments.assessmentCompleted") : status}
               size="small"
               sx={{
                 backgroundColor: "#d1fae5",

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, memo } from "react";
 import { Box } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { isRtl } from "@/lib/i18n";
 import { AppBar } from "./AppBar";
 import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
 import { BottomNavigation } from "./BottomNavigation";
@@ -58,29 +60,52 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
     setMobileOpen(!mobileOpen);
   };
 
+  const { i18n } = useTranslation();
+  const rtl = isRtl(i18n.language || "en");
+
+  // Use direction: ltr so flex order is consistent: order 1 = left, order 2 = right.
+  // Otherwise with dir="rtl" on document, flex start is on the right and main content would sit under the sidebar.
   return (
     <Box
       sx={{
+        direction: "ltr",
         display: "flex",
+        flexDirection: "row",
         minHeight: fullPage ? "100vh" : "auto",
         height: fullPage ? "100vh" : "auto",
         maxHeight: fullPage ? "100vh" : "none",
         overflow: fullPage ? "hidden" : "auto",
         backgroundColor: "#f9fafb",
+        width: "100%",
       }}
     >
       <AppBar onMenuClick={handleDrawerToggle} DrawerWidth={DrawerWidth} />
       {!hideSidebar && (
-        <Sidebar mobileOpen={mobileOpen} onClose={handleDrawerToggle} />
+        <Box
+          sx={{
+            order: rtl ? 2 : 0,
+            flexShrink: 0,
+            width: { xs: 0, md: DRAWER_WIDTH },
+            minWidth: { md: DRAWER_WIDTH },
+            overflow: "hidden",
+          }}
+        >
+          <Sidebar mobileOpen={mobileOpen} onClose={handleDrawerToggle} />
+        </Box>
       )}
       <Box
         component="main"
         sx={{
+          order: rtl ? 1 : 0,
+          direction: rtl ? "rtl" : "ltr",
           flexGrow: 1,
+          flexShrink: 1,
+          minWidth: 0,
           width: {
             xs: "100%",
             md: hideSidebar ? "100%" : `calc(100% - ${DRAWER_WIDTH}px)`,
           },
+          maxWidth: hideSidebar ? "none" : { md: `calc(100% - ${DRAWER_WIDTH}px)` },
           minHeight: fullPage ? "100vh" : "auto",
           height: fullPage ? "100vh" : "auto",
           maxHeight: fullPage ? "100vh" : "none",
@@ -88,7 +113,8 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
           backgroundColor: "#f9fafb",
           display: "flex",
           flexDirection: "column",
-          marginLeft: { md: 0 },
+          marginInlineStart: { md: 0 },
+          marginInlineEnd: { md: 0 },
           transition: "width 0.3s ease",
         }}
       >

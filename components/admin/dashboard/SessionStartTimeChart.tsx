@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import {
   LineChart,
@@ -21,6 +22,7 @@ interface SessionStartTimeChartProps {
 }
 
 export function SessionStartTimeChart({ data }: SessionStartTimeChartProps) {
+  const { t } = useTranslation("common");
   const formattedData = (data || []).map((item) => {
     const date = new Date(item.date);
     const day = date.getDate();
@@ -84,7 +86,7 @@ export function SessionStartTimeChart({ data }: SessionStartTimeChartProps) {
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
       >
-        Session Start Time Trend
+        {t("admin.dashboard.sessionStartTimeTrend")}
       </Typography>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={formattedData}>

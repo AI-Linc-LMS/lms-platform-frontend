@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/services/assessment.service";
 
 export default function SubmissionSuccessPage() {
+  const { t } = useTranslation("common");
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
@@ -51,7 +53,7 @@ export default function SubmissionSuccessPage() {
           // Scholarship status might not be available yet - silently fail
         }
       } catch (error: any) {
-        showToast("Failed to load assessment details", "error");
+        showToast(t("assessments.failedToLoadDetails"), "error");
         router.push(`/assessments/${slug}`);
       } finally {
         setLoading(false);
@@ -68,7 +70,7 @@ export default function SubmissionSuccessPage() {
     return (
       <MainLayout>
         <Container>
-          <Typography>Assessment not found</Typography>
+          <Typography>{t("assessments.notFound")}</Typography>
         </Container>
       </MainLayout>
     );
@@ -83,7 +85,7 @@ export default function SubmissionSuccessPage() {
               <IconWrapper icon="mdi:check-circle" size={80} color="#10b981" />
             </Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
-              Assessment Submitted Successfully!
+              {t("assessments.submittedSuccess")}
             </Typography>
             <Typography variant="h6" color="text.secondary">
               {assessment.title}
@@ -96,13 +98,11 @@ export default function SubmissionSuccessPage() {
             <Box sx={{ mb: 4 }}>
               <Alert severity="success" sx={{ mb: 3 }}>
                 <Typography variant="body1" fontWeight={600} gutterBottom>
-                  Your Score: {scholarshipStatus.score}
+                  {t("assessments.yourScore")} {scholarshipStatus.score}
                 </Typography>
                 {scholarshipStatus.offered_scholarship_percentage > 0 && (
                   <Typography variant="body2">
-                    You have been offered a{" "}
-                    {scholarshipStatus.offered_scholarship_percentage}%
-                    scholarship!
+                    {t("assessments.scholarshipOffered", { percent: scholarshipStatus.offered_scholarship_percentage })}
                   </Typography>
                 )}
               </Alert>
@@ -115,7 +115,7 @@ export default function SubmissionSuccessPage() {
                       color="text.secondary"
                       gutterBottom
                     >
-                      Scholarship Code:
+                      {t("assessments.scholarshipCode")}
                     </Typography>
                     <Typography
                       variant="h6"
@@ -135,8 +135,7 @@ export default function SubmissionSuccessPage() {
           )}
 
           <Typography variant="body1" color="text.secondary" paragraph>
-            Your assessment has been submitted and is being reviewed. You will
-            receive results shortly.
+            {t("assessments.submittedReview")}
           </Typography>
 
           <Box
@@ -147,7 +146,7 @@ export default function SubmissionSuccessPage() {
               onClick={() => router.push("/assessments")}
               startIcon={<IconWrapper icon="mdi:arrow-left" />}
             >
-              Back to Assessments
+              {t("assessments.backToAssessments")}
             </Button>
             {assessment.show_result !== false && (
               <Button
@@ -155,7 +154,7 @@ export default function SubmissionSuccessPage() {
                 onClick={() => router.push(`/assessments/result/${slug}`)}
                 startIcon={<IconWrapper icon="mdi:file-document-edit" />}
               >
-                View Assessment Result
+                {t("assessments.viewResult")}
               </Button>
             )}
           </Box>

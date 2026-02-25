@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback, startTransition } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, LinearProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { JobCard } from "@/components/jobs/JobCard";
@@ -29,6 +30,7 @@ type NormalizedJob = Job & {
 };
 
 export default function JobsPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,7 @@ export default function JobsPage() {
         setAllJobs(normalized);
         setFilteredJobs(normalized);
       } catch (err) {
-        showToast("Failed to load jobs", "error");
+        showToast(t("jobs.failedToLoad"), "error");
       } finally {
         setLoading(false);
       }
@@ -229,7 +231,7 @@ export default function JobsPage() {
         <Box
           sx={{
             width: 320,
-            borderRight: "1px solid",
+            borderInlineEnd: "1px solid",
             borderColor: "divider",
             p: 3,
           }}

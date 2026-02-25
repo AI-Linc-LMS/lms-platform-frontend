@@ -71,9 +71,9 @@ const articleBodySx = {
     mt: 2,
   },
   "& blockquote": {
-    borderLeft: "4px solid #3b82f6",
-    pl: 2,
-    ml: 0,
+    borderInlineStart: "4px solid #3b82f6",
+    paddingInlineStart: 16,
+    marginInlineStart: 0,
     fontStyle: "italic",
     color: "#6b7280",
     mb: 2,
@@ -107,7 +107,7 @@ const articleBodySx = {
   "& th, & td": {
     border: "1px solid #e5e7eb",
     padding: 1,
-    textAlign: "left",
+    textAlign: "start",
   },
   "& th": {
     backgroundColor: "#f9fafb",

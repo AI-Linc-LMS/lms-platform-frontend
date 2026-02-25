@@ -47,7 +47,7 @@ export function SubmoduleSidebar({
       sx={{
         width: "100%",
         display: "flex",
-        borderRight: { xs: "none", md: "1px solid #e5e7eb" },
+        borderInlineEnd: { xs: "none", md: "1px solid #e5e7eb" },
         flexDirection: "column",
         height: "100%",
         borderRadius: 0,

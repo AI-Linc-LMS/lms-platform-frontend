@@ -31,6 +31,9 @@ import { motion } from "framer-motion";
 import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Settings } from "lucide-react";
+import { LanguageSelect } from "@/components/common/LanguageSelect";
+import { useTranslation } from "react-i18next";
+import { isRtl } from "@/lib/i18n";
 
 interface AppBarProps {
   onMenuClick?: () => void;
@@ -49,6 +52,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     user?.role === "admin" || user?.role === "instructor";
   const isSuperAdmin = user?.role === "superadmin";
   const canAccessAdmin = isAdminOrInstructor || isSuperAdmin;
+  const { i18n, t } = useTranslation("common");
+  const rtl = isRtl(i18n.language || "en");
   const {
     leaderboard,
     streak,
@@ -156,25 +161,35 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             DrawerWidth === 0 ? DrawerWidth : DRAWER_WIDTH
           }px)`,
         },
-        left: {
-          xs: 0,
-          md: `${DrawerWidth === 0 ? DrawerWidth : DRAWER_WIDTH}px`,
-        },
+        ...(rtl
+          ? {
+              left: { xs: 0, md: 0 },
+              right: { xs: "auto", md: "auto" },
+            }
+          : {
+              left: {
+                xs: 0,
+                md: `${DrawerWidth === 0 ? DrawerWidth : DRAWER_WIDTH}px`,
+              },
+              right: { xs: "auto", md: "auto" },
+            }),
       }}
     >
       <Toolbar
         sx={{
           minHeight: { xs: 56, sm: 64 },
           px: { xs: 1.5, sm: 2.5 },
+          flexDirection: rtl ? "row-reverse" : "row",
         }}
       >
-        {/* LEFT SIDE - Client Logo (Mobile) and Leaderboard */}
+        {/* LEFT (LTR) / RIGHT (RTL) - Client Logo (Mobile) and Leaderboard */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             gap: 2,
             flex: 1,
+            ...(rtl && { justifyContent: "flex-end" }),
           }}
         >
           {/* Admin Mode Indicator */}
@@ -212,10 +227,11 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           )}
         </Box>
 
-        {/* RIGHT SIDE ACTIONS */}
+        {/* RIGHT (LTR) / LEFT (RTL) - actions; in RTL row-reverse so avatar is at extreme left */}
         <Box
           sx={{
             display: "flex",
+            flexDirection: rtl ? "row-reverse" : "row",
             alignItems: "center",
             gap: { xs: 0.5, sm: 1.5 },
             ml: { xs: "auto", md: "auto" },
@@ -324,7 +340,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     repeatDelay: 2.5,
                   }}
                 >
-                  Today's Leaders
+                  {t("common.todaysLeaders")}
                 </motion.span>
               </Typography>
             </Box>
@@ -808,6 +824,11 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           </React.Fragment>
           )}
 
+          {/* Language selector - always on navbar */}
+          <Box sx={{ minWidth: 100 }}>
+            <LanguageSelect size="small" variant="outlined" />
+          </Box>
+
           {/* Notifications */}
           <IconButton
             sx={{
@@ -911,7 +932,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     : "transparent",
                 }}
               >
-                <Settings size={18} style={{ marginRight: 12 }} />
+                <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><Settings size={18} /></Box>
                 {isAdminMode ? "Exit Admin Mode" : "Switch to Admin"}
               </MenuItem>
             )}
@@ -924,15 +945,15 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 handleMenuClose();
               }}
             >
-              <User size={18} style={{ marginRight: 12 }} />
-              Profile Settings
+              <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><User size={18} /></Box>
+              {t("common.profileSettings")}
             </MenuItem>
 
             <Divider />
 
             <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
-              <LogOut size={18} style={{ marginRight: 12 }} />
-              Logout
+              <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><LogOut size={18} /></Box>
+              {t("common.logout")}
             </MenuItem>
           </Menu>
         </Box>

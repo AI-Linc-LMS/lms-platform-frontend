@@ -44,7 +44,7 @@ export function ReportIssueFAB() {
           sx={{
             position: "fixed",
             bottom: { xs: 80, md: 24 },
-            right: { xs: 16, md: 24 },
+            insetInlineEnd: { xs: 16, md: 24 },
             backgroundColor: "#ef4444",
             "&:hover": {
               backgroundColor: "#dc2626",

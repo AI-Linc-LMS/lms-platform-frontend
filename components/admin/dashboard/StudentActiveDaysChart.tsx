@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { StudentActiveDaysAnalytics } from "@/lib/services/admin/admin-dashboard.service";
 import { Box, Typography, Paper } from "@mui/material";
 import {
@@ -18,6 +19,7 @@ interface StudentActiveDaysChartProps {
 }
 
 export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
+  const { t } = useTranslation("common");
   // Get top 20 students by active days
   const topStudents = (data || [])
     .filter(
@@ -56,7 +58,7 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
             fontSize: { xs: "1rem", sm: "1.25rem" },
           }}
         >
-          Student Active Days
+          {t("admin.dashboard.studentActiveDays")}
         </Typography>
         <Typography
           variant="body2"
@@ -65,7 +67,7 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
-          Top 20 Students
+          {t("admin.dashboard.top20Students")}
         </Typography>
       </Box>
       <ResponsiveContainer width="100%" height={380}>

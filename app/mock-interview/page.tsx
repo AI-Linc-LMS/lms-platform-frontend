@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Container, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { InterviewModeSelector } from "@/components/mock-interview/InterviewModeSelector";
@@ -14,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
 
 export default function MockInterviewPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function MockInterviewPage() {
         const data = await mockInterviewService.listInterviews();
         setInterviews(data);
       } catch (error) {
-        showToast("Failed to load interviews", "error");
+        showToast(t("mockInterview.failedToLoad"), "error");
         hasLoadedRef.current = false;
       } finally {
         setLoading(false);
@@ -98,10 +100,10 @@ export default function MockInterviewPage() {
                 variant="h4"
                 sx={{ fontWeight: 700, fontSize: { xs: "1.5rem", md: "2rem" } }}
               >
-                Mock Interview Practice
+                {t("mockInterview.practiceTitle")}
               </Typography>
               <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                Prepare for your dream job with AI-powered mock interviews
+                {t("mockInterview.practiceSubtitle")}
               </Typography>
             </Box>
           </Box>
@@ -152,7 +154,7 @@ export default function MockInterviewPage() {
                 color: "#1f2937",
               }}
             >
-              New Interview
+              {t("mockInterview.newInterview")}
             </Typography>
           </Box>
 
@@ -212,7 +214,7 @@ export default function MockInterviewPage() {
                 color: "#6b7280",
               }}
             >
-              Scheduled
+              {t("mockInterview.scheduled")}
             </Typography>
           </Box>
         </Box>

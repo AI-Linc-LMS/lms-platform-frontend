@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import {
   LineChart,
@@ -20,6 +21,7 @@ interface AttendanceTrendChartProps {
 }
 
 export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
+  const { t } = useTranslation("common");
   const formattedData = (data || []).map((item) => {
     const date = new Date(item.date);
     const month = date.toLocaleDateString("en-US", { month: "short" });
@@ -49,7 +51,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
       >
-        Attendance Trend
+        {t("admin.dashboard.attendanceTrend")}
       </Typography>
       {formattedData.length === 0 ? (
         <Box
@@ -61,7 +63,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
             color: "#6b7280",
           }}
         >
-          <Typography variant="body2">No attendance data available</Typography>
+          <Typography variant="body2">{t("admin.dashboard.noAttendanceData")}</Typography>
         </Box>
       ) : (
         <ResponsiveContainer width="100%" height={300}>

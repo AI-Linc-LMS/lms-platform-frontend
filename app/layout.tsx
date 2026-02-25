@@ -13,6 +13,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
 import { AdminModeProvider } from "@/lib/contexts/AdminModeContext";
 import { CameraRouteGuard } from "@/components/providers/CameraRouteGuard";
+import { I18nProvider } from "@/components/providers/I18nProvider";
+import { DirectionSync } from "@/components/providers/DirectionSync";
 
 /* ✅ Metadata (SEO) */
 export async function generateMetadata(): Promise<Metadata> {
@@ -72,9 +74,11 @@ export default async function RootLayout({
         <ClientThemeProvider client={client} />
 
         <ErrorBoundary>
-          <EmotionCacheProvider>
-            <ThemeProvider>
-              <ReduxProvider>
+          <I18nProvider>
+            <EmotionCacheProvider>
+              <ThemeProvider>
+                <DirectionSync />
+                <ReduxProvider>
                 <ThemeModeProvider>
                   <AuthProvider>
                     <ClientInfoProvider>
@@ -89,6 +93,7 @@ export default async function RootLayout({
               </ReduxProvider>
             </ThemeProvider>
           </EmotionCacheProvider>
+          </I18nProvider>
         </ErrorBoundary>
       </body>
     </html>

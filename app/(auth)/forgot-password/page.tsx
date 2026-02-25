@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { TextField, Button, Typography, Box } from "@mui/material";
 import Link from "next/link";
 import { Formik, Form, Field } from "formik";
@@ -15,6 +16,7 @@ interface ForgotPasswordFormValues {
 }
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -33,8 +35,7 @@ export default function ForgotPasswordPage() {
       showToast("Password reset link sent to your email", "success");
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.detail ||
-        "Failed to send reset link. Please try again.";
+        err.response?.data?.detail || t("auth.resetLinkFailed");
       showToast(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -42,7 +43,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout slogan="Changing the  way  the  world  learns">
+    <AuthLayout slogan={t("auth.slogan")}>
       <Box
         sx={{
           width: "100%",
@@ -62,7 +63,7 @@ export default function ForgotPasswordPage() {
             fontSize: { xs: "1.75rem", sm: "2rem" },
           }}
         >
-          Reset your password
+          {t("auth.resetPassword")}
         </Typography>
 
         {/* Description */}
@@ -98,7 +99,7 @@ export default function ForgotPasswordPage() {
                       fontSize: "0.875rem",
                     }}
                   >
-                    Email
+                    {t("auth.email")}
                   </Typography>
                   <Field name="email">
                     {({ field }: any) => (
@@ -153,7 +154,7 @@ export default function ForgotPasswordPage() {
                     },
                   }}
                 >
-                  {loading ? "Sending..." : "Send reset link"}
+                  {loading ? t("auth.sending") : t("auth.sendResetLink")}
                 </Button>
               </Form>
             )}
@@ -176,8 +177,7 @@ export default function ForgotPasswordPage() {
                 lineHeight: 1.5,
               }}
             >
-              We've sent a password reset link to your email. Please check your
-              inbox and follow the instructions to reset your password.
+              {t("auth.emailSentMessage")}
             </Typography>
           </Box>
         )}
@@ -211,7 +211,7 @@ export default function ForgotPasswordPage() {
                 },
               }}
             >
-              Back to login
+              {t("auth.backToLogin")}
             </Typography>
           </Link>
         </Box>

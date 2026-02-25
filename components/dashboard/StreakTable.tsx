@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Card, CircularProgress, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { dashboardService } from "@/lib/services/dashboard.service";
@@ -14,6 +15,7 @@ export const StreakTable = ({
   streakDays: propStreakDays,
   currentStreak: propCurrentStreak,
 }: StreakTableProps) => {
+  const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
   const [streakDays, setStreakDays] = useState<number[]>(propStreakDays || []);
   const [streakData, setStreakData] = useState<{ [date: string]: boolean }>({});
@@ -139,8 +141,8 @@ export const StreakTable = ({
             fontWeight: 600,
             color: "#111827",
           }}
-        >
-          My Streak
+          >
+            {t("dashboard.myStreak")}
         </Typography>
         {currentStreak > 0 && (
           <Box
@@ -167,7 +169,7 @@ export const StreakTable = ({
                 color: "#92400E",
               }}
             >
-              {currentStreak} day streak
+              {t("dashboard.dayStreak", { count: currentStreak })}
             </Typography>
           </Box>
         )}
@@ -295,7 +297,7 @@ export const StreakTable = ({
                 return (
                   <Tooltip
                     key={index}
-                    title={hasStreak ? "Streak" : "No streak"}
+                    title={hasStreak ? t("dashboard.streak") : t("dashboard.noStreak")}
                     arrow
                     placement="top"
                     componentsProps={{

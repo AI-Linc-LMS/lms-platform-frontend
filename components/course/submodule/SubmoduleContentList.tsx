@@ -103,7 +103,7 @@ export function SubmoduleContentList({
                   backgroundColor: isActive
                     ? "rgba(99, 102, 241, 0.08)"
                     : "transparent",
-                  borderLeft: isActive ? "3px solid #6366f1" : "none",
+                  borderInlineStart: isActive ? "3px solid #6366f1" : "none",
                   cursor: "pointer",
                   "&:hover": {
                     backgroundColor: isActive

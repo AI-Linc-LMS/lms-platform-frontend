@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Card, Avatar, LinearProgress } from "@mui/material";
 import {
   dashboardService,
@@ -47,6 +48,7 @@ interface LeaderboardProps {
 }
 
 export const Leaderboard = ({ courseId }: LeaderboardProps) => {
+  const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<OverallLeaderboardEntry[]>([]);
   const hasLoadedRef = useRef(false);
@@ -144,8 +146,8 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
             fontWeight: 600,
             color: "#111827",
           }}
-        >
-          Leaderboard
+          >
+            {t("dashboard.leaderboard")}
         </Typography>
       </Box>
       
@@ -223,7 +225,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
             variant="body2"
             sx={{ color: "#6B7280", textAlign: "center", py: 2, p: 2 }}
           >
-            No leaderboard data available
+            {t("dashboard.noLeaderboardData")}
           </Typography>
         ) : (
           <Box
@@ -358,7 +360,7 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
                         lineHeight: 1.2,
                       }}
                     >
-                      Score: {totalScore}
+                      {t("dashboard.score")}: {totalScore}
                     </Typography>
                   </Box>
                   <Typography

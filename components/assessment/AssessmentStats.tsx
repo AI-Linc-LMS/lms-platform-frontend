@@ -14,6 +14,7 @@ export function AssessmentStats({
   availableCount,
   completedCount,
 }: AssessmentStatsProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -173,7 +174,7 @@ export function AssessmentStats({
                 fontWeight: 500,
               }}
             >
-              Completed
+              {t("assessments.completed")}
             </Typography>
           </Box>
         </Box>
