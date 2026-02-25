@@ -271,7 +271,7 @@ export default function AdminMockInterviewStudentDetailPage() {
                   <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#64748b" }} />
                   <Tooltip
                     contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0" }}
-                    formatter={(value: number) => [`${value}%`, "Score"]}
+                    formatter={(value: number | undefined) => [`${value ?? 0}%`, "Score"]}
                   />
                   <Bar dataKey="score" name="Score" fill="#6366f1" radius={[6, 6, 0, 0]} />
                 </BarChart>
