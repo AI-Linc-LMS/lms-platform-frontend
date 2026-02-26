@@ -9,6 +9,11 @@ export interface BasicInfo {
   summary: string;
   github?: string;
   linkedin?: string;
+  portfolio?: string;
+  leetcode?: string;
+  hackerrank?: string;
+  kaggle?: string;
+  medium?: string;
 }
 
 export interface WorkExperience {

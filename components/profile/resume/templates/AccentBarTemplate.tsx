@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
 
 const ACCENT = "#0d9488";
@@ -48,6 +49,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         backgroundColor: "#ffffff",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
+        colorAdjust: "exact !important",
       }}
     >
       <Box sx={{ px: 2.5, pt: 2, pb: 1 }}>
@@ -76,23 +78,50 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             flexWrap: "wrap",
             gap: 1,
             mb: 1.5,
-            fontSize: "0.65rem",
             color: "#64748b",
           }}
         >
-          {data.basicInfo.email && <a href={`mailto:${data.basicInfo.email}`} style={{ textDecoration: "none", color: "inherit" }}>{data.basicInfo.email}</a>}
-          {data.basicInfo.phone && <span>|</span>}
-          {data.basicInfo.phone && <a href={`tel:${data.basicInfo.phone}`} style={{ textDecoration: "none", color: "inherit" }}>{data.basicInfo.phone}</a>}
-          {data.basicInfo.location && <span>|</span>}
-          {data.basicInfo.location && <span>{data.basicInfo.location}</span>}
-          {data.basicInfo.linkedin && <span>|</span>}
-          {data.basicInfo.linkedin && <a href={`https://linkedin.com/in/${data.basicInfo.linkedin}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit" }}>linkedin.com/in/{data.basicInfo.linkedin}</a>}
-          {data.basicInfo.github && <span>|</span>}
-          {data.basicInfo.github && <a href={`https://github.com/${data.basicInfo.github}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit" }}>github.com/{data.basicInfo.github}</a>}
+          {[
+            { val: data.basicInfo.email, icon: "mdi:email-outline", label: data.basicInfo.email, href: `mailto:${data.basicInfo.email}` },
+            { val: data.basicInfo.phone, icon: "mdi:phone-outline", label: data.basicInfo.phone, href: `tel:${data.basicInfo.phone}` },
+            { val: data.basicInfo.location, icon: "mdi:map-marker-outline", label: data.basicInfo.location },
+            { val: data.basicInfo.github, icon: "mdi:github", label: "GitHub", href: (data.basicInfo.github ?? "").startsWith("http") ? data.basicInfo.github! : `https://github.com/${data.basicInfo.github}` },
+            { val: data.basicInfo.linkedin, icon: "mdi:linkedin", label: "LinkedIn", href: (data.basicInfo.linkedin ?? "").startsWith("http") ? data.basicInfo.linkedin! : `https://linkedin.com/in/${data.basicInfo.linkedin}` },
+            { val: data.basicInfo.portfolio, icon: "mdi:web", label: "Portfolio", href: (data.basicInfo.portfolio ?? "").startsWith("http") ? data.basicInfo.portfolio! : `https://${data.basicInfo.portfolio}` },
+            { val: data.basicInfo.leetcode, icon: "simple-icons:leetcode", label: "LeetCode", href: (data.basicInfo.leetcode ?? "").startsWith("http") ? data.basicInfo.leetcode! : `https://leetcode.com/u/${data.basicInfo.leetcode}` },
+            { val: data.basicInfo.kaggle, icon: "simple-icons:kaggle", label: "Kaggle", href: (data.basicInfo.kaggle ?? "").startsWith("http") ? data.basicInfo.kaggle! : `https://kaggle.com/${data.basicInfo.kaggle}` },
+            { val: data.basicInfo.hackerrank, icon: "simple-icons:hackerrank", label: "HackerRank", href: (data.basicInfo.hackerrank ?? "").startsWith("http") ? data.basicInfo.hackerrank! : `https://hackerrank.com/${data.basicInfo.hackerrank}` },
+            { val: data.basicInfo.medium, icon: "simple-icons:medium", label: "Medium", href: (data.basicInfo.medium ?? "").startsWith("http") ? data.basicInfo.medium! : `https://medium.com/@${data.basicInfo.medium}` },
+          ]
+            .filter((item) => item.val)
+            .map((item, idx) => (
+              <Box
+                key={idx}
+                {...(item.href ? { component: "a", href: item.href, target: item.href.startsWith("mailto:") || item.href.startsWith("tel:") ? undefined : "_blank", rel: "noopener noreferrer" } : {})}
+                sx={{ display: "flex", alignItems: "center", gap: 0.5, textDecoration: "none", color: "inherit" }}
+              >
+                <Box sx={{ flexShrink: 0, display: "flex" }}>
+                  <IconWrapper icon={item.icon} size={11} color={ACCENT} />
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: "0.65rem",
+                    ...(item.icon === "mdi:email-outline"
+                      ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+                      : { whiteSpace: "nowrap" }),
+                    ...(["mdi:github", "mdi:linkedin", "mdi:web"].includes(item.icon)
+                      ? { overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }
+                      : {}),
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
         </Box>
 
         {data.basicInfo.summary && (
-          <Typography sx={{ fontSize: "0.65rem", color: "#475569", lineHeight: 1.5, mb: 2 }}>
+          <Typography sx={{ fontSize: "0.65rem", color: "#475569", lineHeight: 1.6, mb: 2 }}>
             {data.basicInfo.summary}
           </Typography>
         )}
@@ -102,14 +131,14 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             <SectionTitle>Work Experience</SectionTitle>
             {data.workExperience.map((exp) => (
               <Box key={exp.id} sx={{ mb: 1.5 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 0.5 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 0.5 }}>
                   <Box>
                     <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>
                       {exp.position}
                     </Typography>
                     <Typography sx={{ fontSize: "0.65rem", color: ACCENT }}>{exp.company}</Typography>
                   </Box>
-                  <Typography sx={{ fontSize: "0.6rem", color: "#64748b" }}>
+                  <Typography sx={{ fontSize: "0.6rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(exp.startDate, exp.endDate, exp.current)}
                   </Typography>
                 </Box>
@@ -119,7 +148,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                 {exp.description.filter((d) => d.trim()).length > 0 && (
                   <Box component="ul" sx={{ m: 0, pl: 2 }}>
                     {exp.description.filter((d) => d.trim()).map((d, i) => (
-                      <Typography key={i} component="li" sx={{ fontSize: "0.6rem", color: "#475569", lineHeight: 1.45 }}>
+                      <Typography key={i} component="li" sx={{ fontSize: "0.6rem", color: "#475569", lineHeight: 1.6, mb: 0.5 }}>
                         {d}
                       </Typography>
                     ))}
@@ -135,15 +164,15 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             <SectionTitle>Education</SectionTitle>
             {data.education.map((edu) => (
               <Box key={edu.id} sx={{ mb: 1.25 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{edu.degree}</Typography>
-                  <Typography sx={{ fontSize: "0.6rem", color: "#64748b" }}>
+                  <Typography sx={{ fontSize: "0.6rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(edu.startDate, edu.endDate)}
                   </Typography>
                 </Box>
                 <Typography sx={{ fontSize: "0.65rem", color: ACCENT }}>{edu.institution}</Typography>
                 {edu.gpa && (
-                  <Typography sx={{ fontSize: "0.6rem", color: "#475569" }}>GPA: {edu.gpa}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "#475569", whiteSpace: "nowrap" }}>GPA: {edu.gpa}</Typography>
                 )}
                 {edu.description && (
                   <Typography sx={{ fontSize: "0.6rem", color: "#475569", lineHeight: 1.45 }}>{edu.description}</Typography>
@@ -167,7 +196,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             <SectionTitle>Projects</SectionTitle>
             {data.projects.map((proj) => (
               <Box key={proj.id} sx={{ mb: 1.25 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 0.5 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
                   <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{proj.name}</Typography>
                   {proj.link && (
                     <Typography
@@ -175,7 +204,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                       href={proj.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontSize: "0.6rem", color: ACCENT, fontWeight: 600 }}
+                      sx={{ fontSize: "0.6rem", color: ACCENT, fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
                       🔗Link
                     </Typography>

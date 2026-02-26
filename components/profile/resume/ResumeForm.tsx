@@ -442,43 +442,82 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
               </Typography>
             </Box>
 
-            <Box
-              sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
-            >
-              <TextField
-                label="GitHub Username"
-                value={resumeData.basicInfo.github || ""}
-                onChange={(e) => updateBasicInfo("github", e.target.value)}
-                fullWidth
-                size="small"
-                placeholder="e.g., johndoe"
-                InputProps={{
-                  startAdornment: (
-                    <Typography
-                      sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5 }}
-                    >
-                      github.com/
-                    </Typography>
-                  ),
-                }}
-              />
+            <TextField
+              label="GitHub Username"
+              value={resumeData.basicInfo.github || ""}
+              onChange={(e) => updateBasicInfo("github", e.target.value)}
+              fullWidth
+              size="small"
+              placeholder="e.g., johndoe"
+              InputProps={{
+                startAdornment: (
+                  <Typography
+                    sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5, whiteSpace: "nowrap" }}
+                  >
+                    github.com/
+                  </Typography>
+                ),
+              }}
+            />
 
+            <TextField
+              label="LinkedIn Username"
+              value={resumeData.basicInfo.linkedin || ""}
+              onChange={(e) => updateBasicInfo("linkedin", e.target.value)}
+              fullWidth
+              size="small"
+              placeholder="e.g., johndoe"
+              InputProps={{
+                startAdornment: (
+                  <Typography
+                    sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5, whiteSpace: "nowrap" }}
+                  >
+                    linkedin.com/in/
+                  </Typography>
+                ),
+              }}
+            />
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <TextField
-                label="LinkedIn Username"
-                value={resumeData.basicInfo.linkedin || ""}
-                onChange={(e) => updateBasicInfo("linkedin", e.target.value)}
+                label="Portfolio Website"
+                value={resumeData.basicInfo.portfolio || ""}
+                onChange={(e) => updateBasicInfo("portfolio", e.target.value)}
                 fullWidth
                 size="small"
-                placeholder="e.g., johndoe"
-                InputProps={{
-                  startAdornment: (
-                    <Typography
-                      sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5 }}
-                    >
-                      linkedin.com/in/
-                    </Typography>
-                  ),
-                }}
+                placeholder="https://myportfolio.com"
+              />
+              <TextField
+                label="LeetCode Profile"
+                value={resumeData.basicInfo.leetcode || ""}
+                onChange={(e) => updateBasicInfo("leetcode", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://leetcode.com/u/username"
+              />
+              <TextField
+                label="HackerRank Profile"
+                value={resumeData.basicInfo.hackerrank || ""}
+                onChange={(e) => updateBasicInfo("hackerrank", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://hackerrank.com/username"
+              />
+              <TextField
+                label="Kaggle Profile"
+                value={resumeData.basicInfo.kaggle || ""}
+                onChange={(e) => updateBasicInfo("kaggle", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://kaggle.com/username"
+              />
+              <TextField
+                label="Medium Profile"
+                value={resumeData.basicInfo.medium || ""}
+                onChange={(e) => updateBasicInfo("medium", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://medium.com/@username"
               />
             </Box>
 

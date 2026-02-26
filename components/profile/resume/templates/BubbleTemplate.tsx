@@ -42,6 +42,7 @@ function BubbleSectionHead({
           fontSize: "0.95rem",
           fontWeight: 700,
           color: "#1f2937",
+          whiteSpace: "nowrap",
         }}
       >
         {children}
@@ -80,6 +81,7 @@ function SidebarSectionHead({
           fontSize: "0.95rem",
           fontWeight: 700,
           color: "#1f2937",
+          whiteSpace: "nowrap",
         }}
       >
         {children}
@@ -135,6 +137,7 @@ function TimelineEvent({
       >
         <Box
           sx={{
+            display: "block",
             width: TIMELINE_DOT,
             height: TIMELINE_DOT,
             borderRadius: "50%",
@@ -147,6 +150,7 @@ function TimelineEvent({
         />
         <Box
           sx={{
+            display: "block",
             width: 3,
             flex: 1,
             backgroundColor: `${TIMELINE_COLOR} !important`,
@@ -214,7 +218,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
           <>
             <BubbleSectionHead icon="mdi:text-box-outline">Profile</BubbleSectionHead>
             <Typography
-              sx={{ fontSize: "0.62rem", color: "#4b5563", lineHeight: 1.5, pl: 0.5 }}
+              sx={{ fontSize: "0.62rem", color: "#4b5563", lineHeight: 1.6, pl: 0.5 }}
             >
               {data.basicInfo.summary}
             </Typography>
@@ -287,7 +291,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
             <BubbleSectionHead icon="mdi:target">Projects</BubbleSectionHead>
             {data.projects.map((proj) => (
               <TimelineEvent key={proj.id}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 0.5 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
                   <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
                     {proj.name}
                   </Typography>
@@ -297,7 +301,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                       href={proj.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontSize: "0.58rem", color: "#1f2937", fontWeight: 600, flexShrink: 0 }}
+                      sx={{ fontSize: "0.58rem", color: "#1f2937", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
                       🔗Link
                     </Typography>
@@ -327,53 +331,44 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
       >
         {/* Contact */}
         <SidebarSectionHead icon="mdi:card-account-details-outline">Contact</SidebarSectionHead>
-        <Box sx={{ "& > div": { display: "flex", alignItems: "flex-start", gap: 1, mb: 1 } }}>
-          {data.basicInfo.email && (
-            <Box>
-              <IconWrapper icon="mdi:email-outline" size={14} color="#1f2937" />
-              <Box>
-                <Typography sx={{ fontSize: "0.6rem", fontWeight: 700, color: "#1f2937" }}>Email</Typography>
-                <Typography component="a" href={`mailto:${data.basicInfo.email}`} sx={{ fontSize: "0.58rem", color: "#4b5563", textDecoration: "none" }}>{data.basicInfo.email}</Typography>
+        {[
+          { val: data.basicInfo.email, icon: "mdi:email-outline", label: data.basicInfo.email, href: `mailto:${data.basicInfo.email}` },
+          { val: data.basicInfo.phone, icon: "mdi:phone-outline", label: data.basicInfo.phone, href: `tel:${data.basicInfo.phone}` },
+          { val: data.basicInfo.location, icon: "mdi:map-marker-outline", label: data.basicInfo.location },
+          { val: data.basicInfo.github, icon: "mdi:github", label: "GitHub", href: (data.basicInfo.github ?? "").startsWith("http") ? data.basicInfo.github! : `https://github.com/${data.basicInfo.github}` },
+          { val: data.basicInfo.linkedin, icon: "mdi:linkedin", label: "LinkedIn", href: (data.basicInfo.linkedin ?? "").startsWith("http") ? data.basicInfo.linkedin! : `https://linkedin.com/in/${data.basicInfo.linkedin}` },
+          { val: data.basicInfo.portfolio, icon: "mdi:web", label: "Portfolio", href: (data.basicInfo.portfolio ?? "").startsWith("http") ? data.basicInfo.portfolio! : `https://${data.basicInfo.portfolio}` },
+          { val: data.basicInfo.leetcode, icon: "simple-icons:leetcode", label: "LeetCode", href: (data.basicInfo.leetcode ?? "").startsWith("http") ? data.basicInfo.leetcode! : `https://leetcode.com/u/${data.basicInfo.leetcode}` },
+          { val: data.basicInfo.kaggle, icon: "simple-icons:kaggle", label: "Kaggle", href: (data.basicInfo.kaggle ?? "").startsWith("http") ? data.basicInfo.kaggle! : `https://kaggle.com/${data.basicInfo.kaggle}` },
+          { val: data.basicInfo.hackerrank, icon: "simple-icons:hackerrank", label: "HackerRank", href: (data.basicInfo.hackerrank ?? "").startsWith("http") ? data.basicInfo.hackerrank! : `https://hackerrank.com/${data.basicInfo.hackerrank}` },
+          { val: data.basicInfo.medium, icon: "simple-icons:medium", label: "Medium", href: (data.basicInfo.medium ?? "").startsWith("http") ? data.basicInfo.medium! : `https://medium.com/@${data.basicInfo.medium}` },
+        ]
+          .filter((item) => item.val)
+          .map((item, idx) => (
+            <Box
+              key={idx}
+              {...(item.href ? { component: "a", href: item.href, target: item.href.startsWith("mailto:") || item.href.startsWith("tel:") ? undefined : "_blank", rel: "noopener noreferrer" } : {})}
+              sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, textDecoration: "none", color: "inherit" }}
+            >
+              <Box sx={{ flexShrink: 0, display: "flex" }}>
+                <IconWrapper icon={item.icon} size={14} color="#1f2937" />
               </Box>
+              <Typography
+                sx={{
+                  fontSize: "0.58rem",
+                  color: "#4b5563",
+                  ...(item.icon === "mdi:email-outline"
+                    ? { wordBreak: "break-all" }
+                    : { whiteSpace: "nowrap" }),
+                  ...(["mdi:github", "mdi:linkedin", "mdi:web"].includes(item.icon)
+                    ? { overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }
+                    : {}),
+                }}
+              >
+                {item.label}
+              </Typography>
             </Box>
-          )}
-          {data.basicInfo.phone && (
-            <Box>
-              <IconWrapper icon="mdi:phone-outline" size={14} color="#1f2937" />
-              <Box>
-                <Typography sx={{ fontSize: "0.6rem", fontWeight: 700, color: "#1f2937" }}>Phone</Typography>
-                <Typography component="a" href={`tel:${data.basicInfo.phone}`} sx={{ fontSize: "0.58rem", color: "#4b5563", textDecoration: "none" }}>{data.basicInfo.phone}</Typography>
-              </Box>
-            </Box>
-          )}
-          {data.basicInfo.location && (
-            <Box>
-              <IconWrapper icon="mdi:home-outline" size={14} color="#1f2937" />
-              <Box>
-                <Typography sx={{ fontSize: "0.6rem", fontWeight: 700, color: "#1f2937" }}>Address</Typography>
-                <Typography sx={{ fontSize: "0.58rem", color: "#4b5563" }}>{data.basicInfo.location}</Typography>
-              </Box>
-            </Box>
-          )}
-          {data.basicInfo.github && (
-            <Box>
-              <IconWrapper icon="mdi:web" size={14} color="#1f2937" />
-              <Box>
-                <Typography sx={{ fontSize: "0.6rem", fontWeight: 700, color: "#1f2937" }}>Website</Typography>
-                <Typography component="a" href={`https://github.com/${data.basicInfo.github}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.58rem", color: "#4b5563", textDecoration: "none" }}>github.com/{data.basicInfo.github}</Typography>
-              </Box>
-            </Box>
-          )}
-          {data.basicInfo.linkedin && (
-            <Box>
-              <IconWrapper icon="mdi:linkedin" size={14} color="#1f2937" />
-              <Box>
-                <Typography sx={{ fontSize: "0.6rem", fontWeight: 700, color: "#1f2937" }}>LinkedIn</Typography>
-                <Typography component="a" href={`https://linkedin.com/in/${data.basicInfo.linkedin}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.58rem", color: "#4b5563", textDecoration: "none" }}>linkedin.com/in/{data.basicInfo.linkedin}</Typography>
-              </Box>
-            </Box>
-          )}
-        </Box>
+          ))}
 
         {/* Skills */}
         {data.skills.length > 0 && (
@@ -383,6 +378,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
               <Box key={skill.id} sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
                 <Box
                   sx={{
+                    display: "block",
                     width: 6,
                     height: 6,
                     borderRadius: "50%",

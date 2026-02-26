@@ -119,46 +119,43 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
               color: COLORS.body,
             }}
           >
-            {data.basicInfo.email && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:email" size={14} color={COLORS.body} />
-                <Typography component="a" href={`mailto:${data.basicInfo.email}`} sx={{ fontSize: "0.7rem", textDecoration: "none", color: "inherit" }}>
-                  {data.basicInfo.email}
-                </Typography>
-              </Box>
-            )}
-            {data.basicInfo.phone && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:phone" size={14} color={COLORS.body} />
-                <Typography component="a" href={`tel:${data.basicInfo.phone}`} sx={{ fontSize: "0.7rem", textDecoration: "none", color: "inherit" }}>
-                  {data.basicInfo.phone}
-                </Typography>
-              </Box>
-            )}
-            {data.basicInfo.location && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:map-marker" size={14} color={COLORS.body} />
-                <Typography component="span" sx={{ fontSize: "0.7rem" }}>
-                  {data.basicInfo.location}
-                </Typography>
-              </Box>
-            )}
-            {data.basicInfo.linkedin && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:linkedin" size={14} color={COLORS.body} />
-                <Typography component="a" href={`https://linkedin.com/in/${data.basicInfo.linkedin}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.7rem", textDecoration: "none", color: "inherit" }}>
-                  linkedin.com/in/{data.basicInfo.linkedin}
-                </Typography>
-              </Box>
-            )}
-            {data.basicInfo.github && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:github" size={14} color={COLORS.body} />
-                <Typography component="a" href={`https://github.com/${data.basicInfo.github}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.7rem", textDecoration: "none", color: "inherit" }}>
-                  github.com/{data.basicInfo.github}
-                </Typography>
-              </Box>
-            )}
+            {[
+              { val: data.basicInfo.email, icon: "mdi:email-outline", label: data.basicInfo.email, href: `mailto:${data.basicInfo.email}` },
+              { val: data.basicInfo.phone, icon: "mdi:phone-outline", label: data.basicInfo.phone, href: `tel:${data.basicInfo.phone}` },
+              { val: data.basicInfo.location, icon: "mdi:map-marker-outline", label: data.basicInfo.location },
+              { val: data.basicInfo.github, icon: "mdi:github", label: "GitHub", href: (data.basicInfo.github ?? "").startsWith("http") ? data.basicInfo.github! : `https://github.com/${data.basicInfo.github}` },
+              { val: data.basicInfo.linkedin, icon: "mdi:linkedin", label: "LinkedIn", href: (data.basicInfo.linkedin ?? "").startsWith("http") ? data.basicInfo.linkedin! : `https://linkedin.com/in/${data.basicInfo.linkedin}` },
+              { val: data.basicInfo.portfolio, icon: "mdi:web", label: "Portfolio", href: (data.basicInfo.portfolio ?? "").startsWith("http") ? data.basicInfo.portfolio! : `https://${data.basicInfo.portfolio}` },
+              { val: data.basicInfo.leetcode, icon: "simple-icons:leetcode", label: "LeetCode", href: (data.basicInfo.leetcode ?? "").startsWith("http") ? data.basicInfo.leetcode! : `https://leetcode.com/u/${data.basicInfo.leetcode}` },
+              { val: data.basicInfo.kaggle, icon: "simple-icons:kaggle", label: "Kaggle", href: (data.basicInfo.kaggle ?? "").startsWith("http") ? data.basicInfo.kaggle! : `https://kaggle.com/${data.basicInfo.kaggle}` },
+              { val: data.basicInfo.hackerrank, icon: "simple-icons:hackerrank", label: "HackerRank", href: (data.basicInfo.hackerrank ?? "").startsWith("http") ? data.basicInfo.hackerrank! : `https://hackerrank.com/${data.basicInfo.hackerrank}` },
+              { val: data.basicInfo.medium, icon: "simple-icons:medium", label: "Medium", href: (data.basicInfo.medium ?? "").startsWith("http") ? data.basicInfo.medium! : `https://medium.com/@${data.basicInfo.medium}` },
+            ]
+              .filter((item) => item.val)
+              .map((item, idx) => (
+                <Box
+                  key={idx}
+                  {...(item.href ? { component: "a", href: item.href, target: item.href.startsWith("mailto:") || item.href.startsWith("tel:") ? undefined : "_blank", rel: "noopener noreferrer" } : {})}
+                  sx={{ display: "flex", alignItems: "center", gap: 0.5, textDecoration: "none", color: "inherit" }}
+                >
+                  <Box sx={{ flexShrink: 0, display: "flex" }}>
+                    <IconWrapper icon={item.icon} size={14} color={COLORS.body} />
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: "0.7rem",
+                      ...(item.icon === "mdi:email-outline"
+                        ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+                        : { whiteSpace: "nowrap" }),
+                      ...(["mdi:github", "mdi:linkedin", "mdi:web"].includes(item.icon)
+                        ? { overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }
+                        : {}),
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                </Box>
+              ))}
           </Box>
         </Box>
         {data.basicInfo.photo && (
@@ -226,10 +223,10 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                             key={i}
                             component="li"
                             sx={{
-                              fontSize: "0.65rem",
-                              color: COLORS.body,
-                              lineHeight: 1.4,
-                              mb: 0.25,
+                            fontSize: "0.65rem",
+                            color: COLORS.body,
+                            lineHeight: 1.6,
+                            mb: 0.5,
                             }}
                           >
                             {d}
@@ -275,6 +272,8 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                           color: COLORS.accent,
                           fontWeight: 600,
                           flexShrink: 0,
+                          whiteSpace: "nowrap",
+                          textDecoration: "none",
                         }}
                       >
                         🔗Link
@@ -304,7 +303,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                               px: 0.75,
                               py: 0.2,
                               fontSize: "0.6rem",
-                              backgroundColor: "#f5f5f5",
+                              backgroundColor: "#f5f5f5 !important",
                               color: COLORS.body,
                               borderRadius: 0.5,
                               WebkitPrintColorAdjust: "exact !important",
@@ -339,7 +338,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                   fontSize: "0.7rem",
                   color: COLORS.body,
                   fontStyle: "italic",
-                  lineHeight: 1.5,
+                  lineHeight: 1.6,
                   m: 0,
                   pl: 1.5,
                   borderLeft: `3px solid ${COLORS.accent}`,
@@ -518,7 +517,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                   </Typography>
                   {edu.gpa && (
                     <Typography
-                      sx={{ fontSize: "0.65rem", color: COLORS.body, mt: 0.25 }}
+                      sx={{ fontSize: "0.65rem", color: COLORS.body, mt: 0.25, whiteSpace: "nowrap" }}
                     >
                       GPA: {edu.gpa}
                     </Typography>

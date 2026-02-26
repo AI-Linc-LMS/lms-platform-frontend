@@ -20,6 +20,7 @@ function HeadLeft({ children }: { children: string }) {
           fontVariant: "small-caps",
           letterSpacing: "0.06em",
           color: "#ffffff",
+          whiteSpace: "nowrap",
         }}
       >
         {children}
@@ -185,48 +186,44 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
 
           {/* Contact details */}
           <HeadLeft>Contact details</HeadLeft>
-          <Box sx={{ "& > div": { display: "flex", alignItems: "flex-start", gap: 0.75, mb: 0.5 } }}>
-            {data.basicInfo.email && (
-              <Box>
-                <IconWrapper icon="mdi:at" size={12} color="#ffffff" />
-                <Typography component="a" href={`mailto:${data.basicInfo.email}`} sx={{ fontSize: "0.58rem", lineHeight: 1.4, textDecoration: "none", color: "inherit" }}>
-                  {data.basicInfo.email}
+          {[
+            { val: data.basicInfo.email, icon: "mdi:email-outline", label: data.basicInfo.email, href: `mailto:${data.basicInfo.email}` },
+            { val: data.basicInfo.phone, icon: "mdi:phone-outline", label: data.basicInfo.phone, href: `tel:${data.basicInfo.phone}` },
+            { val: data.basicInfo.location, icon: "mdi:map-marker-outline", label: data.basicInfo.location },
+            { val: data.basicInfo.github, icon: "mdi:github", label: "GitHub", href: (data.basicInfo.github ?? "").startsWith("http") ? data.basicInfo.github! : `https://github.com/${data.basicInfo.github}` },
+            { val: data.basicInfo.linkedin, icon: "mdi:linkedin", label: "LinkedIn", href: (data.basicInfo.linkedin ?? "").startsWith("http") ? data.basicInfo.linkedin! : `https://linkedin.com/in/${data.basicInfo.linkedin}` },
+            { val: data.basicInfo.portfolio, icon: "mdi:web", label: "Portfolio", href: (data.basicInfo.portfolio ?? "").startsWith("http") ? data.basicInfo.portfolio! : `https://${data.basicInfo.portfolio}` },
+            { val: data.basicInfo.leetcode, icon: "simple-icons:leetcode", label: "LeetCode", href: (data.basicInfo.leetcode ?? "").startsWith("http") ? data.basicInfo.leetcode! : `https://leetcode.com/u/${data.basicInfo.leetcode}` },
+            { val: data.basicInfo.kaggle, icon: "simple-icons:kaggle", label: "Kaggle", href: (data.basicInfo.kaggle ?? "").startsWith("http") ? data.basicInfo.kaggle! : `https://kaggle.com/${data.basicInfo.kaggle}` },
+            { val: data.basicInfo.hackerrank, icon: "simple-icons:hackerrank", label: "HackerRank", href: (data.basicInfo.hackerrank ?? "").startsWith("http") ? data.basicInfo.hackerrank! : `https://hackerrank.com/${data.basicInfo.hackerrank}` },
+            { val: data.basicInfo.medium, icon: "simple-icons:medium", label: "Medium", href: (data.basicInfo.medium ?? "").startsWith("http") ? data.basicInfo.medium! : `https://medium.com/@${data.basicInfo.medium}` },
+          ]
+            .filter((item) => item.val)
+            .map((item, idx) => (
+              <Box
+                key={idx}
+                {...(item.href ? { component: "a", href: item.href, target: item.href.startsWith("mailto:") || item.href.startsWith("tel:") ? undefined : "_blank", rel: "noopener noreferrer" } : {})}
+                sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5, textDecoration: "none", color: "inherit" }}
+              >
+                <Box sx={{ flexShrink: 0, display: "flex" }}>
+                  <IconWrapper icon={item.icon} size={12} color="#ffffff" />
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: "0.58rem",
+                    lineHeight: 1.4,
+                    ...(item.icon === "mdi:email-outline"
+                      ? { wordBreak: "break-all" }
+                      : { whiteSpace: "nowrap" }),
+                    ...(["mdi:github", "mdi:linkedin", "mdi:web"].includes(item.icon)
+                      ? { overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }
+                      : {}),
+                  }}
+                >
+                  {item.label}
                 </Typography>
               </Box>
-            )}
-            {data.basicInfo.phone && (
-              <Box>
-                <IconWrapper icon="mdi:cellphone" size={12} color="#ffffff" />
-                <Typography component="a" href={`tel:${data.basicInfo.phone}`} sx={{ fontSize: "0.58rem", lineHeight: 1.4, textDecoration: "none", color: "inherit" }}>
-                  {data.basicInfo.phone}
-                </Typography>
-              </Box>
-            )}
-            {data.basicInfo.github && (
-              <Box>
-                <IconWrapper icon="mdi:web" size={12} color="#ffffff" />
-                <Typography component="a" href={`https://github.com/${data.basicInfo.github}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.58rem", lineHeight: 1.4, textDecoration: "none", color: "inherit" }}>
-                  github.com/{data.basicInfo.github}
-                </Typography>
-              </Box>
-            )}
-            {data.basicInfo.linkedin && (
-              <Box>
-                <IconWrapper icon="mdi:linkedin" size={12} color="#ffffff" />
-                <Typography component="a" href={`https://linkedin.com/in/${data.basicInfo.linkedin}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.58rem", lineHeight: 1.4, textDecoration: "none", color: "inherit" }}>
-                  linkedin.com/in/{data.basicInfo.linkedin}
-                </Typography>
-              </Box>
-            )}
-            {data.basicInfo.location && (
-              <Box>
-                <IconWrapper icon="mdi:email-outline" size={12} color="#ffffff" />
-                <Typography sx={{ fontSize: "0.58rem", lineHeight: 1.4 }}>
-                  {data.basicInfo.location}
-                </Typography>
-              </Box>
-            )}
-          </Box>
+            ))}
 
           {/* Skills */}
           <HeadLeft>Skills</HeadLeft>
@@ -366,14 +363,15 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
-                          fontSize: "0.62rem",
-                          color: CVBLUE,
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                          float: "right",
-                        }}
-                      >
-                        🔗Link
+                        fontSize: "0.62rem",
+                        color: CVBLUE,
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        float: "right",
+                        textDecoration: "none",
+                      }}
+                    >
+                      🔗Link
                       </Typography>
                     </>
                   )}
