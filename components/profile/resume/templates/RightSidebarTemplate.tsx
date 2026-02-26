@@ -77,7 +77,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                       {exp.company}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b" }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(exp.startDate, exp.endDate, exp.current)}
                   </Typography>
                 </Box>
@@ -122,12 +122,12 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                       <Typography sx={{ fontSize: "0.625rem", color: "#64748b" }}>{edu.location}</Typography>
                     )}
                   </Box>
-                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b" }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(edu.startDate, edu.endDate)}
                   </Typography>
                 </Box>
                 {edu.gpa && (
-                  <Typography sx={{ fontSize: "0.625rem", color: "#475569", mt: 0.5 }}>GPA: {edu.gpa}</Typography>
+                  <Typography sx={{ fontSize: "0.625rem", color: "#475569", mt: 0.5, whiteSpace: "nowrap" }}>GPA: {edu.gpa}</Typography>
                 )}
                 {edu.description && (
                   <Typography sx={{ fontSize: "0.625rem", color: "#475569", mt: 0.5, lineHeight: 1.5 }}>
@@ -165,7 +165,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                       href={project.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontSize: "0.625rem", color: "#6366f1", fontWeight: 600, flexShrink: 0 }}
+                      sx={{ fontSize: "0.625rem", color: "#6366f1", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
                       🔗Link
                     </Typography>
@@ -217,44 +217,51 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         }}
       >
         <Box sx={{ mb: 4 }}>
-          <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8" }}>
+          <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
             CONTACT
           </Typography>
-          {data.basicInfo.email && (
-            <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "flex-start" }}>
-              <IconWrapper icon="mdi:email" size={16} color="#94a3b8" />
-              <Typography component="a" href={`mailto:${data.basicInfo.email}`} sx={{ fontSize: "0.625rem", wordBreak: "break-word", textDecoration: "none", color: "inherit" }}>{data.basicInfo.email}</Typography>
-            </Box>
-          )}
-          {data.basicInfo.phone && (
-            <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
-              <IconWrapper icon="mdi:phone" size={16} color="#94a3b8" />
-              <Typography component="a" href={`tel:${data.basicInfo.phone}`} sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}>{data.basicInfo.phone}</Typography>
-            </Box>
-          )}
-          {data.basicInfo.location && (
-            <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "flex-start" }}>
-              <IconWrapper icon="mdi:map-marker" size={16} color="#94a3b8" />
-              <Typography sx={{ fontSize: "0.625rem" }}>{data.basicInfo.location}</Typography>
-            </Box>
-          )}
-          {data.basicInfo.github && (
-            <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
-              <IconWrapper icon="mdi:github" size={16} color="#94a3b8" />
-              <Typography component="a" href={`https://github.com/${data.basicInfo.github}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}>github.com/{data.basicInfo.github}</Typography>
-            </Box>
-          )}
-          {data.basicInfo.linkedin && (
-            <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
-              <IconWrapper icon="mdi:linkedin" size={16} color="#94a3b8" />
-              <Typography component="a" href={`https://linkedin.com/in/${data.basicInfo.linkedin}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}>linkedin.com/in/{data.basicInfo.linkedin}</Typography>
-            </Box>
-          )}
+          {[
+            { val: data.basicInfo.email, icon: "mdi:email-outline", label: data.basicInfo.email, href: `mailto:${data.basicInfo.email}` },
+            { val: data.basicInfo.phone, icon: "mdi:phone-outline", label: data.basicInfo.phone, href: `tel:${data.basicInfo.phone}` },
+            { val: data.basicInfo.location, icon: "mdi:map-marker-outline", label: data.basicInfo.location },
+            { val: data.basicInfo.github, icon: "mdi:github", label: "GitHub", href: (data.basicInfo.github ?? "").startsWith("http") ? data.basicInfo.github! : `https://github.com/${data.basicInfo.github}` },
+            { val: data.basicInfo.linkedin, icon: "mdi:linkedin", label: "LinkedIn", href: (data.basicInfo.linkedin ?? "").startsWith("http") ? data.basicInfo.linkedin! : `https://linkedin.com/in/${data.basicInfo.linkedin}` },
+            { val: data.basicInfo.portfolio, icon: "mdi:web", label: "Portfolio", href: (data.basicInfo.portfolio ?? "").startsWith("http") ? data.basicInfo.portfolio! : `https://${data.basicInfo.portfolio}` },
+            { val: data.basicInfo.leetcode, icon: "simple-icons:leetcode", label: "LeetCode", href: (data.basicInfo.leetcode ?? "").startsWith("http") ? data.basicInfo.leetcode! : `https://leetcode.com/u/${data.basicInfo.leetcode}` },
+            { val: data.basicInfo.kaggle, icon: "simple-icons:kaggle", label: "Kaggle", href: (data.basicInfo.kaggle ?? "").startsWith("http") ? data.basicInfo.kaggle! : `https://kaggle.com/${data.basicInfo.kaggle}` },
+            { val: data.basicInfo.hackerrank, icon: "simple-icons:hackerrank", label: "HackerRank", href: (data.basicInfo.hackerrank ?? "").startsWith("http") ? data.basicInfo.hackerrank! : `https://hackerrank.com/${data.basicInfo.hackerrank}` },
+            { val: data.basicInfo.medium, icon: "simple-icons:medium", label: "Medium", href: (data.basicInfo.medium ?? "").startsWith("http") ? data.basicInfo.medium! : `https://medium.com/@${data.basicInfo.medium}` },
+          ]
+            .filter((item) => item.val)
+            .map((item, idx) => (
+              <Box
+                key={idx}
+                {...(item.href ? { component: "a", href: item.href, target: item.href.startsWith("mailto:") || item.href.startsWith("tel:") ? undefined : "_blank", rel: "noopener noreferrer" } : {})}
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, textDecoration: "none", color: "inherit" }}
+              >
+                <Box sx={{ flexShrink: 0, display: "flex" }}>
+                  <IconWrapper icon={item.icon} size={16} color="#94a3b8" />
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: "0.625rem",
+                    ...(item.icon === "mdi:email-outline"
+                      ? { wordBreak: "break-all" }
+                      : { whiteSpace: "nowrap" }),
+                    ...(["mdi:github", "mdi:linkedin", "mdi:web"].includes(item.icon)
+                      ? { overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }
+                      : {}),
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
         </Box>
 
         {data.skills.length > 0 && (
           <Box sx={{ mb: 4 }}>
-            <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8" }}>
+            <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
               SKILLS
             </Typography>
             {data.skills.map((skill) => (
@@ -285,7 +292,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
 
         {data.certifications.length > 0 && (
           <Box>
-            <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8" }}>
+            <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
               CERTIFICATIONS
             </Typography>
             {data.certifications.map((cert) => (

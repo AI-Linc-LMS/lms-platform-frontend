@@ -14,109 +14,124 @@ interface ResumeBuilderProps {
   initialData?: Partial<ResumeData>;
 }
 
-// Dummy data for prefilling
-const getDummyData = (initialData?: Partial<ResumeData>): ResumeData => ({
-  basicInfo: {
-    firstName: initialData?.basicInfo?.firstName || "John",
-    lastName: initialData?.basicInfo?.lastName || "Doe",
-    professionalTitle:
-      initialData?.basicInfo?.professionalTitle || "Senior Software Engineer",
-    email: initialData?.basicInfo?.email || "john.doe@example.com",
-    phone: initialData?.basicInfo?.phone || "+1 (555) 123-4567",
-    location: initialData?.basicInfo?.location || "San Francisco, CA",
-    photo: initialData?.basicInfo?.photo || "",
-    summary:
-      initialData?.basicInfo?.summary ||
-      "Experienced software engineer with 5+ years of expertise in full-stack development, specializing in React, Node.js, and cloud technologies. Proven track record of delivering scalable solutions and leading cross-functional teams.",
-    github: initialData?.basicInfo?.github || "johndoe",
-    linkedin: initialData?.basicInfo?.linkedin || "johndoe",
+const MOCK_WORK: ResumeData["workExperience"] = [
+  {
+    id: "1",
+    position: "Senior Software Engineer",
+    company: "Tech Solutions Inc.",
+    location: "San Francisco, CA",
+    startDate: "2021-06",
+    endDate: "",
+    current: true,
+    description: [
+      "Led development of microservices architecture serving 1M+ users",
+      "Improved application performance by 40% through code optimization",
+      "Mentored team of 5 junior developers",
+    ],
   },
-  workExperience: initialData?.workExperience || [
-    {
-      id: "1",
-      position: "Senior Software Engineer",
-      company: "Tech Solutions Inc.",
-      location: "San Francisco, CA",
-      startDate: "2021-06",
-      endDate: "",
-      current: true,
-      description: [
-        "Led development of microservices architecture serving 1M+ users",
-        "Improved application performance by 40% through code optimization",
-        "Mentored team of 5 junior developers",
-      ],
-    },
-    {
-      id: "2",
-      position: "Software Engineer",
-      company: "Digital Innovations",
-      location: "Remote",
-      startDate: "2019-03",
-      endDate: "2021-05",
-      current: false,
-      description: [
-        "Developed and maintained React-based web applications",
-        "Implemented RESTful APIs using Node.js and Express",
-        "Collaborated with UX team to improve user experience",
-      ],
-    },
-  ],
-  education: initialData?.education || [
-    {
-      id: "1",
-      degree: "Bachelor of Science in Computer Science",
-      institution: "University of California",
-      location: "Berkeley, CA",
-      startDate: "2015-09",
-      endDate: "2019-05",
-      gpa: "3.8/4.0",
-      description: "Focus on Software Engineering and Artificial Intelligence",
-    },
-  ],
-  skills: initialData?.skills || [
-    { id: "1", name: "JavaScript/TypeScript", level: 5 },
-    { id: "2", name: "React & Next.js", level: 5 },
-    { id: "3", name: "Node.js & Express", level: 4 },
-    { id: "4", name: "Python", level: 4 },
-    { id: "5", name: "AWS & Cloud Services", level: 4 },
-    { id: "6", name: "Docker & Kubernetes", level: 3 },
-    { id: "7", name: "SQL & NoSQL Databases", level: 4 },
-    { id: "8", name: "Git & CI/CD", level: 5 },
-  ],
-  projects: initialData?.projects || [
-    {
-      id: "1",
-      name: "E-Commerce Platform",
-      description:
-        "Built a scalable e-commerce platform handling 10K+ daily transactions with real-time inventory management and payment processing.",
-      technologies: ["React", "Node.js", "MongoDB", "Stripe", "Redis"],
-      link: "https://github.com/johndoe/ecommerce",
-    },
-    {
-      id: "2",
-      name: "Task Management App",
-      description:
-        "Developed a collaborative task management application with real-time updates and team collaboration features.",
-      technologies: ["Next.js", "PostgreSQL", "WebSocket", "Tailwind CSS"],
-      link: "https://github.com/johndoe/taskmanager",
-    },
-  ],
-  certifications: initialData?.certifications || [
-    {
-      id: "1",
-      name: "AWS Certified Solutions Architect",
-      issuer: "Amazon Web Services",
-      date: "2022-08",
-      link: "",
-    },
-    {
-      id: "2",
-      name: "Professional Scrum Master I",
-      issuer: "Scrum.org",
-      date: "2021-11",
-      link: "",
-    },
-  ],
+  {
+    id: "2",
+    position: "Software Engineer",
+    company: "Digital Innovations",
+    location: "Remote",
+    startDate: "2019-03",
+    endDate: "2021-05",
+    current: false,
+    description: [
+      "Developed and maintained React-based web applications",
+      "Implemented RESTful APIs using Node.js and Express",
+      "Collaborated with UX team to improve user experience",
+    ],
+  },
+];
+
+const MOCK_EDUCATION: ResumeData["education"] = [
+  {
+    id: "1",
+    degree: "Bachelor of Science in Computer Science",
+    institution: "University of California",
+    location: "Berkeley, CA",
+    startDate: "2015-09",
+    endDate: "2019-05",
+    gpa: "3.8/4.0",
+    description: "Focus on Software Engineering and Artificial Intelligence",
+  },
+];
+
+const MOCK_SKILLS: ResumeData["skills"] = [
+  { id: "1", name: "JavaScript/TypeScript", level: 5 },
+  { id: "2", name: "React & Next.js", level: 5 },
+  { id: "3", name: "Node.js & Express", level: 4 },
+  { id: "4", name: "Python", level: 4 },
+  { id: "5", name: "AWS & Cloud Services", level: 4 },
+  { id: "6", name: "Docker & Kubernetes", level: 3 },
+  { id: "7", name: "SQL & NoSQL Databases", level: 4 },
+  { id: "8", name: "Git & CI/CD", level: 5 },
+];
+
+const MOCK_PROJECTS: ResumeData["projects"] = [
+  {
+    id: "1",
+    name: "E-Commerce Platform",
+    description:
+      "Built a scalable e-commerce platform handling 10K+ daily transactions with real-time inventory management and payment processing.",
+    technologies: ["React", "Node.js", "MongoDB", "Stripe", "Redis"],
+    link: "https://github.com/johndoe/ecommerce",
+  },
+  {
+    id: "2",
+    name: "Task Management App",
+    description:
+      "Developed a collaborative task management application with real-time updates and team collaboration features.",
+    technologies: ["Next.js", "PostgreSQL", "WebSocket", "Tailwind CSS"],
+    link: "https://github.com/johndoe/taskmanager",
+  },
+];
+
+const MOCK_CERTS: ResumeData["certifications"] = [
+  {
+    id: "1",
+    name: "AWS Certified Solutions Architect",
+    issuer: "Amazon Web Services",
+    date: "2022-08",
+    link: "",
+  },
+  {
+    id: "2",
+    name: "Professional Scrum Master I",
+    issuer: "Scrum.org",
+    date: "2021-11",
+    link: "",
+  },
+];
+
+const hasContent = (arr?: unknown[]) => arr && arr.length > 0;
+
+const buildResumeData = (d?: Partial<ResumeData>): ResumeData => ({
+  basicInfo: {
+    firstName: d?.basicInfo?.firstName || "John",
+    lastName: d?.basicInfo?.lastName || "Doe",
+    professionalTitle: d?.basicInfo?.professionalTitle || "Senior Software Engineer",
+    email: d?.basicInfo?.email || "john.doe@example.com",
+    phone: d?.basicInfo?.phone || "+1 (555) 123-4567",
+    location: d?.basicInfo?.location || "San Francisco, CA",
+    photo: d?.basicInfo?.photo || "",
+    summary:
+      d?.basicInfo?.summary ||
+      "Experienced software engineer with 5+ years of expertise in full-stack development, specializing in React, Node.js, and cloud technologies. Proven track record of delivering scalable solutions and leading cross-functional teams.",
+    github: d?.basicInfo?.github ?? "",
+    linkedin: d?.basicInfo?.linkedin ?? "",
+    portfolio: d?.basicInfo?.portfolio ?? "",
+    leetcode: d?.basicInfo?.leetcode ?? "",
+    hackerrank: d?.basicInfo?.hackerrank ?? "",
+    kaggle: d?.basicInfo?.kaggle ?? "",
+    medium: d?.basicInfo?.medium ?? "",
+  },
+  workExperience: hasContent(d?.workExperience) ? d!.workExperience! : MOCK_WORK,
+  education: hasContent(d?.education) ? d!.education! : MOCK_EDUCATION,
+  skills: hasContent(d?.skills) ? d!.skills! : MOCK_SKILLS,
+  projects: hasContent(d?.projects) ? d!.projects! : MOCK_PROJECTS,
+  certifications: hasContent(d?.certifications) ? d!.certifications! : MOCK_CERTS,
 });
 
 export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
@@ -128,50 +143,30 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
     useState<null | HTMLElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Load resume data from localStorage or use dummy data
-  const [resumeData, setResumeData] = useState<ResumeData>(() => {
-    try {
-      const savedData = localStorage.getItem("resumeData");
-      if (savedData) {
-        return JSON.parse(savedData);
-      }
-    } catch (error) {
-      // Silently handle resume loading error
-    }
-    return getDummyData(initialData);
-  });
+  const [isProfileMode, setIsProfileMode] = useState(false);
+  const [resumeData, setResumeData] = useState<ResumeData>(() => buildResumeData());
 
   const handleSave = () => {
-    try {
-      localStorage.setItem("resumeData", JSON.stringify(resumeData));
-      showToast("Resume saved successfully", "success");
-    } catch (error) {
-      showToast("Failed to save resume", "error");
-    }
+    showToast("Resume saved", "success");
   };
 
   const handleClearData = () => {
-    try {
-      localStorage.removeItem("resumeData");
-      setResumeData(getDummyData(initialData));
-      showToast("Resume data cleared", "success");
-    } catch (error) {
-      showToast("Failed to clear data", "error");
-    }
+    setResumeData(buildResumeData());
+    setIsProfileMode(false);
+    showToast("Resume data cleared", "success");
   };
 
-  // Auto-save to localStorage whenever resumeData changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      try {
-        localStorage.setItem("resumeData", JSON.stringify(resumeData));
-      } catch (error) {
-        // Silently handle auto-save failure
-      }
-    }, 1000); // Debounce auto-save by 1 second
-
-    return () => clearTimeout(timeoutId);
-  }, [resumeData]);
+  const handleToggleSource = () => {
+    if (isProfileMode) {
+      setResumeData(buildResumeData());
+      setIsProfileMode(false);
+      showToast("Switched to mock data", "info");
+    } else {
+      setResumeData(buildResumeData(initialData));
+      setIsProfileMode(true);
+      showToast("Profile data imported", "success");
+    }
+  };
 
   /** Convert img elements to data URLs so they can be embedded in the PDF (avoids CORS issues). */
   const convertImagesInElementToDataUrls = async (el: HTMLElement) => {
@@ -430,6 +425,26 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               }}
             >
               Clear
+            </Button>
+          </Tooltip>
+
+          <Tooltip title={isProfileMode ? "Switch back to mock/sample data" : "Import data from your profile section"}>
+            <Button
+              variant="outlined"
+              startIcon={<IconWrapper icon={isProfileMode ? "mdi:swap-horizontal" : "mdi:account-arrow-right"} />}
+              onClick={handleToggleSource}
+              sx={{
+                textTransform: "none",
+                borderColor: isProfileMode ? "#6366f1" : "#e5e7eb",
+                color: "#6366f1",
+                backgroundColor: isProfileMode ? "#eef2ff" : "transparent",
+                "&:hover": {
+                  borderColor: "#6366f1",
+                  backgroundColor: isProfileMode ? "#e0e7ff" : "#eef2ff",
+                },
+              }}
+            >
+              {isProfileMode ? "Use Mock Data" : "Import from Profile"}
             </Button>
           </Tooltip>
 
