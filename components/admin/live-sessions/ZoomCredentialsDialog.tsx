@@ -18,10 +18,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
-
-const PRODUCTION_WEBHOOK_BASE = "https://be-app.ailinc.com";
 
 interface ZoomCredentialsDialogProps {
   open: boolean;
@@ -54,7 +51,6 @@ function getApiErrorMessage(e: unknown): string {
 
 export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogProps) {
   const { showToast } = useToast();
-  const { clientInfo } = useClientInfo();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,11 +59,6 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
   const [webhookUrl, setWebhookUrl] = useState<string | null>(null);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
   const [showSetupHelp, setShowSetupHelp] = useState(false);
-
-  const displayWebhookUrl =
-    clientInfo?.slug != null
-      ? `${PRODUCTION_WEBHOOK_BASE}/webhooks/zoom/${clientInfo.slug}/`
-      : `${PRODUCTION_WEBHOOK_BASE}/webhooks/zoom/<client_slug>/`;
 
   const loadCredentials = async () => {
     if (!open) return;
@@ -219,20 +210,24 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
               {hasExistingConfig && (
                 <Box>
                   <Typography variant="caption" sx={{ color: "#6b7280", mb: 0.5, display: "block" }}>
-                    Webhook URL (for Zoom Event Subscriptions)
+                    Subscription endpoint URL (Webhook URL)
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <TextField
-                      value={displayWebhookUrl}
+                      value={webhookUrl?.trim() ?? ""}
                       size="small"
                       fullWidth
+                      placeholder={webhookUrl ? undefined : "Save credentials to see webhook URL"}
                       InputProps={{ readOnly: true }}
                       sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem", fontFamily: "monospace" } }}
                     />
                     <IconButton
                       size="small"
+                      disabled={!webhookUrl?.trim()}
                       onClick={() => {
-                        navigator.clipboard.writeText(displayWebhookUrl).then(
+                        const url = webhookUrl?.trim();
+                        if (!url) return;
+                        navigator.clipboard.writeText(url).then(
                           () => showToast("Webhook URL copied", "success"),
                           () => showToast("Failed to copy", "error")
                         );
@@ -245,11 +240,6 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                   <Typography variant="caption" sx={{ color: "#9ca3af", mt: 0.5, display: "block" }}>
                     In Zoom Marketplace → your app → Event Subscriptions, set Endpoint URL to this value.
                   </Typography>
-                  {!clientInfo?.slug && (
-                    <Typography variant="caption" sx={{ color: "#6b7280", mt: 0.5, display: "block" }}>
-                      Replace &lt;client_slug&gt; with your client&apos;s slug (from backend/admin).
-                    </Typography>
-                  )}
                   {webhookConfigured && (
                     <Chip
                       label="Webhook active"
@@ -306,13 +296,10 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                     Event Subscriptions (Zoom Marketplace → your app → Event Subscriptions)
                   </Typography>
                   <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "#475569" }}>
-                    <li><strong>Endpoint URL</strong> — use the Webhook URL above (or production URL when deploying)</li>
+                    <li><strong>Endpoint URL</strong> — use the Webhook URL shown above (from the API)</li>
                     <li><strong>Secret token</strong> — copy from Zoom and paste into &quot;Webhook Secret&quot; above</li>
                     <li>Subscribe to: <strong>Meeting has ended</strong> (meeting.ended) and <strong>Recording has been completed</strong> (recording.completed)</li>
                   </Box>
-                  <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#64748b" }}>
-                    Production webhook base: <strong>{PRODUCTION_WEBHOOK_BASE}</strong> — use <code style={{ fontSize: "0.75rem" }}>https://be-app.ailinc.com/webhooks/zoom/&lt;client_slug&gt;/</code> with your client&apos;s slug.
-                  </Typography>
                 </Box>
               </Collapse>
             </Box>
