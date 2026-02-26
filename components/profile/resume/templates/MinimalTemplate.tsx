@@ -69,16 +69,16 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             fontWeight: 400,
           }}
         >
-          {data.basicInfo.email && <Typography sx={{ fontSize: "0.625rem" }}>{data.basicInfo.email}</Typography>}
-          {data.basicInfo.phone && <Typography sx={{ fontSize: "0.625rem" }}>{data.basicInfo.phone}</Typography>}
+          {data.basicInfo.email && <Typography component="a" href={`mailto:${data.basicInfo.email}`} sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}>{data.basicInfo.email}</Typography>}
+          {data.basicInfo.phone && <Typography component="a" href={`tel:${data.basicInfo.phone}`} sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}>{data.basicInfo.phone}</Typography>}
           {data.basicInfo.location && (
             <Typography sx={{ fontSize: "0.625rem" }}>{data.basicInfo.location}</Typography>
           )}
           {data.basicInfo.github && (
-            <Typography sx={{ fontSize: "0.625rem" }}>github.com/{data.basicInfo.github}</Typography>
+            <Typography component="a" href={`https://github.com/${data.basicInfo.github}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}>github.com/{data.basicInfo.github}</Typography>
           )}
           {data.basicInfo.linkedin && (
-            <Typography sx={{ fontSize: "0.625rem" }}>linkedin.com/in/{data.basicInfo.linkedin}</Typography>
+            <Typography component="a" href={`https://linkedin.com/in/${data.basicInfo.linkedin}`} target="_blank" rel="noopener noreferrer" sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}>linkedin.com/in/{data.basicInfo.linkedin}</Typography>
           )}
         </Box>
       </Box>
@@ -112,7 +112,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
               textTransform: "uppercase",
             }}
           >
-            Experience
+            Work Experience
           </Typography>
 
           {data.workExperience.map((exp, index) => (
@@ -281,11 +281,37 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
           {data.projects.slice(0, 2).map((project, index) => (
             <Box key={project.id} sx={{ mb: index < Math.min(data.projects.length, 2) - 1 ? 1.5 : 0 }}>
-              <Typography
-                sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000", mb: 0.3 }}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 0.3,
+                  gap: 1,
+                }}
               >
-                {project.name}
-              </Typography>
+                <Typography
+                  sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000" }}
+                >
+                  {project.name}
+                </Typography>
+                {project.link && (
+                  <Typography
+                    component="a"
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      fontSize: "0.625rem",
+                      color: "#2563eb",
+                      fontWeight: 500,
+                      flexShrink: 0,
+                    }}
+                  >
+                    🔗Link
+                  </Typography>
+                )}
+              </Box>
 
               {project.description && (
                 <Typography
@@ -344,11 +370,30 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
               }}
             >
               <Box>
-                <Typography
-                  sx={{ fontSize: "0.625rem", fontWeight: 500, color: "#000000" }}
-                >
-                  {cert.name}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography
+                    sx={{ fontSize: "0.625rem", fontWeight: 500, color: "#000000", flex: 1, minWidth: 0 }}
+                  >
+                    {cert.name}
+                  </Typography>
+                  {cert.link && (
+                    <Typography
+                      component="a"
+                      href={cert.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.55rem",
+                        color: "#2563eb",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
                 <Typography sx={{ fontSize: "0.625rem", color: "#666666" }}>
                   {cert.issuer}
                 </Typography>

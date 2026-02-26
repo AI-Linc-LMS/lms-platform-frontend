@@ -80,9 +80,13 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
         <Box sx={{ mt: 1.5, fontSize: "0.7rem", color: "#f8f8f2" }}>
           {data.basicInfo.email && (
             <Typography
+              component="a"
+              href={`mailto:${data.basicInfo.email}`}
               sx={{
                 fontSize: "0.75rem",
                 fontFamily: "'Courier New', monospace",
+                textDecoration: "none",
+                color: "inherit",
               }}
             >
               email: {data.basicInfo.email}
@@ -90,9 +94,13 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
           )}
           {data.basicInfo.phone && (
             <Typography
+              component="a"
+              href={`tel:${data.basicInfo.phone}`}
               sx={{
                 fontSize: "0.75rem",
                 fontFamily: "'Courier New', monospace",
+                textDecoration: "none",
+                color: "inherit",
               }}
             >
               phone: {data.basicInfo.phone}
@@ -110,9 +118,15 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
           )}
           {data.basicInfo.github && (
             <Typography
+              component="a"
+              href={`https://github.com/${data.basicInfo.github}`}
+              target="_blank"
+              rel="noopener noreferrer"
               sx={{
                 fontSize: "0.75rem",
                 fontFamily: "'Courier New', monospace",
+                textDecoration: "none",
+                color: "inherit",
               }}
             >
               github: {data.basicInfo.github}
@@ -120,9 +134,15 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
           )}
           {data.basicInfo.linkedin && (
             <Typography
+              component="a"
+              href={`https://linkedin.com/in/${data.basicInfo.linkedin}`}
+              target="_blank"
+              rel="noopener noreferrer"
               sx={{
                 fontSize: "0.75rem",
                 fontFamily: "'Courier New', monospace",
+                textDecoration: "none",
+                color: "inherit",
               }}
             >
               linkedin: {data.basicInfo.linkedin}
@@ -181,7 +201,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
               fontFamily: "'Courier New', monospace",
             }}
           >
-            {">"} skills.list()
+            {">"} Skills
           </Typography>
           <Box
             sx={{
@@ -209,13 +229,15 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                 >
                   {skill.name}:
                 </Typography>
-                <Box sx={{ display: "flex", gap: 0.4 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: "3px", height: 10 }}>
                   {[...Array(5)].map((_, index) => (
                     <Box
                       key={index}
+                      component="span"
                       sx={{
-                        width: 7,
-                        height: 7,
+                        display: "block",
+                        width: 8,
+                        height: 8,
                         backgroundColor:
                           index < (skill.level || 3)
                             ? "#50fa7b !important"
@@ -223,6 +245,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                         transform: "rotate(45deg)",
                         WebkitPrintColorAdjust: "exact !important",
                         printColorAdjust: "exact !important",
+                        colorAdjust: "exact !important",
                       }}
                     />
                   ))}
@@ -245,7 +268,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
               fontFamily: "'Courier New', monospace",
             }}
           >
-            {">"} experience.query()
+            {">"} Work Experience
           </Typography>
 
           {data.workExperience.map((exp, index) => (
@@ -346,7 +369,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
               fontFamily: "'Courier New', monospace",
             }}
           >
-            {">"} projects.showcase()
+            {">"} Projects
           </Typography>
 
           {data.projects.slice(0, 2).map((project, index) => (
@@ -362,17 +385,43 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                 printColorAdjust: "exact !important",
               }}
             >
-              <Typography
+              <Box
                 sx={{
-                  fontSize: "0.8rem",
-                  fontWeight: 700,
-                  color: "#282a36",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   mb: 0.3,
-                  fontFamily: "'Courier New', monospace",
+                  gap: 1,
                 }}
               >
-                {project.name}
-              </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    color: "#282a36",
+                    fontFamily: "'Courier New', monospace",
+                  }}
+                >
+                  {project.name}
+                </Typography>
+                {project.link && (
+                  <Typography
+                    component="a"
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      fontSize: "0.65rem",
+                      color: "#50fa7b",
+                      fontWeight: 600,
+                      flexShrink: 0,
+                      fontFamily: "'Courier New', monospace",
+                    }}
+                  >
+                    🔗Link
+                  </Typography>
+                )}
+              </Box>
 
               {project.description && (
                 <Typography
@@ -430,7 +479,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
               fontFamily: "'Courier New', monospace",
             }}
           >
-            {">"} education.credentials()
+            {">"} Education
           </Typography>
 
           {data.education.map((edu, index) => (
@@ -515,7 +564,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
               fontFamily: "'Courier New', monospace",
             }}
           >
-            {">"} certifications.verify()
+            {">"} Certifications
           </Typography>
 
           <Box
@@ -537,16 +586,38 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                   printColorAdjust: "exact !important",
                 }}
               >
-                <Typography
-                  sx={{
-                    fontSize: "0.7rem",
-                    fontWeight: 600,
-                    color: "#282a36",
-                    fontFamily: "'Courier New', monospace",
-                  }}
-                >
-                  {cert.name}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography
+                    sx={{
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      color: "#282a36",
+                      fontFamily: "'Courier New', monospace",
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {cert.name}
+                  </Typography>
+                  {cert.link && (
+                    <Typography
+                      component="a"
+                      href={cert.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.55rem",
+                        color: "#50fa7b",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        fontFamily: "'Courier New', monospace",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
                 <Typography
                   sx={{
                     fontSize: "0.65rem",

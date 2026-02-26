@@ -83,12 +83,20 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
           }}
         >
           {data.basicInfo.email && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
+            <Typography
+              component="a"
+              href={`mailto:${data.basicInfo.email}`}
+              sx={{ fontSize: "0.85rem", textDecoration: "none", color: "inherit" }}
+            >
               {data.basicInfo.email}
             </Typography>
           )}
           {data.basicInfo.phone && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
+            <Typography
+              component="a"
+              href={`tel:${data.basicInfo.phone}`}
+              sx={{ fontSize: "0.85rem", textDecoration: "none", color: "inherit" }}
+            >
               {data.basicInfo.phone}
             </Typography>
           )}
@@ -98,12 +106,24 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             </Typography>
           )}
           {data.basicInfo.github && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
+            <Typography
+              component="a"
+              href={`https://github.com/${data.basicInfo.github}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ fontSize: "0.85rem", textDecoration: "none", color: "inherit" }}
+            >
               github.com/{data.basicInfo.github}
             </Typography>
           )}
           {data.basicInfo.linkedin && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
+            <Typography
+              component="a"
+              href={`https://linkedin.com/in/${data.basicInfo.linkedin}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ fontSize: "0.85rem", textDecoration: "none", color: "inherit" }}
+            >
               linkedin.com/in/{data.basicInfo.linkedin}
             </Typography>
           )}
@@ -150,7 +170,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               letterSpacing: "0.05em",
             }}
           >
-            Professional Experience
+            Work Experience
           </Typography>
 
           {data.workExperience.map((exp, index) => (
@@ -315,19 +335,22 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                   >
                     {skill.name}
                   </Typography>
-                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: "4px", height: 6 }}>
                     {[...Array(5)].map((_, index) => (
                       <Box
                         key={index}
+                        component="span"
                         sx={{
+                          display: "block",
                           width: 24,
-                          height: 3,
+                          height: 6,
                           backgroundColor:
                             index < (skill.level || 3)
                               ? "#d4af37 !important"
                               : "#e5e7eb !important",
                           WebkitPrintColorAdjust: "exact !important",
                           printColorAdjust: "exact !important",
+                          colorAdjust: "exact !important",
                         }}
                       />
                     ))}
@@ -356,11 +379,30 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 1 }}>
-                <Typography
-                  sx={{ fontSize: "0.8rem", fontWeight: 600, color: "#1a1a1a" }}
-                >
-                  {cert.name}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography
+                    sx={{ fontSize: "0.8rem", fontWeight: 600, color: "#1a1a1a", flex: 1, minWidth: 0 }}
+                  >
+                    {cert.name}
+                  </Typography>
+                  {cert.link && (
+                    <Typography
+                      component="a"
+                      href={cert.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.65rem",
+                        color: "#d4af37",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
                 <Typography sx={{ fontSize: "0.7rem", color: "#4a4a4a" }}>
                   {cert.issuer}
                 </Typography>
@@ -383,7 +425,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               letterSpacing: "0.05em",
             }}
           >
-            Key Projects
+            Projects
           </Typography>
 
           {data.projects.slice(0, 2).map((project, index) => (
@@ -393,16 +435,41 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 mb: index < Math.min(data.projects.length, 2) - 1 ? 1.5 : 0,
               }}
             >
-              <Typography
+              <Box
                 sx={{
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  color: "#1a1a1a",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   mb: 0.3,
+                  gap: 1,
                 }}
               >
-                {project.name}
-              </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    color: "#1a1a1a",
+                  }}
+                >
+                  {project.name}
+                </Typography>
+                {project.link && (
+                  <Typography
+                    component="a"
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      fontSize: "0.7rem",
+                      color: "#d4af37",
+                      fontWeight: 600,
+                      flexShrink: 0,
+                    }}
+                  >
+                    🔗Link
+                  </Typography>
+                )}
+              </Box>
               {project.description && (
                 <Typography
                   sx={{

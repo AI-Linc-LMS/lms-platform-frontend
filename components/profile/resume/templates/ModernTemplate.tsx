@@ -84,7 +84,9 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
             >
               <IconWrapper icon="mdi:email" size={16} color="#94a3b8" />
               <Typography
-                sx={{ fontSize: "0.625rem", wordBreak: "break-word" }}
+                component="a"
+                href={`mailto:${data.basicInfo.email}`}
+                sx={{ fontSize: "0.625rem", wordBreak: "break-word", textDecoration: "none", color: "inherit" }}
               >
                 {data.basicInfo.email}
               </Typography>
@@ -94,7 +96,11 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
           {data.basicInfo.phone && (
             <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
               <IconWrapper icon="mdi:phone" size={16} color="#94a3b8" />
-              <Typography sx={{ fontSize: "0.625rem" }}>
+              <Typography
+                component="a"
+                href={`tel:${data.basicInfo.phone}`}
+                sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}
+              >
                 {data.basicInfo.phone}
               </Typography>
             </Box>
@@ -114,7 +120,13 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
           {data.basicInfo.github && (
             <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
               <IconWrapper icon="mdi:github" size={16} color="#94a3b8" />
-              <Typography sx={{ fontSize: "0.625rem" }}>
+              <Typography
+                component="a"
+                href={`https://github.com/${data.basicInfo.github}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}
+              >
                 github.com/{data.basicInfo.github}
               </Typography>
             </Box>
@@ -123,7 +135,13 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
           {data.basicInfo.linkedin && (
             <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
               <IconWrapper icon="mdi:linkedin" size={16} color="#94a3b8" />
-              <Typography sx={{ fontSize: "0.625rem" }}>
+              <Typography
+                component="a"
+                href={`https://linkedin.com/in/${data.basicInfo.linkedin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontSize: "0.625rem", textDecoration: "none", color: "inherit" }}
+              >
                 linkedin.com/in/{data.basicInfo.linkedin}
               </Typography>
             </Box>
@@ -150,13 +168,15 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                 <Typography sx={{ fontSize: "0.625rem", mb: 0.5 }}>
                   {skill.name}
                 </Typography>
-                <Box sx={{ display: "flex", gap: 0.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: "4px", height: 6 }}>
                   {[...Array(5)].map((_, index) => (
                     <Box
                       key={index}
+                      component="span"
                       sx={{
+                        display: "block",
                         width: 24,
-                        height: 4,
+                        height: 6,
                         backgroundColor:
                           index < (skill.level || 3)
                             ? "#6366f1 !important"
@@ -164,6 +184,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                         borderRadius: 2,
                         WebkitPrintColorAdjust: "exact !important",
                         printColorAdjust: "exact !important",
+                        colorAdjust: "exact !important",
                       }}
                     />
                   ))}
@@ -190,9 +211,28 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
 
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: "0.625rem", fontWeight: 600 }}>
-                  {cert.name}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography sx={{ fontSize: "0.625rem", fontWeight: 600, flex: 1, minWidth: 0 }}>
+                    {cert.name}
+                  </Typography>
+                  {cert.link && (
+                    <Typography
+                      component="a"
+                      href={cert.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.55rem",
+                        color: "#6366f1",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
                 <Typography sx={{ fontSize: "0.625rem", color: "#94a3b8" }}>
                   {cert.issuer}
                 </Typography>
@@ -437,16 +477,41 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
 
             {data.projects.map((project) => (
               <Box key={project.id} sx={{ mb: 2 }}>
-                <Typography
+                <Box
                   sx={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: "#1e293b",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                     mb: 0.5,
+                    gap: 1,
                   }}
                 >
-                  {project.name}
-                </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      color: "#1e293b",
+                    }}
+                  >
+                    {project.name}
+                  </Typography>
+                  {project.link && (
+                    <Typography
+                      component="a"
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.625rem",
+                        color: "#6366f1",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
 
                 {project.description && (
                   <Typography
