@@ -8,6 +8,7 @@ import {
   Breadcrumbs,
   Link,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { QuizTimer } from "./QuizTimer";
 import { QuizQuestionList } from "./QuizQuestionList";
 import { QuestionTitle } from "./QuestionTitle";
@@ -61,6 +62,8 @@ export interface QuizLayoutProps {
   correctAnswerId?: string | number;
   isReadOnly?: boolean; // For viewing past submissions
   explanation?: string; // Explanation for the current question
+  /** When true (e.g. inside course submodule), show Submit Early in top bar only */
+  isSubmodule?: boolean;
 }
 
 export function QuizLayout({
@@ -83,7 +86,9 @@ export function QuizLayout({
   correctAnswerId,
   isReadOnly = false,
   explanation,
+  isSubmodule = false,
 }: QuizLayoutProps) {
+  const { t } = useTranslation("common");
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
   const isFirstQuestion = currentQuestionIndex === 0;
   const answeredCount = questions.filter((q) => q.answered).length;
@@ -134,6 +139,46 @@ export function QuizLayout({
           order: { xs: 0, md: 1 },
         }}
       >
+        {/* Top bar - Submit Early (submodule only) */}
+        {isSubmodule && !isReadOnly && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              mb: 2,
+              py: 1,
+              borderBottom: "1px solid #e5e7eb",
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={onFinalSubmit}
+              disabled={isSubmitting}
+              sx={{
+                borderColor: "#10b981",
+                color: "#059669",
+                px: 2,
+                py: 1,
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                borderRadius: 2,
+                textTransform: "none",
+                "&:hover": {
+                  borderColor: "#059669",
+                  backgroundColor: "#05966915",
+                },
+                "&:disabled": {
+                  borderColor: "#d1d5db",
+                  color: "#9ca3af",
+                },
+              }}
+            >
+              {isSubmitting ? t("quiz.submitting") : t("quiz.submitEarly")}
+            </Button>
+          </Box>
+        )}
+
         {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
           <Breadcrumbs
@@ -232,7 +277,10 @@ export function QuizLayout({
                   fontWeight: 500,
                 }}
               >
-                {answeredCount} of {totalQuestions} answered
+                {t("quiz.answeredOf", {
+                  answered: answeredCount,
+                  total: totalQuestions,
+                })}
               </Typography>
             </Box>
 
@@ -276,7 +324,7 @@ export function QuizLayout({
                   },
                 }}
               >
-                Previous
+                {t("quiz.previous")}
               </Button>
 
               {/* Progress indicator - desktop middle */}
@@ -296,13 +344,16 @@ export function QuizLayout({
                       fontWeight: 500,
                     }}
                   >
-                    {answeredCount} of {totalQuestions} answered
+                    {t("quiz.answeredOf", {
+                      answered: answeredCount,
+                      total: totalQuestions,
+                    })}
                   </Typography>
                 </Box>
               )}
 
-              {/* Next / Final Submit Buttons */}
-              {!isLastQuestion ? (
+              {/* Next button - only when not on last question */}
+              {!isLastQuestion && (
                 <Button
                   variant="contained"
                   onClick={onNextQuestion}
@@ -330,57 +381,83 @@ export function QuizLayout({
                     },
                   }}
                 >
-                  Next
+                  {t("quiz.next")}
                 </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  onClick={onFinalSubmit}
-                  disabled={isSubmitting}
-                  sx={{
-                    background: isReadOnly
-                      ? "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
-                      : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: "#ffffff",
-                    px: { xs: 3, sm: 5 },
-                    py: 1.5,
-                    fontSize: "0.9375rem",
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    textTransform: "none",
-                    flex: 1,
-                    minWidth: { xs: "auto", sm: "200px" },
-                    boxShadow: isReadOnly
-                      ? "0 4px 12px rgba(99, 102, 241, 0.3)"
-                      : "0 4px 12px rgba(16, 185, 129, 0.3)",
-                    "&:hover": {
-                      background: isReadOnly
-                        ? "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)"
-                        : "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                      boxShadow: isReadOnly
-                        ? "0 6px 16px rgba(99, 102, 241, 0.4)"
-                        : "0 6px 16px rgba(16, 185, 129, 0.4)",
-                      transform: "translateY(-1px)",
-                    },
-                    "&:active": {
-                      transform: "translateY(0)",
-                    },
-                    "&:disabled": {
-                      background:
-                        "linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)",
-                      color: "#ffffff",
-                      boxShadow: "none",
-                      opacity: 0.6,
-                    },
-                    transition: "all 0.2s ease-in-out",
-                  }}
-                >
-                  {isReadOnly
-                    ? "Back"
-                    : isSubmitting
-                    ? "Submitting..."
-                    : "Submit Quiz"}
-                </Button>
+              )}
+
+              {/* Submit Quiz - only at bottom when NOT submodule */}
+              {!isSubmodule && (
+              <Button
+                variant={isLastQuestion ? "contained" : "outlined"}
+                onClick={onFinalSubmit}
+                disabled={isSubmitting}
+                sx={
+                  isLastQuestion
+                    ? {
+                        background: isReadOnly
+                          ? "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+                          : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        color: "#ffffff",
+                        px: { xs: 3, sm: 5 },
+                        py: 1.5,
+                        fontSize: "0.9375rem",
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        textTransform: "none",
+                        flex: 1,
+                        minWidth: { xs: "auto", sm: "200px" },
+                        boxShadow: isReadOnly
+                          ? "0 4px 12px rgba(99, 102, 241, 0.3)"
+                          : "0 4px 12px rgba(16, 185, 129, 0.3)",
+                        "&:hover": {
+                          background: isReadOnly
+                            ? "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)"
+                            : "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                          boxShadow: isReadOnly
+                            ? "0 6px 16px rgba(99, 102, 241, 0.4)"
+                            : "0 6px 16px rgba(16, 185, 129, 0.4)",
+                          transform: "translateY(-1px)",
+                        },
+                        "&:active": {
+                          transform: "translateY(0)",
+                        },
+                        "&:disabled": {
+                          background:
+                            "linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)",
+                          color: "#ffffff",
+                          boxShadow: "none",
+                          opacity: 0.6,
+                        },
+                        transition: "all 0.2s ease-in-out",
+                      }
+                    : {
+                        borderColor: "#10b981",
+                        color: "#059669",
+                        px: { xs: 2, sm: 3 },
+                        py: 1.5,
+                        fontSize: "0.9375rem",
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        textTransform: "none",
+                        flex: { xs: 1, sm: "none" },
+                        minWidth: { xs: "auto", sm: "140px" },
+                        "&:hover": {
+                          borderColor: "#059669",
+                          backgroundColor: "#05966915",
+                        },
+                        "&:disabled": {
+                          borderColor: "#d1d5db",
+                          color: "#9ca3af",
+                        },
+                      }
+                }
+              >
+                {isReadOnly
+                  ? t("quiz.back")
+                  : isSubmitting
+                    ? t("quiz.submitting")
+                    : t("quiz.submitQuiz")}
+              </Button>
               )}
             </Box>
           </Box>

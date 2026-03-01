@@ -267,6 +267,15 @@
     "questions": "الأسئلة",
     "minutes": "دقائق"
   },
+  "quiz": {
+    "submitEarly": "تسليم مبكر",
+    "submitQuiz": "إرسال الاختبار",
+    "previous": "السابق",
+    "next": "التالي",
+    "submitting": "جاري الإرسال...",
+    "back": "رجوع",
+    "answeredOf": "{{answered}} من {{total}} تمت الإجابة عليها"
+  },
   "assessments": {
     "title": "التقييمات",
     "subtitle": "اختبر معرفتك وتتبع تقدمك",

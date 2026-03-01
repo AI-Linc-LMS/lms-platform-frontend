@@ -244,8 +244,15 @@ export default function CoursesPage() {
       await coursesService.enrollInCourse(courseId);
       showToast(t("courses.enrolledSuccess"), "success");
       loadCourses();
-    } catch {
-      showToast("Failed to enroll in course", "error");
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const message =
+        typeof data?.error === "string"
+          ? data.error
+          : typeof data?.detail === "string"
+            ? data.detail
+            : t("courses.failedToEnroll");
+      showToast(message, "error");
     } finally {
       setEnrollingCourseId(null);
     }

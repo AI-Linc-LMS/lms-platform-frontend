@@ -267,6 +267,15 @@
     "questions": "Questions",
     "minutes": "Minutes"
   },
+  "quiz": {
+    "submitEarly": "Submit Early",
+    "submitQuiz": "Submit Quiz",
+    "previous": "Previous",
+    "next": "Next",
+    "submitting": "Submitting...",
+    "back": "Back",
+    "answeredOf": "{{answered}} of {{total}} answered"
+  },
   "assessments": {
     "title": "Assessments",
     "subtitle": "Test your knowledge and track your progress",

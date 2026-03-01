@@ -873,6 +873,7 @@ export function QuizContent({
             correctAnswerId={correctAnswerId}
             isReadOnly={isViewingSubmission}
             explanation={currentExplanation}
+            isSubmodule
           />
         </Box>
       </>

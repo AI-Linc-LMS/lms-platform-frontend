@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Box, Paper, Tabs, Tab, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Paper, Tabs, Tab, IconButton, useMediaQuery, useTheme } from "@mui/material";
 import { coursesService } from "@/lib/services/courses.service";
 import { useToast } from "@/components/common/Toast";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { CompletionDialog } from "@/components/common/CompletionDialog";
 import { ProblemDescription } from "./ProblemDescription";
 import { TestResults } from "./TestResults";
@@ -50,10 +51,12 @@ export function CodingProblemLayout({
   const [testResults, setTestResults] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-  const [canSubmit, setCanSubmit] = useState(false);
+  // Allow submission even when 0 or partial test cases have passed
+  const [canSubmit, setCanSubmit] = useState(true);
   const [runningCustomInput, setRunningCustomInput] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [completionStats, setCompletionStats] = useState<any>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const lastFetchedSubmissionsIdRef = useRef<number | null>(null);
 
   // Comments state
@@ -213,6 +216,15 @@ export function CodingProblemLayout({
     };
   }, [code, selectedLanguage]);
 
+  // Exit full screen on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullScreen) setIsFullScreen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullScreen]);
+
   // Load previous submissions
   const loadSubmissions = async () => {
     try {
@@ -273,7 +285,6 @@ export function CodingProblemLayout({
   // Handle language change
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
-    setCanSubmit(false);
     setTestResults(null);
 
     // Try to load from local storage first
@@ -338,14 +349,12 @@ export function CodingProblemLayout({
         setCanSubmit(true);
         showToast("All test cases passed! You can now submit.", "success");
       } else if (hasError) {
-        setCanSubmit(false);
         const errorType = result.status || "Error";
         showToast(
           `${errorType}: Please fix the errors and try again.`,
           "error"
         );
       } else {
-        setCanSubmit(false);
         showToast(
           "Some test cases failed. Fix your code and try again.",
           "warning"
@@ -356,7 +365,6 @@ export function CodingProblemLayout({
         setActiveTab(2);
       }
     } catch (error: any) {
-      setCanSubmit(false);
       showToast(error.response?.data?.message || "Failed to run code", "error");
     } finally {
       setRunning(false);
@@ -445,7 +453,6 @@ export function CodingProblemLayout({
 
   // Handle Reset
   const handleReset = () => {
-    setCanSubmit(false);
     setTestResults(null);
 
     // Clear from local storage
@@ -498,6 +505,42 @@ export function CodingProblemLayout({
     }
   };
 
+  const fullScreenSx = isFullScreen
+    ? {
+        position: "fixed" as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1300,
+        height: "100vh",
+        maxHeight: "100vh",
+        borderRadius: 0,
+      }
+    : {};
+
+  const fullScreenToggleButton = (
+    <IconButton
+      onClick={() => setIsFullScreen((prev) => !prev)}
+      size="small"
+      sx={{
+        position: "absolute",
+        top: 8,
+        insetInlineEnd: 8,
+        zIndex: 11,
+        backgroundColor: "rgba(255,255,255,0.9)",
+        boxShadow: 1,
+        "&:hover": { backgroundColor: "#fff" },
+      }}
+      title={isFullScreen ? "Exit full screen" : "Full screen"}
+    >
+      <IconWrapper
+        icon={isFullScreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
+        size={20}
+      />
+    </IconButton>
+  );
+
   // Mobile Layout (Tabs)
   if (isMobile) {
     return (
@@ -514,7 +557,7 @@ export function CodingProblemLayout({
         />
         <Box
           sx={{
-            height: "calc(100vh - 150px)",
+            height: isFullScreen ? "100vh" : "calc(100vh - 150px)",
             minHeight: "400px",
             display: "flex",
             flexDirection: "column",
@@ -522,8 +565,11 @@ export function CodingProblemLayout({
             borderRadius: 2,
             overflow: "hidden",
             backgroundColor: "#ffffff",
+            position: "relative",
+            ...fullScreenSx,
           }}
         >
+          {fullScreenToggleButton}
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
@@ -617,9 +663,13 @@ export function CodingProblemLayout({
       />
       <Box
         sx={{
-          height: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
+          height: isFullScreen
+            ? "100vh"
+            : { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
           minHeight: "500px",
-          maxHeight: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
+          maxHeight: isFullScreen
+            ? "100vh"
+            : { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
           display: "flex",
           gap: 0,
           backgroundColor: "#f9fafb",
@@ -627,8 +677,10 @@ export function CodingProblemLayout({
           borderRadius: 2,
           overflow: "hidden",
           position: "relative",
+          ...fullScreenSx,
         }}
       >
+        {fullScreenToggleButton}
         {/* Left Panel */}
         <Paper
           elevation={0}
