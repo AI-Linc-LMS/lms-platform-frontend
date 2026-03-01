@@ -77,13 +77,29 @@ export default function AssessmentDetailPage({
     }
   };
 
+  if (loading) {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 400,
+            py: 8,
+          }}
+        >
+          <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+        </Box>
+      </MainLayout>
+    );
+  }
+
   if (!assessment) {
     return (
       <MainLayout>
         <Container>
-          <Typography>
-            {" "}
-          </Typography>
+          <Typography>{t("assessments.failedToLoadDetails")}</Typography>
         </Container>
       </MainLayout>
     );

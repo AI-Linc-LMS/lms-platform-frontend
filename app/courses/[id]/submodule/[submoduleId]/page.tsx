@@ -584,11 +584,22 @@ export default function SubmoduleDetailPage() {
     return `${mins}m`;
   };
 
-  if (!submoduleData || !courseDetail) {
-    return null;
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 400,
+          py: 8,
+        }}
+      >
+        <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+      </Box>
+    );
   }
 
-  // Early return if data is not loaded
   if (!submoduleData || !courseDetail) {
     return null;
   }

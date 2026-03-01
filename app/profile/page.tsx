@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Container, Tabs, Tab } from "@mui/material";
+import { Box, Container, Tabs, Tab, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CoverPhoto } from "@/components/profile/CoverPhoto";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -78,6 +78,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
 
@@ -91,6 +92,7 @@ export default function ProfilePage() {
 
   const loadProfileData = async () => {
     try {
+      setLoading(true);
       const profileData = await profileService.getUserProfile();
       setProfile(mergeWithLocalFallback(profileData));
 
@@ -102,6 +104,8 @@ export default function ProfilePage() {
       }
     } catch {
       showToast("Failed to load profile", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,6 +138,26 @@ export default function ProfilePage() {
       showToast("Profile saved locally", "info");
     }
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: 400,
+              py: 8,
+            }}
+          >
+            <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+          </Box>
+        </Container>
+      </MainLayout>
+    );
+  }
 
   if (!profile) {
     return (

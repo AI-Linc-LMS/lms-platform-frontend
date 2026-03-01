@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Container } from "@mui/material";
+import { Box, Container, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useToast } from "@/components/common/Toast";
@@ -169,6 +169,24 @@ export default function InterviewResultPage() {
     router.push("/mock-interview/previous");
   }, [router]);
 
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 400,
+            py: 8,
+          }}
+        >
+          <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+        </Box>
+      </MainLayout>
+    );
+  }
 
   if (!result) {
     return null;

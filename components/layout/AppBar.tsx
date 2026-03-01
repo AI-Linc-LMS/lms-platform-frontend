@@ -34,6 +34,7 @@ import { Settings } from "lucide-react";
 import { LanguageSelect } from "@/components/common/LanguageSelect";
 import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
+import { useToast } from "@/components/common/Toast";
 
 interface AppBarProps {
   onMenuClick?: () => void;
@@ -46,6 +47,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const { clientInfo } = useClientInfo();
   const hideLeaderboardView = useHideLeaderboardView();
   const { isAdminMode, toggleAdminMode } = useAdminMode();
+  const { showToast } = useToast();
 
   // Check if user can access admin mode
   const isAdminOrInstructor =
@@ -833,6 +835,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
           {/* Notifications */}
           <IconButton
+            aria-label="Notifications"
+            onClick={() => showToast("No New Notifications", "info")}
             sx={{
               color: "#6b7280",
               width: 40,
