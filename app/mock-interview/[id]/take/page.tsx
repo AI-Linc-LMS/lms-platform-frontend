@@ -11,6 +11,7 @@ import mockInterviewService, {
 } from "@/lib/services/mock-interview.service";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
+import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import {
@@ -37,13 +38,10 @@ export default function TakeMockInterviewPage() {
   const [currentAnswer, setCurrentAnswer] = useState<string>("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const [isListening, setIsListening] = useState(false);
-  const [recognizedText, setRecognizedText] = useState<string>("");
   const [audioLevel, setAudioLevel] = useState<number>(0);
 
   const isInitializingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -99,40 +97,45 @@ export default function TakeMockInterviewPage() {
       // Face count changes handled automatically
     },
   });
-  const testDevices = async () => {
+  const testDevices = useCallback(async () => {
     try {
-      // Request camera and microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: "user",
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
+      // Reuse stream from device-check when available for a smooth transition
+      let stream: MediaStream | null = null;
+      if (typeof window !== "undefined" && (window as any).__mockInterviewStream) {
+        const globalStream = (window as any).__mockInterviewStream;
+        const videoTracks = globalStream.getVideoTracks();
+        if (videoTracks.length > 0 && videoTracks[0].readyState === "live") {
+          stream = globalStream;
+        }
+      }
+      if (!stream) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "user",
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
+        });
+      }
 
       userStreamRef.current = stream;
 
-      // Check video tracks
       const videoTracks = stream.getVideoTracks();
       const hasVideo =
         videoTracks.length > 0 && videoTracks[0].readyState === "live";
-
-      // Check audio tracks
       const audioTracks = stream.getAudioTracks();
       const hasAudio =
         audioTracks.length > 0 && audioTracks[0].readyState === "live";
 
-      // Set video element source
       if (proctoringVideoRef.current) {
         proctoringVideoRef.current.srcObject = stream;
         proctoringVideoRef.current.play();
       }
 
-      // Test microphone levels (visual feedback)
       if (hasAudio && audioTracks.length > 0) {
         try {
           const audioContext = new AudioContext();
@@ -144,23 +147,19 @@ export default function TakeMockInterviewPage() {
           source.connect(analyser);
           analyserRef.current = analyser;
 
-          // Monitor audio levels continuously
           const updateAudioLevel = () => {
             if (!analyserRef.current) return;
-
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
             analyserRef.current.getByteFrequencyData(dataArray);
             const average =
               dataArray.reduce((a, b) => a + b) / dataArray.length;
-            const normalizedLevel = Math.min(average / 100, 1); // Normalize to 0-1
+            const normalizedLevel = Math.min(average / 100, 1);
             setAudioLevel(normalizedLevel);
-
             animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
           };
-
           updateAudioLevel();
-        } catch (error) {
-          // Fail silently or handle appropriately
+        } catch {
+          // Fail silently
         }
       }
 
@@ -169,11 +168,11 @@ export default function TakeMockInterviewPage() {
       setLoading(false);
       showToast("Failed to access camera or microphone", "error");
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     testDevices();
-  }, []);
+  }, [testDevices]);
   // Initialize camera and start proctoring immediately on page load
   useEffect(() => {
     if (isProctoringActive || isProctoringInitializing) return;
@@ -205,6 +204,17 @@ export default function TakeMockInterviewPage() {
   const { enterFullscreen, violations: fullscreenViolations } =
     useFullscreenMonitor();
 
+  const speechToText = useSpeechToText({
+    streamRef: userStreamRef,
+    onFinal: (text) =>
+      setCurrentAnswer((prev) =>
+        prev ? `${prev.trim()} ${text}`.trim() : text
+      ),
+    continuous: true,
+    lang: "en-US",
+  });
+  const { start: startStt, stop: stopStt, transcript: recognizedText, isListening } = speechToText;
+
   // Disable ESC and right-click
   useKeyboardShortcuts({
     enabled: interviewStarted,
@@ -213,123 +223,43 @@ export default function TakeMockInterviewPage() {
     },
   });
 
-  // Initialize Speech Recognition
+  // Start speech-to-text when interview starts (uses Canary Qwen 2.5B when STT_API_URL is set, else browser)
+  const hasStartedSttRef = useRef(false);
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!interviewStarted) {
+      hasStartedSttRef.current = false;
+      return;
+    }
+    if (hasStartedSttRef.current) return;
+    hasStartedSttRef.current = true;
+    const t = setTimeout(() => {
+      startStt();
+    }, 500);
+    return () => clearTimeout(t);
+  }, [interviewStarted, startStt]);
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+  // Load interview data on mount: use sessionStorage if coming from device-check, else call start API
+  useEffect(() => {
+    const storageKey = `mockInterviewStarted_${interviewId}`;
+    const cached = typeof window !== "undefined" ? sessionStorage.getItem(storageKey) : null;
 
-    if (SpeechRecognition) {
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = true;
-      recognitionInstance.interimResults = true;
-      recognitionInstance.lang = "en-US";
-
-      recognitionInstance.onresult = (event: any) => {
-        let interimTranscript = "";
-        let finalTranscript = "";
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + " ";
-          } else {
-            interimTranscript += transcript;
-          }
+    if (cached) {
+      try {
+        const startedInterview = JSON.parse(cached) as MockInterviewDetail;
+        if (startedInterview?.id === interviewId) {
+          sessionStorage.removeItem(storageKey);
+          setInterview(startedInterview);
+          setStartTime(new Date(startedInterview.started_at || new Date()));
+          return;
         }
-
-        const newText = finalTranscript || interimTranscript;
-        setRecognizedText(newText);
-
-        // Append to current answer (only final results to avoid duplicates)
-        if (finalTranscript) {
-          setCurrentAnswer((prev) => {
-            const trimmed = prev.trim();
-            return trimmed
-              ? `${trimmed} ${finalTranscript.trim()}`
-              : finalTranscript.trim();
-          });
-        }
-      };
-
-      recognitionInstance.onerror = (event: any) => {
-        if (event.error !== "no-speech") {
-          showToast("Speech recognition error: " + event.error, "error");
-        }
-      };
-
-      recognitionInstance.onend = () => {
-        // Auto-restart if interview is started
-        if (interviewStarted && recognitionRef.current) {
-          try {
-            recognitionRef.current.start();
-          } catch (error) {
-            // Already started or error - ignore
-          }
-        }
-      };
-
-      recognitionRef.current = recognitionInstance;
+      } catch {
+        sessionStorage.removeItem(storageKey);
+      }
     }
 
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (error) {
-          // Ignore
-        }
-      }
-    };
-  }, [interviewStarted, showToast]);
-
-  // Auto-start speech recognition when interview starts - always active
-  useEffect(() => {
-    if (!interviewStarted || !recognitionRef.current) return;
-
-    const startListening = () => {
-      try {
-        recognitionRef.current?.start();
-        setIsListening(true);
-      } catch (error) {
-        // Already started or error - ignore
-      }
-    };
-
-    // Small delay to ensure recognition is initialized
-    const timer = setTimeout(startListening, 500);
-
-    // Keep speech recognition always active
-    const keepListening = setInterval(() => {
-      if (recognitionRef.current && interviewStarted) {
-        try {
-          if (
-            recognitionRef.current.state === "stopped" ||
-            recognitionRef.current.state === "inactive"
-          ) {
-            recognitionRef.current.start();
-            setIsListening(true);
-          }
-        } catch (error) {
-          // Ignore errors
-        }
-      }
-    }, 2000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(keepListening);
-    };
-  }, [interviewStarted]);
-
-  // Load interview data on mount (call start API)
-  useEffect(() => {
     const loadInterview = async () => {
       try {
         setLoading(true);
-        // Call start API to get questions
         const startedInterview = await mockInterviewService.startInterview(
           interviewId
         );
