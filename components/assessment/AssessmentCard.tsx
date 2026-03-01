@@ -215,63 +215,26 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             }
           : {},
       }}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
       onClick={handleClick}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleClick();
+              }
+            }
+          : undefined
+      }
+      aria-label={
+        isClickable
+          ? `${stripHtmlTags(assessment.title || "").trim() || assessment.title} - ${buttonLabel}`
+          : undefined
+      }
     >
-      {/* Status Badges - RTL-aware position and icon order */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 10,
-          insetInlineEnd: 10,
-          zIndex: 2,
-          display: "flex",
-          flexDirection: "row",
-          gap: 1,
-        }}
-      >
-        {assessment.proctoring_enabled && (
-          <Chip
-            icon={<IconWrapper icon="mdi:shield-account" size={14} />}
-            label={t("assessments.proctored")}
-            size="small"
-            sx={{
-              backgroundColor: "#fef3c7",
-              color: "#92400e",
-              fontWeight: 600,
-              fontSize: "0.7rem",
-              height: 22,
-              flexDirection: isRtl ? "row-reverse" : "row",
-              "& .MuiChip-icon": {
-                color: "#92400e",
-                marginInlineStart: isRtl ? "4px" : 0,
-                marginInlineEnd: isRtl ? 0 : "4px",
-              },
-            }}
-          />
-        )}
-        {showResults && (
-          <Chip
-            icon={<IconWrapper icon="mdi:check-circle" size={14} />}
-            label={t("assessments.completed")}
-            size="small"
-            sx={{
-              backgroundColor: "#d1fae5",
-              color: "#065f46",
-              fontWeight: 600,
-              fontSize: "0.7rem",
-              height: 22,
-              flexDirection: isRtl ? "row-reverse" : "row",
-              "& .MuiChip-icon": {
-                color: "#065f46",
-                marginInlineStart: isRtl ? "4px" : 0,
-                marginInlineEnd: isRtl ? 0 : "4px",
-              },
-            }}
-          />
-        )}
-      </Box>
-
-      {/* Header Section */}
+      {/* Header Section - Title and tags in clear rows to avoid overlap */}
       <Box
         sx={{
           background: isPsychometric
@@ -301,27 +264,91 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             }}
           />
         )}
-        
-        <Box sx={{ position: "relative", zIndex: 1 }}>
+
+        <Box
+          sx={{
+            position: "relative",
+            zIndex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
+          {/* Row 1: Status badges only - no overlap with title */}
+          {(assessment.proctoring_enabled || showResults) && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isRtl ? "row-reverse" : "row",
+                justifyContent: "flex-end",
+                gap: 1,
+                flexShrink: 0,
+              }}
+            >
+              {assessment.proctoring_enabled && (
+                <Chip
+                  icon={<IconWrapper icon="mdi:shield-account" size={14} />}
+                  label={t("assessments.proctored")}
+                  size="small"
+                  sx={{
+                    backgroundColor: showResults ? "#fef3c7" : "rgba(255, 255, 255, 0.25)",
+                    color: showResults ? "#92400e" : "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    height: 24,
+                    flexDirection: isRtl ? "row-reverse" : "row",
+                    border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                    "& .MuiChip-icon": {
+                      color: "inherit",
+                      marginInlineStart: isRtl ? "4px" : 0,
+                      marginInlineEnd: isRtl ? 0 : "4px",
+                    },
+                  }}
+                />
+              )}
+              {showResults && (
+                <Chip
+                  icon={<IconWrapper icon="mdi:check-circle" size={14} />}
+                  label={t("assessments.completed")}
+                  size="small"
+                  sx={{
+                    backgroundColor: showResults ? "#d1fae5" : "rgba(255, 255, 255, 0.25)",
+                    color: showResults ? "#065f46" : "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    height: 24,
+                    flexDirection: isRtl ? "row-reverse" : "row",
+                    border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                    "& .MuiChip-icon": {
+                      color: "inherit",
+                      marginInlineStart: isRtl ? "4px" : 0,
+                      marginInlineEnd: isRtl ? 0 : "4px",
+                    },
+                  }}
+                />
+              )}
+            </Box>
+          )}
+
+          {/* Row 2: Title - full width, no overlap */}
           <Typography
             variant="h6"
             sx={{
               color: showResults ? "#1f2937" : "#ffffff",
               fontWeight: 700,
-              fontSize: "1rem",
-              mb: 0.5,
-              pr: showResults || isPsychometric ? 10 : 0,
-              pl: isPsychometric && !showResults ? 0 : 0,
-              minHeight: 40,
+              fontSize: "1.0625rem",
+              lineHeight: 1.35,
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
-              lineHeight: 1.3,
+              minHeight: 40,
             }}
           >
             {stripHtmlTags(assessment.title || "").trim() || assessment.title || "\u00A0"}
           </Typography>
+
+          {/* Row 3: Subtitle / instructions */}
           <Typography
             variant="body2"
             sx={{
@@ -336,15 +363,15 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           >
             {(stripHtmlTags(assessment.instructions || "").trim() || "\u00A0")}
           </Typography>
-          
-          {/* Tags for psychometric assessments */}
+
+          {/* Psychometric tags */}
           {isPsychometric && psychometricTags.length > 0 && (
             <Box
               sx={{
                 display: "flex",
                 flexWrap: "wrap",
                 gap: 1,
-                mt: 1.5,
+                mt: 0.5,
               }}
             >
               {psychometricTags.slice(0, 3).map((tag, index) => (

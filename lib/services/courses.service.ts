@@ -182,6 +182,8 @@ export interface LeaderboardEntry {
   profile_pic_url?: string;
   score: number;
   rank: number;
+  email?: string;
+  user_name?: string;
 }
 
 export const coursesService = {

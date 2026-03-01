@@ -2,12 +2,20 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Typography, Card, Avatar, LinearProgress } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Card,
+  Avatar,
+  LinearProgress,
+  Divider,
+} from "@mui/material";
 import {
   dashboardService,
   OverallLeaderboardEntry,
 } from "@/lib/services/dashboard.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { useAuth } from "@/lib/auth/auth-context";
 
 const LEADERBOARD_STORAGE_KEY = "leaderboard_data";
 
@@ -47,60 +55,98 @@ interface LeaderboardProps {
   courseId?: number; // Kept for backward compatibility but not used
 }
 
-export const Leaderboard = ({ courseId }: LeaderboardProps) => {
+export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
   const { t } = useTranslation("common");
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<OverallLeaderboardEntry[]>([]);
+  const [myRankEntry, setMyRankEntry] = useState<OverallLeaderboardEntry | null>(null);
   const hasLoadedRef = useRef(false);
+
+  const findUserEntry = useCallback(
+    (data: OverallLeaderboardEntry[]) => {
+      if (!user || !data?.length) return undefined;
+
+      const fullName = `${user.first_name} ${user.last_name}`
+        .trim()
+        .toLowerCase();
+      const userName = (user.user_name || "").toLowerCase();
+      const userEmail = (user.email || "").toLowerCase();
+      const firstName = (user.first_name || "").toLowerCase();
+      const lastName = (user.last_name || "").toLowerCase();
+
+      return data.find((entry) => {
+        const entryName = (entry?.name || "").toLowerCase().trim();
+        const entryEmail = (entry?.email || "").toLowerCase();
+        const entryUserName = (entry?.user_name || "").toLowerCase();
+
+        if (userEmail && entryEmail && userEmail === entryEmail) return true;
+        if (userName && entryUserName && userName === entryUserName) return true;
+        if (fullName && entryName && fullName === entryName) return true;
+        if (userName && entryName && userName === entryName) return true;
+        if (
+          firstName &&
+          lastName &&
+          entryName.includes(firstName) &&
+          entryName.includes(lastName)
+        )
+          return true;
+        return false;
+      });
+    },
+    [user]
+  );
 
   const loadLeaderboard = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Get overall leaderboard (default limit is handled by API)
+
       const data = await dashboardService.getOverallLeaderboard();
 
-      // Ensure data is an array - multiple checks
-      if (!data) {
+      if (!data || !Array.isArray(data)) {
         setLeaderboard([]);
         setStoredLeaderboard([]);
         return;
       }
 
-      if (!Array.isArray(data)) {
-        setLeaderboard([]);
-        setStoredLeaderboard([]);
-        return;
-      }
-
-      // Update state and localStorage with fresh data
       setLeaderboard(data);
       setStoredLeaderboard(data);
+
+      const foundInTop = findUserEntry(data);
+      if (foundInTop) {
+        setMyRankEntry(foundInTop);
+      } else {
+        try {
+          const fullData = await dashboardService.getOverallLeaderboard(10000);
+          if (fullData && Array.isArray(fullData)) {
+            const foundInFull = findUserEntry(fullData);
+            setMyRankEntry(foundInFull ?? null);
+          }
+        } catch {
+          // Silently fail — user rank is optional
+        }
+      }
     } catch {
-      // On error, try to load from localStorage if available
       const storedData = getStoredLeaderboard();
       if (storedData) {
         setLeaderboard(storedData);
       } else {
         setLeaderboard([]);
       }
-      // Don't show toast for optional data
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [findUserEntry]);
 
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
 
-    // Load from localStorage first to show cached data immediately
     const storedData = getStoredLeaderboard();
     if (storedData && storedData.length > 0) {
       setLeaderboard(storedData);
     }
 
-    // Always fetch fresh data from API
     loadLeaderboard();
   }, [loadLeaderboard]);
 
@@ -128,6 +174,8 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
     }
     return leaderboard;
   }, [leaderboard]);
+
+  const currentUserEntry = myRankEntry;
 
   return (
     <Box>
@@ -389,6 +437,111 @@ export const Leaderboard = ({ courseId }: LeaderboardProps) => {
           </Box>
         )}
       </Card>
+
+      {/* Current User Rank - Pinned at Bottom */}
+      {currentUserEntry && safeLeaderboard.length > 0 && (
+        <Box sx={{ mt: 1.5 }}>
+          <Divider sx={{ mb: 1.5 }} />
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 1.5,
+              borderRadius: 2,
+              background:
+                "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.2)",
+            }}
+          >
+            <Box
+              sx={{
+                minWidth: 28,
+                height: 28,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                background:
+                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                color: "#ffffff",
+                fontWeight: 700,
+                fontSize: "0.75rem",
+                flexShrink: 0,
+                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
+              }}
+            >
+              {currentUserEntry.rank ?? "?"}
+            </Box>
+            <Avatar
+              src={
+                currentUserEntry.profile_pic_url ||
+                user?.profile_picture ||
+                undefined
+              }
+              alt={currentUserEntry.name || "You"}
+              sx={{
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                border: "2px solid rgba(99, 102, 241, 0.3)",
+                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.15)",
+              }}
+            >
+              {(currentUserEntry.name || "U")[0]}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 700,
+                  color: "#1a1f2e",
+                  fontSize: "0.8125rem",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  lineHeight: 1.3,
+                }}
+              >
+                {currentUserEntry.name || "You"}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#6366f1",
+                  fontSize: "0.6875rem",
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                }}
+              >
+                {t("dashboard.score")}: {currentUserEntry.marks ?? 0}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1.5,
+                background:
+                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                flexShrink: 0,
+                boxShadow: "0 2px 4px rgba(99, 102, 241, 0.2)",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  fontSize: "0.8125rem",
+                }}
+              >
+                #{currentUserEntry.rank ?? "?"}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };

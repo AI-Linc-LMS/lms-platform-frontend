@@ -7,10 +7,12 @@ import {
   Avatar,
   Tooltip,
   IconButton,
+  Divider,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LeaderboardEntry } from "@/lib/services/courses.service";
+import { useAuth } from "@/lib/auth/auth-context";
 
 interface CourseLeaderboardProps {
   leaderboard: LeaderboardEntry[];
@@ -18,6 +20,7 @@ interface CourseLeaderboardProps {
 
 export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
   const { t } = useTranslation("common");
+  const { user } = useAuth();
   const getRankColor = (rank?: number | null) => {
     if (!rank || rank === 0) return "#6B7280";
     if (rank === 1) return "#FFD700"; // Gold
@@ -35,9 +38,37 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
   };
 
   const getDisplayName = (entry: LeaderboardEntry) => {
-    // Current structure has name directly
     return entry.name || "User";
   };
+
+  const currentUserEntry = (() => {
+    if (!user || leaderboard.length === 0) return undefined;
+
+    const fullName = `${user.first_name} ${user.last_name}`.trim().toLowerCase();
+    const userName = (user.user_name || "").toLowerCase();
+    const userEmail = (user.email || "").toLowerCase();
+    const firstName = (user.first_name || "").toLowerCase();
+    const lastName = (user.last_name || "").toLowerCase();
+
+    return leaderboard.find((entry) => {
+      const entryName = (entry?.name || "").toLowerCase().trim();
+      const entryEmail = (entry?.email || "").toLowerCase();
+      const entryUserName = (entry?.user_name || "").toLowerCase();
+
+      if (userEmail && entryEmail && userEmail === entryEmail) return true;
+      if (userName && entryUserName && userName === entryUserName) return true;
+      if (fullName && entryName && fullName === entryName) return true;
+      if (userName && entryName && userName === entryName) return true;
+      if (
+        firstName &&
+        lastName &&
+        entryName.includes(firstName) &&
+        entryName.includes(lastName)
+      )
+        return true;
+      return false;
+    });
+  })();
 
   const markingScheme = [
     { type: "VideoTutorial", marks: 10 },
@@ -376,6 +407,112 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
           </Box>
         )}
       </Box>
+
+      {/* Current User Rank - Pinned at Bottom */}
+      {currentUserEntry && leaderboard.length > 0 && (
+        <Box sx={{ mt: 2 }}>
+          <Divider sx={{ mb: 1.5 }} />
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 1.5,
+              borderRadius: 2,
+              background:
+                "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.2)",
+            }}
+          >
+            <Box
+              sx={{
+                minWidth: 32,
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                background:
+                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                color: "#ffffff",
+                fontWeight: 700,
+                fontSize: "0.8125rem",
+                flexShrink: 0,
+                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
+              }}
+            >
+              {currentUserEntry.rank ?? "?"}
+            </Box>
+            <Avatar
+              src={
+                currentUserEntry.profile_pic_url ||
+                user?.profile_picture ||
+                undefined
+              }
+              alt={getDisplayName(currentUserEntry)}
+              sx={{
+                width: 36,
+                height: 36,
+                flexShrink: 0,
+                border: "2px solid rgba(99, 102, 241, 0.3)",
+                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.15)",
+              }}
+            >
+              {getDisplayName(currentUserEntry)[0]}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 700,
+                  color: "#1a1f2e",
+                  fontSize: "0.875rem",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  lineHeight: 1.3,
+                }}
+              >
+                {getDisplayName(currentUserEntry)}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#6366f1",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                }}
+              >
+                {t("courses.scoreLabel")}:{" "}
+                {(currentUserEntry.score ?? 0).toFixed(0)}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1.5,
+                background:
+                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                flexShrink: 0,
+                boxShadow: "0 2px 4px rgba(99, 102, 241, 0.2)",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  fontSize: "0.8125rem",
+                }}
+              >
+                #{currentUserEntry.rank ?? "?"}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      )}
     </Card>
   );
 }
