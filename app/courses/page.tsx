@@ -17,16 +17,16 @@ import {
   FormControl,
   LinearProgress,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
 import {
   coursesService,
   Course as ServiceCourse,
 } from "@/lib/services/courses.service";
-import { Course as CourseCardCourse } from "@/components/course/interfaces";
-import { useToast } from "@/components/common/Toast";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { CourseCard } from "@/components/course/CourseCard";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { useToast } from "@/components/common/Toast";
 import { usePayment } from "@/hooks/usePayment";
+import type { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { PaymentType } from "@/lib/services/payment.service";
 
 const ITEMS_PER_PAGE = 12;
@@ -98,67 +98,37 @@ export default function CoursesPage() {
         })
       );
       setCourses(mappedCourses);
-    } catch (error: any) {
+    } catch {
       showToast(t("courses.failedToLoad"), "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper function to check if course matches category based on tags
+  // Filter by category = filter by course tags (same tags set in admin course builder)
   const matchesCategory = (
     course: CourseCardCourse,
     category: string
   ): boolean => {
     if (category === "All") return true;
-
-    // Map category names to tag keywords
-    const categoryTagMap: Record<string, string[]> = {
-      "Full Stack Development": [
-        "fullstack",
-        "full-stack",
-        "mern",
-        "mean",
-        "stack",
-      ],
-      "Front-End Development": [
-        "frontend",
-        "front-end",
-        "react",
-        "vue",
-        "angular",
-        "javascript",
-      ],
-      "Back-End Development": [
-        "backend",
-        "back-end",
-        "server",
-        "api",
-        "node",
-        "python",
-        "django",
-      ],
-      "UI/UX Design": ["ui", "ux", "design", "figma", "sketch"],
-      "Data Science & Analytics": [
-        "data",
-        "science",
-        "analytics",
-        "machine learning",
-        "ml",
-        "ai",
-      ],
-      Marketing: ["marketing", "seo", "social", "digital"],
-      Business: ["business", "management", "strategy", "finance"],
-    };
-
-    const courseTags = (course.tags || []).map((tag) => tag.toLowerCase());
-    const keywords = categoryTagMap[category] || [];
-
-    // Check if any tag matches any keyword for this category
-    return keywords.some((keyword) =>
-      courseTags.some((tag) => tag.includes(keyword.toLowerCase()))
+    const courseTags = (course.tags || []).map((t) =>
+      t.trim().toLowerCase()
     );
+    const selected = category.trim().toLowerCase();
+    return courseTags.some((tag) => tag === selected);
   };
+
+  // Category options = unique tags from all courses (from admin course builder)
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    courses.forEach((c) =>
+      (c.tags || []).forEach((tag) => {
+        const t = tag.trim();
+        if (t) set.add(t);
+      })
+    );
+    return ["All", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+  }, [courses]);
 
   // Calculate counts
   const totalCount = courses.length;
@@ -274,8 +244,15 @@ export default function CoursesPage() {
       await coursesService.enrollInCourse(courseId);
       showToast(t("courses.enrolledSuccess"), "success");
       loadCourses();
-    } catch (error: any) {
-      showToast("Failed to enroll in course", "error");
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const message =
+        typeof data?.error === "string"
+          ? data.error
+          : typeof data?.detail === "string"
+            ? data.detail
+            : t("courses.failedToEnroll");
+      showToast(message, "error");
     } finally {
       setEnrollingCourseId(null);
     }
@@ -612,7 +589,11 @@ export default function CoursesPage() {
                 {t("courses.category")}
               </Typography>
               <Select
-                value={filters.category || "All"}
+                value={
+                  categoryOptions.includes(filters.category || "All")
+                    ? filters.category || "All"
+                    : "All"
+                }
                 onChange={(e) => handleFilterChange("category", e.target.value)}
                 sx={{
                   backgroundColor: "#f9fafb",
@@ -627,22 +608,11 @@ export default function CoursesPage() {
                   },
                 }}
               >
-                <MenuItem value="All">{t("courses.allCategories")}</MenuItem>
-                <MenuItem value="Full Stack Development">
-                  {t("courses.fullStack")}
-                </MenuItem>
-                <MenuItem value="Front-End Development">
-                  {t("courses.frontEnd")}
-                </MenuItem>
-                <MenuItem value="Back-End Development">
-                  {t("courses.backEnd")}
-                </MenuItem>
-                <MenuItem value="UI/UX Design">{t("courses.uiUx")}</MenuItem>
-                <MenuItem value="Data Science & Analytics">
-                  {t("courses.dataScience")}
-                </MenuItem>
-                <MenuItem value="Marketing">{t("courses.marketing")}</MenuItem>
-                <MenuItem value="Business">{t("courses.business")}</MenuItem>
+                {categoryOptions.map((opt) => (
+                  <MenuItem key={opt} value={opt}>
+                    {opt === "All" ? t("courses.allCategories") : opt}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 

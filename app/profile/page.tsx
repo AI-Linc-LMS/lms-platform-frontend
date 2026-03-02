@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Container, Tabs, Tab } from "@mui/material";
+import { Box, Container, Tabs, Tab, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CoverPhoto } from "@/components/profile/CoverPhoto";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -78,6 +78,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
 
@@ -91,6 +92,7 @@ export default function ProfilePage() {
 
   const loadProfileData = async () => {
     try {
+      setLoading(true);
       const profileData = await profileService.getUserProfile();
       setProfile(mergeWithLocalFallback(profileData));
 
@@ -102,6 +104,8 @@ export default function ProfilePage() {
       }
     } catch {
       showToast("Failed to load profile", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,6 +138,26 @@ export default function ProfilePage() {
       showToast("Profile saved locally", "info");
     }
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: 400,
+              py: 8,
+            }}
+          >
+            <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+          </Box>
+        </Container>
+      </MainLayout>
+    );
+  }
 
   if (!profile) {
     return (
@@ -427,13 +451,58 @@ export default function ProfilePage() {
                 basicInfo: {
                   firstName: profile.first_name,
                   lastName: profile.last_name,
-                  professionalTitle: "",
+                  professionalTitle: profile.headline ?? "",
                   email: profile.email,
                   phone: profile.phone_number,
-                  location: "",
+                  location: [profile.city, profile.state].filter(Boolean).join(", "),
                   photo: profile.profile_picture,
                   summary: profile.bio ?? "",
+                  github: profile.social_links?.github ?? "",
+                  linkedin: profile.social_links?.linkedin ?? "",
+                  portfolio: profile.portfolio_website_url ?? "",
+                  leetcode: profile.leetcode_url ?? "",
+                  hackerrank: profile.hackerrank_url ?? "",
+                  kaggle: profile.kaggle_url ?? "",
+                  medium: profile.medium_url ?? "",
                 },
+                workExperience: profile.experience?.map((exp, i) => ({
+                  id: exp.id ?? String(i + 1),
+                  position: exp.position,
+                  company: exp.company,
+                  location: exp.location ?? "",
+                  startDate: exp.start_date,
+                  endDate: exp.end_date ?? "",
+                  current: exp.current,
+                  description: exp.description ? exp.description.split("\n").filter(Boolean) : [],
+                })),
+                education: profile.education?.map((edu, i) => ({
+                  id: edu.id ?? String(i + 1),
+                  degree: [edu.degree, edu.field_of_study].filter(Boolean).join(" in "),
+                  institution: edu.institution,
+                  location: "",
+                  startDate: edu.start_date ?? "",
+                  endDate: edu.end_date ?? "",
+                  gpa: edu.gpa ?? "",
+                  description: edu.description ?? "",
+                })),
+                skills: profile.skills?.map((s, i) => ({
+                  id: s.id ?? String(i + 1),
+                  name: s.name,
+                })),
+                projects: profile.projects?.map((p, i) => ({
+                  id: p.id ?? String(i + 1),
+                  name: p.name,
+                  description: p.description,
+                  technologies: p.technologies ?? [],
+                  link: p.url ?? "",
+                })),
+                certifications: profile.certifications?.map((c, i) => ({
+                  id: c.id ?? String(i + 1),
+                  name: c.name,
+                  issuer: c.issuing_organization,
+                  date: c.issue_date,
+                  link: c.credential_url ?? "",
+                })),
               }}
             />
           )}

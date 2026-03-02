@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
 
 interface CreativeTemplateProps {
@@ -33,27 +34,46 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
           display: "flex",
           flexDirection: "column",
           gap: 3,
+          WebkitPrintColorAdjust: "exact !important",
+          printColorAdjust: "exact !important",
+          colorAdjust: "exact !important",
         }}
       >
-        {/* Profile Picture Placeholder */}
-        <Box
-          sx={{
-            width: 100,
-            height: 100,
-            borderRadius: "50%",
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "2.5rem",
-            fontWeight: 700,
-            mx: "auto",
-            border: "3px solid rgba(255, 255, 255, 0.3)",
-          }}
-        >
-          {data.basicInfo.firstName[0]}
-          {data.basicInfo.lastName[0]}
-        </Box>
+        {/* Profile Picture / Initials Fallback */}
+        {data.basicInfo.photo ? (
+          <Box
+            component="img"
+            src={data.basicInfo.photo}
+            alt={`${data.basicInfo.firstName} ${data.basicInfo.lastName}`}
+            sx={{
+              width: 100,
+              height: 100,
+              borderRadius: "50%",
+              objectFit: "cover",
+              mx: "auto",
+              border: "3px solid rgba(255, 255, 255, 0.3)",
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              width: 100,
+              height: 100,
+              borderRadius: "50%",
+              backgroundColor: "rgba(255, 255, 255, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "2.5rem",
+              fontWeight: 700,
+              mx: "auto",
+              border: "3px solid rgba(255, 255, 255, 0.3)",
+            }}
+          >
+            {data.basicInfo.firstName[0]}
+            {data.basicInfo.lastName[0]}
+          </Box>
+        )}
 
         {/* Contact */}
         <Box>
@@ -64,28 +84,50 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
               letterSpacing: "0.1em",
               mb: 2,
               color: "rgba(255, 255, 255, 0.7)",
+              whiteSpace: "nowrap",
             }}
           >
             CONTACT
           </Typography>
 
-          {data.basicInfo.email && (
-            <Typography sx={{ fontSize: "0.75rem", mb: 1.5, wordBreak: "break-word" }}>
-              {data.basicInfo.email}
-            </Typography>
-          )}
-
-          {data.basicInfo.phone && (
-            <Typography sx={{ fontSize: "0.75rem", mb: 1.5 }}>
-              {data.basicInfo.phone}
-            </Typography>
-          )}
-
-          {data.basicInfo.location && (
-            <Typography sx={{ fontSize: "0.75rem", mb: 1.5 }}>
-              {data.basicInfo.location}
-            </Typography>
-          )}
+          {[
+            { val: data.basicInfo.email, icon: "mdi:email-outline", label: data.basicInfo.email, href: `mailto:${data.basicInfo.email}` },
+            { val: data.basicInfo.phone, icon: "mdi:phone-outline", label: data.basicInfo.phone, href: `tel:${data.basicInfo.phone}` },
+            { val: data.basicInfo.location, icon: "mdi:map-marker-outline", label: data.basicInfo.location },
+            { val: data.basicInfo.github, icon: "mdi:github", label: "GitHub", href: (data.basicInfo.github ?? "").startsWith("http") ? data.basicInfo.github! : `https://github.com/${data.basicInfo.github}` },
+            { val: data.basicInfo.linkedin, icon: "mdi:linkedin", label: "LinkedIn", href: (data.basicInfo.linkedin ?? "").startsWith("http") ? data.basicInfo.linkedin! : `https://linkedin.com/in/${data.basicInfo.linkedin}` },
+            { val: data.basicInfo.portfolio, icon: "mdi:web", label: "Portfolio", href: (data.basicInfo.portfolio ?? "").startsWith("http") ? data.basicInfo.portfolio! : `https://${data.basicInfo.portfolio}` },
+            { val: data.basicInfo.leetcode, icon: "simple-icons:leetcode", label: "LeetCode", href: (data.basicInfo.leetcode ?? "").startsWith("http") ? data.basicInfo.leetcode! : `https://leetcode.com/u/${data.basicInfo.leetcode}` },
+            { val: data.basicInfo.kaggle, icon: "simple-icons:kaggle", label: "Kaggle", href: (data.basicInfo.kaggle ?? "").startsWith("http") ? data.basicInfo.kaggle! : `https://kaggle.com/${data.basicInfo.kaggle}` },
+            { val: data.basicInfo.hackerrank, icon: "simple-icons:hackerrank", label: "HackerRank", href: (data.basicInfo.hackerrank ?? "").startsWith("http") ? data.basicInfo.hackerrank! : `https://hackerrank.com/${data.basicInfo.hackerrank}` },
+            { val: data.basicInfo.medium, icon: "simple-icons:medium", label: "Medium", href: (data.basicInfo.medium ?? "").startsWith("http") ? data.basicInfo.medium! : `https://medium.com/@${data.basicInfo.medium}` },
+          ]
+            .filter((item) => item.val)
+            .map((item, idx) => (
+              <Box
+                key={idx}
+                {...(item.href ? { component: "a", href: item.href, target: item.href.startsWith("mailto:") || item.href.startsWith("tel:") ? undefined : "_blank", rel: "noopener noreferrer" } : {})}
+                sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.25, textDecoration: "none", color: "inherit" }}
+              >
+                <Box sx={{ flexShrink: 0, display: "flex" }}>
+                  <IconWrapper icon={item.icon} size={13} color="rgba(255,255,255,0.8)" />
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: "0.7rem",
+                    lineHeight: 1.3,
+                    ...(item.icon === "mdi:email-outline"
+                      ? { wordBreak: "break-all" }
+                      : { whiteSpace: "nowrap" }),
+                    ...(["mdi:github", "mdi:linkedin", "mdi:web"].includes(item.icon)
+                      ? { overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }
+                      : {}),
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
         </Box>
 
         {/* Skills */}
@@ -112,17 +154,23 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   sx={{
                     width: "100%",
                     height: 6,
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                    backgroundColor: "rgba(255, 255, 255, 0.2) !important",
                     borderRadius: 3,
                     overflow: "hidden",
+                    WebkitPrintColorAdjust: "exact !important",
+                    printColorAdjust: "exact !important",
+                    colorAdjust: "exact !important",
                   }}
                 >
                   <Box
                     sx={{
                       width: `${(skill.level || 3) * 20}%`,
                       height: "100%",
-                      backgroundColor: "#fbbf24",
+                      backgroundColor: "#fbbf24 !important",
                       borderRadius: 3,
+                      WebkitPrintColorAdjust: "exact !important",
+                      printColorAdjust: "exact !important",
+                      colorAdjust: "exact !important",
                     }}
                   />
                 </Box>
@@ -154,7 +202,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 <Typography sx={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.8)" }}>
                   {edu.institution}
                 </Typography>
-                <Typography sx={{ fontSize: "0.7rem", color: "rgba(255, 255, 255, 0.6)", mt: 0.3 }}>
+                <Typography sx={{ fontSize: "0.7rem", color: "rgba(255, 255, 255, 0.6)", mt: 0.3, whiteSpace: "nowrap" }}>
                   {formatDate(edu.startDate, edu.endDate)}
                 </Typography>
               </Box>
@@ -221,6 +269,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
             >
               <Box
                 sx={{
+                  display: "block",
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
@@ -236,7 +285,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   letterSpacing: "0.05em",
                 }}
               >
-                Experience
+                Work Experience
               </Typography>
             </Box>
 
@@ -249,7 +298,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   borderLeft: "2px solid #e5e7eb",
                 }}
               >
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
                   <Box>
                     <Typography
                       sx={{ fontSize: "1rem", fontWeight: 600, color: "#1f2937" }}
@@ -314,6 +363,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
             >
               <Box
                 sx={{
+                  display: "block",
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
@@ -342,11 +392,39 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   borderLeft: "2px solid #e5e7eb",
                 }}
               >
-                <Typography
-                  sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#1f2937", mb: 0.5 }}
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 0.5,
+                    gap: 1,
+                  }}
                 >
-                  {project.name}
-                </Typography>
+                  <Typography
+                    sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#1f2937" }}
+                  >
+                    {project.name}
+                  </Typography>
+                  {project.link && (
+                    <Typography
+                      component="a"
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.75rem",
+                        color: "#667eea",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                        textDecoration: "none",
+                      }}
+                    >
+                      🔗Link
+                    </Typography>
+                  )}
+                </Box>
 
                 {project.description && (
                   <Typography
@@ -371,6 +449,8 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                             fontSize: "0.7rem",
                             borderRadius: 2,
                             fontWeight: 500,
+                            WebkitPrintColorAdjust: "exact !important",
+                            printColorAdjust: "exact !important",
                           }}
                         >
                           {tech}
@@ -396,6 +476,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
             >
               <Box
                 sx={{
+                  display: "block",
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
@@ -418,11 +499,31 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
             <Box sx={{ pl: 2.5, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
               {data.certifications.map((cert) => (
                 <Box key={cert.id}>
-                  <Typography
-                    sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#1f2937" }}
-                  >
-                    {cert.name}
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography
+                      sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#1f2937", flex: 1, minWidth: 0 }}
+                    >
+                      {cert.name}
+                    </Typography>
+                    {cert.link && (
+                      <Typography
+                        component="a"
+                        href={cert.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          fontSize: "0.65rem",
+                          color: "#667eea",
+                          fontWeight: 600,
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                          textDecoration: "none",
+                        }}
+                      >
+                        🔗Link
+                      </Typography>
+                    )}
+                  </Box>
                   <Typography sx={{ fontSize: "0.75rem", color: "#6b7280" }}>
                     {cert.issuer}
                   </Typography>
