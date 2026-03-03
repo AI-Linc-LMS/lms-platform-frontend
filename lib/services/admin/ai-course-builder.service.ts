@@ -152,6 +152,7 @@ export interface ApproveOutlineBody {
   slug?: string;
   thumbnail?: string;
   published?: boolean;
+  is_free?: boolean;
 }
 
 interface ApiErrorPayload {

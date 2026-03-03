@@ -146,13 +146,7 @@ export default function SubmoduleDetailPage() {
         setVideoCompleted(false);
       }
 
-      // Track view activity for Article content
-      if (currentItem?.content_type === "Article" && selectedContentId) {
-        trackActivity(selectedContentId, "view").catch((error) => {
-          // Error tracking article view
-        });
-      }
-      // View activity tracking removed - only track start and complete
+      // Article: no view tracking on load; completion is tracked only when user clicks "Mark as read"
     }
   }, [selectedContentId]);
 

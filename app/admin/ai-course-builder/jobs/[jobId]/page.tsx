@@ -110,6 +110,7 @@ export default function JobDetailPage() {
       setApproving(true);
       const body: ApproveOutlineBody = {
         slug: approveSlug.trim() || undefined,
+        is_free:true,
         thumbnail: approveThumbnail.trim() || undefined,
         published: approvePublished,
       };
