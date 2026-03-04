@@ -23,6 +23,7 @@ interface AnswerOptionProps {
   isReadOnly: boolean;
   isSubmitting: boolean;
   onSelect: () => void;
+  compact?: boolean;
 }
 
 export const AnswerOption = memo(function AnswerOption({
@@ -33,13 +34,14 @@ export const AnswerOption = memo(function AnswerOption({
   isReadOnly,
   isSubmitting,
   onSelect,
+  compact,
 }: AnswerOptionProps) {
   return (
     <Paper
       elevation={0}
       onClick={() => !isSubmitting && !isReadOnly && onSelect()}
       sx={{
-        p: { xs: 2.5, sm: 3, md: 3.5 },
+        p: compact ? { xs: 2, sm: 2.5, md: 3 } : { xs: 2.5, sm: 3, md: 3.5 },
         border: isCorrect
           ? "2px solid #10b981"
           : isWrongSelection

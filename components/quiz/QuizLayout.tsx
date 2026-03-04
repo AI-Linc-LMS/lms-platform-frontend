@@ -97,18 +97,20 @@ export function QuizLayout({
       sx={{
         display: "flex",
         flexDirection: { xs: "column", md: "row" },
-        gap: { xs: 2, md: 3 },
+        gap: { xs: 1.5, md: 2 },
         maxWidth: "100%",
+        minHeight: 0,
+        flex: 1,
       }}
     >
       {/* Left Sidebar - Timer and Question List */}
       <Box
         sx={{
-          width: { xs: "100%", md: "320px" },
+          width: { xs: "100%", md: "300px" },
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
-          gap: 2,
+          gap: 1.5,
           order: { xs: 1, md: 0 },
         }}
       >
@@ -136,51 +138,12 @@ export function QuizLayout({
           display: "flex",
           flexDirection: "column",
           minWidth: 0,
+          minHeight: 0,
           order: { xs: 0, md: 1 },
         }}
       >
-        {/* Top bar - Submit Early (submodule only) */}
-        {isSubmodule && !isReadOnly && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              mb: 2,
-              py: 1,
-              borderBottom: "1px solid #e5e7eb",
-            }}
-          >
-            <Button
-              variant="outlined"
-              onClick={onFinalSubmit}
-              disabled={isSubmitting}
-              sx={{
-                borderColor: "#10b981",
-                color: "#059669",
-                px: 2,
-                py: 1,
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                borderRadius: 2,
-                textTransform: "none",
-                "&:hover": {
-                  borderColor: "#059669",
-                  backgroundColor: "#05966915",
-                },
-                "&:disabled": {
-                  borderColor: "#d1d5db",
-                  color: "#9ca3af",
-                },
-              }}
-            >
-              {isSubmitting ? t("quiz.submitting") : t("quiz.submitEarly")}
-            </Button>
-          </Box>
-        )}
-
-        {/* Breadcrumbs */}
-        {breadcrumbs.length > 0 && (
+        {/* Breadcrumbs - hidden for submodule to free space for question/options */}
+        {breadcrumbs.length > 0 && !isSubmodule && (
           <Breadcrumbs
             separator=">"
             sx={{
@@ -232,10 +195,11 @@ export function QuizLayout({
             border: "1px solid #e5e7eb",
             display: "flex",
             flexDirection: "column",
+            minHeight: 0,
           }}
         >
           {/* Question Title */}
-          <QuestionTitle question={currentQuestion.question} />
+          <QuestionTitle question={currentQuestion.question} compact={isSubmodule} />
 
           {/* Answer Options */}
           <AnswerOptionsList
@@ -246,6 +210,7 @@ export function QuizLayout({
             isReadOnly={isReadOnly}
             isSubmitting={isSubmitting}
             onAnswerSelect={onAnswerSelect}
+            compact={isSubmodule}
           />
 
           {/* Explanation */}
@@ -260,6 +225,7 @@ export function QuizLayout({
               justifyContent: "space-between",
               alignItems: { xs: "stretch", sm: "center" },
               gap: 2,
+              flexShrink: 0,
             }}
           >
             {/* Progress indicator - mobile top */}
@@ -352,7 +318,7 @@ export function QuizLayout({
                 </Box>
               )}
 
-              {/* Next button - only when not on last question */}
+              {/* Next button - when not on last question (submodule + non-submodule) */}
               {!isLastQuestion && (
                 <Button
                   variant="contained"
@@ -385,7 +351,7 @@ export function QuizLayout({
                 </Button>
               )}
 
-              {/* Submit Quiz - only at bottom when NOT submodule */}
+              {/* Submit - only for non-submodule; submodule uses top bar Submit only */}
               {!isSubmodule && (
               <Button
                 variant={isLastQuestion ? "contained" : "outlined"}

@@ -16,6 +16,8 @@ import {
   MenuItem,
   FormControl,
   LinearProgress,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import {
   coursesService,
@@ -46,8 +48,11 @@ export default function CoursesPage() {
   const [enrollingCourseId, setEnrollingCourseId] = useState<number | null>(
     null
   );
-  const [filters, setFilters] = useState({
-    category: "All",
+  const [filters, setFilters] = useState<{
+    categories: string[];
+    price: string;
+  }>({
+    categories: [],
     price: "All",
   });
   const { showToast } = useToast();
@@ -64,7 +69,6 @@ export default function CoursesPage() {
     try {
       setLoading(true);
       const data = await coursesService.getCourses();
-      // Map service Course to CourseCardCourse format
       const mappedCourses: CourseCardCourse[] = data.map(
         (course: ServiceCourse) => ({
           id: course.id,
@@ -105,20 +109,18 @@ export default function CoursesPage() {
     }
   };
 
-  // Filter by category = filter by course tags (same tags set in admin course builder)
   const matchesCategory = (
     course: CourseCardCourse,
-    category: string
+    selectedCategories: string[]
   ): boolean => {
-    if (category === "All") return true;
+    if (selectedCategories.length === 0) return true;
     const courseTags = (course.tags || []).map((t) =>
       t.trim().toLowerCase()
     );
-    const selected = category.trim().toLowerCase();
-    return courseTags.some((tag) => tag === selected);
+    const selectedLower = selectedCategories.map((c) => c.trim().toLowerCase());
+    return courseTags.some((tag) => selectedLower.includes(tag));
   };
 
-  // Category options = unique tags from all courses (from admin course builder)
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
     courses.forEach((c) =>
@@ -127,15 +129,13 @@ export default function CoursesPage() {
         if (t) set.add(t);
       })
     );
-    return ["All", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [courses]);
 
-  // Calculate counts
   const totalCount = courses.length;
   const enrolledCount = courses.filter((c) => c.is_enrolled).length;
   const availableCount = courses.filter((c) => !c.is_enrolled).length;
 
-  // Filter and search logic
   const filteredCourses = useMemo(() => {
     let result = courses.filter(
       (course) =>
@@ -143,21 +143,18 @@ export default function CoursesPage() {
         course.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Apply tab filter
     if (filter === "enrolled") {
       result = result.filter((c) => c.is_enrolled);
     } else if (filter === "available") {
       result = result.filter((c) => !c.is_enrolled);
     }
 
-    // Apply category filter
-    if (filters.category !== "All") {
+    if (filters.categories.length > 0) {
       result = result.filter((course) =>
-        matchesCategory(course, filters.category)
+        matchesCategory(course, filters.categories)
       );
     }
 
-    // Apply price filter
     if (filters.price !== "All") {
       if (filters.price === "Free") {
         result = result.filter((course) => course.is_free);
@@ -166,7 +163,6 @@ export default function CoursesPage() {
       }
     }
 
-    // Sort
     return result.sort((a, b) => {
       if (sortBy === "recent") {
         return b.id - a.id;
@@ -179,7 +175,6 @@ export default function CoursesPage() {
     });
   }, [courses, searchTerm, filter, filters, sortBy]);
 
-  // Pagination
   const paginatedCourses = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredCourses.slice(start, start + pageSize);
@@ -198,9 +193,17 @@ export default function CoursesPage() {
     setPage(1);
   };
 
+  const handleCategoriesChange = (selected: string[]) => {
+    setFilters((prev) => ({
+      ...prev,
+      categories: selected,
+    }));
+    setPage(1);
+  };
+
   const handleClearFilters = () => {
     setFilters({
-      category: "All",
+      categories: [],
       price: "All",
     });
     setPage(1);
@@ -212,7 +215,6 @@ export default function CoursesPage() {
 
     setEnrollingCourseId(courseId);
 
-    // If course is not free, trigger payment
     if (!course.is_free && parseFloat(course.price) > 0) {
       await handlePayment({
         amount: course.price,
@@ -239,7 +241,6 @@ export default function CoursesPage() {
       return;
     }
 
-    // Standard free enrollment
     try {
       await coursesService.enrollInCourse(courseId);
       showToast(t("courses.enrolledSuccess"), "success");
@@ -263,20 +264,19 @@ export default function CoursesPage() {
   return (
     <MainLayout>
       <Box sx={{ width: "100%", px: { xs: 1.5, sm: 2, md: 3 }, py: 3 }}>
-        {/* Header with Icon */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
           <Box
             sx={{
               width: 56,
               height: 56,
               borderRadius: 2,
-              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+              background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:book" size={28} color="#ffffff" />
+            <IconWrapper icon="mdi:book" size={28} color="var(--font-light)" />
           </Box>
           <Box>
             <Typography variant="h4" fontWeight={700}>
@@ -288,7 +288,6 @@ export default function CoursesPage() {
           </Box>
         </Box>
 
-        {/* Stats Cards */}
         <Box
           sx={{
             display: "grid",
@@ -305,9 +304,9 @@ export default function CoursesPage() {
             elevation={0}
             sx={{
               p: 2.5,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -316,7 +315,7 @@ export default function CoursesPage() {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  backgroundColor: "#eef2ff",
+                  backgroundColor: "var(--surface-indigo-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -325,11 +324,11 @@ export default function CoursesPage() {
                 <IconWrapper
                   icon="mdi:book-open-page-variant"
                   size={24}
-                  color="#6366f1"
+                  color="var(--accent-indigo)"
                 />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+                <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
                   {totalCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -342,9 +341,9 @@ export default function CoursesPage() {
             elevation={0}
             sx={{
               p: 2.5,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -353,7 +352,7 @@ export default function CoursesPage() {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  backgroundColor: "#d1fae5",
+                  backgroundColor: "var(--surface-green-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -362,11 +361,11 @@ export default function CoursesPage() {
                 <IconWrapper
                   icon="mdi:check-circle"
                   size={24}
-                  color="#10b981"
+                  color="var(--course-cta)"
                 />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+                <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
                   {enrolledCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -379,9 +378,9 @@ export default function CoursesPage() {
             elevation={0}
             sx={{
               p: 2.5,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -390,16 +389,16 @@ export default function CoursesPage() {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  backgroundColor: "#dbeafe",
+                  backgroundColor: "var(--surface-blue-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <IconWrapper icon="mdi:play-circle" size={24} color="#3b82f6" />
+                <IconWrapper icon="mdi:play-circle" size={24} color="var(--accent-blue-light)" />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+                <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
                   {availableCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -410,17 +409,15 @@ export default function CoursesPage() {
           </Paper>
         </Box>
 
-        {/* Filters and Search */}
         <Paper
           elevation={0}
           sx={{
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             mb: 3,
             overflow: "hidden",
           }}
         >
-          {/* Tabs */}
           <Tabs
             value={filter}
             onChange={(_, newValue) => {
@@ -428,19 +425,19 @@ export default function CoursesPage() {
               setPage(1);
             }}
             sx={{
-              borderBottom: "1px solid #e5e7eb",
+              borderBottom: "1px solid var(--border-default)",
               px: 2,
               "& .MuiTab-root": {
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.9375rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 "&.Mui-selected": {
-                  color: "#6366f1",
+                  color: "var(--accent-indigo)",
                 },
               },
               "& .MuiTabs-indicator": {
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
                 height: 3,
               },
             }}
@@ -450,7 +447,6 @@ export default function CoursesPage() {
             <Tab label={`${t("courses.availableTab")} (${availableCount})`} value="available" />
           </Tabs>
 
-          {/* Search and Sort */}
           <Box
             sx={{
               p: 2,
@@ -471,22 +467,22 @@ export default function CoursesPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <IconWrapper icon="mdi:magnify" size={20} color="#6b7280" />
+                    <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   borderRadius: 2,
                   "& fieldset": {
                     borderColor: "transparent",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 },
               }}
@@ -497,16 +493,16 @@ export default function CoursesPage() {
                 onChange={(e) => setSortBy(e.target.value as SortType)}
                 displayEmpty
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   borderRadius: 2,
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "transparent",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 }}
               >
@@ -527,11 +523,10 @@ export default function CoursesPage() {
           </Box>
         </Paper>
 
-        {/* Additional Filters */}
         <Paper
           elevation={0}
           sx={{
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             mb: 3,
             p: 2,
@@ -545,7 +540,7 @@ export default function CoursesPage() {
               mb: 2,
             }}
           >
-            <Typography variant="subtitle2" fontWeight={600} color="#1f2937">
+            <Typography variant="subtitle2" fontWeight={600} color="var(--font-primary-dark)">
               {t("courses.advancedFilters")}
             </Typography>
             <Button
@@ -553,11 +548,11 @@ export default function CoursesPage() {
               onClick={handleClearFilters}
               sx={{
                 textTransform: "none",
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
                 fontWeight: 600,
                 fontSize: "0.8125rem",
                 "&:hover": {
-                  backgroundColor: "rgba(99, 102, 241, 0.08)",
+                  backgroundColor: "var(--surface-indigo-light)",
                 },
               }}
             >
@@ -575,13 +570,12 @@ export default function CoursesPage() {
               gap: 2,
             }}
           >
-            {/* Category Filter */}
             <FormControl fullWidth size="small">
               <Typography
                 variant="caption"
                 sx={{
                   mb: 0.5,
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontWeight: 500,
                   fontSize: "0.75rem",
                 }}
@@ -589,40 +583,55 @@ export default function CoursesPage() {
                 {t("courses.category")}
               </Typography>
               <Select
-                value={
-                  categoryOptions.includes(filters.category || "All")
-                    ? filters.category || "All"
-                    : "All"
+                multiple
+                value={filters.categories}
+                onChange={(e) =>
+                  handleCategoriesChange(
+                    typeof e.target.value === "string"
+                      ? e.target.value.split(",")
+                      : e.target.value
+                  )
                 }
-                onChange={(e) => handleFilterChange("category", e.target.value)}
+                renderValue={(selected) =>
+                  selected.length === 0
+                    ? t("courses.allCategories")
+                    : selected.length <= 2
+                      ? selected.join(", ")
+                      : `${selected.length} ${t("courses.categoriesSelected")}`
+                }
+                displayEmpty
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "transparent",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 }}
               >
                 {categoryOptions.map((opt) => (
                   <MenuItem key={opt} value={opt}>
-                    {opt === "All" ? t("courses.allCategories") : opt}
+                    <Checkbox
+                      checked={filters.categories.indexOf(opt) > -1}
+                      size="small"
+                      sx={{ mr: 1 }}
+                    />
+                    <ListItemText primary={opt} />
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            {/* Price Filter */}
             <FormControl fullWidth size="small">
               <Typography
                 variant="caption"
                 sx={{
                   mb: 0.5,
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontWeight: 500,
                   fontSize: "0.75rem",
                 }}
@@ -633,15 +642,15 @@ export default function CoursesPage() {
                 value={filters.price || "All"}
                 onChange={(e) => handleFilterChange("price", e.target.value)}
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "transparent",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 }}
               >
@@ -654,7 +663,6 @@ export default function CoursesPage() {
           </Box>
         </Paper>
 
-        {/* Courses Grid */}
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
             <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
@@ -688,7 +696,6 @@ export default function CoursesPage() {
           </Box>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <Box
             sx={{
@@ -723,8 +730,8 @@ export default function CoursesPage() {
                 onClick={() => handlePageChange(page - 1)}
                 startIcon={<IconWrapper icon="mdi:chevron-left" size={16} />}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#374151",
+                  borderColor: "var(--border-light)",
+                  color: "var(--font-muted)",
                   textTransform: "none",
                   minWidth: { xs: "auto", sm: "auto" },
                   px: { xs: 1, sm: 2 },
@@ -732,12 +739,12 @@ export default function CoursesPage() {
                     mr: { xs: 0, sm: 0.5 },
                   },
                   "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "var(--font-tertiary)",
+                    backgroundColor: "var(--surface)",
                   },
                   "&:disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-tertiary)",
                   },
                 }}
               >
@@ -757,15 +764,15 @@ export default function CoursesPage() {
                 size="small"
                 sx={{
                   "& .MuiPaginationItem-root": {
-                    color: "#374151",
+                    color: "var(--font-muted)",
                     minWidth: { xs: "32px", sm: "36px" },
                     height: { xs: "32px", sm: "36px" },
                     fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                     "&.Mui-selected": {
-                      backgroundColor: "#374151",
-                      color: "#ffffff",
+                      backgroundColor: "var(--font-muted)",
+                      color: "var(--card-bg)",
                       "&:hover": {
-                        backgroundColor: "#1f2937",
+                        backgroundColor: "var(--font-primary-dark)",
                       },
                     },
                   },
@@ -778,8 +785,8 @@ export default function CoursesPage() {
                 onClick={() => handlePageChange(page + 1)}
                 endIcon={<IconWrapper icon="mdi:chevron-right" size={16} />}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#374151",
+                  borderColor: "var(--border-light)",
+                  color: "var(--font-muted)",
                   textTransform: "none",
                   minWidth: { xs: "auto", sm: "auto" },
                   px: { xs: 1, sm: 2 },
@@ -787,12 +794,12 @@ export default function CoursesPage() {
                     ml: { xs: 0, sm: 0.5 },
                   },
                   "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "var(--font-tertiary)",
+                    backgroundColor: "var(--surface)",
                   },
                   "&:disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-tertiary)",
                   },
                 }}
               >
