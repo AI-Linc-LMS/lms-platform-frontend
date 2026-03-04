@@ -132,11 +132,10 @@ export function ArticleContent({
   const articleRef = useRef<HTMLDivElement>(null);
   const [readProgress, setReadProgress] = useState(0);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
-  const [hasTrackedView, setHasTrackedView] = useState(false);
   const readingTimeMinutes = content.details?.reading_time_minutes || 
     Math.ceil((content.details?.content?.length || 0) / 1000) || 5; // Estimate: 1000 chars per minute
 
-  // Track scroll progress and mark as complete when user scrolls to bottom
+  // Track scroll progress only (for progress bar). Do not auto-mark as complete.
   useEffect(() => {
     const articleElement = articleRef.current;
     if (!articleElement) return;
@@ -145,39 +144,19 @@ export function ArticleContent({
       const scrollTop = articleElement.scrollTop;
       const scrollHeight = articleElement.scrollHeight;
       const clientHeight = articleElement.clientHeight;
-      
+
       if (scrollHeight > clientHeight) {
         const progress = (scrollTop / (scrollHeight - clientHeight)) * 100;
         setReadProgress(Math.min(100, Math.max(0, progress)));
-        
-        // Mark as complete when user scrolls to 90% or more
-        if (progress >= 90 && !hasMarkedComplete && onArticleComplete) {
-          setHasMarkedComplete(true);
-          onArticleComplete();
-        }
       } else {
-        // If content fits in viewport, mark as complete immediately
-        if (!hasMarkedComplete && onArticleComplete) {
-          setHasMarkedComplete(true);
-          onArticleComplete();
-        }
+        setReadProgress(100);
       }
     };
 
-    // Check initial scroll position
     handleScroll();
-
     articleElement.addEventListener("scroll", handleScroll);
     return () => articleElement.removeEventListener("scroll", handleScroll);
-  }, [hasMarkedComplete, onArticleComplete]);
-
-  // Track view activity when component mounts
-  useEffect(() => {
-    if (!hasTrackedView && content.id) {
-      // Track view activity - this will be handled by the parent component
-      setHasTrackedView(true);
-    }
-  }, [content.id, hasTrackedView]);
+  }, []);
 
   const handleMarkAsRead = () => {
     if (hasMarkedComplete || !onArticleComplete) return;

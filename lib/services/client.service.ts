@@ -143,7 +143,7 @@ export const reportIssue = async (
     throw new Error(
       axiosError?.response?.data?.detail ||
         axiosError?.message ||
-        "Failed to report issue"
+        "Failed to send request"
     );
   }
 };

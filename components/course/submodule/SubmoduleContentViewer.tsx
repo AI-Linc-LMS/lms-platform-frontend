@@ -59,10 +59,12 @@ export function SubmoduleContentViewer({
 }: SubmoduleContentViewerProps) {
   // For coding problems, don't show header as the layout handles it internally
   const isCodingProblem = content.content_type === "CodingProblem";
+  // For Quiz, title is shown once in page header - avoid duplicate
+  const isQuiz = content.content_type === "Quiz";
 
   return (
     <Box>
-      {!isCodingProblem && (
+      {!isCodingProblem && !isQuiz && (
         <Box sx={{ mb: 2 }}>
           <Typography
             variant="h5"
@@ -83,6 +85,16 @@ export function SubmoduleContentViewer({
               submissions={currentItem.submissions ?? 0}
             />
           )}
+        </Box>
+      )}
+      {/* Quiz: show only marks info (title in page header) */}
+      {isQuiz && currentItem && currentItem.marks > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <ContentMarksInfo
+            marks={currentItem.marks}
+            obtainedMarks={currentItem.obtainedMarks ?? null}
+            submissions={currentItem.submissions ?? 0}
+          />
         </Box>
       )}
 

@@ -25,12 +25,12 @@ interface ReportIssueDialogProps {
   contentId?: number;
 }
 
-const ISSUE_TYPES = [
-  { value: "technical", label: "Technical Issue" },
-  { value: "content", label: "Content Error" },
-  { value: "video", label: "Video Problem" },
-  { value: "quiz", label: "Quiz/Assessment Issue" },
-  { value: "navigation", label: "Navigation Problem" },
+const SUPPORT_TYPES = [
+  { value: "technical", label: "Technical Support" },
+  { value: "content", label: "Content Help" },
+  { value: "video", label: "Video Help" },
+  { value: "quiz", label: "Quiz/Assessment Help" },
+  { value: "navigation", label: "Navigation Help" },
   { value: "other", label: "Other" },
 ];
 
@@ -66,11 +66,11 @@ export function ReportIssueDialog({
       const clientId = Number(config.clientId);
       await reportIssue(clientId, issueData);
 
-      showToast("Issue reported successfully! We'll look into it.", "success");
+      showToast("Your request has been sent. We'll get back to you soon.", "success");
       handleClose();
     } catch (error: any) {
       showToast(
-        error.message || "Failed to report issue. Please try again.",
+        error.message || "Failed to send. Please try again.",
         "error"
       );
     } finally {
@@ -113,29 +113,28 @@ export function ReportIssueDialog({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: "#ef4444",
+            backgroundColor: "#4285f4",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:alert-circle" size={24} color="#ffffff" />
+          <IconWrapper icon="mdi:help-circle" size={24} color="#ffffff" />
         </Box>
-        Report an Issue
+        Support and Help
       </DialogTitle>
 
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
           <Typography variant="body2" sx={{ color: "#6b7280" }}>
-            Help us improve your experience by reporting any issues you
-            encounter. We'll investigate and get back to you as soon as
-            possible.
+            Get technical support, content help, video help, and more. We're
+            here to assist you.
           </Typography>
 
           <TextField
             select
-            label="Issue Type"
+            label="What do you need help with?"
             value={issueType}
             onChange={(e) => setIssueType(e.target.value)}
             fullWidth
@@ -147,7 +146,7 @@ export function ReportIssueDialog({
               },
             }}
           >
-            {ISSUE_TYPES.map((option) => (
+            {SUPPORT_TYPES.map((option) => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
               </MenuItem>
@@ -163,7 +162,7 @@ export function ReportIssueDialog({
             fullWidth
             required
             disabled={submitting}
-            placeholder="Please describe the issue in detail..."
+            placeholder="Describe your question or issue..."
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,
@@ -195,9 +194,9 @@ export function ReportIssueDialog({
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            backgroundColor: "#ef4444",
+            backgroundColor: "#4285f4",
             "&:hover": {
-              backgroundColor: "#dc2626",
+              backgroundColor: "#3367d6",
             },
             "&:disabled": {
               backgroundColor: "#f3f4f6",
@@ -212,7 +211,7 @@ export function ReportIssueDialog({
             )
           }
         >
-          {submitting ? "Submitting..." : "Submit Report"}
+          {submitting ? "Sending..." : "Submit"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -13,6 +13,8 @@ interface AnswerOptionsListProps {
   isReadOnly: boolean;
   isSubmitting: boolean;
   onAnswerSelect: (answerId: string | number) => void;
+  /** When true, reduce spacing so quiz fits without scroll */
+  compact?: boolean;
 }
 
 export const AnswerOptionsList = memo(function AnswerOptionsList({
@@ -23,9 +25,18 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
   isReadOnly,
   isSubmitting,
   onAnswerSelect,
+  compact,
 }: AnswerOptionsListProps) {
   return (
-    <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2.5, mt: 3 }}>
+    <Box
+      sx={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: compact ? 1.5 : 2.5,
+        mt: compact ? 1.5 : 3,
+      }}
+    >
       {options.map((option) => {
         const isSelected = selectedAnswer === option.id;
         const isCorrect = showCorrectAnswer && correctAnswerId === option.id;
@@ -41,6 +52,7 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
             isReadOnly={isReadOnly}
             isSubmitting={isSubmitting}
             onSelect={() => onAnswerSelect(option.id)}
+            compact={compact}
           />
         );
       })}

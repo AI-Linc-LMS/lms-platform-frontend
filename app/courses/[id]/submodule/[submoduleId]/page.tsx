@@ -63,6 +63,8 @@ export default function SubmoduleDetailPage() {
   const [isAutoNavigating, setIsAutoNavigating] = useState(false);
   const [autoRedirectCountdown, setAutoRedirectCountdown] = useState(5);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [isQuizInProgress, setIsQuizInProgress] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const autoNavigateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchedSubmissionsIdRef = useRef<number | null>(null);
   const theme = useTheme();
@@ -146,15 +148,16 @@ export default function SubmoduleDetailPage() {
         setVideoCompleted(false);
       }
 
-      // Track view activity for Article content
-      if (currentItem?.content_type === "Article" && selectedContentId) {
-        trackActivity(selectedContentId, "view").catch((error) => {
-          // Error tracking article view
-        });
-      }
-      // View activity tracking removed - only track start and complete
+      // Article: no view tracking on load; completion is tracked only when user clicks "Mark as read"
     }
   }, [selectedContentId]);
+
+  // Reset quiz-in-progress when navigating away from quiz (sidebar collapse state kept for all content)
+  useEffect(() => {
+    if (currentContent?.content_type !== "Quiz") {
+      setIsQuizInProgress(false);
+    }
+  }, [currentContent?.content_type, selectedContentId]);
 
   // Sync sidebar submission count with pastSubmissions
   useEffect(() => {
@@ -619,31 +622,71 @@ export default function SubmoduleDetailPage() {
           width: "100%",
         }}
       >
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar - collapsible for all content (Article, Quiz, Coding, Video, etc.) */}
         {!isMobile && (
           <Box
             sx={{
-              width: 300,
+              width: sidebarCollapsed ? 48 : 300,
               flexShrink: 0,
               height: "100%",
+              position: "relative",
+              transition: "width 0.25s ease",
+              overflow: !sidebarCollapsed ? "visible" : "hidden",
             }}
           >
-            <SubmoduleSidebar
-              courseDetail={courseDetail}
-              submoduleName={submoduleData.submoduleName}
-              moduleName={submoduleData.moduleName}
-              contentItems={submoduleData.data}
-              selectedContentId={selectedContentId}
-              activeTab={activeTab}
-              courseId={courseId}
-              onTabChange={setActiveTab}
-              onContentSelect={(contentId) => {
-                handleContentSelect(contentId);
+            {!sidebarCollapsed && (
+              <Box sx={{ width: 300, height: "100%" }}>
+                <SubmoduleSidebar
+                  courseDetail={courseDetail}
+                  submoduleName={submoduleData.submoduleName}
+                  moduleName={submoduleData.moduleName}
+                  contentItems={submoduleData.data}
+                  selectedContentId={selectedContentId}
+                  activeTab={activeTab}
+                  courseId={courseId}
+                  onTabChange={setActiveTab}
+                  onContentSelect={(contentId) => {
+                    handleContentSelect(contentId);
+                  }}
+                  getContentIcon={getContentIcon}
+                  getContentColor={getContentColor}
+                  formatDuration={formatDuration}
+                />
+              </Box>
+            )}
+            <Button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              variant="contained"
+              size="small"
+              sx={{
+                position: "absolute",
+                top: 12,
+                right: sidebarCollapsed ? 0 : -12,
+                left: "auto",
+                zIndex: 10,
+                minWidth: sidebarCollapsed ? 36 : 24,
+                width: sidebarCollapsed ? 36 : 24,
+                height: sidebarCollapsed ? 36 : 24,
+                p: 0,
+                borderRadius: sidebarCollapsed ? 1 : "50%",
+                backgroundColor: "#4285f4",
+                boxShadow: "none",
+                "&:hover": {
+                  backgroundColor: "#3367d6",
+                  boxShadow: "none",
+                },
               }}
-              getContentIcon={getContentIcon}
-              getContentColor={getContentColor}
-              formatDuration={formatDuration}
-            />
+            >
+              <IconWrapper
+                icon={
+                  sidebarCollapsed
+                    ? "mdi:menu"
+                    : "mdi:chevron-left"
+                }
+                size={sidebarCollapsed ? 20 : 16}
+                color="#ffffff"
+              />
+            </Button>
           </Box>
         )}
 
@@ -990,10 +1033,11 @@ export default function SubmoduleDetailPage() {
                   }
                 }}
                 onStartQuiz={async () => {
-                  // Start activity tracking removed - only track complete
-                  // Quiz will start on the same page via QuizContent component
+                  setIsQuizInProgress(true);
+                  setSidebarCollapsed(true);
                 }}
                 onQuizComplete={async (obtainedMarks?: number) => {
+                  setIsQuizInProgress(false);
                   if (selectedContentId) {
                     lastFetchedSubmissionsIdRef.current = null;
                     await loadPastSubmissions(selectedContentId);
