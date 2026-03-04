@@ -274,81 +274,92 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             gap: 1,
           }}
         >
-          {/* Row 1: Status badges only - no overlap with title */}
-          {(assessment.proctoring_enabled || showResults) && (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: isRtl ? "row-reverse" : "row",
-                justifyContent: "flex-end",
-                gap: 1,
-                flexShrink: 0,
-              }}
-            >
-              {assessment.proctoring_enabled && (
-                <Chip
-                  icon={<IconWrapper icon="mdi:shield-account" size={14} />}
-                  label={t("assessments.proctored")}
-                  size="small"
-                  sx={{
-                    backgroundColor: showResults ? "#fef3c7" : "rgba(255, 255, 255, 0.25)",
-                    color: showResults ? "#92400e" : "#ffffff",
-                    fontWeight: 600,
-                    fontSize: "0.7rem",
-                    height: 24,
-                    flexDirection: isRtl ? "row-reverse" : "row",
-                    border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
-                    "& .MuiChip-icon": {
-                      color: "inherit",
-                      marginInlineStart: isRtl ? "4px" : 0,
-                      marginInlineEnd: isRtl ? 0 : "4px",
-                    },
-                  }}
-                />
-              )}
-              {showResults && (
-                <Chip
-                  icon={<IconWrapper icon="mdi:check-circle" size={14} />}
-                  label={t("assessments.completed")}
-                  size="small"
-                  sx={{
-                    backgroundColor: showResults ? "#d1fae5" : "rgba(255, 255, 255, 0.25)",
-                    color: showResults ? "#065f46" : "#ffffff",
-                    fontWeight: 600,
-                    fontSize: "0.7rem",
-                    height: 24,
-                    flexDirection: isRtl ? "row-reverse" : "row",
-                    border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
-                    "& .MuiChip-icon": {
-                      color: "inherit",
-                      marginInlineStart: isRtl ? "4px" : 0,
-                      marginInlineEnd: isRtl ? 0 : "4px",
-                    },
-                  }}
-                />
-              )}
-            </Box>
-          )}
-
-          {/* Row 2: Title - full width, no overlap */}
-          <Typography
-            variant="h6"
+          {/* Title and tags on one row: title wraps before hitting tags */}
+          <Box
             sx={{
-              color: showResults ? "#1f2937" : "#ffffff",
-              fontWeight: 700,
-              fontSize: "1.0625rem",
-              lineHeight: 1.35,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              minHeight: 40,
+              display: "flex",
+              flexDirection: isRtl ? "row-reverse" : "row",
+              alignItems: "flex-start",
+              gap: 1.5,
+              minWidth: 0,
             }}
           >
-            {stripHtmlTags(assessment.title || "").trim() || assessment.title || "\u00A0"}
-          </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                color: showResults ? "#1f2937" : "#ffffff",
+                fontWeight: 700,
+                fontSize: "1.0625rem",
+                lineHeight: 1.35,
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              }}
+            >
+              {stripHtmlTags(assessment.title || "").trim() || assessment.title || "\u00A0"}
+            </Typography>
+            {(assessment.proctoring_enabled || showResults) && (
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  display: "flex",
+                  flexDirection: isRtl ? "row-reverse" : "row",
+                  gap: 1,
+                  alignItems: "center",
+                }}
+              >
+                {assessment.proctoring_enabled && (
+                  <Chip
+                    icon={<IconWrapper icon="mdi:shield-account" size={14} />}
+                    label={t("assessments.proctored")}
+                    size="small"
+                    sx={{
+                      backgroundColor: showResults ? "#fef3c7" : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "#92400e" : "#ffffff",
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 24,
+                      flexDirection: isRtl ? "row-reverse" : "row",
+                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      "& .MuiChip-icon": {
+                        color: "inherit",
+                        marginInlineStart: isRtl ? "4px" : 0,
+                        marginInlineEnd: isRtl ? 0 : "4px",
+                      },
+                    }}
+                  />
+                )}
+                {showResults && (
+                  <Chip
+                    icon={<IconWrapper icon="mdi:check-circle" size={14} />}
+                    label={t("assessments.completed")}
+                    size="small"
+                    sx={{
+                      backgroundColor: showResults ? "#d1fae5" : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "#065f46" : "#ffffff",
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 24,
+                      flexDirection: isRtl ? "row-reverse" : "row",
+                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      "& .MuiChip-icon": {
+                        color: "inherit",
+                        marginInlineStart: isRtl ? "4px" : 0,
+                        marginInlineEnd: isRtl ? 0 : "4px",
+                      },
+                    }}
+                  />
+                )}
+              </Box>
+            )}
+          </Box>
 
-          {/* Row 3: Subtitle / instructions */}
+          {/* Subtitle / instructions */}
           <Typography
             variant="body2"
             sx={{

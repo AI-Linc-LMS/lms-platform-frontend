@@ -9,6 +9,8 @@ function hasHtml(str: unknown): str is string {
 
 interface QuestionTitleProps {
   question: string;
+  /** When true, reduce spacing so quiz fits without scroll */
+  compact?: boolean;
 }
 
 const titleSx = {
@@ -19,12 +21,12 @@ const titleSx = {
   letterSpacing: "-0.01em",
 };
 
-export function QuestionTitle({ question }: QuestionTitleProps) {
+export function QuestionTitle({ question, compact }: QuestionTitleProps) {
   return (
     <Box
       sx={{
-        mb: { xs: 2, sm: 3 },
-        maxHeight: "200px",
+        mb: compact ? { xs: 1.5, sm: 2 } : { xs: 2, sm: 3 },
+        maxHeight: compact ? "180px" : "200px",
         overflowY: "auto",
         pr: 1,
         "&::-webkit-scrollbar": {

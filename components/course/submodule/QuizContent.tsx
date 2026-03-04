@@ -754,11 +754,10 @@ export function QuizContent({
       answered: answeredQuestions.has(q.id),
     }));
 
-    // Build breadcrumbs
+    // Build breadcrumbs - keep only Home > Course (quiz title shown once in page header)
     const breadcrumbs = [
       { label: "Home", href: "/" },
       { label: "Course", href: `/courses/${courseId}` },
-      { label: content.content_title },
     ];
 
     // Get correct answer for current question when viewing past submission
@@ -908,7 +907,7 @@ export function QuizContent({
         onCancel={() => setShowConfirmDialog(false)}
       />
       <Box sx={{ mb: 3 }}>
-        <QuizStartScreen content={content} onStartQuiz={handleStartQuiz} />
+        <QuizStartScreen content={content} onStartQuiz={handleStartQuiz} hideTitle />
         <PastSubmissionsTable
           submissions={pastSubmissions}
           loading={loadingSubmissions}

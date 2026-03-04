@@ -8,11 +8,14 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 interface QuizStartScreenProps {
   content: ContentDetail;
   onStartQuiz: () => void;
+  /** When true, hide title (shown once in page header) */
+  hideTitle?: boolean;
 }
 
 export function QuizStartScreen({
   content,
   onStartQuiz,
+  hideTitle = false,
 }: QuizStartScreenProps) {
   const { t } = useTranslation("common");
   const duration =
@@ -36,17 +39,19 @@ export function QuizStartScreen({
     >
       {/* Header */}
       <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 700,
-            color: "#1a1f2e",
-            mb: 1.5,
-            fontSize: { xs: "1.5rem", sm: "1.75rem" },
-          }}
-        >
-          {content.content_title || "Quiz"}
-        </Typography>
+        {!hideTitle && (
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              color: "#1a1f2e",
+              mb: 1.5,
+              fontSize: { xs: "1.5rem", sm: "1.75rem" },
+            }}
+          >
+            {content.content_title || "Quiz"}
+          </Typography>
+        )}
         {content.details?.instructions && (
           <Typography
             variant="body1"

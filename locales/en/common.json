@@ -173,6 +173,8 @@
     "category": "Category",
     "price": "Price",
     "allCategories": "All Categories",
+    "categoriesSelected": "categories selected",
+    "selectCategories": "Select categories",
     "allPrices": "All Prices",
     "free": "Free",
     "paid": "Paid",
@@ -269,12 +271,13 @@
   },
   "quiz": {
     "submitEarly": "Submit Early",
-    "submitQuiz": "Submit Quiz",
+    "submitQuiz": "Submit",
     "previous": "Previous",
     "next": "Next",
     "submitting": "Submitting...",
     "back": "Back",
-    "answeredOf": "{{answered}} of {{total}} answered"
+    "answeredOf": "{{answered}} of {{total}} answered",
+    "questionOf": "Question {{current}} of {{total}}"
   },
   "assessments": {
     "title": "Assessments",

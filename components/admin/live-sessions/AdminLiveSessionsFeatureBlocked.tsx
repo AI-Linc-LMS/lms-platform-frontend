@@ -10,13 +10,13 @@ export function AdminLiveSessionsFeatureBlocked() {
         p: 5,
         textAlign: "center",
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
       }}
     >
-      <Typography variant="h6" sx={{ color: "#374151", mb: 1 }}>
-        Live sessions are not enabled for your organization
+      <Typography variant="h6" sx={{ color: "var(--font-muted)", mb: 1 }}>
+        Live sessions are not enabled for your profile
       </Typography>
-      <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
         This feature is not available. Contact your administrator if you
         believe this is an error.
       </Typography>
