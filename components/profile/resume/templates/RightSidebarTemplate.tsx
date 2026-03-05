@@ -55,6 +55,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         {data.workExperience.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
@@ -70,7 +71,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
               <Box key={exp.id} sx={{ mb: 2.5 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
                   <Box>
-                    <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>
+                    <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>
                       {exp.position}
                     </Typography>
                     <Typography sx={{ fontSize: "0.625rem", color: "#6366f1", fontWeight: 500 }}>
@@ -101,6 +102,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         {data.education.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
@@ -116,7 +118,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
               <Box key={edu.id} sx={{ mb: 2 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <Box>
-                    <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>{edu.degree}</Typography>
+                    <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>{edu.degree}</Typography>
                     <Typography sx={{ fontSize: "0.625rem", color: "#6366f1" }}>{edu.institution}</Typography>
                     {edu.location && (
                       <Typography sx={{ fontSize: "0.625rem", color: "#64748b" }}>{edu.location}</Typography>
@@ -142,6 +144,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         {data.projects.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
@@ -156,7 +159,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
             {data.projects.map((project) => (
               <Box key={project.id} sx={{ mb: 2 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5, gap: 1 }}>
-                  <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>
                     {project.name}
                   </Typography>
                   {project.link && (
@@ -167,7 +170,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{ fontSize: "0.625rem", color: "#6366f1", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>
@@ -243,6 +246,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                   <IconWrapper icon={item.icon} size={16} color="#94a3b8" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.625rem",
                     ...(item.icon === "mdi:email-outline"
@@ -261,7 +265,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
 
         {data.skills.length > 0 && (
           <Box sx={{ mb: 4 }}>
-            <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
+            <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
               SKILLS
             </Typography>
             {data.skills.map((skill) => (
@@ -292,7 +296,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
 
         {data.certifications.length > 0 && (
           <Box>
-            <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
+            <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
               CERTIFICATIONS
             </Typography>
             {data.certifications.map((cert) => (
@@ -307,7 +311,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{ fontSize: "0.55rem", color: "#6366f1", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>

@@ -103,6 +103,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                   <IconWrapper icon={item.icon} size={12} color="#50fa7b" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.75rem",
                     fontFamily: "'Courier New', monospace",
@@ -164,6 +165,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
       {data.skills.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
@@ -231,6 +233,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
       {data.workExperience.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
@@ -265,6 +268,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
               >
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.85rem",
                       fontWeight: 700,
@@ -332,6 +336,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
       {data.projects.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
@@ -366,6 +371,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                 }}
               >
                 <Typography
+                  data-resume-nowrap
                   sx={{
                     fontSize: "0.8rem",
                     fontWeight: 700,
@@ -391,7 +397,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                       textDecoration: "none",
                     }}
                   >
-                    🔗Link
+                    Link
                   </Typography>
                 )}
               </Box>
@@ -444,6 +450,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
       {data.education.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
@@ -477,6 +484,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
               >
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.8rem",
                       fontWeight: 700,
@@ -530,6 +538,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
       {data.certifications.length > 0 && (
         <Box>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
@@ -588,7 +597,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>

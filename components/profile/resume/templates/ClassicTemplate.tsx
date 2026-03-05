@@ -110,6 +110,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                   <IconWrapper icon={item.icon} size={11} color="#4b5563" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.625rem",
                     ...(item.icon === "mdi:email-outline"
@@ -160,6 +161,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
       {data.workExperience.length > 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
@@ -186,6 +188,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
               >
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.75rem",
                       fontWeight: 600,
@@ -248,6 +251,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
       {data.education.length > 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
@@ -273,6 +277,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
               >
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.75rem",
                       fontWeight: 600,
@@ -333,6 +338,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
       {data.skills.length > 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
@@ -365,6 +371,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
       {data.projects.length > 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
@@ -393,6 +400,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 }}
               >
                 <Typography
+                  data-resume-nowrap
                   sx={{
                     fontSize: "0.75rem",
                     fontWeight: 600,
@@ -416,7 +424,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                       textDecoration: "none",
                     }}
                   >
-                    🔗Link
+                    Link
                   </Typography>
                 )}
               </Box>
@@ -458,6 +466,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
       {data.certifications.length > 0 && (
         <Box>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
@@ -505,7 +514,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>

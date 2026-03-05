@@ -79,6 +79,14 @@ export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
             "& p, & li, & span, & div": {
               lineHeight: "inherit",
             },
+            "& [data-resume-section-title], & [data-resume-nowrap]": {
+              whiteSpace: "nowrap",
+            },
+            "& [data-resume-contact-item]": {
+              whiteSpace: "nowrap",
+              overflow: "visible",
+              textOverflow: "clip",
+            },
             "@media print": {
               boxShadow: "none",
               transform: "none",

@@ -14,6 +14,7 @@ function HeadLeft({ children }: { children: string }) {
   return (
     <Box sx={{ mt: 2.5, mb: 0.75 }}>
       <Typography
+        data-resume-section-title
         sx={{
           fontSize: "0.7rem",
           fontWeight: 700,
@@ -42,6 +43,7 @@ function HeadRight({ children }: { children: string }) {
   return (
     <Box sx={{ mt: 2, mb: 0.5 }}>
       <Typography
+        data-resume-section-title
         sx={{
           fontSize: "1.05rem",
           fontWeight: 400,
@@ -209,6 +211,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                   <IconWrapper icon={item.icon} size={12} color="#ffffff" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.58rem",
                     lineHeight: 1.4,
@@ -269,6 +272,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
             >
               <Box
                 component="span"
+                data-resume-nowrap
                 sx={{ fontVariant: "small-caps", fontWeight: 600, letterSpacing: "0.02em" }}
               >
                 {exp.position}
@@ -315,6 +319,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
             >
               <Box
                 component="span"
+                data-resume-nowrap
                 sx={{ fontVariant: "small-caps", fontWeight: 600, letterSpacing: "0.02em" }}
               >
                 {edu.degree}.
@@ -350,6 +355,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 >
                   <Box
                     component="span"
+                    data-resume-nowrap
                     sx={{ fontVariant: "small-caps", fontWeight: 600, letterSpacing: "0.02em" }}
                   >
                     {proj.name}.
@@ -371,7 +377,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                         textDecoration: "none",
                       }}
                     >
-                      🔗Link
+                      Link
                       </Typography>
                     </>
                   )}
@@ -431,7 +437,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                           textDecoration: "none",
                         }}
                       >
-                        🔗Link
+                        Link
                       </Box>
                     </>
                   )}
