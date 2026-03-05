@@ -106,6 +106,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                   <IconWrapper icon={item.icon} size={14} color="#d4af37" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.85rem",
                     ...(item.icon === "mdi:email-outline"
@@ -154,6 +155,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       {data.workExperience.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
@@ -181,6 +183,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               >
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.9rem",
                       fontWeight: 700,
@@ -249,6 +252,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       {data.education.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
@@ -269,6 +273,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.85rem",
                       fontWeight: 600,
@@ -309,6 +314,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
         {data.skills.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
@@ -359,6 +365,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
         {data.certifications.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
@@ -393,7 +400,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>
@@ -410,6 +417,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       {data.projects.length > 0 && (
         <Box sx={{ mt: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
@@ -439,6 +447,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 }}
               >
                 <Typography
+                  data-resume-nowrap
                   sx={{
                     fontSize: "0.85rem",
                     fontWeight: 600,
@@ -462,7 +471,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                       textDecoration: "none",
                     }}
                   >
-                    🔗Link
+                    Link
                   </Typography>
                 )}
               </Box>

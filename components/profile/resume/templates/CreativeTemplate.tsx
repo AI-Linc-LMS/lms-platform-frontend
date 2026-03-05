@@ -113,6 +113,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   <IconWrapper icon={item.icon} size={13} color="rgba(255,255,255,0.8)" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.7rem",
                     lineHeight: 1.3,
@@ -134,6 +135,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
         {data.skills.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.8rem",
                 fontWeight: 700,
@@ -183,6 +185,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
         {data.education.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.8rem",
                 fontWeight: 700,
@@ -196,7 +199,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
 
             {data.education.map((edu) => (
               <Box key={edu.id} sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, mb: 0.5 }}>
+                <Typography data-resume-nowrap sx={{ fontSize: "0.85rem", fontWeight: 600, mb: 0.5 }}>
                   {edu.degree}
                 </Typography>
                 <Typography sx={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.8)" }}>
@@ -277,6 +280,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 }}
               />
               <Typography
+                data-resume-section-title
                 sx={{
                   fontSize: "1.1rem",
                   fontWeight: 700,
@@ -301,6 +305,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
                   <Box>
                     <Typography
+                      data-resume-nowrap
                       sx={{ fontSize: "1rem", fontWeight: 600, color: "#1f2937" }}
                     >
                       {exp.position}
@@ -371,6 +376,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 }}
               />
               <Typography
+                data-resume-section-title
                 sx={{
                   fontSize: "1.1rem",
                   fontWeight: 700,
@@ -402,6 +408,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   }}
                 >
                   <Typography
+                    data-resume-nowrap
                     sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#1f2937" }}
                   >
                     {project.name}
@@ -421,7 +428,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                         textDecoration: "none",
                       }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>
@@ -484,6 +491,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 }}
               />
               <Typography
+                data-resume-section-title
                 sx={{
                   fontSize: "1.1rem",
                   fontWeight: 700,
@@ -520,7 +528,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                           textDecoration: "none",
                         }}
                       >
-                        🔗Link
+                        Link
                       </Typography>
                     )}
                   </Box>
