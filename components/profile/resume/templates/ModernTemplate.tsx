@@ -102,6 +102,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                   <IconWrapper icon={item.icon} size={16} color="#94a3b8" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.625rem",
                     ...(item.icon === "mdi:email-outline"
@@ -122,6 +123,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         {data.skills.length > 0 && (
           <Box sx={{ mb: 4 }}>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.625rem",
                 fontWeight: 700,
@@ -168,6 +170,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         {data.certifications.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.625rem",
                 fontWeight: 700,
@@ -199,7 +202,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>
@@ -267,6 +270,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         {data.workExperience.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
@@ -295,6 +299,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                 >
                   <Box sx={{ backgroundColor: "transparent" }}>
                     <Typography
+                      data-resume-nowrap
                       sx={{
                         fontSize: "0.75rem",
                         fontWeight: 600,
@@ -357,6 +362,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         {data.education.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
@@ -380,6 +386,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                 >
                   <Box>
                     <Typography
+                      data-resume-nowrap
                       sx={{
                         fontSize: "0.75rem",
                         fontWeight: 600,
@@ -433,6 +440,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         {data.projects.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
@@ -457,6 +465,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                   }}
                 >
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.75rem",
                       fontWeight: 600,
@@ -480,7 +489,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                         textDecoration: "none",
                       }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>

@@ -38,6 +38,7 @@ function BubbleSectionHead({
         <IconWrapper icon={icon} size={14} color="#1f2937" />
       </Box>
       <Typography
+        data-resume-section-title
         sx={{
           fontSize: "0.95rem",
           fontWeight: 700,
@@ -77,6 +78,7 @@ function SidebarSectionHead({
         <IconWrapper icon={icon} size={14} color="#1f2937" />
       </Box>
       <Typography
+        data-resume-section-title
         sx={{
           fontSize: "0.95rem",
           fontWeight: 700,
@@ -235,7 +237,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 startYear={getYear(exp.startDate)}
                 endYear={exp.current ? "present" : getYear(exp.endDate)}
               >
-                <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
+                <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
                   {exp.position}
                 </Typography>
                 <Typography sx={{ fontSize: "0.62rem", fontStyle: "italic", color: "#6b7280" }}>
@@ -266,7 +268,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 startYear={getYear(edu.startDate)}
                 endYear={getYear(edu.endDate)}
               >
-                <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
+                <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
                   {edu.degree}
                 </Typography>
                 <Typography sx={{ fontSize: "0.62rem", fontStyle: "italic", color: "#6b7280" }}>
@@ -292,7 +294,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
             {data.projects.map((proj) => (
               <TimelineEvent key={proj.id}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
-                  <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
                     {proj.name}
                   </Typography>
                   {proj.link && (
@@ -303,7 +305,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{ fontSize: "0.58rem", color: "#1f2937", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>
@@ -354,6 +356,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 <IconWrapper icon={item.icon} size={14} color="#1f2937" />
               </Box>
               <Typography
+                data-resume-contact-item
                 sx={{
                   fontSize: "0.58rem",
                   color: "#4b5563",
@@ -413,7 +416,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{ fontSize: "0.52rem", color: "#4b5563", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>

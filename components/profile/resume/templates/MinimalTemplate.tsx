@@ -91,6 +91,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                   <IconWrapper icon={item.icon} size={11} color="#666666" />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.625rem",
                     fontWeight: 400,
@@ -129,6 +130,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
       {data.workExperience.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
@@ -152,6 +154,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                   }}
                 >
                   <Typography
+                    data-resume-nowrap
                     sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000" }}
                   >
                     {exp.position}
@@ -210,6 +213,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
       {data.education.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
@@ -232,6 +236,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 }}
               >
                 <Typography
+                  data-resume-nowrap
                   sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000" }}
                 >
                   {edu.degree}
@@ -268,6 +273,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
       {data.skills.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
@@ -297,6 +303,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
       {data.projects.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
@@ -321,6 +328,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 }}
               >
                 <Typography
+                  data-resume-nowrap
                   sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000" }}
                 >
                   {project.name}
@@ -340,7 +348,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                       textDecoration: "none",
                     }}
                   >
-                    🔗Link
+                    Link
                   </Typography>
                 )}
               </Box>
@@ -379,6 +387,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
       {data.certifications.length > 0 && (
         <Box>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
@@ -422,7 +431,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>

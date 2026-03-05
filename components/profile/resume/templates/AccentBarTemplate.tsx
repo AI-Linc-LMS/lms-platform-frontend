@@ -13,6 +13,7 @@ interface AccentBarTemplateProps {
 function SectionTitle({ children }: { children: string }) {
   return (
     <Typography
+      data-resume-section-title
       sx={{
         fontSize: "0.7rem",
         fontWeight: 700,
@@ -104,6 +105,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                   <IconWrapper icon={item.icon} size={11} color={ACCENT} />
                 </Box>
                 <Typography
+                  data-resume-contact-item
                   sx={{
                     fontSize: "0.65rem",
                     ...(item.icon === "mdi:email-outline"
@@ -133,7 +135,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
               <Box key={exp.id} sx={{ mb: 1.5 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 0.5 }}>
                   <Box>
-                    <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>
+                    <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>
                       {exp.position}
                     </Typography>
                     <Typography sx={{ fontSize: "0.65rem", color: ACCENT }}>{exp.company}</Typography>
@@ -165,7 +167,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             {data.education.map((edu) => (
               <Box key={edu.id} sx={{ mb: 1.25 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{edu.degree}</Typography>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{edu.degree}</Typography>
                   <Typography sx={{ fontSize: "0.6rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(edu.startDate, edu.endDate)}
                   </Typography>
@@ -197,7 +199,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             {data.projects.map((proj) => (
               <Box key={proj.id} sx={{ mb: 1.25 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
-                  <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{proj.name}</Typography>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{proj.name}</Typography>
                   {proj.link && (
                     <Typography
                       component="a"
@@ -206,7 +208,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{ fontSize: "0.6rem", color: ACCENT, fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>
@@ -238,7 +240,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{ fontSize: "0.55rem", color: ACCENT, fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
                     >
-                      🔗Link
+                      Link
                     </Typography>
                   )}
                 </Box>
