@@ -7,13 +7,8 @@ import {
   Paper,
   Button,
   TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
@@ -33,6 +28,7 @@ export function SessionSummaryCard({
   activity,
   onSave,
 }: SessionSummaryCardProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -127,7 +123,7 @@ export function SessionSummaryCard({
             fontSize: { xs: "1rem", sm: "1.25rem" },
           }}
         >
-          Session Summary
+          {t("adminAttendance.sessionSummary")}
         </Typography>
         {!editing && (
           <Button
@@ -142,14 +138,14 @@ export function SessionSummaryCard({
               alignSelf: { xs: "flex-start", sm: "auto" },
             }}
           >
-            Edit
+            {t("adminAttendance.edit")}
           </Button>
         )}
       </Box>
       {editing ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           <TextField
-            label="Topic Covered"
+            label={t("adminAttendance.topicCovered")}
             multiline
             rows={4}
             value={formData.topic_covered}
@@ -158,11 +154,11 @@ export function SessionSummaryCard({
             }
             fullWidth
             size="small"
-            placeholder="Enter each point on a new line"
-            helperText="Enter each point on a new line (point-wise format)"
+            placeholder={t("adminAttendance.enterEachPointNewLine")}
+            helperText={t("adminAttendance.pointWiseFormat")}
           />
           <TextField
-            label="Assignments Given"
+            label={t("adminAttendance.assignmentsGiven")}
             multiline
             rows={4}
             value={formData.assignments_given}
@@ -174,11 +170,11 @@ export function SessionSummaryCard({
             }
             fullWidth
             size="small"
-            placeholder="Enter each point on a new line"
-            helperText="Enter each point on a new line (point-wise format)"
+            placeholder={t("adminAttendance.enterEachPointNewLine")}
+            helperText={t("adminAttendance.pointWiseFormat")}
           />
           <TextField
-            label="Hands-on Coding"
+            label={t("adminAttendance.handsOnCoding")}
             multiline
             rows={4}
             value={formData.hands_on_coding}
@@ -190,11 +186,11 @@ export function SessionSummaryCard({
             }
             fullWidth
             size="small"
-            placeholder="Enter each point on a new line"
-            helperText="Enter each point on a new line (point-wise format)"
+            placeholder={t("adminAttendance.enterEachPointNewLine")}
+            helperText={t("adminAttendance.pointWiseFormat")}
           />
           <TextField
-            label="Additional Comments"
+            label={t("adminAttendance.additionalComments")}
             multiline
             rows={4}
             value={formData.additional_comments}
@@ -206,8 +202,8 @@ export function SessionSummaryCard({
             }
             fullWidth
             size="small"
-            placeholder="Enter each point on a new line"
-            helperText="Enter each point on a new line (point-wise format)"
+            placeholder={t("adminAttendance.enterEachPointNewLine")}
+            helperText={t("adminAttendance.pointWiseFormat")}
           />
           <Box
             sx={{
@@ -227,7 +223,7 @@ export function SessionSummaryCard({
                 maxWidth: { xs: "100%", sm: "auto" },
               }}
             >
-              Cancel
+              {t("adminAttendance.cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -241,7 +237,7 @@ export function SessionSummaryCard({
                 maxWidth: { xs: "100%", sm: "auto" },
               }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("adminAttendance.saving") : t("adminAttendance.save")}
             </Button>
           </Box>
         </Box>
@@ -253,7 +249,7 @@ export function SessionSummaryCard({
                 variant="subtitle2"
                 sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
               >
-                Topic Covered
+                {t("adminAttendance.topicCovered")}
               </Typography>
               {formatPoints(activity.topic_covered)[0] && (
                 <Typography
@@ -282,7 +278,7 @@ export function SessionSummaryCard({
                 variant="subtitle2"
                 sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
               >
-                Assignments Given
+                {t("adminAttendance.assignmentsGiven")}
               </Typography>
               <Box component="ul" sx={{ mt: 0.5, pl: 2, mb: 0 }}>
                 {formatPoints(activity.assignments_given).map(
@@ -301,7 +297,7 @@ export function SessionSummaryCard({
                 variant="subtitle2"
                 sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
               >
-                Hands-on Coding
+                {t("adminAttendance.handsOnCoding")}
               </Typography>
               <Box component="ul" sx={{ mt: 0.5, pl: 2, mb: 0 }}>
                 {formatPoints(activity.hands_on_coding).map((point, index) => (
@@ -318,7 +314,7 @@ export function SessionSummaryCard({
                 variant="subtitle2"
                 sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
               >
-                Additional Comments
+                {t("adminAttendance.additionalComments")}
               </Typography>
               <Box component="ul" sx={{ mt: 0.5, pl: 2, mb: 0 }}>
                 {formatPoints(activity.additional_comments).map(

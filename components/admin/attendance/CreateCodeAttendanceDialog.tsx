@@ -13,6 +13,7 @@ import {
   IconButton,
   CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { adminAttendanceService } from "@/lib/services/admin/admin-attendance.service";
@@ -46,9 +47,10 @@ export function CreateCodeAttendanceDialog({
     }
   }, [open, clientInfo]);
 
+  const { t } = useTranslation("common");
   const handleCreate = async () => {
     if (!name.trim()) {
-      showToast("Please enter activity name", "error");
+      showToast(t("adminAttendance.pleaseEnterActivityName"), "error");
       return;
     }
     try {
@@ -57,7 +59,7 @@ export function CreateCodeAttendanceDialog({
         name: name.trim(),
         duration_minutes: duration,
       });
-      showToast("Attendance activity created successfully", "success");
+      showToast(t("adminAttendance.activityCreatedSuccessfully"), "success");
       setName("");
       setDuration(60);
       onSuccess();
@@ -65,7 +67,7 @@ export function CreateCodeAttendanceDialog({
       const detail =
         error?.response?.data?.detail ||
         error?.response?.data?.message ||
-        "Failed to create activity";
+        t("adminAttendance.failedToCreateActivity");
       showToast(
         typeof detail === "string" ? detail : JSON.stringify(detail),
         "error"
@@ -97,7 +99,7 @@ export function CreateCodeAttendanceDialog({
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Create Attendance Activity
+            {t("adminAttendance.createAttendanceActivity")}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <IconWrapper icon="mdi:close" size={20} />
@@ -114,21 +116,19 @@ export function CreateCodeAttendanceDialog({
           }}
         >
           <Typography variant="body2" sx={{ color: "#6b7280" }}>
-            Create a code-based attendance activity. Students will mark
-            attendance using the 6-digit code. For Zoom live classes, use Live
-            Sessions.
+            {t("adminAttendance.createCodeAttendanceDescription")}
           </Typography>
           <TextField
-            label="Activity Name"
+            label={t("adminAttendance.activityName")}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., AB-Classroom"
+            placeholder={t("adminAttendance.activityNamePlaceholder")}
             fullWidth
             required
             size="small"
           />
           <TextField
-            label="Duration (minutes)"
+            label={t("adminAttendance.durationMinutesLabel")}
             type="number"
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
@@ -140,7 +140,7 @@ export function CreateCodeAttendanceDialog({
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t("adminAttendance.cancel")}</Button>
         <Button
           variant="contained"
           onClick={handleCreate}
@@ -150,7 +150,7 @@ export function CreateCodeAttendanceDialog({
           {creating ? (
             <CircularProgress size={20} color="inherit" />
           ) : (
-            "Create"
+            t("adminAttendance.create")
           )}
         </Button>
       </DialogActions>

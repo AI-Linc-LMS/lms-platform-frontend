@@ -11,10 +11,10 @@ import {
   TableRow,
   Paper,
   Chip,
-  CircularProgress,
   Button,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AdminStudentListItem } from "@/lib/services/admin/admin-mock-interview.service";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
@@ -49,6 +49,7 @@ export function MockInterviewStudentTable({
   onPageChange,
   onLimitChange,
 }: MockInterviewStudentTableProps) {
+  const { t } = useTranslation("common");
   const router = useRouter();
 
   const handleRowClick = (studentId: number) => {
@@ -117,10 +118,10 @@ export function MockInterviewStudentTable({
         </Box>
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
-            Students
+            {t("adminMockInterview.studentsSection")}
           </Typography>
           <Typography variant="caption" sx={{ color: "#6b7280" }}>
-            Click a row to view full performance report
+            {t("adminMockInterview.clickRowForReport")}
           </Typography>
         </Box>
         {pagination.total_students > 0 && (
@@ -136,7 +137,7 @@ export function MockInterviewStudentTable({
               fontSize: "0.8125rem",
             }}
           >
-            {pagination.total_students} total
+            {pagination.total_students} {t("adminMockInterview.total")}
           </Box>
         )}
       </Box>
@@ -165,11 +166,10 @@ export function MockInterviewStudentTable({
             <IconWrapper icon="mdi:account-group-outline" size={48} color="#6366f1" />
           </Box>
           <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827", mb: 0.5 }}>
-            No students found
+            {t("adminMockInterview.noStudentsFound")}
           </Typography>
           <Typography variant="body2" sx={{ color: "#6b7280", maxWidth: 360, mx: "auto", mb: 2 }}>
-            Students will appear here once they complete mock interviews. Try adjusting your search
-            or check back later.
+            {t("adminMockInterview.studentsAppearWhenComplete")}
           </Typography>
           <Box
             sx={{
@@ -182,7 +182,7 @@ export function MockInterviewStudentTable({
             }}
           >
             <Typography variant="caption" sx={{ color: "#6b7280" }}>
-              Tip: Use the search above to find students by name or email
+              {t("adminMockInterview.tipSearchNameOrEmail")}
             </Typography>
           </Box>
         </Box>
@@ -198,28 +198,28 @@ export function MockInterviewStudentTable({
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Student
+                    {t("adminMockInterview.student")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Completed
+                    {t("adminMockInterview.completedColumn")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Avg Score
+                    {t("adminMockInterview.avgScore")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Highest
+                    {t("adminMockInterview.highestColumn")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Completion
+                    {t("adminMockInterview.completion")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Topics
+                    {t("adminMockInterview.topics")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Last Interview
+                    {t("adminMockInterview.lastInterview")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb", width: 100 }}>
-                    Actions
+                    {t("adminMockInterview.actions")}
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -307,7 +307,7 @@ export function MockInterviewStudentTable({
                           },
                         }}
                       >
-                        View
+                        {t("adminMockInterview.view")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -324,7 +324,7 @@ export function MockInterviewStudentTable({
               onLimitChange(v);
               onPageChange(1);
             }}
-            itemLabel="students"
+            itemLabel={t("adminMockInterview.itemLabelStudents")}
           />
         </>
       )}

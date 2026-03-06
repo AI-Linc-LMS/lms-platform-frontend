@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Button, Paper, Menu, MenuItem, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeForm } from "./ResumeForm";
@@ -107,6 +108,21 @@ const MOCK_CERTS: ResumeData["certifications"] = [
 
 const hasContent = (arr?: unknown[]) => arr && arr.length > 0;
 
+const TEMPLATE_KEYS: Record<string, string> = {
+  modern: "templateModern",
+  classic: "templateClassic",
+  minimal: "templateMinimal",
+  executive: "templateExecutive",
+  creative: "templateCreative",
+  technical: "templateTechnical",
+  western: "templateWestern",
+  luxsleek: "templateLuxsleek",
+  twocolumn: "templateTwocolumn",
+  accentbar: "templateAccentbar",
+  rightsidebar: "templateRightsidebar",
+  bubble: "templateBubble",
+};
+
 const buildResumeData = (d?: Partial<ResumeData>): ResumeData => ({
   basicInfo: {
     firstName: d?.basicInfo?.firstName || "John",
@@ -135,6 +151,7 @@ const buildResumeData = (d?: Partial<ResumeData>): ResumeData => ({
 });
 
 export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<
     "modern" | "classic" | "minimal" | "executive" | "creative" | "technical" | "western" | "luxsleek" | "twocolumn" | "accentbar" | "rightsidebar" | "bubble"
@@ -147,24 +164,24 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   const [resumeData, setResumeData] = useState<ResumeData>(() => buildResumeData());
 
   const handleSave = () => {
-    showToast("Resume saved", "success");
+    showToast(t("profile.resumeSaved"), "success");
   };
 
   const handleClearData = () => {
     setResumeData(buildResumeData());
     setIsProfileMode(false);
-    showToast("Resume data cleared", "success");
+    showToast(t("profile.resumeDataCleared"), "success");
   };
 
   const handleToggleSource = () => {
     if (isProfileMode) {
       setResumeData(buildResumeData());
       setIsProfileMode(false);
-      showToast("Switched to mock data", "info");
+      showToast(t("profile.switchedToMockData"), "info");
     } else {
       setResumeData(buildResumeData(initialData));
       setIsProfileMode(true);
-      showToast("Profile data imported", "success");
+      showToast(t("profile.profileDataImported"), "success");
     }
   };
 
@@ -234,7 +251,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
     }
 
     try {
-      showToast("Generating PDF...", "info");
+      showToast(t("profile.generatingPdf"), "info");
 
       const element = previewRef.current;
 
@@ -325,10 +342,10 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
       const fileName = `${resumeData.basicInfo.firstName}_${resumeData.basicInfo.lastName}_Resume.pdf`;
       pdf.save(fileName);
 
-      showToast("PDF downloaded successfully!", "success");
+      showToast(t("profile.pdfDownloadSuccess"), "success");
     } catch (error) {
       console.error("PDF generation error:", error);
-      showToast("Failed to generate PDF. Please try again.", "error");
+      showToast(t("profile.pdfDownloadFailed"), "error");
     } finally {
       if (patched && origDescriptor) {
         try {
@@ -369,7 +386,8 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   ) => {
     setSelectedTemplate(template);
     handleTemplateMenuClose();
-    showToast(`Switched to ${template} template`, "success");
+    const templateName = t(`profile.${TEMPLATE_KEYS[template]}`);
+    showToast(t("profile.switchedToTemplate", { template: templateName }), "success");
   };
 
   return (
@@ -390,7 +408,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
         }}
       >
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          <Tooltip title="Save Resume Locally">
+          <Tooltip title={t("profile.save")}>
             <Button
               variant="outlined"
               startIcon={<IconWrapper icon="mdi:content-save" />}
@@ -405,11 +423,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 },
               }}
             >
-              Save
+              {t("profile.save")}
             </Button>
           </Tooltip>
 
-          <Tooltip title="Clear Saved Data">
+          <Tooltip title={t("profile.clearSavedData")}>
             <Button
               variant="outlined"
               startIcon={<IconWrapper icon="mdi:delete-outline" />}
@@ -424,11 +442,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 },
               }}
             >
-              Clear
+              {t("profile.clear")}
             </Button>
           </Tooltip>
 
-          <Tooltip title={isProfileMode ? "Switch back to mock/sample data" : "Import data from your profile section"}>
+          <Tooltip title={isProfileMode ? t("profile.tooltipSwitchToMock") : t("profile.tooltipImportFromProfile")}>
             <Button
               variant="outlined"
               startIcon={<IconWrapper icon={isProfileMode ? "mdi:swap-horizontal" : "mdi:account-arrow-right"} />}
@@ -444,11 +462,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 },
               }}
             >
-              {isProfileMode ? "Use Mock Data" : "Import from Profile"}
+              {isProfileMode ? t("profile.useMockData") : t("profile.importFromProfile")}
             </Button>
           </Tooltip>
 
-          <Tooltip title="Choose Template">
+          <Tooltip title={t("profile.chooseTemplate")}>
             <Button
               variant="outlined"
               startIcon={<IconWrapper icon="mdi:view-grid" />}
@@ -463,7 +481,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 },
               }}
             >
-              Template: {selectedTemplate}
+              {t("profile.templateLabel", { name: t(`profile.${TEMPLATE_KEYS[selectedTemplate]}`) })}
             </Button>
           </Tooltip>
 
@@ -473,40 +491,40 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             onClose={handleTemplateMenuClose}
           >
             <MenuItem onClick={() => handleTemplateSelect("modern")}>
-              Modern Template
+              {t("profile.templateModern")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("classic")}>
-              Classic Template
+              {t("profile.templateClassic")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("minimal")}>
-              Minimal Template
+              {t("profile.templateMinimal")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("executive")}>
-              Executive Template
+              {t("profile.templateExecutive")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("creative")}>
-              Creative Template
+              {t("profile.templateCreative")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("technical")}>
-              Technical Template
+              {t("profile.templateTechnical")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("western")}>
-              Western Template
+              {t("profile.templateWestern")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("luxsleek")}>
-              LuxSleek Template
+              {t("profile.templateLuxsleek")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("twocolumn")}>
-              Two Column Template
+              {t("profile.templateTwocolumn")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("accentbar")}>
-              Accent Bar Template
+              {t("profile.templateAccentbar")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("rightsidebar")}>
-              Right Sidebar Template
+              {t("profile.templateRightsidebar")}
             </MenuItem>
             <MenuItem onClick={() => handleTemplateSelect("bubble")}>
-              Bubble Template
+              {t("profile.templateBubble")}
             </MenuItem>
           </Menu>
         </Box>
@@ -525,7 +543,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             },
           }}
         >
-          Download PDF
+          {t("profile.downloadPdf")}
         </Button>
       </Paper>
 

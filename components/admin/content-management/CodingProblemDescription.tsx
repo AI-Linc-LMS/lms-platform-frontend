@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Chip, Divider, Paper } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 interface CodingProblemDescriptionProps {
   title: string;
@@ -27,6 +28,7 @@ export function CodingProblemDescription({
   tags,
   difficultyLevel,
 }: CodingProblemDescriptionProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -106,7 +108,7 @@ export function CodingProblemDescription({
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
-            Problem Statement
+            {t("adminContentManagement.problemStatement")}
           </Typography>
           <Box
             sx={{
@@ -141,7 +143,7 @@ export function CodingProblemDescription({
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
-            Input Format
+            {t("adminContentManagement.inputFormat")}
           </Typography>
           <Box
             sx={{
@@ -169,7 +171,7 @@ export function CodingProblemDescription({
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
-            Output Format
+            {t("adminContentManagement.outputFormat")}
           </Typography>
           <Box
             sx={{
@@ -197,7 +199,7 @@ export function CodingProblemDescription({
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
-            Constraints
+            {t("adminContentManagement.constraints")}
           </Typography>
           <Box
             sx={{
@@ -225,7 +227,7 @@ export function CodingProblemDescription({
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
-            Sample Input/Output
+            {t("adminContentManagement.sampleInputOutput")}
           </Typography>
           <Paper
             elevation={0}
@@ -247,7 +249,7 @@ export function CodingProblemDescription({
                     fontSize: "0.75rem",
                   }}
                 >
-                  Sample Input
+                  {t("adminContentManagement.sampleInput")}
                 </Typography>
                 <Box
                   component="pre"
@@ -279,7 +281,7 @@ export function CodingProblemDescription({
                     fontSize: "0.75rem",
                   }}
                 >
-                  Sample Output
+                  {t("adminContentManagement.sampleOutput")}
                 </Typography>
                 <Box
                   component="pre"
@@ -316,7 +318,7 @@ export function CodingProblemDescription({
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
-            Test Cases
+            {t("adminContentManagement.testCases")}
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {testCases.map((testCase: any, index: number) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Paper } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface CourseStatsSectionProps {
@@ -14,6 +15,7 @@ export function CourseStatsSection({
   publishedCount,
   totalCount,
 }: CourseStatsSectionProps) {
+  const { t } = useTranslation("common");
   return (
     <Box>
       <Typography
@@ -25,10 +27,10 @@ export function CourseStatsSection({
           mb: 1,
         }}
       >
-        All Courses
+        {t("adminCourseBuilder.allCourses")}
       </Typography>
       <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
-        Here is a glimpse of your overall progress.
+        {t("adminCourseBuilder.glimpseProgress")}
       </Typography>
 
       {/* Course Counts */}
@@ -50,7 +52,7 @@ export function CourseStatsSection({
               >
                 {draftCount}
               </Typography>{" "}
-              Drafts
+              {t("adminCourseBuilder.drafts")}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -69,7 +71,7 @@ export function CourseStatsSection({
               >
                 {publishedCount}
               </Typography>{" "}
-              Published
+              {t("adminCourseBuilder.published")}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -88,7 +90,7 @@ export function CourseStatsSection({
               >
                 {totalCount}
               </Typography>{" "}
-              Total
+              {t("adminCourseBuilder.total")}
             </Typography>
           </Box>
         </Box>

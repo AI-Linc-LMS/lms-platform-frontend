@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -15,7 +17,6 @@ import {
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 
 interface Course {
   id: number;
@@ -97,12 +98,20 @@ export function EnrolledCoursesTable({
     return 0;
   };
 
-  const getDerivedStatus = (course: Course) => {
+  const getDerivedStatus = (course: Course): string => {
     if (course.status) return course.status;
     const progress = getProgress(course);
     if (progress >= 100) return "Completed";
     if (progress > 0) return "Ongoing";
     return "Not Started";
+  };
+
+  const { t } = useTranslation("common");
+  const getStatusLabel = (status: string) => {
+    if (status === "Completed") return t("manageStudents.completed");
+    if (status === "Ongoing") return t("manageStudents.ongoing");
+    if (status === "Not Started") return t("manageStudents.notStarted");
+    return status;
   };
 
   return (
@@ -122,10 +131,10 @@ export function EnrolledCoursesTable({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
-          Enrolled Courses
+          {t("manageStudents.enrolledCourses")}
         </Typography>
         <Typography variant="body2" sx={{ color: "#6b7280" }}>
-          {courses.length} course{courses.length !== 1 ? "s" : ""}
+          {t("manageStudents.courseCount", { count: courses.length })}
         </Typography>
       </Box>
 
@@ -142,10 +151,10 @@ export function EnrolledCoursesTable({
         >
           <IconWrapper icon="mdi:book-off-outline" size={48} color="#d1d5db" />
           <Typography variant="body1" sx={{ color: "#6b7280", fontWeight: 500 }}>
-            No enrolled courses
+            {t("manageStudents.noEnrolledCourses")}
           </Typography>
           <Typography variant="caption" sx={{ color: "#9ca3af" }}>
-            This student hasn't enrolled in any courses yet
+            {t("manageStudents.noEnrolledCoursesDesc")}
           </Typography>
         </Box>
       ) : (
@@ -179,7 +188,7 @@ export function EnrolledCoursesTable({
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >
-                    Course
+                    {t("manageStudents.course")}
                   </TableCell>
 
                   <TableCell
@@ -189,7 +198,7 @@ export function EnrolledCoursesTable({
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >
-                    Progress
+                    {t("manageStudents.progress")}
                   </TableCell>
                   <TableCell
                     sx={{
@@ -198,7 +207,7 @@ export function EnrolledCoursesTable({
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >
-                    Status
+                    {t("manageStudents.status")}
                   </TableCell>
                   <TableCell
                     sx={{
@@ -207,7 +216,7 @@ export function EnrolledCoursesTable({
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >
-                    Score
+                    {t("manageStudents.score")}
                   </TableCell>
                   <TableCell
                     sx={{
@@ -217,7 +226,7 @@ export function EnrolledCoursesTable({
                       display: { xs: "none", lg: "table-cell" },
                     }}
                   >
-                    Certificate
+                    {t("manageStudents.certificate")}
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -257,7 +266,7 @@ export function EnrolledCoursesTable({
                                 fontSize: "0.75rem",
                               }}
                             >
-                              {course.lessons_count} lessons • {course.hours}h
+                              {t("manageStudents.lessonsHours", { count: course.lessons_count, hours: course.hours })}
                             </Typography>
                           ) : (
                             typeof course.completed_contents === "number" &&
@@ -269,7 +278,7 @@ export function EnrolledCoursesTable({
                                   fontSize: "0.75rem",
                                 }}
                               >
-                                {course.completed_contents}/{course.total_contents} contents
+                                {t("manageStudents.contentsCount", { completed: course.completed_contents, total: course.total_contents })}
                               </Typography>
                             )
                           )}
@@ -323,7 +332,7 @@ export function EnrolledCoursesTable({
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={getDerivedStatus(course)}
+                        label={getStatusLabel(getDerivedStatus(course))}
                         size="small"
                         sx={{
                           backgroundColor: getStatusBgColor(getDerivedStatus(course)),
@@ -362,7 +371,7 @@ export function EnrolledCoursesTable({
                         />
                       ) : (
                         <Typography variant="body2" sx={{ color: "#9ca3af" }}>
-                          None
+                          {t("manageStudents.none")}
                         </Typography>
                       )}
                     </TableCell>
@@ -400,9 +409,11 @@ export function EnrolledCoursesTable({
                   fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 }}
               >
-                Showing {paginatedCourses.length === 0 ? 0 : startIndex + 1} to{" "}
-                {Math.min(endIndex, courses.length)} of {courses.length} course
-                {courses.length !== 1 ? "s" : ""}
+                {t("manageStudents.showingCourses", {
+                  start: paginatedCourses.length === 0 ? 0 : startIndex + 1,
+                  end: Math.min(endIndex, courses.length),
+                  total: courses.length,
+                })}
               </Typography>
               <PerPageSelect
                 value={limit}
@@ -412,7 +423,7 @@ export function EnrolledCoursesTable({
                 }}
                 options={[5, 10, 25, 50]}
                 displayEmpty
-                ariaLabel="Courses per page"
+                ariaLabel={t("manageStudents.coursesPerPage")}
                 minWidth={120}
                 SelectSx={{
                   fontSize: { xs: "0.75rem", sm: "0.875rem" },

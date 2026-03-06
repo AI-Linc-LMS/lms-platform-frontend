@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogTitle,
@@ -29,6 +30,7 @@ export function CreateThreadDialog({
   onSubmit,
   availableTags,
 }: CreateThreadDialogProps) {
+  const { t } = useTranslation("common");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
@@ -66,7 +68,7 @@ export function CreateThreadDialog({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:forum" size={24} color="#2563eb" />
           <Typography variant="h6" fontWeight={600}>
-            Create New Thread
+            {t("community.createNewThread")}
           </Typography>
         </Box>
       </DialogTitle>
@@ -75,8 +77,8 @@ export function CreateThreadDialog({
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
           {/* Title */}
           <TextField
-            label="Title"
-            placeholder="What's your question or discussion topic?"
+            label={t("community.titleLabel")}
+            placeholder={t("community.titlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             fullWidth
@@ -86,8 +88,8 @@ export function CreateThreadDialog({
 
           {/* Body */}
           <TextField
-            label="Description"
-            placeholder="Provide more details about your question..."
+            label={t("community.descriptionLabel")}
+            placeholder={t("community.descriptionPlaceholder")}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             fullWidth
@@ -106,8 +108,8 @@ export function CreateThreadDialog({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Tags"
-                placeholder="Select relevant tags..."
+                label={t("community.tagsLabel")}
+                placeholder={t("community.tagsPlaceholder")}
               />
             )}
             renderTags={(value, getTagProps) =>
@@ -126,14 +128,14 @@ export function CreateThreadDialog({
           />
 
           <Typography variant="caption" color="text.secondary">
-            💡 Tip: Add relevant tags to help others find your thread easily.
+            {t("community.tagsTip")}
           </Typography>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={submitting}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           variant="contained"
@@ -141,7 +143,7 @@ export function CreateThreadDialog({
           disabled={!title.trim() || !body.trim() || submitting}
           startIcon={<IconWrapper icon="mdi:send" />}
         >
-          {submitting ? "Creating..." : "Create Thread"}
+          {submitting ? t("community.creating") : t("community.createThread")}
         </Button>
       </DialogActions>
     </Dialog>

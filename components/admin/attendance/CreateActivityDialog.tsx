@@ -13,6 +13,7 @@ import {
   IconButton,
   CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -49,9 +50,10 @@ export function CreateActivityDialog({
     }
   }, [open, clientInfo]);
 
+  const { t } = useTranslation("common");
   const handleCreate = async () => {
     if (!name.trim()) {
-      showToast("Please enter activity name", "error");
+      showToast(t("adminAttendance.pleaseEnterActivityName"), "error");
       return;
     }
     try {
@@ -60,7 +62,7 @@ export function CreateActivityDialog({
         name: name.trim(),
         duration_minutes: duration,
       });
-      showToast("Attendance activity created successfully", "success");
+      showToast(t("adminAttendance.activityCreatedSuccessfully"), "success");
       setName("");
       setDuration(60);
       onClose();
@@ -69,7 +71,7 @@ export function CreateActivityDialog({
       const detail =
         error?.response?.data?.detail ||
         error?.response?.data?.message ||
-        "Failed to create activity";
+        t("adminAttendance.failedToCreateActivity");
       showToast(
         typeof detail === "string" ? detail : JSON.stringify(detail),
         "error"
@@ -107,7 +109,7 @@ export function CreateActivityDialog({
               fontSize: { xs: "1rem", sm: "1.25rem" },
             }}
           >
-            Create Attendance Activity
+            {t("adminAttendance.createAttendanceActivity")}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <IconWrapper icon="mdi:close" size={20} />
@@ -124,13 +126,13 @@ export function CreateActivityDialog({
           }}
         >
           <TextField
-            label="Activity Name"
+            label={t("adminAttendance.activityName")}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., AB-Classroom"
+            placeholder={t("adminAttendance.activityNamePlaceholder")}
             fullWidth
             required
-            helperText="Enter the activity name (e.g., AB-Classroom)"
+            helperText={t("adminAttendance.activityNameHelper")}
             size="small"
             sx={{
               "& .MuiInputBase-root": {
@@ -139,7 +141,7 @@ export function CreateActivityDialog({
             }}
           />
           <TextField
-            label="Duration (minutes)"
+            label={t("adminAttendance.durationMinutesLabel")}
             type="number"
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
@@ -160,7 +162,7 @@ export function CreateActivityDialog({
           onClick={onClose}
           sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
         >
-          Cancel
+          {t("adminAttendance.cancel")}
         </Button>
         <Button
           variant="contained"
@@ -175,7 +177,7 @@ export function CreateActivityDialog({
           {creating ? (
             <CircularProgress size={20} color="inherit" />
           ) : (
-            "Create"
+            t("adminAttendance.create")
           )}
         </Button>
       </DialogActions>

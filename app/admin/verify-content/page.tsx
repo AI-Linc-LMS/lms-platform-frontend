@@ -8,6 +8,7 @@ import {
   Paper,
   CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
@@ -24,6 +25,7 @@ import { ContentTable } from "@/components/admin/content-management/ContentTable
 import { ContentPagination } from "@/components/admin/content-management/ContentPagination";
 
 export default function VerifyContentPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const [contents, setContents] = useState<ContentListItem[]>([]);
@@ -60,7 +62,7 @@ export default function VerifyContentPage() {
       setContentCounts(counts);
     } catch (error: any) {
       showToast(
-        error?.message || "Failed to load content statistics",
+        error?.message || t("adminContentManagement.failedToLoadContentStatistics"),
         "error"
       );
     } finally {
@@ -76,7 +78,7 @@ export default function VerifyContentPage() {
       );
       setContents(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      showToast(error?.message || "Failed to load contents", "error");
+      showToast(error?.message || t("adminContentManagement.failedToLoadContents"), "error");
     } finally {
       setLoading(false);
     }
@@ -111,12 +113,12 @@ export default function VerifyContentPage() {
       await loadContentCounts();
 
       showToast(
-        `Content ${isVerified ? "verified" : "unverified"} successfully`,
+        isVerified ? t("adminContentManagement.contentVerifiedSuccessfully") : t("adminContentManagement.contentUnverifiedSuccessfully"),
         "success"
       );
     } catch (error: any) {
       showToast(
-        error?.message || "Failed to update verification status",
+        error?.message || t("adminContentManagement.failedToUpdateVerificationStatus"),
         "error"
       );
     } finally {
@@ -178,13 +180,13 @@ export default function VerifyContentPage() {
               mb: 1,
             }}
           >
-            Content Management
+            {t("adminContentManagement.title")}
           </Typography>
           <Typography
             variant="body2"
             sx={{ color: "#6b7280", fontSize: { xs: "0.875rem", sm: "1rem" } }}
           >
-            Manage and verify content for your platform
+            {t("adminContentManagement.subtitle")}
           </Typography>
         </Box>
 

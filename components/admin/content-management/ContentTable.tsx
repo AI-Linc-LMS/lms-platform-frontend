@@ -10,10 +10,11 @@ import {
   TableHead,
   TableRow,
   Chip,
-  IconButton,
   Switch,
   Tooltip,
+  IconButton,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   ContentListItem,
@@ -39,12 +40,22 @@ const getTypeColor = (type: ContentType) => {
   return colors[type] || { bg: "#f3f4f6", text: "#6b7280" };
 };
 
+const typeToLabelKey: Record<ContentType, string> = {
+  Quiz: "adminContentManagement.typeQuiz",
+  Article: "adminContentManagement.typeArticle",
+  Assignment: "adminContentManagement.typeAssignment",
+  CodingProblem: "adminContentManagement.typeCodingProblem",
+  DevCodingProblem: "adminContentManagement.typeDevCodingProblem",
+  VideoTutorial: "adminContentManagement.typeVideoTutorial",
+};
+
 export function ContentTable({
   contents,
   onViewDetails,
   onToggleVerification,
   verifyingIds,
 }: ContentTableProps) {
+  const { t } = useTranslation("common");
   return (
     <TableContainer sx={{ width: "100%" }}>
       <Table sx={{ width: "100%" }}>
@@ -57,7 +68,7 @@ export function ContentTable({
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
-              Title
+              {t("adminContentManagement.titleColumn")}
             </TableCell>
             <TableCell
               sx={{
@@ -67,7 +78,7 @@ export function ContentTable({
                 display: { xs: "none", sm: "table-cell" },
               }}
             >
-              Type
+              {t("adminContentManagement.typeColumn")}
             </TableCell>
             <TableCell
               sx={{
@@ -77,7 +88,7 @@ export function ContentTable({
                 display: { xs: "none", md: "table-cell" },
               }}
             >
-              Verification Status
+              {t("adminContentManagement.verificationStatusColumn")}
             </TableCell>
             <TableCell
               sx={{
@@ -87,7 +98,7 @@ export function ContentTable({
                 textAlign: "center",
               }}
             >
-              Actions
+              {t("adminContentManagement.actions")}
             </TableCell>
           </TableRow>
         </TableHead>
@@ -96,7 +107,7 @@ export function ContentTable({
             <TableRow>
               <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                 <Typography variant="body2" color="text.secondary">
-                  No contents found
+                  {t("adminContentManagement.noContentsFound")}
                 </Typography>
               </TableCell>
             </TableRow>
@@ -126,7 +137,7 @@ export function ContentTable({
                   </TableCell>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>
                     <Chip
-                      label={content.type}
+                      label={t(typeToLabelKey[content.type])}
                       size="small"
                       sx={{
                         bgcolor: typeColor.bg,
@@ -139,7 +150,7 @@ export function ContentTable({
                   </TableCell>
                   <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
                     <Chip
-                      label={content.is_verified ? "Verified" : "Unverified"}
+                      label={content.is_verified ? t("adminContentManagement.verified") : t("adminContentManagement.unverified")}
                       size="small"
                       sx={{
                         bgcolor: content.is_verified ? "#d1fae5" : "#fee2e2",
@@ -162,8 +173,8 @@ export function ContentTable({
                       <Tooltip
                         title={
                           content.is_verified
-                            ? "Click to unverify"
-                            : "Click to verify"
+                            ? t("adminContentManagement.clickToUnverify")
+                            : t("adminContentManagement.clickToVerify")
                         }
                       >
                         <Switch
@@ -184,7 +195,7 @@ export function ContentTable({
                           }}
                         />
                       </Tooltip>
-                      <Tooltip title="View Details">
+                      <Tooltip title={t("adminContentManagement.viewDetails")}>
                         <IconButton
                           size="small"
                           onClick={() => onViewDetails(content.id)}

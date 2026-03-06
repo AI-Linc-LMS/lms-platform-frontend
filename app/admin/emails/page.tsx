@@ -24,6 +24,7 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -77,6 +78,7 @@ function JobsTable({
   formatDate: (s: string) => string;
   isAssessment?: boolean;
 }) {
+  const { t } = useTranslation("common");
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       const search = filterName.trim().toLowerCase();
@@ -125,28 +127,28 @@ function JobsTable({
         >
           <TextField
             size="small"
-            placeholder="Filter by name or subject..."
+            placeholder={t("adminEmailJobs.filterByNamePlaceholder")}
             value={filterName}
             onChange={(e) => setFilterName(e.target.value)}
             sx={{ minWidth: 200 }}
           />
           <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Status</InputLabel>
+            <InputLabel>{t("adminEmailJobs.status")}</InputLabel>
             <Select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              label="Status"
+              label={t("adminEmailJobs.status")}
             >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="failed">Failed</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
-              <MenuItem value="COMPLETED">COMPLETED</MenuItem>
-              <MenuItem value="FAILED">FAILED</MenuItem>
-              <MenuItem value="success">Success</MenuItem>
-              <MenuItem value="sent">Sent</MenuItem>
-              <MenuItem value="queued">Queued</MenuItem>
-              <MenuItem value="error">Error</MenuItem>
+              <MenuItem value="all">{t("adminEmailJobs.all")}</MenuItem>
+              <MenuItem value="failed">{t("adminEmailJobs.failed")}</MenuItem>
+              <MenuItem value="pending">{t("adminEmailJobs.pending")}</MenuItem>
+              <MenuItem value="completed">{t("adminEmailJobs.completed")}</MenuItem>
+              <MenuItem value="COMPLETED">{t("adminEmailJobs.completed")}</MenuItem>
+              <MenuItem value="FAILED">{t("adminEmailJobs.failed")}</MenuItem>
+              <MenuItem value="success">{t("adminEmailJobs.success")}</MenuItem>
+              <MenuItem value="sent">{t("adminEmailJobs.sent")}</MenuItem>
+              <MenuItem value="queued">{t("adminEmailJobs.queued")}</MenuItem>
+              <MenuItem value="error">{t("adminEmailJobs.error")}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -169,11 +171,11 @@ function JobsTable({
               <TableHead>
                 <TableRow sx={{ backgroundColor: "#f9fafb" }}>
                   <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                    {isAssessment ? "Assessment / Subject" : "Task / Subject"}
+                    {isAssessment ? t("adminEmailJobs.assessmentSubject") : t("adminEmailJobs.taskSubject")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Created</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{t("adminEmailJobs.status")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{t("adminEmailJobs.created")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{t("adminEmailJobs.actions")}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -182,8 +184,8 @@ function JobsTable({
                     <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                       <Typography variant="body2" color="text.secondary">
                         {jobs.length === 0
-                          ? "No email jobs found"
-                          : "No jobs match the filters"}
+                          ? t("adminEmailJobs.noEmailJobsFound")
+                          : t("adminEmailJobs.noJobsMatchFilters")}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -233,7 +235,7 @@ function JobsTable({
                             onClick={() => onView(job)}
                             sx={{ minWidth: 70 }}
                           >
-                            View
+                            {t("adminEmailJobs.view")}
                           </Button>
                           {isFailedStatus(job.status) && (
                             <Button
@@ -247,7 +249,7 @@ function JobsTable({
                               {retryingId === job.task_id ? (
                                 <CircularProgress size={16} color="inherit" />
                               ) : (
-                                "Retry"
+                                t("adminEmailJobs.retry")
                               )}
                             </Button>
                           )}
@@ -276,8 +278,11 @@ function JobsTable({
                   variant="body2"
                   sx={{ color: "#6b7280", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                 >
-                  Showing {(page - 1) * limit + 1} to{" "}
-                  {Math.min(filteredJobs.length, page * limit)} of {filteredJobs.length}
+                  {t("adminEmailJobs.showing", {
+                    start: (page - 1) * limit + 1,
+                    end: Math.min(filteredJobs.length, page * limit),
+                    total: filteredJobs.length,
+                  })}
                 </Typography>
                 <PerPageSelect
                   value={limit}
@@ -310,6 +315,7 @@ function JobsTable({
 
 export default function AdminEmailsPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tabValue, setTabValue] = useState(0);
@@ -342,12 +348,12 @@ export default function AdminEmailsPage() {
       const data = await adminEmailJobsService.getEmailJobs(config.clientId);
       setAllJobs(Array.isArray(data) ? data : []);
     } catch (e: unknown) {
-      showToast((e as Error)?.message || "Failed to load email jobs", "error");
+      showToast((e as Error)?.message || t("adminEmailJobs.failedToLoadEmailJobs"), "error");
       setAllJobs([]);
     } finally {
       setLoadingAll(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   const loadAssessmentJobs = useCallback(async () => {
     try {
@@ -358,14 +364,14 @@ export default function AdminEmailsPage() {
       setAssessmentJobs(Array.isArray(data) ? data : []);
     } catch (e: unknown) {
       showToast(
-        (e as Error)?.message || "Failed to load assessment email jobs",
+        (e as Error)?.message || t("adminEmailJobs.failedToLoadAssessmentEmailJobs"),
         "error"
       );
       setAssessmentJobs([]);
     } finally {
       setLoadingAssessment(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => {
     if (tabValue === 0) loadAllJobs();
@@ -384,10 +390,10 @@ export default function AdminEmailsPage() {
     try {
       setRetryingId(job.task_id);
       await adminEmailJobsService.resendEmailJob(config.clientId, job.task_id);
-      showToast("Email job queued for resending", "success");
+      showToast(t("adminEmailJobs.emailJobQueuedResending"), "success");
       loadAllJobs();
     } catch (e: unknown) {
-      showToast((e as Error)?.message || "Failed to resend", "error");
+      showToast((e as Error)?.message || t("adminEmailJobs.failedToResend"), "error");
     } finally {
       setRetryingId(null);
     }
@@ -400,10 +406,10 @@ export default function AdminEmailsPage() {
         config.clientId,
         job.task_id
       );
-      showToast("Assessment email job queued for retry", "success");
+      showToast(t("adminEmailJobs.assessmentEmailJobQueuedRetry"), "success");
       loadAssessmentJobs();
     } catch (e: unknown) {
-      showToast((e as Error)?.message || "Failed to retry", "error");
+      showToast((e as Error)?.message || t("adminEmailJobs.failedToRetry"), "error");
     } finally {
       setRetryingId(null);
     }
@@ -438,7 +444,7 @@ export default function AdminEmailsPage() {
             mb: 3,
           }}
         >
-          Email Jobs
+          {t("adminEmailJobs.title")}
         </Typography>
 
         <Tabs
@@ -446,8 +452,8 @@ export default function AdminEmailsPage() {
           onChange={(_, v) => setTabValue(v)}
           sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
         >
-          <Tab label="All Emails" />
-          <Tab label="Assessment Emails" />
+          <Tab label={t("adminEmailJobs.allEmails")} />
+          <Tab label={t("adminEmailJobs.assessmentEmails")} />
         </Tabs>
 
         {tabValue === 0 && (

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Collapse, IconButton, Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -24,6 +25,7 @@ type SortOrder = "asc" | "desc";
 
 export default function ManageStudentsPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -201,14 +203,14 @@ export default function ManageStudentsPage() {
       }
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load students",
+        error?.response?.data?.detail || t("adminManageStudents.failedToLoadStudents"),
         "error"
       );
       setAllStudents([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedCourse, showToast]);
+  }, [selectedCourse, showToast, t]);
 
   // Load students when course filter changes or on mount
   useEffect(() => {
@@ -367,24 +369,24 @@ export default function ManageStudentsPage() {
 
   const handleDownloadCsv = () => {
     const headers = [
-      "Name",
-      "Email",
-      "Status",
-      "Enrollment Count",
-      "Most Active Course",
-      "Completion %",
-      "Attendance %",
+      t("adminManageStudents.csvHeaderName"),
+      t("adminManageStudents.csvHeaderEmail"),
+      t("adminManageStudents.csvHeaderStatus"),
+      t("adminManageStudents.csvHeaderEnrollmentCount"),
+      t("adminManageStudents.csvHeaderMostActiveCourse"),
+      t("adminManageStudents.csvHeaderCompletionPct"),
+      t("adminManageStudents.csvHeaderAttendancePct"),
     ];
     const rows = filteredStudents.map((student) => {
       const stats = completionStats[student.user_id] ?? completionStats[student.id];
       return [
         escapeCsvValue(student.name ?? ""),
         escapeCsvValue(student.email ?? ""),
-        student.is_active ? "Active" : "Inactive",
+        student.is_active ? t("adminManageStudents.active") : t("adminManageStudents.inactive"),
         escapeCsvValue(student.enrollment_count ?? 0),
-        escapeCsvValue(student.most_active_course ?? "No Activity"),
-        stats ? escapeCsvValue(stats.completion_percentage.toFixed(1)) : "N/A",
-        stats ? escapeCsvValue(stats.attendance_percentage.toFixed(1)) : "N/A",
+        escapeCsvValue(student.most_active_course ?? t("adminManageStudents.noActivity")),
+        stats ? escapeCsvValue(stats.completion_percentage.toFixed(1)) : t("adminManageStudents.na"),
+        stats ? escapeCsvValue(stats.attendance_percentage.toFixed(1)) : t("adminManageStudents.na"),
       ];
     });
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
@@ -436,7 +438,7 @@ export default function ManageStudentsPage() {
               }}
             >
               <Typography variant="h6" fontWeight={600}>
-                Enrollment Job History
+                {t("adminManageStudents.enrollmentJobHistory")}
               </Typography>
               <IconButton size="small">
                 <IconWrapper

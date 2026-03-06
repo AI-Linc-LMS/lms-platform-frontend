@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -23,8 +24,6 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import {
   RECORDING_PROCESSING_MESSAGE,
-  RECORDING_NOT_AVAILABLE_FRIENDLY_MESSAGE,
-  SESSION_NOT_FOUND_MESSAGE,
   getLiveSessionErrorMessage,
   getZoomApiErrorMessage,
 } from "@/lib/utils/live-session-errors";
@@ -45,6 +44,7 @@ export function LiveSessionDetailDrawer({
   onUpdated,
   webhookConfigured = false,
 }: LiveSessionDetailDrawerProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [activity, setActivity] = useState<LiveActivity | null>(null);
   const [loading, setLoading] = useState(false);
@@ -187,11 +187,11 @@ export function LiveSessionDetailDrawer({
       }}
     >
       <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
-        <IconButton onClick={onClose} size="small" aria-label="Close drawer">
+        <IconButton onClick={onClose} size="small" aria-label={t("adminLiveSessions.close")}>
           <IconWrapper icon="mdi:close" size={24} />
         </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-          Live Session
+          {t("adminLiveSessions.sessionDetailTitle")}
         </Typography>
       </Box>
 
@@ -202,10 +202,10 @@ export function LiveSessionDetailDrawer({
       ) : sessionNotFound ? (
         <Box sx={{ px: 2, py: 4, textAlign: "center" }}>
           <Typography variant="body1" sx={{ color: "#6b7280", mb: 2 }}>
-            {SESSION_NOT_FOUND_MESSAGE}
+            {t("adminLiveSessions.sessionNotFound")}
           </Typography>
           <Button variant="contained" onClick={onClose}>
-            Close
+            {t("adminLiveSessions.close")}
           </Button>
         </Box>
       ) : activity ? (
@@ -217,17 +217,17 @@ export function LiveSessionDetailDrawer({
             {formatDateTime(activity.class_datetime)} · {activity.duration_minutes} min
           </Typography>
           <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
-            Course: {activity.course_detail?.title ?? "No course"}
+            {t("adminLiveSessions.course")}: {activity.course_detail?.title ?? t("adminLiveSessions.noCourse")}
           </Typography>
 
           <Chip
             label={
               activity.meeting_status === "live"
-                ? "Live"
+                ? t("liveSessions.live")
                 : activity.meeting_status === "ended"
-                  ? "Ended"
+                  ? t("adminLiveSessions.ended")
                   : activity.meeting_status === "expired"
-                    ? "Expired"
+                    ? t("liveSessions.expired")
                     : "—"
             }
             size="small"
@@ -263,12 +263,12 @@ export function LiveSessionDetailDrawer({
                   textTransform: "none",
                 }}
               >
-                Start meeting
+                {t("adminLiveSessions.startMeeting")}
               </Button>
             )}
             {activity.zoom_password && (
               <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                Password: {activity.zoom_password}
+                {t("liveSessions.password")}: {activity.zoom_password}
               </Typography>
             )}
           </Box>
@@ -277,7 +277,7 @@ export function LiveSessionDetailDrawer({
             variant="subtitle2"
             sx={{ fontWeight: 600, mb: 1, color: "#374151" }}
           >
-            Recording &amp; sync
+            {t("adminLiveSessions.recordingAndSync")}
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
             {hasRecording ? (
@@ -292,7 +292,7 @@ export function LiveSessionDetailDrawer({
                 }
                 sx={{ textTransform: "none", alignSelf: "flex-start" }}
               >
-                Open recording
+                {t("adminLiveSessions.openRecording")}
               </Button>
             ) : (
               <>
@@ -305,13 +305,13 @@ export function LiveSessionDetailDrawer({
                   }
                   sx={{ textTransform: "none", alignSelf: "flex-start" }}
                 >
-                  Open recording
+                  {t("adminLiveSessions.openRecording")}
                 </Button>
                 <Typography
                   variant="caption"
                   sx={{ color: "#6b7280", maxWidth: 360 }}
                 >
-                  {RECORDING_NOT_AVAILABLE_FRIENDLY_MESSAGE}
+                  {t("liveSessions.recordingNotAvailable")}
                 </Typography>
               </>
             )}
@@ -334,7 +334,7 @@ export function LiveSessionDetailDrawer({
                   }
                   sx={{ textTransform: "none" }}
                 >
-                  End meeting
+                  {t("adminLiveSessions.endMeeting")}
                 </Button>
                 <Dialog
                   open={endMeetingConfirmOpen}
@@ -343,16 +343,16 @@ export function LiveSessionDetailDrawer({
                   aria-describedby="end-meeting-dialog-description"
                 >
                   <DialogTitle id="end-meeting-dialog-title">
-                    End this meeting?
+                    {t("adminLiveSessions.endMeetingConfirmTitle")}
                   </DialogTitle>
                   <DialogContent>
                     <DialogContentText id="end-meeting-dialog-description">
-                      All participants will be disconnected. This cannot be undone.
+                      {t("adminLiveSessions.endMeetingConfirmDesc")}
                     </DialogContentText>
                   </DialogContent>
                   <DialogActions>
                     <Button onClick={() => setEndMeetingConfirmOpen(false)}>
-                      Cancel
+                      {t("adminLiveSessions.cancel")}
                     </Button>
                     <Button
                       onClick={handleEndMeetingConfirm}
@@ -360,7 +360,7 @@ export function LiveSessionDetailDrawer({
                       variant="contained"
                       disabled={endingMeeting}
                     >
-                      End meeting
+                      {t("adminLiveSessions.endMeeting")}
                     </Button>
                   </DialogActions>
                 </Dialog>
@@ -380,7 +380,7 @@ export function LiveSessionDetailDrawer({
               }
               sx={{ textTransform: "none" }}
             >
-              Sync recording
+              {t("adminLiveSessions.syncRecording")}
             </Button>
           </Box>
 

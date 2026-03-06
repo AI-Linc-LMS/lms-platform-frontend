@@ -17,6 +17,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   Student,
@@ -67,6 +68,7 @@ export function StudentsTable({
   onSort,
 }: StudentsTableProps) {
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   if (loading) {
     return (
@@ -157,7 +159,7 @@ export function StudentsTable({
                     component="span"
                     sx={{ display: { xs: "none", sm: "inline" } }}
                   >
-                    NAME
+                    {t("adminManageStudents.name").toUpperCase()}
                   </Box>
                   {getSortIcon("name", sortBy, sortOrder) && (
                     <IconWrapper
@@ -192,7 +194,7 @@ export function StudentsTable({
                     component="span"
                     sx={{ display: { xs: "none", sm: "inline" } }}
                   >
-                    ENROLL
+                    {t("adminManageStudents.enroll").toUpperCase()}
                   </Box>
                 </Box>
               </TableCell>
@@ -213,7 +215,7 @@ export function StudentsTable({
                   }}
                 >
                   <IconWrapper icon="mdi:target" size={18} color="#6b7280" />
-                  MOST ACTIVE
+                {t("adminManageStudents.mostActive").toUpperCase()}
                 </Box>
               </TableCell>
               <TableCell
@@ -240,7 +242,7 @@ export function StudentsTable({
                     component="span"
                     sx={{ display: { xs: "none", sm: "inline" } }}
                   >
-                    COMPLETION %
+                    {t("adminManageStudents.completionPct").toUpperCase()}
                   </Box>
                   {getSortIcon("completion_pct", sortBy, sortOrder) && (
                     <IconWrapper
@@ -275,7 +277,7 @@ export function StudentsTable({
                     component="span"
                     sx={{ display: { xs: "none", sm: "inline" } }}
                   >
-                    ATTENDANCE %
+                    {t("adminManageStudents.attendancePct").toUpperCase()}
                   </Box>
                   {getSortIcon("attendance_pct", sortBy, sortOrder) && (
                     <IconWrapper
@@ -312,7 +314,7 @@ export function StudentsTable({
                     component="span"
                     sx={{ display: { xs: "none", sm: "inline" } }}
                   >
-                    ACTIONS
+                    {t("adminManageStudents.actions").toUpperCase()}
                   </Box>
                 </Box>
               </TableCell>
@@ -349,7 +351,7 @@ export function StudentsTable({
                         fontWeight: 500,
                       }}
                     >
-                      No students found
+                      {t("adminManageStudents.noStudentsFound")}
                     </Typography>
                     <Typography
                       variant="caption"
@@ -357,7 +359,7 @@ export function StudentsTable({
                         color: "#9ca3af",
                       }}
                     >
-                      Try adjusting your filters
+                      {t("adminManageStudents.tryAdjustingFilters")}
                     </Typography>
                   </Box>
                 </TableCell>
@@ -421,11 +423,11 @@ export function StudentsTable({
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {student.name || "N/A"}
+                              {student.name || t("adminManageStudents.na")}
                             </Typography>
                             {!student.is_active && (
                               <Chip
-                                label="Inactive"
+                                label={t("adminManageStudents.inactive")}
                                 size="small"
                                 sx={{
                                   backgroundColor: "#fee2e2",
@@ -450,7 +452,7 @@ export function StudentsTable({
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {student.email || "N/A"}
+                            {student.email || t("adminManageStudents.na")}
                           </Typography>
                         </Box>
                       </Box>
@@ -490,7 +492,7 @@ export function StudentsTable({
                           maxWidth: 200,
                         }}
                       >
-                        {student.most_active_course || "No Activity"}
+                        {student.most_active_course || t("adminManageStudents.noActivity")}
                       </Typography>
                     </TableCell>
                     <TableCell
@@ -552,7 +554,7 @@ export function StudentsTable({
                             fontSize: { xs: "0.75rem", sm: "0.875rem" },
                           }}
                         >
-                          N/A
+                          {t("adminManageStudents.na")}
                         </Typography>
                       )}
                     </TableCell>
@@ -615,7 +617,7 @@ export function StudentsTable({
                             fontSize: { xs: "0.75rem", sm: "0.875rem" },
                           }}
                         >
-                          N/A
+                          {t("adminManageStudents.na")}
                         </Typography>
                       )}
                     </TableCell>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
 import { ContentDetails } from "@/lib/services/admin/admin-content-management.service";
 
@@ -13,10 +14,11 @@ export function VideoTutorialView({ content }: VideoTutorialViewProps) {
   const description = content.content_details?.description || "";
   const difficultyLevel = content.content_details?.difficulty_level || "";
 
+  const { t } = useTranslation("common");
   if (!videoUrl) {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography variant="h6">No video URL provided</Typography>
+        <Typography variant="h6">{t("adminContentManagement.noVideoUrlProvided")}</Typography>
       </Box>
     );
   }

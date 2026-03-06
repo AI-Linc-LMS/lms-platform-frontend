@@ -17,6 +17,7 @@ import {
   Typography,
   SelectChangeEvent,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState } from "react";
 
@@ -39,6 +40,7 @@ export function CreateCourseModal({
   loading = false,
   existingTitles = [],
 }: CreateCourseModalProps) {
+  const { t } = useTranslation("common");
   const [formData, setFormData] = useState({
     name: "",
     level: "",
@@ -87,10 +89,10 @@ export function CreateCourseModal({
     // Validation
     const newErrors: typeof errors = {};
     if (!formData.name.trim()) {
-      newErrors.name = "Course name is required";
+      newErrors.name = t("adminCourseBuilder.courseNameRequired");
     }
     if (!formData.level) {
-      newErrors.level = "Difficulty level is required";
+      newErrors.level = t("adminCourseBuilder.difficultyRequired");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -104,7 +106,7 @@ export function CreateCourseModal({
     );
 
     if (isDuplicate) {
-      if (!confirm(`A course with a similar title already exists. Create anyway?`)) {
+      if (!confirm(t("adminCourseBuilder.duplicateTitleConfirm"))) {
         return;
       }
     }
@@ -142,7 +144,7 @@ export function CreateCourseModal({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Add New Course
+          {t("adminCourseBuilder.addNewCourseTitle")}
         </Typography>
         <IconButton
           onClick={handleClose}
@@ -157,11 +159,11 @@ export function CreateCourseModal({
         <DialogContent sx={{ pt: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <TextField
-              label="Course Name"
+              label={t("adminCourseBuilder.courseName")}
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="e.g., Data Structures"
+              placeholder={t("adminCourseBuilder.courseNamePlaceholder")}
               fullWidth
               required
               error={!!errors.name}
@@ -170,16 +172,16 @@ export function CreateCourseModal({
             />
 
             <FormControl fullWidth required error={!!errors.level}>
-              <InputLabel>Difficulty Level</InputLabel>
+              <InputLabel>{t("adminCourseBuilder.difficultyLevel")}</InputLabel>
               <Select
                 value={formData.level}
                 onChange={handleSelectChange}
-                label="Difficulty Level"
+                label={t("adminCourseBuilder.difficultyLevel")}
               >
-                <MenuItem value="">Choose a level</MenuItem>
-                <MenuItem value="Easy">Easy</MenuItem>
-                <MenuItem value="Medium">Medium</MenuItem>
-                <MenuItem value="Hard">Hard</MenuItem>
+                <MenuItem value="">{t("adminCourseBuilder.chooseLevel")}</MenuItem>
+                <MenuItem value="Easy">{t("adminCourseBuilder.easy")}</MenuItem>
+                <MenuItem value="Medium">{t("adminCourseBuilder.medium")}</MenuItem>
+                <MenuItem value="Hard">{t("adminCourseBuilder.hard")}</MenuItem>
               </Select>
               {errors.level && (
                 <Typography variant="caption" sx={{ color: "#d32f2f", mt: 0.5, ml: 1.75 }}>
@@ -189,11 +191,11 @@ export function CreateCourseModal({
             </FormControl>
 
             <TextField
-              label="Description"
+              label={t("adminCourseBuilder.description")}
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="e.g., This course covers..."
+              placeholder={t("adminCourseBuilder.descriptionPlaceholder")}
               fullWidth
               multiline
               rows={4}
@@ -203,7 +205,7 @@ export function CreateCourseModal({
 
         <DialogActions sx={{ p: 2, pt: 1 }}>
           <Button onClick={handleClose} disabled={loading}>
-            Cancel
+            {t("adminCourseBuilder.cancel")}
           </Button>
           <Button
             type="submit"
@@ -218,7 +220,7 @@ export function CreateCourseModal({
             }
             sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
           >
-            {loading ? "Creating..." : "Create Course"}
+            {loading ? t("adminCourseBuilder.creating") : t("adminCourseBuilder.createCourse")}
           </Button>
         </DialogActions>
       </form>

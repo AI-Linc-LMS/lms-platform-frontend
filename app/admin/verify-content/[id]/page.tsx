@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Paper,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
@@ -27,6 +28,7 @@ import { ContentViewHeader } from "@/components/admin/content-management/Content
 export default function ContentViewPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [content, setContent] = useState<ContentDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function ContentViewPage() {
       );
       setContent(data);
     } catch (error: any) {
-      showToast(error?.message || "Failed to load content", "error");
+      showToast(error?.message || t("adminContentManagement.failedToLoadContent"), "error");
       router.push("/admin/verify-content");
     } finally {
       setLoading(false);
@@ -76,12 +78,12 @@ export default function ContentViewPage() {
       });
 
       showToast(
-        `Content ${!content.is_verified ? "verified" : "unverified"} successfully`,
+        !content.is_verified ? t("adminContentManagement.contentVerifiedSuccessfully") : t("adminContentManagement.contentUnverifiedSuccessfully"),
         "success"
       );
     } catch (error: any) {
       showToast(
-        error?.message || "Failed to update verification status",
+        error?.message || t("adminContentManagement.failedToUpdateVerificationStatus"),
         "error"
       );
     } finally {
@@ -110,9 +112,9 @@ export default function ContentViewPage() {
     return (
       <MainLayout>
         <Box sx={{ p: 3 }}>
-          <Typography variant="h6">Content not found</Typography>
+          <Typography variant="h6">{t("adminContentManagement.contentNotFound")}</Typography>
           <Button onClick={() => router.push("/admin/verify-content")}>
-            Back to Content Management
+            {t("adminContentManagement.backToContentManagement")}
           </Button>
         </Box>
       </MainLayout>
@@ -139,7 +141,7 @@ export default function ContentViewPage() {
               {content.title}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Content type "{content.type}" is not yet supported in view mode.
+              {t("adminContentManagement.contentTypeNotSupported", { type: content.type })}
             </Typography>
           </Paper>
         );

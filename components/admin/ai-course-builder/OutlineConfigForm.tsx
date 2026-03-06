@@ -12,6 +12,7 @@ import {
   Checkbox,
   SelectChangeEvent,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import type { OutlineConfig } from "@/lib/services/admin/ai-course-builder.service";
 
 const CONTENT_TYPES = ["Article", "Quiz",];
@@ -33,6 +34,7 @@ const defaultConfig: OutlineConfig = {
 };
 
 export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) {
+  const { t } = useTranslation("common");
   const c = { ...defaultConfig, ...config };
 
   const handleContentTypes = (e: SelectChangeEvent<string[]>) => {
@@ -75,16 +77,16 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151" }}>
-        Content configuration
+        {t("adminAICourseBuilder.contentConfiguration")}
       </Typography>
 
       <FormControl size="small" fullWidth>
-        <InputLabel>Content types</InputLabel>
+        <InputLabel>{t("adminAICourseBuilder.contentTypes")}</InputLabel>
         <Select
           multiple
           value={c.content_types ?? ["Quiz", "Article"]}
           onChange={handleContentTypes}
-          label="Content types"
+          label={t("adminAICourseBuilder.contentTypes")}
           renderValue={(selected) => (selected as string[]).join(", ")}
         >
           {CONTENT_TYPES.map((t) => (
@@ -96,15 +98,15 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
       </FormControl>
 
       <FormControl size="small" fullWidth>
-        <InputLabel>Difficulty level</InputLabel>
+        <InputLabel>{t("adminAICourseBuilder.difficultyLevel")}</InputLabel>
         <Select
           value={c.difficulty_level ?? "Medium"}
           onChange={handleDifficulty}
-          label="Difficulty level"
+          label={t("adminAICourseBuilder.difficultyLevel")}
         >
           {DIFFICULTY_LEVELS.map((d) => (
             <MenuItem key={d} value={d}>
-              {d}
+              {t(`adminCourseBuilder.${d.toLowerCase()}`)}
             </MenuItem>
           ))}
         </Select>
@@ -118,13 +120,13 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
             color="primary"
           />
         }
-        label="Include coding problems"
+        label={t("adminAICourseBuilder.includeCodingProblems")}
       />
 
       <TextField
         size="small"
         type="number"
-        label="Articles per submodule"
+        label={t("adminAICourseBuilder.articlesPerSubmodule")}
         value={c.articles_per_submodule ?? 1}
         onChange={(e) => handleNumber("articles_per_submodule", e.target.value)}
         inputProps={{ min: 0 }}
@@ -133,7 +135,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
       <TextField
         size="small"
         type="number"
-        label="Quizzes per submodule"
+        label={t("adminAICourseBuilder.quizzesPerSubmodule")}
         value={c.quizzes_per_submodule ?? 1}
         onChange={(e) => handleNumber("quizzes_per_submodule", e.target.value)}
         inputProps={{ min: 0 }}
@@ -142,7 +144,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
       <TextField
         size="small"
         type="number"
-        label="Questions per quiz"
+        label={t("adminAICourseBuilder.questionsPerQuiz")}
         value={c.questions_per_quiz ?? 5}
         onChange={(e) => handleNumber("questions_per_quiz", e.target.value)}
         inputProps={{ min: 3}}
@@ -151,7 +153,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
       <TextField
         size="small"
         type="number"
-        label="Coding problems per submodule"
+        label={t("adminAICourseBuilder.codingProblemsPerSubmodule")}
         value={c.coding_problems_per_submodule ?? 0}
         onChange={(e) =>
           handleNumber("coding_problems_per_submodule", e.target.value)

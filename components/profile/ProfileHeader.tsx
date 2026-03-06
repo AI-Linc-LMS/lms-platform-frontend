@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Avatar,
@@ -37,6 +38,7 @@ export function ProfileHeader({
   onEditProfilePicUrl,
   onEditHeadline,
 }: ProfileHeaderProps) {
+  const { t } = useTranslation("common");
   const [profilePicHovered, setProfilePicHovered] = useState(false);
   const [headlineHovered, setHeadlineHovered] = useState(false);
   const [headlineDialogOpen, setHeadlineDialogOpen] = useState(false);
@@ -164,7 +166,7 @@ export function ProfileHeader({
                 fontStyle: headline ? "normal" : "italic",
               }}
             >
-              {headline || "Add a headline"}
+              {headline || t("profile.addHeadline")}
             </Typography>
             {onEditHeadline && (headlineHovered || !headline) && (
               <IconButton
@@ -243,10 +245,10 @@ export function ProfileHeader({
               }}
             >
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                Edit Profile
+                {t("profile.editProfile")}
               </Box>
               <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-                Edit
+                {t("profile.edit")}
               </Box>
             </Button>
           </Box>
@@ -310,7 +312,7 @@ export function ProfileHeader({
                 mb: 0.25,
               }}
             >
-              Edit Headline
+              {t("profile.editHeadline")}
             </Typography>
             <Typography
               variant="caption"
@@ -320,7 +322,7 @@ export function ProfileHeader({
                 fontWeight: 400,
               }}
             >
-              Add a professional headline to showcase your expertise
+              {t("profile.headlineHelper")}
             </Typography>
           </Box>
         </DialogTitle>
@@ -546,7 +548,7 @@ export function ProfileHeader({
               transition: "all 0.2s ease",
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={async () => {
@@ -602,10 +604,10 @@ export function ProfileHeader({
                     },
                   }}
                 />
-                Saving...
+                {t("profile.saving")}
               </Box>
             ) : (
-              "Save"
+              t("profile.save")
             )}
           </Button>
         </DialogActions>
@@ -617,7 +619,7 @@ export function ProfileHeader({
           open={profilePicDialogOpen}
           onClose={() => setProfilePicDialogOpen(false)}
           onSave={onEditProfilePicUrl}
-          title="Edit Profile Picture"
+          title={t("profile.editProfilePicture")}
           subtitle="Paste an image URL to use as your profile picture"
           currentImageUrl={profilePicUrl}
           placeholder="https://example.com/profile-picture.jpg"

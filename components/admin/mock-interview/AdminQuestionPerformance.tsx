@@ -9,6 +9,7 @@ import {
   AccordionDetails,
   Divider,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo, Fragment } from "react";
 import type {
@@ -40,11 +41,12 @@ const AdminQuestionPerformanceComponent = ({
   expandedQuestion,
   onQuestionToggle,
 }: AdminQuestionPerformanceProps) => {
+  const { t } = useTranslation("common");
   const criteriaLabels: Record<string, string> = {
-    technical_accuracy: "Technical Accuracy",
-    communication: "Communication",
-    problem_solving: "Problem Solving",
-    code_quality: "Code Quality",
+    technical_accuracy: t("adminMockInterview.technicalAccuracy"),
+    communication: t("adminMockInterview.communication"),
+    problem_solving: t("adminMockInterview.problemSolving"),
+    code_quality: t("adminMockInterview.codeQuality"),
   };
 
   return (
@@ -58,7 +60,7 @@ const AdminQuestionPerformanceComponent = ({
       }}
     >
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
-        Questions & Responses
+        {t("adminMockInterview.questionsAndResponses")}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {questions.map((q, index) => {
@@ -111,7 +113,7 @@ const AdminQuestionPerformanceComponent = ({
                     variant="subtitle2"
                     sx={{ fontWeight: 700, mb: 1, color: "#1f2937" }}
                   >
-                    Student Response
+                    {t("adminMockInterview.studentResponse")}
                   </Typography>
                   <Paper
                     elevation={0}
@@ -123,7 +125,7 @@ const AdminQuestionPerformanceComponent = ({
                     }}
                   >
                     <Typography variant="body2" sx={{ color: "#4b5563", whiteSpace: "pre-wrap" }}>
-                      {response || "No response recorded"}
+                      {response || t("adminMockInterview.noResponseRecorded")}
                     </Typography>
                   </Paper>
                 </Box>
@@ -138,7 +140,7 @@ const AdminQuestionPerformanceComponent = ({
       {evaluationScore && (
         <Box sx={{ mt: 3 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: "#1f2937" }}>
-            Evaluation Criteria
+            {t("adminMockInterview.evaluationCriteria")}
           </Typography>
           <Box
             sx={{

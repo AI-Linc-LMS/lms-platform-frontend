@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Chip, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface ManageStudentsHeaderProps {
@@ -14,6 +15,7 @@ export function ManageStudentsHeader({
   onBulkEnrollClick,
   onDownloadCsv,
 }: ManageStudentsHeaderProps) {
+  const { t } = useTranslation("common");
   return (
     <Box sx={{ mb: { xs: 3, sm: 4 } }}>
       <Box
@@ -42,11 +44,11 @@ export function ManageStudentsHeader({
               fontSize: { xs: "1.5rem", sm: "2rem" },
             }}
           >
-            Manage Students
+            {t("adminManageStudents.title")}
           </Typography>
           {totalCount > 0 && (
             <Chip
-              label={`${totalCount} Student${totalCount !== 1 ? "s" : ""}`}
+              label={t("adminManageStudents.studentCount", { count: totalCount })}
               sx={{
                 backgroundColor: "#eef2ff",
                 color: "#6366f1",
@@ -72,7 +74,7 @@ export function ManageStudentsHeader({
                 },
               }}
             >
-              Download CSV
+              {t("adminManageStudents.downloadCsv")}
             </Button>
           )}
           {onBulkEnrollClick && (
@@ -87,7 +89,7 @@ export function ManageStudentsHeader({
                 },
               }}
             >
-              Bulk Enroll
+              {t("adminManageStudents.bulkEnroll")}
             </Button>
           )}
         </Box>
@@ -99,7 +101,7 @@ export function ManageStudentsHeader({
           fontSize: { xs: "0.75rem", sm: "0.875rem" },
         }}
       >
-        View and manage all students, their progress, and activity
+        {t("adminManageStudents.subtitle")}
       </Typography>
     </Box>
   );

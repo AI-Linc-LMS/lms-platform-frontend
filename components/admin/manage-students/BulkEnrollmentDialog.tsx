@@ -29,6 +29,7 @@ import {
   IconButton,
   TablePagination,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { parseStudentCSV, ParsedStudent, CSVValidationError } from "@/lib/utils/csv-parser";
@@ -46,14 +47,14 @@ interface BulkEnrollmentDialogProps {
   onSuccess?: () => void;
 }
 
-const steps = ["Upload CSV", "Select Courses", "Confirm"];
-
 export function BulkEnrollmentDialog({
   open,
   onClose,
   onSuccess,
 }: BulkEnrollmentDialogProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
+  const steps = [t("adminManageStudents.uploadCsv"), t("adminManageStudents.selectCourses"), t("adminManageStudents.confirm")];
   const [activeStep, setActiveStep] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
   const [parsedStudents, setParsedStudents] = useState<ParsedStudent[]>([]);
@@ -91,7 +92,7 @@ export function BulkEnrollmentDialog({
       const coursesData = await coursesService.getCourses();
       setCourses(coursesData);
     } catch (error: any) {
-      showToast("Failed to load courses", "error");
+      showToast(t("adminManageStudents.failedToLoadCourses"), "error");
     } finally {
       setLoadingCourses(false);
     }
@@ -171,23 +172,20 @@ export function BulkEnrollmentDialog({
     setStudentsPage(0);
 
     if (duplicates.length > 0) {
-      showToast(
-        `Duplicate emails found. Please ensure all emails are unique before proceeding.`,
-        "error"
-      );
+      showToast(t("adminManageStudents.duplicateEmailsFound"), "error");
     } else if (allStudents.length === 0) {
       showToast(
-        `No valid students found in ${filesToParse.length} file(s). Please check ${totalErrors} error(s).`,
+        t("adminManageStudents.noValidStudentsInFiles", { count: filesToParse.length, errors: totalErrors }),
         "error"
       );
     } else if (allErrors.length > 0) {
       showToast(
-        `Parsed ${totalValid} valid student(s) from ${filesToParse.length} file(s). ${totalErrors} row(s) skipped due to missing/invalid data.`,
+        t("adminManageStudents.parsedWithErrors", { valid: totalValid, files: filesToParse.length, errors: totalErrors }),
         "warning"
       );
     } else {
       showToast(
-        `Successfully parsed ${totalValid} students from ${filesToParse.length} file(s)`,
+        t("adminManageStudents.parsedSuccess", { count: totalValid, files: filesToParse.length }),
         "success"
       );
     }
@@ -215,11 +213,11 @@ export function BulkEnrollmentDialog({
     const invalidFiles = uploadedFiles.filter(file => !file.name.endsWith(".csv"));
 
     if (invalidFiles.length > 0) {
-      showToast(`${invalidFiles.length} file(s) are not CSV files and were skipped`, "warning");
+      showToast(t("adminManageStudents.filesNotCsv", { count: invalidFiles.length }), "warning");
     }
 
     if (csvFiles.length === 0) {
-      showToast("Please upload CSV files", "error");
+      showToast(t("adminManageStudents.pleaseUploadCsv"), "error");
       return;
     }
 
@@ -230,7 +228,7 @@ export function BulkEnrollmentDialog({
       const allFiles = [...prevFiles, ...newFiles];
       
       if (newFiles.length < csvFiles.length) {
-        showToast(`${csvFiles.length - newFiles.length} file(s) already uploaded`, "info");
+        showToast(t("adminManageStudents.filesAlreadyUploaded", { count: csvFiles.length - newFiles.length }), "info");
       }
       
       // Parse all files
@@ -244,19 +242,19 @@ export function BulkEnrollmentDialog({
     if (activeStep === 0) {
       // Validate CSV upload - only require at least one valid student
       if (parsedStudents.length === 0) {
-        showToast("Please upload a CSV file with at least one valid student (name and email required)", "error");
+        showToast(t("adminManageStudents.pleaseUploadCsvWithStudents"), "error");
         return;
       }
       // Check for duplicate emails
       if (duplicateEmails.length > 0) {
-        showToast("Duplicate emails found. Please remove duplicates and re-upload with all unique emails.", "error");
+        showToast(t("adminManageStudents.duplicateEmailsRemove"), "error");
         return;
       }
       // Allow proceeding even if some rows had errors (they're already skipped)
     } else if (activeStep === 1) {
       // Validate course selection
       if (selectedCourseIds.length === 0) {
-        showToast("Please select at least one course", "error");
+        showToast(t("adminManageStudents.pleaseSelectCourse"), "error");
         return;
       }
     }
@@ -279,9 +277,9 @@ export function BulkEnrollmentDialog({
       setCurrentJob(job);
       setShowJobStatus(true);
       setActiveStep(3); // Move to job status step
-      showToast("Enrollment job created successfully", "success");
+      showToast(t("adminManageStudents.enrollmentJobCreated"), "success");
     } catch (error: any) {
-      showToast(error.message || "Failed to create enrollment job", "error");
+      showToast(error.message || t("adminManageStudents.failedToCreateJob"), "error");
     } finally {
       setCreatingJob(false);
     }
@@ -301,10 +299,10 @@ export function BulkEnrollmentDialog({
         return (
           <Box>
             <Typography variant="h6" fontWeight={600} gutterBottom>
-              Upload Student CSV File
+              {t("adminManageStudents.uploadStudentCsvTitle")}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Upload a CSV file with columns: name, email, phone (optional)
+              {t("adminManageStudents.uploadStudentCsvDesc")}
             </Typography>
 
             <Box
@@ -332,17 +330,17 @@ export function BulkEnrollmentDialog({
               />
               <IconWrapper icon="mdi:upload" size={48} />
               <Typography variant="body1" sx={{ mt: 2, mb: 1 }}>
-                Click to upload or drag and drop
+                {t("adminManageStudents.clickToUpload")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                CSV files only (multiple files supported)
+                {t("adminManageStudents.csvFilesOnly")}
               </Typography>
             </Box>
 
             {files.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Uploaded Files ({files.length}):
+                  {t("adminManageStudents.uploadedFiles", { count: files.length })}
                 </Typography>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                   {files.map((file, index) => (
@@ -367,10 +365,10 @@ export function BulkEnrollmentDialog({
             {duplicateEmails.length > 0 && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                  Duplicate Emails Found ({duplicateEmails.length}):
+                  {t("adminManageStudents.duplicateEmailsTitle", { count: duplicateEmails.length })}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  The following email addresses appear multiple times in your CSV file. Please remove duplicates and re-upload with all unique emails.
+                  {t("adminManageStudents.duplicateEmailsDesc")}
                 </Typography>
                 <Box sx={{ maxHeight: 300, overflowY: "auto", mt: 1.5 }}>
                   {duplicateEmails.slice(0, 20).map((duplicate, index) => (
@@ -388,7 +386,7 @@ export function BulkEnrollmentDialog({
                         <Typography variant="body2" component="span" sx={{ fontWeight: 600, color: "#991b1b" }}>
                           {duplicate.email}
                         </Typography>
-                        <Chip label={`${duplicate.count} times`} size="small" sx={{ ml: 1, height: 20, fontSize: "0.7rem", bgcolor: "#fee2e2", color: "#991b1b" }} />
+                        <Chip label={`${duplicate.count} ${t("adminManageStudents.times")}`} size="small" sx={{ ml: 1, height: 20, fontSize: "0.7rem", bgcolor: "#fee2e2", color: "#991b1b" }} />
                       </Box>
                       <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
                         {duplicate.students.map((student, studentIndex) => (
@@ -401,11 +399,11 @@ export function BulkEnrollmentDialog({
                       </Box>
                     </Box>
                   ))}
-                  {duplicateEmails.length > 20 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
-                      ... and {duplicateEmails.length - 20} more duplicate email(s)
-                    </Typography>
-                  )}
+                    {duplicateEmails.length > 20 && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
+                        {t("adminManageStudents.andMoreDuplicates", { count: duplicateEmails.length - 20 })}
+                      </Typography>
+                    )}
                 </Box>
               </Alert>
             )}
@@ -413,22 +411,22 @@ export function BulkEnrollmentDialog({
             {parsedStudents.length > 0 && validationErrors.length > 0 && (
               <Alert severity="warning" sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>
-                  Skipped Rows ({validationErrors.length}):
+                  {t("adminManageStudents.skippedRowsTitle", { count: validationErrors.length })}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  The following rows were skipped due to missing or invalid data. Only rows with both name and email are processed.
+                  {t("adminManageStudents.skippedRowsDesc")}
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2, maxHeight: 200, overflowY: "auto" }}>
                   {validationErrors.slice(0, 20).map((error, index) => (
                     <li key={index}>
                       <Typography variant="body2">
-                        Row {error.row}: {error.field} - {error.message}
+                        {t("adminManageStudents.rowError", { row: error.row, field: error.field, message: error.message })}
                       </Typography>
                     </li>
                   ))}
                   {validationErrors.length > 20 && (
                     <Typography variant="body2" color="text.secondary">
-                      ... and {validationErrors.length - 20} more skipped rows
+                      {t("adminManageStudents.andMoreSkipped", { count: validationErrors.length - 20 })}
                     </Typography>
                   )}
                 </Box>
@@ -438,22 +436,22 @@ export function BulkEnrollmentDialog({
             {parsedStudents.length === 0 && validationErrors.length > 0 && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>
-                  No Valid Students Found ({validationErrors.length} errors):
+                  {t("adminManageStudents.noValidStudentsTitle", { count: validationErrors.length })}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  All rows were skipped. Please ensure your CSV has at least one row with both name and email fields.
+                  {t("adminManageStudents.noValidStudentsDesc")}
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2, maxHeight: 200, overflowY: "auto" }}>
                   {validationErrors.slice(0, 20).map((error, index) => (
                     <li key={index}>
                       <Typography variant="body2">
-                        Row {error.row}: {error.field} - {error.message}
+                        {t("adminManageStudents.rowError", { row: error.row, field: error.field, message: error.message })}
                       </Typography>
                     </li>
                   ))}
                   {validationErrors.length > 20 && (
                     <Typography variant="body2" color="text.secondary">
-                      ... and {validationErrors.length - 20} more errors
+                      {t("adminManageStudents.andMoreErrors", { count: validationErrors.length - 20 })}
                     </Typography>
                   )}
                 </Box>
@@ -464,11 +462,11 @@ export function BulkEnrollmentDialog({
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
                   <Typography variant="subtitle2" fontWeight={600}>
-                    Valid Students ({parsedStudents.length}):
+                    {t("adminManageStudents.validStudents", { count: parsedStudents.length })}
                   </Typography>
                   {validationErrors.length > 0 && (
                     <Typography variant="caption" color="text.secondary">
-                      {validationErrors.length} row(s) skipped
+                      {t("adminManageStudents.rowsSkipped", { count: validationErrors.length })}
                     </Typography>
                   )}
                 </Box>
@@ -476,9 +474,9 @@ export function BulkEnrollmentDialog({
                   <Table size="small" stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Email</TableCell>
-                        <TableCell>Phone</TableCell>
+                        <TableCell>{t("adminManageStudents.name")}</TableCell>
+                        <TableCell>{t("adminManageStudents.email")}</TableCell>
+                        <TableCell>{t("adminManageStudents.phone")}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -491,7 +489,7 @@ export function BulkEnrollmentDialog({
                           <TableRow key={index}>
                             <TableCell>{student.name}</TableCell>
                             <TableCell>{student.email}</TableCell>
-                            <TableCell>{student.phone || "-"}</TableCell>
+                            <TableCell>{student.phone || t("adminManageStudents.na")}</TableCell>
                           </TableRow>
                         ))}
                     </TableBody>
@@ -509,7 +507,7 @@ export function BulkEnrollmentDialog({
                       setStudentsPage(0);
                     }}
                     rowsPerPageOptions={[5, 10, 25, 50, 100]}
-                    labelRowsPerPage="Rows per page:"
+                    labelRowsPerPage={t("adminManageStudents.rowsPerPage")}
                   />
                 </TableContainer>
               </Box>
@@ -521,10 +519,10 @@ export function BulkEnrollmentDialog({
         return (
           <Box>
             <Typography variant="h6" fontWeight={600} gutterBottom>
-              Select Courses
+              {t("adminManageStudents.selectCoursesTitle")}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Select one or more courses to enroll students in
+              {t("adminManageStudents.selectCoursesDesc")}
             </Typography>
 
             {loadingCourses ? (
@@ -533,12 +531,12 @@ export function BulkEnrollmentDialog({
               </Box>
             ) : (
               <FormControl fullWidth>
-                <InputLabel>Courses</InputLabel>
+                <InputLabel>{t("adminManageStudents.courses")}</InputLabel>
                 <Select
                   multiple
                   value={selectedCourseIds}
                   onChange={(e) => setSelectedCourseIds(e.target.value as number[])}
-                  label="Courses"
+                  label={t("adminManageStudents.courses")}
                   renderValue={(selected) => (
                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                       {selected.map((courseId) => {
@@ -566,7 +564,7 @@ export function BulkEnrollmentDialog({
             {selectedCourseIds.length > 0 && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" color="text.secondary">
-                  {selectedCourseIds.length} course(s) selected
+                  {t("adminManageStudents.courseSelected", { count: selectedCourseIds.length })}
                 </Typography>
               </Box>
             )}
@@ -577,16 +575,16 @@ export function BulkEnrollmentDialog({
         return (
           <Box>
             <Typography variant="h6" fontWeight={600} gutterBottom>
-              Confirm Enrollment
+              {t("adminManageStudents.confirmEnrollmentTitle")}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Review the details before creating the enrollment job
+              {t("adminManageStudents.confirmEnrollmentDesc")}
             </Typography>
 
             <Paper sx={{ p: 2, mb: 2 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Students:
+                  {t("adminManageStudents.students")}:
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
                   {parsedStudents.length}
@@ -594,7 +592,7 @@ export function BulkEnrollmentDialog({
               </Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Courses:
+                  {t("adminManageStudents.courses")}:
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
                   {selectedCourseIds.length}
@@ -602,7 +600,7 @@ export function BulkEnrollmentDialog({
               </Box>
               <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                 <Typography variant="body2" color="text.secondary">
-                  Total Enrollments:
+                  {t("adminManageStudents.totalEnrollments")}
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
                   {parsedStudents.length * selectedCourseIds.length}
@@ -613,14 +611,13 @@ export function BulkEnrollmentDialog({
             {validationErrors.length > 0 && (
               <Alert severity="warning" sx={{ mb: 2 }}>
                 <Typography variant="body2">
-                  Note: {validationErrors.length} row(s) from the CSV were skipped due to missing or invalid data (name/email required). Only the {parsedStudents.length} valid student(s) above will be processed.
+                  {t("adminManageStudents.noteSkippedRows", { skipped: validationErrors.length, valid: parsedStudents.length })}
                 </Typography>
               </Alert>
             )}
 
             <Alert severity="info">
-              This will create an asynchronous job. You can track the progress after
-              submission.
+              {t("adminManageStudents.asyncJobNote")}
             </Alert>
           </Box>
         );
@@ -646,7 +643,7 @@ export function BulkEnrollmentDialog({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconWrapper icon="mdi:account-plus" size={24} />
             <Typography variant="h6" fontWeight={600}>
-              Bulk Student Enrollment
+              {t("adminManageStudents.bulkStudentEnrollment")}
             </Typography>
           </Box>
           <IconButton onClick={onClose} size="small">
@@ -669,12 +666,12 @@ export function BulkEnrollmentDialog({
       {activeStep < 3 && (
         <DialogActions>
           <Button onClick={onClose} disabled={creatingJob}>
-            Cancel
+            {t("adminManageStudents.cancel")}
           </Button>
           <Box sx={{ flex: 1 }} />
           {activeStep > 0 && (
             <Button onClick={handleBack} disabled={creatingJob}>
-              Back
+              {t("adminManageStudents.back")}
             </Button>
           )}
           {activeStep < 2 ? (
@@ -684,7 +681,7 @@ export function BulkEnrollmentDialog({
               disabled={creatingJob}
               startIcon={<IconWrapper icon="mdi:arrow-right" size={20} />}
             >
-              Next
+              {t("adminManageStudents.next")}
             </Button>
           ) : (
             <Button
@@ -699,7 +696,7 @@ export function BulkEnrollmentDialog({
                 )
               }
             >
-              {creatingJob ? "Creating..." : "Create Job"}
+              {creatingJob ? t("adminManageStudents.creating") : t("adminManageStudents.createJob")}
             </Button>
           )}
         </DialogActions>

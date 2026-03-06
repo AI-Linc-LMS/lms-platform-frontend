@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -34,6 +35,7 @@ export function UserDetailsCard({
   socialLinks,
   externalProfiles,
 }: UserDetailsCardProps) {
+  const { t } = useTranslation();
   const formatUrl = (url: string) => {
     if (!url) return "";
     if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -45,12 +47,12 @@ export function UserDetailsCard({
   const details: DetailItem[] = [
     {
       icon: "mdi:account",
-      label: "Username",
+      label: t("profile.username"),
       value: username,
     },
     {
       icon: "mdi:email",
-      label: "Email address",
+      label: t("profile.emailAddress"),
       value: emailAddress,
       copyable: true,
     },
@@ -58,7 +60,7 @@ export function UserDetailsCard({
       ? [
           {
             icon: "mdi:github",
-            label: "GitHub",
+            label: t("profile.github"),
             value: `https://github.com/${socialLinks.github}`,
             copyable: true,
             linkable: true,
@@ -70,7 +72,7 @@ export function UserDetailsCard({
       ? [
           {
             icon: "mdi:linkedin",
-            label: "LinkedIn",
+            label: t("profile.linkedin"),
             value: `https://www.linkedin.com/in/${socialLinks.linkedin}`,
             copyable: true,
             linkable: true,
@@ -82,7 +84,7 @@ export function UserDetailsCard({
       ? [
           {
             icon: "mdi:web",
-            label: "Portfolio",
+            label: t("profile.portfolio"),
             value: externalProfiles.portfolio_website_url,
             copyable: true,
             linkable: true,
@@ -94,7 +96,7 @@ export function UserDetailsCard({
       ? [
           {
             icon: "mdi:code-tags",
-            label: "LeetCode",
+            label: t("profile.leetcode"),
             value: externalProfiles.leetcode_url,
             copyable: true,
             linkable: true,
@@ -106,7 +108,7 @@ export function UserDetailsCard({
       ? [
           {
             icon: "mdi:code-braces",
-            label: "HackerRank",
+            label: t("profile.hackerrank"),
             value: externalProfiles.hackerrank_url,
             copyable: true,
             linkable: true,
@@ -118,7 +120,7 @@ export function UserDetailsCard({
       ? [
           {
             icon: "mdi:chart-box",
-            label: "Kaggle",
+            label: t("profile.kaggle"),
             value: externalProfiles.kaggle_url,
             copyable: true,
             linkable: true,
@@ -130,7 +132,7 @@ export function UserDetailsCard({
       ? [
           {
             icon: "mdi:book-open-variant",
-            label: "Medium",
+            label: t("profile.medium"),
             value: externalProfiles.medium_url,
             copyable: true,
             linkable: true,

@@ -17,8 +17,8 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { RECORDING_NOT_AVAILABLE_FRIENDLY_MESSAGE } from "@/lib/utils/live-session-errors";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
 
 interface AdminLiveSessionsTableProps {
@@ -52,6 +52,7 @@ export function AdminLiveSessionsTable({
   onViewSession,
   formatDateTime,
 }: AdminLiveSessionsTableProps) {
+  const { t } = useTranslation("common");
   const paginatedSessions = sessions.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -76,7 +77,7 @@ export function AdminLiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Topic
+                {t("adminLiveSessions.topic")}
               </TableCell>
               <TableCell
                 sx={{
@@ -85,7 +86,7 @@ export function AdminLiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Class date / time
+                {t("adminLiveSessions.classDateTime")}
               </TableCell>
               <TableCell
                 sx={{
@@ -94,7 +95,7 @@ export function AdminLiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Course
+                {t("adminLiveSessions.course")}
               </TableCell>
               <TableCell
                 sx={{
@@ -103,7 +104,7 @@ export function AdminLiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Status
+                {t("adminLiveSessions.status")}
               </TableCell>
               <TableCell
                 sx={{
@@ -112,7 +113,7 @@ export function AdminLiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Attended
+                {t("adminLiveSessions.attended")}
               </TableCell>
               <TableCell
                 sx={{
@@ -121,7 +122,7 @@ export function AdminLiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Actions
+                {t("adminLiveSessions.actions")}
               </TableCell>
               <TableCell
                 sx={{
@@ -131,7 +132,7 @@ export function AdminLiveSessionsTable({
                   width: 48,
                 }}
               >
-                View
+                {t("adminLiveSessions.view")}
               </TableCell>
             </TableRow>
           </TableHead>
@@ -166,7 +167,7 @@ export function AdminLiveSessionsTable({
                 <TableCell>
                   {activity.meeting_status === "live" ? (
                     <Chip
-                      label="Live"
+                      label={t("liveSessions.live")}
                       size="small"
                       sx={{
                         backgroundColor: "#d1fae5",
@@ -177,7 +178,7 @@ export function AdminLiveSessionsTable({
                     />
                   ) : activity.meeting_status === "ended" ? (
                     <Chip
-                      label="Ended"
+                      label={t("adminLiveSessions.ended")}
                       size="small"
                       sx={{
                         backgroundColor: "#9ca3af",
@@ -188,7 +189,7 @@ export function AdminLiveSessionsTable({
                     />
                   ) : activity.meeting_status === "expired" ? (
                     <Chip
-                      label="Expired"
+                      label={t("liveSessions.expired")}
                       size="small"
                       sx={{
                         backgroundColor: "#fed7aa",
@@ -239,7 +240,7 @@ export function AdminLiveSessionsTable({
                           color: "#6366f1",
                         }}
                       >
-                        Create Zoom
+                        {t("adminLiveSessions.createZoom")}
                       </Button>
                     )}
                     {activity.meeting_status === "live" &&
@@ -261,7 +262,7 @@ export function AdminLiveSessionsTable({
                             "&:hover": { bgcolor: "#4f46e5" },
                           }}
                         >
-                          Start meeting
+                          {t("adminLiveSessions.startMeeting")}
                         </Button>
                       )}
                     {activity.meeting_status === "live" &&
@@ -281,7 +282,7 @@ export function AdminLiveSessionsTable({
                             alignSelf: "flex-start",
                           }}
                         >
-                          Open join link
+                          {t("adminLiveSessions.openJoinLink")}
                         </Button>
                       )}
                     {activity.meeting_status === "live" &&
@@ -295,7 +296,7 @@ export function AdminLiveSessionsTable({
                           gap: 0.5,
                         }}
                       >
-                        Password: {activity.zoom_password}
+                        {t("liveSessions.password")}: {activity.zoom_password}
                         <Button
                           size="small"
                           sx={{
@@ -308,7 +309,7 @@ export function AdminLiveSessionsTable({
                             onCopyPassword(activity.zoom_password!)
                           }
                         >
-                          Copy
+                          {t("liveSessions.copy")}
                         </Button>
                       </Typography>
                     )}
@@ -337,11 +338,11 @@ export function AdminLiveSessionsTable({
                             alignSelf: "flex-start",
                           }}
                         >
-                          Open recording
+                          {t("adminLiveSessions.openRecording")}
                         </Button>
                       ) : (
                         <Tooltip
-                          title={RECORDING_NOT_AVAILABLE_FRIENDLY_MESSAGE}
+                          title={t("liveSessions.recordingNotAvailable")}
                           placement="top"
                         >
                           <span>
@@ -362,7 +363,7 @@ export function AdminLiveSessionsTable({
                                 alignSelf: "flex-start",
                               }}
                             >
-                              Open recording
+                              {t("adminLiveSessions.openRecording")}
                             </Button>
                           </span>
                         </Tooltip>
@@ -373,7 +374,7 @@ export function AdminLiveSessionsTable({
                   <IconButton
                     size="small"
                     onClick={() => onViewSession(activity)}
-                    aria-label="View session"
+                    aria-label={t("adminLiveSessions.viewSession")}
                   >
                     <IconWrapper icon="mdi:eye" size={20} />
                   </IconButton>
