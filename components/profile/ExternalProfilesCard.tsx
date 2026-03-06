@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, TextField, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface ExternalProfilesCardProps {
@@ -14,6 +15,7 @@ export function ExternalProfilesCard({
   profile,
   onSave,
 }: ExternalProfilesCardProps) {
+  const { t } = useTranslation("common");
   const [formData, setFormData] = useState({
     portfolio_website_url: profile.portfolio_website_url || "",
     leetcode_url: profile.leetcode_url || "",
@@ -24,6 +26,18 @@ export function ExternalProfilesCard({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const syncFormFromProfile = () => ({
+    portfolio_website_url: profile.portfolio_website_url || "",
+    leetcode_url: profile.leetcode_url || "",
+    hackerrank_url: profile.hackerrank_url || "",
+    kaggle_url: profile.kaggle_url || "",
+    medium_url: profile.medium_url || "",
+  });
+
+  useEffect(() => {
+    if (!editing) setFormData(syncFormFromProfile());
+  }, [profile, editing]);
+
   const handleChange =
     (field: keyof typeof formData) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,20 +47,43 @@ export function ExternalProfilesCard({
       });
     };
 
+  const platformBaseUrls: Record<string, string> = {
+    leetcode_url: "https://leetcode.com/",
+    hackerrank_url: "https://www.hackerrank.com/",
+    kaggle_url: "https://www.kaggle.com/",
+    medium_url: "https://medium.com/@",
+  };
+
+  const normalizeUrl = (field: string, value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed;
+    }
+    if (trimmed.includes(".")) {
+      return `https://${trimmed}`;
+    }
+    const base = platformBaseUrls[field];
+    if (base) {
+      return `${base}${trimmed}`;
+    }
+    return `https://${trimmed}`;
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       const dataToSave = {
-        portfolio_website_url: formData.portfolio_website_url || "",
-        leetcode_url: formData.leetcode_url || "",
-        hackerrank_url: formData.hackerrank_url || "",
-        kaggle_url: formData.kaggle_url || "",
-        medium_url: formData.medium_url || "",
+        portfolio_website_url: normalizeUrl("portfolio_website_url", formData.portfolio_website_url),
+        leetcode_url: normalizeUrl("leetcode_url", formData.leetcode_url),
+        hackerrank_url: normalizeUrl("hackerrank_url", formData.hackerrank_url),
+        kaggle_url: normalizeUrl("kaggle_url", formData.kaggle_url),
+        medium_url: normalizeUrl("medium_url", formData.medium_url),
       };
       await onSave(dataToSave);
       setEditing(false);
-    } catch (error) {
-      // Silently handle profile save error
+    } catch {
+      // handled by parent
     } finally {
       setSaving(false);
     }
@@ -215,7 +252,7 @@ export function ExternalProfilesCard({
                       color: "#9ca3af",
                     }}
                   >
-                    Not added
+                    {t("profile.notAdded")}
                   </Box>
                 )}
               </Typography>
@@ -257,14 +294,17 @@ export function ExternalProfilesCard({
             fontSize: "1.25rem",
           }}
         >
-          External Profiles
+          {t("profile.externalProfiles")}
         </Typography>
         {!editing ? (
           <Button
             variant="text"
             size="small"
             startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setFormData(syncFormFromProfile());
+              setEditing(true);
+            }}
             sx={{
               textTransform: "none",
               color: "#0a66c2",
@@ -276,7 +316,7 @@ export function ExternalProfilesCard({
               transition: "all 0.2s ease",
             }}
           >
-            Edit
+            {t("profile.edit")}
           </Button>
         ) : (
           <Box sx={{ display: "flex", gap: 1 }}>
@@ -297,7 +337,7 @@ export function ExternalProfilesCard({
                 },
               }}
             >
-              Cancel
+              {t("profile.cancel")}
             </Button>
             <Button
               variant="contained"
@@ -316,7 +356,7 @@ export function ExternalProfilesCard({
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("profile.saving") : t("profile.save")}
             </Button>
           </Box>
         )}
@@ -330,31 +370,31 @@ export function ExternalProfilesCard({
         }}
       >
         {renderField(
-          "Portfolio Website",
+          t("profile.portfolio"),
           "portfolio_website_url",
           "https://yourportfolio.com",
           "mdi:web"
         )}
         {renderField(
-          "LeetCode Profile",
+          t("profile.leetcode"),
           "leetcode_url",
           "https://leetcode.com/username",
           "mdi:code-tags"
         )}
         {renderField(
-          "HackerRank Profile",
+          t("profile.hackerrank"),
           "hackerrank_url",
           "https://www.hackerrank.com/username",
           "mdi:code-braces"
         )}
         {renderField(
-          "Kaggle Profile",
+          t("profile.kaggle"),
           "kaggle_url",
           "https://www.kaggle.com/username",
           "mdi:chart-box"
         )}
         {renderField(
-          "Medium Profile",
+          t("profile.medium"),
           "medium_url",
           "https://medium.com/@username",
           "mdi:book-open-variant"

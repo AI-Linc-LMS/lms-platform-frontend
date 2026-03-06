@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Box, Typography } from "@mui/material";
 import { accountsService } from "@/lib/services/accounts.service";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -44,6 +45,7 @@ interface GoogleSignInProps {
 export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   disabled = false,
 }) => {
+  const { t } = useTranslation("common");
   const { googleLogin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,7 +65,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       // Send the credential (ID token) to the backend
       // This is called when using One Tap or credential flow
       await googleLogin(response.credential);
-      showToast("Login successful!", "success");
+      showToast(t("auth.loginSuccess"), "success");
       setIsRedirecting(true);
       const redirectUrl = searchParams.get("redirect") || "/dashboard";
       // Small delay to show success message, then redirect
@@ -72,12 +74,11 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       }, 500);
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.detail ||
-        "Google sign-in failed. Please try again.";
+        error.response?.data?.detail || t("auth.googleSignInFailed");
       showToast(errorMessage, "error");
       setIsRedirecting(false);
     }
-  }, [googleLogin, showToast, searchParams]);
+  }, [googleLogin, showToast, searchParams, t]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -111,10 +112,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
                 // User closed the popup, don't show error
                 return;
               }
-              showToast(
-                "Google sign-in encountered an error. Please try again.",
-                "error"
-              );
+              showToast(t("auth.googleError"), "error");
             },
           });
 
@@ -133,19 +131,13 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
 
           isInitialized.current = true;
         } catch (error) {
-          showToast(
-            "Failed to initialize Google sign-in. Please refresh the page.",
-            "error"
-          );
+          showToast(t("auth.googleInitFailed"), "error");
         }
       }
     };
     
     script.onerror = () => {
-      showToast(
-        "Failed to load Google sign-in. Please check your connection.",
-        "error"
-      );
+      showToast(t("auth.googleLoadFailed"), "error");
     };
     document.body.appendChild(script);
 
@@ -177,10 +169,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     }
 
     if (!window.google || !window.google.accounts || !isInitialized.current) {
-      showToast(
-        "Google sign-in is loading. Please try again in a moment.",
-        "info"
-      );
+      showToast(t("auth.googleLoading"), "info");
       return;
     }
 
@@ -266,7 +255,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
             variant="body2"
             sx={{ fontWeight: 500, fontSize: "0.9375rem" }}
           >
-            Sign in with Google
+            {t("auth.signInWithGoogle")}
           </Typography>
         </Box>
       </Button>

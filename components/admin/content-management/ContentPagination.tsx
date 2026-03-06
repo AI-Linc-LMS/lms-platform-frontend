@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  Box,
-  Typography,
-  Pagination,
-  Select,
-  MenuItem,
-  FormControl,
-} from "@mui/material";
+import { Box, Typography, Pagination } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 
 interface ContentPaginationProps {
   totalCount: number;
@@ -24,6 +19,7 @@ export function ContentPagination({
   onPageChange,
   onLimitChange,
 }: ContentPaginationProps) {
+  const { t } = useTranslation("common");
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
   const startIndex = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const endIndex = Math.min(totalCount, page * limit);
@@ -56,31 +52,17 @@ export function ContentPagination({
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
-          Showing {startIndex} to {endIndex} of {totalCount} contents
+          {t("adminContentManagement.showingXToYOfZ", { start: startIndex, end: endIndex, total: totalCount })}
         </Typography>
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 100, sm: 120 },
-            "& .MuiInputBase-root": {
-              fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            },
+        <PerPageSelect
+          value={limit}
+          onChange={(v) => {
+            onLimitChange(v);
+            onPageChange(1);
           }}
-        >
-          <Select
-            value={limit}
-            onChange={(e) => {
-              onLimitChange(Number(e.target.value));
-              onPageChange(1);
-            }}
-            displayEmpty
-          >
-            <MenuItem value={10}>10 per page</MenuItem>
-            <MenuItem value={25}>25 per page</MenuItem>
-            <MenuItem value={50}>50 per page</MenuItem>
-            <MenuItem value={100}>100 per page</MenuItem>
-          </Select>
-        </FormControl>
+          displayEmpty
+          SelectSx={{ "& .MuiInputBase-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}
+        />
       </Box>
       {totalPages > 1 && (
         <Pagination

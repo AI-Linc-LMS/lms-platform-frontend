@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Typography, Button, Paper } from "@mui/material";
+import { Box, Typography, Button, Paper, LinearProgress } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { CourseCard } from "@/components/course/CourseCard";
 import { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -8,9 +9,11 @@ import Link from "next/link";
 
 interface MyCoursesSectionProps {
   courses: CourseCardCourse[];
+  loading?: boolean;
 }
 
-export const MyCoursesSection = ({ courses }: MyCoursesSectionProps) => {
+export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) => {
+  const { t } = useTranslation("common");
   const hasCourses = courses && courses.length > 0;
 
   return (
@@ -31,11 +34,15 @@ export const MyCoursesSection = ({ courses }: MyCoursesSectionProps) => {
             color: "#111827",
           }}
         >
-          My Courses
+          {t("dashboard.myCourses")}
         </Typography>
       </Box>
 
-      {hasCourses ? (
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+          <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+        </Box>
+      ) : hasCourses ? (
         <Box
           sx={{
             display: "grid",
@@ -94,7 +101,7 @@ export const MyCoursesSection = ({ courses }: MyCoursesSectionProps) => {
               mb: 1,
             }}
           >
-            No courses chosen yet
+            {t("dashboard.noCoursesChosen")}
           </Typography>
           <Typography
             variant="body2"
@@ -104,8 +111,7 @@ export const MyCoursesSection = ({ courses }: MyCoursesSectionProps) => {
               maxWidth: 300,
             }}
           >
-            Explore our catalog and find the perfect course to start your
-            learning journey.
+            {t("dashboard.exploreCatalog")}
           </Typography>
           <Button
             component={Link}
@@ -125,7 +131,7 @@ export const MyCoursesSection = ({ courses }: MyCoursesSectionProps) => {
               },
             }}
           >
-            Explore Courses
+            {t("dashboard.exploreCourses")}
           </Button>
         </Paper>
       )}

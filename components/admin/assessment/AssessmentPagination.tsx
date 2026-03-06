@@ -1,13 +1,7 @@
 "use client";
 
-import {
-  Box,
-  Typography,
-  Pagination,
-  Select,
-  MenuItem,
-  FormControl,
-} from "@mui/material";
+import { Box, Typography, Pagination } from "@mui/material";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 
 interface AssessmentPaginationProps {
   totalCount: number;
@@ -57,29 +51,15 @@ export function AssessmentPagination({
         >
           Showing {startIndex} to {endIndex} of {totalCount} assessments
         </Typography>
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 100, sm: 120 },
-            "& .MuiInputBase-root": {
-              fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            },
+        <PerPageSelect
+          value={limit}
+          onChange={(v) => {
+            onLimitChange(v);
+            onPageChange(1);
           }}
-        >
-          <Select
-            value={limit}
-            onChange={(e) => {
-              onLimitChange(Number(e.target.value));
-              onPageChange(1);
-            }}
-            displayEmpty
-          >
-            <MenuItem value={10}>10 per page</MenuItem>
-            <MenuItem value={25}>25 per page</MenuItem>
-            <MenuItem value={50}>50 per page</MenuItem>
-            <MenuItem value={100}>100 per page</MenuItem>
-          </Select>
-        </FormControl>
+          displayEmpty
+          SelectSx={{ "& .MuiInputBase-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}
+        />
       </Box>
       <Pagination
         count={totalPages}

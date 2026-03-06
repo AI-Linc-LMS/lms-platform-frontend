@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, CircularProgress, Paper } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { SubModuleContentItem } from "@/lib/services/courses.service";
 
@@ -11,6 +12,7 @@ interface SubmoduleProgressProps {
 export function SubmoduleProgress({
   contentItems,
 }: SubmoduleProgressProps) {
+  const { t } = useTranslation("common");
   // Calculate progress statistics
   const totalItems = contentItems.length;
   const completedItems = contentItems.filter(
@@ -138,7 +140,7 @@ export function SubmoduleProgress({
               minWidth: 0,
             }}
           >
-            Overall Progress
+            {t("courses.overallProgress")}
           </Typography>
           <Typography
             variant="h6"
@@ -176,9 +178,9 @@ export function SubmoduleProgress({
             <Box
               sx={{
                 top: 0,
-                left: 0,
+                insetInlineStart: 0,
                 bottom: 0,
-                right: 0,
+                insetInlineEnd: 0,
                 position: "absolute",
                 display: "flex",
                 alignItems: "center",
@@ -263,9 +265,9 @@ export function SubmoduleProgress({
                 <Box
                   sx={{
                     top: 0,
-                    left: 0,
+                    insetInlineStart: 0,
                     bottom: 0,
-                    right: 0,
+                    insetInlineEnd: 0,
                     position: "absolute",
                     display: "flex",
                     alignItems: "center",

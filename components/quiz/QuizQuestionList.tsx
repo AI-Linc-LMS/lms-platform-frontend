@@ -4,6 +4,11 @@ import { Box, Paper, Typography, List, ListItem, ListItemButton, ListItemText } 
 import { useState, memo } from "react";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
+/** Check if string contains HTML tags so we can render with dangerouslySetInnerHTML */
+function hasHtml(str: unknown): str is string {
+  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+}
+
 interface QuizQuestion {
   id: string | number;
   question: string;
@@ -134,22 +139,43 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                             color={isCurrent ? "#6366f1" : "#d1d5db"}
                           />
                         )}
-                        <Typography
-                          sx={{
-                            fontWeight: isCurrent ? 700 : 500,
-                            color: isCurrent
-                              ? "#1e40af"
-                              : "#6b7280",
-                            fontSize: "0.875rem",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            flex: 1,
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {question.question || `Quiz question ${index + 1}`}
-                        </Typography>
+                        {hasHtml(question.question) ? (
+                          <Box
+                            component="span"
+                            sx={{
+                              fontWeight: isCurrent ? 700 : 500,
+                              color: isCurrent ? "#1e40af" : "#6b7280",
+                              fontSize: "0.875rem",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              flex: 1,
+                              lineHeight: 1.5,
+                              "& p": { margin: 0, display: "inline" },
+                              "& br": { display: "none" },
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: question.question || `Quiz question ${index + 1}`,
+                            }}
+                          />
+                        ) : (
+                          <Typography
+                            sx={{
+                              fontWeight: isCurrent ? 700 : 500,
+                              color: isCurrent
+                                ? "#1e40af"
+                                : "#6b7280",
+                              fontSize: "0.875rem",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              flex: 1,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {question.question || `Quiz question ${index + 1}`}
+                          </Typography>
+                        )}
                         {isCurrent && (
                           <Box
                             sx={{
@@ -173,14 +199,24 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
     </Paper>
   );
 }, (prevProps, nextProps) => {
-  // Only re-render if current question changed or answered status changed
+  // If current question changed, we MUST re-render (navigation)
   if (prevProps.currentQuestionId !== nextProps.currentQuestionId) return false;
+  
+  // If questions array length changed, re-render
   if (prevProps.questions.length !== nextProps.questions.length) return false;
   
-  // Check if answered count changed
-  const prevAnswered = prevProps.questions.filter(q => q.answered).length;
-  const nextAnswered = nextProps.questions.filter(q => q.answered).length;
-  if (prevAnswered !== nextAnswered) return false;
+  // Only check if the current question's answered status changed (optimized)
+  const prevCurrent = prevProps.questions.find(q => q.id === prevProps.currentQuestionId);
+  const nextCurrent = nextProps.questions.find(q => q.id === nextProps.currentQuestionId);
+  if (prevCurrent?.answered !== nextCurrent?.answered) return false;
+  
+  // Check if any question's answered status changed (but only for visible questions)
+  // This is a lighter check than filtering all questions
+  for (let i = 0; i < Math.min(prevProps.questions.length, nextProps.questions.length); i++) {
+    if (prevProps.questions[i]?.answered !== nextProps.questions[i]?.answered) {
+      return false; // Re-render if answered status changed
+    }
+  }
   
   return true; // Skip re-render
 });

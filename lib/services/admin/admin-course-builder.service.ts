@@ -6,10 +6,11 @@ import { AxiosError } from "axios";
 export interface CourseData {
   title: string;
   description: string;
-  slug: string; // Required field
+  slug?: string; // Optional on update; omit when unchanged to avoid backend uniqueness false positive
   difficulty_level?: string; // Valid values: 'Easy', 'Medium', 'Hard'
   rating?: number; // Course rating 0-5
   is_pro?: boolean;
+  is_free?: boolean;
   tags?: string | string[]; // Tags as comma-separated string or array
   [key: string]: string | number | boolean | string[] | undefined;
 }
@@ -93,12 +94,71 @@ export const adminCourseBuilderService = {
       return res.data;
     } catch (error: unknown) {
       const apiError = error as AxiosError<ApiErrorPayload>;
+      const data = apiError.response?.data as Record<string, unknown> | undefined;
+      const slugErrors = data?.slug as string[] | undefined;
+      const message =
+        (Array.isArray(slugErrors) && slugErrors[0]) ||
+        apiError.response?.data?.detail ||
+        apiError.response?.data?.error ||
+        apiError.response?.data?.message ||
+        apiError.message ||
+        "Failed to update course";
+      throw new Error(message);
+    }
+  },
+
+  duplicateCourse: async (courseId: number) => {
+    try {
+      const res = await apiClient.post(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/duplicate/`
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
       throw new Error(
         apiError.response?.data?.detail ||
           apiError.response?.data?.error ||
           apiError.response?.data?.message ||
           apiError.message ||
-          "Failed to update course"
+          "Failed to duplicate course"
+      );
+    }
+  },
+
+  publishCourse: async (courseId: number) => {
+    try {
+      const res = await apiClient.patch(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/`,
+        { published: true }
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to publish course"
+      );
+    }
+  },
+
+  unpublishCourse: async (courseId: number) => {
+    try {
+      const res = await apiClient.patch(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/`,
+        { published: false }
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to unpublish course"
       );
     }
   },
@@ -363,6 +423,30 @@ export const adminCourseBuilderService = {
           apiError.response?.data?.message ||
           apiError.message ||
           "Failed to delete submodule content"
+      );
+    }
+  },
+
+  updateSubmoduleContent: async (
+    courseId: number,
+    submoduleId: number,
+    contentId: number,
+    contentData: Partial<ContentData>
+  ) => {
+    try {
+      const res = await apiClient.patch(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/submodules/${submoduleId}/contents/${contentId}/`,
+        contentData
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to update submodule content"
       );
     }
   },

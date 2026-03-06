@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile, Achievement } from "@/lib/services/profile.service";
 
 interface AchievementsSectionProps {
@@ -14,6 +15,7 @@ export function AchievementsSection({
   profile,
   onSave,
 }: AchievementsSectionProps) {
+  const { t } = useTranslation("common");
   const [achievements, setAchievements] = useState<Achievement[]>(profile.achievements || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -27,11 +29,21 @@ export function AchievementsSection({
     organization: "",
   });
 
+  useEffect(() => {
+    if (!editing && editingIndex === null) setAchievements(profile.achievements || []);
+  }, [profile.achievements, editing, editingIndex]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        achievements: achievements,
+      const dataToSave: Partial<UserProfile> = {
+        achievements: achievements.map((ach): Achievement => ({
+          id: ach.id,
+          title: ach.title,
+          description: ach.description || undefined,
+          date: ach.date || undefined,
+          organization: ach.organization || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -71,10 +83,19 @@ export function AchievementsSection({
     setAchievements(achievements.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newAchievement: Achievement = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      date: toISODate(formData.date || ""),
     };
 
     if (editingIndex !== null) {
@@ -130,7 +151,7 @@ export function AchievementsSection({
               fontSize: "1.25rem",
             }}
           >
-            Achievements & Activities
+            {t("profile.achievements")}
           </Typography>
           {!editing ? (
             <Button
@@ -147,7 +168,7 @@ export function AchievementsSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -168,12 +189,12 @@ export function AchievementsSection({
                   },
                 }}
               >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -187,12 +208,12 @@ export function AchievementsSection({
                   },
                 }}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -204,7 +225,7 @@ export function AchievementsSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -323,7 +344,7 @@ export function AchievementsSection({
                 fontWeight: 500,
               }}
             >
-              No achievements added yet
+              {t("profile.noAchievementsYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -333,7 +354,7 @@ export function AchievementsSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your achievements
+              {t("profile.clickEditToAddAchievements")}
             </Typography>
           </Box>
         )}
@@ -354,6 +375,7 @@ export function AchievementsSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -370,6 +392,7 @@ export function AchievementsSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
@@ -377,18 +400,17 @@ export function AchievementsSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Achievement" : "Add Achievement"}
+            {editingIndex !== null ? t("profile.editAchievement") : t("profile.addAchievement")}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Title *"
+              label="Title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -467,7 +489,7 @@ export function AchievementsSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -491,7 +513,7 @@ export function AchievementsSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

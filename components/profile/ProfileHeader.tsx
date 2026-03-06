@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Avatar,
@@ -14,7 +15,7 @@ import {
   TextField,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { ImageUploadDialog } from "./ImageUploadDialog";
+import { ImageUrlDialog } from "./ImageUrlDialog";
 
 interface ProfileHeaderProps {
   userName: string;
@@ -23,7 +24,7 @@ interface ProfileHeaderProps {
   headline?: string;
   location?: string;
   onEdit?: () => void;
-  onEditProfilePic?: (file: File) => Promise<void>;
+  onEditProfilePicUrl?: (url: string) => Promise<void>;
   onEditHeadline?: (headline: string) => Promise<void>;
 }
 
@@ -34,9 +35,10 @@ export function ProfileHeader({
   headline,
   location,
   onEdit,
-  onEditProfilePic,
+  onEditProfilePicUrl,
   onEditHeadline,
 }: ProfileHeaderProps) {
+  const { t } = useTranslation("common");
   const [profilePicHovered, setProfilePicHovered] = useState(false);
   const [headlineHovered, setHeadlineHovered] = useState(false);
   const [headlineDialogOpen, setHeadlineDialogOpen] = useState(false);
@@ -44,12 +46,6 @@ export function ProfileHeader({
   const [headlineValue, setHeadlineValue] = useState(headline || "");
   const [savingHeadline, setSavingHeadline] = useState(false);
   const displayLocation = location || "";
-
-  const handleProfilePicUpload = async (file: File) => {
-    if (onEditProfilePic) {
-      await onEditProfilePic(file);
-    }
-  };
 
   // Sync headline value when prop changes
   useEffect(() => {
@@ -86,19 +82,19 @@ export function ProfileHeader({
               height: { xs: 96, sm: 120, md: 168 },
               border: { xs: "3px solid #ffffff", sm: "4px solid #ffffff" },
               boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
-              cursor: onEditProfilePic ? "pointer" : "default",
+              cursor: onEditProfilePicUrl ? "pointer" : "default",
               backgroundColor: "#1a1f2e",
               color: "#ffffff",
             }}
           >
             {userName?.[0]?.toUpperCase()}
           </Avatar>
-          {onEditProfilePic && profilePicHovered && (
+          {onEditProfilePicUrl && profilePicHovered && (
             <Box
               sx={{
                 position: "absolute",
                 bottom: 0,
-                right: 0,
+                insetInlineEnd: 0,
                 width: { xs: 36, sm: 40, md: 48 },
                 height: { xs: 36, sm: 40, md: 48 },
                 borderRadius: "50%",
@@ -116,7 +112,7 @@ export function ProfileHeader({
               }}
               onClick={() => setProfilePicDialogOpen(true)}
             >
-              <IconWrapper icon="mdi:camera" size={20} color="#ffffff" />
+              <IconWrapper icon="mdi:link-variant" size={20} color="#ffffff" />
             </Box>
           )}
         </Box>
@@ -170,7 +166,7 @@ export function ProfileHeader({
                 fontStyle: headline ? "normal" : "italic",
               }}
             >
-              {headline || "Add a headline"}
+              {headline || t("profile.addHeadline")}
             </Typography>
             {onEditHeadline && (headlineHovered || !headline) && (
               <IconButton
@@ -249,10 +245,10 @@ export function ProfileHeader({
               }}
             >
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                Edit Profile
+                {t("profile.editProfile")}
               </Box>
               <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-                Edit
+                {t("profile.edit")}
               </Box>
             </Button>
           </Box>
@@ -316,7 +312,7 @@ export function ProfileHeader({
                 mb: 0.25,
               }}
             >
-              Edit Headline
+              {t("profile.editHeadline")}
             </Typography>
             <Typography
               variant="caption"
@@ -326,13 +322,13 @@ export function ProfileHeader({
                 fontWeight: 400,
               }}
             >
-              Add a professional headline to showcase your expertise
+              {t("profile.headlineHelper")}
             </Typography>
           </Box>
         </DialogTitle>
         <DialogContent 
           sx={{ 
-            pt: { xs: 2.5, sm: 3 }, 
+            pt: { xs: 4.5, sm: 5 }, 
             px: { xs: 2.5, sm: 3 }, 
             pb: 2,
             overflow: "auto",
@@ -351,8 +347,10 @@ export function ProfileHeader({
             maxRows={5}
             size="medium"
             placeholder="e.g., Software Engineer | Full Stack Developer | React Specialist"
+            InputLabelProps={{ shrink: true }}
             helperText={
               <Box
+                component="span"
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -394,6 +392,7 @@ export function ProfileHeader({
               },
             }}
             sx={{
+              mt: 1.5,
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,
                 fontSize: "0.9375rem",
@@ -549,7 +548,7 @@ export function ProfileHeader({
               transition: "all 0.2s ease",
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={async () => {
@@ -566,7 +565,7 @@ export function ProfileHeader({
               }
             }}
             variant="contained"
-            disabled={savingHeadline || !headlineValue.trim()}
+            disabled={savingHeadline}
             sx={{
               textTransform: "none",
               fontWeight: 600,
@@ -605,26 +604,25 @@ export function ProfileHeader({
                     },
                   }}
                 />
-                Saving...
+                {t("profile.saving")}
               </Box>
             ) : (
-              "Save"
+              t("profile.save")
             )}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Profile Picture Upload Dialog */}
-      {onEditProfilePic && (
-        <ImageUploadDialog
+      {/* Profile Picture URL Dialog */}
+      {onEditProfilePicUrl && (
+        <ImageUrlDialog
           open={profilePicDialogOpen}
           onClose={() => setProfilePicDialogOpen(false)}
-          onUpload={handleProfilePicUpload}
-          title="Edit Profile Picture"
-          subtitle="Upload a profile picture to personalize your profile"
+          onSave={onEditProfilePicUrl}
+          title={t("profile.editProfilePicture")}
+          subtitle="Paste an image URL to use as your profile picture"
           currentImageUrl={profilePicUrl}
-          aspectRatio={1} // Square aspect ratio for profile pictures
-          maxSizeMB={5}
+          placeholder="https://example.com/profile-picture.jpg"
         />
       )}
     </Box>

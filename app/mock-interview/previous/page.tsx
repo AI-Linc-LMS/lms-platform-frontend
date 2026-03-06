@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Container, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { PreviousInterviewsTable } from "@/components/mock-interview/PreviousInterviewsTable";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService, {
@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
 
 export default function PreviousInterviewsPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -43,13 +44,6 @@ export default function PreviousInterviewsPage() {
     loadInterviews();
   }, [showToast]);
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -82,7 +76,7 @@ export default function PreviousInterviewsPage() {
                 variant="h4"
                 sx={{ fontWeight: 700, fontSize: { xs: "1.5rem", md: "2rem" } }}
               >
-                Previous Interviews
+                {t("mockInterview.previousInterviews")}
               </Typography>
               <Typography variant="body2" sx={{ color: "#6b7280" }}>
                 {interviews.length} interview
@@ -130,7 +124,7 @@ export default function PreviousInterviewsPage() {
                 color: "#6b7280",
               }}
             >
-              New Interview
+              {t("mockInterview.newInterview")}
             </Typography>
           </Box>
 
@@ -157,7 +151,7 @@ export default function PreviousInterviewsPage() {
                 color: "#1f2937",
               }}
             >
-              Previous
+              {t("mockInterview.previous")}
             </Typography>
           </Box>
 

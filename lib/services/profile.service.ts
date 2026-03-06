@@ -78,30 +78,23 @@ export interface UserProfile {
   username: string;
   profile_picture: string;
   phone_number: string;
-  bio: string;
-  social_links: {
-    github: string;
-    linkedin: string;
-  };
+  bio: string | null;
+  social_links: Record<string, string>;
   date_of_birth: string | null;
-  role?: string;
-  headline?: string;
-  cover_photo_url?: string;
-  // Education fields
-  college_name?: string;
-  degree_type?: string; // B.Tech, BCA, B.Sc, MCA, M.Tech, Other
-  branch?: string;
-  graduation_year?: string;
-  // Location
-  city?: string;
-  state?: string;
-  // External profiles
-  portfolio_website_url?: string;
-  leetcode_url?: string;
-  hackerrank_url?: string;
-  kaggle_url?: string;
-  medium_url?: string;
-  // Arrays
+  role?: string | null;
+  headline?: string | null;
+  cover_photo_url?: string | null;
+  college_name?: string | null;
+  degree_type?: string | null;
+  branch?: string | null;
+  graduation_year?: string | null;
+  city?: string | null;
+  state?: string | null;
+  portfolio_website_url?: string | null;
+  leetcode_url?: string | null;
+  hackerrank_url?: string | null;
+  kaggle_url?: string | null;
+  medium_url?: string | null;
   skills?: Skill[];
   projects?: Project[];
   experience?: Experience[];
@@ -109,6 +102,13 @@ export interface UserProfile {
   certifications?: Certification[];
   achievements?: Achievement[];
 }
+
+/** Update payload: partial profile; clearable fields may be null to clear. */
+export type UserProfileUpdate = Omit<Partial<UserProfile>, "profile_picture" | "cover_photo_url" | "headline"> & {
+  profile_picture?: string | null;
+  cover_photo_url?: string | null;
+  headline?: string | null;
+};
 
 export interface UserActivityHeatmap {
   heatmap_data: HeatmapData;
@@ -130,6 +130,8 @@ export interface DailyProgressLeaderboardEntry {
   };
   seconds?: number;
   profile_pic_url?: string;
+  college?: string; // College/University name
+  linkedin_url?: string; // LinkedIn profile URL
 }
 
 export interface MonthlyStreak {
@@ -141,8 +143,13 @@ export interface MonthlyStreak {
   monthly_days?: number[]; // Array of day numbers with activity (deprecated, use streak object)
 }
 
+/**
+ * User Profile API: .../clients/<client_id>/user-profile/
+ * - GET: full profile (29 keys; scalars may be null, arrays may be [])
+ * - POST/PATCH: partial body OK; response = full profile same as GET
+ * - Arrays (skills, projects, experience, education, certifications, achievements): send full array to replace
+ */
 export const profileService = {
-  // Get user profile
   getUserProfile: async (): Promise<UserProfile> => {
     const response = await apiClient.get<UserProfile>(
       `/accounts/clients/${config.clientId}/user-profile/`
@@ -150,11 +157,8 @@ export const profileService = {
     return response.data;
   },
 
-  // Update user profile
-  updateUserProfile: async (
-    data: Partial<UserProfile>
-  ): Promise<UserProfile> => {
-    const response = await apiClient.post<UserProfile>(
+  updateUserProfile: async (data: UserProfileUpdate): Promise<UserProfile> => {
+    const response = await apiClient.patch<UserProfile>(
       `/accounts/clients/${config.clientId}/user-profile/`,
       data
     );

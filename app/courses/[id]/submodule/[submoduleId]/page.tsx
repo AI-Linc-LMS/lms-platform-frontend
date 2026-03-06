@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -16,7 +17,6 @@ import {
   IconButton,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   coursesService,
   SubModuleDetailResponse,
@@ -63,11 +63,14 @@ export default function SubmoduleDetailPage() {
   const [isAutoNavigating, setIsAutoNavigating] = useState(false);
   const [autoRedirectCountdown, setAutoRedirectCountdown] = useState(5);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [isQuizInProgress, setIsQuizInProgress] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const autoNavigateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchedSubmissionsIdRef = useRef<number | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     if (!courseId || !submoduleId) return;
@@ -145,15 +148,16 @@ export default function SubmoduleDetailPage() {
         setVideoCompleted(false);
       }
 
-      // Track view activity for Article content
-      if (currentItem?.content_type === "Article" && selectedContentId) {
-        trackActivity(selectedContentId, "view").catch((error) => {
-          // Error tracking article view
-        });
-      }
-      // View activity tracking removed - only track start and complete
+      // Article: no view tracking on load; completion is tracked only when user clicks "Mark as read"
     }
   }, [selectedContentId]);
+
+  // Reset quiz-in-progress when navigating away from quiz (sidebar collapse state kept for all content)
+  useEffect(() => {
+    if (currentContent?.content_type !== "Quiz") {
+      setIsQuizInProgress(false);
+    }
+  }, [currentContent?.content_type, selectedContentId]);
 
   // Sync sidebar submission count with pastSubmissions
   useEffect(() => {
@@ -252,7 +256,7 @@ export default function SubmoduleDetailPage() {
 
       return data;
     } catch (error: any) {
-      showToast("Failed to load submodule data", "error");
+      showToast(t("courses.failedToLoadSubmodule"), "error");
       return null;
     } finally {
       if (!preserveSelectedContent) {
@@ -297,7 +301,7 @@ export default function SubmoduleDetailPage() {
         setComments([]);
       }
     } catch (error: any) {
-      showToast("Failed to load content", "error");
+      showToast(t("courses.failedToLoadContent"), "error");
     } finally {
       setContentLoading(false);
     }
@@ -456,7 +460,7 @@ export default function SubmoduleDetailPage() {
       (item) => item.id === selectedContentId
     );
     if (currentItem?.content_type !== "VideoTutorial") {
-      showToast("Comments are only available for videos", "info");
+      showToast(t("courses.commentsOnlyForVideos"), "info");
       return;
     }
 
@@ -474,7 +478,7 @@ export default function SubmoduleDetailPage() {
         error.response?.data?.detail ||
           error.response?.data?.comment?.[0] ||
           error.response?.data?.message ||
-          "Failed to add comment",
+          t("courses.failedToAddComment"),
         "error"
       );
     } finally {
@@ -492,7 +496,7 @@ export default function SubmoduleDetailPage() {
 
   const handleNavigateContent = (direction: "next" | "previous") => {
     if (!currentContent || !submoduleData) {
-      showToast("Cannot navigate: Content not loaded", "error");
+      showToast(t("courses.cannotNavigateContent"), "error");
       return;
     }
 
@@ -533,8 +537,8 @@ export default function SubmoduleDetailPage() {
     } else {
       showToast(
         direction === "next"
-          ? "No next content available"
-          : "No previous content available",
+          ? t("courses.noNextContent")
+          : t("courses.noPreviousContent"),
         "info"
       );
     }
@@ -585,24 +589,20 @@ export default function SubmoduleDetailPage() {
 
   if (loading) {
     return (
-      <MainLayout hideSidebar={!isMobile} fullPage DrawerWidth={0}>
-        <Loading fullScreen />
-      </MainLayout>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 400,
+          py: 8,
+        }}
+      >
+        <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+      </Box>
     );
   }
 
-  if (!loading && (!submoduleData || !courseDetail)) {
-    return (
-      <MainLayout hideSidebar={!isMobile} fullPage DrawerWidth={0}>
-        <Box sx={{ p: 3 }}>
-          {" "}
-          <Loading fullScreen />
-        </Box>
-      </MainLayout>
-    );
-  }
-
-  // Early return if data is not loaded
   if (!submoduleData || !courseDetail) {
     return null;
   }
@@ -622,31 +622,71 @@ export default function SubmoduleDetailPage() {
           width: "100%",
         }}
       >
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar - collapsible for all content (Article, Quiz, Coding, Video, etc.) */}
         {!isMobile && (
           <Box
             sx={{
-              width: 300,
+              width: sidebarCollapsed ? 48 : 300,
               flexShrink: 0,
               height: "100%",
+              position: "relative",
+              transition: "width 0.25s ease",
+              overflow: !sidebarCollapsed ? "visible" : "hidden",
             }}
           >
-            <SubmoduleSidebar
-              courseDetail={courseDetail}
-              submoduleName={submoduleData.submoduleName}
-              moduleName={submoduleData.moduleName}
-              contentItems={submoduleData.data}
-              selectedContentId={selectedContentId}
-              activeTab={activeTab}
-              courseId={courseId}
-              onTabChange={setActiveTab}
-              onContentSelect={(contentId) => {
-                handleContentSelect(contentId);
+            {!sidebarCollapsed && (
+              <Box sx={{ width: 300, height: "100%" }}>
+                <SubmoduleSidebar
+                  courseDetail={courseDetail}
+                  submoduleName={submoduleData.submoduleName}
+                  moduleName={submoduleData.moduleName}
+                  contentItems={submoduleData.data}
+                  selectedContentId={selectedContentId}
+                  activeTab={activeTab}
+                  courseId={courseId}
+                  onTabChange={setActiveTab}
+                  onContentSelect={(contentId) => {
+                    handleContentSelect(contentId);
+                  }}
+                  getContentIcon={getContentIcon}
+                  getContentColor={getContentColor}
+                  formatDuration={formatDuration}
+                />
+              </Box>
+            )}
+            <Button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              variant="contained"
+              size="small"
+              sx={{
+                position: "absolute",
+                top: 12,
+                right: sidebarCollapsed ? 0 : -12,
+                left: "auto",
+                zIndex: 10,
+                minWidth: sidebarCollapsed ? 36 : 24,
+                width: sidebarCollapsed ? 36 : 24,
+                height: sidebarCollapsed ? 36 : 24,
+                p: 0,
+                borderRadius: sidebarCollapsed ? 1 : "50%",
+                backgroundColor: "#4285f4",
+                boxShadow: "none",
+                "&:hover": {
+                  backgroundColor: "#3367d6",
+                  boxShadow: "none",
+                },
               }}
-              getContentIcon={getContentIcon}
-              getContentColor={getContentColor}
-              formatDuration={formatDuration}
-            />
+            >
+              <IconWrapper
+                icon={
+                  sidebarCollapsed
+                    ? "mdi:menu"
+                    : "mdi:chevron-left"
+                }
+                size={sidebarCollapsed ? 20 : 16}
+                color="#ffffff"
+              />
+            </Button>
           </Box>
         )}
 
@@ -718,7 +758,7 @@ export default function SubmoduleDetailPage() {
                   size="small"
                   sx={{ mr: 2 }}
                 >
-                  TEST Dialog
+                  {t("courses.testDialog")}
                 </Button>
               )}
             {/* Mobile Menu Button */}
@@ -774,7 +814,7 @@ export default function SubmoduleDetailPage() {
                           fontWeight: 600,
                         }}
                       >
-                        Week {submoduleData.weekNo}
+                        {t("courses.weekNo", { number: submoduleData.weekNo })}
                       </Typography>
                     </Box>
                   )}
@@ -785,7 +825,10 @@ export default function SubmoduleDetailPage() {
                       fontSize: "0.75rem",
                     }}
                   >
-                    Content {currentIndex} of {totalContents}
+                    {t("courses.contentOf", {
+                      current: currentIndex,
+                      total: totalContents,
+                    })}
                   </Typography>
                 </Box>
                 <Typography
@@ -881,9 +924,7 @@ export default function SubmoduleDetailPage() {
               },
             }}
           >
-            {contentLoading ? (
-              <Loading />
-            ) : currentContent ? (
+            {currentContent ? (
               <SubmoduleContentViewer
                 content={currentContent}
                 currentItem={submoduleData?.data.find(
@@ -979,7 +1020,7 @@ export default function SubmoduleDetailPage() {
                           handleContentSelect(nextContentId);
                         } catch (error) {
                           // Failed to load next content
-                          showToast("Failed to load next content", "error");
+                          showToast(t("courses.failedToLoadNextContent"), "error");
                         } finally {
                           // Close dialog and reset flag after navigation
                           setTimeout(() => {
@@ -992,10 +1033,11 @@ export default function SubmoduleDetailPage() {
                   }
                 }}
                 onStartQuiz={async () => {
-                  // Start activity tracking removed - only track complete
-                  // Quiz will start on the same page via QuizContent component
+                  setIsQuizInProgress(true);
+                  setSidebarCollapsed(true);
                 }}
                 onQuizComplete={async (obtainedMarks?: number) => {
+                  setIsQuizInProgress(false);
                   if (selectedContentId) {
                     lastFetchedSubmissionsIdRef.current = null;
                     await loadPastSubmissions(selectedContentId);
@@ -1129,7 +1171,7 @@ export default function SubmoduleDetailPage() {
                 fontSize: { xs: "1rem", sm: "1.25rem" },
               }}
             >
-              Video Completed!
+              {t("courses.videoCompleted")}
             </Typography>
             <Typography
               variant="caption"
@@ -1138,7 +1180,7 @@ export default function SubmoduleDetailPage() {
                 fontSize: { xs: "0.7rem", sm: "0.75rem" },
               }}
             >
-              Great job finishing this content
+              {t("courses.greatJobFinishing")}
             </Typography>
           </Box>
         </DialogTitle>
@@ -1167,7 +1209,7 @@ export default function SubmoduleDetailPage() {
                     fontWeight: 500,
                   }}
                 >
-                  Up Next:
+                  {t("courses.upNext")}
                 </Typography>
                 <Box
                   sx={{
@@ -1217,7 +1259,9 @@ export default function SubmoduleDetailPage() {
                         fontSize: { xs: "0.7rem", sm: "0.75rem" },
                       }}
                     >
-                      Auto-starting in {autoRedirectCountdown} seconds...
+                      {t("courses.autoStartingIn", {
+                        count: autoRedirectCountdown,
+                      })}
                     </Typography>
                   </Box>
                 </Box>
@@ -1252,7 +1296,7 @@ export default function SubmoduleDetailPage() {
                 },
               }}
             >
-              Continue to Next Content
+              {t("courses.continueToNextContent")}
             </Button>
           </Box>
         </DialogContent>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback, startTransition } from "react";
-import { Box } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { Box, LinearProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { JobCard } from "@/components/jobs/JobCard";
 import { JobSearchBar } from "@/components/jobs/JobSearchBar";
 import { JobFiltersSidebar } from "@/components/jobs/JobFiltersSidebar";
@@ -30,6 +30,7 @@ type NormalizedJob = Job & {
 };
 
 export default function JobsPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -97,7 +98,7 @@ export default function JobsPage() {
         setAllJobs(normalized);
         setFilteredJobs(normalized);
       } catch (err) {
-        showToast("Failed to load jobs", "error");
+        showToast(t("jobs.failedToLoad"), "error");
       } finally {
         setLoading(false);
       }
@@ -216,13 +217,6 @@ export default function JobsPage() {
     });
   }, []);
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -237,7 +231,7 @@ export default function JobsPage() {
         <Box
           sx={{
             width: 320,
-            borderRight: "1px solid",
+            borderInlineEnd: "1px solid",
             borderColor: "divider",
             p: 3,
           }}
@@ -258,7 +252,11 @@ export default function JobsPage() {
 
         {/* Desktop Job List */}
         <Box sx={{ flex: 1, p: 3 }}>
-          {paginatedJobs.length === 0 ? (
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 300 }}>
+              <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+            </Box>
+          ) : paginatedJobs.length === 0 ? (
             <EmptyJobsState />
           ) : (
             <>
@@ -272,7 +270,6 @@ export default function JobsPage() {
                 />
               </Box>
 
-              {filtering && <Loading />}
 
               {paginatedJobs.map((job) => (
                 <JobCard key={job.id} job={job} />
@@ -329,7 +326,11 @@ export default function JobsPage() {
             backgroundColor: "#f9fafb",
           }}
         >
-          {paginatedJobs.length === 0 ? (
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+              <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+            </Box>
+          ) : paginatedJobs.length === 0 ? (
             <EmptyJobsState />
           ) : (
             <>
@@ -339,7 +340,6 @@ export default function JobsPage() {
                 onPageSizeChange={handlePageSizeChange}
               />
 
-              {filtering && <Loading />}
 
               <Box
                 sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}

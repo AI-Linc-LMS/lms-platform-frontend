@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -14,18 +15,20 @@ import {
   Select,
   MenuItem,
   FormControl,
+  LinearProgress,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   coursesService,
   Course as ServiceCourse,
 } from "@/lib/services/courses.service";
-import { Course as CourseCardCourse } from "@/components/course/interfaces";
-import { useToast } from "@/components/common/Toast";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { CourseCard } from "@/components/course/CourseCard";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { useToast } from "@/components/common/Toast";
 import { usePayment } from "@/hooks/usePayment";
+import type { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { PaymentType } from "@/lib/services/payment.service";
 
 const ITEMS_PER_PAGE = 12;
@@ -34,6 +37,7 @@ type FilterType = "all" | "enrolled" | "available";
 type SortType = "recent" | "oldest" | "title";
 
 export default function CoursesPage() {
+  const { t } = useTranslation("common");
   const [courses, setCourses] = useState<CourseCardCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,8 +48,11 @@ export default function CoursesPage() {
   const [enrollingCourseId, setEnrollingCourseId] = useState<number | null>(
     null
   );
-  const [filters, setFilters] = useState({
-    category: "All",
+  const [filters, setFilters] = useState<{
+    categories: string[];
+    price: string;
+  }>({
+    categories: [],
     price: "All",
   });
   const { showToast } = useToast();
@@ -62,7 +69,6 @@ export default function CoursesPage() {
     try {
       setLoading(true);
       const data = await coursesService.getCourses();
-      // Map service Course to CourseCardCourse format
       const mappedCourses: CourseCardCourse[] = data.map(
         (course: ServiceCourse) => ({
           id: course.id,
@@ -96,74 +102,40 @@ export default function CoursesPage() {
         })
       );
       setCourses(mappedCourses);
-    } catch (error: any) {
-      showToast("Failed to load courses", "error");
+    } catch {
+      showToast(t("courses.failedToLoad"), "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper function to check if course matches category based on tags
   const matchesCategory = (
     course: CourseCardCourse,
-    category: string
+    selectedCategories: string[]
   ): boolean => {
-    if (category === "All") return true;
-
-    // Map category names to tag keywords
-    const categoryTagMap: Record<string, string[]> = {
-      "Full Stack Development": [
-        "fullstack",
-        "full-stack",
-        "mern",
-        "mean",
-        "stack",
-      ],
-      "Front-End Development": [
-        "frontend",
-        "front-end",
-        "react",
-        "vue",
-        "angular",
-        "javascript",
-      ],
-      "Back-End Development": [
-        "backend",
-        "back-end",
-        "server",
-        "api",
-        "node",
-        "python",
-        "django",
-      ],
-      "UI/UX Design": ["ui", "ux", "design", "figma", "sketch"],
-      "Data Science & Analytics": [
-        "data",
-        "science",
-        "analytics",
-        "machine learning",
-        "ml",
-        "ai",
-      ],
-      Marketing: ["marketing", "seo", "social", "digital"],
-      Business: ["business", "management", "strategy", "finance"],
-    };
-
-    const courseTags = (course.tags || []).map((tag) => tag.toLowerCase());
-    const keywords = categoryTagMap[category] || [];
-
-    // Check if any tag matches any keyword for this category
-    return keywords.some((keyword) =>
-      courseTags.some((tag) => tag.includes(keyword.toLowerCase()))
+    if (selectedCategories.length === 0) return true;
+    const courseTags = (course.tags || []).map((t) =>
+      t.trim().toLowerCase()
     );
+    const selectedLower = selectedCategories.map((c) => c.trim().toLowerCase());
+    return courseTags.some((tag) => selectedLower.includes(tag));
   };
 
-  // Calculate counts
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    courses.forEach((c) =>
+      (c.tags || []).forEach((tag) => {
+        const t = tag.trim();
+        if (t) set.add(t);
+      })
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [courses]);
+
   const totalCount = courses.length;
   const enrolledCount = courses.filter((c) => c.is_enrolled).length;
   const availableCount = courses.filter((c) => !c.is_enrolled).length;
 
-  // Filter and search logic
   const filteredCourses = useMemo(() => {
     let result = courses.filter(
       (course) =>
@@ -171,21 +143,18 @@ export default function CoursesPage() {
         course.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Apply tab filter
     if (filter === "enrolled") {
       result = result.filter((c) => c.is_enrolled);
     } else if (filter === "available") {
       result = result.filter((c) => !c.is_enrolled);
     }
 
-    // Apply category filter
-    if (filters.category !== "All") {
+    if (filters.categories.length > 0) {
       result = result.filter((course) =>
-        matchesCategory(course, filters.category)
+        matchesCategory(course, filters.categories)
       );
     }
 
-    // Apply price filter
     if (filters.price !== "All") {
       if (filters.price === "Free") {
         result = result.filter((course) => course.is_free);
@@ -194,7 +163,6 @@ export default function CoursesPage() {
       }
     }
 
-    // Sort
     return result.sort((a, b) => {
       if (sortBy === "recent") {
         return b.id - a.id;
@@ -207,7 +175,6 @@ export default function CoursesPage() {
     });
   }, [courses, searchTerm, filter, filters, sortBy]);
 
-  // Pagination
   const paginatedCourses = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredCourses.slice(start, start + pageSize);
@@ -226,9 +193,17 @@ export default function CoursesPage() {
     setPage(1);
   };
 
+  const handleCategoriesChange = (selected: string[]) => {
+    setFilters((prev) => ({
+      ...prev,
+      categories: selected,
+    }));
+    setPage(1);
+  };
+
   const handleClearFilters = () => {
     setFilters({
-      category: "All",
+      categories: [],
       price: "All",
     });
     setPage(1);
@@ -240,7 +215,6 @@ export default function CoursesPage() {
 
     setEnrollingCourseId(courseId);
 
-    // If course is not free, trigger payment
     if (!course.is_free && parseFloat(course.price) > 0) {
       await handlePayment({
         amount: course.price,
@@ -249,10 +223,7 @@ export default function CoursesPage() {
         paymentType: PaymentType.COURSE,
         description: `Access for ${course.title}`,
         onSuccess: (res) => {
-          showToast(
-            "Payment verified! You have successfully enrolled.",
-            "success"
-          );
+          showToast(t("courses.paymentVerified"), "success");
           setEnrollingCourseId(null);
           loadCourses(); // Reload to update UI
         },
@@ -270,57 +241,53 @@ export default function CoursesPage() {
       return;
     }
 
-    // Standard free enrollment
     try {
       await coursesService.enrollInCourse(courseId);
-      showToast("Successfully enrolled in course", "success");
+      showToast(t("courses.enrolledSuccess"), "success");
       loadCourses();
-    } catch (error: any) {
-      showToast("Failed to enroll in course", "error");
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const message =
+        typeof data?.error === "string"
+          ? data.error
+          : typeof data?.detail === "string"
+            ? data.detail
+            : t("courses.failedToEnroll");
+      showToast(message, "error");
     } finally {
       setEnrollingCourseId(null);
     }
   };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   const totalPages = Math.ceil(filteredCourses.length / pageSize);
 
   return (
     <MainLayout>
       <Box sx={{ width: "100%", px: { xs: 1.5, sm: 2, md: 3 }, py: 3 }}>
-        {/* Header with Icon */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
           <Box
             sx={{
               width: 56,
               height: 56,
               borderRadius: 2,
-              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+              background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:book" size={28} color="#ffffff" />
+            <IconWrapper icon="mdi:book" size={28} color="var(--font-light)" />
           </Box>
           <Box>
             <Typography variant="h4" fontWeight={700}>
-              Course List
+              {t("courses.courseList")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Explore and enroll in courses to enhance your skills
+              {t("courses.exploreEnroll")}
             </Typography>
           </Box>
         </Box>
 
-        {/* Stats Cards */}
         <Box
           sx={{
             display: "grid",
@@ -337,9 +304,9 @@ export default function CoursesPage() {
             elevation={0}
             sx={{
               p: 2.5,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -348,7 +315,7 @@ export default function CoursesPage() {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  backgroundColor: "#eef2ff",
+                  backgroundColor: "var(--surface-indigo-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -357,15 +324,15 @@ export default function CoursesPage() {
                 <IconWrapper
                   icon="mdi:book-open-page-variant"
                   size={24}
-                  color="#6366f1"
+                  color="var(--accent-indigo)"
                 />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+                <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
                   {totalCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Total Courses
+                  {t("courses.totalCourses")}
                 </Typography>
               </Box>
             </Box>
@@ -374,9 +341,9 @@ export default function CoursesPage() {
             elevation={0}
             sx={{
               p: 2.5,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -385,7 +352,7 @@ export default function CoursesPage() {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  backgroundColor: "#d1fae5",
+                  backgroundColor: "var(--surface-green-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -394,15 +361,15 @@ export default function CoursesPage() {
                 <IconWrapper
                   icon="mdi:check-circle"
                   size={24}
-                  color="#10b981"
+                  color="var(--course-cta)"
                 />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+                <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
                   {enrolledCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Enrolled
+                  {t("courses.enrolled")}
                 </Typography>
               </Box>
             </Box>
@@ -411,9 +378,9 @@ export default function CoursesPage() {
             elevation={0}
             sx={{
               p: 2.5,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -422,37 +389,35 @@ export default function CoursesPage() {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  backgroundColor: "#dbeafe",
+                  backgroundColor: "var(--surface-blue-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <IconWrapper icon="mdi:play-circle" size={24} color="#3b82f6" />
+                <IconWrapper icon="mdi:play-circle" size={24} color="var(--accent-blue-light)" />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight={700} color="#1f2937">
+                <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
                   {availableCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Available
+                  {t("courses.allAvailable")}
                 </Typography>
               </Box>
             </Box>
           </Paper>
         </Box>
 
-        {/* Filters and Search */}
         <Paper
           elevation={0}
           sx={{
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             mb: 3,
             overflow: "hidden",
           }}
         >
-          {/* Tabs */}
           <Tabs
             value={filter}
             onChange={(_, newValue) => {
@@ -460,29 +425,28 @@ export default function CoursesPage() {
               setPage(1);
             }}
             sx={{
-              borderBottom: "1px solid #e5e7eb",
+              borderBottom: "1px solid var(--border-default)",
               px: 2,
               "& .MuiTab-root": {
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.9375rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 "&.Mui-selected": {
-                  color: "#6366f1",
+                  color: "var(--accent-indigo)",
                 },
               },
               "& .MuiTabs-indicator": {
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
                 height: 3,
               },
             }}
           >
-            <Tab label={`All (${totalCount})`} value="all" />
-            <Tab label={`Enrolled (${enrolledCount})`} value="enrolled" />
-            <Tab label={`Available (${availableCount})`} value="available" />
+            <Tab label={`${t("courses.all")} (${totalCount})`} value="all" />
+            <Tab label={`${t("courses.enrolledTab")} (${enrolledCount})`} value="enrolled" />
+            <Tab label={`${t("courses.availableTab")} (${availableCount})`} value="available" />
           </Tabs>
 
-          {/* Search and Sort */}
           <Box
             sx={{
               p: 2,
@@ -494,7 +458,7 @@ export default function CoursesPage() {
           >
             <TextField
               fullWidth
-              placeholder="Search courses..."
+              placeholder={t("courses.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -503,22 +467,22 @@ export default function CoursesPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <IconWrapper icon="mdi:magnify" size={20} color="#6b7280" />
+                    <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   borderRadius: 2,
                   "& fieldset": {
                     borderColor: "transparent",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 },
               }}
@@ -529,41 +493,40 @@ export default function CoursesPage() {
                 onChange={(e) => setSortBy(e.target.value as SortType)}
                 displayEmpty
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   borderRadius: 2,
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "transparent",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 }}
               >
                 <MenuItem value="recent">
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Sort By:
+                      {t("courses.sortBy")}
                     </Typography>
                     <Typography variant="body2" fontWeight={600}>
-                      Most Recent
+                      {t("courses.mostRecent")}
                     </Typography>
                   </Box>
                 </MenuItem>
-                <MenuItem value="oldest">Oldest First</MenuItem>
-                <MenuItem value="title">Title (A-Z)</MenuItem>
+                <MenuItem value="oldest">{t("courses.oldestFirst")}</MenuItem>
+                <MenuItem value="title">{t("courses.titleAZ")}</MenuItem>
               </Select>
             </FormControl>
           </Box>
         </Paper>
 
-        {/* Additional Filters */}
         <Paper
           elevation={0}
           sx={{
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             mb: 3,
             p: 2,
@@ -577,23 +540,23 @@ export default function CoursesPage() {
               mb: 2,
             }}
           >
-            <Typography variant="subtitle2" fontWeight={600} color="#1f2937">
-              Advanced Filters
+            <Typography variant="subtitle2" fontWeight={600} color="var(--font-primary-dark)">
+              {t("courses.advancedFilters")}
             </Typography>
             <Button
               size="small"
               onClick={handleClearFilters}
               sx={{
                 textTransform: "none",
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
                 fontWeight: 600,
                 fontSize: "0.8125rem",
                 "&:hover": {
-                  backgroundColor: "rgba(99, 102, 241, 0.08)",
+                  backgroundColor: "var(--surface-indigo-light)",
                 },
               }}
             >
-              Clear All
+              {t("courses.clearAll")}
             </Button>
           </Box>
           <Box
@@ -607,97 +570,107 @@ export default function CoursesPage() {
               gap: 2,
             }}
           >
-            {/* Category Filter */}
             <FormControl fullWidth size="small">
               <Typography
                 variant="caption"
                 sx={{
                   mb: 0.5,
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontWeight: 500,
                   fontSize: "0.75rem",
                 }}
               >
-                Category
+                {t("courses.category")}
               </Typography>
               <Select
-                value={filters.category || "All"}
-                onChange={(e) => handleFilterChange("category", e.target.value)}
+                multiple
+                value={filters.categories}
+                onChange={(e) =>
+                  handleCategoriesChange(
+                    typeof e.target.value === "string"
+                      ? e.target.value.split(",")
+                      : e.target.value
+                  )
+                }
+                renderValue={(selected) =>
+                  selected.length === 0
+                    ? t("courses.allCategories")
+                    : selected.length <= 2
+                      ? selected.join(", ")
+                      : `${selected.length} ${t("courses.categoriesSelected")}`
+                }
+                displayEmpty
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "transparent",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 }}
               >
-                <MenuItem value="All">All Categories</MenuItem>
-                <MenuItem value="Full Stack Development">
-                  Full Stack Development
-                </MenuItem>
-                <MenuItem value="Front-End Development">
-                  Front-End Development
-                </MenuItem>
-                <MenuItem value="Back-End Development">
-                  Back-End Development
-                </MenuItem>
-                <MenuItem value="UI/UX Design">UI/UX Design</MenuItem>
-                <MenuItem value="Data Science & Analytics">
-                  Data Science & Analytics
-                </MenuItem>
-                <MenuItem value="Marketing">Marketing</MenuItem>
-                <MenuItem value="Business">Business</MenuItem>
+                {categoryOptions.map((opt) => (
+                  <MenuItem key={opt} value={opt}>
+                    <Checkbox
+                      checked={filters.categories.indexOf(opt) > -1}
+                      size="small"
+                      sx={{ mr: 1 }}
+                    />
+                    <ListItemText primary={opt} />
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 
-            {/* Price Filter */}
             <FormControl fullWidth size="small">
               <Typography
                 variant="caption"
                 sx={{
                   mb: 0.5,
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontWeight: 500,
                   fontSize: "0.75rem",
                 }}
               >
-                Price
+                {t("courses.price")}
               </Typography>
               <Select
                 value={filters.price || "All"}
                 onChange={(e) => handleFilterChange("price", e.target.value)}
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "transparent",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
                 }}
               >
-                <MenuItem value="All">All Prices</MenuItem>
-                <MenuItem value="Free">Free</MenuItem>
-                <MenuItem value="Paid">Paid</MenuItem>
+                <MenuItem value="All">{t("courses.allPrices")}</MenuItem>
+                <MenuItem value="Free">{t("courses.free")}</MenuItem>
+                <MenuItem value="Paid">{t("courses.paid")}</MenuItem>
               </Select>
             </FormControl>
 
           </Box>
         </Paper>
 
-        {/* Courses Grid */}
-        {paginatedCourses.length === 0 ? (
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+            <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+          </Box>
+        ) : paginatedCourses.length === 0 ? (
           <Box sx={{ textAlign: "center", py: 8 }}>
             <Typography variant="body1" color="text.secondary">
-              No courses found
+              {t("courses.noCoursesFound")}
             </Typography>
           </Box>
         ) : (
@@ -723,7 +696,6 @@ export default function CoursesPage() {
           </Box>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <Box
             sx={{
@@ -744,9 +716,11 @@ export default function CoursesPage() {
                 textAlign: { xs: "center", sm: "left" },
               }}
             >
-              Showing result {(page - 1) * pageSize + 1}-
-              {Math.min(page * pageSize, filteredCourses.length)} of{" "}
-              {filteredCourses.length} Entries
+              {t("courses.showingResult", {
+                from: (page - 1) * pageSize + 1,
+                to: Math.min(page * pageSize, filteredCourses.length),
+                total: filteredCourses.length,
+              })}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Button
@@ -756,8 +730,8 @@ export default function CoursesPage() {
                 onClick={() => handlePageChange(page - 1)}
                 startIcon={<IconWrapper icon="mdi:chevron-left" size={16} />}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#374151",
+                  borderColor: "var(--border-light)",
+                  color: "var(--font-muted)",
                   textTransform: "none",
                   minWidth: { xs: "auto", sm: "auto" },
                   px: { xs: 1, sm: 2 },
@@ -765,12 +739,12 @@ export default function CoursesPage() {
                     mr: { xs: 0, sm: 0.5 },
                   },
                   "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "var(--font-tertiary)",
+                    backgroundColor: "var(--surface)",
                   },
                   "&:disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-tertiary)",
                   },
                 }}
               >
@@ -778,7 +752,7 @@ export default function CoursesPage() {
                   component="span"
                   sx={{ display: { xs: "none", sm: "inline" } }}
                 >
-                  Previous
+                  {t("courses.previous")}
                 </Box>
               </Button>
               <Pagination
@@ -790,15 +764,15 @@ export default function CoursesPage() {
                 size="small"
                 sx={{
                   "& .MuiPaginationItem-root": {
-                    color: "#374151",
+                    color: "var(--font-muted)",
                     minWidth: { xs: "32px", sm: "36px" },
                     height: { xs: "32px", sm: "36px" },
                     fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                     "&.Mui-selected": {
-                      backgroundColor: "#374151",
-                      color: "#ffffff",
+                      backgroundColor: "var(--font-muted)",
+                      color: "var(--card-bg)",
                       "&:hover": {
-                        backgroundColor: "#1f2937",
+                        backgroundColor: "var(--font-primary-dark)",
                       },
                     },
                   },
@@ -811,8 +785,8 @@ export default function CoursesPage() {
                 onClick={() => handlePageChange(page + 1)}
                 endIcon={<IconWrapper icon="mdi:chevron-right" size={16} />}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#374151",
+                  borderColor: "var(--border-light)",
+                  color: "var(--font-muted)",
                   textTransform: "none",
                   minWidth: { xs: "auto", sm: "auto" },
                   px: { xs: 1, sm: 2 },
@@ -820,12 +794,12 @@ export default function CoursesPage() {
                     ml: { xs: 0, sm: 0.5 },
                   },
                   "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "var(--font-tertiary)",
+                    backgroundColor: "var(--surface)",
                   },
                   "&:disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-tertiary)",
                   },
                 }}
               >
@@ -833,7 +807,7 @@ export default function CoursesPage() {
                   component="span"
                   sx={{ display: { xs: "none", sm: "inline" } }}
                 >
-                  Next
+                  {t("courses.next")}
                 </Box>
               </Button>
             </Box>

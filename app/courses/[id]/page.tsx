@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Typography, Fab, Tooltip } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { Box, Typography, Fab, Tooltip, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   coursesService,
   CourseDetail,
@@ -19,10 +19,13 @@ import { CourseOverview } from "@/components/course/CourseOverview";
 import { ProgressDashboard } from "@/components/course/ProgressDashboard";
 import { CourseLeaderboard } from "@/components/course/CourseLeaderboard";
 import { InstructorCard } from "@/components/course/InstructorCard";
+import { CertificateButtons } from "@/components/course/CertificateButtons";
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
+import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 
 export default function CourseDetailPage() {
+  const { t } = useTranslation("common");
   const params = useParams();
   const router = useRouter();
   const courseId = Number(params.id);
@@ -35,6 +38,7 @@ export default function CourseDetailPage() {
   }>({});
   const { showToast } = useToast();
   const { handlePayment, isProcessing } = usePayment();
+  const hideLeaderboardView = useHideLeaderboardView();
 
   useEffect(() => {
     if (!courseId) return;
@@ -61,7 +65,7 @@ export default function CourseDetailPage() {
         setExpandedModules(initialExpanded);
       }
     } catch (error: any) {
-      showToast("Failed to load course details", "error");
+      showToast(t("courses.failedToLoadDetails"), "error");
     } finally {
       setLoading(false);
     }
@@ -104,7 +108,7 @@ export default function CourseDetailPage() {
         description: `Access for ${course.course_title}`,
         onSuccess: (res) => {
           showToast(
-            "Payment verified! You have successfully enrolled.",
+            t("courses.paymentVerified"),
             "success"
           );
           loadCourseDetail();
@@ -122,11 +126,11 @@ export default function CourseDetailPage() {
 
     try {
       await coursesService.enrollInCourse(courseId);
-      showToast("Successfully enrolled in course!", "success");
+      showToast(t("courses.enrolledSuccess"), "success");
       loadCourseDetail();
       loadDashboard();
     } catch (error: any) {
-      showToast(error.response?.data?.detail || "Failed to enroll", "error");
+      showToast(error.response?.data?.detail || t("courses.failedToEnroll"), "error");
     }
   };
 
@@ -175,7 +179,7 @@ export default function CourseDetailPage() {
           liked_count: previousCount,
         };
       });
-      showToast("Failed to toggle like", "error");
+      showToast(t("courses.failedToToggleLike"), "error");
     }
   };
 
@@ -193,7 +197,16 @@ export default function CourseDetailPage() {
   if (loading) {
     return (
       <MainLayout>
-        <Loading fullScreen />
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 400,
+          }}
+        >
+          <CircularProgress />
+        </Box>
       </MainLayout>
     );
   }
@@ -202,7 +215,7 @@ export default function CourseDetailPage() {
     return (
       <MainLayout>
         <Box sx={{ p: 3 }}>
-          <Typography>Course not found</Typography>
+          <Typography>{t("courses.courseNotFound")}</Typography>
         </Box>
       </MainLayout>
     );
@@ -231,7 +244,7 @@ export default function CourseDetailPage() {
               variant="body2"
               sx={{ color: "#6b7280", "&:hover": { color: "#1a1f2e" } }}
             >
-              My Courses / {course.course_title}
+              {t("courses.myCourses")} / {course.course_title}
             </Typography>
           </Link>
         </Box>
@@ -290,11 +303,27 @@ export default function CourseDetailPage() {
                 order: { xs: 1, md: 2 },
               }}
             >
-              {/* Progress Dashboard */}
-              {dashboard && <ProgressDashboard dashboard={dashboard} />}
+                {/* Certificate Buttons - only when certificate available; actionable when completion > 80% */}
 
-              {/* Leaderboard */}
-              <CourseLeaderboard leaderboard={leaderboard} />
+                <CertificateButtons
+                  courseId={course.course_id}
+                  courseTitle={course.course_title}
+                  certificateAvailable={(course as any).is_certified}
+                  completionPercentage={course?.modules?.length === 0 ? 80 : dashboard?.total_progress ?? 0}
+                  score={
+                    dashboard
+                      ? `${Math.round(dashboard.total_progress ?? 0)}%`
+                      : "100%"
+                  }
+                  certificateUrl={`/courses/${course.course_id}`}
+                />
+              {/* Progress Dashboard & Leaderboard - hidden when no_leaderboard_view */}
+              {!hideLeaderboardView && dashboard && (
+                <ProgressDashboard dashboard={dashboard} />
+              )}
+              {!hideLeaderboardView && (
+                <CourseLeaderboard leaderboard={leaderboard} />
+              )}
 
               {/* Instructor Section */}
               {instructor && <InstructorCard instructor={instructor} />}

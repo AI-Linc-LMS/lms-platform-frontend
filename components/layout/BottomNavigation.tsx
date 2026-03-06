@@ -1,6 +1,8 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useMemo } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Box, Paper, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -46,6 +48,12 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "attendance",
   },
   {
+    label: "Live Sessions",
+    path: "/live-sessions",
+    icon: "mdi:video-box",
+    featureName: "live_sessions",
+  },
+  {
     label: "Community",
     path: "/community",
     icon: "mdi:forum",
@@ -74,6 +82,12 @@ const adminNavigationItems: NavigationItem[] = [
     featureName: "admin_course_builder",
   },
   {
+    label: "AI Course",
+    path: "/admin/ai-course-builder",
+    icon: "mdi:robot",
+    featureName: "admin_ai_course_builder",
+  },
+  {
     label: "Assessments",
     path: "/admin/assessment",
     icon: "mdi:file-document-edit",
@@ -91,16 +105,27 @@ const adminNavigationItems: NavigationItem[] = [
     icon: "mdi:calendar-check",
     featureName: "admin_attendance",
   },
-  // {
-  //   label: "Payment",
-  //   path: "/admin/payment",
-  //   icon: "mdi:credit-card-multiple",
-  //   featureName: "admin_payment",
-  // },
+  {
+    label: "Mock Interview",
+    path: "/admin/admin-mock-interview",
+    icon: "mdi:account-voice",
+    featureName: "admin_mock_interview",
+  },
+  {
+    label: "Live Sessions",
+    path: "/admin/live-sessions",
+    icon: "mdi:video-box",
+    featureName: "admin_live_sessions",
+  },
+  {
+    label: "Emails",
+    path: "/admin/emails",
+    icon: "mdi:email-multiple",
+    featureName: "admin_emails",
+  },
 ];
 
 export const BottomNavigation: React.FC = () => {
-  const router = useRouter();
   const pathname = usePathname();
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
   const { isAdminMode } = useAdminMode();
@@ -135,26 +160,28 @@ export const BottomNavigation: React.FC = () => {
   // Only show navigation items that are enabled in client features
   // Don't show any items while loading to avoid UX flash
   // Always show dashboard for regular users (even if feature doesn't exist)
-  const filteredItems = loadingClientInfo
-    ? []
-    : filteredFeatureNames.size > 0
-    ? allNavigationItems.filter((item) => {
+  // Memoize filtered items to prevent unnecessary recalculations
+  const filteredItems = useMemo(() => {
+    if (loadingClientInfo) return [];
+    if (filteredFeatureNames.size > 0) {
+      return allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
         if (!isAdminMode && item.featureName === "dashboard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);
-      })
-    : allNavigationItems;
+      });
+    }
+    return allNavigationItems;
+  }, [loadingClientInfo, filteredFeatureNames, allNavigationItems, isAdminMode]);
 
   // Helper function to get the correct path (admin items already have /admin/ prefix)
   const getNavigationPath = (item: NavigationItem): string => {
     return item.path;
   };
 
-  const handleNavigation = (item: NavigationItem) => {
-    const path = getNavigationPath(item);
-    router.push(path);
+  const handleNavigation = () => {
+    // Navigation handled by Link component
   };
 
   return (
@@ -162,8 +189,8 @@ export const BottomNavigation: React.FC = () => {
       sx={{
         position: "fixed",
         bottom: 0,
-        left: 0,
-        right: 0,
+        insetInlineStart: 0,
+        insetInlineEnd: 0,
         zIndex: 1000,
         display: { xs: "flex", md: "none" },
         borderTop: "1px solid",
@@ -191,37 +218,42 @@ export const BottomNavigation: React.FC = () => {
             pathname?.startsWith(navigationPath + "/");
 
           return (
-            <Box
+            <Link
               key={item.path}
-              onClick={() => handleNavigation(item)}
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                flex: 1,
-                cursor: "pointer",
-                py: 0.5,
-                px: 0.25,
-                borderRadius: 1,
-                transition: "all 0.15s ease",
-                minWidth: 0,
-                "&:active": {
-                  transform: "scale(0.95)",
-                  opacity: 0.8,
-                },
-                "&:hover": {
-                  "& svg": {
-                    transform: isActive
-                      ? "translateY(-2px) scale(1.1)"
-                      : "translateY(-1px) scale(1.05)",
-                    filter: isActive
-                      ? "drop-shadow(0 3px 6px rgba(99, 102, 241, 0.6)) drop-shadow(0 2px 4px rgba(99, 102, 241, 0.5))"
-                      : "drop-shadow(0 2px 4px rgba(255, 255, 255, 0.2))",
-                  },
-                },
-              }}
+              href={navigationPath}
+              prefetch={true}
+              style={{ textDecoration: "none", color: "inherit", flex: 1 }}
+              onClick={handleNavigation}
             >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
+                  cursor: "pointer",
+                  py: 0.5,
+                  px: 0.25,
+                  borderRadius: 1,
+                  transition: "all 0.15s ease",
+                  minWidth: 0,
+                  "&:active": {
+                    transform: "scale(0.95)",
+                    opacity: 0.8,
+                  },
+                  "&:hover": {
+                    "& svg": {
+                      transform: isActive
+                        ? "translateY(-2px) scale(1.1)"
+                        : "translateY(-1px) scale(1.05)",
+                      filter: isActive
+                        ? "drop-shadow(0 3px 6px rgba(99, 102, 241, 0.6)) drop-shadow(0 2px 4px rgba(99, 102, 241, 0.5))"
+                        : "drop-shadow(0 2px 4px rgba(255, 255, 255, 0.2))",
+                    },
+                  },
+                }}
+              >
               <Box
                 sx={{
                   display: "flex",
@@ -267,6 +299,7 @@ export const BottomNavigation: React.FC = () => {
                 {item.label}
               </Typography>
             </Box>
+            </Link>
           );
         })}
       </Box>

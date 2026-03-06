@@ -14,6 +14,7 @@ import {
   Paper,
   IconButton,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ContentDetails, ContentType } from "@/lib/services/admin/admin-content-management.service";
 
@@ -53,11 +54,20 @@ export function ContentDetailsModal({
   content,
   loading,
 }: ContentDetailsModalProps) {
+  const { t } = useTranslation("common");
   if (!content && !loading) {
     return null;
   }
 
   const typeColor = content ? getTypeColor(content.type) : null;
+  const typeToLabelKey: Record<ContentType, string> = {
+    Quiz: "adminContentManagement.typeQuiz",
+    Article: "adminContentManagement.typeArticle",
+    Assignment: "adminContentManagement.typeAssignment",
+    CodingProblem: "adminContentManagement.typeCodingProblem",
+    DevCodingProblem: "adminContentManagement.typeDevCodingProblem",
+    VideoTutorial: "adminContentManagement.typeVideoTutorial",
+  };
 
   return (
     <Dialog
@@ -80,7 +90,7 @@ export function ContentDetailsModal({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Content Details
+          {t("adminContentManagement.contentDetails")}
         </Typography>
         <IconButton
           onClick={onClose}
@@ -111,7 +121,7 @@ export function ContentDetailsModal({
                 variant="h6"
                 sx={{ fontWeight: 600, mb: 2, color: "#111827" }}
               >
-                Basic Information
+                {t("adminContentManagement.basicInformation")}
               </Typography>
               <Paper
                 sx={{
@@ -126,7 +136,7 @@ export function ContentDetailsModal({
                       variant="caption"
                       sx={{ color: "#6b7280", fontWeight: 600 }}
                     >
-                      Title
+                      {t("adminContentManagement.titleColumn")}
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
                       {content.title}
@@ -138,11 +148,11 @@ export function ContentDetailsModal({
                         variant="caption"
                         sx={{ color: "#6b7280", fontWeight: 600 }}
                       >
-                        Type
+                        {t("adminContentManagement.type")}
                       </Typography>
                       <Box sx={{ mt: 0.5 }}>
                         <Chip
-                          label={content.type}
+                          label={t(typeToLabelKey[content.type])}
                           size="small"
                           sx={{
                             bgcolor: typeColor?.bg,
@@ -157,11 +167,11 @@ export function ContentDetailsModal({
                         variant="caption"
                         sx={{ color: "#6b7280", fontWeight: 600 }}
                       >
-                        Verification Status
+                        {t("adminContentManagement.verificationStatus")}
                       </Typography>
                       <Box sx={{ mt: 0.5 }}>
                         <Chip
-                          label={content.is_verified ? "Verified" : "Unverified"}
+                          label={content.is_verified ? t("adminContentManagement.verified") : t("adminContentManagement.unverified")}
                           size="small"
                           sx={{
                             bgcolor: content.is_verified ? "#d1fae5" : "#fee2e2",
@@ -176,7 +186,7 @@ export function ContentDetailsModal({
                         variant="caption"
                         sx={{ color: "#6b7280", fontWeight: 600 }}
                       >
-                        Order
+                        {t("adminContentManagement.order")}
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {content.order}
@@ -187,10 +197,10 @@ export function ContentDetailsModal({
                         variant="caption"
                         sx={{ color: "#6b7280", fontWeight: 600 }}
                       >
-                        Duration
+                        {t("adminContentManagement.duration")}
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {content.duration_in_minutes} minutes
+                        {t("adminContentManagement.durationMinutes", { count: content.duration_in_minutes })}
                       </Typography>
                     </Box>
                     <Box>
@@ -198,7 +208,7 @@ export function ContentDetailsModal({
                         variant="caption"
                         sx={{ color: "#6b7280", fontWeight: 600 }}
                       >
-                        Marks
+                        {t("adminContentManagement.marks")}
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {content.marks}
@@ -212,7 +222,7 @@ export function ContentDetailsModal({
                         variant="caption"
                         sx={{ color: "#6b7280", fontWeight: 600 }}
                       >
-                        Created At
+                        {t("adminContentManagement.createdAt")}
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {formatDate(content.created_at)}
@@ -223,7 +233,7 @@ export function ContentDetailsModal({
                         variant="caption"
                         sx={{ color: "#6b7280", fontWeight: 600 }}
                       >
-                        Last Updated
+                        {t("adminContentManagement.lastUpdated")}
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         {formatDate(content.updated_at)}
@@ -240,7 +250,7 @@ export function ContentDetailsModal({
                 variant="h6"
                 sx={{ fontWeight: 600, mb: 2, color: "#111827" }}
               >
-                Content Details
+                {t("adminContentManagement.contentDetails")}
               </Typography>
               <Paper
                 sx={{

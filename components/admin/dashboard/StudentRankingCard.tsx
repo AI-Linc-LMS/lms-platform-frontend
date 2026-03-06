@@ -1,9 +1,11 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface StudentRankingCardProps {
+  expandForPdf?: boolean;
   leaderboard: Array<{
     name?: string;
     studentName?: string;
@@ -15,7 +17,8 @@ interface StudentRankingCardProps {
   }>;
 }
 
-export function StudentRankingCard({ leaderboard }: StudentRankingCardProps) {
+export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRankingCardProps) {
+  const { t } = useTranslation("common");
   return (
     <Paper
       sx={{
@@ -34,7 +37,7 @@ export function StudentRankingCard({ leaderboard }: StudentRankingCardProps) {
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
       >
-        Student Ranking
+        {t("admin.dashboard.studentRanking")}
       </Typography>
       {leaderboard.length === 0 ? (
         <Box
@@ -55,7 +58,7 @@ export function StudentRankingCard({ leaderboard }: StudentRankingCardProps) {
               fontSize: { xs: "0.875rem", sm: "1rem" },
             }}
           >
-            No leaderboard available
+            {t("admin.dashboard.noLeaderboardAvailable")}
           </Typography>
           <Box
             sx={{
@@ -76,8 +79,7 @@ export function StudentRankingCard({ leaderboard }: StudentRankingCardProps) {
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
-              As you complete modules you will move to the top of the leaderboard
-              and earn exciting rewards.
+              {t("admin.dashboard.leaderboardHint")}
             </Typography>
           </Box>
         </Box>
@@ -86,8 +88,8 @@ export function StudentRankingCard({ leaderboard }: StudentRankingCardProps) {
           sx={{
             display: "flex",
             flexDirection: "column",
-            height: "240px", // Fixed height to show exactly 3 records (80px each)
-            overflowY: "auto",
+            height: expandForPdf ? "auto" : "240px", // Expand to show all records during PDF capture
+            overflowY: expandForPdf ? "visible" : "auto",
             gap: 1,
             pr: 0.5,
             "&::-webkit-scrollbar": {

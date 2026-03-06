@@ -36,23 +36,22 @@ export function ReportIssueFAB() {
 
   return (
     <>
-      <Tooltip title="Report an Issue" placement="left">
+      <Tooltip title="Support and Help" placement="left">
         <Fab
-          color="error"
-          aria-label="report issue"
+          aria-label="support and help"
           onClick={() => setShowReportDialog(true)}
           sx={{
             position: "fixed",
             bottom: { xs: 80, md: 24 },
-            right: { xs: 16, md: 24 },
-            backgroundColor: "#ef4444",
+            insetInlineEnd: { xs: 16, md: 24 },
+            backgroundColor: "#4285f4",
             "&:hover": {
-              backgroundColor: "#dc2626",
+              backgroundColor: "#3367d6",
             },
             zIndex: 1000,
           }}
         >
-          <IconWrapper icon="mdi:alert-circle" size={24} color="#ffffff" />
+          <IconWrapper icon="mdi:help-circle" size={24} color="#ffffff" />
         </Fab>
       </Tooltip>
 

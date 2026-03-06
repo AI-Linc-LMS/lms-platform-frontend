@@ -363,43 +363,161 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
               placeholder="e.g., San Francisco, CA"
             />
 
-            <Box
-              sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
-            >
-              <TextField
-                label="GitHub Username"
-                value={resumeData.basicInfo.github || ""}
-                onChange={(e) => updateBasicInfo("github", e.target.value)}
-                fullWidth
-                size="small"
-                placeholder="e.g., johndoe"
-                InputProps={{
-                  startAdornment: (
-                    <Typography
-                      sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5 }}
+            {/* Profile Photo / Logo - used by templates that support it (e.g. Western = photo, IIIT Vadodara = logo); stored as data URL so it appears in PDF */}
+            <Box>
+              <Typography sx={{ fontSize: "0.875rem", color: "#374151", mb: 1 }}>
+                Profile Photo / Logo
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                {resumeData.basicInfo.photo ? (
+                  <Avatar
+                    src={resumeData.basicInfo.photo}
+                    alt="Profile"
+                    sx={{ width: 64, height: 64 }}
+                  />
+                ) : (
+                  <Avatar sx={{ width: 64, height: 64, bgcolor: "#e5e7eb" }}>
+                    <IconWrapper icon="mdi:account" color="#9ca3af" />
+                  </Avatar>
+                )}
+                <Box>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    component="label"
+                    startIcon={<IconWrapper icon="mdi:upload" size={20} />}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Upload photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const dataUrl = reader.result as string;
+                          setResumeData({
+                            ...resumeData,
+                            basicInfo: {
+                              ...resumeData.basicInfo,
+                              photo: dataUrl,
+                            },
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </Button>
+                  {resumeData.basicInfo.photo && (
+                    <Button
+                      size="small"
+                      onClick={() =>
+                        setResumeData({
+                          ...resumeData,
+                          basicInfo: {
+                            ...resumeData.basicInfo,
+                            photo: "",
+                          },
+                        })
+                      }
+                      sx={{
+                        textTransform: "none",
+                        color: "#dc2626",
+                        ml: 1,
+                      }}
                     >
-                      github.com/
-                    </Typography>
-                  ),
-                }}
-              />
+                      Remove
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+              <Typography
+                sx={{ fontSize: "0.75rem", color: "#6b7280", mt: 0.5 }}
+              >
+                Used as profile picture (e.g. Western) or logo (e.g. IIIT Vadodara). Stored so it appears in the PDF.
+              </Typography>
+            </Box>
 
+            <TextField
+              label="GitHub Username"
+              value={resumeData.basicInfo.github || ""}
+              onChange={(e) => updateBasicInfo("github", e.target.value)}
+              fullWidth
+              size="small"
+              placeholder="e.g., johndoe"
+              InputProps={{
+                startAdornment: (
+                  <Typography
+                    sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5, whiteSpace: "nowrap" }}
+                  >
+                    github.com/
+                  </Typography>
+                ),
+              }}
+            />
+
+            <TextField
+              label="LinkedIn Username"
+              value={resumeData.basicInfo.linkedin || ""}
+              onChange={(e) => updateBasicInfo("linkedin", e.target.value)}
+              fullWidth
+              size="small"
+              placeholder="e.g., johndoe"
+              InputProps={{
+                startAdornment: (
+                  <Typography
+                    sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5, whiteSpace: "nowrap" }}
+                  >
+                    linkedin.com/in/
+                  </Typography>
+                ),
+              }}
+            />
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <TextField
-                label="LinkedIn Username"
-                value={resumeData.basicInfo.linkedin || ""}
-                onChange={(e) => updateBasicInfo("linkedin", e.target.value)}
+                label="Portfolio Website"
+                value={resumeData.basicInfo.portfolio || ""}
+                onChange={(e) => updateBasicInfo("portfolio", e.target.value)}
                 fullWidth
                 size="small"
-                placeholder="e.g., johndoe"
-                InputProps={{
-                  startAdornment: (
-                    <Typography
-                      sx={{ fontSize: "0.875rem", color: "#666", mr: 0.5 }}
-                    >
-                      linkedin.com/in/
-                    </Typography>
-                  ),
-                }}
+                placeholder="https://myportfolio.com"
+              />
+              <TextField
+                label="LeetCode Profile"
+                value={resumeData.basicInfo.leetcode || ""}
+                onChange={(e) => updateBasicInfo("leetcode", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://leetcode.com/u/username"
+              />
+              <TextField
+                label="HackerRank Profile"
+                value={resumeData.basicInfo.hackerrank || ""}
+                onChange={(e) => updateBasicInfo("hackerrank", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://hackerrank.com/username"
+              />
+              <TextField
+                label="Kaggle Profile"
+                value={resumeData.basicInfo.kaggle || ""}
+                onChange={(e) => updateBasicInfo("kaggle", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://kaggle.com/username"
+              />
+              <TextField
+                label="Medium Profile"
+                value={resumeData.basicInfo.medium || ""}
+                onChange={(e) => updateBasicInfo("medium", e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="https://medium.com/@username"
               />
             </Box>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Collapse, IconButton, Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -19,11 +20,12 @@ import { StudentsPagination } from "../../../components/admin/manage-students/St
 import { BulkEnrollmentDialog } from "../../../components/admin/manage-students/BulkEnrollmentDialog";
 import { EnrollmentJobHistory } from "../../../components/admin/manage-students/EnrollmentJobHistory";
 
-type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak";
+type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak" | "completion_pct" | "attendance_pct";
 type SortOrder = "asc" | "desc";
 
 export default function ManageStudentsPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -201,14 +203,14 @@ export default function ManageStudentsPage() {
       }
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load students",
+        error?.response?.data?.detail || t("adminManageStudents.failedToLoadStudents"),
         "error"
       );
       setAllStudents([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedCourse, showToast]);
+  }, [selectedCourse, showToast, t]);
 
   // Load students when course filter changes or on mount
   useEffect(() => {
@@ -217,6 +219,7 @@ export default function ManageStudentsPage() {
 
   // Client-side filtering, sorting, and pagination
   // This runs entirely in the browser - no API calls for search, status, sort, or pagination changes
+  const hasFilter = Boolean(selectedCourse || status !== "all" || (searchTerm && searchTerm.trim()));
   const { filteredStudents, paginatedStudents, totalCount, totalPages } =
     useMemo(() => {
       // Step 1: Filter by search term (name or email)
@@ -237,7 +240,7 @@ export default function ManageStudentsPage() {
         filtered = filtered.filter((s) => !s.is_active);
       }
 
-      // Step 3: Sort
+      // Step 3: Sort (completion_pct and attendance_pct use completionStats)
       const sorted = [...filtered].sort((a, b) => {
         let aValue: any;
         let bValue: any;
@@ -267,6 +270,20 @@ export default function ManageStudentsPage() {
             aValue = a.current_streak;
             bValue = b.current_streak;
             break;
+          case "completion_pct": {
+            const statsA = completionStats[a.user_id] ?? completionStats[a.id];
+            const statsB = completionStats[b.user_id] ?? completionStats[b.id];
+            aValue = statsA?.completion_percentage ?? 0;
+            bValue = statsB?.completion_percentage ?? 0;
+            break;
+          }
+          case "attendance_pct": {
+            const statsA = completionStats[a.user_id] ?? completionStats[a.id];
+            const statsB = completionStats[b.user_id] ?? completionStats[b.id];
+            aValue = statsA?.attendance_percentage ?? 0;
+            bValue = statsB?.attendance_percentage ?? 0;
+            break;
+          }
           default:
             return 0;
         }
@@ -289,14 +306,20 @@ export default function ManageStudentsPage() {
         totalCount: total,
         totalPages: totalPagesCount,
       };
-    }, [allStudents, searchTerm, status, sortBy, sortOrder, page, limit]);
+    }, [allStudents, completionStats, searchTerm, status, sortBy, sortOrder, page, limit]);
 
   const handleSort = (field: SortOption) => {
+    const isPctColumn = field === "completion_pct" || field === "attendance_pct";
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortOrder("asc");
+      // When any filter is selected and sorting by completion/attendance %, default to DESC
+      if (isPctColumn && hasFilter) {
+        setSortOrder("desc");
+      } else {
+        setSortOrder("asc");
+      }
     }
     setPage(1);
   };
@@ -336,12 +359,53 @@ export default function ManageStudentsPage() {
     setShowJobHistory(true); // Show job history after successful enrollment
   };
 
+  const escapeCsvValue = (value: string | number): string => {
+    const str = String(value ?? "");
+    if (str.includes('"') || str.includes(",") || str.includes("\n") || str.includes("\r")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const handleDownloadCsv = () => {
+    const headers = [
+      t("adminManageStudents.csvHeaderName"),
+      t("adminManageStudents.csvHeaderEmail"),
+      t("adminManageStudents.csvHeaderStatus"),
+      t("adminManageStudents.csvHeaderEnrollmentCount"),
+      t("adminManageStudents.csvHeaderMostActiveCourse"),
+      t("adminManageStudents.csvHeaderCompletionPct"),
+      t("adminManageStudents.csvHeaderAttendancePct"),
+    ];
+    const rows = filteredStudents.map((student) => {
+      const stats = completionStats[student.user_id] ?? completionStats[student.id];
+      return [
+        escapeCsvValue(student.name ?? ""),
+        escapeCsvValue(student.email ?? ""),
+        student.is_active ? t("adminManageStudents.active") : t("adminManageStudents.inactive"),
+        escapeCsvValue(student.enrollment_count ?? 0),
+        escapeCsvValue(student.most_active_course ?? t("adminManageStudents.noActivity")),
+        stats ? escapeCsvValue(stats.completion_percentage.toFixed(1)) : t("adminManageStudents.na"),
+        stats ? escapeCsvValue(stats.attendance_percentage.toFixed(1)) : t("adminManageStudents.na"),
+      ];
+    });
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `students${selectedCourse ? `-course-${selectedCourse}` : ""}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         <ManageStudentsHeader
           totalCount={totalCount}
           onBulkEnrollClick={() => setBulkEnrollDialogOpen(true)}
+          onDownloadCsv={selectedCourse ? handleDownloadCsv : undefined}
         />
 
         <StudentsFilters
@@ -374,7 +438,7 @@ export default function ManageStudentsPage() {
               }}
             >
               <Typography variant="h6" fontWeight={600}>
-                Enrollment Job History
+                {t("adminManageStudents.enrollmentJobHistory")}
               </Typography>
               <IconButton size="small">
                 <IconWrapper

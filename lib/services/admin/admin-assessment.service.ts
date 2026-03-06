@@ -81,6 +81,20 @@ export interface GenerateCodingProblemRequest {
   number_of_problems?: number;
 }
 
+/** Request body for generating a single coding problem from raw problem text */
+export interface GenerateCodingProblemRawRequest {
+  raw_problem: string;
+  difficulty_level: "Easy" | "Medium" | "Hard";
+  programming_language: string;
+}
+
+/** Request body for generating multiple coding problems from raw problem texts (single request) */
+export interface GenerateCodingProblemsRawBatchRequest {
+  raw_problems: string[];
+  difficulty_level: "Easy" | "Medium" | "Hard";
+  programming_language: string;
+}
+
 export interface GenerateCodingProblemResponse {
   message: string;
   topic: string;
@@ -98,14 +112,22 @@ export interface GenerateCodingProblemResponse {
 
 export interface CreateAssessmentPayload {
   title: string;
+  course_ids?: number[];
+  colleges?: string[];
   instructions: string;
   description?: string;
   duration_minutes: number;
+  start_time?: string;
+  end_time?: string;
   is_paid?: boolean;
   price?: string | number | null;
   currency?: string;
   is_active?: boolean;
   proctoring_enabled?: boolean;
+  /** Whether to send notification email to students */
+  send_communication?: boolean;
+  /** Whether to show results to students after submission (default true) */
+  show_result?: boolean;
   quiz_section?: QuizSection; // For backward compatibility
   quiz_sections?: Array<{
     title: string;
@@ -144,12 +166,24 @@ export interface Assessment {
   is_paid: boolean;
   price: string | number | null;
   is_active: boolean;
+  proctoring_enabled?: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
   created_at: string;
   total_questions: number;
   quiz_sections_count: number;
+  coding_sections_count?: number;
+  submissions_count?: number;
+  courses?: Array<{ id: number; title: string }>;
+  colleges?: string[];
 }
 
 export interface AssessmentDetail extends Assessment {
+  start_time?: string | null;
+  end_time?: string | null;
+  proctoring_enabled?: boolean;
+  course_ids?: number[];
+  currency?: string;
   quiz_sections?: Array<{
     id: number;
     title: string;
@@ -297,6 +331,31 @@ export const updateAssessment = async (
 };
 
 /**
+ * Run email job for an assessment (e.g. send assessment notification emails to students)
+ * POST /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/run-email-job/
+ */
+export const runAssessmentEmailJob = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<{ message?: string; task_id?: string; status?: string }> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/run-email-job/`
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      (typeof error.response?.data?.detail === "string"
+        ? error.response.data.detail
+        : "Failed to run email job");
+    throw new Error(message);
+  }
+};
+
+/**
  * Delete an assessment
  */
 export const deleteAssessment = async (
@@ -314,6 +373,30 @@ export const deleteAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to delete assessment";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Duplicate an assessment
+ * POST /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/duplicate/
+ */
+export const duplicateAssessment = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<Assessment> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/duplicate/`
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to duplicate assessment";
     throw new Error(message);
   }
 };
@@ -402,6 +485,80 @@ export const getCodingProblems = async (
 };
 
 /**
+ * Generate a single coding problem from raw problem text.
+ * POST same endpoint with raw_problem, difficulty_level, programming_language.
+ */
+export const generateCodingProblemFromRaw = async (
+  clientId: string | number,
+  payload: GenerateCodingProblemRawRequest
+): Promise<GenerateCodingProblemResponse> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/generate-coding-problems/`,
+      payload
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    if (error.response?.status === 400 && error.response?.data) {
+      const errorData = error.response.data;
+      const errorMessages = Object.entries(errorData)
+        .map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(", ")}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join("; ");
+      throw new Error(errorMessages || "Validation error");
+    }
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to generate coding problem from raw text";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Generate multiple coding problems in one request with raw_problems array.
+ * POST body: { raw_problems: string[], difficulty_level, programming_language }
+ */
+export const generateCodingProblemsFromRawBatch = async (
+  clientId: string | number,
+  payload: GenerateCodingProblemsRawBatchRequest
+): Promise<GenerateCodingProblemResponse> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/generate-coding-problems/`,
+      payload
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    if (error.response?.status === 400 && error.response?.data) {
+      const errorData = error.response.data;
+      const errorMessages = Object.entries(errorData)
+        .map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(", ")}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join("; ");
+      throw new Error(errorMessages || "Validation error");
+    }
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to generate coding problems from raw text";
+    throw new Error(message);
+  }
+};
+
+/**
  * Generate coding problems with AI
  */
 export const generateCodingProblemsWithAI = async (
@@ -440,14 +597,176 @@ export const generateCodingProblemsWithAI = async (
   }
 };
 
+/**
+ * Fetch submissions export as CSV for an assessment.
+ * GET /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/submissions-export/
+ * Returns the response as a Blob (CSV file).
+ */
+export const getSubmissionsExport = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<Blob> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/`,
+    { responseType: "blob" }
+  );
+  return response.data as Blob;
+};
+
+/**
+ * Fetch questions export as CSV for an assessment.
+ * GET /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/questions-export/
+ * Returns the response as a Blob (CSV file).
+ */
+export const getQuestionsExport = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<Blob> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/export-questions/`,
+    { responseType: "blob" }
+  );
+  return response.data as Blob;
+};
+
+/** Questions export JSON shape (export-questions API) – MCQ/quiz question */
+export interface QuestionsExportMCQQuestion {
+  id: number;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: string;
+  explanation?: string;
+  difficulty_level?: string;
+  topic?: string;
+  skills?: string;
+}
+
+/** Questions export – coding question shape */
+export interface QuestionsExportCodingQuestion {
+  id: number;
+  title: string;
+  problem_statement?: string;
+  input_format?: string;
+  output_format?: string;
+  sample_input?: string;
+  sample_output?: string;
+  constraints?: string;
+  difficulty_level?: string;
+  tags?: string;
+  test_cases?: Array<{ input: string; expected_output: string }>;
+  time_limit?: number;
+  memory_limit?: number;
+  [key: string]: unknown;
+}
+
+/** Union type for quiz or coding question in export */
+export type QuestionsExportQuestion = QuestionsExportMCQQuestion | QuestionsExportCodingQuestion;
+
+export function isCodingQuestion(q: QuestionsExportQuestion): q is QuestionsExportCodingQuestion {
+  return "title" in q && typeof (q as QuestionsExportCodingQuestion).title === "string";
+}
+
+export function isMCQQuestion(q: QuestionsExportQuestion): q is QuestionsExportMCQQuestion {
+  return "question_text" in q && "option_a" in q;
+}
+
+export interface QuestionsExportSection {
+  section_id: number;
+  section_title: string;
+  section_description?: string;
+  section_type: string;
+  order: number;
+  easy_score?: number;
+  medium_score?: number;
+  hard_score?: number;
+  number_of_questions: number;
+  questions: QuestionsExportQuestion[];
+}
+
+export interface QuestionsExportResponse {
+  assessment: { id: number; title: string; slug: string; instructions?: string; description?: string };
+  sections: QuestionsExportSection[];
+}
+
+/** Proctoring data per submission (for CSV export) */
+export interface SubmissionsExportProctoringData {
+  tab_switches_count?: number;
+  face_violations_count?: number;
+  fullscreen_exits_count?: number;
+  eye_movement_count?: number;
+  face_validation_failures_count?: number;
+  multiple_face_detections_count?: number;
+  total_violation_count?: number;
+}
+
+/** Submissions export JSON shape (submissions-export API) */
+export interface SubmissionsExportSubmission {
+  name: string;
+  email: string;
+  phone?: string;
+  started_at?: string;
+  submitted_at?: string;
+  maximum_marks?: number;
+  overall_score?: number;
+  percentage?: number;
+  total_questions?: number;
+  attempted_questions?: number;
+  section_wise_scores?: Record<string, number>;
+  section_wise_max_scores?: Record<string, number>;
+  proctoring?: SubmissionsExportProctoringData;
+}
+
+export interface SubmissionsExportResponse {
+  assessment: { id: number; title: string; slug: string; maximum_marks?: number };
+  submissions: SubmissionsExportSubmission[];
+}
+
+/**
+ * Fetch questions export as JSON (for view + table download).
+ * GET .../export-questions/
+ */
+export const getQuestionsExportJson = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<QuestionsExportResponse> => {
+  const response = await apiClient.get<QuestionsExportResponse>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/export-questions/`
+  );
+  return response.data;
+};
+
+/**
+ * Fetch submissions export as JSON (for view + table download).
+ * GET .../submissions-export/
+ */
+export const getSubmissionsExportJson = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<SubmissionsExportResponse> => {
+  const response = await apiClient.get<SubmissionsExportResponse>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/`
+  );
+  return response.data;
+};
+
 export const adminAssessmentService = {
   getAssessments,
   getAssessmentById,
   createAssessment,
   updateAssessment,
   deleteAssessment,
+  duplicateAssessment,
+  getSubmissionsExport,
+  getQuestionsExport,
+  getQuestionsExportJson,
+  getSubmissionsExportJson,
   getMCQs,
   generateMCQsWithAI,
   getCodingProblems,
   generateCodingProblemsWithAI,
+  generateCodingProblemFromRaw,
+  generateCodingProblemsFromRawBatch,
 };

@@ -13,8 +13,7 @@ import {
   memo,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Box } from "@mui/material";
-import { Loading } from "@/components/common/Loading";
+import { Box, Typography, Button } from "@mui/material";
 import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
 import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
@@ -64,7 +63,7 @@ export default function TakeAssessmentPage({
   // State
   const [submitting, setSubmitting] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
-  const [showStartButton, setShowStartButton] = useState(true);
+  const [showStartButton, setShowStartButton] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
@@ -107,16 +106,16 @@ export default function TakeAssessmentPage({
     }
   }, [assessment, loading]);
 
-  // Timer setup
+  // Timer setup - ALWAYS use remaining_time if available
   const initialTimeSeconds = useMemo(() => {
-    if (assessment?.remaining_time) {
-      return assessment.remaining_time * 60;
+    if (assessment?.remaining_time !== undefined && assessment?.remaining_time !== null) {
+      return assessment.remaining_time * 60; // Convert minutes to seconds
     }
     if (assessment?.duration_minutes) {
       return assessment.duration_minutes * 60;
     }
     return 3600;
-  }, [assessment]);
+  }, [assessment?.remaining_time, assessment?.duration_minutes]);
 
   const timer = useAssessmentTimer({
     initialTimeSeconds,
@@ -129,12 +128,22 @@ export default function TakeAssessmentPage({
   });
 
   // Sections - memoized to prevent unnecessary recalculations
+  // Calculate immediately but use startTransition for updates to prevent blocking
   const sections = useMemo(() => {
     if (!assessment) return [];
-    return mergeAssessmentSections(
+    const merged = mergeAssessmentSections(
       assessment.quizSection || [],
       assessment.codingProblemSection || []
     );
+    // Debug: Log sections to help diagnose issues
+    if (merged.length === 0) {
+      console.warn("No sections found in assessment:", {
+        quizSection: assessment.quizSection,
+        codingProblemSection: assessment.codingProblemSection,
+        assessment: assessment
+      });
+    }
+    return merged;
   }, [assessment]);
 
   // Proctoring
@@ -152,6 +161,8 @@ export default function TakeAssessmentPage({
     faceCount,
     status,
     metadata,
+    latestViolation,
+    tabSwitchCount,
     startProctoring,
     stopProctoring,
     enterFullscreen,
@@ -163,7 +174,109 @@ export default function TakeAssessmentPage({
     autoStart: false,
   });
 
-  // Show warning when eye movement violations occur
+  // Track last violation timestamp per type to avoid duplicate toasts
+  const lastViolationToastRef = useRef<Map<string, number>>(new Map());
+  const prevTabSwitchCountRef = useRef(0);
+  const lastTabSwitchToastRef = useRef(0);
+  const TAB_SWITCH_TOAST_COOLDOWN_MS = 4000;
+
+  // Show toast when tab switch is detected (user left and returned to the assessment tab)
+  useEffect(() => {
+    if (!assessmentStarted || submitting) return;
+    if (tabSwitchCount <= prevTabSwitchCountRef.current) return;
+    prevTabSwitchCountRef.current = tabSwitchCount;
+    const now = Date.now();
+    if (now - lastTabSwitchToastRef.current < TAB_SWITCH_TOAST_COOLDOWN_MS) return;
+    lastTabSwitchToastRef.current = now;
+    showToast(
+      "Tab switch detected. Please stay on the assessment tab for the duration of the test.",
+      "warning"
+    );
+  }, [tabSwitchCount, assessmentStarted, submitting, showToast]);
+
+  // Show toast notifications for proctoring violations
+  useEffect(() => {
+    if (!assessmentStarted || submitting || !latestViolation) return;
+
+    // Skip NORMAL status violations
+    if (latestViolation.type === "NORMAL") return;
+    // TRACKPAD_SWIPE toast is shown from useTrackpadSwipeDetector to avoid duplicate
+    if (latestViolation.type === "TRACKPAD_SWIPE") return;
+
+    const now = Date.now();
+    const violationType = latestViolation.type;
+    const lastToastTime = lastViolationToastRef.current.get(violationType) || 0;
+
+    // Map violation types to user-friendly messages and toast types
+    const violationMessages: Record<string, { message: string; toastType: "warning" | "error" | "info"; cooldown: number }> = {
+      LOOKING_AWAY: {
+        message: "Please look at the screen",
+        toastType: "warning",
+        cooldown: 3000,
+      },
+      NO_FACE: {
+        message: "Face not detected. Please position yourself in front of the camera",
+        toastType: "error",
+        cooldown: 4000,
+      },
+      MULTIPLE_FACES: {
+        message: "Multiple faces detected. Please ensure only you are visible",
+        toastType: "warning",
+        cooldown: 4000,
+      },
+      FACE_NOT_VISIBLE: {
+        message: "Face not clearly visible. Please remove any obstructions (mask, hand, etc.)",
+        toastType: "error",
+        cooldown: 4000,
+      },
+      FACE_TOO_CLOSE: {
+        message: "Please move back from the camera",
+        toastType: "warning",
+        cooldown: 3000,
+      },
+      FACE_TOO_FAR: {
+        message: "Please move closer to the camera (within 2-3 meters)",
+        toastType: "warning",
+        cooldown: 3000,
+      },
+      POOR_LIGHTING: {
+        message: "Poor lighting detected. Please improve lighting conditions",
+        toastType: "warning",
+        cooldown: 5000,
+      },
+    };
+
+    const violationConfig = violationMessages[violationType];
+    
+    if (violationConfig) {
+      // Check cooldown for this specific violation type
+      const timeSinceLastToast = now - lastToastTime;
+      if (timeSinceLastToast < violationConfig.cooldown) {
+        return; // Still in cooldown period
+      }
+      
+      // Update last toast time for this violation type
+      lastViolationToastRef.current.set(violationType, now);
+      
+      // Show toast with violation message
+      showToast(violationConfig.message, violationConfig.toastType);
+    } else if (latestViolation.message) {
+      // Fallback to violation's own message if no custom message defined
+      const defaultCooldown = 3000;
+      const timeSinceLastToast = now - lastToastTime;
+      
+      if (timeSinceLastToast < defaultCooldown) {
+        return; // Still in cooldown period
+      }
+      
+      const toastType = latestViolation.severity === "high" ? "error" : 
+                       latestViolation.severity === "medium" ? "warning" : "info";
+      lastViolationToastRef.current.set(violationType, now);
+      showToast(latestViolation.message, toastType);
+    }
+  }, [latestViolation, assessmentStarted, submitting, showToast]);
+
+  // Show warning when eye movement violations occur (kept for backward compatibility)
   useEffect(() => {
     const eyeMovementCount = metadata.proctoring.eye_movement_count || 0;
     
@@ -174,13 +287,10 @@ export default function TakeAssessmentPage({
       const now = Date.now();
       if (now - lastEyeMovementWarningRef.current > 5000) { // 5 second cooldown
         lastEyeMovementWarningRef.current = now;
-        showToast(
-          `Eye movement detected`,
-          "warning"
-        );
+        // Note: Eye movement toasts are now handled by latestViolation effect above
       }
     }
-  }, [metadata.proctoring.eye_movement_count, showToast]);
+  }, [metadata.proctoring.eye_movement_count]);
 
   // Navigation
   const navigation = useAssessmentNavigation({
@@ -227,50 +337,82 @@ export default function TakeAssessmentPage({
         setCurrentQuestionIndex(0);
       }
 
-      // Parse responseSheet asynchronously after initial render (deferred)
+      // Parse responseSheet asynchronously after initial render (deferred with longer delay)
       if (assessment.responseSheet) {
-        // Use requestIdleCallback or setTimeout to defer heavy parsing
+        // Use requestIdleCallback or setTimeout to defer heavy parsing - longer delay to prevent freeze
         const parseResponseSheet = () => {
           try {
             const responseSheet = assessment.responseSheet;
             const loadedResponses: Record<string, Record<string, any>> = {};
 
-            // Process responseSheet - it may be organized by section index or section type
-            sections.forEach((section: any, sectionIndex: number) => {
-              const sectionType = section.section_type || "quiz";
-              const sectionKey = String(sectionIndex + 1);
-
-              // Check if responses exist for this section
-              if (responseSheet[sectionKey]) {
-                const sectionResponses = responseSheet[sectionKey];
-                if (!loadedResponses[sectionType]) {
-                  loadedResponses[sectionType] = {};
-                }
-
-                // Map section responses to question IDs
-                Object.keys(sectionResponses).forEach((questionId) => {
-                  const response = sectionResponses[questionId];
-                  if (response !== undefined && response !== null) {
-                    loadedResponses[sectionType][questionId] = response;
-                  }
-                });
+            // Process quizSectionId array - structure: quizSectionId[0]["75"]["84205"] = "a"
+            if (responseSheet.quizSectionId && Array.isArray(responseSheet.quizSectionId)) {
+              if (!loadedResponses["quiz"]) {
+                loadedResponses["quiz"] = {};
               }
-            });
 
-            // Only update if we found saved responses
+              responseSheet.quizSectionId.forEach((sectionData: any) => {
+                // sectionData is like: { "75": { "84205": "a", "84206": "a", ... } }
+                Object.keys(sectionData).forEach((sectionIdKey) => {
+                  const questionResponses = sectionData[sectionIdKey];
+                  
+                  // Map each question response - bind ALL responses including null
+                  Object.keys(questionResponses).forEach((questionIdKey) => {
+                    const response = questionResponses[questionIdKey];
+                    const questionId = Number(questionIdKey);
+                    
+                    // Bind ALL responses including null (null means question was cleared/unanswered)
+                    // Store with multiple ID formats for compatibility
+                    if (response !== undefined) {
+                      loadedResponses["quiz"][questionId] = response;
+                      loadedResponses["quiz"][String(questionId)] = response;
+                    }
+                  });
+                });
+              });
+            }
+
+            // Process codingProblemSectionId array - similar structure
+            if (responseSheet.codingProblemSectionId && Array.isArray(responseSheet.codingProblemSectionId)) {
+              if (!loadedResponses["coding"]) {
+                loadedResponses["coding"] = {};
+              }
+
+              responseSheet.codingProblemSectionId.forEach((sectionData: any) => {
+                Object.keys(sectionData).forEach((sectionIdKey) => {
+                  const questionResponses = sectionData[sectionIdKey];
+                  
+                  Object.keys(questionResponses).forEach((questionIdKey) => {
+                    const response = questionResponses[questionIdKey];
+                    const questionId = Number(questionIdKey);
+                    
+                    if (response !== undefined) {
+                      loadedResponses["coding"][questionId] = response;
+                      loadedResponses["coding"][String(questionId)] = response;
+                    }
+                  });
+                });
+              });
+            }
+
+            // Only update if we found saved responses - use startTransition for non-blocking update
             if (Object.keys(loadedResponses).length > 0) {
-              setResponses(loadedResponses);
+              startTransition(() => {
+                setResponses(loadedResponses);
+              });
             }
           } catch (error) {
+            console.error("Error parsing responseSheet:", error);
             // Silently fail - already initialized empty structure
           }
         };
 
-        // Defer parsing to prevent blocking initial render
+        // Defer parsing with much longer delay to prevent blocking UI and camera
+        // Parse after camera has initialized and UI is interactive (3+ seconds)
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 1000 });
+          (window as any).requestIdleCallback(parseResponseSheet, { timeout: 8000 });
         } else {
-          setTimeout(parseResponseSheet, 100);
+          setTimeout(parseResponseSheet, 3000);
         }
       }
     }
@@ -337,7 +479,7 @@ export default function TakeAssessmentPage({
     slug,
     responses,
     sections,
-    metadata,
+    metadata: metadata as any, // Type compatibility - both types have same structure
     navigation,
     stopProctoring,
     setSubmitting,
@@ -345,33 +487,90 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog,
   });
 
-  // Start assessment
+  // Pre-initialize camera IMMEDIATELY as soon as videoRef is available (before assessment starts)
+  // IMPORTANT: Reuse stream from device-check page to prevent camera from turning off
+  useEffect(() => {
+    if (
+      assessment &&
+      !loading &&
+      assessment.status !== "submitted" &&
+      !assessmentStarted &&
+      assessment.proctoring_enabled !== false
+    ) {
+      // Check if we have an existing stream from device-check page
+      const existingStream = typeof window !== "undefined" 
+        ? (window as any).__assessmentStream 
+        : null;
+      
+      // If stream exists, attach it to video element immediately to keep camera on
+      if (existingStream && videoRef.current && !videoRef.current.srcObject) {
+        try {
+          videoRef.current.srcObject = existingStream;
+          videoRef.current.autoplay = true;
+          videoRef.current.playsInline = true;
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {
+            // Silently fail - will be handled by proctoring service
+          });
+        } catch (error) {
+          // Silently fail
+        }
+      }
+
+      // Start camera immediately - don't wait for assessment to start
+      // This makes camera preview appear instantly when assessment begins
+      // Proctoring service will reuse existing stream if available
+      const startCameraEarly = async () => {
+        try {
+          // Start proctoring immediately (non-blocking)
+          // Proctoring service will detect and reuse the existing stream
+          startProctoring().catch(() => {
+            // Silently fail - will retry when assessment starts
+          });
+        } catch (error) {
+          // Silently fail
+        }
+      };
+      
+      // Start immediately - no delay
+      startCameraEarly();
+    }
+  }, [videoRef.current, assessment, loading, assessmentStarted, startProctoring]);
+
+  // Start assessment - prioritize camera, defer heavy operations
   const handleStartAssessment = useCallback(async () => {
     if (isInitializingRef.current) return;
     isInitializingRef.current = true;
     setShowStartButton(false);
 
     try {
+      // Start timer first (non-blocking)
       setAssessmentStarted(true);
       timer.start();
 
-      // Conditionally start proctoring and fullscreen in parallel (non-blocking)
-      const promises: Promise<any>[] = [];
-      
-      // Only start proctoring if enabled
+      // Camera should already be started by pre-initialization
+      // Just ensure video is playing if camera is already active
       if (assessment?.proctoring_enabled !== false) {
-        promises.push(
+        // If camera isn't already active, start it now
+        if (!isProctoringActive) {
           startProctoring().catch(() => {
             showToast(
               "Camera initialization failed. Please ensure camera permissions are granted.",
               "error"
             );
-          })
-        );
+          });
+        } else if (videoRef.current) {
+          // Camera is already active, just ensure video is playing
+          if (videoRef.current.srcObject) {
+            videoRef.current.play().catch(() => {
+              // Silently fail - will retry
+            });
+          }
+        }
       }
 
-      // Always enter fullscreen
-      promises.push(
+      // Defer fullscreen to allow camera to start
+      setTimeout(() => {
         enterFullscreen()
           .then(() => {
             setTimeout(() => {
@@ -388,10 +587,8 @@ export default function TakeAssessmentPage({
           })
           .catch(() => {
             setShowFullscreenWarning(true);
-          })
-      );
-
-      Promise.all(promises);
+          });
+      }, 100);
     } catch (error: any) {
       showToast(error.message || "Failed to start assessment.", "error");
       setShowStartButton(true);
@@ -404,6 +601,7 @@ export default function TakeAssessmentPage({
     showToast,
     setShowFullscreenWarning,
     assessment,
+    videoRef,
   ]);
 
   // Time up handler
@@ -413,6 +611,68 @@ export default function TakeAssessmentPage({
       handleFinalSubmit();
     };
   }, [handleFinalSubmit, showToast]);
+  
+  // Track if timer has been initialized to prevent multiple resets
+  const timerInitializedRef = useRef(false);
+  const lastRemainingTimeRef = useRef<number | null>(null);
+  
+  // Update timer when remaining_time changes (for resuming assessments) - DEFERRED to prevent freeze
+  useEffect(() => {
+    if (assessment?.remaining_time !== undefined && assessment?.remaining_time !== null) {
+      const newTimeSeconds = assessment.remaining_time * 60;
+      
+      // If remaining_time is 0, auto-submit immediately
+      if (assessment.remaining_time === 0 && assessmentStarted && !submitting) {
+        showToast("Time is up! Submitting assessment...", "warning");
+        handleFinalSubmit();
+        return;
+      }
+      
+      // Only reset if time actually changed (not just on every render)
+      if (lastRemainingTimeRef.current !== assessment.remaining_time) {
+        lastRemainingTimeRef.current = assessment.remaining_time;
+        
+        // Defer timer reset to prevent blocking initial render
+        const resetTimer = () => {
+          const timeDifference = Math.abs(timer.remainingSeconds - newTimeSeconds);
+          // Only reset if difference is significant (more than 10 seconds) or not initialized
+          if (!timerInitializedRef.current || timeDifference > 10) {
+            timerInitializedRef.current = true;
+            timer.reset(newTimeSeconds);
+            if (assessmentStarted) {
+              timer.start();
+            }
+          }
+        };
+        
+        // Defer with longer delay to prevent freeze
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(resetTimer, { timeout: 1000 });
+        } else {
+          setTimeout(resetTimer, 300);
+        }
+      }
+    }
+  }, [assessment?.remaining_time, assessment?.status, assessmentStarted, submitting, timer, showToast, handleFinalSubmit]);
+  
+  // Auto-start when assessment loads (if not submitted) - deferred to prevent freeze
+  useEffect(() => {
+    if (
+      assessment &&
+      !loading &&
+      assessment.status !== "submitted" &&
+      !assessmentStarted &&
+      !showStartButton &&
+      sections.length > 0
+    ) {
+      // Defer auto-start to allow initial render, timer, and camera pre-warming
+      const startTimer = setTimeout(() => {
+        handleStartAssessment();
+      }, 150);
+      
+      return () => clearTimeout(startTimer);
+    }
+  }, [assessment, loading, assessmentStarted, showStartButton, sections.length, handleStartAssessment]);
 
   // Cleanup on unmount - ensure camera is always stopped
   useEffect(() => {
@@ -547,28 +807,13 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog(false);
   }, []);
 
-  // Section change handler - optimized with transition (non-blocking)
+  // Section change handler - IMMEDIATE, never block navigation
   const handleSectionChange = useCallback((sectionIndex: number) => {
-    // Prevent multiple rapid clicks
-    if (isTransitioning) return;
-    
-    setIsTransitioning(true);
-    // Use requestIdleCallback or setTimeout for truly non-blocking updates
-    const updateSection = () => {
-      startTransition(() => {
-        setCurrentSectionIndex(sectionIndex);
-        setCurrentQuestionIndex(0);
-      });
-      // Clear transition state after a short delay
-      setTimeout(() => setIsTransitioning(false), 100);
-    };
-    
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      (window as any).requestIdleCallback(updateSection, { timeout: 50 });
-    } else {
-      setTimeout(updateSection, 0);
-    }
-  }, [isTransitioning]);
+    // Never block navigation - update immediately
+    setCurrentSectionIndex(sectionIndex);
+    setCurrentQuestionIndex(0);
+    // Don't use transition state - it blocks navigation
+  }, []);
 
   // Computed values - heavily memoized
   const currentSection = useMemo(
@@ -586,29 +831,70 @@ export default function TakeAssessmentPage({
     return currentSection.questions || [];
   }, [currentSection, sectionType]);
 
+  // Optimized mappedQuizQuestions - cache with ref to prevent recalculation on navigation
+  const mappedQuizQuestionsRef = useRef<any[]>([]);
+  const lastMappedHashRef = useRef<string>("");
+  
   const mappedQuizQuestions = useMemo(() => {
-    if (!quizQuestions.length) return [];
+    if (!quizQuestions.length) {
+      mappedQuizQuestionsRef.current = [];
+      return [];
+    }
+    
     const sectionResponses = responses[sectionType] || {};
-    return quizQuestions.map((q: any) => ({
+    
+    // Create a hash of only the relevant responses for this section
+    const relevantResponses = quizQuestions.map((q: any) => ({
+      id: q.id,
+      answered: !!sectionResponses[q.id]
+    }));
+    const hash = JSON.stringify(relevantResponses);
+    
+    // Only recalculate if responses for this section actually changed
+    if (hash === lastMappedHashRef.current && mappedQuizQuestionsRef.current.length > 0) {
+      return mappedQuizQuestionsRef.current;
+    }
+    
+    lastMappedHashRef.current = hash;
+    
+    const mapped = quizQuestions.map((q: any) => ({
       id: q.id,
       question: q.question,
       answered: !!sectionResponses[q.id],
     }));
+    
+    mappedQuizQuestionsRef.current = mapped;
+    return mapped;
   }, [quizQuestions, responses, sectionType]);
 
-  // Optimized section status - only recalculate when responses change significantly
+  // Optimized section status - use ref to prevent recalculation on every navigation
+  const sectionStatusRef = useRef<any[]>([]);
+  const lastResponsesHashRef = useRef<string>("");
+  
   const sectionStatus = useMemo(() => {
-    return sections.map((section: any) => {
+    // Create a simple hash of responses to detect actual changes
+    const responsesHash = JSON.stringify(Object.keys(responses).map(key => ({
+      key,
+      count: Object.keys(responses[key] || {}).length
+    })));
+    
+    // Only recalculate if responses actually changed
+    if (responsesHash === lastResponsesHashRef.current && sectionStatusRef.current.length > 0) {
+      return sectionStatusRef.current;
+    }
+    
+    lastResponsesHashRef.current = responsesHash;
+    
+    const status = sections.map((section: any) => {
       const sectionType = section.section_type || "quiz";
       const sectionResponses = responses[sectionType] || {};
       const sectionQuestions = section.questions || [];
       
       // Count answered questions for THIS specific section only
-      // Check each question in this section to see if it has a response
       let answered = 0;
       sectionQuestions.forEach((question: any) => {
         const questionId = question.id;
-        const response = sectionResponses[questionId];
+        const response = sectionResponses[questionId] ?? sectionResponses[String(questionId)];
         
         // For quiz: check if answer is selected
         if (sectionType === "quiz") {
@@ -616,17 +902,17 @@ export default function TakeAssessmentPage({
             answered++;
           }
         } 
-        // For coding: check if code was explicitly submitted (has submitted flag or test results)
+        // For coding: count as attempted if user has code, has run tests, or submitted
+        // (so "visited/attempted" matches what the student did, not only full pass)
         else if (sectionType === "coding") {
-          if (
-            response &&
-            response.submitted === true &&
-            (response.tc_passed !== undefined ||
-              response.total_tc !== undefined ||
-              response.passed !== undefined ||
-              response.total_test_cases !== undefined)
-          ) {
-            answered++;
+          if (response && typeof response === "object") {
+            const isSubmitted = response.submitted === true;
+            const totalCount = response.total_tc ?? response.total_test_cases ?? 0;
+            const hasCode = typeof response.code === "string" && response.code.trim().length > 0;
+            const hasRun = totalCount > 0;
+            if (isSubmitted || hasRun || hasCode) {
+              answered++;
+            }
           }
         }
       });
@@ -638,27 +924,16 @@ export default function TakeAssessmentPage({
         total: sectionQuestions.length,
       };
     });
+    
+    sectionStatusRef.current = status;
+    return status;
   }, [sections, responses]);
 
+  // totalAnswered must match section breakdown (sum of sectionStatus.answered)
+  // so "Questions Visited" and section breakdown are always consistent
   const totalAnswered = useMemo(() => {
-    return Object.values(responses).reduce(
-      (sum: number, sectionResponses: any) => {
-        if (!sectionResponses || typeof sectionResponses !== "object") {
-          return sum;
-        }
-        return (
-          sum +
-          Object.keys(sectionResponses).filter(
-            (key) =>
-              sectionResponses[key] !== undefined &&
-              sectionResponses[key] !== null &&
-              sectionResponses[key] !== ""
-          ).length
-        );
-      },
-      0
-    );
-  }, [responses]);
+    return sectionStatus.reduce((sum, s) => sum + s.answered, 0);
+  }, [sectionStatus]);
 
   // Handlers - memoized
   const handleQuizAnswerSelect = useCallback(
@@ -727,22 +1002,17 @@ export default function TakeAssessmentPage({
     if (!currentSection || sectionType !== "coding") return [];
     const codingResponses = responses["coding"] || {};
     return (currentSection.questions || []).map((q: any) => {
-      const response = codingResponses[q.id];
-      // Mark as answered ONLY if code was explicitly submitted (has submitted flag)
-      // OR has test case results (indicating code was run/submitted)
-      // Don't mark as answered just because template code was saved
-      const isAnswered = !!(
-        response &&
-        response.submitted === true &&
-        (response.tc_passed !== undefined ||
-          response.total_tc !== undefined ||
-          response.passed !== undefined ||
-          response.total_test_cases !== undefined)
-      );
+      const response = codingResponses[q.id] ?? codingResponses[String(q.id)];
+      // Only show tick if user explicitly submitted OR ran code and got some passed (tc_passed > 0)
+      // Unattempted (tc_passed=0 from payload) should NOT show tick
+      const isSubmitted = response?.submitted === true;
+      const passedCount = response?.tc_passed ?? response?.passed ?? 0;
+      const totalCount = response?.total_tc ?? response?.total_test_cases ?? 0;
+      const hasAttempted = isSubmitted || (totalCount > 0 && passedCount > 0);
       return {
         id: q.id,
         title: q.title,
-        answered: isAnswered,
+        answered: !!hasAttempted,
       };
     });
   }, [currentSection, sectionType, responses]);
@@ -750,29 +1020,50 @@ export default function TakeAssessmentPage({
   // Handle coding question click
   const handleCodingQuestionClick = useCallback(
     (questionId: string | number) => {
-      // Don't block on isTransitioning for question clicks - allow rapid navigation
+      // IMMEDIATE navigation - never block
       const index = codingQuestions.findIndex((q: any) => q.id === questionId);
       if (index !== -1 && index !== currentQuestionIndex) {
-        // Use requestIdleCallback for non-blocking updates
-        const updateQuestion = () => {
-          startTransition(() => {
-            setCurrentQuestionIndex(index);
-          });
-        };
-        
-        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-          (window as any).requestIdleCallback(updateQuestion, { timeout: 30 });
-        } else {
-          setTimeout(updateQuestion, 0);
-        }
+        // Update immediately - no delays
+        setCurrentQuestionIndex(index);
       }
     },
     [codingQuestions, currentQuestionIndex]
   );
 
   // Early return
-  if (loading || !assessment) {
-    return <Loading fullScreen />;
+  if (!assessment) {
+    return null;
+  }
+
+  // Check if assessment has no sections/questions
+  if (sections.length === 0) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 2,
+          p: 4,
+        }}
+      >
+        <Typography variant="h5" sx={{ color: "#ef4444", fontWeight: 600 }}>
+          No Questions Available
+        </Typography>
+        <Typography variant="body1" sx={{ color: "#6b7280", textAlign: "center" }}>
+          This assessment does not have any questions configured. Please contact the administrator.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => router.push(`/assessments/${slug}`)}
+          sx={{ mt: 2 }}
+        >
+          Go Back
+        </Button>
+      </Box>
+    );
   }
 
   return (
@@ -850,14 +1141,10 @@ export default function TakeAssessmentPage({
               boxSizing: "border-box",
             }}
           >
-            {currentSection && (
+            {currentSection ? (
               <Box
                 sx={{
                   position: "relative",
-                  opacity: isTransitioning ? 0.8 : 1,
-                  transition: "opacity 0.15s ease-out",
-                  willChange: isTransitioning ? "opacity" : "auto",
-                  transform: isTransitioning ? "translateX(4px)" : "translateX(0)",
                 }}
               >
                 {sectionType === "quiz" && currentQuizQuestion && (
@@ -881,6 +1168,7 @@ export default function TakeAssessmentPage({
                     slug={slug}
                     questionId={currentCodingQuestion.id}
                     problemData={{
+                      content_title: currentCodingQuestion.title,
                       details: currentCodingQuestion,
                     }}
                     initialCode={
@@ -933,6 +1221,65 @@ export default function TakeAssessmentPage({
                     }}
                   />
                 )}
+
+                {/* Show message if section exists but has no questions */}
+                {sectionType === "quiz" && !currentQuizQuestion && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "400px",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                      No questions available in this section
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                      This section does not contain any questions.
+                    </Typography>
+                  </Box>
+                )}
+
+                {sectionType === "coding" && !currentCodingQuestion && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "400px",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                      No coding problems available in this section
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                      This section does not contain any coding problems.
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "400px",
+                  flexDirection: "column",
+                  gap: 2,
+                }}
+              >
+                <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                  No section available
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                  Unable to load assessment sections. Please refresh the page.
+                </Typography>
               </Box>
             )}
           </Box>
@@ -960,15 +1307,7 @@ export default function TakeAssessmentPage({
         </>
       )}
 
-      {!assessmentStarted &&
-        showStartButton &&
-        assessment?.status !== "submitted" && (
-          <StartAssessmentButton
-            title={assessment.title}
-            onStart={handleStartAssessment}
-            isInitializing={isInitializing}
-          />
-        )}
+      {/* Auto-start assessment - no start button needed */}
     </Box>
   );
 }

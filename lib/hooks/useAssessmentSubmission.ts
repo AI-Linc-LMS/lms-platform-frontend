@@ -175,10 +175,25 @@ export function useAssessmentSubmission({
       ).length;
       const fullscreenExits = metadata.proctoring.fullscreen_exits.length;
 
-      // Format responses using helper function (uses actual section IDs)
+      // Format responses - for attempted coding questions, prefer sessionStorage code
+      const getCodeFromSession = (questionId: number | string) => {
+        try {
+          const key = `assessment_${slug}_coding_${questionId}`;
+          const raw = typeof window !== "undefined" ? sessionStorage.getItem(key) : null;
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const code = parsed?.code;
+            return code != null ? String(code) : null;
+          }
+        } catch {
+          // Ignore
+        }
+        return null;
+      };
       const { quizSectionId, codingProblemSectionId } = formatAssessmentResponses(
         currentResponses,
-        sections
+        sections,
+        getCodeFromSession
       );
 
       // Prepare metadata for transcript
@@ -231,6 +246,19 @@ export function useAssessmentSubmission({
 
       // Show success immediately
       showToast("Assessment submitted successfully!", "success");
+
+      // Clear assessment coding sessionStorage
+      try {
+        const prefix = `assessment_${slug}_coding_`;
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith(prefix)) keysToRemove.push(key);
+        }
+        keysToRemove.forEach((k) => sessionStorage.removeItem(k));
+      } catch {
+        // Ignore
+      }
 
       // Stop camera and cleanup in background (non-blocking)
       // Don't wait for this - navigate immediately

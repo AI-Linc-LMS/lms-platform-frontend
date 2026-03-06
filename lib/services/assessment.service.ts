@@ -15,14 +15,18 @@ export interface Assessment {
   number_of_questions: number;
   created_at: string;
   is_attempted: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
   has_attempted?: boolean; // For backward compatibility
   proctoring_enabled?: boolean;
-  /** "not_started" | "in_progress" | "submitted" – when "submitted", show results */
-  status?: "not_started" | "in_progress" | "submitted";
+  /** "not_started" | "in_progress" | "submitted" | "completed" – when "submitted" or "completed", show results */
+  status?: "not_started" | "in_progress" | "submitted" | "completed";
 }
 
 export interface AssessmentDetail extends Assessment {
   sections: any[];
+  /** When false, hide "View Assessment Result" button on submission-success */
+  show_result?: boolean;
 }
 
 export interface AssessmentSubmission {
@@ -99,6 +103,8 @@ export interface AssessmentResult {
   assessment_id: string;
   assessment_name: string;
   maximum_marks: number;
+  /** When false, show evaluation-in-progress message instead of full result */
+  show_result?: boolean;
   stats: {
     total_questions: number;
     attempted_questions: number;
@@ -123,6 +129,40 @@ export interface AssessmentResult {
     }>;
     eye_movement_count?: number;
   };
+  user_responses?: {
+    quiz_responses?: QuizResponseItem[];
+    coding_problem_responses?: CodingProblemResponseItem[];
+  };
+}
+
+export interface QuizResponseItem {
+  question_id: number;
+  question_text: string;
+  options: Record<string, string>;
+  correct_option: string;
+  selected_answer: string | null;
+  is_correct: boolean;
+  explanation?: string | null;
+  difficulty_level?: "Easy" | "Medium" | "Hard";
+  topic?: string | null;
+  skills?: string | null;
+}
+
+export interface CodingProblemResponseItem {
+  problem_id: number;
+  title: string;
+  problem_statement?: string | null;
+  input_format?: string | null;
+  output_format?: string | null;
+  sample_input?: string | null;
+  sample_output?: string | null;
+  constraints?: string | null;
+  difficulty_level?: "Easy" | "Medium" | "Hard";
+  tags?: string | null;
+  submitted_code?: string | null;
+  total_test_cases: number;
+  passed_test_cases: number;
+  all_test_cases_passed: boolean;
 }
 
 export interface AssessmentMetadata {
@@ -131,6 +171,7 @@ export interface AssessmentMetadata {
       type:
         | "NO_FACE"
         | "MULTIPLE_FACES"
+        | "FACE_NOT_VISIBLE"
         | "LOOKING_AWAY"
         | "EYE_MOVEMENT"
         | "FACE_TOO_CLOSE"

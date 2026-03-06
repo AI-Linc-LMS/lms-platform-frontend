@@ -3,6 +3,7 @@
 import { Box, Paper, Typography, TextField, Button, Chip } from "@mui/material";
 import { CheckCircle } from "lucide-react";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface AnswerInputAreaProps {
   currentAnswer: string;
@@ -25,6 +26,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
   canGoPrevious,
   isLastQuestion,
 }: AnswerInputAreaProps) {
+  const { t } = useTranslation("common");
   return (
     <Paper
       elevation={0}
@@ -103,7 +105,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
               },
             }}
           >
-            Previous
+            {t("mockInterview.previous")}
           </Button>
           <Button
             variant="outlined"

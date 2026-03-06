@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Typography,
@@ -13,7 +14,12 @@ import {
   Rating,
   Autocomplete,
   CircularProgress,
+  Switch,
+  FormControlLabel,
+  Button,
+  Tooltip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { adminCourseBuilderService, CourseData } from "@/lib/services/admin/admin-course-builder.service";
@@ -47,18 +53,23 @@ export interface Course {
 interface CourseCardProps {
   course: Course;
   onEditClick: () => void;
+  onDuplicate?: () => void;
   onUpdate?: () => void;
 }
 
-export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
+export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: CourseCardProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [editData, setEditData] = useState({
     title: course.title,
     description: course.description,
     tags: course.tags || [],
     rating: course.rating || 0,
+    is_free: course.is_free ?? true,
   });
 
   const getDifficultyColor = (level: string) => {
@@ -83,26 +94,27 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
     (course.stats?.assignment?.total || 0) +
     (course.stats?.coding_problem?.total || 0);
 
+  const handleViewCourse = () => {
+    router.push(`/admin/course-builder/${course.id}`);
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       const courseData: CourseData = {
         title: editData.title.trim(),
         description: editData.description.trim(),
-        slug: course.title
-          .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, ""),
         rating: editData.rating,
-        tags: editData.tags, // Send as array
+        tags: editData.tags,
+        is_free: editData.is_free,
       };
 
       await adminCourseBuilderService.updateCourse(course.id, courseData);
-      showToast("Course updated successfully", "success");
+      showToast(t("adminCourseBuilder.courseUpdatedSuccess"), "success");
       setEditing(false);
       onUpdate?.();
     } catch (error: any) {
-      showToast(error?.message || "Failed to update course", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToUpdateCourse"), "error");
     } finally {
       setSaving(false);
     }
@@ -114,8 +126,35 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
       description: course.description,
       tags: course.tags || [],
       rating: course.rating || 0,
+      is_free: course.is_free ?? true,
     });
     setEditing(false);
+  };
+
+  const handlePublish = async () => {
+    try {
+      setPublishing(true);
+      await adminCourseBuilderService.publishCourse(course.id);
+      showToast(t("adminCourseBuilder.coursePublishedSuccess"), "success");
+      onUpdate?.();
+    } catch (error: any) {
+      showToast(error?.message || t("adminCourseBuilder.failedToPublishCourse"), "error");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      setPublishing(true);
+      await adminCourseBuilderService.unpublishCourse(course.id);
+      showToast(t("adminCourseBuilder.courseUnpublishedSuccess"), "success");
+      onUpdate?.();
+    } catch (error: any) {
+      showToast(error?.message || t("adminCourseBuilder.failedToUnpublishCourse"), "error");
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return (
@@ -125,13 +164,15 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
         overflow: "hidden",
         transition: "all 0.2s",
+        cursor: editing ? "default" : "pointer",
         "&:hover": {
           boxShadow: editing ? "0 1px 3px rgba(0,0,0,0.1)" : "0 4px 12px rgba(0,0,0,0.15)",
           transform: editing ? "none" : "translateY(-2px)",
         },
         maxWidth: 500,
-        border: editing ? "2px solid #6366f1" : "none",
+        border: editing ? "2px solid #6366f1" : "1px solid transparent",
       }}
+      onClick={editing ? undefined : handleViewCourse}
     >
       <Box sx={{ p: 3 }}>
         {/* Header */}
@@ -152,6 +193,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
                 size="small"
                 sx={{ mb: 1 }}
                 inputProps={{ maxLength: 255 }}
+                onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <>
@@ -186,7 +228,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
               </>
             )}
           </Box>
-          <Box sx={{ display: "flex", gap: 0.5, ml: 1 }}>
+          <Box sx={{ display: "flex", gap: 0.5, ml: 1 }} onClick={(e) => e.stopPropagation()}>
             {editing ? (
               <>
                 <IconButton
@@ -218,27 +260,69 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
               </>
             ) : (
               <>
-                <IconButton
-                  size="small"
-                  onClick={() => setEditing(true)}
-                  sx={{
-                    color: "#6366f1",
-                    "&:hover": { bgcolor: "#eef2ff" },
-                  }}
-                >
-                  <IconWrapper icon="mdi:pencil" size={18} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={onEditClick}
-                  sx={{
-                    color: "#6b7280",
-                    "&:hover": { bgcolor: "#f3f4f6" },
-                  }}
-                  title="Full Edit"
-                >
-                  <IconWrapper icon="mdi:open-in-new" size={18} />
-                </IconButton>
+                <Tooltip title={t("adminCourseBuilder.quickEdit")}>
+                  <IconButton
+                    size="small"
+                    onClick={() => setEditing(true)}
+                    sx={{
+                      color: "#6366f1",
+                      "&:hover": { bgcolor: "#eef2ff" },
+                    }}
+                  >
+                    <IconWrapper icon="mdi:pencil" size={18} />
+                  </IconButton>
+                </Tooltip>
+                {onDuplicate && (
+                  <Tooltip title={t("adminCourseBuilder.duplicateCourseTooltip")}>
+                    <IconButton
+                      size="small"
+                      onClick={onDuplicate}
+                      sx={{
+                        color: "#6b7280",
+                        "&:hover": { bgcolor: "#f3f4f6" },
+                      }}
+                    >
+                      <IconWrapper icon="mdi:content-copy" size={18} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {!course.published ? (
+                  <Tooltip title={t("adminCourseBuilder.publishCourseTooltip")}>
+                    <IconButton
+                      size="small"
+                      onClick={handlePublish}
+                      disabled={publishing}
+                      sx={{
+                        color: "#059669",
+                        "&:hover": { bgcolor: "#d1fae5" },
+                      }}
+                    >
+                      {publishing ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <IconWrapper icon="mdi:publish" size={18} />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title={t("adminCourseBuilder.unpublishCourseTooltip")}>
+                    <IconButton
+                      size="small"
+                      onClick={handleUnpublish}
+                      disabled={publishing}
+                      sx={{
+                        color: "#b45309",
+                        "&:hover": { bgcolor: "#fef3c7" },
+                      }}
+                    >
+                      {publishing ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : (
+                        <IconWrapper icon="mdi:publish-off" size={18} />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                )}
               </>
             )}
           </Box>
@@ -254,6 +338,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
             rows={3}
             size="small"
             sx={{ mb: 2 }}
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <Typography
@@ -269,15 +354,15 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
               minHeight: { xs: "2.5rem", sm: "3rem" },
             }}
           >
-            {course.description || "No description available"}
+            {course.description || t("adminCourseBuilder.noDescriptionAvailable")}
           </Typography>
         )}
 
         {/* Rating */}
         {editing ? (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
             <Typography variant="caption" sx={{ color: "#6b7280", mb: 0.5, display: "block" }}>
-              Rating
+              {t("adminCourseBuilder.rating")}
             </Typography>
             <Rating
               value={editData.rating}
@@ -299,9 +384,39 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
           )
         )}
 
+        {/* Is free */}
+        {editing ? (
+          <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editData.is_free}
+                  onChange={(e) => setEditData({ ...editData, is_free: e.target.checked })}
+                  color="primary"
+                  size="small"
+                />
+              }
+              label={t("adminCourseBuilder.freeCourse")}
+              sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
+            />
+          </Box>
+        ) : (
+          <Box sx={{ mb: 2 }}>
+            <Chip
+              label={course.is_free ? t("adminCourseBuilder.free") : t("adminCourseBuilder.paid")}
+              size="small"
+              sx={{
+                bgcolor: course.is_free ? "#d1fae5" : "#fef3c7",
+                color: course.is_free ? "#065f46" : "#92400e",
+                fontSize: "0.75rem",
+              }}
+            />
+          </Box>
+        )}
+
         {/* Tags */}
         {editing ? (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
             <Autocomplete
               multiple
               freeSolo
@@ -313,9 +428,9 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Tags"
+                  label={t("adminCourseBuilder.tags")}
                   size="small"
-                  placeholder="Add tags"
+                  placeholder={t("adminCourseBuilder.addTags")}
                 />
               )}
               renderTags={(value, getTagProps) =>
@@ -367,12 +482,12 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
           }}
         >
           {[
-            { icon: "mdi:video", label: course.stats?.video?.total || 0, name: "Video" },
-            { icon: "mdi:file-document", label: course.stats?.article?.total || 0, name: "Article" },
-            { icon: "mdi:help-circle", label: course.stats?.quiz?.total || 0, name: "Quiz" },
-            { icon: "mdi:assignment", label: course.stats?.assignment?.total || 0, name: "Assignment" },
-            { icon: "mdi:code-tags", label: course.stats?.coding_problem?.total || 0, name: "Coding" },
-            { icon: "mdi:file-multiple", label: totalContent, name: "Total" },
+            { icon: "mdi:video", label: course.stats?.video?.total || 0, name: t("adminCourseBuilder.video") },
+            { icon: "mdi:file-document", label: course.stats?.article?.total || 0, name: t("adminCourseBuilder.article") },
+            { icon: "mdi:help-circle", label: course.stats?.quiz?.total || 0, name: t("adminCourseBuilder.quiz") },
+            { icon: "mdi:assignment", label: course.stats?.assignment?.total || 0, name: t("adminCourseBuilder.assignment") },
+            { icon: "mdi:code-tags", label: course.stats?.coding_problem?.total || 0, name: t("adminCourseBuilder.coding") },
+            { icon: "mdi:file-multiple", label: totalContent, name: t("adminCourseBuilder.total") },
           ].map((stat, index) => (
             <Box
               key={index}
@@ -420,7 +535,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
                 display: "block",
               }}
             >
-              Enrolled Students
+              {t("adminCourseBuilder.enrolledStudents")}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <AvatarGroup max={4} sx={{ "& .MuiAvatar-root": { width: 24, height: 24, fontSize: "0.7rem" } }}>
@@ -435,7 +550,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
                   fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 }}
               >
-                {course.enrolled_students.total} enrolled
+                {course.enrolled_students.total} {t("adminCourseBuilder.enrolled")}
               </Typography>
             </Box>
           </Box>
@@ -464,7 +579,7 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
               }}
             />
             <Chip
-              label={course.published ? "Published" : "Draft"}
+              label={course.published ? t("adminCourseBuilder.published") : t("adminCourseBuilder.draft")}
               size="small"
               sx={{
                 bgcolor: course.published ? "#d1fae5" : "#fee2e2",
@@ -474,6 +589,22 @@ export function CourseCard({ course, onEditClick, onUpdate }: CourseCardProps) {
                 height: { xs: 20, sm: 24 },
               }}
             />
+          </Box>
+          <Box onClick={(e) => e.stopPropagation()}>
+            <Button
+              size="small"
+              variant="text"
+              endIcon={<IconWrapper icon="mdi:arrow-right" size={16} />}
+              onClick={handleViewCourse}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                color: "#6366f1",
+                fontSize: "0.8rem",
+              }}
+            >
+              {t("adminCourseBuilder.manage")}
+            </Button>
           </Box>
         </Box>
       </Box>

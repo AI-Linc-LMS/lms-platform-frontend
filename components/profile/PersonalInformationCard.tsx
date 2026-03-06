@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface PersonalInformationCardProps {
@@ -14,6 +15,7 @@ export function PersonalInformationCard({
   profile,
   onSave,
 }: PersonalInformationCardProps) {
+  const { t } = useTranslation("common");
   const [formData, setFormData] = useState({
     first_name: profile.first_name || "",
     last_name: profile.last_name || "",
@@ -30,6 +32,25 @@ export function PersonalInformationCard({
   });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const syncFormFromProfile = () => ({
+    first_name: profile.first_name || "",
+    last_name: profile.last_name || "",
+    phone_number: profile.phone_number || "",
+    date_of_birth: profile.date_of_birth || "",
+    github: profile.social_links?.github || "",
+    linkedin: profile.social_links?.linkedin || "",
+    college_name: profile.college_name || "",
+    degree_type: profile.degree_type || "",
+    branch: profile.branch || "",
+    graduation_year: profile.graduation_year || "",
+    city: profile.city || "",
+    state: profile.state || "",
+  });
+
+  useEffect(() => {
+    if (!editing) setFormData(syncFormFromProfile());
+  }, [profile, editing]);
 
   const handleChange =
     (field: keyof typeof formData) =>
@@ -50,24 +71,22 @@ export function PersonalInformationCard({
   const handleSave = async () => {
     try {
       setSaving(true);
-      // Prepare data in the exact format required by API
-      const dataToSave = {
+      // API: partial body OK; optional fields use null when empty (matches GET response shape)
+      const dataToSave: Partial<UserProfile> = {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone_number: formData.phone_number,
         date_of_birth: formData.date_of_birth || null,
-        emailNotification: false,
-        inAppNotification: true,
         social_links: {
           linkedin: formData.linkedin || "",
           github: formData.github || "",
         },
-        college_name: formData.college_name || "",
-        degree_type: formData.degree_type || "",
-        branch: formData.branch || "",
-        graduation_year: formData.graduation_year || "",
-        city: formData.city || "",
-        state: formData.state || "",
+        college_name: formData.college_name || null,
+        degree_type: formData.degree_type || null,
+        branch: formData.branch || null,
+        graduation_year: formData.graduation_year || null,
+        city: formData.city || null,
+        state: formData.state || null,
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -127,14 +146,17 @@ export function PersonalInformationCard({
             fontSize: "1.25rem",
           }}
         >
-          Personal Information
+          {t("profile.personalInformation")}
         </Typography>
         {!editing ? (
           <Button
             variant="text"
             size="small"
             startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setFormData(syncFormFromProfile());
+              setEditing(true);
+            }}
             sx={{
               textTransform: "none",
               color: "#0a66c2",
@@ -146,7 +168,7 @@ export function PersonalInformationCard({
               transition: "all 0.2s ease",
             }}
           >
-            Edit
+            {t("profile.edit")}
           </Button>
         ) : (
           <Box sx={{ display: "flex", gap: 1 }}>
@@ -167,7 +189,7 @@ export function PersonalInformationCard({
                 },
               }}
             >
-              Cancel
+              {t("profile.cancel")}
             </Button>
             <Button
               variant="contained"
@@ -186,7 +208,7 @@ export function PersonalInformationCard({
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("profile.saving") : t("profile.save")}
             </Button>
           </Box>
         )}
@@ -227,7 +249,7 @@ export function PersonalInformationCard({
                 letterSpacing: "0.5px",
               }}
             >
-              First Name
+              {t("profile.firstName")}
             </Typography>
             </Box>
             {editing ? (
@@ -254,7 +276,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.first_name ? "normal" : "italic",
                 }}
               >
-                {profile.first_name || "Not provided"}
+                {profile.first_name || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -284,7 +306,7 @@ export function PersonalInformationCard({
                 letterSpacing: "0.5px",
               }}
             >
-              Last Name
+              {t("profile.lastName")}
             </Typography>
             </Box>
             {editing ? (
@@ -311,7 +333,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.last_name ? "normal" : "italic",
                 }}
               >
-                {profile.last_name || "Not provided"}
+                {profile.last_name || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -350,7 +372,7 @@ export function PersonalInformationCard({
                 letterSpacing: "0.5px",
               }}
             >
-              Phone Number
+              {t("profile.phoneNumber")}
             </Typography>
             </Box>
             {editing ? (
@@ -378,7 +400,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.phone_number ? "normal" : "italic",
                 }}
               >
-                {profile.phone_number || "Not provided"}
+                {profile.phone_number || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -408,7 +430,7 @@ export function PersonalInformationCard({
                 letterSpacing: "0.5px",
               }}
             >
-              Date of Birth
+              {t("profile.dateOfBirth")}
             </Typography>
             </Box>
             {editing ? (
@@ -447,7 +469,7 @@ export function PersonalInformationCard({
                         year: "numeric",
                       }
                     )
-                  : "Not provided"}
+                  : t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -486,7 +508,7 @@ export function PersonalInformationCard({
                 letterSpacing: "0.5px",
               }}
             >
-              GitHub Profile
+              {t("profile.githubProfile")}
             </Typography>
             </Box>
             {editing ? (
@@ -552,7 +574,7 @@ export function PersonalInformationCard({
                     {profile.social_links.github}
                   </Box>
                 ) : (
-                  "Not provided"
+                  t("profile.notProvided")
                 )}
               </Typography>
             )}
@@ -583,7 +605,7 @@ export function PersonalInformationCard({
                 letterSpacing: "0.5px",
               }}
             >
-              LinkedIn Profile
+              {t("profile.linkedinProfile")}
             </Typography>
             </Box>
             {editing ? (
@@ -649,7 +671,7 @@ export function PersonalInformationCard({
                     {profile.social_links.linkedin}
                   </Box>
                 ) : (
-                  "Not provided"
+                  t("profile.notProvided")
                 )}
               </Typography>
             )}
@@ -689,7 +711,7 @@ export function PersonalInformationCard({
                   letterSpacing: "0.5px",
                 }}
               >
-                College / University Name
+                {t("profile.collegeName")}
               </Typography>
             </Box>
             {editing ? (
@@ -716,7 +738,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.college_name ? "normal" : "italic",
                 }}
               >
-                {profile.college_name || "Not provided"}
+                {profile.college_name || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -746,7 +768,7 @@ export function PersonalInformationCard({
                   letterSpacing: "0.5px",
                 }}
               >
-                Degree Type
+                {t("profile.degreeType")}
               </Typography>
             </Box>
             {editing ? (
@@ -779,7 +801,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.degree_type ? "normal" : "italic",
                 }}
               >
-                {profile.degree_type || "Not provided"}
+                {profile.degree_type || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -818,7 +840,7 @@ export function PersonalInformationCard({
                   letterSpacing: "0.5px",
                 }}
               >
-                Branch / Major
+                {t("profile.branch")}
               </Typography>
             </Box>
             {editing ? (
@@ -845,7 +867,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.branch ? "normal" : "italic",
                 }}
               >
-                {profile.branch || "Not provided"}
+                {profile.branch || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -875,7 +897,7 @@ export function PersonalInformationCard({
                   letterSpacing: "0.5px",
                 }}
               >
-                Graduation Year
+                {t("profile.graduationYear")}
               </Typography>
             </Box>
             {editing ? (
@@ -904,7 +926,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.graduation_year ? "normal" : "italic",
                 }}
               >
-                {profile.graduation_year || "Not provided"}
+                {profile.graduation_year || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -943,7 +965,7 @@ export function PersonalInformationCard({
               letterSpacing: "0.5px",
                 }}
               >
-                City
+                {t("profile.city")}
               </Typography>
             </Box>
             {editing ? (
@@ -970,7 +992,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.city ? "normal" : "italic",
                 }}
               >
-                {profile.city || "Not provided"}
+                {profile.city || t("profile.notProvided")}
               </Typography>
             )}
           </Box>
@@ -1000,7 +1022,7 @@ export function PersonalInformationCard({
                   letterSpacing: "0.5px",
                 }}
               >
-                State
+                {t("profile.state")}
           </Typography>
             </Box>
           {editing ? (
@@ -1027,7 +1049,7 @@ export function PersonalInformationCard({
                   fontStyle: profile.state ? "normal" : "italic",
                 }}
               >
-                {profile.state || "Not provided"}
+                {profile.state || t("profile.notProvided")}
             </Typography>
           )}
           </Box>

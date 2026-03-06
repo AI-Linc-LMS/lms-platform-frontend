@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Divider } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
 
 interface ExecutiveTemplateProps {
@@ -34,6 +35,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
         overflow: "hidden",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
+        colorAdjust: "exact !important",
       }}
     >
       {/* Header with dark background */}
@@ -78,35 +80,47 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             display: "flex",
             gap: 3,
             flexWrap: "wrap",
-            fontSize: "0.85rem",
             color: "#cccccc",
           }}
         >
-          {data.basicInfo.email && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
-              {data.basicInfo.email}
-            </Typography>
-          )}
-          {data.basicInfo.phone && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
-              {data.basicInfo.phone}
-            </Typography>
-          )}
-          {data.basicInfo.location && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
-              {data.basicInfo.location}
-            </Typography>
-          )}
-          {data.basicInfo.github && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
-              github.com/{data.basicInfo.github}
-            </Typography>
-          )}
-          {data.basicInfo.linkedin && (
-            <Typography sx={{ fontSize: "0.85rem" }}>
-              linkedin.com/in/{data.basicInfo.linkedin}
-            </Typography>
-          )}
+          {[
+            { val: data.basicInfo.email, icon: "mdi:email-outline", label: data.basicInfo.email, href: `mailto:${data.basicInfo.email}` },
+            { val: data.basicInfo.phone, icon: "mdi:phone-outline", label: data.basicInfo.phone, href: `tel:${data.basicInfo.phone}` },
+            { val: data.basicInfo.location, icon: "mdi:map-marker-outline", label: data.basicInfo.location },
+            { val: data.basicInfo.github, icon: "mdi:github", label: "GitHub", href: (data.basicInfo.github ?? "").startsWith("http") ? data.basicInfo.github! : `https://github.com/${data.basicInfo.github}` },
+            { val: data.basicInfo.linkedin, icon: "mdi:linkedin", label: "LinkedIn", href: (data.basicInfo.linkedin ?? "").startsWith("http") ? data.basicInfo.linkedin! : `https://linkedin.com/in/${data.basicInfo.linkedin}` },
+            { val: data.basicInfo.portfolio, icon: "mdi:web", label: "Portfolio", href: (data.basicInfo.portfolio ?? "").startsWith("http") ? data.basicInfo.portfolio! : `https://${data.basicInfo.portfolio}` },
+            { val: data.basicInfo.leetcode, icon: "simple-icons:leetcode", label: "LeetCode", href: (data.basicInfo.leetcode ?? "").startsWith("http") ? data.basicInfo.leetcode! : `https://leetcode.com/u/${data.basicInfo.leetcode}` },
+            { val: data.basicInfo.kaggle, icon: "simple-icons:kaggle", label: "Kaggle", href: (data.basicInfo.kaggle ?? "").startsWith("http") ? data.basicInfo.kaggle! : `https://kaggle.com/${data.basicInfo.kaggle}` },
+            { val: data.basicInfo.hackerrank, icon: "simple-icons:hackerrank", label: "HackerRank", href: (data.basicInfo.hackerrank ?? "").startsWith("http") ? data.basicInfo.hackerrank! : `https://hackerrank.com/${data.basicInfo.hackerrank}` },
+            { val: data.basicInfo.medium, icon: "simple-icons:medium", label: "Medium", href: (data.basicInfo.medium ?? "").startsWith("http") ? data.basicInfo.medium! : `https://medium.com/@${data.basicInfo.medium}` },
+          ]
+            .filter((item) => item.val)
+            .map((item, idx) => (
+              <Box
+                key={idx}
+                {...(item.href ? { component: "a", href: item.href, target: item.href.startsWith("mailto:") || item.href.startsWith("tel:") ? undefined : "_blank", rel: "noopener noreferrer" } : {})}
+                sx={{ display: "flex", alignItems: "center", gap: 0.75, textDecoration: "none", color: "inherit" }}
+              >
+                <Box sx={{ flexShrink: 0, display: "flex" }}>
+                  <IconWrapper icon={item.icon} size={14} color="#d4af37" />
+                </Box>
+                <Typography
+                  data-resume-contact-item
+                  sx={{
+                    fontSize: "0.85rem",
+                    ...(item.icon === "mdi:email-outline"
+                      ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+                      : { whiteSpace: "nowrap" }),
+                    ...(["mdi:github", "mdi:linkedin", "mdi:web"].includes(item.icon)
+                      ? { overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }
+                      : {}),
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
         </Box>
       </Box>
 
@@ -141,6 +155,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       {data.workExperience.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
@@ -150,7 +165,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               letterSpacing: "0.05em",
             }}
           >
-            Professional Experience
+            Work Experience
           </Typography>
 
           {data.workExperience.map((exp, index) => (
@@ -162,11 +177,13 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
+                  alignItems: "flex-start",
                   mb: 0.5,
                 }}
               >
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.9rem",
                       fontWeight: 700,
@@ -217,8 +234,8 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                         sx={{
                           fontSize: "0.75rem",
                           color: "#4a4a4a",
-                          lineHeight: 1.5,
-                          mb: 0.3,
+                          lineHeight: 1.6,
+                          mb: 0.5,
                         }}
                       >
                         {desc}
@@ -235,6 +252,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       {data.education.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
@@ -252,9 +270,10 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               key={edu.id}
               sx={{ mb: index < data.education.length - 1 ? 1.5 : 0 }}
             >
-              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <Box>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.85rem",
                       fontWeight: 600,
@@ -268,7 +287,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                   </Typography>
                   {edu.gpa && (
                     <Typography
-                      sx={{ fontSize: "0.75rem", color: "#6b7280", mt: 0.3 }}
+                      sx={{ fontSize: "0.75rem", color: "#6b7280", mt: 0.3, whiteSpace: "nowrap" }}
                     >
                       GPA: {edu.gpa}
                     </Typography>
@@ -295,6 +314,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
         {data.skills.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
@@ -315,19 +335,22 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                   >
                     {skill.name}
                   </Typography>
-                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: "4px", height: 6 }}>
                     {[...Array(5)].map((_, index) => (
                       <Box
                         key={index}
+                        component="span"
                         sx={{
+                          display: "block",
                           width: 24,
-                          height: 3,
+                          height: 6,
                           backgroundColor:
                             index < (skill.level || 3)
                               ? "#d4af37 !important"
                               : "#e5e7eb !important",
                           WebkitPrintColorAdjust: "exact !important",
                           printColorAdjust: "exact !important",
+                          colorAdjust: "exact !important",
                         }}
                       />
                     ))}
@@ -342,6 +365,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
         {data.certifications.length > 0 && (
           <Box>
             <Typography
+              data-resume-section-title
               sx={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
@@ -356,11 +380,30 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 1 }}>
-                <Typography
-                  sx={{ fontSize: "0.8rem", fontWeight: 600, color: "#1a1a1a" }}
-                >
-                  {cert.name}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography
+                    sx={{ fontSize: "0.8rem", fontWeight: 600, color: "#1a1a1a", flex: 1, minWidth: 0 }}
+                  >
+                    {cert.name}
+                  </Typography>
+                  {cert.link && (
+                    <Typography
+                      component="a"
+                      href={cert.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        fontSize: "0.65rem",
+                        color: "#d4af37",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Link
+                    </Typography>
+                  )}
+                </Box>
                 <Typography sx={{ fontSize: "0.7rem", color: "#4a4a4a" }}>
                   {cert.issuer}
                 </Typography>
@@ -374,6 +417,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       {data.projects.length > 0 && (
         <Box sx={{ mt: 2.5 }}>
           <Typography
+            data-resume-section-title
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
@@ -383,7 +427,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               letterSpacing: "0.05em",
             }}
           >
-            Key Projects
+            Projects
           </Typography>
 
           {data.projects.slice(0, 2).map((project, index) => (
@@ -393,16 +437,44 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 mb: index < Math.min(data.projects.length, 2) - 1 ? 1.5 : 0,
               }}
             >
-              <Typography
+              <Box
                 sx={{
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  color: "#1a1a1a",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   mb: 0.3,
+                  gap: 1,
                 }}
               >
-                {project.name}
-              </Typography>
+                <Typography
+                  data-resume-nowrap
+                  sx={{
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    color: "#1a1a1a",
+                  }}
+                >
+                  {project.name}
+                </Typography>
+                {project.link && (
+                  <Typography
+                    component="a"
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      fontSize: "0.7rem",
+                      color: "#d4af37",
+                      fontWeight: 600,
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Link
+                  </Typography>
+                )}
+              </Box>
               {project.description && (
                 <Typography
                   sx={{

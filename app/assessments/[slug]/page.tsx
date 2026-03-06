@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -16,7 +17,6 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   assessmentService,
   AssessmentDetail,
@@ -30,6 +30,7 @@ export default function AssessmentDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
@@ -61,7 +62,7 @@ export default function AssessmentDetailPage({
 
       setAssessment(data);
     } catch (error: any) {
-      showToast("Failed to load assessment details", "error");
+      showToast(t("assessments.failedToLoadDetails"), "error");
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,17 @@ export default function AssessmentDetailPage({
   if (loading) {
     return (
       <MainLayout>
-        <Loading fullScreen />
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 400,
+            py: 8,
+          }}
+        >
+          <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+        </Box>
       </MainLayout>
     );
   }
@@ -88,10 +99,7 @@ export default function AssessmentDetailPage({
     return (
       <MainLayout>
         <Container>
-          <Typography>
-            {" "}
-            <Loading fullScreen />
-          </Typography>
+          <Typography>{t("assessments.failedToLoadDetails")}</Typography>
         </Container>
       </MainLayout>
     );
@@ -318,7 +326,8 @@ export default function AssessmentDetailPage({
                 <li>
                   <strong>Camera & Microphone Required:</strong> You must have a
                   working camera and microphone. Your device will be tested before
-                  the exam begins.
+                  the exam begins. Position your face clearly in frame and look at
+                  the screen—you’ll need to pass a quick face check before starting.
                 </li>
                 <li>
                   <strong>AI Proctoring Active:</strong> This exam is monitored by
@@ -396,9 +405,7 @@ export default function AssessmentDetailPage({
                   fontWeight={600}
                   sx={{ color: "#92400e" }}
                 >
-                  By clicking &quot;Start Assessment&quot;, you acknowledge that
-                  you have read and understood all instructions and agree to abide
-                  by the examination rules and proctoring policies.
+                  {t("assessments.startAcknowledgment")}
                 </Typography>
               </Alert>
             </Paper>
@@ -474,7 +481,7 @@ export default function AssessmentDetailPage({
               },
             }}
           >
-            Start Assessment
+            {t("assessments.startAssessment")}
           </Button>
         </Paper>
       </Box>

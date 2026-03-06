@@ -12,11 +12,10 @@ import {
   TableRow,
   Chip,
   Pagination,
-  Select,
-  MenuItem,
-  FormControl,
   Avatar,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
 
@@ -35,6 +34,7 @@ export function StudentsTableCard({
   onStudentsPageChange,
   onStudentsLimitChange,
 }: StudentsTableCardProps) {
+  const { t } = useTranslation("common");
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
@@ -77,7 +77,7 @@ export function StudentsTableCard({
             fontSize: { xs: "1rem", sm: "1.25rem" },
           }}
         >
-          Students ({attendees.length})
+          {t("adminAttendance.studentsCount", { count: attendees.length })}
         </Typography>
       </Box>
       {attendees.length === 0 ? (
@@ -100,10 +100,10 @@ export function StudentsTableCard({
             variant="body1"
             sx={{ color: "#6b7280", fontWeight: 500 }}
           >
-            No attendees yet
+            {t("adminAttendance.noAttendeesYet")}
           </Typography>
           <Typography variant="caption" sx={{ color: "#9ca3af" }}>
-            Students will appear here once they mark attendance
+            {t("adminAttendance.studentsAppearWhenMarked")}
           </Typography>
         </Box>
       ) : (
@@ -138,7 +138,7 @@ export function StudentsTableCard({
                       py: { xs: 1, sm: 1.5 },
                     }}
                   >
-                    Name
+                    {t("adminAttendance.name")}
                   </TableCell>
                   <TableCell 
                     sx={{ 
@@ -149,7 +149,7 @@ export function StudentsTableCard({
                       display: { xs: "none", sm: "table-cell" },
                     }}
                   >
-                    Email
+                    {t("adminAttendance.email")}
                   </TableCell>
                   <TableCell 
                     sx={{ 
@@ -159,7 +159,7 @@ export function StudentsTableCard({
                       py: { xs: 1, sm: 1.5 },
                     }}
                   >
-                    Status
+                    {t("adminAttendance.status")}
                   </TableCell>
                   <TableCell 
                     sx={{ 
@@ -170,7 +170,7 @@ export function StudentsTableCard({
                       display: { xs: "none", md: "table-cell" },
                     }}
                   >
-                    Marked At
+                    {t("adminAttendance.markedAt")}
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -252,7 +252,7 @@ export function StudentsTableCard({
                     </TableCell>
                     <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
                       <Chip
-                        label="Present"
+                        label={t("adminAttendance.present")}
                         size="small"
                         sx={{
                           bgcolor: "#d1fae5",
@@ -314,41 +314,27 @@ export function StudentsTableCard({
                   fontSize: { xs: "0.7rem", sm: "0.875rem" },
                 }}
               >
-                Showing {Math.min(attendees.length, startIndex + 1)} to{" "}
-                {Math.min(attendees.length, endIndex)} of{" "}
-                {attendees.length} students
+                {t("adminAttendance.showingXToYOfZStudents", {
+                  start: Math.min(attendees.length, startIndex + 1),
+                  end: Math.min(attendees.length, endIndex),
+                  total: attendees.length,
+                })}
               </Typography>
-              <FormControl 
-                size="small" 
-                sx={{ 
-                  minWidth: { xs: 100, sm: 120 },
-                  "& .MuiInputBase-root": {
-                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
-                  },
+              <PerPageSelect
+                value={studentsLimit}
+                onChange={(v) => {
+                  onStudentsLimitChange(v);
+                  onStudentsPageChange(1);
                 }}
-              >
-                <Select
-                  value={studentsLimit}
-                  onChange={(e) => {
-                    onStudentsLimitChange(Number(e.target.value));
-                    onStudentsPageChange(1);
-                  }}
-                  displayEmpty
-                  inputProps={{ "aria-label": "Students per page" }}
-                  sx={{
-                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
-                    "& .MuiSelect-select": {
-                      py: { xs: 0.5, sm: 1 },
-                      px: { xs: 0.75, sm: 1.5 },
-                    },
-                  }}
-                >
-                  <MenuItem value={5} sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}>5 per page</MenuItem>
-                  <MenuItem value={10} sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}>10 per page</MenuItem>
-                  <MenuItem value={25} sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}>25 per page</MenuItem>
-                  <MenuItem value={50} sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}>50 per page</MenuItem>
-                </Select>
-              </FormControl>
+                options={[5, 10, 25, 50]}
+                displayEmpty
+                ariaLabel="Students per page"
+                MenuItemSx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
+                SelectSx={{
+                  fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                  "& .MuiSelect-select": { py: { xs: 0.5, sm: 1 }, px: { xs: 0.75, sm: 1.5 } },
+                }}
+              />
             </Box>
 
             <Pagination

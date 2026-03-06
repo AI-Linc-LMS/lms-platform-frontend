@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -16,7 +17,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -24,7 +24,6 @@ import {
   TextField,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
@@ -57,6 +56,7 @@ export default function AttendancePage() {
   const codeInputRefs = useRef<(HTMLInputElement | null)[]>(
     Array(6).fill(null)
   );
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -67,12 +67,12 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       const data = await activityService.getLiveAttendance();
-      setAttendanceActivities(data);
+      setAttendanceActivities(Array.isArray(data) ? data : []);
     } catch (error: any) {
       showToast(
         error?.response?.data?.detail ||
           error?.message ||
-          "Failed to load attendance activities",
+          t("attendance.failedToLoad"),
         "error"
       );
     } finally {
@@ -134,14 +134,14 @@ export default function AttendancePage() {
 
     const codeString = attendanceCode.join("");
     if (!codeString.trim() || codeString.length !== 6) {
-      showToast("Please enter the complete 6-digit attendance code", "error");
+      showToast(t("attendance.enterCode"), "error");
       return;
     }
 
     try {
       setMarkingAttendance(selectedActivityId);
       await activityService.markAttendance(selectedActivityId, codeString);
-      showToast("Attendance marked successfully!", "success");
+      showToast(t("attendance.markedSuccess"), "success");
       handleCodeDialogClose();
       // Reload activities to update the status
       await loadAttendanceActivities();
@@ -169,7 +169,7 @@ export default function AttendancePage() {
   };
 
   const formatTimeRemaining = (minutes: number) => {
-    if (minutes <= 0) return "Expired";
+    if (minutes <= 0) return t("attendance.expired");
     if (minutes < 60) {
       return `${minutes} min left`;
     }
@@ -179,18 +179,13 @@ export default function AttendancePage() {
   };
 
   const isActivityActive = (activity: LiveAttendanceActivity) => {
-    const expiresAt = new Date(activity.expires_at);
+    const expiresAtValue = activity.expires_at ?? activity.class_datetime;
+    if (!expiresAtValue) return false;
+    const expiresAt = new Date(expiresAtValue);
     const now = new Date();
     return now < expiresAt && activity.time_remaining_minutes > 0;
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   const paginatedActivities = attendanceActivities.slice(
     page * rowsPerPage,
@@ -209,11 +204,10 @@ export default function AttendancePage() {
               mb: 1,
             }}
           >
-            Attendance
+            {t("attendance.title")}
           </Typography>
           <Typography variant="body1" sx={{ color: "#6b7280" }}>
-            Mark your attendance by entering the code provided by your
-            instructor
+            {t("attendance.subtitle")}
           </Typography>
         </Box>
 
@@ -257,7 +251,7 @@ export default function AttendancePage() {
                         fontSize: "0.875rem",
                       }}
                     >
-                      Name
+                      {t("attendance.name")}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -266,7 +260,7 @@ export default function AttendancePage() {
                         fontSize: "0.875rem",
                       }}
                     >
-                      Expires At
+                      {t("attendance.expiresAt")}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -275,7 +269,7 @@ export default function AttendancePage() {
                         fontSize: "0.875rem",
                       }}
                     >
-                      Time Remaining
+                      {t("attendance.timeRemaining")}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -285,7 +279,7 @@ export default function AttendancePage() {
                       }}
                       align="right"
                     >
-                      Action
+                      {t("attendance.action")}
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -311,12 +305,16 @@ export default function AttendancePage() {
                               color: "#111827",
                             }}
                           >
-                            {activity.name}
+                            {activity.topic_name ?? activity.name ?? "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ color: "#374151" }}>
-                            {formatDateTime(activity.expires_at)}
+                            {(activity.expires_at ?? activity.class_datetime)
+                              ? formatDateTime(
+                                  activity.expires_at ?? activity.class_datetime ?? ""
+                                )
+                              : "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -383,7 +381,7 @@ export default function AttendancePage() {
                             </Button>
                           ) : activity.has_marked_attendance ? (
                             <Chip
-                              label="Marked"
+                              label={t("attendance.marked")}
                               size="small"
                               sx={{
                                 backgroundColor: "#dbeafe",
@@ -401,7 +399,7 @@ export default function AttendancePage() {
                             />
                           ) : (
                             <Chip
-                              label="Absent"
+                              label={t("attendance.absent")}
                               size="small"
                               sx={{
                                 backgroundColor: "#ed4545",

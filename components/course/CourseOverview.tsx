@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Paper } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CourseDetail, Module } from "@/lib/services/courses.service";
 import { ModuleAccordion } from "./ModuleAccordion";
@@ -18,6 +19,7 @@ export function CourseOverview({
   onModuleToggle,
   onNavigate,
 }: CourseOverviewProps) {
+  const { t } = useTranslation("common");
   const getTotalStats = () => {
     if (!course?.modules) return { sections: 0, lectures: 0 };
 
@@ -99,13 +101,13 @@ export function CourseOverview({
             variant="h6"
             sx={{ fontWeight: 700, color: "#1a1f2e", fontSize: "1.125rem" }}
           >
-            Courses Overview
+            {t("courses.coursesOverview")}
           </Typography>
           <Typography
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            {stats.sections} sections • {stats.lectures} items
+            {stats.sections} {t("courses.sections")} • {stats.lectures} {t("courses.items")}
           </Typography>
         </Box>
       </Box>
@@ -157,17 +159,29 @@ export function CourseOverview({
 
                 {/* Modules for this week */}
                 <Box>
-                  {weekModules.map((module) => (
-                    <ModuleAccordion
-                      key={module.id}
-                      module={module}
-                      isExpanded={expandedModules[module.id] ?? false}
-                      onToggle={() => onModuleToggle(module.id)}
-                      courseId={course.course_id}
-                      onNavigate={onNavigate}
-                      getSubmoduleContentCount={getSubmoduleContentCount}
-                    />
-                  ))}
+                  {weekModules.map((module,index) => {
+                    // Get previous week's modules for locking logic
+                    const previousWeek = week - 1;
+                    const previousWeekModules = modulesByWeek[previousWeek] || [];
+                    
+                    return (
+                      <ModuleAccordion
+                        key={module.id}
+                        module={module}
+                        moduleIndex={index}
+                        modules={weekModules}
+                        currentWeek={week}
+                        previousWeekModules={previousWeekModules}
+                        isExpanded={expandedModules[module.id] ?? false}
+                        onToggle={() => onModuleToggle(module.id)}
+                        courseId={course.course_id}
+                        contentLockEnabled={course.content_lock_enabled}
+                        lockThresholdValue={course.lock_threshold_value ?? 80}
+                        onNavigate={onNavigate}
+                        getSubmoduleContentCount={getSubmoduleContentCount}
+                      />
+                    );
+                  })}
                 </Box>
               </Box>
             );
@@ -175,7 +189,7 @@ export function CourseOverview({
         </Box>
       ) : (
         <Typography variant="body2" sx={{ color: "#9ca3af" }}>
-          No modules available
+          {t("courses.noModulesAvailable")}
         </Typography>
       )}
     </Paper>

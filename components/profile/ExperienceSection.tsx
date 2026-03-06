@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, Checkbox, FormControlLabel, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile, Experience } from "@/lib/services/profile.service";
 
 interface ExperienceSectionProps {
@@ -14,6 +15,7 @@ export function ExperienceSection({
   profile,
   onSave,
 }: ExperienceSectionProps) {
+  const { t } = useTranslation("common");
   const [experiences, setExperiences] = useState<Experience[]>(profile.experience || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,11 +32,24 @@ export function ExperienceSection({
     description: "",
   });
 
+  useEffect(() => {
+    if (!editing && editingIndex === null) setExperiences(profile.experience || []);
+  }, [profile.experience, editing, editingIndex]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        experience: experiences,
+      const dataToSave: Partial<UserProfile> = {
+        experience: experiences.map((exp): Experience => ({
+          id: exp.id,
+          company: exp.company,
+          position: exp.position,
+          current: exp.current,
+          start_date: exp.start_date ?? "",
+          end_date: exp.end_date || undefined,
+          location: exp.location || undefined,
+          description: exp.description || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -77,10 +92,20 @@ export function ExperienceSection({
     setExperiences(experiences.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newExperience: Experience = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      start_date: toISODate(formData.start_date ?? ""),
+      end_date: formData.end_date ? toISODate(formData.end_date) : undefined,
     };
 
     if (editingIndex !== null) {
@@ -135,7 +160,7 @@ export function ExperienceSection({
               fontSize: "1.25rem",
             }}
           >
-            Experience
+            {t("profile.experience")}
           </Typography>
           {!editing ? (
             <Button
@@ -175,13 +200,13 @@ export function ExperienceSection({
                   },
                   transition: "all 0.2s ease",
                 }}
-              >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+            >
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -194,13 +219,13 @@ export function ExperienceSection({
                     backgroundColor: "#f9fafb",
                   },
                 }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+            >
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -214,7 +239,7 @@ export function ExperienceSection({
                 transition: "all 0.2s ease",
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -330,7 +355,7 @@ export function ExperienceSection({
                 fontWeight: 500,
               }}
             >
-              No experience added yet
+              {t("profile.noExperienceYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -340,7 +365,7 @@ export function ExperienceSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your work experience
+              {t("profile.clickEditToAddExperience")}
             </Typography>
           </Box>
         )}
@@ -361,6 +386,7 @@ export function ExperienceSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -377,6 +403,7 @@ export function ExperienceSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
@@ -384,18 +411,17 @@ export function ExperienceSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Experience" : "Add Experience"}
+            {editingIndex !== null ? t("profile.editExperience") : t("profile.addExperience")}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Position *"
+              label="Position"
               value={formData.position}
               onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -404,12 +430,11 @@ export function ExperienceSection({
               }}
             />
             <TextField
-              label="Company *"
+              label="Company"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -432,13 +457,12 @@ export function ExperienceSection({
             />
             <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
               <TextField
-                label="Start Date *"
+                label="Start Date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
-                required
                 InputLabelProps={{ shrink: true }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
@@ -451,7 +475,7 @@ export function ExperienceSection({
                 label="End Date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 disabled={formData.current}
@@ -533,7 +557,7 @@ export function ExperienceSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -557,7 +581,7 @@ export function ExperienceSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -17,6 +17,7 @@ import {
   Alert,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 export interface Section {
   id: string;
@@ -83,6 +84,7 @@ export function MultipleSectionsSection({
     const section: Section = {
       id: `section-${Date.now()}`,
       ...newSection,
+      order: newSection.order || sections.length + 1,
     };
 
     onSectionsChange([...sections, section]);
@@ -107,8 +109,19 @@ export function MultipleSectionsSection({
     );
   };
 
-  const quizSections = sections.filter((s) => s.type === "quiz");
-  const codingSections = sections.filter((s) => s.type === "coding");
+  const handleDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+    const ordered = [...sections].sort((a, b) => a.order - b.order);
+    const [removed] = ordered.splice(result.source.index, 1);
+    ordered.splice(result.destination.index, 0, removed);
+    const updated = ordered.map((s, i) => ({ ...s, order: i + 1 }));
+    onSectionsChange(updated);
+  }, [sections, onSectionsChange]);
+
+  const orderedSections = useMemo(
+    () => [...sections].sort((a, b) => a.order - b.order),
+    [sections]
+  );
 
   return (
     <Box>
@@ -159,24 +172,21 @@ export function MultipleSectionsSection({
             <TextField
               label="Section Order"
               type="number"
-              value={newSection.order}
-              onChange={(e) =>
+              value={newSection.order === 0 ? "" : newSection.order}
+              onChange={(e) => {
+                const v = e.target.value;
                 setNewSection({
                   ...newSection,
-                  order: Number(e.target.value),
-                })
-              }
+                  order: v === "" ? 0 : Number(v),
+                });
+              }}
               fullWidth
-              inputProps={{ min: 1 }}
+              inputProps={{ min: 0 }}
               helperText="Display order"
               error={sections.some((s) => s.order === newSection.order)}
             />
           </Box>
-          {sections.some((s) => s.order === newSection.order) && (
-            <Alert severity="error" sx={{ mt: 1 }}>
-              This order number is already used by another section. Please choose a different order.
-            </Alert>
-          )}
+          
           <Box
             sx={{
               display: "grid",
@@ -188,13 +198,14 @@ export function MultipleSectionsSection({
               <TextField
                 label="Easy Score"
                 type="number"
-                value={newSection.easyScore || 1}
-                onChange={(e) =>
+                value={newSection.easyScore === undefined ? "" : newSection.easyScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setNewSection({
                     ...newSection,
-                    easyScore: Number(e.target.value),
-                  })
-                }
+                    easyScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 helperText={newSection.type === "quiz" ? "Points for Easy questions" : "Points for Easy problems"}
@@ -202,13 +213,14 @@ export function MultipleSectionsSection({
               <TextField
                 label="Medium Score"
                 type="number"
-                value={newSection.mediumScore || 2}
-                onChange={(e) =>
+                value={newSection.mediumScore === undefined ? "" : newSection.mediumScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setNewSection({
                     ...newSection,
-                    mediumScore: Number(e.target.value),
-                  })
-                }
+                    mediumScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 helperText={newSection.type === "quiz" ? "Points for Medium questions" : "Points for Medium problems"}
@@ -216,13 +228,14 @@ export function MultipleSectionsSection({
               <TextField
                 label="Hard Score"
                 type="number"
-                value={newSection.hardScore || 3}
-                onChange={(e) =>
+                value={newSection.hardScore === undefined ? "" : newSection.hardScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setNewSection({
                     ...newSection,
-                    hardScore: Number(e.target.value),
-                  })
-                }
+                    hardScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 helperText={newSection.type === "quiz" ? "Points for Hard questions" : "Points for Hard problems"}
@@ -253,17 +266,16 @@ export function MultipleSectionsSection({
           <TextField
             label="Number of Questions to Show"
             type="number"
-            value={newSection.number_of_questions_to_show || ""}
-            onChange={(e) =>
+            value={newSection.number_of_questions_to_show ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
               setNewSection({
                 ...newSection,
-                number_of_questions_to_show: e.target.value
-                  ? Number(e.target.value)
-                  : undefined,
-              })
-            }
+                number_of_questions_to_show: v === "" ? undefined : Number(v),
+              });
+            }}
             fullWidth
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 0 }}
             helperText="If you have 10 questions but only want to show 5, enter 5 here. Leave empty to show all questions."
           />
           <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -280,58 +292,48 @@ export function MultipleSectionsSection({
         </Box>
       </Paper>
 
-      {/* Existing Sections */}
+      {/* Existing Sections - Drag to reorder */}
       {sections.length > 0 && (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {quizSections.length > 0 && (
-            <Box>
-              <Typography
-                variant="subtitle1"
-                sx={{ fontWeight: 600, mb: 2, color: "#6366f1" }}
-              >
-                Quiz Sections ({quizSections.length})
-              </Typography>
-              {quizSections
-                .sort((a, b) => a.order - b.order)
-                .map((section) => (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    onUpdate={(updates) =>
-                      handleUpdateSection(section.id, updates)
-                    }
-                    onDelete={() => handleDeleteSection(section.id)}
-                    orderError={orderErrors[section.id]}
-                    allSections={sections}
-                  />
-                ))}
-            </Box>
-          )}
-
-          {codingSections.length > 0 && (
-            <Box>
-              <Typography
-                variant="subtitle1"
-                sx={{ fontWeight: 600, mb: 2, color: "#10b981" }}
-              >
-                Coding Sections ({codingSections.length})
-              </Typography>
-              {codingSections
-                .sort((a, b) => a.order - b.order)
-                .map((section) => (
-                  <SectionCard
-                    key={section.id}
-                    section={section}
-                    onUpdate={(updates) =>
-                      handleUpdateSection(section.id, updates)
-                    }
-                    onDelete={() => handleDeleteSection(section.id)}
-                    orderError={orderErrors[section.id]}
-                    allSections={sections}
-                  />
-                ))}
-            </Box>
-          )}
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: "#111827" }}>
+            Sections (drag to reorder)
+          </Typography>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="sections">
+              {(provided) => (
+                <Box ref={provided.innerRef} {...provided.droppableProps}>
+                  {orderedSections.map((section, index) => (
+                    <Draggable
+                      key={section.id}
+                      draggableId={section.id}
+                      index={index}
+                    >
+                      {(provided, snapshot) => (
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          sx={{ mb: 2 }}
+                        >
+                          <SectionCard
+                            section={section}
+                            onUpdate={(updates) =>
+                              handleUpdateSection(section.id, updates)
+                            }
+                            onDelete={() => handleDeleteSection(section.id)}
+                            orderError={orderErrors[section.id]}
+                            allSections={sections}
+                            dragHandleProps={provided.dragHandleProps as any}
+                            isDragging={snapshot.isDragging}
+                          />
+                        </Box>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </Box>
+              )}
+            </Droppable>
+          </DragDropContext>
         </Box>
       )}
 
@@ -352,6 +354,8 @@ interface SectionCardProps {
   onDelete: () => void;
   orderError?: string;
   allSections: Section[];
+  dragHandleProps?: Record<string, unknown>;
+  isDragging?: boolean;
 }
 
 function SectionCard({
@@ -360,6 +364,8 @@ function SectionCard({
   onDelete,
   orderError,
   allSections,
+  dragHandleProps,
+  isDragging,
 }: SectionCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(section);
@@ -410,28 +416,7 @@ function SectionCard({
                 <MenuItem value="coding">Coding Section</MenuItem>
               </Select>
             </FormControl>
-            <TextField
-              label="Order"
-              type="number"
-              value={editData.order}
-              onChange={(e) =>
-                setEditData({ ...editData, order: Number(e.target.value) })
-              }
-              fullWidth
-              inputProps={{ min: 1 }}
-              error={
-                allSections.some(
-                  (s) => s.id !== section.id && s.order === editData.order
-                ) || !!orderError
-              }
-              helperText={
-                allSections.some(
-                  (s) => s.id !== section.id && s.order === editData.order
-                )
-                  ? "This order is already used"
-                  : undefined
-              }
-            />
+          
           </Box>
           <TextField
             label="Title"
@@ -463,39 +448,42 @@ function SectionCard({
               <TextField
                 label="Easy Score"
                 type="number"
-                value={editData.easyScore || 1}
-                onChange={(e) =>
+                value={editData.easyScore === undefined ? "" : editData.easyScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setEditData({
                     ...editData,
-                    easyScore: Number(e.target.value),
-                  })
-                }
+                    easyScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
               />
               <TextField
                 label="Medium Score"
                 type="number"
-                value={editData.mediumScore || 2}
-                onChange={(e) =>
+                value={editData.mediumScore === undefined ? "" : editData.mediumScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setEditData({
                     ...editData,
-                    mediumScore: Number(e.target.value),
-                  })
-                }
+                    mediumScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
               />
               <TextField
                 label="Hard Score"
                 type="number"
-                value={editData.hardScore || 3}
-                onChange={(e) =>
+                value={editData.hardScore === undefined ? "" : editData.hardScore}
+                onChange={(e) => {
+                  const v = e.target.value;
                   setEditData({
                     ...editData,
-                    hardScore: Number(e.target.value),
-                  })
-                }
+                    hardScore: v === "" ? undefined : Number(v),
+                  });
+                }}
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
               />
@@ -504,17 +492,16 @@ function SectionCard({
           <TextField
             label="Number of Questions to Show"
             type="number"
-            value={editData.number_of_questions_to_show || ""}
-            onChange={(e) =>
+            value={editData.number_of_questions_to_show ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
               setEditData({
                 ...editData,
-                number_of_questions_to_show: e.target.value
-                  ? Number(e.target.value)
-                  : undefined,
-              })
-            }
+                number_of_questions_to_show: v === "" ? undefined : Number(v),
+              });
+            }}
             fullWidth
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 0 }}
             helperText="If you have 10 questions but only want to show 5, enter 5 here. Leave empty to show all questions."
           />
           {allSections.some(
@@ -623,7 +610,15 @@ function SectionCard({
                 </Alert>
               )}
             </Box>
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <IconButton
+                size="small"
+                {...dragHandleProps}
+                sx={{ color: "#9ca3af", cursor: "grab", "&:hover": { color: "#6b7280" } }}
+                aria-label="Drag to reorder"
+              >
+                <IconWrapper icon="mdi:drag" size={20} />
+              </IconButton>
               <IconButton
                 size="small"
                 onClick={() => setIsEditing(true)}

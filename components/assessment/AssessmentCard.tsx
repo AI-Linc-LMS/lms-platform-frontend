@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -7,6 +8,8 @@ import {
   Typography,
   Chip,
   Button,
+  Tooltip,
+  useTheme,
 } from "@mui/material";
 import { Assessment } from "@/lib/services/assessment.service";
 import { useRouter } from "next/navigation";
@@ -15,21 +18,157 @@ import {
   isPsychometricAssessment,
   getPsychometricTags,
 } from "@/lib/utils/psychometric-utils";
+import { stripHtmlTags } from "@/lib/utils/html-utils";
+import { useTranslation } from "react-i18next";
 
 interface AssessmentCardProps {
   assessment: Assessment;
 }
 
+function parseDateTime(s: string | undefined | null): Date | null {
+  if (!s || typeof s !== "string" || !s.trim()) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDateTimeDisplay(d: Date): string {
+  return d.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function formatRemainingTime(
+  startDate: Date,
+  t: (key: string, opts?: Record<string, number | string>) => string
+): string {
+  const now = new Date();
+  const diff = startDate.getTime() - now.getTime();
+
+  if (diff <= 0) {
+    return t("assessments.availableNow");
+  }
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  if (days > 0) {
+    return t("assessments.startsInDaysHours", { days, hours });
+  }
+  if (hours > 0) {
+    return t("assessments.startsInHoursMinutes", { hours, minutes });
+  }
+  if (minutes > 0) {
+    return t("assessments.startsInMinutesSeconds", { minutes, seconds });
+  }
+  return t("assessments.startsInSeconds", { seconds });
+}
+
 export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   assessment,
 }) => {
+  const { t } = useTranslation("common");
+  const theme = useTheme();
+  const isRtl = theme.direction === "rtl";
   const router = useRouter();
-  const showResults =
-    assessment.status === "submitted";
+  const showResults = assessment.status === "submitted";
   const isPsychometric = isPsychometricAssessment(assessment);
   const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
+  const [remainingTime, setRemainingTime] = useState<string>("");
+  
+  // Calculate remaining time for hover tooltip
+  const startDate = useMemo(() => parseDateTime(assessment.start_time), [assessment.start_time]);
+  
+  useEffect(() => {
+    if (!startDate) {
+      setRemainingTime("");
+      return;
+    }
+
+    const updateRemainingTime = () => {
+      setRemainingTime(formatRemainingTime(startDate, t));
+    };
+
+    // Update immediately
+    updateRemainingTime();
+
+    // Update every second if less than 1 hour remaining, otherwise every minute
+    const now = new Date();
+    const diff = startDate.getTime() - now.getTime();
+    const interval = diff < 3600000 ? 1000 : 60000; // 1 second if < 1 hour, else 1 minute
+
+    const intervalId = setInterval(updateRemainingTime, interval);
+
+    return () => clearInterval(intervalId);
+  }, [startDate, t]);
+
+  const { canStartNow, availabilityLabel, isExpired } = useMemo(() => {
+    const now = Date.now();
+    const start = parseDateTime(assessment.start_time);
+    const end = parseDateTime(assessment.end_time);
+    const hasStart = start !== null;
+    const hasEnd = end !== null;
+
+    if (!hasStart && !hasEnd) {
+      return { canStartNow: true, availabilityLabel: "", isExpired: false };
+    }
+    if (hasStart && now < start.getTime()) {
+      return {
+        canStartNow: false,
+        availabilityLabel: `Starts ${formatDateTimeDisplay(start)}`,
+        isExpired: false,
+      };
+    }
+    if (hasEnd && now > end.getTime()) {
+      return {
+        canStartNow: false,
+        availabilityLabel: "Ended",
+        isExpired: true,
+      };
+    }
+    return { canStartNow: true, availabilityLabel: "", isExpired: false };
+  }, [assessment.start_time, assessment.end_time]);
+
+  const status = assessment.status ?? "not_started";
+
+  const { buttonLabel, isClickable } = useMemo(() => {
+    if (status === "submitted") {
+      return { buttonLabel: "View Results", isClickable: true };
+    }
+    if (status === "in_progress") {
+      // If assessment is in progress but expired (end_time passed), show "Ended"
+      if (isExpired) {
+        return { buttonLabel: "Ended", isClickable: false };
+      }
+      // If assessment is in progress but can't start now (e.g., before start_time), show availability
+      if (!canStartNow) {
+        return { buttonLabel: availabilityLabel || "Resume", isClickable: false };
+      }
+      // Assessment is in progress and can be resumed
+      return {
+        buttonLabel: "Resume",
+        isClickable: true,
+      };
+    }
+    if (status === "not_started" || !status) {
+      if (canStartNow) {
+        return { buttonLabel: "Start Assessment", isClickable: true };
+      }
+      if (isExpired) {
+        return { buttonLabel: "Start Assessment", isClickable: false };
+      }
+      return { buttonLabel: availabilityLabel, isClickable: false };
+    }
+    return {
+      buttonLabel: canStartNow ? "Start Assessment" : availabilityLabel || "Start Assessment",
+      isClickable: canStartNow,
+    };
+  }, [status, canStartNow, isExpired, availabilityLabel]);
 
   const handleClick = () => {
+    if (!isClickable) return;
     if (showResults) {
       router.push(`/assessments/result/${assessment.slug}`);
     } else {
@@ -56,83 +195,46 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         overflow: "hidden",
         transition: "all 0.3s ease",
         position: "relative",
-        cursor: "pointer",
+        cursor: isClickable ? "pointer" : "default",
         boxShadow: isPsychometric
           ? "0 4px 12px rgba(124, 58, 237, 0.15)"
           : "0 2px 8px rgba(0, 0, 0, 0.08)",
-        "&:hover": {
-          boxShadow: isPsychometric
-            ? "0 12px 32px rgba(124, 58, 237, 0.25)"
-            : "0 8px 24px rgba(0, 0, 0, 0.12)",
-          transform: "translateY(-4px)",
-          borderColor: isPsychometric
-            ? showResults
-              ? "rgba(124, 58, 237, 0.4)"
-              : "rgba(124, 58, 237, 0.5)"
-            : showResults
-            ? "rgba(16, 185, 129, 0.4)"
-            : "#6366f1",
-        },
+        "&:hover": isClickable
+          ? {
+              boxShadow: isPsychometric
+                ? "0 12px 32px rgba(124, 58, 237, 0.25)"
+                : "0 8px 24px rgba(0, 0, 0, 0.12)",
+              transform: "translateY(-4px)",
+              borderColor: isPsychometric
+                ? showResults
+                  ? "rgba(124, 58, 237, 0.4)"
+                  : "rgba(124, 58, 237, 0.5)"
+                : showResults
+                ? "rgba(16, 185, 129, 0.4)"
+                : "#6366f1",
+            }
+          : {},
       }}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
       onClick={handleClick}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleClick();
+              }
+            }
+          : undefined
+      }
+      aria-label={
+        isClickable
+          ? `${stripHtmlTags(assessment.title || "").trim() || assessment.title} - ${buttonLabel}`
+          : undefined
+      }
     >
-      {/* Status Badge */}
-      {showResults && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 10,
-            right: 10,
-            zIndex: 2,
-          }}
-        >
-          <Chip
-            icon={<IconWrapper icon="mdi:check-circle" size={14} />}
-            label="Completed"
-            size="small"
-            sx={{
-              backgroundColor: "#d1fae5",
-              color: "#065f46",
-              fontWeight: 600,
-              fontSize: "0.7rem",
-              height: 22,
-              "& .MuiChip-icon": {
-                color: "#065f46",
-              },
-            }}
-          />
-        </Box>
-      )}
-
-      {/* Proctored Badge */}
-      {assessment.proctoring_enabled && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 10,
-            right: showResults ? 100 : 10,
-            zIndex: 2,
-          }}
-        >
-          <Chip
-            icon={<IconWrapper icon="mdi:shield-account" size={14} />}
-            label="Proctored"
-            size="small"
-            sx={{
-              backgroundColor: "#fef3c7",
-              color: "#92400e",
-              fontWeight: 600,
-              fontSize: "0.7rem",
-              height: 22,
-              "& .MuiChip-icon": {
-                color: "#92400e",
-              },
-            }}
-          />
-        </Box>
-      )}
-
-      {/* Header Section */}
+      {/* Header Section - Title and tags in clear rows to avoid overlap */}
       <Box
         sx={{
           background: isPsychometric
@@ -162,27 +264,102 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             }}
           />
         )}
-        
-        <Box sx={{ position: "relative", zIndex: 1 }}>
-          <Typography
-            variant="h6"
+
+        <Box
+          sx={{
+            position: "relative",
+            zIndex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
+          {/* Title and tags on one row: title wraps before hitting tags */}
+          <Box
             sx={{
-              color: showResults ? "#1f2937" : "#ffffff",
-              fontWeight: 700,
-              fontSize: "1rem",
-              mb: 0.5,
-              pr: showResults || isPsychometric ? 10 : 0,
-              pl: isPsychometric && !showResults ? 0 : 0,
-              minHeight: 40,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              lineHeight: 1.3,
+              display: "flex",
+              flexDirection: isRtl ? "row-reverse" : "row",
+              alignItems: "flex-start",
+              gap: 1.5,
+              minWidth: 0,
             }}
           >
-            {assessment.title}
-          </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                color: showResults ? "#1f2937" : "#ffffff",
+                fontWeight: 700,
+                fontSize: "1.0625rem",
+                lineHeight: 1.35,
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              }}
+            >
+              {stripHtmlTags(assessment.title || "").trim() || assessment.title || "\u00A0"}
+            </Typography>
+            {(assessment.proctoring_enabled || showResults) && (
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  display: "flex",
+                  flexDirection: isRtl ? "row-reverse" : "row",
+                  gap: 1,
+                  alignItems: "center",
+                }}
+              >
+                {assessment.proctoring_enabled && (
+                  <Chip
+                    icon={<IconWrapper icon="mdi:shield-account" size={14} />}
+                    label={t("assessments.proctored")}
+                    size="small"
+                    sx={{
+                      backgroundColor: showResults ? "#fef3c7" : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "#92400e" : "#ffffff",
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 24,
+                      flexDirection: isRtl ? "row-reverse" : "row",
+                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      "& .MuiChip-icon": {
+                        color: "inherit",
+                        marginInlineStart: isRtl ? "4px" : 0,
+                        marginInlineEnd: isRtl ? 0 : "4px",
+                      },
+                    }}
+                  />
+                )}
+                {showResults && (
+                  <Chip
+                    icon={<IconWrapper icon="mdi:check-circle" size={14} />}
+                    label={t("assessments.completed")}
+                    size="small"
+                    sx={{
+                      backgroundColor: showResults ? "#d1fae5" : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "#065f46" : "#ffffff",
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 24,
+                      flexDirection: isRtl ? "row-reverse" : "row",
+                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      "& .MuiChip-icon": {
+                        color: "inherit",
+                        marginInlineStart: isRtl ? "4px" : 0,
+                        marginInlineEnd: isRtl ? 0 : "4px",
+                      },
+                    }}
+                  />
+                )}
+              </Box>
+            )}
+          </Box>
+
+          {/* Subtitle / instructions */}
           <Typography
             variant="body2"
             sx={{
@@ -195,17 +372,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               overflow: "hidden",
             }}
           >
-            {assessment.instructions || "\u00A0"}
+            {(stripHtmlTags(assessment.instructions || "").trim() || "\u00A0")}
           </Typography>
-          
-          {/* Tags for psychometric assessments */}
+
+          {/* Psychometric tags */}
           {isPsychometric && psychometricTags.length > 0 && (
             <Box
               sx={{
                 display: "flex",
                 flexWrap: "wrap",
                 gap: 1,
-                mt: 1.5,
+                mt: 0.5,
               }}
             >
               {psychometricTags.slice(0, 3).map((tag, index) => (
@@ -283,10 +460,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             overflow: "hidden",
           }}
         >
-          {assessment.description || "\u00A0"}
+          {(stripHtmlTags(assessment.description || "").trim() || "\u00A0")}
         </Typography>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - RTL: column order flips (Duration right, Questions left) */}
         <Box
           sx={{
             display: "grid",
@@ -294,12 +471,14 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             gap: 1.5,
             mb: 2,
             minHeight: 60,
+            ...(isRtl && { direction: "rtl" }),
           }}
         >
-          {/* Duration */}
+          {/* Duration - RTL: icon to the left of value */}
           <Box
             sx={{
               display: "flex",
+              flexDirection: isRtl ? "row-reverse" : "row",
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
@@ -337,10 +516,11 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             </Box>
           </Box>
 
-          {/* Questions */}
+          {/* Questions - RTL: icon to the left of value */}
           <Box
             sx={{
               display: "flex",
+              flexDirection: isRtl ? "row-reverse" : "row",
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
@@ -366,7 +546,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                   lineHeight: 1.2,
                 }}
               >
-                Questions
+                {t("assessments.questions")}
               </Typography>
               <Typography
                 variant="body2"
@@ -385,59 +565,159 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
 
         {/* CTA Button */}
         <Box sx={{ mt: "1" }}>
-          <Button
-            fullWidth
-            variant="contained"
-            size="large"
-            startIcon={
-              <IconWrapper
-                icon={
-                  showResults ? "mdi:eye-outline" : "mdi:play-circle-outline"
+          {!isClickable && startDate && remainingTime && !showResults ? (
+            <Tooltip
+              title={remainingTime}
+              arrow
+              placement="top"
+              enterDelay={300}
+              leaveDelay={0}
+            >
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={!isClickable}
+                endIcon={
+                  <IconWrapper
+                    icon={
+                      status === "submitted"
+                        ? "mdi:eye-outline"
+                        : !isClickable
+                        ? "mdi:clock-outline"
+                        : "mdi:play-circle-outline"
+                    }
+                    size={18}
+                  />
                 }
-                size={18}
-              />
-            }
-            sx={{
-              backgroundColor: isPsychometric
-                ? showResults
-                  ? "#7c3aed"
-                  : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
-                : showResults
-                ? "#10b981"
-                : "#6366f1",
-              color: "#ffffff",
-              fontWeight: 600,
-              py: 1,
-              borderRadius: 2,
-              textTransform: "none",
-              fontSize: "0.875rem",
-              boxShadow: isPsychometric
-                ? showResults
-                  ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
-                  : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
-                : showResults
-                ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
-                : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
-              "&:hover": {
-                backgroundColor: isPsychometric
-                  ? showResults
-                    ? "#6d28d9"
-                    : "#6d28d9"
-                  : showResults
-                  ? "#059669"
-                  : "#4f46e5",
-                boxShadow: isPsychometric
-                  ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
-                  : showResults
-                  ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
-                  : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
-                transform: "translateY(-2px)",
-              },
-              transition: "all 0.2s ease",
-            }}
-          >
-            {showResults ? "View Results" : "Start Assessment"}
-          </Button>
+                sx={{
+                  flexDirection: isRtl ? "row-reverse" : "row",
+                  backgroundColor:
+                    !isClickable
+                      ? "#9ca3af"
+                      : isPsychometric
+                      ? showResults
+                        ? "#7c3aed"
+                        : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
+                      : showResults
+                      ? "#10b981"
+                      : "#6366f1",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  py: 1,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontSize: "0.875rem",
+                  boxShadow:
+                    !isClickable
+                      ? "none"
+                      : isPsychometric
+                      ? showResults
+                        ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
+                        : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
+                      : showResults
+                      ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
+                      : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+                  ...(isClickable ? {
+                    "&:hover": {
+                      backgroundColor: isPsychometric
+                        ? showResults
+                          ? "#6d28d9"
+                          : "#6d28d9"
+                        : showResults
+                        ? "#059669"
+                        : "#4f46e5",
+                      boxShadow: isPsychometric
+                        ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
+                        : showResults
+                        ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
+                        : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                      transform: "translateY(-2px)",
+                    },
+                  } : {}),
+                  "&.Mui-disabled": {
+                    backgroundColor: "#9ca3af",
+                    color: "#ffffff",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {buttonLabel}
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={!isClickable}
+              endIcon={
+                <IconWrapper
+                  icon={
+                    status === "submitted"
+                      ? "mdi:eye-outline"
+                      : !isClickable
+                      ? "mdi:clock-outline"
+                      : "mdi:play-circle-outline"
+                  }
+                  size={18}
+                />
+              }
+              sx={{
+                flexDirection: isRtl ? "row-reverse" : "row",
+                backgroundColor:
+                  !isClickable
+                    ? "#9ca3af"
+                    : isPsychometric
+                    ? showResults
+                      ? "#7c3aed"
+                      : "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)"
+                    : showResults
+                    ? "#10b981"
+                    : "#6366f1",
+                color: "#ffffff",
+                fontWeight: 600,
+                py: 1,
+                borderRadius: 2,
+                textTransform: "none",
+                fontSize: "0.875rem",
+                boxShadow:
+                  !isClickable
+                    ? "none"
+                    : isPsychometric
+                    ? showResults
+                      ? "0 4px 14px 0 rgba(124, 58, 237, 0.39)"
+                      : "0 4px 14px 0 rgba(124, 58, 237, 0.5)"
+                    : showResults
+                    ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
+                    : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+                ...(isClickable && {
+                  "&:hover": {
+                    backgroundColor: isPsychometric
+                      ? showResults
+                        ? "#6d28d9"
+                        : "#6d28d9"
+                      : showResults
+                      ? "#059669"
+                      : "#4f46e5",
+                    boxShadow: isPsychometric
+                      ? "0 6px 20px 0 rgba(124, 58, 237, 0.6)"
+                      : showResults
+                      ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
+                      : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                    transform: "translateY(-2px)",
+                  },
+                }),
+                "&.Mui-disabled": {
+                  backgroundColor: "#9ca3af",
+                  color: "#ffffff",
+                },
+                transition: "all 0.2s ease",
+              }}
+            >
+              {buttonLabel}
+            </Button>
+          )}
         </Box>
       </CardContent>
     </Card>

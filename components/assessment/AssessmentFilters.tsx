@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Paper,
@@ -37,6 +38,7 @@ export function AssessmentFilters({
   onSortChange,
   onSearchChange,
 }: AssessmentFiltersProps) {
+  const { t } = useTranslation("common");
   return (
     <Paper
       elevation={0}
@@ -71,9 +73,9 @@ export function AssessmentFilters({
           },
         }}
       >
-        <Tab label={`All (${totalCount})`} />
-        <Tab label={`Available (${availableCount})`} />
-        <Tab label={`Completed (${completedCount})`} />
+        <Tab label={`${t("assessments.all")} (${totalCount})`} />
+        <Tab label={`${t("assessments.available")} (${availableCount})`} />
+        <Tab label={`${t("assessments.completed")} (${completedCount})`} />
       </Tabs>
 
       {/* Search and Sort */}
@@ -88,7 +90,7 @@ export function AssessmentFilters({
         <TextField
           fullWidth
           size="small"
-          placeholder="Search assessments..."
+          placeholder={t("assessments.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           InputProps={{

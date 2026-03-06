@@ -3,6 +3,7 @@
 import { Box, Paper, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface InterviewStatsProps {
   totalInterviews: number;
@@ -17,9 +18,10 @@ const InterviewStatsComponent = ({
   scheduledInterviews,
   averageScore,
 }: InterviewStatsProps) => {
+  const { t } = useTranslation("common");
   const stats = [
     {
-      label: "Total Interviews",
+      label: t("mockInterview.totalInterviews"),
       value: totalInterviews,
       icon: "mdi:briefcase-outline",
       color: "#6366f1",
@@ -33,14 +35,14 @@ const InterviewStatsComponent = ({
       bgColor: "#ecfdf5",
     },
     {
-      label: "Scheduled",
+      label: t("mockInterview.scheduled"),
       value: scheduledInterviews,
       icon: "mdi:calendar-clock",
       color: "#f59e0b",
       bgColor: "#fef3c7",
     },
     {
-      label: "Average Score",
+      label: t("mockInterview.averageScore"),
       value: `${averageScore}%`,
       icon: "mdi:chart-line",
       color: "#8b5cf6",

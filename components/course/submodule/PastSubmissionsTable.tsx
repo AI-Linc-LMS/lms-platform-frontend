@@ -94,9 +94,10 @@ export function PastSubmissionsTable({
             {submissions
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((submission) => {
-                const marks = parseFloat(submission.marks || "0");
-                const maxMarks =
-                  submission.maximum_marks || submission.marks || 0;
+                const marks =
+                  submission.obtained_marks ??
+                  parseFloat(submission.marks || "0");
+                const maxMarks = Number(submission.maximum_marks) || 0;
                 const percentage =
                   maxMarks > 0 ? Math.round((marks / maxMarks) * 100) : 0;
                 const result = submission.result || "submitted";
@@ -124,7 +125,15 @@ export function PastSubmissionsTable({
                           fontWeight: 500,
                         }}
                       >
-                        {new Date(submittedDate).toLocaleString()}
+                        {new Date(submittedDate).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: true,
+                        })}
                       </Typography>
                     </TableCell>
                     <TableCell>

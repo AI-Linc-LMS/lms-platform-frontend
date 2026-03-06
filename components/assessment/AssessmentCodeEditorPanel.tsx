@@ -177,11 +177,11 @@ export function AssessmentCodeEditorPanel({
             },
           }}
         >
-          {submitting
-            ? "Submitting..."
-            : canSubmit
-            ? "Submit"
-            : "Run Tests First"}
+        {submitting
+        ? "Submitting..."
+        : canSubmit
+        ? "Final Code Submission"
+        : "Check with Test Cases"}
         </Button>
       </Box>
 

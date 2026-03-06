@@ -85,8 +85,11 @@ export interface CourseDetail {
   liked_count: number;
   is_liked_by_current_user: boolean;
   is_certified: boolean;
+  certificate_available?: boolean;
   updated_at: string;
   modules: Module[];
+  content_lock_enabled:boolean;
+  lock_threshold_value?:number;
 }
 
 export interface CourseDashboard {
@@ -176,9 +179,11 @@ export interface LikeResponse {
 
 export interface LeaderboardEntry {
   name: string;
-
+  profile_pic_url?: string;
   score: number;
   rank: number;
+  email?: string;
+  user_name?: string;
 }
 
 export const coursesService = {
@@ -278,6 +283,21 @@ export const coursesService = {
     return response.data;
   },
 
+  // Get past submission detail (with questions, options, selected/correct, explanation)
+  getPastSubmissionDetail: async (
+    courseId: number,
+    contentId: number,
+    submissionId: number
+  ): Promise<any> => {
+    const response = await apiClient.get<any>(
+      `/lms/clients/${config.clientId}/courses/${courseId}/content/${contentId}/past-submissions/${submissionId}/`
+    );
+    const data = response.data;
+    // Handle both { questions: [...] } and raw array response
+    if (Array.isArray(data)) return { questions: data };
+    return data;
+  },
+
   // Add comment to content
   addComment: async (
     courseId: number,
@@ -302,7 +322,8 @@ export const coursesService = {
   // Create user activity
   // activityType should be the content type (e.g., "VideoTutorial", "Quiz")
   // actionType should be the action (e.g., "view", "start", "complete")
-  // userAnswers is for Quiz completion - array of {questionId, isCorrect, questionIndex, selectedOption}
+  // userAnswers is for Quiz completion - array of {questionId, questionIndex, selectedOption}
+  // Do NOT send isCorrect - backend computes it; get from response
   createUserActivity: async (
     courseId: number,
     contentId: number,
@@ -311,7 +332,6 @@ export const coursesService = {
       activity_type?: string;
       userAnswers?: Array<{
         questionId: number | string;
-        isCorrect: boolean;
         questionIndex: number;
         selectedOption: string;
       }>;

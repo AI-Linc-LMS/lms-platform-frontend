@@ -12,24 +12,29 @@ import {
   Divider,
   Badge,
   Popover,
+  Tooltip,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { LogOut, User, Menu as MenuIcon, Bell } from "lucide-react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
 import {
   getUserDisplayName,
   getUserInitials,
   getUserProfilePicture,
 } from "@/lib/utils/user-utils";
-import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useClientInfo, useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Settings } from "lucide-react";
+import { LanguageSelect } from "@/components/common/LanguageSelect";
+import { useTranslation } from "react-i18next";
+import { isRtl } from "@/lib/i18n";
+import { useToast } from "@/components/common/Toast";
 
 interface AppBarProps {
   onMenuClick?: () => void;
@@ -40,13 +45,17 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
   const { clientInfo } = useClientInfo();
+  const hideLeaderboardView = useHideLeaderboardView();
   const { isAdminMode, toggleAdminMode } = useAdminMode();
+  const { showToast } = useToast();
 
   // Check if user can access admin mode
   const isAdminOrInstructor =
     user?.role === "admin" || user?.role === "instructor";
   const isSuperAdmin = user?.role === "superadmin";
   const canAccessAdmin = isAdminOrInstructor || isSuperAdmin;
+  const { i18n, t } = useTranslation("common");
+  const rtl = isRtl(i18n.language || "en");
   const {
     leaderboard,
     streak,
@@ -154,25 +163,35 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             DrawerWidth === 0 ? DrawerWidth : DRAWER_WIDTH
           }px)`,
         },
-        left: {
-          xs: 0,
-          md: `${DrawerWidth === 0 ? DrawerWidth : DRAWER_WIDTH}px`,
-        },
+        ...(rtl
+          ? {
+              left: { xs: 0, md: 0 },
+              right: { xs: "auto", md: "auto" },
+            }
+          : {
+              left: {
+                xs: 0,
+                md: `${DrawerWidth === 0 ? DrawerWidth : DRAWER_WIDTH}px`,
+              },
+              right: { xs: "auto", md: "auto" },
+            }),
       }}
     >
       <Toolbar
         sx={{
           minHeight: { xs: 56, sm: 64 },
           px: { xs: 1.5, sm: 2.5 },
+          flexDirection: rtl ? "row-reverse" : "row",
         }}
       >
-        {/* LEFT SIDE - Client Logo (Mobile) and Leaderboard */}
+        {/* LEFT (LTR) / RIGHT (RTL) - Client Logo (Mobile) and Leaderboard */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             gap: 2,
             flex: 1,
+            ...(rtl && { justifyContent: "flex-end" }),
           }}
         >
           {/* Admin Mode Indicator */}
@@ -210,10 +229,11 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           )}
         </Box>
 
-        {/* RIGHT SIDE ACTIONS */}
+        {/* RIGHT (LTR) / LEFT (RTL) - actions; in RTL row-reverse so avatar is at extreme left */}
         <Box
           sx={{
             display: "flex",
+            flexDirection: rtl ? "row-reverse" : "row",
             alignItems: "center",
             gap: { xs: 0.5, sm: 1.5 },
             ml: { xs: "auto", md: "auto" },
@@ -247,7 +267,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     color: "#92400e",
                   }}
                 >
-                  Admin Mode
+                  {t("common.adminMode")}
                 </Typography>
               </Box>
               {/* Mobile: Icon Only */}
@@ -271,7 +291,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Box>
             </>
           )}
-          {/* Daily Progress Leaderboard */}
+          {/* Daily Progress Leaderboard - hidden when no_leaderboard_view */}
+          {!hideLeaderboardView && (
+          <React.Fragment>
           <Box
             sx={{
               display: { xs: "none", sm: "block" },
@@ -320,7 +342,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     repeatDelay: 2.5,
                   }}
                 >
-                  Today's Leaders
+                  {t("common.todaysLeaders")}
                 </motion.span>
               </Typography>
             </Box>
@@ -452,21 +474,78 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     const userName = entry?.name ?? entry?.user?.user_name ?? "Unknown";
                     const timeDisplay = formatProgress(entry);
                     const profilePicUrl = entry?.profile_pic_url ?? entry?.user?.profile_pic_url;
+                    const college = entry?.college;
+                    const linkedinUrl = entry?.linkedin_url;
                     
                     // Create a unique key combining user id, name, and index
                     const uniqueKey = entry?.user?.id 
                       ? `leaderboard-${entry.user.id}-${index}` 
                       : `leaderboard-${userName}-${index}`;
                     
+                    const handleClick = (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      if (linkedinUrl) {
+                        // Ensure URL is valid and starts with http/https
+                        const url = linkedinUrl.startsWith("http") 
+                          ? linkedinUrl 
+                          : `https://${linkedinUrl}`;
+                        // Open LinkedIn in new tab
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      }
+                    };
+                    
                     return (
-                      <Box
+                      <Tooltip
                         key={uniqueKey}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
+                        title={
+                          linkedinUrl
+                            ? college
+                              ? `College: ${college} - Click to view LinkedIn`
+                              : "Click to view LinkedIn profile"
+                            : college
+                            ? `College: ${college}`
+                            : "No college information available"
+                        }
+                        arrow
+                        placement="left"
+                        disableInteractive
                       >
+                        <Box
+                          onClick={handleClick}
+                          onKeyDown={(e) => {
+                            if ((e.key === "Enter" || e.key === " ") && linkedinUrl) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (linkedinUrl) {
+                                const url = linkedinUrl.startsWith("http") 
+                                  ? linkedinUrl 
+                                  : `https://${linkedinUrl}`;
+                                window.open(url, "_blank", "noopener,noreferrer");
+                              }
+                            }
+                          }}
+                          role={linkedinUrl ? "button" : undefined}
+                          tabIndex={linkedinUrl ? 0 : undefined}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            cursor: linkedinUrl ? "pointer" : "default",
+                            p: 0.5,
+                            borderRadius: 1,
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              backgroundColor: linkedinUrl ? "rgba(99, 102, 241, 0.08)" : undefined,
+                              transform: linkedinUrl ? "translateX(2px)" : undefined,
+                            },
+                            "&:focus": linkedinUrl
+                              ? {
+                                  outline: "2px solid #6366f1",
+                                  outlineOffset: "2px",
+                                }
+                              : {},
+                          }}
+                        >
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
@@ -519,17 +598,27 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                             {userName}
                           </Typography>
                         </Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            color: "#17627A",
-                          }}
-                        >
-                          {timeDisplay}
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                              color: "#17627A",
+                            }}
+                          >
+                            {timeDisplay}
+                          </Typography>
+                          {linkedinUrl && (
+                            <IconWrapper
+                              icon="mdi:linkedin"
+                              size={14}
+                              color="#0077B5"
+                            />
+                          )}
+                        </Box>
                       </Box>
+                      </Tooltip>
                     );
                   })}
                 </Box>
@@ -734,9 +823,20 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Box>
             </Popover>
           </Box>
+          </React.Fragment>
+          )}
+
+          {/* Language selector - only for client id 28 */}
+          {clientInfo?.id === 28 && (
+            <Box sx={{ minWidth: 100 }}>
+              <LanguageSelect size="small" variant="outlined" />
+            </Box>
+          )}
 
           {/* Notifications */}
           <IconButton
+            aria-label="Notifications"
+            onClick={() => showToast("No New Notifications", "info")}
             sx={{
               color: "#6b7280",
               width: 40,
@@ -838,8 +938,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     : "transparent",
                 }}
               >
-                <Settings size={18} style={{ marginRight: 12 }} />
-                {isAdminMode ? "Exit Admin Mode" : "Switch to Admin"}
+                <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><Settings size={18} /></Box>
+                {isAdminMode ? t("common.exitAdminMode") : t("common.switchToAdmin")}
               </MenuItem>
             )}
 
@@ -851,15 +951,15 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 handleMenuClose();
               }}
             >
-              <User size={18} style={{ marginRight: 12 }} />
-              Profile Settings
+              <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><User size={18} /></Box>
+              {t("common.profileSettings")}
             </MenuItem>
 
             <Divider />
 
             <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
-              <LogOut size={18} style={{ marginRight: 12 }} />
-              Logout
+              <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><LogOut size={18} /></Box>
+              {t("common.logout")}
             </MenuItem>
           </Menu>
         </Box>

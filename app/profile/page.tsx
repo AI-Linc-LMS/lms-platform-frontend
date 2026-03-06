@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Container, Tabs, Tab } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { Box, Container, Tabs, Tab, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { CoverPhoto } from "@/components/profile/CoverPhoto";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileSummary } from "@/components/profile/ProfileSummary";
@@ -23,16 +23,62 @@ import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
 import {
   profileService,
   UserProfile,
+  UserProfileUpdate,
   HeatmapData,
 } from "@/lib/services/profile.service";
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { config } from "@/lib/config";
+
+const PROFILE_LOCAL_KEY_PREFIX = "user_profile_extra";
+
+function getProfileLocalKey(): string {
+  return `${PROFILE_LOCAL_KEY_PREFIX}_${config.clientId}`;
+}
+
+function isEmptyValue(val: unknown): boolean {
+  if (val === undefined || val === null || val === "") return true;
+  if (Array.isArray(val) && val.length === 0) return true;
+  return false;
+}
+
+function loadLocalProfile(): Partial<UserProfile> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(getProfileLocalKey());
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalProfile(data: Partial<UserProfileUpdate>) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = loadLocalProfile();
+    localStorage.setItem(getProfileLocalKey(), JSON.stringify({ ...existing, ...data }));
+  } catch {
+    // storage unavailable
+  }
+}
+
+function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
+  const local = loadLocalProfile();
+  const merged = { ...apiProfile };
+  for (const [key, value] of Object.entries(local)) {
+    if (isEmptyValue((merged as any)[key]) && !isEmptyValue(value)) {
+      (merged as any)[key] = value;
+    }
+  }
+  return merged;
+}
 
 export default function ProfilePage() {
+  const { t } = useTranslation("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
 
@@ -47,40 +93,68 @@ export default function ProfilePage() {
   const loadProfileData = async () => {
     try {
       setLoading(true);
-
-      // Load profile
       const profileData = await profileService.getUserProfile();
-      setProfile(profileData);
+      setProfile(mergeWithLocalFallback(profileData));
 
-      // Load activity heatmap
       try {
         const heatmap = await profileService.getUserActivityHeatmap();
         setHeatmapData(heatmap as any);
-      } catch (error) {
+      } catch {
         // Continue even if heatmap fails
       }
-    } catch (error: any) {
-      showToast("Failed to load profile", "error");
+    } catch {
+      showToast(t("profile.failedToLoad"), "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveProfile = async (updatedProfile: Partial<UserProfile>) => {
+  const handleSaveProfile = async (updatedProfile: UserProfileUpdate) => {
+    saveLocalProfile(updatedProfile);
+
     try {
-      const updated = await profileService.updateUserProfile(updatedProfile);
-      setProfile(updated);
-      showToast("Profile updated successfully", "success");
-    } catch (error: any) {
-      showToast("Failed to update profile", "error");
-      throw error;
+      const apiResponse = await profileService.updateUserProfile(updatedProfile);
+      setProfile((prev) => {
+        if (!prev) return { ...updatedProfile, ...apiResponse } as UserProfile;
+        const result = { ...prev, ...updatedProfile };
+        // Layer on API response, but only values the backend actually returned
+        for (const [key, val] of Object.entries(apiResponse)) {
+          if (!isEmptyValue(val)) {
+            (result as any)[key] = val;
+          }
+        }
+        // Normalize required string field so state matches UserProfile
+        result.profile_picture = result.profile_picture ?? "";
+        return result as UserProfile;
+      });
+      showToast(t("profile.updatedSuccess"), "success");
+    } catch {
+      setProfile((prev) => {
+        if (!prev) return null;
+        const merged = { ...prev, ...updatedProfile };
+        merged.profile_picture = merged.profile_picture ?? "";
+        return merged as UserProfile;
+      });
+      showToast(t("profile.savedLocally"), "info");
     }
   };
 
   if (loading) {
     return (
       <MainLayout>
-        <Loading fullScreen />
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: 400,
+              py: 8,
+            }}
+          >
+            <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+          </Box>
+        </Container>
       </MainLayout>
     );
   }
@@ -90,7 +164,7 @@ export default function ProfilePage() {
       <MainLayout>
         <Container maxWidth="lg">
           <Box sx={{ py: 8, textAlign: "center" }}>
-            <Box sx={{ color: "#6b7280" }}>Profile not found</Box>
+            <Box sx={{ color: "#6b7280" }}>{t("profile.notFound")}</Box>
           </Box>
         </Container>
       </MainLayout>
@@ -127,17 +201,11 @@ export default function ProfilePage() {
               mx: "auto",
             }}
           >
-            <CoverPhoto 
-              coverPhotoUrl={profile.cover_photo_url}
-              onEditCover={async (file: File) => {
-                try {
-                  const result = await profileService.uploadCoverPhoto(file);
-                  await handleSaveProfile({ cover_photo_url: result.cover_photo_url });
-                  showToast("Cover photo updated successfully", "success");
-                } catch (error: any) {
-                  showToast(error.message || "Failed to upload cover photo", "error");
-                  throw error;
-                }
+            <CoverPhoto
+              coverPhotoUrl={profile.cover_photo_url ?? undefined}
+              onEditCoverUrl={async (url: string) => {
+                await handleSaveProfile({ cover_photo_url: url || null });
+                showToast(url ? t("profile.coverPhotoUpdated") : t("profile.coverPhotoCleared"), "success");
               }}
             />
           </Box>
@@ -158,21 +226,15 @@ export default function ProfilePage() {
           <ProfileHeader
             userName={profile.first_name + " " + profile.last_name}
             profilePicUrl={profile.profile_picture}
-            role={profile.role || "Student"}
-            headline={profile.headline}
+            role={profile.role || t("profile.student")}
+            headline={profile.headline ?? undefined}
             location={location}
-            onEditProfilePic={async (file: File) => {
-              try {
-                const result = await profileService.uploadProfilePicture(file);
-                await handleSaveProfile({ profile_picture: result.profile_picture });
-                showToast("Profile picture updated successfully", "success");
-              } catch (error: any) {
-                showToast(error.message || "Failed to upload profile picture", "error");
-                throw error;
-              }
+            onEditProfilePicUrl={async (url: string) => {
+              await handleSaveProfile({ profile_picture: url || null });
+              showToast(url ? t("profile.profilePictureUpdated") : t("profile.profilePictureCleared"), "success");
             }}
             onEditHeadline={async (newHeadline: string) => {
-              await handleSaveProfile({ headline: newHeadline });
+              await handleSaveProfile({ headline: newHeadline.trim() || null });
             }}
           />
         </Box>
@@ -224,8 +286,8 @@ export default function ProfilePage() {
                 },
               }}
             >
-              <Tab label="Profile" />
-              <Tab label="Resume" />
+              <Tab label={t("profile.tabProfile")} />
+              <Tab label={t("profile.tabResume")} />
             </Tabs>
           </Box>
 
@@ -252,13 +314,16 @@ export default function ProfilePage() {
                 <UserDetailsCard
                   username={profile.username}
                   emailAddress={profile.email}
-                  socialLinks={profile.social_links}
+                  socialLinks={{
+                    github: profile.social_links?.github || "",
+                    linkedin: profile.social_links?.linkedin || "",
+                  }}
                   externalProfiles={{
-                    portfolio_website_url: profile.portfolio_website_url,
-                    leetcode_url: profile.leetcode_url,
-                    hackerrank_url: profile.hackerrank_url,
-                    kaggle_url: profile.kaggle_url,
-                    medium_url: profile.medium_url,
+                    portfolio_website_url: profile.portfolio_website_url ?? undefined,
+                    leetcode_url: profile.leetcode_url ?? undefined,
+                    hackerrank_url: profile.hackerrank_url ?? undefined,
+                    kaggle_url: profile.kaggle_url ?? undefined,
+                    medium_url: profile.medium_url ?? undefined,
                   }}
                 />
 
@@ -270,7 +335,7 @@ export default function ProfilePage() {
                           {
                             id: 1,
                             name: clientInfo.name || "AI-Linc Learning",
-                            role: "Student",
+                            role: t("profile.student"),
                             joinedDate: "Jan 1, 2024",
                           },
                         ]
@@ -386,13 +451,58 @@ export default function ProfilePage() {
                 basicInfo: {
                   firstName: profile.first_name,
                   lastName: profile.last_name,
-                  professionalTitle: "",
+                  professionalTitle: profile.headline ?? "",
                   email: profile.email,
                   phone: profile.phone_number,
-                  location: "",
+                  location: [profile.city, profile.state].filter(Boolean).join(", "),
                   photo: profile.profile_picture,
-                  summary: profile.bio,
+                  summary: profile.bio ?? "",
+                  github: profile.social_links?.github ?? "",
+                  linkedin: profile.social_links?.linkedin ?? "",
+                  portfolio: profile.portfolio_website_url ?? "",
+                  leetcode: profile.leetcode_url ?? "",
+                  hackerrank: profile.hackerrank_url ?? "",
+                  kaggle: profile.kaggle_url ?? "",
+                  medium: profile.medium_url ?? "",
                 },
+                workExperience: profile.experience?.map((exp, i) => ({
+                  id: exp.id ?? String(i + 1),
+                  position: exp.position,
+                  company: exp.company,
+                  location: exp.location ?? "",
+                  startDate: exp.start_date,
+                  endDate: exp.end_date ?? "",
+                  current: exp.current,
+                  description: exp.description ? exp.description.split("\n").filter(Boolean) : [],
+                })),
+                education: profile.education?.map((edu, i) => ({
+                  id: edu.id ?? String(i + 1),
+                  degree: [edu.degree, edu.field_of_study].filter(Boolean).join(" in "),
+                  institution: edu.institution,
+                  location: "",
+                  startDate: edu.start_date ?? "",
+                  endDate: edu.end_date ?? "",
+                  gpa: edu.gpa ?? "",
+                  description: edu.description ?? "",
+                })),
+                skills: profile.skills?.map((s, i) => ({
+                  id: s.id ?? String(i + 1),
+                  name: s.name,
+                })),
+                projects: profile.projects?.map((p, i) => ({
+                  id: p.id ?? String(i + 1),
+                  name: p.name,
+                  description: p.description,
+                  technologies: p.technologies ?? [],
+                  link: p.url ?? "",
+                })),
+                certifications: profile.certifications?.map((c, i) => ({
+                  id: c.id ?? String(i + 1),
+                  name: c.name,
+                  issuer: c.issuing_organization,
+                  date: c.issue_date,
+                  link: c.credential_url ?? "",
+                })),
               }}
             />
           )}

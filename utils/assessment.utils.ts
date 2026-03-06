@@ -35,7 +35,7 @@ export function convertMCQToQuizQuestion(mcq: {
 export function convertCodingProblem(problem: any) {
   return {
     id: problem.id,
-    title: problem.title,
+    title: problem.title ?? problem.name ?? problem.problem_title ?? "Coding Problem",
     problem_statement: problem.problem_statement,
     difficulty_level: problem.difficulty_level,
     input_format: problem.input_format,
@@ -122,11 +122,12 @@ export function mergeAssessmentSections(
  * Format assessment responses for API submission
  * Uses actual section IDs from the assessment, not indices
  * For quiz sections: includes ALL questions (even if not attempted) for post-assessment analysis
- * For coding sections: only includes questions that were actually submitted (not template code)
+ * For coding sections: unattempted = best_code empty; attempted = prefer sessionStorage code if found
  */
 export function formatAssessmentResponses(
   responses: Record<string, Record<string, any>>,
-  sections: Array<{ id: number; section_type: string; questions: Array<{ id: number | string }> }>
+  sections: Array<{ id: number; section_type: string; questions: Array<{ id: number | string }> }>,
+  getCodeFromSession?: (questionId: number | string) => string | null
 ): {
   quizSectionId: Array<Record<string, any>>;
   codingProblemSectionId: Array<Record<string, any>>;
@@ -145,42 +146,50 @@ export function formatAssessmentResponses(
       const questionResponse = sectionResponses[questionId];
 
       if (sectionType === "coding") {
-        // For coding: only include if actually submitted (has submitted flag or test case results)
-        // Don't send template code as best_code if not attempted
+        // For coding: include ALL problems - attempted and unattempted
+        // Unattempted: best_code = "" (empty)
+        // Attempted: prefer sessionStorage code if found, else response code
+        // IMPORTANT: If code exists in sessionStorage (even if never run/submitted), include it
+        const templateCode = question.template_code?.python ||
+                            question.template_code?.python3 ||
+                            question.template_code?.java ||
+                            question.template_code?.cpp ||
+                            question.template_code?.javascript ||
+                            "";
+        const totalTestCases = question.test_cases?.length ?? 0;
+        
+        // Check sessionStorage first - if code exists there, use it even if never run/submitted
+        const sessionCode = getCodeFromSession?.(questionId);
+        const hasSessionCode = sessionCode != null && sessionCode.trim() !== "";
+        
         const hasTestResults = questionResponse?.tc_passed !== undefined ||
                                questionResponse?.total_tc !== undefined ||
                                questionResponse?.passed !== undefined ||
                                questionResponse?.total_test_cases !== undefined;
-        
         const isExplicitlySubmitted = questionResponse?.submitted === true;
         
-        // Only include if explicitly submitted OR has test results (indicates code was run)
-        if ((isExplicitlySubmitted || hasTestResults) && questionResponse) {
-          const code = questionResponse.best_code ?? questionResponse.code ?? "";
+        // Consider attempted if: explicitly submitted, has test results, OR has code in sessionStorage
+        // If user wrote code (even if never run/submitted), include it in submission
+        const attempted = isExplicitlySubmitted || hasTestResults || hasSessionCode;
+
+        if (attempted) {
+          // Prefer sessionStorage code (most up-to-date), then response code, then template code
+          const code = hasSessionCode
+            ? sessionCode
+            : (questionResponse?.best_code ?? questionResponse?.code ?? templateCode ?? "");
           
-          // Get template code for comparison
-          const templateCode = question.template_code?.python || 
-                              question.template_code?.python3 || 
-                              question.template_code?.java ||
-                              question.template_code?.cpp ||
-                              question.template_code?.javascript ||
-                              "";
-          
-          // Only send if code exists and is different from template (or if explicitly submitted with test results)
-          const hasActualCode = code.trim() !== "" && 
-                               (code.trim() !== templateCode.trim() || hasTestResults);
-          
-          if (hasActualCode) {
-            sectionResponseData[String(questionId)] = {
-              tc_passed:
-                questionResponse.tc_passed ?? questionResponse.passed ?? 0,
-              total_tc:
-                questionResponse.total_tc ??
-                questionResponse.total_test_cases ??
-                0,
-              best_code: code,
-            };
-          }
+          sectionResponseData[String(questionId)] = {
+            tc_passed: questionResponse?.tc_passed ?? questionResponse?.passed ?? 0,
+            total_tc: questionResponse?.total_tc ?? questionResponse?.total_test_cases ?? totalTestCases,
+            best_code: code.trim() !== "" ? code : templateCode,
+          };
+        } else {
+          // Unattempted - keep best_code empty
+          sectionResponseData[String(questionId)] = {
+            tc_passed: 0,
+            total_tc: totalTestCases,
+            best_code: "",
+          };
         }
       } else {
         // For quiz: include ALL questions, even if not attempted (for post-assessment analysis)
@@ -195,13 +204,13 @@ export function formatAssessmentResponses(
     });
 
     // For quiz sections: always add section (even if all questions are null)
-    // For coding sections: only add if it has actual submissions
+    // For coding sections: always add section - includes all problems (attempted and unattempted)
     if (sectionType === "quiz" && sectionQuestions.length > 0) {
       const sectionEntry = {
         [String(section.id)]: sectionResponseData,
       };
       quizSectionId.push(sectionEntry);
-    } else if (sectionType === "coding" && Object.keys(sectionResponseData).length > 0) {
+    } else if (sectionType === "coding" && sectionQuestions.length > 0) {
       const sectionEntry = {
         [String(section.id)]: sectionResponseData,
       };

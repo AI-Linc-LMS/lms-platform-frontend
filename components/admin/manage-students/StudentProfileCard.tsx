@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper, Avatar, Chip } from "@mui/material";
 import { StudentDetail } from "@/lib/services/admin/admin-student.service";
 
@@ -20,6 +21,7 @@ const formatDate = (dateString: string) => {
 };
 
 export function StudentProfileCard({ student }: StudentProfileCardProps) {
+  const { t } = useTranslation("common");
   const { personal_info } = student;
 
   return (
@@ -52,7 +54,7 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
           {getInitials(personal_info.first_name, personal_info.last_name)}
         </Avatar>
         <Chip
-          label={personal_info.is_active ? "Active" : "Inactive"}
+          label={personal_info.is_active ? t("manageStudents.active") : t("manageStudents.inactive")}
           sx={{
             bgcolor: personal_info.is_active
               ? "rgba(16, 185, 129, 0.3)"
@@ -68,7 +70,7 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
           {personal_info.first_name} {personal_info.last_name}
         </Typography>
         <Typography variant="body2" sx={{ opacity: 0.9 }}>
-          Enrolled on {formatDate(personal_info.date_joined)}
+          {t("manageStudents.enrolledOn")} {formatDate(personal_info.date_joined)}
         </Typography>
         <Box
           sx={{
@@ -87,7 +89,7 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
               mb: 0.5,
             }}
           >
-            Username
+            {t("manageStudents.username")}
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
             {personal_info.username}
@@ -95,11 +97,11 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
         </Box>
         {personal_info.last_login ? (
           <Typography variant="caption" sx={{ opacity: 0.8 }}>
-            Last login: {formatDate(personal_info.last_login)}
+            {t("manageStudents.lastLogin")}: {formatDate(personal_info.last_login)}
           </Typography>
         ) : (
           <Typography variant="caption" sx={{ opacity: 0.8 }}>
-            Never logged in
+            {t("manageStudents.neverLoggedIn")}
           </Typography>
         )}
       </Box>

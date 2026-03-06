@@ -13,6 +13,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
 import { AdminModeProvider } from "@/lib/contexts/AdminModeContext";
 import { CameraRouteGuard } from "@/components/providers/CameraRouteGuard";
+import { I18nProvider } from "@/components/providers/I18nProvider";
+import { DirectionSync } from "@/components/providers/DirectionSync";
 
 /* ✅ Metadata (SEO) */
 export async function generateMetadata(): Promise<Metadata> {
@@ -50,8 +52,10 @@ export default async function RootLayout({
     ? `${client.app_icon_url}?v=${client.id}-${Date.now()}`
     : `/favicon.ico?v=${Date.now()}`;
 
+  const defaultLang = client?.id === 28 ? "ar" : "en";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={defaultLang} suppressHydrationWarning>
       <head>
         <link rel="icon" href={favicon} />
         <link rel="shortcut icon" href={favicon} />
@@ -72,9 +76,11 @@ export default async function RootLayout({
         <ClientThemeProvider client={client} />
 
         <ErrorBoundary>
-          <EmotionCacheProvider>
-            <ThemeProvider>
-              <ReduxProvider>
+          <I18nProvider clientId={client?.id}>
+            <EmotionCacheProvider>
+              <ThemeProvider>
+                <DirectionSync />
+                <ReduxProvider>
                 <ThemeModeProvider>
                   <AuthProvider>
                     <ClientInfoProvider>
@@ -89,6 +95,7 @@ export default async function RootLayout({
               </ReduxProvider>
             </ThemeProvider>
           </EmotionCacheProvider>
+          </I18nProvider>
         </ErrorBoundary>
       </body>
     </html>

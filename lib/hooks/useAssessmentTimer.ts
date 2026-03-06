@@ -14,22 +14,54 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
   const [isRunning, setIsRunning] = useState(autoStart);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
+  const remainingSecondsRef = useRef(initialTimeSeconds);
 
-  // Keep onTimeUp ref updated without triggering useEffect
+  // Keep refs updated
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
+  // Sync ref with state
   useEffect(() => {
-    if (isRunning && remainingSeconds > 0) {
+    remainingSecondsRef.current = remainingSeconds;
+  }, [remainingSeconds]);
+
+  // Track if timer has been initialized to prevent reset on initialTimeSeconds change
+  const hasInitializedRef = useRef(false);
+  const lastInitialTimeRef = useRef(initialTimeSeconds);
+  
+  // Update ref when initialTimeSeconds changes (for reset) - but only if not already initialized
+  // or if the value actually changed significantly
+  useEffect(() => {
+    const timeDiff = Math.abs(lastInitialTimeRef.current - initialTimeSeconds);
+    if (!hasInitializedRef.current || timeDiff > 10) {
+      hasInitializedRef.current = true;
+      lastInitialTimeRef.current = initialTimeSeconds;
+      remainingSecondsRef.current = initialTimeSeconds;
+      setRemainingSeconds(initialTimeSeconds);
+    }
+  }, [initialTimeSeconds]);
+
+  // Timer interval - only depends on isRunning to prevent resets
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (isRunning && remainingSecondsRef.current > 0) {
       intervalRef.current = setInterval(() => {
         setRemainingSeconds((prev) => {
-          if (prev <= 1) {
+          const current = remainingSecondsRef.current;
+          if (current <= 1) {
             setIsRunning(false);
             onTimeUpRef.current?.();
+            remainingSecondsRef.current = 0;
             return 0;
           }
-          return prev - 1;
+          const newValue = current - 1;
+          remainingSecondsRef.current = newValue;
+          return newValue;
         });
       }, 1000);
     }
@@ -37,9 +69,10 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isRunning, remainingSeconds]); // Removed onTimeUp from deps to prevent restart
+  }, [isRunning]); // Only depend on isRunning to prevent interval recreation
 
   const start = useCallback(() => {
     setIsRunning(true);
@@ -50,8 +83,15 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
   }, []);
 
   const reset = useCallback((newTimeSeconds: number) => {
+    // Clear any existing interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    remainingSecondsRef.current = newTimeSeconds;
     setRemainingSeconds(newTimeSeconds);
     setIsRunning(false);
+    hasInitializedRef.current = true; // Mark as initialized after manual reset
   }, []);
 
   const formatTime = useCallback((seconds: number): string => {

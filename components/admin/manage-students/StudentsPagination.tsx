@@ -1,6 +1,8 @@
 "use client";
 
-import { Box, Pagination, Typography, Select, MenuItem, FormControl } from "@mui/material";
+import { Box, Pagination, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { PerPageSelect } from "@/components/common/PerPageSelect";
 
 interface StudentsPaginationProps {
   totalPages: number;
@@ -19,6 +21,7 @@ export function StudentsPagination({
   onPageChange,
   onLimitChange,
 }: StudentsPaginationProps) {
+  const { t } = useTranslation("common");
   const startItem = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const endItem = Math.min(page * limit, totalCount);
 
@@ -50,25 +53,21 @@ export function StudentsPagination({
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
-          Showing {startItem} to {endItem} of {totalCount} students
+          {t("adminManageStudents.showingStudents", {
+            start: startItem,
+            end: endItem,
+            total: totalCount,
+          })}
         </Typography>
-        <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 120 } }}>
-          <Select
-            value={limit}
-            onChange={(e) => {
-              onLimitChange(Number(e.target.value));
-              onPageChange(1);
-            }}
-            sx={{
-              fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            }}
-          >
-            <MenuItem value={10}>10 per page</MenuItem>
-            <MenuItem value={25}>25 per page</MenuItem>
-            <MenuItem value={50}>50 per page</MenuItem>
-            <MenuItem value={100}>100 per page</MenuItem>
-          </Select>
-        </FormControl>
+        <PerPageSelect
+          value={limit}
+          onChange={(v) => {
+            onLimitChange(v);
+            onPageChange(1);
+          }}
+          minWidth={{ xs: "100%", sm: 120 }}
+          SelectSx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+        />
       </Box>
       {totalPages > 1 && (
         <Pagination

@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Box, Paper, CircularProgress } from "@mui/material";
+import { useRouter } from "next/navigation";
+import {
+  Box,
+  Paper,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -22,11 +34,16 @@ import { EmptyState } from "@/components/admin/course-builder/EmptyState";
 
 export default function CourseBuilderPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [courseToDuplicate, setCourseToDuplicate] = useState<Course | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
 
   useEffect(() => {
     loadCourses();
@@ -38,13 +55,12 @@ export default function CourseBuilderPage() {
       const data = await adminCourseBuilderService.getCourses();
       setCourses(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      showToast(error?.message || "Failed to load courses", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToLoadCourses"), "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter courses based on search query
   const filteredCourses = useMemo(() => {
     if (!searchQuery.trim()) return courses;
 
@@ -78,13 +94,12 @@ export default function CourseBuilderPage() {
       };
 
       await adminCourseBuilderService.createCourse(courseData);
-      showToast("Course created successfully", "success");
+      showToast(t("adminCourseBuilder.courseCreatedSuccess"), "success");
       setIsModalOpen(false);
       loadCourses();
     } catch (error: any) {
-      let errorMessage = error?.message || "Failed to create course";
+      let errorMessage = error?.message || t("adminCourseBuilder.failedToCreateCourse");
 
-      // Try to parse and format the error message
       try {
         if (errorMessage.includes("{")) {
           const errorJson = JSON.parse(
@@ -110,7 +125,36 @@ export default function CourseBuilderPage() {
   };
 
   const handleEditCourse = (courseId: number) => {
-    window.location.href = `/admin/course-builder/${courseId}/edit`;
+    router.push(`/admin/course-builder/${courseId}/edit`);
+  };
+
+  const handleDuplicateClick = (course: Course) => {
+    setCourseToDuplicate(course);
+    setDuplicateDialogOpen(true);
+  };
+
+  const handleDuplicateDialogClose = () => {
+    if (!duplicatingId) {
+      setDuplicateDialogOpen(false);
+      setCourseToDuplicate(null);
+    }
+  };
+
+  const handleDuplicateConfirm = async () => {
+    if (!courseToDuplicate) return;
+    try {
+      setDuplicatingId(courseToDuplicate.id);
+      const duplicated = await adminCourseBuilderService.duplicateCourse(courseToDuplicate.id);
+      const title = duplicated?.title ?? courseToDuplicate.title + " - copy";
+      showToast(t("adminCourseBuilder.courseDuplicatedSuccess", { title }), "success");
+      setDuplicateDialogOpen(false);
+      setCourseToDuplicate(null);
+      loadCourses();
+    } catch (error: any) {
+      showToast(error?.message ?? t("adminCourseBuilder.failedToDuplicateCourse"), "error");
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   const draftCount = courses.filter((course) => !course.published).length;
@@ -215,6 +259,7 @@ export default function CourseBuilderPage() {
                   key={course.id}
                   course={course}
                   onEditClick={() => handleEditCourse(course.id)}
+                  onDuplicate={() => handleDuplicateClick(course)}
                   onUpdate={loadCourses}
                 />
               ))}
@@ -230,6 +275,49 @@ export default function CourseBuilderPage() {
           loading={creating}
           existingTitles={courses.map((c) => c.title)}
         />
+
+        {/* Duplicate Course Dialog */}
+        <Dialog
+          open={duplicateDialogOpen}
+          onClose={handleDuplicateDialogClose}
+          aria-labelledby="duplicate-course-dialog-title"
+          aria-describedby="duplicate-course-dialog-description"
+          PaperProps={{
+            sx: { borderRadius: 2, minWidth: 360 },
+          }}
+        >
+          <DialogTitle id="duplicate-course-dialog-title" sx={{ fontWeight: 600 }}>
+            {t("adminCourseBuilder.duplicateCourseTitle")}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="duplicate-course-dialog-description">
+              {courseToDuplicate ? t("adminCourseBuilder.duplicateCourseMessage", { title: courseToDuplicate.title }) : null}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={handleDuplicateDialogClose}
+              disabled={!!duplicatingId}
+              color="inherit"
+            >
+              {t("adminCourseBuilder.cancel")}
+            </Button>
+            <Button
+              onClick={handleDuplicateConfirm}
+              disabled={!!duplicatingId}
+              variant="contained"
+              sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+              autoFocus
+              startIcon={
+                duplicatingId ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+            >
+              {duplicatingId ? t("adminCourseBuilder.duplicating") : t("adminCourseBuilder.duplicate")}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </MainLayout>
   );

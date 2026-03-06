@@ -13,9 +13,12 @@ import {
   IconButton,
   CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import { adminAttendanceService } from "@/lib/services/admin/admin-attendance.service";
+import {
+  adminAttendanceService,
+} from "@/lib/services/admin/admin-attendance.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
 interface CreateActivityDialogProps {
@@ -35,24 +38,22 @@ export function CreateActivityDialog({
   const [duration, setDuration] = useState(60);
   const [creating, setCreating] = useState(false);
 
-  // Generate default name when dialog opens or client info is available
   useEffect(() => {
     const clientName = (clientInfo as any)?.data?.name || clientInfo?.name;
     if (open && clientName) {
-      // Extract initials (e.g., "Kakatiya University" -> "KU")
       const initials = clientName
         .split(" ")
         .map((word: string) => word.charAt(0).toUpperCase())
         .join("");
-
       const generatedName = `${initials}-Classroom`;
       setName(generatedName);
     }
   }, [open, clientInfo]);
 
+  const { t } = useTranslation("common");
   const handleCreate = async () => {
     if (!name.trim()) {
-      showToast("Please enter activity name", "error");
+      showToast(t("adminAttendance.pleaseEnterActivityName"), "error");
       return;
     }
     try {
@@ -61,13 +62,18 @@ export function CreateActivityDialog({
         name: name.trim(),
         duration_minutes: duration,
       });
-      showToast("Attendance activity created successfully", "success");
+      showToast(t("adminAttendance.activityCreatedSuccessfully"), "success");
       setName("");
-      setDuration(30);
+      setDuration(60);
+      onClose();
       onSuccess();
     } catch (error: any) {
+      const detail =
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        t("adminAttendance.failedToCreateActivity");
       showToast(
-        error?.response?.data?.detail || "Failed to create activity",
+        typeof detail === "string" ? detail : JSON.stringify(detail),
         "error"
       );
     } finally {
@@ -81,7 +87,6 @@ export function CreateActivityDialog({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      fullScreen={false}
       PaperProps={{
         sx: {
           m: { xs: 1, sm: 2 },
@@ -104,7 +109,7 @@ export function CreateActivityDialog({
               fontSize: { xs: "1rem", sm: "1.25rem" },
             }}
           >
-            Create Attendance Activity
+            {t("adminAttendance.createAttendanceActivity")}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <IconWrapper icon="mdi:close" size={20} />
@@ -121,13 +126,13 @@ export function CreateActivityDialog({
           }}
         >
           <TextField
-            label="Activity Name"
+            label={t("adminAttendance.activityName")}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., AB-Classroom"
+            placeholder={t("adminAttendance.activityNamePlaceholder")}
             fullWidth
             required
-            helperText="Enter the activity name (e.g., AB-Classroom )"
+            helperText={t("adminAttendance.activityNameHelper")}
             size="small"
             sx={{
               "& .MuiInputBase-root": {
@@ -136,7 +141,7 @@ export function CreateActivityDialog({
             }}
           />
           <TextField
-            label="Duration (minutes)"
+            label={t("adminAttendance.durationMinutesLabel")}
             type="number"
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
@@ -152,27 +157,28 @@ export function CreateActivityDialog({
           />
         </Box>
       </DialogContent>
-      <DialogActions
-        sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}
-      >
+      <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, gap: 1 }}>
         <Button
           onClick={onClose}
-          sx={{
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-          }}
+          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
         >
-          Cancel
+          {t("adminAttendance.cancel")}
         </Button>
         <Button
           variant="contained"
           onClick={handleCreate}
           disabled={creating || !name.trim()}
           sx={{
-            bgcolor: "#6366f1",
+            bgcolor: "#10b981",
+            "&:hover": { bgcolor: "#059669" },
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
-          {creating ? <CircularProgress size={20} color="inherit" /> : "Create"}
+          {creating ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            t("adminAttendance.create")
+          )}
         </Button>
       </DialogActions>
     </Dialog>

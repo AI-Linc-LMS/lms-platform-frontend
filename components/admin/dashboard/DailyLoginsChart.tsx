@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import {
   LineChart,
@@ -20,6 +21,7 @@ interface DailyLoginsChartProps {
 }
 
 export function DailyLoginsChart({ data }: DailyLoginsChartProps) {
+  const { t } = useTranslation("common");
   const formattedData = (data || []).map((item) => {
     const date = new Date(item.date);
     const day = date.getDate();
@@ -50,7 +52,7 @@ export function DailyLoginsChart({ data }: DailyLoginsChartProps) {
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
       >
-        Student Daily Logins
+        {t("admin.dashboard.studentDailyLoginsChart")}
       </Typography>
       {formattedData.length === 0 ? (
         <Box
@@ -62,20 +64,20 @@ export function DailyLoginsChart({ data }: DailyLoginsChartProps) {
             color: "#6b7280",
           }}
         >
-          <Typography variant="body2">No login data available</Typography>
+          <Typography variant="body2">{t("admin.dashboard.noLoginData")}</Typography>
         </Box>
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={formattedData}>
+        <ResponsiveContainer width="100%" height={380}>
+          <LineChart data={formattedData} margin={{ bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="label"
               stroke="#6b7280"
-              fontSize={12}
+              fontSize={11}
               tick={{ fill: "#6b7280" }}
               angle={-45}
               textAnchor="end"
-              height={80}
+              height={100}
             />
             <YAxis
               stroke="#6b7280"

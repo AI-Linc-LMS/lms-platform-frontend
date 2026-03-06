@@ -45,8 +45,8 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
       sx={{
         position: "fixed",
         top: 90,
-        left: 0,
-        right: 0,
+        insetInlineStart: 0,
+        insetInlineEnd: 0,
         zIndex: 1200,
         px: { xs: 2, md: 3 },
         py: 1.5,
@@ -80,14 +80,16 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           Question {questionNum} of {totalQuestions}
         </Typography>
 
-        {/* Section Tabs - Improved Styling */}
+        {/* Section Tabs - Scroll when more than 6 sections instead of wrapping to 2 lines */}
         <Box
           sx={{
             display: "flex",
             gap: 1,
             alignItems: "center",
-            flexWrap: "wrap",
-            overflowX: "auto",
+            flexWrap: sections.length > 6 ? "nowrap" : "wrap",
+            overflowX: sections.length > 6 ? "auto" : "visible",
+            overflowY: "hidden",
+            maxHeight: sections.length > 6 ? "48px" : "none",
             "&::-webkit-scrollbar": {
               height: "4px",
             },

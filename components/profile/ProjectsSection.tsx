@@ -1,9 +1,29 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, Autocomplete } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile, Project } from "@/lib/services/profile.service";
+
+function getProjectLinkUrl(url: string | undefined): string | null {
+  if (typeof url !== "string" || !url.trim()) return null;
+  const u = url.trim();
+  if (u.startsWith("/")) return null;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  if (origin && u.startsWith(origin)) {
+    try {
+      const parsed = new URL(u);
+      const target = parsed.searchParams.get("url") ?? parsed.searchParams.get("to") ?? parsed.searchParams.get("redirect") ?? parsed.searchParams.get("target");
+      if (target && (target.startsWith("http://") || target.startsWith("https://"))) return target;
+    } catch {
+      
+    }
+    return null;
+  }
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return `https://${u}`;
+}
 
 interface ProjectsSectionProps {
   profile: UserProfile;
@@ -14,6 +34,7 @@ export function ProjectsSection({
   profile,
   onSave,
 }: ProjectsSectionProps) {
+  const { t } = useTranslation("common");
   const [projects, setProjects] = useState<Project[]>(profile.projects || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,11 +51,24 @@ export function ProjectsSection({
     current: false,
   });
 
+  useEffect(() => {
+    if (!editing && editingIndex === null) setProjects(profile.projects || []);
+  }, [profile.projects, editing, editingIndex]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        projects: projects,
+      const dataToSave: Partial<UserProfile> = {
+        projects: projects.map((proj): Project => ({
+          id: proj.id,
+          name: proj.name,
+          description: proj.description ?? "",
+          technologies: proj.technologies,
+          url: proj.url || undefined,
+          start_date: proj.start_date || undefined,
+          end_date: proj.end_date || undefined,
+          current: proj.current,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -77,10 +111,20 @@ export function ProjectsSection({
     setProjects(projects.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newProject: Project = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      start_date: toISODate(formData.start_date || ""),
+      end_date: toISODate(formData.end_date || ""),
     };
 
     if (editingIndex !== null) {
@@ -135,7 +179,7 @@ export function ProjectsSection({
               fontSize: "1.25rem",
             }}
           >
-            Projects
+            {t("profile.projects")}
           </Typography>
           {!editing ? (
             <Button
@@ -152,7 +196,7 @@ export function ProjectsSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -173,12 +217,12 @@ export function ProjectsSection({
                   },
                 }}
               >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -192,12 +236,12 @@ export function ProjectsSection({
                   },
                 }}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -209,7 +253,7 @@ export function ProjectsSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -282,28 +326,31 @@ export function ProjectsSection({
                         ))}
                       </Box>
                     )}
-                    {project.url && (
-                      <Box
-                        component="a"
-                        href={project.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          color: "#0a66c2",
-                          textDecoration: "none",
-                          fontSize: "0.875rem",
-                          "&:hover": {
-                            textDecoration: "underline",
-                          },
-                        }}
-                      >
-                        <IconWrapper icon="mdi:link" size={16} color="#6366f1" />
-                        View Project
-                      </Box>
-                    )}
+                    {(() => {
+                      const linkUrl = getProjectLinkUrl(project.url);
+                      return linkUrl ? (
+                        <Box
+                          component="a"
+                          href={linkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            color: "#0a66c2",
+                            textDecoration: "none",
+                            fontSize: "0.875rem",
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
+                          }}
+                        >
+                          <IconWrapper icon="mdi:link" size={16} color="#6366f1" />
+                          View Project
+                        </Box>
+                      ) : null;
+                    })()}
                   </Box>
                   {editing && (
                     <Box sx={{ display: "flex", gap: 0.5 }}>
@@ -358,7 +405,7 @@ export function ProjectsSection({
                 fontWeight: 500,
               }}
             >
-              No projects added yet
+              {t("profile.noProjectsYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -368,7 +415,7 @@ export function ProjectsSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your projects
+              {t("profile.clickEditToAddProjects")}
             </Typography>
           </Box>
         )}
@@ -389,6 +436,7 @@ export function ProjectsSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -405,6 +453,7 @@ export function ProjectsSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
@@ -412,18 +461,17 @@ export function ProjectsSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Project" : "Add Project"}
+            {editingIndex !== null ? t("profile.editProject") : t("profile.addProject")}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Project Name *"
+              label="Project Name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -505,7 +553,7 @@ export function ProjectsSection({
                 label="Start Date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
@@ -520,7 +568,7 @@ export function ProjectsSection({
                 label="End Date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 disabled={formData.current}
@@ -559,7 +607,7 @@ export function ProjectsSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -583,7 +631,7 @@ export function ProjectsSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

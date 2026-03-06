@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Box, Button } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   assessmentService,
   AssessmentResult,
@@ -24,6 +23,8 @@ import {
   getMockPsychometricData,
 } from "@/lib/mock-data/assessment-mock-data";
 import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
+import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
+import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
 
 export default function AssessmentResultPage() {
   const params = useParams();
@@ -34,6 +35,7 @@ export default function AssessmentResultPage() {
     useState<AssessmentResult | null>(null);
   const [psychometricData, setPsychometricData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const { showToast } = useToast();
 
   const forcePsychometric = searchParams?.get("type") === "psychometric";
@@ -90,9 +92,10 @@ export default function AssessmentResultPage() {
         setPsychometricData(result as any);
       } else {
         // Aptitude test or other assessment type - use original structure
-      setAssessmentResult(result);
+        setAssessmentResult(result);
       }
     } catch (error: any) {
+      setLoadFailed(true);
       showToast("Failed to load assessment results", "error");
     } finally {
       setLoading(false);
@@ -100,13 +103,6 @@ export default function AssessmentResultPage() {
   };
 
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   // If psychometric assessment, render psychometric view
   if (psychometricData) {
@@ -142,8 +138,126 @@ export default function AssessmentResultPage() {
     );
   }
 
+  if (loadFailed) {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            width: "100%",
+            px: { xs: 2, sm: 3, md: 4 },
+            py: { xs: 4, sm: 6 },
+            maxWidth: "600px",
+            mx: "auto",
+          }}
+        >
+          <Button
+            startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
+            onClick={() => router.push("/assessments")}
+            sx={{
+              mb: 3,
+              color: "#6b7280",
+              textTransform: "none",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "rgba(99, 102, 241, 0.08)",
+                color: "#6366f1",
+              },
+            }}
+          >
+            Back to Assessments
+          </Button>
+          <Box
+            sx={{
+              textAlign: "center",
+              p: 4,
+              borderRadius: 2,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+              <IconWrapper
+                icon="mdi:clock-outline"
+                size={64}
+                color="#6366f1"
+              />
+            </Box>
+            <Typography variant="h5" fontWeight={700} gutterBottom textAlign="center">
+              Evaluation in Progress
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Your assessment results are not available yet. Your submission is being 
+              evaluated. You will receive your results soon.
+            </Typography>
+          </Box>
+        </Box>
+      </MainLayout>
+    );
+  }
+
   if (!assessmentResult) {
     return null;
+  }
+
+  // When show_result is false, show student-friendly evaluation message instead of full result
+  if (assessmentResult.show_result === false) {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            width: "100%",
+            px: { xs: 2, sm: 3, md: 4 },
+            py: { xs: 4, sm: 6 },
+            maxWidth: "600px",
+            mx: "auto",
+          }}
+        >
+          <Button
+            startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
+            onClick={() => router.push("/assessments")}
+            sx={{
+              mb: 3,
+              color: "#6b7280",
+              textTransform: "none",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "rgba(99, 102, 241, 0.08)",
+                color: "#6366f1",
+              },
+            }}
+          >
+            Back to Assessments
+          </Button>
+          <Box
+            sx={{
+              textAlign: "center",
+              p: 4,
+              borderRadius: 2,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+              <IconWrapper
+                icon="mdi:clock-outline"
+                size={64}
+                color="#6366f1"
+              />
+            </Box>
+            <Typography variant="h5" fontWeight={700} gutterBottom textAlign="center">
+              Evaluation in Progress
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+              Thank you for completing <strong>{assessmentResult.assessment_name}</strong>.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Your assessment has been submitted successfully and is being evaluated. 
+              You will receive your results soon 
+            </Typography>
+          </Box>
+        </Box>
+      </MainLayout>
+    );
   }
 
   const { stats } = assessmentResult;
@@ -298,7 +412,25 @@ export default function AssessmentResultPage() {
             />
           )}
 
-          {/* Overall Feedback */}
+          {/* Quiz Responses - one question at a time, same layout as QuizContent */}
+          {assessmentResult.user_responses?.quiz_responses &&
+            assessmentResult.user_responses.quiz_responses.length > 0 && (
+              <QuizResponsesSection
+                quizResponses={assessmentResult.user_responses.quiz_responses}
+              />
+            )}
+
+          {/* Coding Problem Responses */}
+          {assessmentResult.user_responses?.coding_problem_responses &&
+            assessmentResult.user_responses.coding_problem_responses.length > 0 && (
+              <CodingProblemResponsesSection
+                codingResponses={
+                  assessmentResult.user_responses.coding_problem_responses
+                }
+              />
+            )}
+
+          {/* Overall Feedback - at the end */}
           <OverallFeedback
             feedbackPoints={feedbackPoints}
           />

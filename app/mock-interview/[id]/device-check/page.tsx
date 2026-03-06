@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -11,13 +12,14 @@ import {
   Alert,
   CircularProgress,
   LinearProgress,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService from "@/lib/services/mock-interview.service";
-import { CheckCircle, XCircle, Video, Mic } from "lucide-react";
+import { useProctoring } from "@/lib/hooks/useProctoring";
+import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 interface DeviceStatus {
   camera: boolean;
@@ -25,11 +27,15 @@ interface DeviceStatus {
   browserSupported: boolean;
 }
 
+const TTS_TEXT =
+  "This is a test of my microphone and speech recognition.";
+
 export default function MockInterviewDeviceCheckPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>({
     camera: false,
@@ -39,112 +45,90 @@ export default function MockInterviewDeviceCheckPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
-  const [canProceed, setCanProceed] = useState(false);
-  const [ttsText] = useState<string>(
-    "This is a test of my microphone and speech recognition."
-  );
+  const [faceValidationPassed, setFaceValidationPassed] = useState(false);
+  const [faceValidationMessage, setFaceValidationMessage] = useState<string>("");
   const [isListening, setIsListening] = useState(false);
   const [recognizedText, setRecognizedText] = useState<string>("");
   const [ttsMatch, setTtsMatch] = useState<boolean>(false);
   const [recognition, setRecognition] = useState<any>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const isNavigatingToInterviewRef = useRef(false);
+  const [isNavigatingToInterview, setIsNavigatingToInterview] = useState(false);
+  const hasAutoTestedRef = useRef(false);
 
-  // Check browser support and initialize speech recognition
+  const {
+    isInitializing: isFaceDetectionInitializing,
+    faceCount,
+    status: faceStatus,
+    latestViolation,
+    startProctoring: startFaceDetection,
+    stopProctoring: stopFaceDetection,
+    videoRef,
+  } = useProctoring({
+    autoStart: false,
+    detectionInterval: 600,
+    violationCooldown: 2000,
+    minFaceSize: 20,
+    maxFaceSize: 75,
+    lookingAwayThreshold: 0.3,
+    minConfidence: 0.4,
+    smoothFrameCount: 3,
+    poorLightingThreshold: 0.4,
+    minConfidenceForValidFace: 0.82,
+    onViolation: (violation) => {
+      setFaceValidationPassed(false);
+      setFaceValidationMessage(violation.message);
+    },
+    onStatusChange: () => {},
+    onFaceCountChange: (count) => {
+      if (count === 0) {
+        setFaceValidationPassed(false);
+        setFaceValidationMessage(t("assessments.deviceCheck.noFaceDetected"));
+      } else if (count > 1) {
+        setFaceValidationPassed(false);
+        setFaceValidationMessage(
+          t("assessments.deviceCheck.multipleFaces", { count })
+        );
+      }
+    },
+  });
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const isSupported =
-      navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-    setDeviceStatus((prev) => ({ ...prev, browserSupported: !!isSupported }));
-
-    if (!isSupported) {
-      setLoading(false);
-      showToast(
-        "Your browser doesn't support camera/microphone access",
-        "error"
-      );
-    }
-
-    // Initialize Speech Recognition
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-
-    if (SpeechRecognition) {
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = "en-US";
-
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setRecognizedText(transcript);
-
-        // Simple text matching (case-insensitive, remove punctuation)
-        const normalize = (text: string) =>
-          text
-            .toLowerCase()
-            .replace(/[^\w\s]/g, "")
-            .trim();
-        const normalizedTts = normalize(ttsText);
-        const normalizedRecognized = normalize(transcript);
-
-        // Check if recognized text contains key phrases from TTS text
-        const ttsWords = normalizedTts.split(/\s+/);
-        const recognizedWords = normalizedRecognized.split(/\s+/);
-        const matchRatio =
-          ttsWords.filter((word) => recognizedWords.includes(word)).length /
-          ttsWords.length;
-
-        const isMatch = matchRatio >= 0.5; // At least 50% word match
-        setTtsMatch(isMatch);
-        setIsListening(false);
-
-        if (isMatch) {
-          showToast("Speech recognition successful! Text matches.", "success");
-        } else {
-          showToast("Text doesn't match. Please try again.", "error");
-        }
-      };
-
-      recognitionInstance.onerror = (event: any) => {
-        setIsListening(false);
-        if (event.error === "no-speech") {
-          showToast("No speech detected. Please try again.", "error");
-        } else if (event.error === "not-allowed") {
-          showToast("Microphone permission denied.", "error");
-        } else {
-          showToast("Speech recognition error. Please try again.", "error");
-        }
-      };
-
-      recognitionInstance.onend = () => {
-        setIsListening(false);
-      };
-
-      setRecognition(recognitionInstance);
+    if (faceCount === 1 && faceStatus === "NORMAL" && !latestViolation) {
+      setFaceValidationPassed(true);
+      setFaceValidationMessage(t("mockInterview.deviceCheck.faceDetectedOk"));
     } else {
-      showToast("Speech recognition not supported in this browser", "warning");
+      setFaceValidationPassed(false);
+      if (faceCount === 0) {
+        setFaceValidationMessage(t("assessments.deviceCheck.noFaceDetected"));
+      } else if (faceCount > 1) {
+        setFaceValidationMessage(
+          t("assessments.deviceCheck.multipleFaces", { count: faceCount })
+        );
+      } else if (latestViolation) {
+        setFaceValidationMessage(latestViolation.message);
+      } else if (faceStatus !== "NORMAL") {
+        setFaceValidationMessage(
+          t("mockInterview.deviceCheck.positionFace")
+        );
+      }
     }
-  }, [showToast, ttsText]);
+  }, [faceCount, faceStatus, latestViolation, t]);
 
-  // Test devices
-  const testDevices = async () => {
+  const testDevices = useCallback(async () => {
     setChecking(true);
     setCameraError(null);
     setMicError(null);
 
     try {
-      // Request camera and microphone access
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
           facingMode: "user",
         },
         audio: {
@@ -155,22 +139,40 @@ export default function MockInterviewDeviceCheckPage() {
 
       streamRef.current = stream;
 
-      // Check video tracks
       const videoTracks = stream.getVideoTracks();
       const hasVideo =
         videoTracks.length > 0 && videoTracks[0].readyState === "live";
-
-      // Check audio tracks
       const audioTracks = stream.getAudioTracks();
       const hasAudio =
         audioTracks.length > 0 && audioTracks[0].readyState === "live";
 
-      // Set video element source
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // Play immediately - no delay
-        videoRef.current.play().catch(() => {
-          // Handle play error silently
+        videoRef.current.play().then(() => {
+          if (hasVideo && videoRef.current) {
+            const checkVideoReady = () => {
+              if (
+                videoRef.current &&
+                videoRef.current.readyState >= 2 &&
+                videoRef.current.videoWidth > 0 &&
+                videoRef.current.videoHeight > 0
+              ) {
+                setTimeout(() => {
+                  startFaceDetection().catch((err) => {
+                    console.error("Failed to start face detection:", err);
+                    setFaceValidationMessage(
+                      t("mockInterview.deviceCheck.faceDetectionFailed")
+                    );
+                  });
+                }, 500);
+              } else {
+                setTimeout(checkVideoReady, 200);
+              }
+            };
+            checkVideoReady();
+          }
+        }).catch((err) => {
+          console.error("Failed to play video:", err);
         });
       }
 
@@ -181,14 +183,12 @@ export default function MockInterviewDeviceCheckPage() {
       });
 
       if (!hasVideo) {
-        setCameraError("Camera is not accessible or not working properly");
+        setCameraError(t("mockInterview.deviceCheck.cameraNotAccessible"));
       }
-
       if (!hasAudio) {
-        setMicError("Microphone is not accessible or not working properly");
+        setMicError(t("mockInterview.deviceCheck.micNotAccessible"));
       }
 
-      // Test microphone levels (visual feedback)
       if (hasAudio && audioTracks.length > 0) {
         try {
           const audioContext = new AudioContext();
@@ -200,24 +200,27 @@ export default function MockInterviewDeviceCheckPage() {
           source.connect(analyser);
           analyserRef.current = analyser;
 
-          // Monitor audio levels continuously
+          let lastUpdate = 0;
           const updateAudioLevel = () => {
             if (!analyserRef.current) return;
-
-            const dataArray = new Uint8Array(
-              analyserRef.current.frequencyBinCount
-            );
+            const now = Date.now();
+            if (now - lastUpdate < 100) {
+              animationFrameRef.current =
+                requestAnimationFrame(updateAudioLevel);
+              return;
+            }
+            lastUpdate = now;
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
             analyserRef.current.getByteFrequencyData(dataArray);
             const average =
               dataArray.reduce((a, b) => a + b) / dataArray.length;
             const normalizedLevel = Math.min(average / 100, 1);
             setAudioLevel(normalizedLevel);
-
-            animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+            animationFrameRef.current =
+              requestAnimationFrame(updateAudioLevel);
           };
-
           updateAudioLevel();
-        } catch (error) {
+        } catch {
           // Fail silently
         }
       }
@@ -225,58 +228,101 @@ export default function MockInterviewDeviceCheckPage() {
       setLoading(false);
     } catch (error: any) {
       setLoading(false);
-
       if (
         error.name === "NotAllowedError" ||
         error.name === "PermissionDeniedError"
       ) {
-        setCameraError(
-          "Camera/microphone access denied. Please allow access and try again."
-        );
-        setMicError(
-          "Camera/microphone access denied. Please allow access and try again."
-        );
+        const msg = t("mockInterview.deviceCheck.permissionDenied");
+        setCameraError(msg);
+        setMicError(msg);
       } else if (
         error.name === "NotFoundError" ||
         error.name === "DevicesNotFoundError"
       ) {
-        setCameraError(
-          "No camera found. Please connect a camera and try again."
-        );
-        setMicError(
-          "No microphone found. Please connect a microphone and try again."
-        );
+        setCameraError(t("mockInterview.deviceCheck.noCameraFound"));
+        setMicError(t("mockInterview.deviceCheck.noMicFound"));
       } else if (
         error.name === "NotReadableError" ||
         error.name === "TrackStartError"
       ) {
-        setCameraError("Camera is already in use by another application.");
-        setMicError("Microphone is already in use by another application.");
+        setCameraError(t("mockInterview.deviceCheck.alreadyInUse"));
+        setMicError(t("mockInterview.deviceCheck.micAlreadyInUse"));
       } else {
-        setCameraError(
-          "Failed to access camera. Please check your device settings."
-        );
-        setMicError(
-          "Failed to access microphone. Please check your device settings."
-        );
+        setCameraError(t("mockInterview.deviceCheck.failedCamera"));
+        setMicError(t("mockInterview.deviceCheck.failedMic"));
       }
     } finally {
       setChecking(false);
     }
-  };
+  }, [startFaceDetection, t, videoRef]);
 
-  // Auto-start device testing when page loads
   useEffect(() => {
-    if (deviceStatus.browserSupported && !checking && loading) {
+    if (typeof window === "undefined") return;
+    const isSupported =
+      navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+    if (!isSupported) {
+      setDeviceStatus((prev) => ({ ...prev, browserSupported: false }));
+      showToast(t("mockInterview.deviceCheck.browserNotSupported"), "error");
+      return;
+    }
+    setDeviceStatus((prev) => ({ ...prev, browserSupported: true }));
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = false;
+      recognitionInstance.lang = "en-US";
+      recognitionInstance.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setRecognizedText(transcript);
+        const normalize = (text: string) =>
+          text.toLowerCase().replace(/[^\w\s]/g, "").trim();
+        const normalizedTts = normalize(TTS_TEXT);
+        const normalizedRecognized = normalize(transcript);
+        const ttsWords = normalizedTts.split(/\s+/);
+        const recognizedWords = normalizedRecognized.split(/\s+/);
+        const matchRatio =
+          ttsWords.filter((w) => recognizedWords.includes(w)).length /
+          ttsWords.length;
+        const isMatch = matchRatio >= 0.5;
+        setTtsMatch(isMatch);
+        setIsListening(false);
+        if (isMatch) {
+          showToast(t("mockInterview.deviceCheck.speechSuccess"), "success");
+        } else {
+          showToast(t("mockInterview.deviceCheck.textNoMatch"), "error");
+        }
+      };
+      recognitionInstance.onerror = (event: any) => {
+        setIsListening(false);
+        if (event.error === "no-speech") {
+          showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+        } else if (event.error === "not-allowed") {
+          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
+        } else {
+          showToast(t("mockInterview.deviceCheck.speechError"), "error");
+        }
+      };
+      recognitionInstance.onend = () => setIsListening(false);
+      setRecognition(recognitionInstance);
+    } else {
+      showToast(t("mockInterview.deviceCheck.speechNotSupported"), "warning");
+    }
+  }, [showToast, t]);
+
+  useEffect(() => {
+    if (!deviceStatus.browserSupported) return;
+    if (!hasAutoTestedRef.current) {
+      hasAutoTestedRef.current = true;
       testDevices();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceStatus.browserSupported]);
+  }, [deviceStatus.browserSupported, testDevices]);
 
-  // Cleanup on unmount - but only stop camera if NOT navigating to interview
   useEffect(() => {
     return () => {
-      // Always cleanup animation frame and audio context
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -284,9 +330,6 @@ export default function MockInterviewDeviceCheckPage() {
         audioContextRef.current.close();
         audioContextRef.current = null;
       }
-
-      // Only stop camera if NOT navigating to the interview take page
-      // This keeps camera on for interview flow, but turns it off if navigating elsewhere
       if (!isNavigatingToInterviewRef.current) {
         if (streamRef.current) {
           streamRef.current.getTracks().forEach((track) => track.stop());
@@ -295,16 +338,18 @@ export default function MockInterviewDeviceCheckPage() {
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
+        if (typeof window !== "undefined") {
+          delete (window as any).__mockInterviewStream;
+        }
       }
-
       analyserRef.current = null;
       setAudioLevel(0);
     };
-  }, []);
+  }, [stopFaceDetection, videoRef]);
 
   const handleStartTTS = () => {
     if (!recognition) {
-      showToast("Speech recognition not available", "error");
+      showToast(t("mockInterview.deviceCheck.speechNotAvailable"), "error");
       return;
     }
     setIsListening(true);
@@ -314,48 +359,53 @@ export default function MockInterviewDeviceCheckPage() {
   };
 
   const handleProceed = async () => {
-    if (!deviceStatus.camera || !deviceStatus.microphone || !ttsMatch) {
-      showToast("Please complete all device checks", "error");
+    if (
+      !deviceStatus.camera ||
+      !deviceStatus.microphone ||
+      !ttsMatch ||
+      !faceValidationPassed
+    ) {
+      showToast(t("mockInterview.deviceCheck.completeAllChecks"), "error");
       return;
     }
     try {
-      // Set flag to prevent camera cleanup when navigating
       isNavigatingToInterviewRef.current = true;
+      setIsNavigatingToInterview(true);
 
-      // Store the stream globally so take page can access it
-      // Use window object to persist across navigation
       if (streamRef.current) {
         (window as any).__mockInterviewStream = streamRef.current;
       }
 
-      // Start the interview
-      await mockInterviewService.startInterview(Number(params.id));
+      const startedInterview = await mockInterviewService.startInterview(
+        Number(params.id)
+      );
 
-      // Navigate to take page - camera stream will persist
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          `mockInterviewStarted_${params.id}`,
+          JSON.stringify(startedInterview)
+        );
+      }
+
+      stopFaceDetection();
       router.push(`/mock-interview/${params.id}/take`);
     } catch (error) {
-      isNavigatingToInterviewRef.current = false; // Reset on error
-      showToast("Failed to start interview", "error");
+      isNavigatingToInterviewRef.current = false;
+      setIsNavigatingToInterview(false);
+      showToast(t("mockInterview.deviceCheck.startInterviewFailed"), "error");
     }
   };
 
-  // Update canProceed when all conditions are met
-  useEffect(() => {
-    setCanProceed(deviceStatus.camera && deviceStatus.microphone && ttsMatch);
-  }, [deviceStatus.camera, deviceStatus.microphone, ttsMatch]);
-
-  if (loading && !deviceStatus.browserSupported) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
+  const canProceed =
+    deviceStatus.camera &&
+    deviceStatus.microphone &&
+    deviceStatus.browserSupported &&
+    ttsMatch &&
+    faceValidationPassed;
 
   return (
     <MainLayout>
       <Container maxWidth="md" sx={{ py: 4 }}>
-        {/* Header */}
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <Box
             sx={{
@@ -380,19 +430,27 @@ export default function MockInterviewDeviceCheckPage() {
               fontSize: { xs: "1.5rem", md: "2rem" },
             }}
           >
-            Device Check
+            {t("mockInterview.deviceCheck.title")}
           </Typography>
           <Typography
             variant="body1"
             sx={{ color: "#6b7280", maxWidth: 500, mx: "auto" }}
           >
-            Before starting your interview, we need to verify that your camera
-            and microphone are working properly. This ensures a smooth interview
-            experience.
+            {t("mockInterview.deviceCheck.description")}
           </Typography>
         </Box>
 
-        {/* Device Status Cards */}
+        {!deviceStatus.browserSupported && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            <Typography variant="body2" fontWeight={600} gutterBottom>
+              {t("mockInterview.deviceCheck.title")}
+            </Typography>
+            <Typography variant="body2">
+              {t("mockInterview.deviceCheck.browserNotSupported")}
+            </Typography>
+          </Alert>
+        )}
+
         <Box
           sx={{
             display: "grid",
@@ -401,7 +459,7 @@ export default function MockInterviewDeviceCheckPage() {
             mb: 4,
           }}
         >
-          {/* Camera Status */}
+          {/* Camera + Face */}
           <Paper
             elevation={0}
             sx={{
@@ -419,30 +477,29 @@ export default function MockInterviewDeviceCheckPage() {
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  Camera
+                  {t("mockInterview.deviceCheck.camera")}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#6b7280" }}>
                   {deviceStatus.camera
-                    ? "Camera is working properly"
-                    : "Camera check required"}
+                    ? t("mockInterview.deviceCheck.cameraWorking")
+                    : t("mockInterview.deviceCheck.cameraRequired")}
                 </Typography>
               </Box>
             </Box>
-
             {cameraError && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 {cameraError}
               </Alert>
             )}
-
-            {/* Video Preview - Always render, show when camera is working */}
             <Box
               sx={{
                 mt: 2,
                 borderRadius: 2,
                 overflow: "hidden",
                 border: deviceStatus.camera
-                  ? "2px solid #10b981"
+                  ? faceValidationPassed
+                    ? "2px solid #10b981"
+                    : "2px solid #f59e0b"
                   : "2px solid #e5e7eb",
                 backgroundColor: "#000000",
                 minHeight: deviceStatus.camera ? "auto" : "200px",
@@ -465,7 +522,26 @@ export default function MockInterviewDeviceCheckPage() {
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "#ffffff" }}>
-                    Camera preview will appear here
+                    {t("mockInterview.deviceCheck.cameraPreview")}
+                  </Typography>
+                </Box>
+              )}
+              {(isFaceDetectionInitializing || isNavigatingToInterview) && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    zIndex: 1,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "#ffffff" }}>
+                    {isNavigatingToInterview
+                      ? t("mockInterview.deviceCheck.startingInterview")
+                      : t("mockInterview.deviceCheck.checkingDevices")}
                   </Typography>
                 </Box>
               )}
@@ -485,16 +561,96 @@ export default function MockInterviewDeviceCheckPage() {
                 }}
                 onLoadedMetadata={() => {
                   if (videoRef.current) {
-                    videoRef.current.play().catch(() => {
-                      // Handle play error
-                    });
+                    videoRef.current.play().catch(() => {});
                   }
                 }}
               />
+              {deviceStatus.camera && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    zIndex: 2,
+                  }}
+                >
+                  {isFaceDetectionInitializing && (
+                    <Chip
+                      icon={<CircularProgress size={16} />}
+                      label={t("mockInterview.deviceCheck.initializingFaceDetection")}
+                      size="small"
+                      sx={{ backgroundColor: "#6366f1", color: "#ffffff" }}
+                    />
+                  )}
+                  {!isFaceDetectionInitializing && (
+                    <>
+                      <Chip
+                        icon={
+                          faceValidationPassed ? (
+                            <CheckCircle size={16} />
+                          ) : (
+                            <XCircle size={16} />
+                          )
+                        }
+                        label={
+                          faceCount === 0
+                            ? "No face"
+                            : faceCount > 1
+                            ? `${faceCount} faces`
+                            : faceValidationPassed
+                            ? "Face OK"
+                            : "Adjust position"
+                        }
+                        size="small"
+                        sx={{
+                          backgroundColor: faceValidationPassed
+                            ? "#10b981"
+                            : "#ef4444",
+                          color: "#ffffff",
+                        }}
+                      />
+                      {faceStatus !== "NORMAL" && latestViolation && (
+                        <Chip
+                          icon={<AlertCircle size={14} />}
+                          label={latestViolation.message}
+                          size="small"
+                          sx={{
+                            backgroundColor: "#f59e0b",
+                            color: "#ffffff",
+                            fontSize: "0.7rem",
+                            maxWidth: "200px",
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </Box>
+              )}
             </Box>
+            {deviceStatus.camera && !isFaceDetectionInitializing && (
+              <Box sx={{ mt: 2 }}>
+                {faceValidationPassed ? (
+                  <Alert severity="success" sx={{ mt: 1 }}>
+                    <Typography variant="body2">
+                      ✓ {t("mockInterview.deviceCheck.faceDetectedOk")}
+                    </Typography>
+                  </Alert>
+                ) : (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    <Typography variant="body2">
+                      {faceValidationMessage ||
+                        t("mockInterview.deviceCheck.positionFace")}
+                    </Typography>
+                  </Alert>
+                )}
+              </Box>
+            )}
           </Paper>
 
-          {/* TTS and mic Verification */}
+          {/* Microphone + Speech */}
           <Paper
             elevation={0}
             sx={{
@@ -512,27 +668,25 @@ export default function MockInterviewDeviceCheckPage() {
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  Speech Recognition and Microphone Test
+                  {t("mockInterview.deviceCheck.speechTest")}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#6b7280" }}>
                   {ttsMatch
-                    ? "Text matches successfully"
-                    : "Read the text below to verify your microphone"}
+                    ? t("mockInterview.deviceCheck.textMatches")
+                    : t("mockInterview.deviceCheck.readToVerify")}
                 </Typography>
-
                 {micError && (
                   <Alert severity="error" sx={{ mt: 2 }}>
                     {micError}
                   </Alert>
                 )}
-
                 {deviceStatus.microphone && (
                   <Box sx={{ mt: 2 }}>
                     <Typography
                       variant="caption"
                       sx={{ color: "#6b7280", display: "block", mb: 1 }}
                     >
-                      Audio Level
+                      {t("mockInterview.deviceCheck.audioLevel")}
                     </Typography>
                     <LinearProgress
                       variant="determinate"
@@ -552,15 +706,13 @@ export default function MockInterviewDeviceCheckPage() {
                       sx={{ color: "#6b7280", display: "block", mt: 0.5 }}
                     >
                       {audioLevel > 0.1
-                        ? "Speak to test your microphone"
-                        : "Microphone is ready"}
+                        ? t("mockInterview.deviceCheck.speakToTest")
+                        : t("mockInterview.deviceCheck.microphoneReady")}
                     </Typography>
                   </Box>
                 )}
               </Box>
             </Box>
-
-            {/* Text to Read */}
             <Paper
               elevation={0}
               sx={{
@@ -580,11 +732,9 @@ export default function MockInterviewDeviceCheckPage() {
                   fontSize: "1rem",
                 }}
               >
-                "{ttsText}"
+                "{TTS_TEXT}"
               </Typography>
             </Paper>
-
-            {/* Recognition Status */}
             {isListening && (
               <Box
                 sx={{
@@ -600,11 +750,10 @@ export default function MockInterviewDeviceCheckPage() {
               >
                 <CircularProgress size={20} sx={{ color: "#3b82f6" }} />
                 <Typography variant="body2" sx={{ color: "#1e40af" }}>
-                  Listening... Please speak the text above.
+                  {t("mockInterview.deviceCheck.listening")}
                 </Typography>
               </Box>
             )}
-
             {recognizedText && !isListening && (
               <Box
                 sx={{
@@ -624,7 +773,7 @@ export default function MockInterviewDeviceCheckPage() {
                     fontWeight: 600,
                   }}
                 >
-                  Recognized Text:
+                  {t("mockInterview.deviceCheck.recognizedText")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -640,12 +789,11 @@ export default function MockInterviewDeviceCheckPage() {
                     variant="caption"
                     sx={{ color: "#dc2626", display: "block", mt: 1 }}
                   >
-                    Text doesn't match. Please try again.
+                    {t("mockInterview.deviceCheck.textNoMatch")}
                   </Typography>
                 )}
               </Box>
             )}
-
             <Button
               variant="outlined"
               onClick={handleStartTTS}
@@ -674,12 +822,13 @@ export default function MockInterviewDeviceCheckPage() {
                 },
               }}
             >
-              {isListening ? "Listening..." : "Start Speech Test"}
+              {isListening
+                ? t("mockInterview.deviceCheck.listening").split("...")[0]
+                : t("mockInterview.deviceCheck.startSpeechTest")}
             </Button>
           </Paper>
         </Box>
 
-        {/* Action Buttons */}
         <Box
           sx={{
             display: "flex",
@@ -688,59 +837,61 @@ export default function MockInterviewDeviceCheckPage() {
             flexWrap: "wrap",
           }}
         >
-          {!canProceed
-            ? (!deviceStatus.camera || !deviceStatus.microphone) && (
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={testDevices}
-                  disabled={checking || !deviceStatus.browserSupported}
-                  startIcon={
-                    checking ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      <IconWrapper icon="mdi:play-circle" size={24} />
-                    )
-                  }
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: 4,
-                    py: 1.5,
-                    backgroundColor: "#6366f1",
-                    "&:hover": {
-                      backgroundColor: "#4f46e5",
-                    },
-                  }}
-                >
-                  {checking
-                    ? "Checking Devices..."
-                    : "Test Camera & Microphone"}
-                </Button>
-              )
-            : null}
-
+          {!canProceed &&
+            (!deviceStatus.camera || !deviceStatus.microphone) && (
+              <Button
+                variant="contained"
+                size="large"
+                onClick={testDevices}
+                disabled={checking || !deviceStatus.browserSupported}
+                startIcon={
+                  checking ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <IconWrapper icon="mdi:play-circle" size={24} />
+                  )
+                }
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                  backgroundColor: "#6366f1",
+                  "&:hover": { backgroundColor: "#4f46e5" },
+                }}
+              >
+                {checking
+                  ? t("mockInterview.deviceCheck.checkingDevices")
+                  : t("mockInterview.deviceCheck.testCameraMic")}
+              </Button>
+            )}
           {canProceed && (
             <Button
               variant="contained"
               size="large"
               onClick={handleProceed}
+              disabled={!faceValidationPassed}
               endIcon={<IconWrapper icon="mdi:arrow-right" size={24} />}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
                 px: 4,
                 py: 1.5,
-                backgroundColor: "#10b981",
+                backgroundColor: faceValidationPassed ? "#10b981" : "#9ca3af",
                 "&:hover": {
-                  backgroundColor: "#059669",
+                  backgroundColor: faceValidationPassed ? "#059669" : "#9ca3af",
+                },
+                "&:disabled": {
+                  backgroundColor: "#9ca3af",
+                  color: "#ffffff",
                 },
               }}
             >
-              Proceed to Interview
+              {faceValidationPassed
+                ? t("mockInterview.deviceCheck.proceedToInterview")
+                : t("mockInterview.deviceCheck.positionFace")}
             </Button>
           )}
-
           <Button
             variant="outlined"
             size="large"
@@ -758,11 +909,10 @@ export default function MockInterviewDeviceCheckPage() {
               },
             }}
           >
-            Cancel
+            {t("mockInterview.deviceCheck.cancel")}
           </Button>
         </Box>
 
-        {/* Info Box */}
         <Paper
           elevation={0}
           sx={{
@@ -780,18 +930,17 @@ export default function MockInterviewDeviceCheckPage() {
                 variant="subtitle2"
                 sx={{ fontWeight: 600, color: "#1e40af", mb: 0.5 }}
               >
-                Why do we need this?
+                {t("mockInterview.deviceCheck.whyWeNeedThis")}
               </Typography>
               <Typography
                 variant="body2"
-                sx={{ color: "#1e40af", fontSize: "0.875rem", lineHeight: 1.7 }}
+                sx={{
+                  color: "#1e40af",
+                  fontSize: "0.875rem",
+                  lineHeight: 1.7,
+                }}
               >
-                Your camera and microphone are essential for the interview
-                process. We use your camera to monitor the interview session and
-                ensure a fair assessment. Your microphone is used to record your
-                answers to interview questions and analyze your speech using
-                Text-to-Speech (TTS) technology for accurate evaluation. Both
-                devices must be working properly before you can proceed.
+                {t("mockInterview.deviceCheck.whyDescription")}
               </Typography>
             </Box>
           </Box>

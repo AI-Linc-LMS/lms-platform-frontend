@@ -8,14 +8,24 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Module } from "@/lib/services/courses.service";
 import { SubmoduleItem } from "./SubmoduleItem";
 
 interface ModuleAccordionProps {
   module: Module;
+  moduleIndex: number;
+  modules: Module[];
+  currentWeek: number;
+  previousWeekModules: Module[];
+
   isExpanded: boolean;
   onToggle: () => void;
+
+  contentLockEnabled: boolean;
+  lockThresholdValue: number;
+
   courseId: number;
   onNavigate: (submoduleId: number) => void;
   getSubmoduleContentCount: (submodule: any) => number;
@@ -23,12 +33,20 @@ interface ModuleAccordionProps {
 
 export function ModuleAccordion({
   module,
+  moduleIndex,
+  modules,
+  currentWeek,
+  previousWeekModules,
   isExpanded,
   onToggle,
   courseId,
+  contentLockEnabled,
+  lockThresholdValue,
   onNavigate,
   getSubmoduleContentCount,
 }: ModuleAccordionProps) {
+  const { t } = useTranslation("common");
+  /* ---------------- content count ---------------- */
   const totalSubmoduleLectures =
     module.submodules?.reduce(
       (sum, sub) => sum + getSubmoduleContentCount(sub),
@@ -37,76 +55,125 @@ export function ModuleAccordion({
 
   const hasContent = totalSubmoduleLectures > 0;
 
+  /* ---------------- locking logic ---------------- */
+  // Lock if: content locking is enabled, current week > 1, and previous week's completion < threshold
+  // Calculate previous week's average completion percentage
+  const getPreviousWeekCompletion = () => {
+    if (previousWeekModules.length === 0) return 100; // No previous week = unlocked
+    
+    // Calculate average completion of all modules in previous week
+    const totalCompletion = previousWeekModules.reduce(
+      (sum, mod) => sum + (mod.completion_percentage ?? 0),
+      0
+    );
+    return previousWeekModules.length > 0 
+      ? totalCompletion / previousWeekModules.length 
+      : 100;
+  };
+
+  const previousWeekCompletion = getPreviousWeekCompletion();
+  
+  const isLocked =
+    contentLockEnabled &&
+    currentWeek > 1 &&
+    previousWeekCompletion < lockThresholdValue;
+
   return (
     <Accordion
-      expanded={isExpanded && hasContent}
-      onChange={hasContent ? onToggle : undefined}
-      disabled={!hasContent}
+      expanded={!isLocked && isExpanded && hasContent}
+      onChange={!isLocked && hasContent ? onToggle : undefined}
+      disabled={isLocked || !hasContent}
       sx={{
         boxShadow: "none",
         border: "1px solid #e5e7eb",
         borderRadius: 1,
         mb: 1.5,
         "&:before": { display: "none" },
-        "&.Mui-expanded": {
-          margin: 0,
-          marginBottom: 1.5,
-        },
         "&.Mui-disabled": {
           backgroundColor: "#f9fafb",
-          opacity: 0.6,
-          cursor: "not-allowed",
+          opacity: 0.8,
+          "& .MuiAccordionSummary-content": {
+            opacity: "1 !important",
+          },
         },
       }}
     >
       <AccordionSummary
         expandIcon={
-          <IconWrapper
-            icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}
-            size={32}
-            color="#6b7280"
-          />
+          isLocked ? (
+            <IconWrapper
+              icon="mdi:lock-outline"
+              size={20}
+              color="#9ca3af"
+            />
+          ) : (
+            <IconWrapper
+              icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}
+              size={28}
+              color="#6b7280"
+            />
+          )
         }
         sx={{
-          px: 2,
-          py: 1.5,
-          "& .MuiAccordionSummary-content": {
-            margin: 0,
-            "&.Mui-expanded": {
-              margin: 0,
-            },
-          },
+          px: { xs: 1.5, md: 2 },
+          py: { xs: 1.25, md: 1.5 },
+          "& .MuiAccordionSummary-content": { margin: 0 },
         }}
       >
         <Box sx={{ flex: 1 }}>
+          {/* -------- Title Row -------- */}
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
-              gap: 2,
-              mb: 0.5,
+              flexDirection: { xs: "column", md: "row" },
+              alignItems: { xs: "flex-start", md: "center" },
+              gap: { xs: 0.5, md: 2 },
             }}
           >
-            {module.completion_percentage === 100 && (
-              <IconWrapper
-                icon="mdi:check-circle-outline"
-                size={28}
-                color="#10b981"
-              />
-            )}
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 600, color: "#1a1f2e" }}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                flexWrap: "wrap",
+              }}
             >
-              {module.title}
-            </Typography>
-            {module.completion_percentage !== undefined &&
-              module.completion_percentage !== null &&
-              module.completion_percentage > 0 && (
+              {/* Completion icon */}
+              {module.completion_percentage === 100 && (
+                <IconWrapper
+                  icon="mdi:check-circle-outline"
+                  size={22}
+                  color="#10b981"
+                />
+              )}
+
+              {/* Lock icon near title */}
+              {isLocked && (
+                <IconWrapper
+                  icon="mdi:lock-outline"
+                  size={18}
+                  color="#9ca3af"
+                />
+              )}
+
+              <Typography
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: "0.95rem", md: "1rem" },
+                  lineHeight: 1.3,
+                  color: "#1a1f2e",
+                }}
+              >
+                {module.title}
+              </Typography>
+
+              {module.completion_percentage > 0 && (
                 <Chip
-                  label={`${(module.completion_percentage ?? 0).toFixed(0)}%`}
+                  label={`${module.completion_percentage.toFixed(0)}%`}
                   size="small"
                   sx={{
+                    height: 18,
+                    fontSize: "0.65rem",
                     backgroundColor:
                       module.completion_percentage === 100
                         ? "#d1fae5"
@@ -115,24 +182,49 @@ export function ModuleAccordion({
                       module.completion_percentage === 100
                         ? "#065f46"
                         : "#6366f1",
-                    fontSize: "0.7rem",
-                    height: 20,
-                    fontWeight: 600,
                   }}
                 />
               )}
+            </Box>
+
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: "0.8rem",
+                color: "#6b7280",
+              }}
+            >
+              {totalSubmoduleLectures} {t("courses.items")}
+            </Typography>
           </Box>
-          <Typography
-            variant="body2"
-            sx={{ color: "#6b7280", fontSize: "0.875rem" }}
-          >
-            {totalSubmoduleLectures} items
-          </Typography>
-          {module.completion_percentage > 0 && (
-            <Box sx={{ mt: 1, width: "100%", maxWidth: 300 }}>
+
+          {/* -------- Lock Message -------- */}
+          {isLocked && (
+            <Typography
+              variant="caption"
+              sx={{
+                mt: 0.5,
+                display: "block",
+                color: "#ef4444",
+                fontSize: "0.7rem",
+                opacity:"1 !important"
+              }}
+            >
+              Complete week {currentWeek-1} (≥ {lockThresholdValue}%) to unlock
+            </Typography>
+          )}
+
+          {/* -------- Progress Bar -------- */}
+          {module.completion_percentage > 0 && !isLocked && (
+            <Box
+              sx={{
+                mt: 1,
+                width: "100%",
+                maxWidth: { xs: "100%", md: 280 },
+              }}
+            >
               <Box
                 sx={{
-                  width: "100%",
                   height: 4,
                   backgroundColor: "#e5e7eb",
                   borderRadius: 2,
@@ -141,13 +233,12 @@ export function ModuleAccordion({
               >
                 <Box
                   sx={{
-                    width: `${module.completion_percentage ?? 0}%`,
+                    width: `${module.completion_percentage}%`,
                     height: "100%",
                     backgroundColor:
                       module.completion_percentage === 100
                         ? "#10b981"
                         : "#6366f1",
-                    borderRadius: 2,
                     transition: "width 0.3s ease",
                   }}
                 />
@@ -156,8 +247,15 @@ export function ModuleAccordion({
           )}
         </Box>
       </AccordionSummary>
-      <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
-        {module.submodules && module.submodules.length > 0 ? (
+
+      <AccordionDetails
+        sx={{
+          px: { xs: 1.5, md: 2 },
+          pb: 2,
+          pt: 0,
+        }}
+      >
+        {module.submodules?.length ? (
           <Box>
             {module.submodules.map((submodule) => (
               <SubmoduleItem
@@ -165,7 +263,7 @@ export function ModuleAccordion({
                 submodule={submodule}
                 module={module}
                 courseId={courseId}
-                onNavigate={onNavigate}
+                onNavigate={!isLocked ? onNavigate : () => {}}
               />
             ))}
           </Box>

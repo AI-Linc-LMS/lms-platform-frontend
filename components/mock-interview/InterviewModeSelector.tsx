@@ -1,13 +1,14 @@
 "use client";
 
-import { Box, Paper, Typography, Button, useTheme, Tooltip, IconButton, Chip } from "@mui/material";
+import { Box, Paper, Typography, Button, Tooltip, IconButton, Chip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useRouter } from "next/navigation";
 import { memo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const InterviewModeSelectorComponent = () => {
+  const { t } = useTranslation("common");
   const router = useRouter();
-  const theme = useTheme();
   const [quickStartHover, setQuickStartHover] = useState(false);
   const [scheduleHover, setScheduleHover] = useState(false);
 
@@ -22,12 +23,12 @@ const InterviewModeSelectorComponent = () => {
   const quickStartTooltip = (
     <Box sx={{ p: 1 }}>
       <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: "#ffffff" }}>
-        Choose Quick Start if:
+        {t("mockInterview.modeSelector.chooseQuickStartIf")}
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2, listStyle: "disc" }}>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>You want to practice right now</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>You need a fast interview session</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>You're doing multiple practice runs</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.quickStartTip1")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.quickStartTip2")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.quickStartTip3")}</Typography></li>
       </Box>
     </Box>
   );
@@ -35,12 +36,12 @@ const InterviewModeSelectorComponent = () => {
   const scheduleTooltip = (
     <Box sx={{ p: 1 }}>
       <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: "#ffffff" }}>
-        Choose Schedule if:
+        {t("mockInterview.modeSelector.chooseScheduleIf")}
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2, listStyle: "disc" }}>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>You want specific AI-generated questions</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>You need detailed topic/subtopic setup</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>You prefer to prepare in advance</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.scheduleTip1")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.scheduleTip2")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.scheduleTip3")}</Typography></li>
       </Box>
     </Box>
   );
@@ -60,10 +61,10 @@ const InterviewModeSelectorComponent = () => {
             WebkitTextFillColor: "transparent",
           }}
         >
-          Choose Interview Mode
+          {t("mockInterview.modeSelector.chooseInterviewMode")}
         </Typography>
         <Typography variant="body1" sx={{ color: "#6b7280", fontSize: "1rem" }}>
-          Select the mode that best fits your preparation style
+          {t("mockInterview.modeSelector.selectModeSubtitle")}
         </Typography>
       </Box>
 
@@ -97,7 +98,7 @@ const InterviewModeSelectorComponent = () => {
         >
           {/* Recommended Badge */}
           <Chip
-            label="RECOMMENDED"
+            label={t("mockInterview.modeSelector.recommended")}
             size="small"
             sx={{
               position: "absolute",
@@ -133,7 +134,7 @@ const InterviewModeSelectorComponent = () => {
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, fontSize: "1.5rem" }}>
-                  Quick Start
+                  {t("mockInterview.modeSelector.quickStartTitle")}
                 </Typography>
                 <Tooltip title={quickStartTooltip} arrow placement="top">
                   <IconButton
@@ -153,17 +154,17 @@ const InterviewModeSelectorComponent = () => {
                 </Tooltip>
               </Box>
               <Typography variant="body2" sx={{ color: "#059669", fontWeight: 600, fontSize: "0.9rem" }}>
-                Start Immediately
+                {t("mockInterview.modeSelector.startImmediately")}
               </Typography>
             </Box>
           </Box>
 
           <Box sx={{ mb: 3.5 }}>
             {[
-              { text: "Select topic and difficulty", icon: "mdi:tune" },
-              { text: "Questions generated instantly", icon: "mdi:auto-fix" },
-              { text: "Begin interview right away", icon: "mdi:play-circle" },
-              { text: "Perfect for practice", icon: "mdi:star-circle" },
+              { text: t("mockInterview.modeSelector.quickStartBullet1"), icon: "mdi:tune" },
+              { text: t("mockInterview.modeSelector.quickStartBullet2"), icon: "mdi:auto-fix" },
+              { text: t("mockInterview.modeSelector.quickStartBullet3"), icon: "mdi:play-circle" },
+              { text: t("mockInterview.modeSelector.quickStartBullet4"), icon: "mdi:star-circle" },
             ].map((item, index) => (
               <Box
                 key={index}
@@ -224,7 +225,7 @@ const InterviewModeSelectorComponent = () => {
               },
             }}
           >
-            Go Quick
+            {t("mockInterview.modeSelector.goQuick")}
           </Button>
         </Paper>
 
@@ -250,7 +251,7 @@ const InterviewModeSelectorComponent = () => {
         >
           {/* Professional Badge */}
           <Chip
-            label="PROFESSIONAL"
+            label={t("mockInterview.modeSelector.professional")}
             size="small"
             sx={{
               position: "absolute",
@@ -286,7 +287,7 @@ const InterviewModeSelectorComponent = () => {
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, fontSize: "1.5rem" }}>
-                  Schedule Interview
+                  {t("mockInterview.modeSelector.scheduleInterviewTitle")}
                 </Typography>
                 <Tooltip title={scheduleTooltip} arrow placement="top">
                   <IconButton
@@ -306,17 +307,17 @@ const InterviewModeSelectorComponent = () => {
                 </Tooltip>
               </Box>
               <Typography variant="body2" sx={{ color: "#6366f1", fontWeight: 600, fontSize: "0.9rem" }}>
-                Plan Ahead
+                {t("mockInterview.modeSelector.planAhead")}
               </Typography>
             </Box>
           </Box>
 
           <Box sx={{ mb: 3.5 }}>
             {[
-              { text: "Full topic and subtopic details", icon: "mdi:file-document-multiple" },
-              { text: "Questions from AI system", icon: "mdi:robot" },
-              { text: "Set specific date and time", icon: "mdi:clock-outline" },
-              { text: "Professional assessment", icon: "mdi:certificate" },
+              { text: t("mockInterview.modeSelector.scheduleBullet1"), icon: "mdi:file-document-multiple" },
+              { text: t("mockInterview.modeSelector.scheduleBullet2"), icon: "mdi:robot" },
+              { text: t("mockInterview.modeSelector.scheduleBullet3"), icon: "mdi:clock-outline" },
+              { text: t("mockInterview.modeSelector.scheduleBullet4"), icon: "mdi:certificate" },
             ].map((item, index) => (
               <Box
                 key={index}
@@ -380,7 +381,7 @@ const InterviewModeSelectorComponent = () => {
               },
             }}
           >
-            Schedule Now
+            {t("mockInterview.modeSelector.scheduleNow")}
           </Button>
         </Paper>
       </Box>

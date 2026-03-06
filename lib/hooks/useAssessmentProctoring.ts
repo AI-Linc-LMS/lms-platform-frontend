@@ -10,6 +10,10 @@ import {
   useTabSwitchDetector,
   TabSwitchViolation,
 } from "./useTabSwitchDetector";
+import {
+  useTrackpadSwipeDetector,
+  TrackpadSwipeViolation,
+} from "./useTrackpadSwipeDetector";
 import { ProctoringViolation } from "@/lib/services/proctoring.service";
 
 export interface AssessmentMetadata {
@@ -18,6 +22,7 @@ export interface AssessmentMetadata {
       type:
         | "NO_FACE"
         | "MULTIPLE_FACES"
+        | "FACE_NOT_VISIBLE"
         | "LOOKING_AWAY"
         | "EYE_MOVEMENT"
         | "FACE_TOO_CLOSE"
@@ -33,6 +38,7 @@ export interface AssessmentMetadata {
     eye_movement_count: number;
     tab_switches: TabSwitchViolation[];
     fullscreen_exits: FullscreenViolation[];
+    trackpad_swipes: TrackpadSwipeViolation[];
     total_violation_count: number;
     violation_threshold_reached: boolean;
   };
@@ -48,6 +54,8 @@ interface UseAssessmentProctoringOptions {
   maxViolations?: number;
   onViolationThresholdReached?: () => void;
   autoStart?: boolean;
+  /** When false, trackpad swipe detection is disabled (no warnings, no blocking). Default true. */
+  trackpadSwipeDetection?: boolean;
 }
 
 interface UseAssessmentProctoringReturn {
@@ -92,6 +100,7 @@ export function useAssessmentProctoring(
     maxViolations = DEFAULT_MAX_VIOLATIONS,
     onViolationThresholdReached,
     autoStart = false,
+    trackpadSwipeDetection = true,
   } = options;
 
   const startedAtRef = useRef<string>(new Date().toISOString());
@@ -110,6 +119,7 @@ export function useAssessmentProctoring(
       eye_movement_count: 0,
       tab_switches: [],
       fullscreen_exits: [],
+      trackpad_swipes: [],
       total_violation_count: 0,
       violation_threshold_reached: false,
     },
@@ -118,22 +128,28 @@ export function useAssessmentProctoring(
     },
   }));
 
-  // Face detection proctoring
+  // Face detection proctoring (tuned for stability and fewer false positives)
   const {
     isActive: isFaceProctoringActive,
     isInitializing,
     faceCount,
     status,
     violations: faceViolations,
-    latestViolation,
+    latestViolation: latestFaceViolation,
     startProctoring: startFaceProctoring,
     stopProctoring: stopFaceProctoring,
     videoRef,
     clearViolations: clearFaceViolations,
   } = useProctoring({
     autoStart: false, // We'll control this manually
-    detectionInterval: 1000,
-    violationCooldown: 3000,
+    detectionInterval: 800,
+    violationCooldown: 2500,
+    minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
+    maxFaceSize: 75,
+    lookingAwayThreshold: 0.3,
+    minConfidence: 0.4,
+    smoothFrameCount: 3,
+    poorLightingThreshold: 0.4,
   });
 
   // Fullscreen monitoring
@@ -152,17 +168,39 @@ export function useAssessmentProctoring(
     clearViolations: clearTabSwitchViolations,
   } = useTabSwitchDetector();
 
-  // Calculate total violation count
+  // Trackpad swipe detection (horizontal swipes only; mouse wheel unaffected). Can be turned off via trackpadSwipeDetection.
+  const {
+    violations: trackpadSwipeViolations,
+    latestViolation: latestSwipeViolation,
+    clearViolations: clearTrackpadSwipeViolations,
+  } = useTrackpadSwipeDetector({
+    enabled: isFaceProctoringActive,
+    detectionEnabled: trackpadSwipeDetection,
+  });
+
+  // Merged latest violation: most recent of face or trackpad swipe (for toasts)
+  const latestViolation = useMemo((): ProctoringViolation | null => {
+    const face = latestFaceViolation;
+    const swipe = latestSwipeViolation;
+    if (!face && !swipe) return null;
+    if (!face) return swipe;
+    if (!swipe) return face;
+    return face.timestamp >= swipe.timestamp ? face : swipe;
+  }, [latestFaceViolation, latestSwipeViolation]);
+
+  // Calculate total violation count (include trackpad swipes)
   const totalViolationCount =
     faceViolations.length +
     tabSwitchViolations.length +
-    fullscreenViolations.length;
+    fullscreenViolations.length +
+    trackpadSwipeViolations.length;
 
   // Use refs to track previous values and prevent unnecessary updates
   const prevViolationLengthsRef = useRef({
     face: 0,
     tab: 0,
     fullscreen: 0,
+    trackpad: 0,
     total: 0,
   });
 
@@ -172,6 +210,7 @@ export function useAssessmentProctoring(
       face: faceViolations.length,
       tab: tabSwitchViolations.length,
       fullscreen: fullscreenViolations.length,
+      trackpad: trackpadSwipeViolations.length,
       total: totalViolationCount,
     };
 
@@ -181,6 +220,7 @@ export function useAssessmentProctoring(
       prevViolationLengthsRef.current.tab !== currentLengths.tab ||
       prevViolationLengthsRef.current.fullscreen !==
         currentLengths.fullscreen ||
+      prevViolationLengthsRef.current.trackpad !== currentLengths.trackpad ||
       prevViolationLengthsRef.current.total !== currentLengths.total;
 
     if (!lengthsChanged) {
@@ -213,6 +253,7 @@ export function useAssessmentProctoring(
         eye_movement_count: eyeMovementViolations.length,
         tab_switches: tabSwitchViolations,
         fullscreen_exits: fullscreenViolations,
+        trackpad_swipes: trackpadSwipeViolations,
         total_violation_count: totalViolationCount,
         violation_threshold_reached: violationThresholdReached,
       },
@@ -234,9 +275,10 @@ export function useAssessmentProctoring(
     faceViolations.length,
     tabSwitchViolations.length,
     fullscreenViolations.length,
+    trackpadSwipeViolations.length,
     totalViolationCount,
     maxViolations,
-    // Note: faceViolations, tabSwitchViolations, fullscreenViolations are used inside
+    // Note: faceViolations, tabSwitchViolations, fullscreenViolations, trackpadSwipeViolations used inside
     // but not in deps to avoid infinite loops. We track changes via their lengths.
   ]);
 
@@ -260,6 +302,7 @@ export function useAssessmentProctoring(
     clearFaceViolations();
     clearFullscreenViolations();
     clearTabSwitchViolations();
+    clearTrackpadSwipeViolations();
     setMetadata((prev) => ({
       ...prev,
       proctoring: {
@@ -269,6 +312,7 @@ export function useAssessmentProctoring(
         eye_movement_count: 0,
         tab_switches: [],
         fullscreen_exits: [],
+        trackpad_swipes: [],
         total_violation_count: 0,
         violation_threshold_reached: false,
       },
@@ -277,6 +321,7 @@ export function useAssessmentProctoring(
     clearFaceViolations,
     clearFullscreenViolations,
     clearTabSwitchViolations,
+    clearTrackpadSwipeViolations,
   ]);
 
   // Update submission timestamp when stopping
@@ -304,6 +349,13 @@ export function useAssessmentProctoring(
     }
   }, [autoStart, startProctoring]);
 
+  // Stable wrapper: update metadata then stop - prevents infinite loop when
+  // take page effect depends on stopProctoring (new ref each render caused re-runs)
+  const stopProctoringWithMetadata = useCallback(() => {
+    updateSubmissionTime();
+    stopProctoring();
+  }, [updateSubmissionTime, stopProctoring]);
+
   return {
     // State
     isActive: isFaceProctoringActive,
@@ -323,10 +375,7 @@ export function useAssessmentProctoring(
 
     // Actions
     startProctoring,
-    stopProctoring: () => {
-      updateSubmissionTime();
-      stopProctoring();
-    },
+    stopProctoring: stopProctoringWithMetadata,
     enterFullscreen,
     videoRef,
     clearViolations,

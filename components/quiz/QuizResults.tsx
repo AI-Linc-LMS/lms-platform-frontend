@@ -11,6 +11,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { normalizeEncoding } from "@/lib/utils/text-utils";
 
 export interface QuizAnswer {
   questionId: string | number;
@@ -27,6 +28,8 @@ interface QuizResultsProps {
   totalQuestions: number;
   correctAnswers: number;
   answers: QuizAnswer[];
+  obtainedMarks?: number;
+  totalMarks?: number;
   onRetake?: () => void;
   onBack?: () => void;
 }
@@ -36,11 +39,16 @@ export function QuizResults({
   totalQuestions,
   correctAnswers,
   answers,
+  obtainedMarks,
+  totalMarks,
   onRetake,
   onBack,
 }: QuizResultsProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+  const useMarks = totalMarks != null && totalMarks > 0 && obtainedMarks != null;
+  const percentage = useMarks
+    ? Math.round((obtainedMarks / totalMarks) * 100)
+    : Math.round((correctAnswers / totalQuestions) * 100);
   const getScoreColor = () => {
     if (percentage >= 80) return "#10b981";
     if (percentage >= 60) return "#f59e0b";
@@ -161,7 +169,7 @@ export function QuizResults({
             mb: 3,
           }}
         >
-          You scored {correctAnswers} out of {totalQuestions} questions
+          You answered {correctAnswers} out of {totalQuestions} questions
           correctly
         </Typography>
 
@@ -190,7 +198,11 @@ export function QuizResults({
           }}
         >
           <Chip
-            label={`Score: ${score}/${totalQuestions}`}
+            label={
+              useMarks
+                ? `Score: ${obtainedMarks}/${totalMarks}`
+                : `Score: ${score}/${totalQuestions}`
+            }
             sx={{
               backgroundColor: `${getScoreColor()}20`,
               color: getScoreColor(),
@@ -507,7 +519,7 @@ export function QuizResults({
                         lineHeight: 1.6,
                       }}
                     >
-                      {currentAnswer.explanation}
+                      {normalizeEncoding(currentAnswer.explanation)}
                     </Typography>
                   </Box>
                 )}

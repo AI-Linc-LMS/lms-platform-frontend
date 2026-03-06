@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Table,
@@ -43,6 +44,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
   onEnroll,
   enrollingCourseId,
 }) => {
+  const { t } = useTranslation("common");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -118,7 +120,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
           {courses.map((course) => {
             const tags = course.tags || [];
             const description =
-              course.description || "No description available";
+              course.description || t("courses.noDescription");
             const truncatedDescription =
               description.length > 80
                 ? `${description.substring(0, 80)}...`
@@ -229,8 +231,8 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                     <Chip
                       label={
                         course.certificate_available
-                          ? "Certificate"
-                          : "No Certificate"
+                          ? t("courses.certificate")
+                          : t("courses.noCertificate")
                       }
                       size="small"
                       sx={{
@@ -289,7 +291,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                       }}
                     >
                       {course.is_free || parseFloat(course.price || "0") === 0
-                        ? "Free"
+                        ? t("courses.free")
                         : `₹${parseFloat(course.price).toFixed(2)}`}
                     </Typography>
                   </Box>
@@ -316,7 +318,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                             },
                           }}
                         >
-                          Continue
+                          {t("courses.continueLearning")}
                         </Button>
                       </Link>
                     ) : (
@@ -558,8 +560,8 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                     <Chip
                       label={
                         course.certificate_available
-                          ? "Available"
-                          : "Not Available"
+                          ? t("courses.certificateAvailable")
+                          : t("courses.certificateNotAvailable")
                       }
                       size="small"
                       sx={{
@@ -628,7 +630,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                       sx={{ color: "#6b7280", fontSize: "0.875rem" }}
                     >
                       {course.is_free || parseFloat(course.price || "0") === 0
-                        ? "Free"
+                        ? t("courses.free")
                         : `₹${parseFloat(course.price).toFixed(2)}`}
                     </Typography>
                   </TableCell>
@@ -654,7 +656,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                             },
                           }}
                         >
-                          Continue
+                          {t("courses.continueLearning")}
                         </Button>
                       </Link>
                     ) : (

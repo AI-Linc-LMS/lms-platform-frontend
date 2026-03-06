@@ -19,9 +19,9 @@ import {
   FormControl,
   IconButton,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
-import { Loading } from "@/components/common/Loading";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminAttendanceService,
@@ -31,42 +31,59 @@ import { ViewActivityPanel } from "@/components/admin/attendance/ViewActivityPan
 import { CreateActivityDialog } from "@/components/admin/attendance/CreateActivityDialog";
 
 export default function AttendancePage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
+
+  const [allActivities, setAllActivities] = useState<AttendanceActivity[]>([]);
   const [activities, setActivities] = useState<AttendanceActivity[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+
   const [selectedActivity, setSelectedActivity] =
     useState<AttendanceActivity | null>(null);
   const [viewPanelOpen, setViewPanelOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
   const [studentsPage, setStudentsPage] = useState(1);
   const [studentsLimit, setStudentsLimit] = useState(10);
 
+  // 🔥 FETCH ALL DATA ONCE
   useEffect(() => {
-    loadActivities();
-  }, [page, limit]);
+    fetchAllActivities();
+  }, []);
 
-  const loadActivities = async () => {
+  const fetchAllActivities = async () => {
     try {
       setLoading(true);
+
       const data = await adminAttendanceService.getAttendanceActivities({
-        page,
-        limit,
+        page: 1,
+        limit: 10000, // big number
       });
-      setActivities(Array.isArray(data) ? data : []);
-      const estimatedTotal = Array.isArray(data) ? data.length : 0;
-      setTotalPages(Math.max(1, Math.ceil(estimatedTotal / limit)));
+
+      const list = Array.isArray(data) ? data : [];
+      setAllActivities(list);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load attendance activities",
+        error?.response?.data?.detail || t("adminAttendance.failedToLoadActivities"),
         "error"
       );
     } finally {
       setLoading(false);
     }
   };
+
+  // 🔥 FRONTEND PAGINATION LOGIC
+  useEffect(() => {
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    setActivities(allActivities.slice(start, end));
+    setTotalPages(Math.max(1, Math.ceil(allActivities.length / limit)));
+  }, [allActivities, page, limit]);
 
   const handleViewActivity = async (activityId: number) => {
     try {
@@ -78,7 +95,7 @@ export default function AttendancePage() {
       setStudentsPage(1);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load activity details",
+        error?.response?.data?.detail || t("adminAttendance.failedToLoadActivityDetails"),
         "error"
       );
     }
@@ -97,37 +114,32 @@ export default function AttendancePage() {
         selectedActivity.id,
         data
       );
-      showToast("Activity updated successfully", "success");
-      const updated = await adminAttendanceService.getAttendanceActivity(
-        selectedActivity.id
-      );
-      setSelectedActivity(updated);
-      loadActivities();
+      showToast(t("adminAttendance.activityUpdatedSuccessfully"), "success");
+      fetchAllActivities();
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to update activity",
+        error?.response?.data?.detail || t("adminAttendance.failedToUpdateActivity"),
         "error"
       );
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
-  if (loading && activities.length === 0) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
+  // if (loading && allActivities.length === 0) {
+  //   return (
+  //     <MainLayout>
+  //       <Loading fullScreen />
+  //     </MainLayout>
+  //   );
+  // }
 
   return (
     <MainLayout>
@@ -143,415 +155,106 @@ export default function AttendancePage() {
             gap: 2,
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: "#111827",
-              fontSize: { xs: "1.5rem", sm: "2rem" },
-            }}
-          >
-            Attendance Management
+          <Typography variant="h4" fontWeight={700}>
+            {t("adminAttendance.title")}
           </Typography>
           <Button
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => setCreateDialogOpen(true)}
-            sx={{ bgcolor: "#6366f1" }}
+            sx={{ bgcolor: "#10b981", "&:hover": { bgcolor: "#059669" } }}
           >
-            Create Activity
+            {t("adminAttendance.createActivity")}
           </Button>
         </Box>
 
         {/* Table */}
-        <Paper
-          sx={{
-            borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            overflow: "hidden",
-          }}
-        >
-          <TableContainer
-            sx={{
-              overflowX: "auto",
-              "&::-webkit-scrollbar": {
-                height: 8,
-              },
-              "&::-webkit-scrollbar-track": {
-                backgroundColor: "#f1f1f1",
-                borderRadius: 4,
-              },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#c1c1c1",
-                borderRadius: 4,
-                "&:hover": {
-                  backgroundColor: "#a8a8a8",
-                },
-              },
-            }}
-          >
+        <Paper sx={{ borderRadius: 2, overflow: "hidden" }}>
+          <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                    }}
-                  >
-                    Name
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                      display: { xs: "none", sm: "table-cell" },
-                    }}
-                  >
-                    Code
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                    }}
-                  >
-                    Duration
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                    }}
-                  >
-                    Status
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                    }}
-                  >
-                    Attendees
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                      display: { xs: "none", md: "table-cell" },
-                    }}
-                  >
-                    Expires At
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                      display: { xs: "none", lg: "table-cell" },
-                    }}
-                  >
-                    Created By
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: "#374151",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      py: { xs: 1, sm: 1.5 },
-                    }}
-                  >
-                    Actions
-                  </TableCell>
+                <TableRow>
+                  <TableCell>{t("adminAttendance.name")}</TableCell>
+                  <TableCell>{t("adminAttendance.code")}</TableCell>
+                  <TableCell>{t("adminAttendance.duration")}</TableCell>
+                  <TableCell>{t("adminAttendance.status")}</TableCell>
+                  <TableCell>{t("adminAttendance.attendees")}</TableCell>
+                  <TableCell>{t("adminAttendance.expires")}</TableCell>
+                  <TableCell>{t("adminAttendance.actions")}</TableCell>
                 </TableRow>
               </TableHead>
+
               <TableBody>
-                {activities.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                      <IconWrapper
-                        icon="mdi:calendar-blank-outline"
-                        size={48}
-                        color="#d1d5db"
+                {activities.map((activity) => (
+                  <TableRow key={activity.id}>
+                    <TableCell>{activity.name}</TableCell>
+                    <TableCell>
+                      <Chip label={activity.code} size="small" />
+                    </TableCell>
+                    <TableCell>{t("adminAttendance.durationMin", { count: activity.duration_minutes })}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={activity.is_active ? t("adminAttendance.active") : t("adminAttendance.inactive")}
+                        size="small"
+                        color={activity.is_active ? "success" : "error"}
                       />
-                      <Typography
-                        variant="body1"
-                        sx={{ color: "#6b7280", mt: 2, fontWeight: 500 }}
+                    </TableCell>
+                    <TableCell>{activity.attendees_count}</TableCell>
+                    <TableCell>
+                      {formatDate(activity.expires_at)}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        onClick={() => handleViewActivity(activity.id)}
                       >
-                        No attendance activities
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "#9ca3af" }}>
-                        Create your first attendance activity to get started
-                      </Typography>
+                        <IconWrapper icon="mdi:eye" />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  activities.map((activity) => (
-                    <TableRow
-                      key={activity.id}
-                      sx={{
-                        "&:hover": { backgroundColor: "#f9fafb" },
-                      }}
-                    >
-                      <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 500,
-                              color: "#111827",
-                              fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                            }}
-                          >
-                            {activity.name}
-                          </Typography>
-                          <Chip
-                            label={activity.code}
-                            size="small"
-                            sx={{
-                              bgcolor: "#eef2ff",
-                              color: "#6366f1",
-                              fontWeight: 600,
-                              fontFamily: "monospace",
-                              mt: { xs: 0.5, sm: 0 },
-                              fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                              height: { xs: 20, sm: 24 },
-                              display: { xs: "inline-flex", sm: "none" },
-                            }}
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          py: { xs: 1.5, sm: 2 },
-                          display: { xs: "none", sm: "table-cell" },
-                        }}
-                      >
-                        <Chip
-                          label={activity.code}
-                          size="small"
-                          sx={{
-                            bgcolor: "#eef2ff",
-                            color: "#6366f1",
-                            fontWeight: 600,
-                            fontFamily: "monospace",
-                            fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "#374151",
-                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          }}
-                        >
-                          {activity.duration_minutes} min
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
-                        <Box
-                          sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}
-                        >
-                          <Chip
-                            label={activity.is_active ? "Active" : "Inactive"}
-                            size="small"
-                            sx={{
-                              bgcolor: activity.is_active
-                                ? "#d1fae5"
-                                : "#fee2e2",
-                              color: activity.is_active ? "#065f46" : "#991b1b",
-                              fontWeight: 600,
-                              fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                              height: { xs: 20, sm: 24 },
-                            }}
-                          />
-                          {activity.is_valid && (
-                            <Chip
-                              label="Valid"
-                              size="small"
-                              sx={{
-                                bgcolor: "#dbeafe",
-                                color: "#1e40af",
-                                fontWeight: 600,
-                                fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                                height: { xs: 20, sm: 24 },
-                              }}
-                            />
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "#374151",
-                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          }}
-                        >
-                          {activity.attendees_count}
-                        </Typography>
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          py: { xs: 1.5, sm: 2 },
-                          display: { xs: "none", md: "table-cell" },
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "#374151",
-                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          }}
-                        >
-                          {formatDate(activity.expires_at)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          py: { xs: 1.5, sm: 2 },
-                          display: { xs: "none", lg: "table-cell" },
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "#374151",
-                            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          }}
-                        >
-                          {activity.created_by_name}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewActivity(activity.id)}
-                          sx={{
-                            color: "#6366f1",
-                            "& .MuiSvgIcon-root": {
-                              fontSize: { xs: "18px", sm: "20px" },
-                            },
-                          }}
-                        >
-                          <IconWrapper icon="mdi:eye" size={20} />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
 
           {/* Pagination */}
-          {activities.length > 0 && (
+          {allActivities.length > 0 && (
             <Box
               sx={{
-                p: { xs: 1.5, sm: 2 },
-                borderTop: "1px solid #e5e7eb",
+                p: 2,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                flexDirection: { xs: "column", sm: "row" },
-                gap: { xs: 1.5, sm: 2 },
+                flexWrap: "wrap",
+                gap: 2,
               }}
             >
-              <FormControl
-                size="small"
-                sx={{
-                  minWidth: { xs: 100, sm: 120 },
-                  width: { xs: "100%", sm: "auto" },
-                  "& .MuiInputBase-root": {
-                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
-                  },
-                }}
-              >
+              <FormControl size="small">
                 <Select
                   value={limit}
                   onChange={(e) => {
                     setLimit(Number(e.target.value));
                     setPage(1);
                   }}
-                  sx={{
-                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
-                    "& .MuiSelect-select": {
-                      py: { xs: 0.5, sm: 1 },
-                      px: { xs: 0.75, sm: 1.5 },
-                    },
-                  }}
                 >
-                  <MenuItem
-                    value={5}
-                    sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
-                  >
-                    5 per page
-                  </MenuItem>
-                  <MenuItem
-                    value={10}
-                    sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
-                  >
-                    10 per page
-                  </MenuItem>
-                  <MenuItem
-                    value={25}
-                    sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
-                  >
-                    25 per page
-                  </MenuItem>
-                  <MenuItem
-                    value={50}
-                    sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
-                  >
-                    50 per page
-                  </MenuItem>
+                  <MenuItem value={5}>5</MenuItem>
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={25}>25</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
                 </Select>
               </FormControl>
+
               <Pagination
                 count={totalPages}
                 page={page}
                 onChange={(_, value) => setPage(value)}
                 color="primary"
-                size="small"
-                showFirstButton={false}
-                showLastButton={false}
-                sx={{
-                  "& .MuiPaginationItem-root": {
-                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
-                    minWidth: { xs: 28, sm: 32 },
-                    height: { xs: 28, sm: 32 },
-                  },
-                  "& .MuiPagination-ul": {
-                    justifyContent: { xs: "center", sm: "flex-end" },
-                  },
-                  width: { xs: "100%", sm: "auto" },
-                  display: { xs: "flex", sm: "block" },
-                  justifyContent: { xs: "center", sm: "flex-end" },
-                  "& .MuiPaginationItem-firstLast": {
-                    display: { xs: "none", sm: "inline-flex" },
-                  },
-                }}
+                sx={{ "& .Mui-selected": { bgcolor: "#10b981" } }}
               />
             </Box>
           )}
         </Paper>
 
-        {/* View Activity Side Panel */}
+        {/* Side Panel */}
         {selectedActivity && (
           <ViewActivityPanel
             open={viewPanelOpen}
@@ -568,13 +271,12 @@ export default function AttendancePage() {
           />
         )}
 
-        {/* Create Dialog */}
         <CreateActivityDialog
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
           onSuccess={() => {
             setCreateDialogOpen(false);
-            loadActivities();
+            fetchAllActivities();
           }}
         />
       </Box>

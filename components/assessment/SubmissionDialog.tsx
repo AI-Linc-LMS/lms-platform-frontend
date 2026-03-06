@@ -73,15 +73,19 @@ export function SubmissionDialog({
             sx={{
               mt: 2,
               p: 2,
-              backgroundColor: allAnswered ? "#f3f4f6" : "#fef3c7",
+              backgroundColor: allAnswered ? "#d1fae5" : "#fef3c7",
               borderRadius: 1,
-              border: `1px solid ${allAnswered ? "#9ca3af" : "#f59e0b"}`,
+              border: `1px solid ${allAnswered ? "#10b981" : "#f59e0b"}`,
             }}
           >
             <Typography variant="body2" fontWeight={600} gutterBottom>
-              Questions Answered: {totalAnswered} / {totalQuestions}
+              Questions Visited: {totalAnswered} / {totalQuestions}
             </Typography>
-            {!allAnswered && (
+            {allAnswered ? (
+              <Typography variant="body2" sx={{ mt: 1, color: "#065f46", fontWeight: 500 }}>
+                All questions attempted. You can submit your assessment.
+              </Typography>
+            ) : (
               <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
                 You have {unansweredCount} unanswered question
                 {unansweredCount !== 1 ? "s" : ""}. Are you sure you want to

@@ -1,8 +1,10 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 export function CourseBuilderHeader() {
+  const { t } = useTranslation("common");
   return (
     <Box sx={{ mb: 4 }}>
       <Typography
@@ -14,10 +16,10 @@ export function CourseBuilderHeader() {
           mb: 1,
         }}
       >
-        Course Builder
+        {t("adminCourseBuilder.title")}
       </Typography>
       <Typography variant="body2" sx={{ color: "#6b7280" }}>
-        Manage your courses and content
+        {t("adminCourseBuilder.subtitle")}
       </Typography>
     </Box>
   );

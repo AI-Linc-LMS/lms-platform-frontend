@@ -10,6 +10,8 @@ export interface DailyProgressLeaderboardEntry {
   };
   score?: number;
   rank?: number;
+  college?: string; // College/University name
+  linkedin_url?: string; // LinkedIn profile URL
 }
 
 // Monthly Streak
@@ -29,6 +31,10 @@ export interface OverallLeaderboardEntry {
   course_name?: number;
   rank?: number;
   profile_pic_url?: string;
+  college?: string;
+  linkedin_url?: string;
+  email?: string;
+  user_name?: string;
 }
 
 export const dashboardService = {
@@ -227,13 +233,17 @@ export const dashboardService = {
 
       // Validate and sanitize each entry
       const validatedData = leaderboardData
-        .filter((entry) => entry != null) // Remove null/undefined entries
+        .filter((entry) => entry != null)
         .map((entry) => ({
-          name: entry?.name ?? " User",
+          name: entry?.name ?? entry?.full_name ?? entry?.user?.name ?? " User",
           marks: entry?.marks ?? entry?.score ?? 0,
           course_name: entry?.course_name ?? " Course",
           rank: entry?.rank ?? 0,
           profile_pic_url: entry?.profile_pic_url ?? entry?.user?.profile_pic_url ?? "",
+          college: entry?.college ?? entry?.college_name ?? entry?.university ?? undefined,
+          linkedin_url: entry?.linkedin_url ?? entry?.linkedin_profile_url ?? entry?.social_links?.linkedin ?? undefined,
+          email: entry?.email ?? entry?.user?.email ?? undefined,
+          user_name: entry?.user_name ?? entry?.username ?? entry?.user?.user_name ?? undefined,
         })) as OverallLeaderboardEntry[];
 
       return validatedData;

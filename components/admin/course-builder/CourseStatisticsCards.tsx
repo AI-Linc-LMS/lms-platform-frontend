@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Paper } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface CourseStatisticsCardsProps {
@@ -14,6 +15,7 @@ export function CourseStatisticsCards({
   publishedCount,
   totalCount,
 }: CourseStatisticsCardsProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -44,7 +46,7 @@ export function CourseStatisticsCards({
               variant="body2"
               sx={{ fontWeight: 500, color: "#3b82f6", mb: 0.5 }}
             >
-              Draft Courses
+              {t("adminCourseBuilder.draftCourses")}
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 700, color: "#1e40af" }}>
               {draftCount}
@@ -86,7 +88,7 @@ export function CourseStatisticsCards({
               variant="body2"
               sx={{ fontWeight: 500, color: "#10b981", mb: 0.5 }}
             >
-              Published Courses
+              {t("adminCourseBuilder.publishedCourses")}
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 700, color: "#065f46" }}>
               {publishedCount}
@@ -128,7 +130,7 @@ export function CourseStatisticsCards({
               variant="body2"
               sx={{ fontWeight: 500, color: "#6b7280", mb: 0.5 }}
             >
-              Total Courses
+              {t("adminCourseBuilder.totalCourses")}
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 700, color: "#374151" }}>
               {totalCount}

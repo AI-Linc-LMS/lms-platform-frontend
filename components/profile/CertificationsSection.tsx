@@ -1,9 +1,29 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile, Certification } from "@/lib/services/profile.service";
+
+function getCredentialLinkUrl(url: string | undefined): string | null {
+  if (typeof url !== "string" || !url.trim()) return null;
+  const u = url.trim();
+  if (u.startsWith("/")) return null;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  if (origin && u.startsWith(origin)) {
+    try {
+      const parsed = new URL(u);
+      const target = parsed.searchParams.get("url") ?? parsed.searchParams.get("to") ?? parsed.searchParams.get("redirect") ?? parsed.searchParams.get("target");
+      if (target && (target.startsWith("http://") || target.startsWith("https://"))) return target;
+    } catch {
+
+    }
+    return null;
+  }
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return `https://${u}`;
+}
 
 interface CertificationsSectionProps {
   profile: UserProfile;
@@ -14,6 +34,7 @@ export function CertificationsSection({
   profile,
   onSave,
 }: CertificationsSectionProps) {
+  const { t } = useTranslation();
   const [certifications, setCertifications] = useState<Certification[]>(profile.certifications || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,11 +50,23 @@ export function CertificationsSection({
     credential_url: "",
   });
 
+  useEffect(() => {
+    if (!editing && editingIndex === null) setCertifications(profile.certifications || []);
+  }, [profile.certifications, editing, editingIndex]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        certifications: certifications,
+      const dataToSave: Partial<UserProfile> = {
+        certifications: certifications.map((cert): Certification => ({
+          id: cert.id,
+          name: cert.name,
+          issuing_organization: cert.issuing_organization,
+          issue_date: cert.issue_date ?? "",
+          expiration_date: cert.expiration_date || undefined,
+          credential_id: cert.credential_id || undefined,
+          credential_url: cert.credential_url || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -75,10 +108,20 @@ export function CertificationsSection({
     setCertifications(certifications.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newCertification: Certification = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      issue_date: toISODate(formData.issue_date),
+      expiration_date: toISODate(formData.expiration_date || ""),
     };
 
     if (editingIndex !== null) {
@@ -133,7 +176,7 @@ export function CertificationsSection({
               fontSize: "1.25rem",
             }}
           >
-            Certifications
+            {t("profile.certifications")}
           </Typography>
           {!editing ? (
             <Button
@@ -150,7 +193,7 @@ export function CertificationsSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -171,12 +214,12 @@ export function CertificationsSection({
                   },
                 }}
               >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -190,12 +233,12 @@ export function CertificationsSection({
                   },
                 }}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -207,7 +250,7 @@ export function CertificationsSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -258,29 +301,32 @@ export function CertificationsSection({
                       {cert.expiration_date && ` • Expires ${formatDate(cert.expiration_date)}`}
                       {cert.credential_id && ` • Credential ID: ${cert.credential_id}`}
                     </Typography>
-                    {cert.credential_url && (
-                      <Box
-                        component="a"
-                        href={cert.credential_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          color: "#0a66c2",
-                          textDecoration: "none",
-                          fontSize: "0.875rem",
-                          mt: 0.5,
-                          "&:hover": {
-                            textDecoration: "underline",
-                          },
-                        }}
-                      >
-                        <IconWrapper icon="mdi:link" size={16} color="#6366f1" />
-                        View Credential
-                      </Box>
-                    )}
+                    {(() => {
+                      const linkUrl = getCredentialLinkUrl(cert.credential_url);
+                      return linkUrl ? (
+                        <Box
+                          component="a"
+                          href={linkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            color: "#0a66c2",
+                            textDecoration: "none",
+                            fontSize: "0.875rem",
+                            mt: 0.5,
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
+                          }}
+                        >
+                          <IconWrapper icon="mdi:link" size={16} color="#6366f1" />
+                          View Credential
+                        </Box>
+                      ) : null;
+                    })()}
                   </Box>
                   {editing && (
                     <Box sx={{ display: "flex", gap: 0.5 }}>
@@ -335,7 +381,7 @@ export function CertificationsSection({
                 fontWeight: 500,
               }}
             >
-              No certifications added yet
+              {t("profile.noCertificationsYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -345,7 +391,7 @@ export function CertificationsSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your certifications
+              {t("profile.clickEditToAddCertifications")}
             </Typography>
           </Box>
         )}
@@ -366,6 +412,7 @@ export function CertificationsSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -382,6 +429,7 @@ export function CertificationsSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
@@ -389,18 +437,17 @@ export function CertificationsSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Certification" : "Add Certification"}
+            {editingIndex !== null ? t("profile.editCertification") : t("profile.addCertification")}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Certification Name *"
+              label="Certification Name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -409,12 +456,11 @@ export function CertificationsSection({
               }}
             />
             <TextField
-              label="Issuing Organization *"
+              label="Issuing Organization"
               value={formData.issuing_organization}
               onChange={(e) => setFormData({ ...formData, issuing_organization: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -423,13 +469,12 @@ export function CertificationsSection({
               }}
             />
             <TextField
-              label="Issue Date *"
+              label="Issue Date"
               value={formData.issue_date}
               onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-              type="month"
+              type="date"
               fullWidth
               size="small"
-              required
               InputLabelProps={{ shrink: true }}
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -442,7 +487,7 @@ export function CertificationsSection({
               label="Expiration Date"
               value={formData.expiration_date}
               onChange={(e) => setFormData({ ...formData, expiration_date: e.target.value })}
-              type="month"
+              type="date"
               fullWidth
               size="small"
               InputLabelProps={{ shrink: true }}
@@ -507,7 +552,7 @@ export function CertificationsSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -531,7 +576,7 @@ export function CertificationsSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

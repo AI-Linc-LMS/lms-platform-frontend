@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface ProfileSummaryProps {
@@ -16,12 +17,17 @@ export function ProfileSummary({
   profile,
   onSave,
 }: ProfileSummaryProps) {
+  const { t } = useTranslation("common");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [formData, setFormData] = useState({
     bio: profile.bio || "",
   });
+
+  useEffect(() => {
+    if (!editing) setFormData({ bio: profile.bio || "" });
+  }, [profile.bio, editing]);
 
   const bio = profile.bio || "";
   const shouldTruncate = bio.length > MAX_PREVIEW_LENGTH;
@@ -31,7 +37,7 @@ export function ProfileSummary({
     try {
       setSaving(true);
       const dataToSave = {
-        bio: formData.bio || "",
+        bio: formData.bio || null,
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -81,14 +87,17 @@ export function ProfileSummary({
             letterSpacing: "-0.01em",
           }}
         >
-          About
+          {t("profile.about")}
         </Typography>
         {!editing ? (
           <Button
             variant="text"
             size="small"
             startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setFormData({ bio: profile.bio || "" });
+              setEditing(true);
+            }}
             sx={{
               textTransform: "none",
               color: "#0a66c2",
@@ -100,7 +109,7 @@ export function ProfileSummary({
               transition: "all 0.2s ease",
             }}
           >
-            Edit
+            {t("profile.edit")}
           </Button>
         ) : (
           <Box sx={{ display: "flex", gap: 1 }}>
@@ -118,7 +127,7 @@ export function ProfileSummary({
                 },
               }}
             >
-              Cancel
+              {t("profile.cancel")}
             </Button>
             <Button
               variant="contained"
@@ -137,7 +146,7 @@ export function ProfileSummary({
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("profile.saving") : t("profile.save")}
             </Button>
           </Box>
         )}
@@ -150,7 +159,7 @@ export function ProfileSummary({
           fullWidth
           multiline
           rows={6}
-          placeholder="Tell us about yourself..."
+          placeholder={t("profile.tellUsAboutYourself")}
           sx={{
             "& .MuiOutlinedInput-root": {
               borderRadius: 1.5,
@@ -194,7 +203,7 @@ export function ProfileSummary({
                     },
                   }}
                 >
-                  {expanded ? "Show less" : "Show more"}
+                  {expanded ? t("profile.showLess") : t("profile.showMore")}
                 </Button>
               )}
             </>
@@ -206,7 +215,7 @@ export function ProfileSummary({
                 fontStyle: "italic",
               }}
             >
-              No summary available. Click Edit to add one.
+              {t("profile.noSummaryClickEdit")}
             </Typography>
           )}
         </Box>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Container, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import { ScheduledInterviewsTable } from "@/components/mock-interview/ScheduledInterviewsTable";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService, {
@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
 
 export default function ScheduledInterviewsPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -65,13 +66,6 @@ export default function ScheduledInterviewsPage() {
     [showToast]
   );
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -156,7 +150,7 @@ export default function ScheduledInterviewsPage() {
                 color: "#6b7280",
               }}
             >
-              New Interview
+              {t("mockInterview.newInterview")}
             </Typography>
           </Box>
 
@@ -186,7 +180,7 @@ export default function ScheduledInterviewsPage() {
                 color: "#6b7280",
               }}
             >
-              Previous
+              {t("mockInterview.previous")}
             </Typography>
           </Box>
 

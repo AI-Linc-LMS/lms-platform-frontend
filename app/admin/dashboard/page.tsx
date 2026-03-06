@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { flushSync } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   Box,
@@ -10,6 +12,7 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import {
   adminDashboardService,
@@ -27,10 +30,12 @@ import { SessionStartTimeChart } from "@/components/admin/dashboard/SessionStart
 import { StudentActiveDaysChart } from "@/components/admin/dashboard/StudentActiveDaysChart";
 import { StudentRankingCard } from "@/components/admin/dashboard/StudentRankingCard";
 import { useToast } from "@/components/common/Toast";
+import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
 
 type TimePeriod = "weekly" | "bimonthly" | "monthly";
 
 function AdminDashboardPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("weekly");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
@@ -50,6 +55,8 @@ function AdminDashboardPage() {
     useState<AttendanceAnalytics | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const dashboardPdfRef = useRef<HTMLDivElement>(null);
 
   // Calculate window size based on time period
   const windowSize = useMemo(() => {
@@ -108,7 +115,7 @@ function AdminDashboardPage() {
       setCoreData(data);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load dashboard data",
+        error?.response?.data?.detail || t("admin.dashboard.failedToLoad"),
         "error"
       );
     }
@@ -144,11 +151,11 @@ function AdminDashboardPage() {
       setAttendanceData(data);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load attendance data",
+        error?.response?.data?.detail || t("admin.dashboard.failedToLoadAttendance"),
         "error"
       );
     }
-  }, [dateRange.start, dateRange.end, selectedCourse, showToast]);
+  }, [dateRange.start, dateRange.end, selectedCourse, showToast, t]);
 
   // Load core data immediately (doesn't require date range)
   useEffect(() => {
@@ -290,109 +297,25 @@ function AdminDashboardPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!dashboardPdfRef.current) return;
+    flushSync(() => setPdfGenerating(true));
+    try {
+      await generateDashboardPdf({
+        element: dashboardPdfRef.current,
+        fileName: `admin-dashboard-${dateRange.start}-${dateRange.end}.pdf`,
+      });
+      showToast(t("admin.dashboard.pdfDownloaded"), "success");
+    } catch {
+      showToast(t("admin.dashboard.failedToGeneratePdf"), "error");
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        {/* Header with Filters */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
-            alignItems: { xs: "flex-start", sm: "center" },
-            mb: 4,
-            gap: 2,
-          }}
-        >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: "#111827",
-              fontSize: { xs: "1.5rem", sm: "2rem" },
-            }}
-          >
-            Dashboard
-          </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              flexDirection: { xs: "column", sm: "row" },
-              width: { xs: "100%", sm: "auto" },
-            }}
-          >
-            <FormControl
-              size="small"
-              sx={{ minWidth: { xs: "100%", sm: 150 } }}
-            >
-              <InputLabel>All Courses</InputLabel>
-              <Select
-                value={selectedCourse}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedCourse(value);
-                  if (value === "all") {
-                    setSelectedCourseId("");
-                    setSelectedCourseName("");
-                  } else {
-                    const course = courses.find(
-                      (c: any) =>
-                        c.id?.toString() === value || c.title === value
-                    );
-                    setSelectedCourseId(course?.id?.toString() || "");
-                    setSelectedCourseName(course?.title || "");
-                  }
-                }}
-                label="All Courses"
-              >
-                <MenuItem value="all">All Courses</MenuItem>
-                {courses?.map((course: any) => (
-                  <MenuItem key={course.id} value={course.id.toString()}>
-                    {course.title}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Box sx={{ display: "flex", gap: 1 }}>
-              {(["weekly", "bimonthly", "monthly"] as TimePeriod[]).map(
-                (period) => (
-                  <Box
-                    key={period}
-                    onClick={() => setTimePeriod(period)}
-                    sx={{
-                      px: 2,
-                      py: 1,
-                      borderRadius: 1,
-                      cursor: "pointer",
-                      backgroundColor:
-                        timePeriod === period ? "#6366f1" : "transparent",
-                      color: timePeriod === period ? "#ffffff" : "#6b7280",
-                      fontWeight: timePeriod === period ? 600 : 500,
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      textTransform: "capitalize",
-                      border: `1px solid ${
-                        timePeriod === period ? "#6366f1" : "#e5e7eb"
-                      }`,
-                      transition: "all 0.2s",
-                      "&:hover": {
-                        backgroundColor:
-                          timePeriod === period ? "#6366f1" : "#f3f4f6",
-                      },
-                    }}
-                  >
-                    {period === "bimonthly"
-                      ? "Bimonthly"
-                      : period.charAt(0).toUpperCase() + period.slice(1)}
-                  </Box>
-                )
-              )}
-            </Box>
-          </Box>
-        </Box>
-
+      <Box sx={{ p: { xs: 2, sm: 3 } }} ref={dashboardPdfRef}>
         {loading ? (
           <Box
             sx={{
@@ -406,21 +329,127 @@ function AdminDashboardPage() {
           </Box>
         ) : (
           <>
-            {/* Metric Cards */}
+            {/* PDF Page 1: Header + Metrics + TimeSpent + Leaderboard + Row 2 */}
             <Box
+              className="pdf-section"
               sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(4, 1fr)",
-                },
+                display: "flex",
+                flexDirection: "column",
                 gap: 3,
-                mb: 4,
+                mb: 3,
               }}
             >
+              {/* Header - title + filters */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  justifyContent: "space-between",
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  gap: 2,
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: "#111827",
+                    fontSize: { xs: "1.5rem", sm: "2rem" },
+                  }}
+                >
+                  {t("admin.dashboard.title")}
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                  <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
+                    <InputLabel>{t("admin.dashboard.allCourses")}</InputLabel>
+                    <Select
+                      value={selectedCourse}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setSelectedCourse(value);
+                        if (value === "all") {
+                          setSelectedCourseId("");
+                          setSelectedCourseName("");
+                        } else {
+                          const course = courses.find(
+                            (c: any) =>
+                              c.id?.toString() === value || c.title === value
+                          );
+                          setSelectedCourseId(course?.id?.toString() || "");
+                          setSelectedCourseName(course?.title || "");
+                        }
+                      }}
+                      label="All Courses"
+                    >
+                      <MenuItem value="all">All Courses</MenuItem>
+                      {courses?.map((course: any) => (
+                        <MenuItem key={course.id} value={course.id.toString()}>
+                          {course.title}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "nowrap" }}>
+                    {(["weekly", "bimonthly", "monthly"] as TimePeriod[]).map((period) => (
+                      <Box
+                        key={period}
+                        onClick={() => setTimePeriod(period)}
+                        sx={{
+                          px: 2,
+                          py: 1,
+                          borderRadius: 1,
+                          cursor: "pointer",
+                          backgroundColor: timePeriod === period ? "#6366f1" : "transparent",
+                          color: timePeriod === period ? "#ffffff" : "#6b7280",
+                          fontWeight: timePeriod === period ? 600 : 500,
+                          fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                          textTransform: "capitalize",
+                          border: `1px solid ${timePeriod === period ? "#6366f1" : "#e5e7eb"}`,
+                          transition: "all 0.2s",
+                          "&:hover": {
+                            backgroundColor: timePeriod === period ? "#6366f1" : "#f3f4f6",
+                          },
+                        }}
+                      >
+                        {period === "bimonthly"
+                          ? t("admin.dashboard.bimonthly")
+                          : period === "weekly"
+                            ? t("admin.dashboard.weekly")
+                            : t("admin.dashboard.monthly")}
+                      </Box>
+                    ))}
+                  </Box>
+                  <Box className="exclude-from-pdf" sx={{ flexShrink: 0 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleDownloadPdf}
+                      disabled={pdfGenerating || loading}
+                      sx={{
+                        backgroundColor: "#6366f1",
+                        "&:hover": { backgroundColor: "#4f46e5" },
+                      }}
+                    >
+                      {pdfGenerating ? "Generating..." : "Download PDF"}
+                    </Button>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Metric Cards */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, 1fr)",
+                    md: "repeat(4, 1fr)",
+                  },
+                  gap: 3,
+                }}
+              >
               <DashboardMetricCard
-                title="Number of students"
+                title={t("admin.dashboard.numberOfStudents")}
                 value={dashboardData?.number_of_students || 0}
                 icon="mdi:account-group"
                 iconColor="#6366f1"
@@ -434,7 +463,7 @@ function AdminDashboardPage() {
                 tooltip={getMetricTooltip("active_students")}
               />
               <DashboardMetricCard
-                title="Time Spent by Student"
+                title={t("admin.dashboard.timeSpentByStudent")}
                 value={`${calculatedTimeSpent.value} ${calculatedTimeSpent.unit}`}
                 icon="mdi:clock-outline"
                 iconColor="#f59e0b"
@@ -447,61 +476,71 @@ function AdminDashboardPage() {
                 iconColor="#8b5cf6"
                 tooltip={getMetricTooltip("daily_logins")}
               />
+              </Box>
+
+              {/* Charts Row 1 - TimeSpent + Leaderboard (full table) */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    lg: "2fr 1fr",
+                  },
+                  gap: 3,
+                }}
+              >
+                <TimeSpentChart data={filteredTimeSpentData} />
+                <StudentRankingCard
+                  leaderboard={dashboardData?.leaderboard || []}
+                  expandForPdf={pdfGenerating}
+                />
+              </Box>
+
+              {/* Charts Row 2 */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    lg: "1fr 1fr",
+                  },
+                  gap: 3,
+                }}
+              >
+                <DailyActivityChart data={filteredDailyActivityData} />
+                <DailyLoginsChart data={filteredDailyLoginData} />
+              </Box>
             </Box>
 
-            {/* Charts Row 1 */}
+            {/* PDF Page 2: Charts Row 3 + Row 4 */}
             <Box
+              className="pdf-section"
               sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  lg: "2fr 1fr",
-                },
+                display: "flex",
+                flexDirection: "column",
                 gap: 3,
                 mb: 3,
               }}
             >
-              <TimeSpentChart data={filteredTimeSpentData} />
-              <StudentRankingCard
-                leaderboard={dashboardData?.leaderboard || []}
-              />
-            </Box>
+              {/* Charts Row 3 */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    lg: "1fr 1fr",
+                  },
+                  gap: 3,
+                }}
+              >
+                <AttendanceTrendChart data={filteredAttendanceTrendData} />
+                <SessionStartTimeChart data={filteredSessionStartTimeData} />
+              </Box>
 
-            {/* Charts Row 2 */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  lg: "1fr 1fr",
-                },
-                gap: 3,
-                mb: 3,
-              }}
-            >
-              <DailyActivityChart data={filteredDailyActivityData} />
-              <DailyLoginsChart data={filteredDailyLoginData} />
-            </Box>
-
-            {/* Charts Row 3 */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  lg: "1fr 1fr",
-                },
-                gap: 3,
-                mb: 3,
-              }}
-            >
-              <AttendanceTrendChart data={filteredAttendanceTrendData} />
-              <SessionStartTimeChart data={filteredSessionStartTimeData} />
-            </Box>
-
-            {/* Charts Row 4 */}
-            <Box sx={{ mb: 3 }}>
-              <StudentActiveDaysChart data={studentActivity || []} />
+              {/* Charts Row 4 */}
+              <Box>
+                <StudentActiveDaysChart data={studentActivity || []} />
+              </Box>
             </Box>
           </>
         )}

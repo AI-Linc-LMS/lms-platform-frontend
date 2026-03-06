@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Button, Paper, Typography, Alert } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -14,6 +15,7 @@ export function StartScreen({
   isInitializing,
   onStart,
 }: StartScreenProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -96,7 +98,7 @@ export function StartScreen({
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           }}
         >
-          {isInitializing ? "Initializing..." : "Start Assessment"}
+          {isInitializing ? t("assessments.initializing") : t("assessments.startAssessment")}
         </Button>
       </Paper>
     </Box>

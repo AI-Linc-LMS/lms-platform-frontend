@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -15,9 +16,9 @@ import {
   MenuItem,
   FormControl,
   Chip,
+  LinearProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Loading } from "@/components/common/Loading";
 import {
   assessmentService,
   Assessment,
@@ -33,6 +34,7 @@ type FilterType = "all" | "available" | "completed";
 type SortType = "recent" | "oldest" | "title";
 
 export default function AssessmentsPage() {
+  const { t } = useTranslation("common");
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,7 +57,7 @@ export default function AssessmentsPage() {
       const data = await assessmentService.getActiveAssessments();
       setAssessments(data);
     } catch (error: any) {
-      showToast("Failed to load assessments", "error");
+      showToast(t("assessments.failedToLoad"), "error");
     } finally {
       setLoading(false);
     }
@@ -69,21 +71,54 @@ export default function AssessmentsPage() {
     (a) => !isPsychometricAssessment(a)
   );
 
-  // Calculate counts
+  // Calculate counts based on status
   const totalCount = assessments.length;
   const psychometricCount = psychometricAssessments.length;
   const regularCount = regularAssessments.length;
+  
+  // Completed: status is "submitted" or "completed"
+  // If status is undefined/null, fallback to is_attempted/has_attempted for backward compatibility
   const completedCount = assessments.filter(
-    (a) => a.is_attempted || a.has_attempted
+    (a) => {
+      if (a.status === "submitted" || a.status === "completed") return true;
+      // Fallback for backward compatibility
+      if (a.status === undefined || a.status === null) {
+        return a.is_attempted || a.has_attempted;
+      }
+      return false;
+    }
   ).length;
+  
+  // Available: status is "not_started" or "in_progress"
+  // If status is undefined/null, fallback to !is_attempted && !has_attempted for backward compatibility
   const availableCount = assessments.filter(
-    (a) => !a.is_attempted && !a.has_attempted
+    (a) => {
+      if (a.status === "not_started" || a.status === "in_progress") return true;
+      // Fallback for backward compatibility
+      if (a.status === undefined || a.status === null) {
+        return !a.is_attempted && !a.has_attempted;
+      }
+      return false;
+    }
   ).length;
+  
   const psychometricCompletedCount = psychometricAssessments.filter(
-    (a) => a.is_attempted || a.has_attempted
+    (a) => {
+      if (a.status === "submitted" || a.status === "completed") return true;
+      if (a.status === undefined || a.status === null) {
+        return a.is_attempted || a.has_attempted;
+      }
+      return false;
+    }
   ).length;
   const regularCompletedCount = regularAssessments.filter(
-    (a) => a.is_attempted || a.has_attempted
+    (a) => {
+      if (a.status === "submitted" || a.status === "completed") return true;
+      if (a.status === undefined || a.status === null) {
+        return a.is_attempted || a.has_attempted;
+      }
+      return false;
+    }
   ).length;
 
   // Combine all assessments (psychometric + regular)
@@ -99,11 +134,29 @@ export default function AssessmentsPage() {
         assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Apply filter
+    // Apply filter based on status
     if (filter === "completed") {
-      result = result.filter((a) => a.is_attempted || a.has_attempted);
+      // Completed: status is "submitted" or "completed"
+      // Fallback to is_attempted/has_attempted for backward compatibility
+      result = result.filter((a) => {
+        if (a.status === "submitted" || a.status === "completed") return true;
+        // Fallback for backward compatibility
+        if (a.status === undefined || a.status === null) {
+          return a.is_attempted || a.has_attempted;
+        }
+        return false;
+      });
     } else if (filter === "available") {
-      result = result.filter((a) => !a.is_attempted && !a.has_attempted);
+      // Available: status is "not_started" or "in_progress"
+      // Fallback to !is_attempted && !has_attempted for backward compatibility
+      result = result.filter((a) => {
+        if (a.status === "not_started" || a.status === "in_progress") return true;
+        // Fallback for backward compatibility
+        if (a.status === undefined || a.status === null) {
+          return !a.is_attempted && !a.has_attempted;
+        }
+        return false;
+      });
     }
 
     // Sort
@@ -134,14 +187,6 @@ export default function AssessmentsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Loading fullScreen />
-      </MainLayout>
-    );
-  }
-
   const totalPages = Math.ceil(filteredAssessments.length / pageSize);
 
   return (
@@ -169,14 +214,14 @@ export default function AssessmentsPage() {
               fontWeight={700}
               sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
             >
-              Assessments
+              {t("assessments.title")}
             </Typography>
             <Typography 
               variant="body2" 
               color="text.secondary"
               sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" }, display: { xs: "none", sm: "block" } }}
             >
-              Test your knowledge and track your progress
+              {t("assessments.subtitle")}
             </Typography>
           </Box>
         </Box>
@@ -237,7 +282,7 @@ export default function AssessmentsPage() {
                   color="text.secondary"
                   sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
                 >
-                  Total Assessments
+                  {t("assessments.totalAssessments")}
                 </Typography>
               </Box>
             </Box>
@@ -284,7 +329,7 @@ export default function AssessmentsPage() {
                   color="text.secondary"
                   sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
                 >
-                  Psychometric
+                  {t("assessments.psychometric")}
                 </Typography>
               </Box>
             </Box>
@@ -331,7 +376,7 @@ export default function AssessmentsPage() {
                   color="text.secondary"
                   sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
                 >
-                  Available
+                  {t("assessments.available")}
                 </Typography>
               </Box>
             </Box>
@@ -378,7 +423,7 @@ export default function AssessmentsPage() {
                   color="text.secondary"
                   sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
                 >
-                  Completed
+                  {t("assessments.completed")}
                 </Typography>
               </Box>
             </Box>
@@ -421,15 +466,15 @@ export default function AssessmentsPage() {
             }}
           >
             <Tab
-              label={`All (${totalCount})`}
+              label={`${t("assessments.all")} (${totalCount})`}
               value="all"
             />
             <Tab
-              label={`Available (${availableCount})`}
+              label={`${t("assessments.available")} (${availableCount})`}
               value="available"
             />
             <Tab
-              label={`Completed (${completedCount})`}
+              label={`${t("assessments.completed")} (${completedCount})`}
               value="completed"
             />
           </Tabs>
@@ -446,7 +491,7 @@ export default function AssessmentsPage() {
           >
             <TextField
               fullWidth
-              placeholder="Search assessments..."
+              placeholder={t("assessments.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -497,22 +542,26 @@ export default function AssessmentsPage() {
                 <MenuItem value="recent">
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Sort By:
+                      {t("courses.sortBy")}
                     </Typography>
                     <Typography variant="body2" fontWeight={600}>
-                      Most Recent
+                      {t("courses.mostRecent")}
                     </Typography>
                   </Box>
                 </MenuItem>
-                <MenuItem value="oldest">Oldest First</MenuItem>
-                <MenuItem value="title">Title (A-Z)</MenuItem>
+                <MenuItem value="oldest">{t("courses.oldestFirst")}</MenuItem>
+                <MenuItem value="title">{t("courses.titleAZ")}</MenuItem>
               </Select>
             </FormControl>
           </Box>
         </Paper>
 
         {/* All Assessments Grid */}
-        {filteredAssessments.length > 0 ? (
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+            <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+          </Box>
+        ) : filteredAssessments.length > 0 ? (
           <AssessmentsGrid
             assessments={paginatedAssessments}
             searchQuery={searchQuery}
@@ -559,7 +608,7 @@ export default function AssessmentsPage() {
                 mb: 1,
               }}
             >
-              {searchQuery ? "No assessments found" : "No assessments available"}
+              {searchQuery ? t("assessments.noAssessmentsFound") : t("assessments.noAssessmentsFound")}
             </Typography>
             <Typography
               variant="body2"
@@ -570,20 +619,10 @@ export default function AssessmentsPage() {
               }}
             >
               {searchQuery
-                ? "Try adjusting your search or filter criteria"
-                : "Check back later for new assessments"}
+                ? t("assessments.adjustSearchFilter")
+                : t("assessments.checkBackLater")}
             </Typography>
           </Paper>
-        )}
-
-        {/* Empty State */}
-        {regularCount === 0 && psychometricCount === 0 && (
-          <Box sx={{ width: "100%" }}>
-            <AssessmentsGrid
-              assessments={[]}
-            searchQuery={searchQuery}
-          />
-        </Box>
         )}
 
         {/* Pagination */}
@@ -604,10 +643,10 @@ export default function AssessmentsPage() {
               color="text.secondary"
               sx={{
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                textAlign: { xs: "center", sm: "left" },
+                textAlign: { xs: "center", sm: "start" },
               }}
             >
-              Showing {filteredAssessments.length} total assessment{filteredAssessments.length !== 1 ? "s" : ""}
+              {t("assessments.showingTotal", { count: filteredAssessments.length })}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Button
@@ -636,7 +675,7 @@ export default function AssessmentsPage() {
                 }}
               >
                 <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                  Previous
+                  {t("assessments.previous")}
                 </Box>
               </Button>
               <Pagination

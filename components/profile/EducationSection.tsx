@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { UserProfile, Education } from "@/lib/services/profile.service";
 
 interface EducationSectionProps {
@@ -14,6 +15,7 @@ export function EducationSection({
   profile,
   onSave,
 }: EducationSectionProps) {
+  const { t } = useTranslation("common");
   const [educations, setEducations] = useState<Education[]>(profile.education || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,11 +32,24 @@ export function EducationSection({
     description: "",
   });
 
+  useEffect(() => {
+    if (!editing && editingIndex === null) setEducations(profile.education || []);
+  }, [profile.education, editing, editingIndex]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      const dataToSave = {
-        education: educations,
+      const dataToSave: Partial<UserProfile> = {
+        education: educations.map((edu): Education => ({
+          id: edu.id,
+          institution: edu.institution,
+          degree: edu.degree,
+          field_of_study: edu.field_of_study || undefined,
+          start_date: edu.start_date || undefined,
+          end_date: edu.end_date || undefined,
+          gpa: edu.gpa || undefined,
+          description: edu.description || undefined,
+        })),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -77,10 +92,20 @@ export function EducationSection({
     setEducations(educations.filter((_, i) => i !== index));
   };
 
+  const toISODate = (val: string): string => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    return d.toISOString().split("T")[0];
+  };
+
   const handleDialogSave = () => {
     const newEducation: Education = {
       ...formData,
       id: formData.id || Date.now().toString(),
+      start_date: toISODate(formData.start_date || ""),
+      end_date: toISODate(formData.end_date || ""),
     };
 
     if (editingIndex !== null) {
@@ -135,7 +160,7 @@ export function EducationSection({
               fontSize: "1.25rem",
             }}
           >
-            Education
+            {t("profile.education")}
           </Typography>
           {!editing ? (
             <Button
@@ -152,7 +177,7 @@ export function EducationSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -173,7 +198,7 @@ export function EducationSection({
                   },
                 }}
               >
-                Add
+                {t("profile.add")}
               </Button>
               <Button
                 variant="outlined"
@@ -192,7 +217,7 @@ export function EducationSection({
                   },
                 }}
               >
-                Cancel
+                {t("profile.cancel")}
               </Button>
               <Button
                 variant="contained"
@@ -209,7 +234,7 @@ export function EducationSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -326,7 +351,7 @@ export function EducationSection({
                 fontWeight: 500,
               }}
             >
-              No education added yet
+              {t("profile.noEducationYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -336,7 +361,7 @@ export function EducationSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your education
+              {t("profile.clickEditToAddEducation")}
             </Typography>
           </Box>
         )}
@@ -357,6 +382,7 @@ export function EducationSection({
         }}
       >
         <DialogTitle
+          component="div"
           sx={{
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
@@ -373,6 +399,7 @@ export function EducationSection({
             color="#0a66c2" 
           />
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
@@ -380,18 +407,17 @@ export function EducationSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Education" : "Add Education"}
+            {editingIndex !== null ? t("profile.editEducation") : t("profile.addEducation")}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ pt: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
             <TextField
-              label="Institution *"
+              label="Institution"
               value={formData.institution}
               onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -400,12 +426,11 @@ export function EducationSection({
               }}
             />
             <TextField
-              label="Degree *"
+              label="Degree"
               value={formData.degree}
               onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
               fullWidth
               size="small"
-              required
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
@@ -431,7 +456,7 @@ export function EducationSection({
                 label="Start Date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
@@ -446,7 +471,7 @@ export function EducationSection({
                 label="End Date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                type="month"
+                type="date"
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
@@ -514,7 +539,7 @@ export function EducationSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -538,7 +563,7 @@ export function EducationSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -66,6 +66,7 @@ export const Submissions = memo(function Submissions({ submissions, loading }: S
       62: "java",
       54: "cpp",
       50: "c",
+      82:'sql'
       // Add more language mappings as needed
     };
     return languageMap[languageId] || "python";
