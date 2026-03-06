@@ -36,10 +36,16 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "assessment",
   }, 
   {
-    label: "Job Portal",
+    label: "Jobs",
     path: "/jobs",
-    icon: "mdi:briefcase",
+    icon: "mdi:briefcase-search",
     featureName: "job_portal",
+  },
+  {
+    label: "Job Portal",
+    path: "/job-portal",
+    icon: "mdi:briefcase",
+    featureName: "job_portal_v2",
   },
   {
     label: "Attendance",
@@ -116,6 +122,12 @@ const adminNavigationItems: NavigationItem[] = [
     path: "/admin/live-sessions",
     icon: "mdi:video-box",
     featureName: "admin_live_sessions",
+  },
+  {
+    label: "Job Portal",
+    path: "/admin/job-portal",
+    icon: "mdi:briefcase",
+    featureName: "admin_job_portal_v2",
   },
   {
     label: "Emails",

@@ -97,11 +97,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "mock_interview",
     },
     {
+      label: "Jobs",
+      labelKey: "nav.jobs",
+      path: "/jobs",
+      icon: "mdi:briefcase-search",
+      featureName: "job_portal",
+    },
+    {
       label: "Job Portal",
       labelKey: "nav.jobPortal",
-      path: "/jobs",
+      path: "/job-portal",
       icon: "mdi:briefcase",
-      featureName: "job_portal",
+      featureName: "job_portal_v2",
     },
     {
       label: "Attendance",
@@ -174,6 +181,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     //   icon: "mdi:account-arrow-right",
     //   featureName: "admin_referral",
     // },
+    {
+      label: "Job Portal",
+      labelKey: "nav.jobPortal",
+      path: "/admin/job-portal",
+      icon: "mdi:briefcase",
+      featureName: "admin_job_portal_v2",
+    },
     {
       label: "Emails",
       labelKey: "nav.emails",
