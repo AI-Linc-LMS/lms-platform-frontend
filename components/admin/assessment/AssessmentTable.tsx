@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Link from "next/link";
 import {
   Box,
@@ -70,6 +71,7 @@ export function AssessmentTable({
   triggeringEmailJobId = null,
   duplicatingId = null,
 }: AssessmentTableProps) {
+  const { t } = useTranslation("common");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [anchorEl, setAnchorEl] = useState<{ [key: number]: HTMLElement | null }>({});
@@ -590,7 +592,7 @@ export function AssessmentTable({
                 minWidth: 200,
               }}
             >
-              Title
+              {t("admin.assessment.columns.title")}
             </TableCell>
             <TableCell
               sx={{
@@ -604,7 +606,7 @@ export function AssessmentTable({
                 display: { xs: "none", lg: "table-cell" },
               }}
             >
-              Courses
+              {t("admin.assessment.columns.courses")}
             </TableCell>
             <TableCell
               sx={{
@@ -618,7 +620,7 @@ export function AssessmentTable({
                 display: { xs: "none", md: "table-cell" },
               }}
             >
-              Duration
+              {t("admin.assessment.columns.duration")}
             </TableCell>
             <TableCell
               sx={{
@@ -632,7 +634,7 @@ export function AssessmentTable({
                 display: { xs: "none", sm: "table-cell" },
               }}
             >
-              Questions
+              {t("admin.assessment.columns.questions")}
             </TableCell>
             <TableCell
               sx={{
@@ -646,7 +648,7 @@ export function AssessmentTable({
                 display: { xs: "none", lg: "table-cell" },
               }}
             >
-              Status
+              {t("admin.assessment.columns.status")}
             </TableCell>
             <TableCell
               sx={{
@@ -661,7 +663,7 @@ export function AssessmentTable({
                 display: { xs: "none", md: "table-cell" },
               }}
             >
-              Created
+              {t("admin.assessment.columns.created")}
             </TableCell>
             <TableCell
               sx={{
@@ -676,7 +678,7 @@ export function AssessmentTable({
                 textAlign: "center",
               }}
             >
-              Actions
+              {t("admin.assessment.columns.actions")}
             </TableCell>
           </TableRow>
         </TableHead>

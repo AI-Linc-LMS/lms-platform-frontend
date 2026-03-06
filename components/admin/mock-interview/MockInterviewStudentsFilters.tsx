@@ -11,6 +11,7 @@ import {
   Typography,
   InputAdornment,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface MockInterviewStudentsFiltersProps {
@@ -23,12 +24,12 @@ interface MockInterviewStudentsFiltersProps {
   totalCount?: number;
 }
 
-const SORT_OPTIONS = [
-  { value: "total_interviews", label: "Total Interviews" },
-  { value: "average_score", label: "Average Score" },
-  { value: "completion_rate", label: "Completion Rate" },
-  { value: "student_name", label: "Name" },
-  { value: "completed_interviews", label: "Completed" },
+const getSortOptions = (t: (key: string) => string) => [
+  { value: "total_interviews", label: t("adminMockInterview.totalInterviewsSort") },
+  { value: "average_score", label: t("adminMockInterview.averageScoreSort") },
+  { value: "completion_rate", label: t("adminMockInterview.completionRateSort") },
+  { value: "student_name", label: t("adminMockInterview.nameSort") },
+  { value: "completed_interviews", label: t("adminMockInterview.completedSort") },
 ];
 
 export function MockInterviewStudentsFilters({
@@ -40,6 +41,8 @@ export function MockInterviewStudentsFilters({
   onSortOrderChange,
   totalCount,
 }: MockInterviewStudentsFiltersProps) {
+  const { t } = useTranslation("common");
+  const SORT_OPTIONS = getSortOptions(t);
   return (
     <Paper
       sx={{
@@ -79,10 +82,10 @@ export function MockInterviewStudentsFilters({
         </Box>
         <Box sx={{ flex: 1 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#111827" }}>
-            Find students
+            {t("adminMockInterview.findStudents")}
           </Typography>
           <Typography variant="caption" sx={{ color: "#6b7280" }}>
-            Search and sort students by mock interview performance
+            {t("adminMockInterview.searchSortByPerformance")}
           </Typography>
         </Box>
         {totalCount != null && totalCount > 0 && (
@@ -97,7 +100,7 @@ export function MockInterviewStudentsFilters({
               fontSize: "0.875rem",
             }}
           >
-            {totalCount} {totalCount === 1 ? "student" : "students"}
+            {totalCount} {totalCount === 1 ? t("adminMockInterview.studentSingular") : t("adminMockInterview.studentsPlural")}
           </Box>
         )}
       </Box>
@@ -111,7 +114,7 @@ export function MockInterviewStudentsFilters({
       >
         <TextField
           size="small"
-          placeholder="Search by name or email..."
+          placeholder={t("adminMockInterview.searchByNameOrEmail")}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={(e) => {
@@ -147,11 +150,11 @@ export function MockInterviewStudentsFilters({
           }}
         />
         <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 180 } }}>
-          <InputLabel>Sort by</InputLabel>
+          <InputLabel>{t("adminMockInterview.sortByLabel")}</InputLabel>
           <Select
             value={sortBy}
             onChange={(e) => onSortByChange(e.target.value)}
-            label="Sort by"
+            label={t("adminMockInterview.sortByLabel")}
           >
             {SORT_OPTIONS.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
@@ -161,16 +164,16 @@ export function MockInterviewStudentsFilters({
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 130 } }}>
-          <InputLabel>Order</InputLabel>
+          <InputLabel>{t("adminMockInterview.order")}</InputLabel>
           <Select
             value={sortOrder}
             onChange={(e) =>
               onSortOrderChange(e.target.value as "asc" | "desc")
             }
-            label="Order"
+            label={t("adminMockInterview.order")}
           >
-            <MenuItem value="asc">Ascending</MenuItem>
-            <MenuItem value="desc">Descending</MenuItem>
+            <MenuItem value="asc">{t("adminMockInterview.ascending")}</MenuItem>
+            <MenuItem value="desc">{t("adminMockInterview.descending")}</MenuItem>
           </Select>
         </FormControl>
       </Box>

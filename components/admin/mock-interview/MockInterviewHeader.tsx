@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Chip } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface MockInterviewHeaderProps {
@@ -12,6 +13,7 @@ export function MockInterviewHeader({
   totalInterviews,
   activeTab,
 }: MockInterviewHeaderProps) {
+  const { t } = useTranslation("common");
   return (
     <Box sx={{ mb: 4 }}>
 
@@ -49,7 +51,7 @@ export function MockInterviewHeader({
                 fontSize: { xs: "1.25rem", sm: "1.5rem" },
               }}
             >
-              Mock Interview Admin
+              {t("adminMockInterview.title")}
             </Typography>
             <Typography
               variant="body2"
@@ -59,14 +61,14 @@ export function MockInterviewHeader({
                 mt: 0.25,
               }}
             >
-              Monitor performance, view interviews, and track student progress
+              {t("adminMockInterview.subtitle")}
             </Typography>
           </Box>
         </Box>
         {totalInterviews != null && totalInterviews > 0 && activeTab === "overview" && (
           <Chip
             icon={<IconWrapper icon="mdi:clipboard-check-outline" size={16} color="#6366f1" />}
-            label={`${totalInterviews} interviews`}
+            label={t("adminMockInterview.interviewsCount", { count: totalInterviews })}
             size="small"
             sx={{
               backgroundColor: "#eef2ff",

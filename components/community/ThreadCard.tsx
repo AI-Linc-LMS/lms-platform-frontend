@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Paper,
@@ -24,6 +25,7 @@ interface ThreadCardProps {
 
 export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const handleThreadClick = () => {
     router.push(`/community/${thread.id}`);
@@ -161,7 +163,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                 ml: "auto",
               }}
             >
-              <Tooltip title="Comments">
+              <Tooltip title={t("community.comments")}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <IconWrapper
                     icon="mdi:comment-outline"
@@ -174,7 +176,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                 </Box>
               </Tooltip>
 
-              <Tooltip title="Bookmarks">
+              <Tooltip title={t("community.bookmarks")}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <IconWrapper
                     icon="mdi:bookmark-outline"
@@ -195,7 +197,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
             {/* Bookmark Button */}
             {onBookmark && (
               <Box sx={{ marginInlineStart: "auto" }}>
-                <Tooltip title={thread.user_bookmarked ? "Remove bookmark" : "Bookmark"}>
+                <Tooltip title={thread.user_bookmarked ? t("community.removeBookmark") : t("community.bookmark")}>
                   <IconButton
                     size="small"
                     onClick={() => onBookmark(thread.id)}

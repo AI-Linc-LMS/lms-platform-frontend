@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { Paper, Typography, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 export function AdminLiveSessionsFeatureBlocked() {
+  const { t } = useTranslation("common");
   return (
     <Paper
       sx={{
@@ -14,14 +16,13 @@ export function AdminLiveSessionsFeatureBlocked() {
       }}
     >
       <Typography variant="h6" sx={{ color: "var(--font-muted)", mb: 1 }}>
-        Live sessions are not enabled for your profile
+        {t("adminLiveSessions.featureBlockedTitle")}
       </Typography>
       <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-        This feature is not available. Contact your administrator if you
-        believe this is an error.
+        {t("adminLiveSessions.featureBlockedDesc")}
       </Typography>
       <Button component={Link} href="/admin/dashboard" variant="contained">
-        Back to admin dashboard
+        {t("adminLiveSessions.backToAdminDashboard")}
       </Button>
     </Paper>
   );

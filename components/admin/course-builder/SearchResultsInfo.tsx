@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 interface SearchResultsInfoProps {
   searchQuery: string;
@@ -13,6 +14,7 @@ export function SearchResultsInfo({
   filteredCount,
   totalCount,
 }: SearchResultsInfoProps) {
+  const { t } = useTranslation("common");
   if (!searchQuery) return null;
 
   return (
@@ -28,20 +30,12 @@ export function SearchResultsInfo({
       <Typography variant="body2" sx={{ color: "#1e40af" }}>
         {filteredCount === 0 ? (
           <>
-            No courses found for "
-            <Typography component="span" sx={{ fontWeight: 600 }}>
-              {searchQuery}
-            </Typography>
-            "
+            {t("adminCourseBuilder.noCoursesFoundFor", { query: searchQuery })}
           </>
         ) : (
           <>
-            Found {filteredCount} course{filteredCount !== 1 ? "s" : ""}
-            {filteredCount !== totalCount && <> out of {totalCount} total</>} for "
-            <Typography component="span" sx={{ fontWeight: 600 }}>
-              {searchQuery}
-            </Typography>
-            "
+            {t("adminCourseBuilder.foundCourses", { count: filteredCount })}
+            {filteredCount !== totalCount && <> {t("adminCourseBuilder.outOfTotal", { total: totalCount })}</>} {t("adminCourseBuilder.forQuery", { query: searchQuery })}
           </>
         )}
       </Typography>

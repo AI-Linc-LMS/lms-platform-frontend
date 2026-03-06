@@ -12,6 +12,7 @@ import {
   InputAdornment,
   Button,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 export interface InterviewFiltersState {
@@ -31,28 +32,28 @@ interface MockInterviewFiltersProps {
   onClearFilters?: () => void;
 }
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+const getStatusOptions = (t: (key: string) => string) => [
+  { value: "", label: t("adminMockInterview.allStatuses") },
+  { value: "scheduled", label: t("adminMockInterview.scheduled") },
+  { value: "in_progress", label: t("adminMockInterview.inProgress") },
+  { value: "completed", label: t("adminMockInterview.completed") },
+  { value: "cancelled", label: t("adminMockInterview.cancelled") },
 ];
 
-const DIFFICULTY_OPTIONS = [
-  { value: "", label: "All Difficulties" },
-  { value: "Easy", label: "Easy" },
-  { value: "Medium", label: "Medium" },
-  { value: "Hard", label: "Hard" },
+const getDifficultyOptions = (t: (key: string) => string) => [
+  { value: "", label: t("adminMockInterview.allDifficulties") },
+  { value: "Easy", label: t("adminMockInterview.easy") },
+  { value: "Medium", label: t("adminMockInterview.medium") },
+  { value: "Hard", label: t("adminMockInterview.hard") },
 ];
 
-const SORT_OPTIONS = [
-  { value: "created_at", label: "Created Date" },
-  { value: "duration", label: "Duration" },
-  { value: "student_name", label: "Student Name" },
-  { value: "difficulty", label: "Difficulty" },
-  { value: "status", label: "Status" },
-  { value: "scheduled_date_time", label: "Scheduled Date" },
+const getSortOptions = (t: (key: string) => string) => [
+  { value: "created_at", label: t("adminMockInterview.sortCreatedDate") },
+  { value: "duration", label: t("adminMockInterview.sortDuration") },
+  { value: "student_name", label: t("adminMockInterview.sortStudentName") },
+  { value: "difficulty", label: t("adminMockInterview.sortDifficulty") },
+  { value: "status", label: t("adminMockInterview.sortStatus") },
+  { value: "scheduled_date_time", label: t("adminMockInterview.sortScheduledDate") },
 ];
 
 const hasActiveFilters = (f: InterviewFiltersState) =>
@@ -63,7 +64,11 @@ export function MockInterviewFilters({
   onFilterChange,
   onClearFilters,
 }: MockInterviewFiltersProps) {
+  const { t } = useTranslation("common");
   const hasFilters = hasActiveFilters(filters);
+  const STATUS_OPTIONS = getStatusOptions(t);
+  const DIFFICULTY_OPTIONS = getDifficultyOptions(t);
+  const SORT_OPTIONS = getSortOptions(t);
 
   return (
     <Paper
@@ -94,7 +99,7 @@ export function MockInterviewFilters({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:filter-variant" size={20} color="#6366f1" />
           <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#111827" }}>
-            Filter interviews
+            {t("adminMockInterview.filterInterviews")}
           </Typography>
           {hasFilters && (
             <Box
@@ -109,7 +114,7 @@ export function MockInterviewFilters({
                 fontWeight: 600,
               }}
             >
-              Active
+              {t("adminMockInterview.active")}
             </Box>
           )}
         </Box>
@@ -127,7 +132,7 @@ export function MockInterviewFilters({
               },
             }}
           >
-            Clear filters
+            {t("adminMockInterview.clearFilters")}
           </Button>
         )}
       </Box>
@@ -146,8 +151,8 @@ export function MockInterviewFilters({
         <TextField
           fullWidth
           size="small"
-          label="Search"
-          placeholder="Student, title, topic..."
+          label={t("adminMockInterview.search")}
+          placeholder={t("adminMockInterview.searchPlaceholder")}
           value={filters.search}
           onChange={(e) => onFilterChange("search", e.target.value)}
           InputProps={{
@@ -175,11 +180,11 @@ export function MockInterviewFilters({
           }}
         />
         <FormControl fullWidth size="small">
-          <InputLabel>Status</InputLabel>
+          <InputLabel>{t("adminMockInterview.status")}</InputLabel>
           <Select
             value={filters.status}
             onChange={(e) => onFilterChange("status", e.target.value)}
-            label="Status"
+            label={t("adminMockInterview.status")}
           >
             {STATUS_OPTIONS.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
@@ -189,11 +194,11 @@ export function MockInterviewFilters({
           </Select>
         </FormControl>
         <FormControl fullWidth size="small">
-          <InputLabel>Difficulty</InputLabel>
+          <InputLabel>{t("adminMockInterview.difficulty")}</InputLabel>
           <Select
             value={filters.difficulty}
             onChange={(e) => onFilterChange("difficulty", e.target.value)}
-            label="Difficulty"
+            label={t("adminMockInterview.difficulty")}
           >
             {DIFFICULTY_OPTIONS.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
@@ -205,15 +210,15 @@ export function MockInterviewFilters({
         <TextField
           fullWidth
           size="small"
-          label="Topic"
-          placeholder="Filter by topic"
+          label={t("adminMockInterview.topic")}
+          placeholder={t("adminMockInterview.filterByTopic")}
           value={filters.topic}
           onChange={(e) => onFilterChange("topic", e.target.value)}
         />
         <TextField
           fullWidth
           size="small"
-          label="Date From"
+          label={t("adminMockInterview.dateFrom")}
           type="date"
           value={filters.date_from}
           onChange={(e) => onFilterChange("date_from", e.target.value)}
@@ -222,7 +227,7 @@ export function MockInterviewFilters({
         <TextField
           fullWidth
           size="small"
-          label="Date To"
+          label={t("adminMockInterview.dateTo")}
           type="date"
           value={filters.date_to}
           onChange={(e) => onFilterChange("date_to", e.target.value)}
@@ -238,11 +243,11 @@ export function MockInterviewFilters({
         }}
       >
         <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>Sort By</InputLabel>
+          <InputLabel>{t("adminMockInterview.sortBy")}</InputLabel>
           <Select
             value={filters.sort_by}
             onChange={(e) => onFilterChange("sort_by", e.target.value)}
-            label="Sort By"
+            label={t("adminMockInterview.sortBy")}
           >
             {SORT_OPTIONS.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
@@ -252,16 +257,16 @@ export function MockInterviewFilters({
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Order</InputLabel>
+          <InputLabel>{t("adminMockInterview.order")}</InputLabel>
           <Select
             value={filters.sort_order}
             onChange={(e) =>
               onFilterChange("sort_order", e.target.value as "asc" | "desc")
             }
-            label="Order"
+            label={t("adminMockInterview.order")}
           >
-            <MenuItem value="asc">Ascending</MenuItem>
-            <MenuItem value="desc">Descending</MenuItem>
+            <MenuItem value="asc">{t("adminMockInterview.ascending")}</MenuItem>
+            <MenuItem value="desc">{t("adminMockInterview.descending")}</MenuItem>
           </Select>
         </FormControl>
       </Box>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -36,6 +37,7 @@ import { formatDate } from "@/lib/utils/date-utils";
 export default function StudentDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const studentId = params?.id ? Number(params.id) : null;
 
@@ -113,7 +115,7 @@ export default function StudentDetailsPage() {
         });
       } catch (error: any) {
         showToast(
-          error?.response?.data?.detail || "Failed to load student details",
+          error?.response?.data?.detail || t("manageStudents.failedToLoadStudent"),
           "error"
         );
       } finally {
@@ -142,12 +144,12 @@ export default function StudentDetailsPage() {
           email: formData.email,
         },
       });
-      showToast("Personal information updated successfully", "success");
+      showToast(t("manageStudents.personalInfoUpdated"), "success");
       setEditing(false);
     } catch (error: any) {
       showToast(
         error?.response?.data?.detail ||
-          "Failed to update personal information",
+          t("manageStudents.failedToUpdatePersonalInfo"),
         "error"
       );
     } finally {
@@ -185,12 +187,12 @@ export default function StudentDetailsPage() {
         },
       });
       showToast(
-        `Student ${newActiveStatus ? "activated" : "deactivated"} successfully`,
+        newActiveStatus ? t("manageStudents.studentActivated") : t("manageStudents.studentDeactivated"),
         "success"
       );
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to update student status",
+        error?.response?.data?.detail || t("manageStudents.failedToUpdateStatus"),
         "error"
       );
     } finally {
@@ -214,7 +216,7 @@ export default function StudentDetailsPage() {
         >
           <CircularProgress size={36} />
           <Typography variant="body1" sx={{ color: "#64748b", fontWeight: 500 }}>
-            Loading student profile...
+            {t("manageStudents.loadingStudentProfile")}
           </Typography>
         </Box>
       </MainLayout>
@@ -247,10 +249,10 @@ export default function StudentDetailsPage() {
               <IconWrapper icon="mdi:account-alert-outline" size={38} color="#94a3b8" />
             </Box>
             <Typography variant="h6" sx={{ color: "#334155", fontWeight: 600 }}>
-              Student not found
+              {t("manageStudents.studentNotFound")}
             </Typography>
             <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
-              The requested student profile is unavailable.
+              {t("manageStudents.studentNotFoundDesc")}
             </Typography>
           </Paper>
         </Box>
@@ -290,7 +292,7 @@ export default function StudentDetailsPage() {
             onClick={() => router.push("/admin/manage-students")}
             sx={{ color: "#6366f1" }}
           >
-            Back
+            {t("common.back")}
           </Button>
           <Typography
             variant="h4"
@@ -300,7 +302,7 @@ export default function StudentDetailsPage() {
               fontSize: { xs: "1.5rem", sm: "2rem" },
             }}
           >
-            Student Details
+            {t("manageStudents.studentDetails")}
           </Typography>
         </Box>
 
@@ -334,7 +336,7 @@ export default function StudentDetailsPage() {
                   variant="h6"
                   sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
                 >
-                  Activity Breakdown
+                  {t("manageStudents.activityBreakdown")}
                 </Typography>
                 {student.activity_breakdown &&
                 Object.keys(student.activity_breakdown).length > 0 ? (
@@ -345,7 +347,7 @@ export default function StudentDetailsPage() {
                   </Box>
                 ) : (
                   <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                    No activity breakdown available.
+                    {t("manageStudents.noActivityBreakdown")}
                   </Typography>
                 )}
               </Paper>
@@ -392,7 +394,7 @@ export default function StudentDetailsPage() {
                   variant="h6"
                   sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
                 >
-                  Assessment History
+                  {t("manageStudents.assessmentHistory")}
                 </Typography>
                 {student.assessments?.length ? (
                   <>
@@ -400,11 +402,11 @@ export default function StudentDetailsPage() {
                       <Table size="small">
                         <TableHead>
                           <TableRow sx={tableHeaderRowSx}>
-                            <TableCell>Assessment</TableCell>
-                            <TableCell>Score</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell>Started At</TableCell>
-                            <TableCell>Submitted At</TableCell>
+                            <TableCell>{t("manageStudents.assessment")}</TableCell>
+                            <TableCell>{t("manageStudents.score")}</TableCell>
+                            <TableCell>{t("manageStudents.status")}</TableCell>
+                            <TableCell>{t("manageStudents.startedAt")}</TableCell>
+                            <TableCell>{t("manageStudents.submittedAt")}</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -467,10 +469,11 @@ export default function StudentDetailsPage() {
                             fontSize: { xs: "0.75rem", sm: "0.875rem" },
                           }}
                         >
-                          Showing{" "}
-                          {paginatedAssessments.length === 0 ? 0 : assessmentStartIndex + 1} to{" "}
-                          {Math.min(assessmentEndIndex, student.assessments.length)} of{" "}
-                          {student.assessments.length} assessments
+                          {t("manageStudents.showingAssessments", {
+                            start: paginatedAssessments.length === 0 ? 0 : assessmentStartIndex + 1,
+                            end: Math.min(assessmentEndIndex, student.assessments.length),
+                            total: student.assessments.length,
+                          })}
                         </Typography>
                         <PerPageSelect
                           value={assessmentLimit}
@@ -480,7 +483,7 @@ export default function StudentDetailsPage() {
                           }}
                           options={[5, 10, 15, 30]}
                           displayEmpty
-                          ariaLabel="Assessments per page"
+                          ariaLabel={t("manageStudents.assessmentsPerPage")}
                           minWidth={120}
                           SelectSx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                         />
@@ -498,7 +501,7 @@ export default function StudentDetailsPage() {
                   </>
                 ) : (
                   <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                    No assessments found for this student.
+                    {t("manageStudents.noAssessmentsFound")}
                   </Typography>
                 )}
               </Paper>
@@ -511,7 +514,7 @@ export default function StudentDetailsPage() {
                   variant="h6"
                   sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
                 >
-                  Last 30 Days Activity
+                  {t("manageStudents.last30DaysActivity")}
                 </Typography>
                 {student.activity_pattern_30_days?.length ? (
                   <>
@@ -519,10 +522,10 @@ export default function StudentDetailsPage() {
                       <Table size="small">
                         <TableHead>
                           <TableRow sx={tableHeaderRowSx}>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Activities</TableCell>
-                            <TableCell>Time Spent (hrs)</TableCell>
-                            <TableCell>Marks Earned</TableCell>
+                            <TableCell>{t("manageStudents.date")}</TableCell>
+                            <TableCell>{t("manageStudents.activities")}</TableCell>
+                            <TableCell>{t("manageStudents.timeSpentHrs")}</TableCell>
+                            <TableCell>{t("manageStudents.marksEarned")}</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -571,13 +574,11 @@ export default function StudentDetailsPage() {
                           fontSize: { xs: "0.75rem", sm: "0.875rem" },
                         }}
                       >
-                        Showing{" "}
-                        {paginatedActivity.length === 0 ? 0 : activityStartIndex + 1} to{" "}
-                        {Math.min(
-                          activityEndIndex,
-                          student.activity_pattern_30_days.length
-                        )}{" "}
-                        of {student.activity_pattern_30_days.length} days
+                        {t("manageStudents.showingDays", {
+                          start: paginatedActivity.length === 0 ? 0 : activityStartIndex + 1,
+                          end: Math.min(activityEndIndex, student.activity_pattern_30_days.length),
+                          total: student.activity_pattern_30_days.length,
+                        })}
                       </Typography>
                       <PerPageSelect
                         value={activityLimit}
@@ -587,7 +588,7 @@ export default function StudentDetailsPage() {
                         }}
                         options={[5, 10, 15, 30]}
                         displayEmpty
-                        ariaLabel="Days per page"
+                        ariaLabel={t("manageStudents.daysPerPage")}
                         minWidth={120}
                         SelectSx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                       />
@@ -605,7 +606,7 @@ export default function StudentDetailsPage() {
                   </>
                 ) : (
                   <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                    No 30-day activity data available.
+                    {t("manageStudents.no30DayActivity")}
                   </Typography>
                 )}
               </Paper>

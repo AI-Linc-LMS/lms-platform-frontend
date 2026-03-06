@@ -10,6 +10,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import Link from "next/link";
@@ -31,6 +32,7 @@ const defaultConfig: OutlineConfig = {
 export default function GenerateDescriptionPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
@@ -44,10 +46,10 @@ export default function GenerateDescriptionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const err: Record<string, string> = {};
-    if (!formData.title.trim()) err.title = "Title is required";
-    if (!formData.description.trim()) err.description = "Description is required";
+    if (!formData.title.trim()) err.title = t("adminAICourseBuilder.titleRequired");
+    if (!formData.description.trim()) err.description = t("adminAICourseBuilder.descriptionRequired");
     if (!formData.duration_weeks || formData.duration_weeks < 1 || formData.duration_weeks > 52) {
-      err.duration_weeks = "Duration must be between 1 and 52 weeks";
+      err.duration_weeks = t("adminAICourseBuilder.durationValidation");
     }
     setErrors(err);
     if (Object.keys(err).length > 0) return;
@@ -62,11 +64,11 @@ export default function GenerateDescriptionPage() {
         duration_weeks: formData.duration_weeks,
         config,
       });
-      showToast("Outline generation started", "success");
+      showToast(t("adminAICourseBuilder.outlineGenerationStarted"), "success");
       router.push("/admin/ai-course-builder");
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : "Failed to generate outline";
+        error instanceof Error ? error.message : t("adminAICourseBuilder.failedToGenerateOutline");
       showToast(message, "error");
       try {
         if (typeof message === "string" && message.includes("{")) {
@@ -103,7 +105,7 @@ export default function GenerateDescriptionPage() {
             }}
           >
             <IconWrapper icon="mdi:arrow-left" size={20} />
-            Back to AI Course Builder
+            {t("adminAICourseBuilder.backToAICourseBuilder")}
           </Link>
         </Box>
 
@@ -111,11 +113,10 @@ export default function GenerateDescriptionPage() {
           variant="h5"
           sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
         >
-          Generate course outline from description
+          {t("adminAICourseBuilder.generateFromDescriptionTitle")}
         </Typography>
         <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-          Enter a high-level description and we will generate a structured
-          course outline with modules and submodules.
+          {t("adminAICourseBuilder.generateFromDescriptionSubtitle")}
         </Typography>
 
         <Paper
@@ -129,7 +130,7 @@ export default function GenerateDescriptionPage() {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Course title"
+              label={t("adminAICourseBuilder.courseTitle")}
               value={formData.title}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, title: e.target.value }))
@@ -142,7 +143,7 @@ export default function GenerateDescriptionPage() {
             />
             <TextField
               fullWidth
-              label="Course description"
+              label={t("adminAICourseBuilder.courseDescription")}
               value={formData.description}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, description: e.target.value }))
@@ -157,7 +158,7 @@ export default function GenerateDescriptionPage() {
             />
             <TextField
               fullWidth
-              label="Target audience (optional)"
+              label={t("adminAICourseBuilder.targetAudienceOptional")}
               value={formData.target_audience}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, target_audience: e.target.value }))
@@ -168,7 +169,7 @@ export default function GenerateDescriptionPage() {
             <TextField
               fullWidth
               type="number"
-              label="Duration (weeks)"
+              label={t("adminAICourseBuilder.durationWeeks")}
               value={formData.duration_weeks === 0 ? "" : formData.duration_weeks}
               onChange={(e) => {
                 const v = e.target.value;
@@ -202,10 +203,10 @@ export default function GenerateDescriptionPage() {
                 {submitting ? (
                   <>
                     <CircularProgress size={20} sx={{ mr: 1 }} />
-                    Generating...
+                    {t("adminAICourseBuilder.generating")}
                   </>
                 ) : (
-                  "Generate outline"
+                  t("adminAICourseBuilder.generateOutline")
                 )}
               </Button>
               <Button
@@ -214,7 +215,7 @@ export default function GenerateDescriptionPage() {
                 variant="outlined"
                 disabled={submitting}
               >
-                Cancel
+                {t("adminAICourseBuilder.cancel")}
               </Button>
             </Box>
           </form>

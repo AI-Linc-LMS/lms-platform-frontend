@@ -17,6 +17,7 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -32,6 +33,7 @@ interface EnrollmentJobHistoryProps {
 
 export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const [jobs, setJobs] = useState<StudentEnrollmentJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
@@ -44,12 +46,11 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
       const jobsData = await adminStudentEnrollmentService.listAllJobs();
       setJobs(jobsData);
     } catch (error: any) {
-      showToast(error.message || "Failed to load job history", "error");
+      showToast(error.message || t("adminManageStudents.failedToLoadJobHistory"), "error");
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // showToast is stable, no need to include it
+  }, [t]);
 
   // Load jobs on mount only - using loadJobs ref to avoid dependency issues
   useEffect(() => {
@@ -74,13 +75,13 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
   const getStatusLabel = (status: JobStatus): string => {
     switch (status) {
       case "PENDING":
-        return "Pending";
+        return t("adminManageStudents.pending");
       case "IN_PROGRESS":
-        return "In Progress";
+        return t("adminManageStudents.inProgress");
       case "COMPLETED":
-        return "Completed";
+        return t("adminManageStudents.completed");
       case "FAILED":
-        return "Failed";
+        return t("adminManageStudents.failed");
       default:
         return status;
     }
@@ -123,7 +124,7 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
   if (jobs.length === 0) {
     return (
       <Alert severity="info">
-        <Typography variant="body2">No enrollment jobs found</Typography>
+        <Typography variant="body2">{t("adminManageStudents.noEnrollmentJobsFound")}</Typography>
       </Alert>
     );
   }
@@ -132,9 +133,9 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
         <Typography variant="h6" fontWeight={600}>
-          Enrollment Job History
+          {t("adminManageStudents.enrollmentJobHistory")}
         </Typography>
-        <IconButton onClick={loadJobs} size="small" title="Refresh">
+        <IconButton onClick={loadJobs} size="small" title={t("adminManageStudents.refresh")}>
           <IconWrapper icon="mdi:refresh" size={20} />
         </IconButton>
       </Box>
@@ -143,31 +144,31 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Students</TableCell>
+              <TableCell>{t("adminManageStudents.id")}</TableCell>
+              <TableCell>{t("adminManageStudents.status")}</TableCell>
+              <TableCell>{t("adminManageStudents.students")}</TableCell>
               <TableCell
                 sx={{
                   display: { xs: "none", lg: "table-cell" },
                 }}
               >
-                Created Date
+                {t("adminManageStudents.createdDate")}
               </TableCell>
               <TableCell
                 sx={{
                   display: { xs: "none", lg: "table-cell" },
                 }}
               >
-                Completed Date
+                {t("adminManageStudents.completedDate")}
               </TableCell>
               <TableCell
                 sx={{
                   display: { xs: "table-cell", md: "none" },
                 }}
               >
-                Results
+                {t("adminManageStudents.results")}
               </TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t("adminManageStudents.actions")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

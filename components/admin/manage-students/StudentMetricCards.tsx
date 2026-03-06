@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -16,6 +17,7 @@ export function StudentMetricCards({
   activities,
   streak,
 }: StudentMetricCardsProps) {
+  const { t } = useTranslation();
   return (
     <Box
       sx={{
@@ -62,7 +64,7 @@ export function StudentMetricCards({
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Enrollments
+            {t("manageStudents.enrollments")}
           </Typography>
           <Typography
             variant="h5"
@@ -102,7 +104,7 @@ export function StudentMetricCards({
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Total Marks
+            {t("manageStudents.totalMarks")}
           </Typography>
           <Typography
             variant="h5"
@@ -142,7 +144,7 @@ export function StudentMetricCards({
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Activities
+            {t("manageStudents.activities")}
           </Typography>
           <Typography
             variant="h5"
@@ -182,7 +184,7 @@ export function StudentMetricCards({
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Streak
+            {t("manageStudents.streak")}
           </Typography>
           <Typography
             variant="h5"

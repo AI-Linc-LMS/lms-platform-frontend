@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, Checkbox, FormControlLabel, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useEffect } from "react";
 import { UserProfile, Experience } from "@/lib/services/profile.service";
 
 interface ExperienceSectionProps {
@@ -14,6 +15,7 @@ export function ExperienceSection({
   profile,
   onSave,
 }: ExperienceSectionProps) {
+  const { t } = useTranslation("common");
   const [experiences, setExperiences] = useState<Experience[]>(profile.experience || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -158,7 +160,7 @@ export function ExperienceSection({
               fontSize: "1.25rem",
             }}
           >
-            Experience
+            {t("profile.experience")}
           </Typography>
           {!editing ? (
             <Button
@@ -198,13 +200,13 @@ export function ExperienceSection({
                   },
                   transition: "all 0.2s ease",
                 }}
-              >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+            >
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -217,13 +219,13 @@ export function ExperienceSection({
                     backgroundColor: "#f9fafb",
                   },
                 }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+            >
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -237,7 +239,7 @@ export function ExperienceSection({
                 transition: "all 0.2s ease",
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -353,7 +355,7 @@ export function ExperienceSection({
                 fontWeight: 500,
               }}
             >
-              No experience added yet
+              {t("profile.noExperienceYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -363,7 +365,7 @@ export function ExperienceSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your work experience
+              {t("profile.clickEditToAddExperience")}
             </Typography>
           </Box>
         )}
@@ -409,7 +411,7 @@ export function ExperienceSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Experience" : "Add Experience"}
+            {editingIndex !== null ? t("profile.editExperience") : t("profile.addExperience")}
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
@@ -555,7 +557,7 @@ export function ExperienceSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -579,7 +581,7 @@ export function ExperienceSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

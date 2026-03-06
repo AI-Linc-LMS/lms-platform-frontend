@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, Autocomplete } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useEffect } from "react";
 import { UserProfile, Project } from "@/lib/services/profile.service";
 
 function getProjectLinkUrl(url: string | undefined): string | null {
@@ -33,6 +34,7 @@ export function ProjectsSection({
   profile,
   onSave,
 }: ProjectsSectionProps) {
+  const { t } = useTranslation("common");
   const [projects, setProjects] = useState<Project[]>(profile.projects || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -177,7 +179,7 @@ export function ProjectsSection({
               fontSize: "1.25rem",
             }}
           >
-            Projects
+            {t("profile.projects")}
           </Typography>
           {!editing ? (
             <Button
@@ -194,7 +196,7 @@ export function ProjectsSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -215,12 +217,12 @@ export function ProjectsSection({
                   },
                 }}
               >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -234,12 +236,12 @@ export function ProjectsSection({
                   },
                 }}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -251,7 +253,7 @@ export function ProjectsSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -403,7 +405,7 @@ export function ProjectsSection({
                 fontWeight: 500,
               }}
             >
-              No projects added yet
+              {t("profile.noProjectsYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -413,7 +415,7 @@ export function ProjectsSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your projects
+              {t("profile.clickEditToAddProjects")}
             </Typography>
           </Box>
         )}
@@ -459,7 +461,7 @@ export function ProjectsSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Project" : "Add Project"}
+            {editingIndex !== null ? t("profile.editProject") : t("profile.addProject")}
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
@@ -605,7 +607,7 @@ export function ProjectsSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -629,7 +631,7 @@ export function ProjectsSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

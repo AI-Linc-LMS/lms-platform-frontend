@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Typography,
@@ -21,6 +22,7 @@ import { ZoomCredentialsDialog } from "@/components/admin/live-sessions/ZoomCred
 import { zoomService } from "@/lib/services/zoom.service";
 
 export default function AdminLiveSessionsPage() {
+  const { t } = useTranslation("common");
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [hasCheckedCredentials, setHasCheckedCredentials] = useState(false);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
@@ -141,11 +143,10 @@ export default function AdminLiveSessionsPage() {
               variant="h4"
               sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
             >
-              Live Sessions
+              {t("adminLiveSessions.title")}
             </Typography>
             <Typography variant="body1" sx={{ color: "#6b7280" }}>
-              View and verify live sessions. Start meeting (host), open join
-              link, sync attendance and recording.
+              {t("adminLiveSessions.subtitle")}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -155,7 +156,7 @@ export default function AdminLiveSessionsPage() {
               onClick={() => setCredentialsDialogOpen(true)}
               sx={{ borderColor: "#6366f1", color: "#6366f1" }}
             >
-              Zoom credentials
+              {t("adminLiveSessions.zoomCredentials")}
             </Button>
             <Button
               variant="contained"
@@ -166,7 +167,7 @@ export default function AdminLiveSessionsPage() {
                 "&:hover": { bgcolor: "#4f46e5" },
               }}
             >
-              Create Live Session
+              {t("adminLiveSessions.createLiveSession")}
             </Button>
           </Box>
         </Box>

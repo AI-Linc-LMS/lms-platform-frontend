@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Typography, Paper, CircularProgress, Chip, Skeleton } from "@mui/material";
+import { Box, Typography, Paper, Chip, Skeleton } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AdminTopicItem, TopicsResponse } from "@/lib/services/admin/admin-mock-interview.service";
 
@@ -15,6 +16,7 @@ export function MockInterviewTopicsView({
   data,
   loading,
 }: MockInterviewTopicsViewProps) {
+  const { t } = useTranslation("common");
   if (loading) {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -55,10 +57,10 @@ export function MockInterviewTopicsView({
           <IconWrapper icon="mdi:book-open-variant" size={36} color="#6366f1" />
         </Box>
         <Typography variant="body1" sx={{ fontWeight: 500, color: "#374151", mb: 0.5 }}>
-          No topic analytics yet
+          {t("adminMockInterview.noTopicAnalytics")}
         </Typography>
         <Typography variant="body2" sx={{ color: "#6b7280" }}>
-          Topic data will appear as students complete interviews
+          {t("adminMockInterview.topicDataWillAppear")}
         </Typography>
       </Paper>
     );
@@ -67,7 +69,7 @@ export function MockInterviewTopicsView({
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <Typography variant="body2" sx={{ color: "#6b7280" }}>
-        {data.total_topics} topics
+        {t("adminMockInterview.topicsCount", { count: data.total_topics })}
       </Typography>
       <Box
         sx={{
@@ -107,7 +109,7 @@ export function MockInterviewTopicsView({
             >
               <Box>
                 <Typography variant="caption" sx={{ color: "#6b7280" }}>
-                  Interviews
+                  {t("adminMockInterview.interviewsColumn")}
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
                   {topic.completed_interviews}/{topic.total_interviews}
@@ -115,7 +117,7 @@ export function MockInterviewTopicsView({
               </Box>
               <Box>
                 <Typography variant="caption" sx={{ color: "#6b7280" }}>
-                  Unique Students
+                  {t("adminMockInterview.uniqueStudentsColumn")}
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
                   {topic.unique_students}
@@ -123,7 +125,7 @@ export function MockInterviewTopicsView({
               </Box>
               <Box>
                 <Typography variant="caption" sx={{ color: "#6b7280" }}>
-                  Avg Score
+                  {t("adminMockInterview.avgScore")}
                 </Typography>
                 <Typography
                   variant="body1"
@@ -145,7 +147,7 @@ export function MockInterviewTopicsView({
               Object.keys(topic.difficulty_breakdown).length > 0 && (
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mb: 1 }}>
-                    Difficulty
+                    {t("adminMockInterview.difficulty")}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                     {Object.entries(topic.difficulty_breakdown).map(
@@ -168,7 +170,7 @@ export function MockInterviewTopicsView({
             {topic.subtopics && topic.subtopics.length > 0 && (
               <Box>
                 <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mb: 1 }}>
-                  Subtopics
+                  {t("adminMockInterview.subtopics")}
                 </Typography>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {topic.subtopics.map((st) => (
@@ -185,7 +187,7 @@ export function MockInterviewTopicsView({
                     >
                       <Typography variant="body2">{st.subtopic}</Typography>
                       <Typography variant="caption" sx={{ color: "#6b7280" }}>
-                        {st.completed}/{st.total_interviews} · avg {st.average_score?.toFixed(1)}%
+                        {st.completed}/{st.total_interviews} · {t("adminMockInterview.avg")} {st.average_score?.toFixed(1)}%
                       </Typography>
                     </Box>
                   ))}

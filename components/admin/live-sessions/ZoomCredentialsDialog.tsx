@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogTitle,
@@ -50,6 +51,7 @@ function getApiErrorMessage(e: unknown): string {
 }
 
 export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -99,11 +101,11 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
     // Create: all three required. Update: secret optional (leave blank to keep existing).
     if (!hasExistingConfig) {
       const missing: string[] = [];
-      if (!(form.account_id && form.account_id.trim())) missing.push("Account ID");
-      if (!(form.zoom_client_id && form.zoom_client_id.trim())) missing.push("Zoom Client ID");
-      if (!(form.zoom_client_secret && form.zoom_client_secret.trim())) missing.push("Zoom Client Secret");
+      if (!(form.account_id && form.account_id.trim())) missing.push(t("adminLiveSessions.accountId"));
+      if (!(form.zoom_client_id && form.zoom_client_id.trim())) missing.push(t("adminLiveSessions.zoomClientId"));
+      if (!(form.zoom_client_secret && form.zoom_client_secret.trim())) missing.push(t("adminLiveSessions.zoomClientSecretRequired"));
       if (missing.length) {
-        setError(`Required when setting up for the first time: ${missing.join(", ")}.`);
+        setError(t("adminLiveSessions.requiredWhenSetup", { fields: missing.join(", ") }));
         return;
       }
     }
@@ -120,7 +122,7 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
       if (form.timezone?.trim()) payload.timezone = form.timezone.trim();
 
       await zoomService.putZoomCredentials(payload);
-      showToast("Zoom credentials saved successfully", "success");
+      showToast(t("adminLiveSessions.zoomCredentialsSaved"), "success");
       onClose();
     } catch (e: unknown) {
       const message = getApiErrorMessage(e);
@@ -136,15 +138,15 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:video-account" size={24} color="#6366f1" />
-          <span>Zoom credentials</span>
+          <span>{t("adminLiveSessions.zoomCredentialsTitle")}</span>
         </Box>
-        <IconButton aria-label="Close" onClick={onClose} size="small">
+        <IconButton aria-label={t("adminLiveSessions.close")} onClick={onClose} size="small">
           <IconWrapper icon="mdi:close" size={20} />
         </IconButton>
       </DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
-          Configure Zoom account and API credentials for this client. Used for creating and managing live sessions.
+          {t("adminLiveSessions.zoomCredentialsDesc")}
         </Typography>
 
         {loading ? (
@@ -167,25 +169,21 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
               }}
             >
               <TextField
-                label={hasExistingConfig ? "Account ID" : "Account ID *"}
+                label={hasExistingConfig ? t("adminLiveSessions.accountId") : t("adminLiveSessions.accountIdRequired")}
                 value={form.account_id ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, account_id: e.target.value }))}
                 size="small"
                 fullWidth
               />
               <TextField
-                label={hasExistingConfig ? "Zoom Client ID" : "Zoom Client ID *"}
+                label={hasExistingConfig ? t("adminLiveSessions.zoomClientId") : t("adminLiveSessions.zoomClientIdRequired")}
                 value={form.zoom_client_id ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, zoom_client_id: e.target.value }))}
                 size="small"
                 fullWidth
               />
               <TextField
-                label={
-                  hasExistingConfig
-                    ? "Zoom Client Secret (leave blank to keep existing)"
-                    : "Zoom Client Secret *"
-                }
+                label={hasExistingConfig ? t("adminLiveSessions.zoomClientSecret") : t("adminLiveSessions.zoomClientSecretRequired")}
                 type="password"
                 value={form.zoom_client_secret ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, zoom_client_secret: e.target.value }))}
@@ -194,30 +192,26 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 autoComplete="off"
               />
               <TextField
-                label={
-                  hasExistingConfig
-                    ? "Webhook Secret (leave blank to keep existing)"
-                    : "Webhook Secret"
-                }
+                label={hasExistingConfig ? t("adminLiveSessions.webhookSecret") : t("adminLiveSessions.webhookSecretLabel")}
                 type="password"
                 value={form.zoom_webhook_secret ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, zoom_webhook_secret: e.target.value }))}
                 size="small"
                 fullWidth
                 autoComplete="off"
-                helperText="From Zoom Marketplace → your app → Event Subscriptions → Secret token."
+                helperText={t("adminLiveSessions.webhookSecretHelper")}
               />
               {hasExistingConfig && (
                 <Box>
                   <Typography variant="caption" sx={{ color: "#6b7280", mb: 0.5, display: "block" }}>
-                    Subscription endpoint URL (Webhook URL)
+                    {t("adminLiveSessions.subscriptionEndpointUrl")}
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <TextField
                       value={webhookUrl?.trim() ?? ""}
                       size="small"
                       fullWidth
-                      placeholder={webhookUrl ? undefined : "Save credentials to see webhook URL"}
+                      placeholder={webhookUrl ? undefined : t("adminLiveSessions.saveCredentialsToSeeWebhook")}
                       InputProps={{ readOnly: true }}
                       sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem", fontFamily: "monospace" } }}
                     />
@@ -228,21 +222,21 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                         const url = webhookUrl?.trim();
                         if (!url) return;
                         navigator.clipboard.writeText(url).then(
-                          () => showToast("Webhook URL copied", "success"),
-                          () => showToast("Failed to copy", "error")
+                          () => showToast(t("adminLiveSessions.webhookUrlCopied"), "success"),
+                          () => showToast(t("adminLiveSessions.failedToCopy"), "error")
                         );
                       }}
-                      aria-label="Copy webhook URL"
+                      aria-label={t("adminLiveSessions.copyWebhookUrl")}
                     >
                       <IconWrapper icon="mdi:content-copy" size={18} />
                     </IconButton>
                   </Box>
                   <Typography variant="caption" sx={{ color: "#9ca3af", mt: 0.5, display: "block" }}>
-                    In Zoom Marketplace → your app → Event Subscriptions, set Endpoint URL to this value.
+                    {t("adminLiveSessions.webhookEndpointHint")}
                   </Typography>
                   {webhookConfigured && (
                     <Chip
-                      label="Webhook active"
+                      label={t("adminLiveSessions.webhookActive")}
                       size="small"
                       sx={{ mt: 1, bgcolor: "#d1fae5", color: "#065f46", fontWeight: 600, fontSize: "0.7rem" }}
                     />
@@ -250,12 +244,12 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 </Box>
               )}
               <TextField
-                label="Timezone (optional)"
+                label={t("adminLiveSessions.timezoneOptional")}
                 value={form.timezone ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, timezone: e.target.value }))}
                 size="small"
                 fullWidth
-                placeholder="e.g. Asia/Kolkata, America/New_York"
+                placeholder={t("adminLiveSessions.timezonePlaceholder")}
               />
               <FormControlLabel
                 control={
@@ -265,7 +259,7 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                     color="primary"
                   />
                 }
-                label="Active"
+                label={t("adminLiveSessions.active")}
               />
             </Box>
             <Box sx={{ mt: 2, mb: 2 }}>
@@ -277,34 +271,34 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 }
                 sx={{ textTransform: "none", color: "#6366f1" }}
               >
-                Zoom Marketplace setup (scopes &amp; webhook)
+                {t("adminLiveSessions.zoomMarketplaceSetup")}
               </Button>
               <Collapse in={showSetupHelp}>
                 <Box sx={{ mt: 1, p: 2, bgcolor: "#f8fafc", borderRadius: 1, border: "1px solid #e2e8f0" }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 1 }}>
-                    Required scopes (Zoom Marketplace → your app → Feature)
+                    {t("adminLiveSessions.requiredScopes")}
                   </Typography>
                   <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "#475569" }}>
-                    <li><strong>Meeting:write</strong> — create meetings</li>
-                    <li><strong>Recording:read</strong> (or Recording:read:admin) — sync cloud recordings</li>
-                    <li><strong>Meeting:read:admin</strong> — fetch past-meeting participants (attendance)</li>
+                    <li>{t("adminLiveSessions.scopeMeetingWrite")}</li>
+                    <li>{t("adminLiveSessions.scopeRecordingRead")}</li>
+                    <li>{t("adminLiveSessions.scopeMeetingReadAdmin")}</li>
                   </Box>
                   <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#64748b" }}>
-                    After adding scopes, re-authorize the app if Zoom prompts you so new tokens include them.
+                    {t("adminLiveSessions.reauthorizeHint")}
                   </Typography>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mt: 2, mb: 1 }}>
-                    Event Subscriptions (Zoom Marketplace → your app → Event Subscriptions)
+                    {t("adminLiveSessions.eventSubscriptions")}
                   </Typography>
                   <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "#475569" }}>
-                    <li><strong>Endpoint URL</strong> — use the Webhook URL shown above (from the API)</li>
-                    <li><strong>Secret token</strong> — copy from Zoom and paste into &quot;Webhook Secret&quot; above</li>
-                    <li>Subscribe to: <strong>Meeting has ended</strong> (meeting.ended) and <strong>Recording has been completed</strong> (recording.completed)</li>
+                    <li>{t("adminLiveSessions.endpointUrlHint")}</li>
+                    <li>{t("adminLiveSessions.secretTokenHint")}</li>
+                    <li>{t("adminLiveSessions.subscribeToEvents")}</li>
                   </Box>
                 </Box>
               </Collapse>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-              <Button onClick={onClose}>Cancel</Button>
+              <Button onClick={onClose}>{t("adminLiveSessions.cancel")}</Button>
               <Button
                 variant="contained"
                 onClick={handleSave}
@@ -314,7 +308,7 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 }
                 sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
               >
-                {saving ? "Saving…" : "Save"}
+                {saving ? t("adminLiveSessions.saving") : t("adminLiveSessions.save")}
               </Button>
             </Box>
           </>
