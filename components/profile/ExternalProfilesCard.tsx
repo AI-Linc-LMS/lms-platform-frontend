@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, TextField, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useEffect } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface ExternalProfilesCardProps {
@@ -14,6 +15,7 @@ export function ExternalProfilesCard({
   profile,
   onSave,
 }: ExternalProfilesCardProps) {
+  const { t } = useTranslation("common");
   const [formData, setFormData] = useState({
     portfolio_website_url: profile.portfolio_website_url || "",
     leetcode_url: profile.leetcode_url || "",
@@ -250,7 +252,7 @@ export function ExternalProfilesCard({
                       color: "#9ca3af",
                     }}
                   >
-                    Not added
+                    {t("profile.notAdded")}
                   </Box>
                 )}
               </Typography>
@@ -292,7 +294,7 @@ export function ExternalProfilesCard({
             fontSize: "1.25rem",
           }}
         >
-          External Profiles
+          {t("profile.externalProfiles")}
         </Typography>
         {!editing ? (
           <Button
@@ -314,7 +316,7 @@ export function ExternalProfilesCard({
               transition: "all 0.2s ease",
             }}
           >
-            Edit
+            {t("profile.edit")}
           </Button>
         ) : (
           <Box sx={{ display: "flex", gap: 1 }}>
@@ -335,7 +337,7 @@ export function ExternalProfilesCard({
                 },
               }}
             >
-              Cancel
+              {t("profile.cancel")}
             </Button>
             <Button
               variant="contained"
@@ -354,7 +356,7 @@ export function ExternalProfilesCard({
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("profile.saving") : t("profile.save")}
             </Button>
           </Box>
         )}
@@ -368,31 +370,31 @@ export function ExternalProfilesCard({
         }}
       >
         {renderField(
-          "Portfolio Website",
+          t("profile.portfolio"),
           "portfolio_website_url",
           "https://yourportfolio.com",
           "mdi:web"
         )}
         {renderField(
-          "LeetCode Profile",
+          t("profile.leetcode"),
           "leetcode_url",
           "https://leetcode.com/username",
           "mdi:code-tags"
         )}
         {renderField(
-          "HackerRank Profile",
+          t("profile.hackerrank"),
           "hackerrank_url",
           "https://www.hackerrank.com/username",
           "mdi:code-braces"
         )}
         {renderField(
-          "Kaggle Profile",
+          t("profile.kaggle"),
           "kaggle_url",
           "https://www.kaggle.com/username",
           "mdi:chart-box"
         )}
         {renderField(
-          "Medium Profile",
+          t("profile.medium"),
           "medium_url",
           "https://medium.com/@username",
           "mdi:book-open-variant"

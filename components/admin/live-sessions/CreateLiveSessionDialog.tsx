@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -37,6 +38,7 @@ export function CreateLiveSessionDialog({
   onClose,
   onSuccess,
 }: CreateLiveSessionDialogProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [step, setStep] = useState<"form" | "create-zoom" | "success">("form");
   const [topicName, setTopicName] = useState("");
@@ -88,15 +90,15 @@ export function CreateLiveSessionDialog({
   const handleCreateSession = async () => {
     const trimmedTopic = topicName.trim();
     if (!trimmedTopic) {
-      showToast("Please enter a topic name", "error");
+      showToast(t("adminLiveSessions.pleaseEnterTopic"), "error");
       return;
     }
     if (trimmedTopic.length < 2) {
-      showToast("Topic name must be at least 2 characters", "error");
+      showToast(t("adminLiveSessions.topicMinLength"), "error");
       return;
     }
     if (!classDatetime.trim()) {
-      showToast("Please enter class date and time", "error");
+      showToast(t("adminLiveSessions.pleaseEnterClassDateTime"), "error");
       return;
     }
     const classDate = new Date(classDatetime);
@@ -106,7 +108,7 @@ export function CreateLiveSessionDialog({
       Number.isNaN(classDate.getTime()) ||
       classDate.getTime() < now - oneMinuteMs
     ) {
-      showToast("Class date and time must be in the future", "error");
+      showToast(t("adminLiveSessions.classDateTimeFuture"), "error");
       return;
     }
     const duration = Math.min(480, Math.max(1, Math.floor(durationMinutes)));
@@ -169,7 +171,7 @@ export function CreateLiveSessionDialog({
         createdSession.id
       );
       applyZoomSuccessState(detail, data);
-      showToast("Zoom meeting created", "success");
+      showToast(t("adminLiveSessions.zoomMeetingCreated"), "success");
     } catch (error: unknown) {
       showToast(
         getLiveSessionErrorMessage(error, "zoom_create"),
@@ -233,11 +235,11 @@ export function CreateLiveSessionDialog({
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {step === "form" && "Create Live Session"}
-            {step === "create-zoom" && "Create Zoom Meeting"}
-            {step === "success" && "Zoom session created"}
+            {step === "form" && t("adminLiveSessions.createDialogTitle")}
+            {step === "create-zoom" && t("adminLiveSessions.createZoomMeetingTitle")}
+            {step === "success" && t("adminLiveSessions.zoomSessionCreatedTitle")}
           </Typography>
-          <IconButton onClick={handleClose} size="small" aria-label="Close dialog">
+          <IconButton onClick={handleClose} size="small" aria-label={t("adminLiveSessions.closeDialog")}>
             <IconWrapper icon="mdi:close" size={20} />
           </IconButton>
         </Box>
@@ -253,18 +255,18 @@ export function CreateLiveSessionDialog({
             }}
           >
             <TextField
-              label="Topic name"
+              label={t("adminLiveSessions.topicName")}
               value={topicName}
               onChange={(e) => setTopicName(e.target.value)}
-              placeholder="e.g. Week 1 – Introduction"
+              placeholder={t("adminLiveSessions.topicPlaceholder")}
               fullWidth
               required
               size="small"
               error={topicName.trim().length > 0 && topicName.trim().length < 2}
-              helperText={topicName.trim().length > 0 && topicName.trim().length < 2 ? "At least 2 characters" : undefined}
+              helperText={topicName.trim().length > 0 && topicName.trim().length < 2 ? t("adminLiveSessions.atLeast2Chars") : undefined}
             />
             <TextField
-              label="Description"
+              label={t("adminLiveSessions.description")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               multiline
@@ -273,7 +275,7 @@ export function CreateLiveSessionDialog({
               size="small"
             />
             <TextField
-              label="Class date & time"
+              label={t("adminLiveSessions.classDateAndTime")}
               type="datetime-local"
               value={classDatetime}
               onChange={(e) => setClassDatetime(e.target.value)}
@@ -281,10 +283,10 @@ export function CreateLiveSessionDialog({
               required
               size="small"
               InputLabelProps={{ shrink: true }}
-              helperText="Times are in your local timezone."
+              helperText={t("adminLiveSessions.timesLocalTimezone")}
             />
             <TextField
-              label="Duration (minutes)"
+              label={t("adminLiveSessions.durationMinutes")}
               type="number"
               value={durationMinutes}
               onChange={(e) => {
@@ -296,21 +298,21 @@ export function CreateLiveSessionDialog({
               inputProps={{ min: 1, max: 480 }}
               size="small"
               error={durationMinutes < 1 || durationMinutes > 480}
-              helperText={durationMinutes > 480 ? "Max 480 minutes (8 hours)" : undefined}
+              helperText={durationMinutes > 480 ? t("adminLiveSessions.maxDurationHelper") : undefined}
             />
             <TextField
-              label="Instructor ID (optional)"
+              label={t("adminLiveSessions.instructorIdOptional")}
               value={instructorId}
               onChange={(e) => setInstructorId(e.target.value)}
               type="number"
               fullWidth
               size="small"
               error={instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1)}
-              helperText={instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1) ? "Enter a positive number" : undefined}
+              helperText={instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1) ? t("adminLiveSessions.enterPositiveNumber") : undefined}
             />
             <TextField
               select
-              label="Course (optional)"
+              label={t("adminLiveSessions.courseOptional")}
               value={courseId ?? ""}
               onChange={(e) => {
                 const v = e.target.value;
@@ -320,7 +322,7 @@ export function CreateLiveSessionDialog({
               size="small"
               disabled={loadingCourses}
             >
-              <MenuItem value="">None</MenuItem>
+              <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
               {courses.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.title}
@@ -333,7 +335,7 @@ export function CreateLiveSessionDialog({
         {step === "create-zoom" && (
           <Box sx={{ py: 2 }}>
             <Typography variant="body1" sx={{ color: "#6b7280", mb: 2 }}>
-              Session &quot;{createdSession?.topic_name ?? createdSession?.title ?? "—"}&quot; was created. Create a Zoom meeting to get the start and join links.
+              {t("adminLiveSessions.sessionCreatedPrompt", { topic: createdSession?.topic_name ?? createdSession?.title ?? "—" })}
             </Typography>
             <Button
               variant="contained"
@@ -351,7 +353,7 @@ export function CreateLiveSessionDialog({
                 "&:hover": { bgcolor: "#4f46e5" },
               }}
             >
-              {creatingZoom ? "Creating…" : "Create Zoom meeting"}
+              {creatingZoom ? t("adminLiveSessions.creating") : t("adminLiveSessions.createZoomMeeting")}
             </Button>
           </Box>
         )}
@@ -366,8 +368,7 @@ export function CreateLiveSessionDialog({
             }}
           >
             <Typography variant="body1" sx={{ color: "#6b7280" }}>
-              Your Zoom session is ready. Start the meeting or share the join
-              link with students.
+              {t("adminLiveSessions.zoomReadyPrompt")}
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
               {zoomStartUrl && (
@@ -380,7 +381,7 @@ export function CreateLiveSessionDialog({
                     "&:hover": { bgcolor: "#4f46e5" },
                   }}
                 >
-                  Start meeting
+                  {t("adminLiveSessions.startMeeting")}
                 </Button>
               )}
               {zoomPassword && (
@@ -388,12 +389,12 @@ export function CreateLiveSessionDialog({
                   variant="body2"
                   sx={{ color: "#6b7280", display: "flex", alignItems: "center", gap: 1 }}
                 >
-                  Password: {zoomPassword}
+                  {t("liveSessions.password")}: {zoomPassword}
                   <Button
                     size="small"
-                    onClick={() => copyToClipboard(zoomPassword, showToast, "Password copied")}
+                    onClick={() => copyToClipboard(zoomPassword, showToast, t("liveSessions.passwordCopied"))}
                   >
-                    Copy
+                    {t("liveSessions.copy")}
                   </Button>
                 </Typography>
               )}
@@ -403,7 +404,7 @@ export function CreateLiveSessionDialog({
       </DialogContent>
       {step === "form" && (
         <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
-          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleClose}>{t("adminLiveSessions.cancel")}</Button>
           <Button
             type="button"
             variant="contained"
@@ -427,20 +428,20 @@ export function CreateLiveSessionDialog({
             {creating ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              "Create session"
+              t("adminLiveSessions.createSession")
             )}
           </Button>
         </DialogActions>
       )}
       {step === "create-zoom" && (
         <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
-          <Button onClick={handleDone}>Skip (done)</Button>
+          <Button onClick={handleDone}>{t("adminLiveSessions.skipDone")}</Button>
         </DialogActions>
       )}
       {step === "success" && (
         <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
           <Button variant="contained" onClick={handleDone}>
-            Done
+            {t("adminLiveSessions.done")}
           </Button>
         </DialogActions>
       )}

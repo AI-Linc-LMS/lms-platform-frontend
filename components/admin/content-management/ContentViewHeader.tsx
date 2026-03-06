@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, Typography, Paper, Chip } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ContentType } from "@/lib/services/admin/admin-content-management.service";
 
@@ -21,6 +22,7 @@ export function ContentViewHeader({
   onBack,
   onToggleVerification,
 }: ContentViewHeaderProps) {
+  const { t } = useTranslation("common");
   const getTypeColor = (contentType: ContentType) => {
     const colors: Record<ContentType, { bg: string; text: string }> = {
       Quiz: { bg: "#eef2ff", text: "#6366f1" },
@@ -34,6 +36,14 @@ export function ContentViewHeader({
   };
 
   const typeColor = getTypeColor(type);
+  const typeToLabelKey: Record<ContentType, string> = {
+    Quiz: "adminContentManagement.typeQuiz",
+    Article: "adminContentManagement.typeArticle",
+    Assignment: "adminContentManagement.typeAssignment",
+    CodingProblem: "adminContentManagement.typeCodingProblem",
+    DevCodingProblem: "adminContentManagement.typeDevCodingProblem",
+    VideoTutorial: "adminContentManagement.typeVideoTutorial",
+  };
 
   return (
     <Paper
@@ -60,7 +70,7 @@ export function ContentViewHeader({
             onClick={onBack}
             sx={{ color: "#6b7280" }}
           >
-            Back
+            {t("adminContentManagement.back")}
           </Button>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
@@ -68,7 +78,7 @@ export function ContentViewHeader({
             </Typography>
             <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
               <Chip
-                label={type}
+                label={t(typeToLabelKey[type])}
                 size="small"
                 sx={{
                   bgcolor: typeColor.bg,
@@ -77,7 +87,7 @@ export function ContentViewHeader({
                 }}
               />
               <Chip
-                label={isVerified ? "Verified" : "Unverified"}
+                label={isVerified ? t("adminContentManagement.verified") : t("adminContentManagement.unverified")}
                 size="small"
                 sx={{
                   bgcolor: isVerified ? "#d1fae5" : "#fee2e2",
@@ -108,7 +118,7 @@ export function ContentViewHeader({
             },
           }}
         >
-          {isVerified ? "Unverify" : "Verify"}
+          {isVerified ? t("adminContentManagement.unverify") : t("adminContentManagement.verify")}
         </Button>
       </Box>
     </Paper>

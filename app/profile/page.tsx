@@ -103,7 +103,7 @@ export default function ProfilePage() {
         // Continue even if heatmap fails
       }
     } catch {
-      showToast("Failed to load profile", "error");
+      showToast(t("profile.failedToLoad"), "error");
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ export default function ProfilePage() {
         merged.profile_picture = merged.profile_picture ?? "";
         return merged as UserProfile;
       });
-      showToast("Profile saved locally", "info");
+      showToast(t("profile.savedLocally"), "info");
     }
   };
 
@@ -205,7 +205,7 @@ export default function ProfilePage() {
               coverPhotoUrl={profile.cover_photo_url ?? undefined}
               onEditCoverUrl={async (url: string) => {
                 await handleSaveProfile({ cover_photo_url: url || null });
-                showToast(url ? "Cover photo updated successfully" : "Cover photo cleared", "success");
+                showToast(url ? t("profile.coverPhotoUpdated") : t("profile.coverPhotoCleared"), "success");
               }}
             />
           </Box>
@@ -226,12 +226,12 @@ export default function ProfilePage() {
           <ProfileHeader
             userName={profile.first_name + " " + profile.last_name}
             profilePicUrl={profile.profile_picture}
-            role={profile.role || "Student"}
+            role={profile.role || t("profile.student")}
             headline={profile.headline ?? undefined}
             location={location}
             onEditProfilePicUrl={async (url: string) => {
               await handleSaveProfile({ profile_picture: url || null });
-              showToast(url ? "Profile picture updated successfully" : "Profile picture cleared", "success");
+              showToast(url ? t("profile.profilePictureUpdated") : t("profile.profilePictureCleared"), "success");
             }}
             onEditHeadline={async (newHeadline: string) => {
               await handleSaveProfile({ headline: newHeadline.trim() || null });
@@ -286,8 +286,8 @@ export default function ProfilePage() {
                 },
               }}
             >
-              <Tab label="Profile" />
-              <Tab label="Resume" />
+              <Tab label={t("profile.tabProfile")} />
+              <Tab label={t("profile.tabResume")} />
             </Tabs>
           </Box>
 
@@ -335,7 +335,7 @@ export default function ProfilePage() {
                           {
                             id: 1,
                             name: clientInfo.name || "AI-Linc Learning",
-                            role: "Student",
+                            role: t("profile.student"),
                             joinedDate: "Jan 1, 2024",
                           },
                         ]

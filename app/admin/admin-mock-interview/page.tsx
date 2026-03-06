@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Box, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -36,6 +37,7 @@ const DEFAULT_FILTERS: InterviewFiltersState = {
 };
 
 export default function AdminMockInterviewPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [tab, setTab] = useState<TabValue>("overview");
   const [days, setDays] = useState(30);
@@ -73,13 +75,13 @@ export default function AdminMockInterviewPage() {
     } catch (err: unknown) {
       showToast(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          "Failed to load dashboard",
+          t("adminMockInterview.failedToLoadDashboard"),
         "error"
       );
     } finally {
       setDashboardLoading(false);
     }
-  }, [days, showToast]);
+  }, [days, showToast, t]);
 
   const loadInterviews = useCallback(async () => {
     setInterviewsLoading(true);
@@ -102,7 +104,7 @@ export default function AdminMockInterviewPage() {
     } catch (err: unknown) {
       showToast(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          "Failed to load interviews",
+          t("adminMockInterview.failedToLoadInterviews"),
         "error"
       );
     } finally {
@@ -113,6 +115,7 @@ export default function AdminMockInterviewPage() {
     interviewLimit,
     interviewFilters,
     showToast,
+    t,
   ]);
 
   const loadStudents = useCallback(async () => {
@@ -129,7 +132,7 @@ export default function AdminMockInterviewPage() {
     } catch (err: unknown) {
       showToast(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          "Failed to load students",
+          t("adminMockInterview.failedToLoadStudents"),
         "error"
       );
     } finally {
@@ -142,6 +145,7 @@ export default function AdminMockInterviewPage() {
     studentPage,
     studentLimit,
     showToast,
+    t,
   ]);
 
   const loadTopics = useCallback(async () => {
@@ -152,7 +156,7 @@ export default function AdminMockInterviewPage() {
     } catch (err: unknown) {
       showToast(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          "Failed to load topics",
+          t("adminMockInterview.failedToLoadTopics"),
         "error"
       );
     } finally {
@@ -202,23 +206,23 @@ export default function AdminMockInterviewPage() {
       a.download = `mock_interviews_export_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast("Export completed", "success");
+      showToast(t("adminMockInterview.exportCompleted"), "success");
     } catch (err: unknown) {
       showToast(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          "Export failed",
+          t("adminMockInterview.exportFailed"),
         "error"
       );
     } finally {
       setExporting(false);
     }
-  }, [interviewFilters, showToast]);
+  }, [interviewFilters, showToast, t]);
 
   const tabItems: { value: TabValue; label: string; icon: string }[] = [
-    { value: "overview", label: "Overview", icon: "mdi:view-dashboard" },
-    { value: "interviews", label: "Interviews", icon: "mdi:clipboard-list" },
-    { value: "students", label: "Students", icon: "mdi:account-group" },
-    { value: "topics", label: "Topics", icon: "mdi:book-open-variant" },
+    { value: "overview", label: t("adminMockInterview.tabOverview"), icon: "mdi:view-dashboard" },
+    { value: "interviews", label: t("adminMockInterview.tabInterviews"), icon: "mdi:clipboard-list" },
+    { value: "students", label: t("adminMockInterview.tabStudents"), icon: "mdi:account-group" },
+    { value: "topics", label: t("adminMockInterview.tabTopics"), icon: "mdi:book-open-variant" },
   ];
 
   return (
@@ -337,7 +341,7 @@ export default function AdminMockInterviewPage() {
                     },
                   }}
                 >
-                  {d} days
+                  {t("adminMockInterview.daysLabel", { n: d })}
                 </Box>
               ))}
             </Box>

@@ -13,6 +13,7 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import Link from "next/link";
@@ -75,6 +76,7 @@ function updateSubmodule(
 export default function GenerateStructuredPlanPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [title, setTitle] = useState("");
@@ -110,18 +112,19 @@ export default function GenerateStructuredPlanPage() {
 
   const validate = (): boolean => {
     const err: Record<string, string> = {};
-    if (!title.trim()) err.title = "Course title is required";
+    if (!title.trim()) err.title = t("adminAICourseBuilder.courseTitleRequired");
     modules.forEach((mod, i) => {
-      if (!mod.title.trim()) err[`module_${i}_title`] = `Module ${i + 1} title is required`;
+      const num = i + 1;
+      if (!mod.title.trim()) err[`module_${i}_title`] = t("adminAICourseBuilder.moduleTitleRequired", { num });
       const emptySubs = mod.submodules.every(
         (s) => !s.title.trim() && !s.description.trim()
       );
       if (mod.submodules.length === 0 || emptySubs) {
-        err[`module_${i}_submodules`] = `Module ${i + 1} must have at least one submodule with title`;
+        err[`module_${i}_submodules`] = t("adminAICourseBuilder.moduleSubmodulesRequired", { num });
       } else {
         const firstWithTitle = mod.submodules.some((s) => s.title.trim());
         if (!firstWithTitle) {
-          err[`module_${i}_submodules`] = `Module ${i + 1}: at least one submodule must have a title`;
+          err[`module_${i}_submodules`] = t("adminAICourseBuilder.moduleSubmodulesRequiredAlt", { num });
         }
       }
     });
@@ -150,7 +153,7 @@ export default function GenerateStructuredPlanPage() {
     );
     if (invalid.length > 0) {
       setErrors({
-        module_0_submodules: "Each module must have at least one submodule.",
+        module_0_submodules: t("adminAICourseBuilder.eachModuleOneSubmodule"),
       });
       return;
     }
@@ -163,11 +166,11 @@ export default function GenerateStructuredPlanPage() {
         modules: payloadModules,
         config,
       });
-      showToast("Outline generation started", "success");
+      showToast(t("adminAICourseBuilder.outlineGenerationStarted"), "success");
       router.push("/admin/ai-course-builder");
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : "Failed to generate outline";
+        error instanceof Error ? error.message : t("adminAICourseBuilder.failedToGenerateOutline");
       showToast(message, "error");
       try {
         if (typeof message === "string" && message.includes("{")) {
@@ -204,7 +207,7 @@ export default function GenerateStructuredPlanPage() {
             }}
           >
             <IconWrapper icon="mdi:arrow-left" size={20} />
-            Back to AI Course Builder
+            {t("adminAICourseBuilder.backToAICourseBuilder")}
           </Link>
         </Box>
 
@@ -212,11 +215,10 @@ export default function GenerateStructuredPlanPage() {
           variant="h5"
           sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
         >
-          Generate course outline from structured plan
+          {t("adminAICourseBuilder.generateFromStructuredPlanTitle")}
         </Typography>
         <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-          Define modules and submodules; we will generate the full outline and
-          content plan from your structure.
+          {t("adminAICourseBuilder.generateFromStructuredPlanSubtitle")}
         </Typography>
 
         <Paper
@@ -230,7 +232,7 @@ export default function GenerateStructuredPlanPage() {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Course title"
+              label={t("adminAICourseBuilder.courseTitle")}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               error={!!errors.title}
@@ -241,7 +243,7 @@ export default function GenerateStructuredPlanPage() {
             />
 
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-              Modules & submodules
+              {t("adminAICourseBuilder.modulesAndSubmodules")}
             </Typography>
 
             {modules.map((mod, modIndex) => (
@@ -261,7 +263,7 @@ export default function GenerateStructuredPlanPage() {
                     }}
                   >
                     <Typography variant="subtitle2" sx={{ color: "#6b7280" }}>
-                      Module {modIndex + 1}
+                      {t("adminAICourseBuilder.moduleLabel", { num: modIndex + 1 })}
                     </Typography>
                     <IconButton
                       size="small"
@@ -275,7 +277,7 @@ export default function GenerateStructuredPlanPage() {
                   <TextField
                     fullWidth
                     size="small"
-                    label="Week"
+                    label={t("adminAICourseBuilder.week")}
                     type="number"
                     value={mod.week === 0 ? "" : mod.week}
                     onChange={(e) => {
@@ -292,7 +294,7 @@ export default function GenerateStructuredPlanPage() {
                   <TextField
                     fullWidth
                     size="small"
-                    label="Module title"
+                    label={t("adminAICourseBuilder.moduleTitleLabel")}
                     value={mod.title}
                     onChange={(e) =>
                       updateModule(modIndex, "title", e.target.value)
@@ -304,7 +306,7 @@ export default function GenerateStructuredPlanPage() {
                   <TextField
                     fullWidth
                     size="small"
-                    label="Module description (optional)"
+                    label={t("adminAICourseBuilder.moduleDescriptionOptional")}
                     value={mod.description ?? ""}
                     onChange={(e) =>
                       updateModule(modIndex, "description", e.target.value)
@@ -318,7 +320,7 @@ export default function GenerateStructuredPlanPage() {
                     variant="caption"
                     sx={{ color: "#6b7280", display: "block", mb: 1 }}
                   >
-                    Submodules
+                    {t("adminAICourseBuilder.submodules")}
                   </Typography>
                   {mod.submodules.map((sub, subIndex) => (
                     <Box
@@ -332,7 +334,7 @@ export default function GenerateStructuredPlanPage() {
                     >
                       <TextField
                         size="small"
-                        label="Submodule title"
+                        label={t("adminAICourseBuilder.submoduleTitle")}
                         value={sub.title}
                         onChange={(e) =>
                           setModules((p) =>
@@ -347,7 +349,7 @@ export default function GenerateStructuredPlanPage() {
                       />
                       <TextField
                         size="small"
-                        label="Description"
+                        label={t("adminAICourseBuilder.description")}
                         value={sub.description}
                         onChange={(e) =>
                           setModules((p) =>
@@ -387,7 +389,7 @@ export default function GenerateStructuredPlanPage() {
                       )
                     }
                   >
-                    Add submodule
+                    {t("adminAICourseBuilder.addSubmodule")}
                   </Button>
                 </CardContent>
               </Card>
@@ -398,7 +400,7 @@ export default function GenerateStructuredPlanPage() {
               onClick={addModule}
               sx={{ mb: 3 }}
             >
-              Add module
+              {t("adminAICourseBuilder.addModule")}
             </Button>
 
             <Box sx={{ mb: 3 }}>
@@ -428,10 +430,10 @@ export default function GenerateStructuredPlanPage() {
                 {submitting ? (
                   <>
                     <CircularProgress size={20} sx={{ mr: 1 }} />
-                    Generating...
+                    {t("adminAICourseBuilder.generating")}
                   </>
                 ) : (
-                  "Generate outline"
+                  t("adminAICourseBuilder.generateOutline")
                 )}
               </Button>
               <Button
@@ -440,7 +442,7 @@ export default function GenerateStructuredPlanPage() {
                 variant="outlined"
                 disabled={submitting}
               >
-                Cancel
+                {t("adminAICourseBuilder.cancel")}
               </Button>
             </Box>
           </form>

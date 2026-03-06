@@ -1,9 +1,10 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, LinearProgress, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { UserProfile } from "@/lib/services/profile.service";
-import { calculateProfileCompletion, ProfileCompletionResult } from "@/lib/utils/profileCompletion";
+import { calculateProfileCompletion } from "@/lib/utils/profileCompletion";
 
 interface ProfileCompletionCardProps {
   profile: UserProfile;
@@ -14,24 +15,19 @@ export function ProfileCompletionCard({
   profile,
   onCompleteProfile,
 }: ProfileCompletionCardProps) {
+  const { t } = useTranslation("common");
   const completion = calculateProfileCompletion(profile);
-  const { percentage, missingFields, completedFields, totalFields } = completion;
+  const { percentage, missingFields } = completion;
 
   const getCompletionColor = () => {
     return "#0a66c2"; // LinkedIn blue for all states
   };
 
   const getCompletionMessage = () => {
-    if (percentage === 100) {
-      return "Your profile is complete!";
-    }
-    if (percentage >= 80) {
-      return "You're almost there! Complete your profile to stand out to recruiters.";
-    }
-    if (percentage >= 50) {
-      return "Your profile is halfway complete. Add more details to showcase your skills.";
-    }
-    return "Complete your profile to unlock more opportunities and connect with professionals.";
+    if (percentage === 100) return t("profile.profileComplete");
+    if (percentage >= 80) return t("profile.profileAlmostThere");
+    if (percentage >= 50) return t("profile.profileHalfway");
+    return t("profile.profileCompleteToUnlock");
   };
 
   return (
@@ -61,7 +57,7 @@ export function ProfileCompletionCard({
                 fontSize: "1.25rem",
               }}
             >
-              Profile Strength
+              {t("profile.profileStrength")}
             </Typography>
             <Box
               sx={{
@@ -139,7 +135,7 @@ export function ProfileCompletionCard({
                   fontSize: "0.8125rem",
                 }}
               >
-                Completed
+                {t("profile.completed")}
               </Typography>
             </Box>
             <Box>
@@ -161,7 +157,7 @@ export function ProfileCompletionCard({
                   fontSize: "0.8125rem",
                 }}
               >
-                Total Fields
+                {t("profile.totalFields")}
               </Typography>
             </Box>
             <Box>
@@ -183,7 +179,7 @@ export function ProfileCompletionCard({
                   fontSize: "0.8125rem",
                 }}
               >
-                Remaining
+                {t("profile.remaining")}
               </Typography>
             </Box>
           </Box>
@@ -201,7 +197,7 @@ export function ProfileCompletionCard({
                   mb: 1.5,
                 }}
               >
-                Add these to strengthen your profile:
+                {t("profile.addTheseToStrengthen")}
               </Typography>
               <Box
                 sx={{
@@ -287,7 +283,7 @@ export function ProfileCompletionCard({
               transition: "all 0.2s ease",
             }}
           >
-            Complete your profile
+            {t("profile.completeProfile")}
           </Button>
         </Box>
       )}

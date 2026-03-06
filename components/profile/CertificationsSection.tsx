@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useEffect } from "react";
 import { UserProfile, Certification } from "@/lib/services/profile.service";
 
 function getCredentialLinkUrl(url: string | undefined): string | null {
@@ -33,6 +34,7 @@ export function CertificationsSection({
   profile,
   onSave,
 }: CertificationsSectionProps) {
+  const { t } = useTranslation();
   const [certifications, setCertifications] = useState<Certification[]>(profile.certifications || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -174,7 +176,7 @@ export function CertificationsSection({
               fontSize: "1.25rem",
             }}
           >
-            Certifications
+            {t("profile.certifications")}
           </Typography>
           {!editing ? (
             <Button
@@ -191,7 +193,7 @@ export function CertificationsSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -212,12 +214,12 @@ export function CertificationsSection({
                   },
                 }}
               >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -231,12 +233,12 @@ export function CertificationsSection({
                   },
                 }}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -248,7 +250,7 @@ export function CertificationsSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -379,7 +381,7 @@ export function CertificationsSection({
                 fontWeight: 500,
               }}
             >
-              No certifications added yet
+              {t("profile.noCertificationsYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -389,7 +391,7 @@ export function CertificationsSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your certifications
+              {t("profile.clickEditToAddCertifications")}
             </Typography>
           </Box>
         )}
@@ -435,7 +437,7 @@ export function CertificationsSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Certification" : "Add Certification"}
+            {editingIndex !== null ? t("profile.editCertification") : t("profile.addCertification")}
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
@@ -550,7 +552,7 @@ export function CertificationsSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -574,7 +576,7 @@ export function CertificationsSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

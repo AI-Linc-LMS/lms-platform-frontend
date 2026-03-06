@@ -8,6 +8,7 @@ import {
   Button,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface AICourseBuilderActionsProps {
@@ -23,6 +24,7 @@ export function AICourseBuilderActions({
   buttonsOnly = false,
 }: AICourseBuilderActionsProps) {
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   if (buttonsOnly) {
     return (
@@ -39,7 +41,7 @@ export function AICourseBuilderActions({
             whiteSpace: "nowrap",
           }}
         >
-          Generate from description
+          {t("adminAICourseBuilder.generateFromDescription")}
         </Button>
         <Button
           variant="contained"
@@ -53,7 +55,7 @@ export function AICourseBuilderActions({
             whiteSpace: "nowrap",
           }}
         >
-          Generate from structured plan
+          {t("adminAICourseBuilder.generateFromStructuredPlan")}
         </Button>
       </Box>
     );
@@ -61,7 +63,7 @@ export function AICourseBuilderActions({
 
   return (
     <TextField
-      placeholder="Search jobs..."
+      placeholder={t("adminAICourseBuilder.searchJobsPlaceholder")}
       value={searchQuery}
       onChange={(e) => onSearchChange?.(e.target.value)}
       size="small"

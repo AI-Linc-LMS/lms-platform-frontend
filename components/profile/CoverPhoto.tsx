@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState } from "react";
 import { ImageUrlDialog } from "./ImageUrlDialog";
 
 interface CoverPhotoProps {
@@ -11,6 +12,7 @@ interface CoverPhotoProps {
 }
 
 export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
+  const { t } = useTranslation("common");
   const [hovered, setHovered] = useState(false);
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
 
@@ -68,10 +70,10 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
               size="small"
             >
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                {coverPhotoUrl ? "Change cover photo" : "Add cover photo"}
+                {coverPhotoUrl ? t("profile.changeCoverPhoto") : t("profile.addCoverPhoto")}
               </Box>
               <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-                {coverPhotoUrl ? "Change" : "Add"}
+                {coverPhotoUrl ? t("profile.change") : t("profile.add")}
               </Box>
             </Button>
           </Box>
@@ -83,7 +85,7 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
           open={urlDialogOpen}
           onClose={() => setUrlDialogOpen(false)}
           onSave={onEditCoverUrl}
-          title="Edit Cover Photo"
+          title={t("profile.editCoverPhoto")}
           subtitle="Paste an image URL to use as your cover photo"
           currentImageUrl={coverPhotoUrl}
           placeholder="https://example.com/cover-image.jpg"

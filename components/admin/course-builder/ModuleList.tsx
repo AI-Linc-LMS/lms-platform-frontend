@@ -20,6 +20,7 @@ import {
   LinearProgress,
   Tooltip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
@@ -48,6 +49,7 @@ const emptyForm: ModuleData = { title: "", weekno: 1, description: "" };
 
 export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [submoduleMap, setSubmoduleMap] = useState<Record<number, any[]>>({});
@@ -69,7 +71,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
         const subs = Array.isArray(data) ? data : data?.results ?? [];
         setSubmoduleMap((prev) => ({ ...prev, [moduleId]: subs }));
       } catch (error: any) {
-        showToast(error?.message || "Failed to load submodules", "error");
+        showToast(error?.message || t("adminCourseBuilder.failedToLoadSubmodules"), "error");
       } finally {
         setLoadingSubs((prev) => ({ ...prev, [moduleId]: false }));
       }
@@ -108,22 +110,22 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      showToast("Title is required", "error");
+      showToast(t("adminCourseBuilder.titleRequired"), "error");
       return;
     }
     try {
       setSaving(true);
       if (editingId !== null) {
         await adminCourseBuilderService.updateCourseModule(courseId, editingId, formData);
-        showToast("Module updated", "success");
+        showToast(t("adminCourseBuilder.moduleUpdated"), "success");
       } else {
         await adminCourseBuilderService.createCourseModule(courseId, formData);
-        showToast("Module created", "success");
+        showToast(t("adminCourseBuilder.moduleCreated"), "success");
       }
       closeDialog();
       onModulesChanged();
     } catch (error: any) {
-      showToast(error?.message || "Failed to save module", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToSaveModule"), "error");
     } finally {
       setSaving(false);
     }
@@ -134,12 +136,12 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
     try {
       setDeleting(true);
       await adminCourseBuilderService.deleteCourseModule(courseId, deleteTarget.id);
-      showToast("Module deleted", "success");
+      showToast(t("adminCourseBuilder.moduleDeleted"), "success");
       setDeleteTarget(null);
       if (expandedId === deleteTarget.id) setExpandedId(null);
       onModulesChanged();
     } catch (error: any) {
-      showToast(error?.message || "Failed to delete module", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToDeleteModule"), "error");
     } finally {
       setDeleting(false);
     }
@@ -149,7 +151,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
     <Box>
       {modules.length === 0 ? (
         <Typography variant="body2" sx={{ color: "#9ca3af", py: 2 }}>
-          No modules added yet
+          {t("adminCourseBuilder.noModulesYet")}
         </Typography>
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
@@ -228,7 +230,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
                   sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Tooltip title="Edit module">
+                  <Tooltip title={t("adminCourseBuilder.editModuleTooltip")}>
                     <IconButton
                       component="span"
                       size="small"
@@ -250,7 +252,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
                       <IconWrapper icon="mdi:pencil" size={18} />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete module">
+                  <Tooltip title={t("adminCourseBuilder.deleteModuleTooltip")}>
                     <IconButton
                       component="span"
                       size="small"
@@ -304,17 +306,17 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
           "&:hover": { borderColor: "#4f46e5", bgcolor: "#eef2ff" },
         }}
       >
-        Add Module
+        {t("adminCourseBuilder.addModule")}
       </Button>
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onClose={saving ? undefined : closeDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>
-          {editingId !== null ? "Edit Module" : "Add Module"}
+          {editingId !== null ? t("adminCourseBuilder.editModule") : t("adminCourseBuilder.addModule")}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "16px !important" }}>
           <TextField
-            label="Title"
+            label={t("adminCourseBuilder.moduleTitle")}
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             fullWidth
@@ -322,7 +324,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
             autoFocus
           />
           <TextField
-            label="Week Number"
+            label={t("adminCourseBuilder.weekNumber")}
             type="number"
             value={formData.weekno}
             onChange={(e) => setFormData({ ...formData, weekno: Number(e.target.value) })}
@@ -330,7 +332,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
             slotProps={{ htmlInput: { min: 1 } }}
           />
           <TextField
-            label="Description"
+            label={t("adminCourseBuilder.description")}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             fullWidth
@@ -340,7 +342,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={closeDialog} disabled={saving} sx={{ color: "#6b7280" }}>
-            Cancel
+            {t("adminCourseBuilder.cancel")}
           </Button>
           <Button
             onClick={handleSave}
@@ -349,7 +351,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
             sx={{ bgcolor: "#6366f1" }}
           >
-            {saving ? "Saving..." : editingId !== null ? "Update" : "Create"}
+            {saving ? t("adminCourseBuilder.saving") : editingId !== null ? t("adminCourseBuilder.update") : t("adminCourseBuilder.create")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -357,8 +359,8 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
       {/* Delete Confirmation */}
       <ConfirmDeleteDialog
         open={!!deleteTarget}
-        title="Delete Module"
-        message={`Are you sure you want to delete "${deleteTarget?.title}" and all its submodules? This action cannot be undone.`}
+        title={t("adminCourseBuilder.deleteModuleTitle")}
+        message={deleteTarget ? t("adminCourseBuilder.deleteModuleMessage", { title: deleteTarget.title }) : ""}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
         loading={deleting}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { getMonacoLanguage } from "@/components/coding/utils/languageUtils";
 
@@ -17,6 +18,7 @@ export function CodingProblemEditor({
   availableLanguages,
   onLanguageChange,
 }: CodingProblemEditorProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -38,14 +40,14 @@ export function CodingProblemEditor({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Code Editor
+          {t("adminContentManagement.codeEditor")}
         </Typography>
         {availableLanguages.length > 0 && (
           <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Language</InputLabel>
+            <InputLabel>{t("adminContentManagement.language")}</InputLabel>
             <Select
               value={selectedLanguage}
-              label="Language"
+              label={t("adminContentManagement.language")}
               onChange={(e) => onLanguageChange(e.target.value)}
             >
               {availableLanguages.map((lang) => (

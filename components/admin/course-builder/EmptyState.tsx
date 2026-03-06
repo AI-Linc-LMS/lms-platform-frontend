@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface EmptyStateProps {
@@ -14,6 +15,7 @@ export function EmptyState({
   onCreateClick,
   onClearSearch,
 }: EmptyStateProps) {
+  const { t } = useTranslation("common");
   if (type === "no-results") {
     return (
       <Box sx={{ textAlign: "center", py: 8 }}>
@@ -24,10 +26,10 @@ export function EmptyState({
           style={{ marginBottom: 16 }}
         />
         <Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
-          No courses found
+          {t("adminCourseBuilder.noCoursesFound")}
         </Typography>
         <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-          Try adjusting your search terms or browse all courses.
+          {t("adminCourseBuilder.tryAdjustingSearch")}
         </Typography>
         {onClearSearch && (
           <Button
@@ -35,7 +37,7 @@ export function EmptyState({
             onClick={onClearSearch}
             sx={{ color: "#6366f1", borderColor: "#6366f1" }}
           >
-            Clear search and view all courses
+            {t("adminCourseBuilder.clearSearchAndViewAll")}
           </Button>
         )}
       </Box>
@@ -51,10 +53,10 @@ export function EmptyState({
         style={{ marginBottom: 16 }}
       />
       <Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
-        No courses yet
+        {t("adminCourseBuilder.noCoursesYet")}
       </Typography>
       <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-        Get started by creating your first course.
+        {t("adminCourseBuilder.getStartedFirstCourse")}
       </Typography>
       {onCreateClick && (
         <Button
@@ -63,7 +65,7 @@ export function EmptyState({
           onClick={onCreateClick}
           sx={{ bgcolor: "#6366f1" }}
         >
-          Create Your First Course
+          {t("adminCourseBuilder.createFirstCourse")}
         </Button>
       )}
     </Box>

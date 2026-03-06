@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Paper,
@@ -33,6 +34,7 @@ export function CommentItem({
   onReply,
   depth = 0,
 }: CommentItemProps) {
+  const { t } = useTranslation("common");
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -204,7 +206,7 @@ export function CommentItem({
               onClick={() => setShowReplyForm(!showReplyForm)}
               sx={{ textTransform: "none", minWidth: "auto" }}
             >
-              Reply
+              {t("community.reply")}
             </Button>
           )}
         </Box>
@@ -213,7 +215,7 @@ export function CommentItem({
         <Collapse in={showReplyForm}>
           <Box sx={{ mt: 2 }}>
             <TextField
-              placeholder="Write your reply..."
+              placeholder={t("community.writeReplyPlaceholder")}
               value={replyBody}
               onChange={(e) => setReplyBody(e.target.value)}
               fullWidth
@@ -228,7 +230,7 @@ export function CommentItem({
                 onClick={handleSubmitReply}
                 disabled={!replyBody.trim() || submitting}
               >
-                {submitting ? "Posting..." : "Post Reply"}
+                {submitting ? t("community.posting") : t("community.postReply")}
               </Button>
               <Button
                 size="small"
@@ -237,7 +239,7 @@ export function CommentItem({
                   setReplyBody("");
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </Box>
           </Box>

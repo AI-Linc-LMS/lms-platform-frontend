@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useEffect } from "react";
 import { UserProfile, Education } from "@/lib/services/profile.service";
 
 interface EducationSectionProps {
@@ -14,6 +15,7 @@ export function EducationSection({
   profile,
   onSave,
 }: EducationSectionProps) {
+  const { t } = useTranslation("common");
   const [educations, setEducations] = useState<Education[]>(profile.education || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -158,7 +160,7 @@ export function EducationSection({
               fontSize: "1.25rem",
             }}
           >
-            Education
+            {t("profile.education")}
           </Typography>
           {!editing ? (
             <Button
@@ -175,7 +177,7 @@ export function EducationSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -196,7 +198,7 @@ export function EducationSection({
                   },
                 }}
               >
-                Add
+                {t("profile.add")}
               </Button>
               <Button
                 variant="outlined"
@@ -215,7 +217,7 @@ export function EducationSection({
                   },
                 }}
               >
-                Cancel
+                {t("profile.cancel")}
               </Button>
               <Button
                 variant="contained"
@@ -232,7 +234,7 @@ export function EducationSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -349,7 +351,7 @@ export function EducationSection({
                 fontWeight: 500,
               }}
             >
-              No education added yet
+              {t("profile.noEducationYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -359,7 +361,7 @@ export function EducationSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your education
+              {t("profile.clickEditToAddEducation")}
             </Typography>
           </Box>
         )}
@@ -405,7 +407,7 @@ export function EducationSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Education" : "Add Education"}
+            {editingIndex !== null ? t("profile.editEducation") : t("profile.addEducation")}
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
@@ -537,7 +539,7 @@ export function EducationSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -561,7 +563,7 @@ export function EducationSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

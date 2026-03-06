@@ -18,6 +18,7 @@ import {
   TableRow,
   LinearProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -45,12 +46,13 @@ function formatDate(dateStr?: string) {
   });
 }
 
-const STAT_CARDS = [
-  { key: "total" as const, label: "Total interviews", icon: "mdi:clipboard-list-outline" },
-  { key: "completed" as const, label: "Completed", icon: "mdi:check-circle-outline" },
-  { key: "avgScore" as const, label: "Avg score", icon: "mdi:chart-line" },
-  { key: "completion" as const, label: "Completion", icon: "mdi:percent-outline" },
-] as const;
+const getStatCards = (t: (key: string) => string) =>
+  [
+    { key: "total" as const, label: t("adminMockInterview.totalInterviewsStat"), icon: "mdi:clipboard-list-outline" },
+    { key: "completed" as const, label: t("adminMockInterview.completedStat"), icon: "mdi:check-circle-outline" },
+    { key: "avgScore" as const, label: t("adminMockInterview.avgScoreStat"), icon: "mdi:chart-line" },
+    { key: "completion" as const, label: t("adminMockInterview.completionStat"), icon: "mdi:percent-outline" },
+  ] as const;
 
 const DIFFICULTY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   Easy: { bg: "rgba(34, 197, 94, 0.12)", border: "#22c55e", text: "#166534" },
@@ -61,15 +63,17 @@ const DIFFICULTY_COLORS: Record<string, { bg: string; border: string; text: stri
 export default function AdminMockInterviewStudentDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<StudentDetailResponse | null>(null);
 
   const studentId = parseInt(params.studentId as string, 10);
+  const STAT_CARDS = getStatCards(t);
 
   const load = useCallback(async () => {
     if (isNaN(studentId)) {
-      showToast("Invalid student ID", "error");
+      showToast(t("adminMockInterview.invalidStudentId"), "error");
       router.push("/admin/admin-mock-interview");
       return;
     }
@@ -81,12 +85,12 @@ export default function AdminMockInterviewStudentDetailPage() {
       );
       setData(result);
     } catch {
-      showToast("Failed to load student report", "error");
+      showToast(t("adminMockInterview.failedToLoadStudentReport"), "error");
       router.push("/admin/admin-mock-interview");
     } finally {
       setLoading(false);
     }
-  }, [studentId, router, showToast]);
+  }, [studentId, router, showToast, t]);
 
   useEffect(() => {
     load();
@@ -161,7 +165,7 @@ export default function AdminMockInterviewStudentDetailPage() {
               "&:hover": { bgcolor: "rgba(99, 102, 241, 0.08)", color: "#6366f1" },
             }}
           >
-            Back to Mock Interview Admin
+            {t("adminMockInterview.backToMockInterviewAdmin")}
           </Button>
 
           {/* Profile card */}
@@ -262,7 +266,7 @@ export default function AdminMockInterviewStudentDetailPage() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
-                Score trend
+                {t("adminMockInterview.scoreTrend")}
               </Typography>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={chartData}>
@@ -291,10 +295,10 @@ export default function AdminMockInterviewStudentDetailPage() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
-                Topic performance
+                {t("adminMockInterview.topicPerformance")}
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                {topic_performance.map((t: TopicPerformanceItem, index: number) => (
+                {topic_performance.map((topicItem: TopicPerformanceItem, index: number) => (
                   <Box
                     key={`topic-${index}`}
                     sx={{
@@ -311,23 +315,23 @@ export default function AdminMockInterviewStudentDetailPage() {
                   >
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
                       <Typography variant="body1" sx={{ fontWeight: 600, color: "#0f172a" }}>
-                        {t.topic}
+                        {topicItem.topic}
                       </Typography>
                       <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
                         <Chip
-                          label={`Avg ${t.average_score?.toFixed(1) ?? 0}%`}
+                          label={`${t("adminMockInterview.avg")} ${topicItem.average_score?.toFixed(1) ?? 0}%`}
                           size="small"
                           sx={{ fontWeight: 600, bgcolor: "#e0e7ff", color: "#4338ca" }}
                         />
                         <Typography variant="body2" sx={{ color: "#64748b" }}>
-                          Best: {t.highest_score ?? 0}%
+                          {t("adminMockInterview.best")}: {topicItem.highest_score ?? 0}%
                         </Typography>
                       </Box>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <LinearProgress
                         variant="determinate"
-                        value={t.total_interviews ? (t.completed / t.total_interviews) * 100 : 0}
+                        value={topicItem.total_interviews ? (topicItem.completed / topicItem.total_interviews) * 100 : 0}
                         sx={{
                           flex: 1,
                           height: 6,
@@ -337,7 +341,7 @@ export default function AdminMockInterviewStudentDetailPage() {
                         }}
                       />
                       <Typography variant="caption" sx={{ color: "#64748b", minWidth: 72 }}>
-                        {t.completed}/{t.total_interviews} completed
+                        {t("adminMockInterview.completedCount", { completed: topicItem.completed, total: topicItem.total_interviews })}
                       </Typography>
                     </Box>
                   </Box>
@@ -358,7 +362,7 @@ export default function AdminMockInterviewStudentDetailPage() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
-                Difficulty performance
+                {t("adminMockInterview.difficultyPerformance")}
               </Typography>
               <Box
                 sx={{
@@ -383,10 +387,10 @@ export default function AdminMockInterviewStudentDetailPage() {
                         {diff}
                       </Typography>
                       <Typography variant="body2" sx={{ color: "#64748b" }}>
-                        {stats.completed}/{stats.total} completed
+                        {t("adminMockInterview.completedCount", { completed: stats.completed, total: stats.total })}
                       </Typography>
                       <Typography variant="body2" sx={{ color: "#64748b" }}>
-                        Avg: {stats.average_score?.toFixed(1) ?? 0}%
+                        {t("adminMockInterview.avg")}: {stats.average_score?.toFixed(1) ?? 0}%
                       </Typography>
                     </Box>
                   );
@@ -406,19 +410,19 @@ export default function AdminMockInterviewStudentDetailPage() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
-                Recent interviews
+                {t("adminMockInterview.recentInterviews")}
               </Typography>
               <TableContainer>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: "#f8fafc" }}>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Title</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Topic</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Difficulty</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Score</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }} align="right">Action</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.titleColumn")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.topic")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.difficulty")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.status")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.score")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.date")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }} align="right">{t("adminMockInterview.action")}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -458,7 +462,7 @@ export default function AdminMockInterviewStudentDetailPage() {
                               "&:hover": { bgcolor: "rgba(99, 102, 241, 0.08)" },
                             }}
                           >
-                            View
+                            {t("adminMockInterview.view")}
                           </Button>
                         </TableCell>
                       </TableRow>

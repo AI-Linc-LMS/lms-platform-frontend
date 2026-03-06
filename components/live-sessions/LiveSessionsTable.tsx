@@ -16,8 +16,8 @@ import {
   CircularProgress,
   Tooltip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { RECORDING_NOT_AVAILABLE_FRIENDLY_MESSAGE } from "@/lib/utils/live-session-errors";
 import type { StudentLiveSession } from "@/lib/services/live-sessions";
 
 interface LiveSessionsTableProps {
@@ -45,6 +45,7 @@ export function LiveSessionsTable({
   formatDateTime,
   formatTimeRemaining,
 }: LiveSessionsTableProps) {
+  const { t } = useTranslation("common");
   const paginatedSessions = sessions.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -69,7 +70,7 @@ export function LiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Name
+                {t("liveSessions.name")}
               </TableCell>
               <TableCell
                 sx={{
@@ -78,7 +79,7 @@ export function LiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Expires At
+                {t("liveSessions.expiresAt")}
               </TableCell>
               <TableCell
                 sx={{
@@ -87,7 +88,7 @@ export function LiveSessionsTable({
                   fontSize: "0.875rem",
                 }}
               >
-                Time Remaining
+                {t("liveSessions.timeRemaining")}
               </TableCell>
               <TableCell
                 sx={{
@@ -97,7 +98,7 @@ export function LiveSessionsTable({
                 }}
                 align="right"
               >
-                Action
+                {t("liveSessions.action")}
               </TableCell>
             </TableRow>
           </TableHead>
@@ -125,7 +126,7 @@ export function LiveSessionsTable({
                 <TableCell>
                   {activity.meeting_status === "live" ? (
                     <Chip
-                      label="Live"
+                      label={t("liveSessions.live")}
                       size="small"
                       sx={{
                         backgroundColor: "#d1fae5",
@@ -136,7 +137,7 @@ export function LiveSessionsTable({
                     />
                   ) : activity.meeting_status === "ended" ? (
                     <Chip
-                      label="Class Ended"
+                      label={t("liveSessions.classEnded")}
                       size="small"
                       sx={{
                         backgroundColor: "#9ca3af",
@@ -147,7 +148,7 @@ export function LiveSessionsTable({
                     />
                   ) : activity.meeting_status === "expired" ? (
                     <Chip
-                      label="Expired"
+                      label={t("liveSessions.expired")}
                       size="small"
                       sx={{
                         backgroundColor: "#fed7aa",
@@ -158,7 +159,7 @@ export function LiveSessionsTable({
                     />
                   ) : activity.time_remaining_minutes <= 0 ? (
                     <Chip
-                      label="Expired"
+                      label={t("liveSessions.expired")}
                       size="small"
                       sx={{
                         backgroundColor: "#ed4545",
@@ -204,7 +205,7 @@ export function LiveSessionsTable({
                               "&:hover": { backgroundColor: "#4f46e5" },
                             }}
                           >
-                            Join Live Class
+                            {t("liveSessions.joinLiveClass")}
                           </Button>
                           {activity.zoom_password && (
                             <Typography
@@ -216,7 +217,7 @@ export function LiveSessionsTable({
                                 gap: 0.5,
                               }}
                             >
-                              Password: {activity.zoom_password}
+                              {t("liveSessions.password")}: {activity.zoom_password}
                               <Button
                                 size="small"
                                 sx={{
@@ -229,7 +230,7 @@ export function LiveSessionsTable({
                                   onCopyPassword(activity.zoom_password!)
                                 }
                               >
-                                Copy
+                                {t("liveSessions.copy")}
                               </Button>
                             </Typography>
                           )}
@@ -259,11 +260,11 @@ export function LiveSessionsTable({
                             color: "#6366f1",
                           }}
                         >
-                          Watch Recording
+                          {t("liveSessions.watchRecording")}
                         </Button>
                       ) : (
                         <Tooltip
-                          title={RECORDING_NOT_AVAILABLE_FRIENDLY_MESSAGE}
+                          title={t("liveSessions.recordingNotAvailable")}
                           placement="top"
                         >
                           <span>
@@ -283,7 +284,7 @@ export function LiveSessionsTable({
                                 color: "#9ca3af",
                               }}
                             >
-                              Watch Recording
+                              {t("liveSessions.watchRecording")}
                             </Button>
                           </span>
                         </Tooltip>

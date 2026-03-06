@@ -184,7 +184,7 @@ export default function MockInterviewPage() {
                 color: "#6b7280",
               }}
             >
-              Previous
+              {t("mockInterview.previous")}
             </Typography>
           </Box>
 

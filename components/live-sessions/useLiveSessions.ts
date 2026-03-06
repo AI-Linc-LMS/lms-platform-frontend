@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
@@ -12,6 +13,7 @@ import { getLiveSessionErrorMessage, copyToClipboard } from "@/lib/utils/live-se
 const LIVE_SESSIONS_FEATURE = "live_sessions";
 
 export function useLiveSessions() {
+  const { t } = useTranslation("common");
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
   const { showToast } = useToast();
   const [sessions, setSessions] = useState<StudentLiveSession[]>([]);
@@ -47,7 +49,7 @@ export function useLiveSessions() {
   }, [loadingClientInfo, hasLiveSessionsFeature]);
 
   const handleCopyPassword = (password: string) => {
-    copyToClipboard(password, showToast, "Password copied");
+    copyToClipboard(password, showToast, t("liveSessions.passwordCopied"));
   };
 
   const handleWatchRecording = async (activity: StudentLiveSession) => {

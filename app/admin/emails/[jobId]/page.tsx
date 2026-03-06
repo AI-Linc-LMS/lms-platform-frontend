@@ -18,6 +18,7 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -48,12 +49,15 @@ const formatDate = (s: string) => {
 function RecipientsTable({
   recipients,
   title,
-  emptyMessage = "None",
+  emptyMessage,
+  t,
 }: {
   recipients: EmailRecipient[];
   title: string;
   emptyMessage?: string;
+  t: (key: string) => string;
 }) {
+  const empty = emptyMessage ?? t("adminEmailJobs.none");
   if (!recipients || recipients.length === 0) {
     return (
       <Box>
@@ -61,7 +65,7 @@ function RecipientsTable({
           {title} (0)
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {emptyMessage}
+          {empty}
         </Typography>
       </Box>
     );
@@ -75,8 +79,8 @@ function RecipientsTable({
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-              <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t("adminEmailJobs.name")}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t("adminEmailJobs.email")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -97,6 +101,7 @@ export default function EmailJobDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const jobId = params?.jobId as string | undefined;
   const [data, setData] = useState<EmailJobDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +118,7 @@ export default function EmailJobDetailPage() {
         );
         setData(result);
       } catch (e: unknown) {
-        showToast((e as Error)?.message || "Failed to load job details", "error");
+        showToast((e as Error)?.message || t("adminEmailJobs.failedToLoadJobDetails"), "error");
         router.push("/admin/emails");
       } finally {
         setLoading(false);
@@ -155,7 +160,7 @@ export default function EmailJobDetailPage() {
     data.failed_count ??
     0;
   const emailBody = data.email_body ?? data.body ?? "";
-  const title = data.task_name || data.subject || "Email Job Details";
+  const title = data.task_name || data.subject || t("adminEmailJobs.emailJobDetails");
 
   return (
     <MainLayout>
@@ -165,7 +170,7 @@ export default function EmailJobDetailPage() {
           onClick={() => router.push("/admin/emails")}
           sx={{ mb: 2, textTransform: "none" }}
         >
-          Back to Email Jobs
+          {t("adminEmailJobs.backToEmailJobs")}
         </Button>
 
         <Typography
@@ -196,13 +201,13 @@ export default function EmailJobDetailPage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Box>
               <Typography variant="caption" color="text.secondary">
-                Task ID
+                {t("adminEmailJobs.taskId")}
               </Typography>
               <Typography variant="body2">{data.task_id}</Typography>
             </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">
-                Status
+                {t("adminEmailJobs.status")}
               </Typography>
               <Box sx={{ mt: 0.5 }}>
                 <Chip
@@ -219,13 +224,13 @@ export default function EmailJobDetailPage() {
             <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  Total Recipients
+                  {t("adminEmailJobs.totalRecipients")}
                 </Typography>
                 <Typography variant="body2">{recipientsCount}</Typography>
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  Successful
+                  {t("adminEmailJobs.successful")}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#10b981" }}>
                   {successfulCount}
@@ -233,7 +238,7 @@ export default function EmailJobDetailPage() {
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  Failed
+                  {t("adminEmailJobs.failedLabel")}
                 </Typography>
                 <Typography variant="body2" sx={{ color: failedCount > 0 ? "#ef4444" : "inherit" }}>
                   {failedCount}
@@ -242,7 +247,7 @@ export default function EmailJobDetailPage() {
             </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">
-                Created
+                {t("adminEmailJobs.created")}
               </Typography>
               <Typography variant="body2">
                 {formatDate(data.created_at || "")}
@@ -263,37 +268,40 @@ export default function EmailJobDetailPage() {
             onChange={(_, v) => setTabValue(v)}
             sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}
           >
-            <Tab label="All Recipients" />
-            <Tab label="Successful" />
-            <Tab label="Failed" />
-            <Tab label="Email Body" />
+            <Tab label={t("adminEmailJobs.allRecipients")} />
+            <Tab label={t("adminEmailJobs.successful")} />
+            <Tab label={t("adminEmailJobs.failedLabel")} />
+            <Tab label={t("adminEmailJobs.emailBody")} />
           </Tabs>
           <Box sx={{ p: 2 }}>
             {tabValue === 0 && (
               <RecipientsTable
                 recipients={data.emails ?? []}
-                title="All Recipients"
-                emptyMessage="No recipients"
+                title={t("adminEmailJobs.allRecipients")}
+                emptyMessage={t("adminEmailJobs.noRecipients")}
+                t={t}
               />
             )}
             {tabValue === 1 && (
               <RecipientsTable
                 recipients={data.successful_emails ?? []}
-                title="Successful"
-                emptyMessage="No successful deliveries"
+                title={t("adminEmailJobs.successful")}
+                emptyMessage={t("adminEmailJobs.noSuccessfulDeliveries")}
+                t={t}
               />
             )}
             {tabValue === 2 && (
               <RecipientsTable
                 recipients={data.failed_emails ?? []}
-                title="Failed"
-                emptyMessage="No failed deliveries"
+                title={t("adminEmailJobs.failedLabel")}
+                emptyMessage={t("adminEmailJobs.noFailedDeliveries")}
+                t={t}
               />
             )}
             {tabValue === 3 && (
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  Email Body
+                  {t("adminEmailJobs.emailBody")}
                 </Typography>
                 {emailBody ? (
                   <Box
@@ -309,7 +317,7 @@ export default function EmailJobDetailPage() {
                   />
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No email body
+                    {t("adminEmailJobs.noEmailBody")}
                   </Typography>
                 )}
               </Box>

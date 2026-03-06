@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useEffect } from "react";
 import { UserProfile, Achievement } from "@/lib/services/profile.service";
 
 interface AchievementsSectionProps {
@@ -14,6 +15,7 @@ export function AchievementsSection({
   profile,
   onSave,
 }: AchievementsSectionProps) {
+  const { t } = useTranslation("common");
   const [achievements, setAchievements] = useState<Achievement[]>(profile.achievements || []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -149,7 +151,7 @@ export function AchievementsSection({
               fontSize: "1.25rem",
             }}
           >
-            Achievements & Activities
+            {t("profile.achievements")}
           </Typography>
           {!editing ? (
             <Button
@@ -166,7 +168,7 @@ export function AchievementsSection({
                 },
               }}
             >
-              Edit
+              {t("profile.edit")}
             </Button>
           ) : (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -187,12 +189,12 @@ export function AchievementsSection({
                   },
                 }}
               >
-                Add
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCancel}
+              {t("profile.add")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -206,12 +208,12 @@ export function AchievementsSection({
                   },
                 }}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSave}
+              {t("profile.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -223,7 +225,7 @@ export function AchievementsSection({
                   },
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("profile.saving") : t("profile.save")}
               </Button>
             </Box>
           )}
@@ -342,7 +344,7 @@ export function AchievementsSection({
                 fontWeight: 500,
               }}
             >
-              No achievements added yet
+              {t("profile.noAchievementsYet")}
             </Typography>
             <Typography
               variant="caption"
@@ -352,7 +354,7 @@ export function AchievementsSection({
                 fontSize: "0.8125rem",
               }}
             >
-              Click Edit to add your achievements
+              {t("profile.clickEditToAddAchievements")}
             </Typography>
           </Box>
         )}
@@ -398,7 +400,7 @@ export function AchievementsSection({
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
-            {editingIndex !== null ? "Edit Achievement" : "Add Achievement"}
+            {editingIndex !== null ? t("profile.editAchievement") : t("profile.addAchievement")}
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
@@ -487,7 +489,7 @@ export function AchievementsSection({
               },
             }}
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleDialogSave}
@@ -511,7 +513,7 @@ export function AchievementsSection({
               transition: "all 0.2s ease",
             }}
           >
-            Save
+            {t("profile.save")}
           </Button>
         </DialogActions>
       </Dialog>

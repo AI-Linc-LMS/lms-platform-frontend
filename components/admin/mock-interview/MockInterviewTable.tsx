@@ -15,6 +15,7 @@ import {
   Button,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AdminInterviewListItem } from "@/lib/services/admin/admin-mock-interview.service";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
@@ -68,6 +69,7 @@ export function MockInterviewTable({
   onExport,
   exporting,
 }: MockInterviewTableProps) {
+  const { t } = useTranslation("common");
   const router = useRouter();
 
   const handleRowClick = (id: number) => {
@@ -109,7 +111,7 @@ export function MockInterviewTable({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
-          Interviews
+          {t("adminMockInterview.tabInterviews")}
         </Typography>
         {onExport && (
           <Button
@@ -137,7 +139,7 @@ export function MockInterviewTable({
               },
             }}
           >
-            Export CSV
+            {t("adminMockInterview.exportCSV")}
           </Button>
         )}
       </Box>
@@ -169,10 +171,10 @@ export function MockInterviewTable({
             />
           </Box>
           <Typography variant="body1" sx={{ fontWeight: 500, color: "#374151", mb: 0.5 }}>
-            No interviews found
+            {t("adminMockInterview.noInterviewsFound")}
           </Typography>
           <Typography variant="body2" sx={{ color: "#6b7280" }}>
-            Try adjusting your filters or date range
+            {t("adminMockInterview.tryAdjustingFilters")}
           </Typography>
         </Box>
       ) : (
@@ -187,28 +189,28 @@ export function MockInterviewTable({
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Title
+                    {t("adminMockInterview.titleColumn")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Student
+                    {t("adminMockInterview.student")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Topic
+                    {t("adminMockInterview.topic")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Difficulty
+                    {t("adminMockInterview.difficulty")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Status
+                    {t("adminMockInterview.status")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Score
+                    {t("adminMockInterview.score")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
-                    Created
+                    {t("adminMockInterview.created")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb", width: 100 }}>
-                    Actions
+                    {t("adminMockInterview.actions")}
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -311,7 +313,7 @@ export function MockInterviewTable({
                           },
                         }}
                       >
-                        View
+                        {t("adminMockInterview.view")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -328,7 +330,7 @@ export function MockInterviewTable({
               onLimitChange(v);
               onPageChange(1);
             }}
-            itemLabel="interviews"
+            itemLabel={t("adminMockInterview.itemLabelInterviews")}
           />
         </>
       )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -15,6 +16,7 @@ interface OrganizationsCardProps {
 }
 
 export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
+  const { t } = useTranslation("common");
   return (
     <Paper
       elevation={0}
@@ -47,7 +49,7 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
             fontSize: "1.25rem",
           }}
         >
-          Organizations
+          {t("profile.organizations")}
         </Typography>
       </Box>
 
@@ -133,7 +135,7 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
               mb: 1,
             }}
           >
-            No organizations yet
+            {t("profile.noOrganizationsYet")}
           </Typography>
         </Box>
       )}

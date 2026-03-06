@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Pagination, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 
 interface StudentsPaginationProps {
@@ -20,6 +21,7 @@ export function StudentsPagination({
   onPageChange,
   onLimitChange,
 }: StudentsPaginationProps) {
+  const { t } = useTranslation("common");
   const startItem = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const endItem = Math.min(page * limit, totalCount);
 
@@ -51,7 +53,11 @@ export function StudentsPagination({
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
-          Showing {startItem} to {endItem} of {totalCount} students
+          {t("adminManageStudents.showingStudents", {
+            start: startItem,
+            end: endItem,
+            total: totalCount,
+          })}
         </Typography>
         <PerPageSelect
           value={limit}

@@ -9,6 +9,7 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
 import { ActivityDetailsCard } from "./ActivityDetailsCard";
@@ -44,6 +45,7 @@ export function ViewActivityPanel({
   onStudentsPageChange,
   onStudentsLimitChange,
 }: ViewActivityPanelProps) {
+  const { t } = useTranslation("common");
   const [activeTab, setActiveTab] = useState(0);
 
   return (
@@ -180,8 +182,8 @@ export function ViewActivityPanel({
               },
             }}
           >
-            <Tab label="Session Summary" />
-            <Tab label="Students" />
+            <Tab label={t("adminAttendance.sessionSummary")} />
+            <Tab label={t("adminAttendance.students")} />
           </Tabs>
         </Box>
 

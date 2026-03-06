@@ -11,6 +11,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { aiCourseBuilderService } from "@/lib/services/admin/ai-course-builder.service";
@@ -22,22 +23,24 @@ import { AIJobCard } from "@/components/admin/ai-course-builder/AIJobCard";
 const POLL_INTERVAL_MS = 10000;
 const DEFAULT_ROWS_PER_PAGE = 10;
 
-const STATUS_FILTER_LABELS: Record<string, string> = {
-  outline_ready: "Outline ready",
-  generating_outline: "Generating outline",
-  generating_content: "Generating content",
-  completed: "Completed",
-  failed: "Failed",
-  pending: "Pending",
-  creating_structure: "Creating structure",
+const STATUS_FILTER_KEYS: Record<string, string> = {
+  outline_ready: "outlineReady",
+  generating_outline: "generatingOutline",
+  generating_content: "generatingContent",
+  completed: "completed",
+  failed: "failed",
+  pending: "pending",
+  creating_structure: "creatingStructure",
 };
-
-function statusFilterLabel(value: string): string {
-  return STATUS_FILTER_LABELS[value] ?? value;
-}
 
 export default function AICourseBuilderPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
+
+  function statusFilterLabel(value: string): string {
+    const key = STATUS_FILTER_KEYS[value];
+    return key ? t(`adminAICourseBuilder.${key}`) : value;
+  }
   const [jobs, setJobs] = useState<CourseBuilderJobListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,7 +58,7 @@ export default function AICourseBuilderPage() {
       } catch (error: unknown) {
         if (!silent) {
           showToast(
-            error instanceof Error ? error.message : "Failed to load jobs",
+            error instanceof Error ? error.message : t("adminAICourseBuilder.failedToLoadJobs"),
             "error"
           );
         }
@@ -63,7 +66,7 @@ export default function AICourseBuilderPage() {
         if (!silent) setLoading(false);
       }
     },
-    [showToast]
+    [showToast, t]
   );
 
   useEffect(() => {
@@ -195,10 +198,10 @@ export default function AICourseBuilderPage() {
                   mb: 1,
                 }}
               >
-                Generation jobs
+                {t("adminAICourseBuilder.generationJobs")}
               </Typography>
               <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
-                Here is a glimpse of your AI course generation progress.
+                {t("adminAICourseBuilder.glimpseProgress")}
               </Typography>
               {jobs.length > 0 && (
                 <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
@@ -218,7 +221,7 @@ export default function AICourseBuilderPage() {
                       >
                         {outlineReadyCount}
                       </Typography>{" "}
-                      Outline ready
+                      {t("adminAICourseBuilder.outlineReady")}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -237,7 +240,7 @@ export default function AICourseBuilderPage() {
                       >
                         {generatingCount}
                       </Typography>{" "}
-                      In progress
+                      {t("adminAICourseBuilder.inProgress")}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -256,7 +259,7 @@ export default function AICourseBuilderPage() {
                       >
                         {completedCount}
                       </Typography>{" "}
-                      Completed
+                      {t("adminAICourseBuilder.completed")}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -275,7 +278,7 @@ export default function AICourseBuilderPage() {
                       >
                         {jobs.length}
                       </Typography>{" "}
-                      Total
+                      {t("adminAICourseBuilder.total")}
                     </Typography>
                   </Box>
                 </Box>
@@ -298,7 +301,7 @@ export default function AICourseBuilderPage() {
                 >
                   <CircularProgress size={14} sx={{ color: "#059669" }} />
                   <Typography variant="caption" sx={{ color: "#047857", fontWeight: 500 }}>
-                    Live — updating every 10s
+                    {t("adminAICourseBuilder.liveUpdating")}
                   </Typography>
                 </Box>
               )}
@@ -322,12 +325,12 @@ export default function AICourseBuilderPage() {
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
                 displayEmpty
                 sx={{ bgcolor: "background.paper" }}
-                renderValue={(v) => (v ? statusFilterLabel(v) : "All statuses")}
+                renderValue={(v) => (v ? statusFilterLabel(v) : t("adminAICourseBuilder.allStatuses"))}
               >
-                <MenuItem value="">All statuses</MenuItem>
-                {Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => (
+                <MenuItem value="">{t("adminAICourseBuilder.allStatuses")}</MenuItem>
+                {Object.entries(STATUS_FILTER_KEYS).map(([value]) => (
                   <MenuItem key={value} value={value}>
-                    {label}
+                    {statusFilterLabel(value)}
                   </MenuItem>
                 ))}
               </Select>
@@ -338,8 +341,8 @@ export default function AICourseBuilderPage() {
             />
             {(searchQuery || statusFilter || inputTypeFilter) && (
               <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                {filteredJobs.length} job(s) match
-                {(searchQuery || statusFilter || inputTypeFilter) && " filters"}
+                {t("adminAICourseBuilder.jobsMatch", { count: filteredJobs.length })}
+                {(searchQuery || statusFilter || inputTypeFilter) && ` ${t("adminAICourseBuilder.filters")}`}
               </Typography>
             )}
           </Box>
@@ -347,11 +350,10 @@ export default function AICourseBuilderPage() {
           {filteredJobs.length === 0 ? (
             <Box sx={{ textAlign: "center", py: 8 }}>
               <Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
-                No generation jobs yet
+                {t("adminAICourseBuilder.noGenerationJobsYet")}
               </Typography>
               <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-                Get started by generating a course outline from a description or
-                a structured plan.
+                {t("adminAICourseBuilder.getStartedDescription")}
               </Typography>
               <AICourseBuilderActions buttonsOnly />
             </Box>
@@ -385,9 +387,11 @@ export default function AICourseBuilderPage() {
                 }}
               >
                 <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                  Showing {(pageSafe - 1) * rowsPerPage + 1}–
-                  {Math.min(pageSafe * rowsPerPage, totalFiltered)} of{" "}
-                  {totalFiltered} job(s)
+                  {t("adminAICourseBuilder.showingJobs", {
+                    start: (pageSafe - 1) * rowsPerPage + 1,
+                    end: Math.min(pageSafe * rowsPerPage, totalFiltered),
+                    total: totalFiltered,
+                  })}
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <FormControl size="small" sx={{ minWidth: 56 }}>

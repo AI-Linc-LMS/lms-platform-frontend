@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Paper, Chip } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { AttendanceActivity } from "@/lib/services/admin/admin-attendance.service";
 
 interface ActivityDetailsCardProps {
@@ -8,6 +9,7 @@ interface ActivityDetailsCardProps {
 }
 
 export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
+  const { t } = useTranslation("common");
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
@@ -46,7 +48,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Code
+            {t("adminAttendance.code")}
           </Typography>
           <Chip
             label={activity.code}
@@ -70,7 +72,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Duration
+            {t("adminAttendance.duration")}
           </Typography>
           <Typography 
             variant="body2" 
@@ -80,7 +82,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.8125rem", sm: "0.875rem" },
             }}
           >
-            {activity.duration_minutes} minutes
+            {t("adminAttendance.durationMinutes", { count: activity.duration_minutes })}
           </Typography>
         </Box>
         <Box>
@@ -91,13 +93,13 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Status
+            {t("adminAttendance.status")}
           </Typography>
           <Box
             sx={{ display: "flex", gap: 0.5, mt: 0.5, flexWrap: "wrap" }}
           >
             <Chip
-              label={activity.is_active ? "Active" : "Inactive"}
+              label={activity.is_active ? t("adminAttendance.active") : t("adminAttendance.inactive")}
               size="small"
               sx={{
                 fontWeight: 600,
@@ -109,7 +111,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
             />
             {activity.is_valid && (
               <Chip
-                label="Valid"
+                label={t("adminAttendance.valid")}
                 size="small"
                 sx={{
                   fontWeight: 600,
@@ -130,7 +132,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Created
+            {t("adminAttendance.created")}
           </Typography>
           <Typography 
             variant="body2" 
@@ -150,7 +152,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Expires At
+            {t("adminAttendance.expiresAt")}
           </Typography>
           <Typography 
             variant="body2" 
@@ -170,7 +172,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Created By
+            {t("adminAttendance.createdBy")}
           </Typography>
           <Typography 
             variant="body2" 
@@ -190,7 +192,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Attendees Count
+            {t("adminAttendance.attendeesCount")}
           </Typography>
           <Typography 
             variant="body2" 

@@ -13,6 +13,7 @@ import {
   DialogActions,
   Button,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -33,6 +34,7 @@ import { EmptyState } from "@/components/admin/course-builder/EmptyState";
 
 export default function CourseBuilderPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function CourseBuilderPage() {
       const data = await adminCourseBuilderService.getCourses();
       setCourses(Array.isArray(data) ? data : []);
     } catch (error: any) {
-      showToast(error?.message || "Failed to load courses", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToLoadCourses"), "error");
     } finally {
       setLoading(false);
     }
@@ -92,11 +94,11 @@ export default function CourseBuilderPage() {
       };
 
       await adminCourseBuilderService.createCourse(courseData);
-      showToast("Course created successfully", "success");
+      showToast(t("adminCourseBuilder.courseCreatedSuccess"), "success");
       setIsModalOpen(false);
       loadCourses();
     } catch (error: any) {
-      let errorMessage = error?.message || "Failed to create course";
+      let errorMessage = error?.message || t("adminCourseBuilder.failedToCreateCourse");
 
       try {
         if (errorMessage.includes("{")) {
@@ -144,12 +146,12 @@ export default function CourseBuilderPage() {
       setDuplicatingId(courseToDuplicate.id);
       const duplicated = await adminCourseBuilderService.duplicateCourse(courseToDuplicate.id);
       const title = duplicated?.title ?? courseToDuplicate.title + " - copy";
-      showToast(`Course duplicated successfully. New course: "${title}"`, "success");
+      showToast(t("adminCourseBuilder.courseDuplicatedSuccess", { title }), "success");
       setDuplicateDialogOpen(false);
       setCourseToDuplicate(null);
       loadCourses();
     } catch (error: any) {
-      showToast(error?.message ?? "Failed to duplicate course", "error");
+      showToast(error?.message ?? t("adminCourseBuilder.failedToDuplicateCourse"), "error");
     } finally {
       setDuplicatingId(null);
     }
@@ -285,16 +287,11 @@ export default function CourseBuilderPage() {
           }}
         >
           <DialogTitle id="duplicate-course-dialog-title" sx={{ fontWeight: 600 }}>
-            Duplicate course?
+            {t("adminCourseBuilder.duplicateCourseTitle")}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="duplicate-course-dialog-description">
-              {courseToDuplicate ? (
-                <>
-                  Create a copy of &quot;{courseToDuplicate.title}&quot;? The new course will
-                  include all modules and content.
-                </>
-              ) : null}
+              {courseToDuplicate ? t("adminCourseBuilder.duplicateCourseMessage", { title: courseToDuplicate.title }) : null}
             </DialogContentText>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -303,7 +300,7 @@ export default function CourseBuilderPage() {
               disabled={!!duplicatingId}
               color="inherit"
             >
-              Cancel
+              {t("adminCourseBuilder.cancel")}
             </Button>
             <Button
               onClick={handleDuplicateConfirm}
@@ -317,7 +314,7 @@ export default function CourseBuilderPage() {
                 ) : null
               }
             >
-              {duplicatingId ? "Duplicating…" : "Duplicate"}
+              {duplicatingId ? t("adminCourseBuilder.duplicating") : t("adminCourseBuilder.duplicate")}
             </Button>
           </DialogActions>
         </Dialog>

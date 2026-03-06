@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -21,6 +22,7 @@ export function AccountStatusCard({
   saving,
   onToggle,
 }: AccountStatusCardProps) {
+  const { t } = useTranslation("common");
   const { personal_info } = student;
 
   return (
@@ -35,7 +37,7 @@ export function AccountStatusCard({
         variant="h6"
         sx={{ fontWeight: 600, color: "#111827", mb: 2 }}
       >
-        Account Status
+        {t("manageStudents.accountStatus")}
       </Typography>
       <Box
         sx={{
@@ -77,17 +79,17 @@ export function AccountStatusCard({
                 variant="body2"
                 sx={{ fontWeight: 500, color: "#111827" }}
               >
-                {personal_info.is_active ? "Active" : "Inactive"}
+                {personal_info.is_active ? t("manageStudents.active") : t("manageStudents.inactive")}
               </Typography>
               <Typography variant="caption" sx={{ color: "#6b7280" }}>
                 {personal_info.is_active
-                  ? "Student can access the platform"
-                  : "Student access is disabled"}
+                  ? t("manageStudents.studentCanAccess")
+                  : t("manageStudents.studentAccessDisabled")}
               </Typography>
             </Box>
           </Box>
           <Chip
-            label={personal_info.is_active ? "Active" : "Inactive"}
+            label={personal_info.is_active ? t("manageStudents.active") : t("manageStudents.inactive")}
             sx={{
               backgroundColor: personal_info.is_active ? "#d1fae5" : "#fee2e2",
               color: personal_info.is_active ? "#065f46" : "#991b1b",
