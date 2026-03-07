@@ -114,7 +114,6 @@ function scoreSpacingAlignment(data: ResumeData): { score: number; note?: string
   return { score: clamp(score), note };
 }
 
-/** Heuristic: tone from summary length and professional keywords */
 function scoreTone(data: ResumeData): { score: number; note?: string } {
   const summary = data.basicInfo?.summary?.trim() ?? "";
   let score = 50;
@@ -147,7 +146,6 @@ function scoreGrammar(data: ResumeData): { score: number; note?: string } {
   return { score: clamp(score), note };
 }
 
-/** Heuristic: consistency - date formats, bullet style */
 function scoreConsistency(data: ResumeData): { score: number; note?: string } {
   let score = 70;
   const dates = [
@@ -170,7 +168,6 @@ function scoreEvidenceAuthentication(data: ResumeData, placeholderScore: number,
   return { score, note };
 }
 
-/** Offline: section balance – all key sections present */
 function scoreSectionBalance(data: ResumeData): { score: number; note?: string } {
   let score = 0;
   const checks = [
@@ -215,7 +212,6 @@ function scoreBulletQuality(data: ResumeData): { score: number; note?: string } 
   return { score: clamp(score), note };
 }
 
-/** Offline: date consistency and recency */
 function scoreDateRecency(data: ResumeData): { score: number; note?: string } {
   const dates = [
     ...(data.workExperience || []).flatMap((w) => [w.startDate, w.endDate].filter(Boolean)),

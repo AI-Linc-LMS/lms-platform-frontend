@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ResumeData } from "@/components/profile/resume/types";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_MODEL = process.env.OPENAI_ATS_MODEL || "gpt-4o-mini";
 
 function collectUrls(data: ResumeData): { label: string; url: string }[] {
   const out: { label: string; url: string }[] = [];
@@ -109,7 +110,7 @@ export interface FeedbackCategory {
   improvementPoints?: string[];
 }
 
-export interface GeminiATSResponse {
+export interface ATSAnalysisResponse {
   overallScore: number;
   atsScore: number;
   tips: string[];
@@ -179,7 +180,7 @@ function repairTruncatedJson(str: string): string | null {
   return repaired;
 }
 
-function extractJsonFromResponse(text: string): GeminiATSResponse | null {
+function extractJsonFromResponse(text: string): ATSAnalysisResponse | null {
   let raw = text.trim();
   const codeBlockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/);
   if (codeBlockMatch) raw = codeBlockMatch[1].trim();
@@ -294,9 +295,9 @@ function extractJsonFromResponse(text: string): GeminiATSResponse | null {
 }
 
 export async function POST(request: NextRequest) {
-  if (!GEMINI_API_KEY) {
+  if (!OPENAI_API_KEY) {
     return NextResponse.json(
-      { error: "ATS AI analysis is not configured (missing GEMINI_API_KEY)" },
+      { error: "ATS AI analysis is not configured (missing OPENAI_API_KEY)" },
       { status: 501 }
     );
   }
@@ -322,12 +323,17 @@ export async function POST(request: NextRequest) {
 RESUME:
 ${resumeSummary}`;
     try {
-      const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+      const res = await fetch(OPENAI_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: lightPrompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 64 },
+          model: OPENAI_MODEL,
+          messages: [{ role: "user", content: lightPrompt }],
+          temperature: 0.2,
+          max_tokens: 64,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -335,7 +341,7 @@ ${resumeSummary}`;
         const message = data?.error?.message || data?.message || "Request failed";
         return NextResponse.json({ error: message }, { status: res.status >= 500 ? 502 : 400 });
       }
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || data?.candidates?.[0]?.content?.parts?.[0]?.parts?.[0]?.text;
+      const text = data?.choices?.[0]?.message?.content;
       if (!text) return NextResponse.json({ error: "No response" }, { status: 502 });
       const raw = text.trim().replace(/```(?:json)?\s*([\s\S]*?)(?:```|$)/, "$1").trim();
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -435,27 +441,27 @@ Return JSON with these exact keys. Keep each string under 150 chars.
 Guidelines: Be specific about what this resume is good for. Use LINK VALIDATION. Flag placeholders, broken links, grammar issues.`;
 
   try {
-    const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+    const res = await fetch(OPENAI_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 8192,
-        },
+        model: OPENAI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        max_tokens: 8192,
       }),
     });
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const message = data?.error?.message || data?.message || "Gemini request failed";
+      const message = data?.error?.message || data?.message || "OpenAI request failed";
       return NextResponse.json({ error: message }, { status: res.status >= 500 ? 502 : 400 });
     }
 
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      data?.candidates?.[0]?.content?.parts?.[0]?.parts?.[0]?.text;
+    const text = data?.choices?.[0]?.message?.content;
     if (!text) {
       return NextResponse.json({ error: "No analysis in response" }, { status: 502 });
     }

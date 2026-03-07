@@ -1,20 +1,5 @@
-/**
- * ATS (Applicant Tracking System) Score Calculator
- *
- * Based on industry research (TalentTuner, Resumly, Maywise, ResumeAdapter):
- * - Critical qualifications / keywords: ~40%
- * - Skills & content depth: ~30%
- * - Profile completeness & format: ~15%
- * - Structure & ATS-friendly formatting: ~15%
- *
- * We compute a 0–100 score from structured ResumeData plus optional job description
- * for keyword matching. No external API required; can be extended with ScoreMyResume
- * or Affinda later via a backend proxy.
- */
-
 import type { ResumeData } from "./types";
 
-/** Weights aligned with common ATS scoring (skills + keywords dominant) */
 const WEIGHTS = {
   format: 0.15,
   completeness: 0.2,
@@ -37,7 +22,6 @@ export interface ATSScoreResult {
   missingKeywords?: string[];
 }
 
-/** Build a single searchable text blob from resume data (for keyword matching) */
 function getResumeText(data: ResumeData): string {
   const parts: string[] = [];
   const b = data.basicInfo;
@@ -63,7 +47,6 @@ function getResumeText(data: ResumeData): string {
   return parts.join(" ").toLowerCase();
 }
 
-/** Extract significant words from job description (skip stop words, normalize) */
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of",
   "with", "by", "from", "as", "is", "was", "are", "were", "been", "be", "have",
@@ -81,7 +64,6 @@ function extractKeywords(text: string): string[] {
   return [...new Set(normalized)];
 }
 
-/** Format & structure: standard sections present, required fields exist */
 function scoreFormat(data: ResumeData): number {
   let score = 0;
   const hasWork = data.workExperience?.length > 0;
@@ -93,7 +75,6 @@ function scoreFormat(data: ResumeData): number {
   return Math.min(100, score);
 }
 
-/** Completeness: contact info, summary, minimum content */
 function scoreCompleteness(data: ResumeData): number {
   let score = 0;
   const b = data.basicInfo;
@@ -105,7 +86,6 @@ function scoreCompleteness(data: ResumeData): number {
   return Math.min(100, score);
 }
 
-/** Content depth: bullets, skills count, projects, certs, summary length */
 function scoreContentDepth(data: ResumeData): number {
   let score = 0;
   const totalBullets = (data.workExperience || []).reduce(
@@ -130,7 +110,6 @@ function scoreContentDepth(data: ResumeData): number {
   return Math.min(100, score);
 }
 
-/** Keyword match when job description is provided */
 function scoreKeywordMatch(
   resumeText: string,
   jobDescription: string
@@ -152,7 +131,6 @@ function scoreKeywordMatch(
   return { score: Math.min(100, score), matched, missing };
 }
 
-/** Generate improvement suggestions from breakdown and missing keywords */
 function getSuggestions(
   data: ResumeData,
   breakdown: ATSBreakdown,
@@ -184,11 +162,6 @@ function getSuggestions(
   return suggestions;
 }
 
-/**
- * Compute ATS score from resume data and optional job description.
- * When jobDescription is empty, keywordMatch is set to 100 and weight redistributed
- * so overall score still reflects format, completeness, and content.
- */
 export function computeATSScore(
   data: ResumeData,
   jobDescription: string = ""
