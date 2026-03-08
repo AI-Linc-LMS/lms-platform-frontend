@@ -21,7 +21,6 @@ export interface AnswerInputAreaProps {
 }
 
 export const AnswerInputArea = memo(function AnswerInputArea({
-  questionText = "",
   currentAnswer,
   interimTranscript = "",
   onAnswerChange,
