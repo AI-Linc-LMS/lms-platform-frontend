@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Paper, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Box, Button, Paper, Menu, MenuItem, Tooltip, Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeForm } from "./ResumeForm";
 import { ResumePreview } from "./ResumePreview";
+import { ATSScoreCard } from "./ATSScoreCard";
 import { ResumeData } from "./types";
 import { useToast } from "@/components/common/Toast";
 import { toPng } from "html-to-image";
@@ -158,10 +159,45 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   >("modern");
   const [templateMenuAnchor, setTemplateMenuAnchor] =
     useState<null | HTMLElement>(null);
+  const [atsDialogOpen, setAtsDialogOpen] = useState(false);
+  const [atsScoreLive, setAtsScoreLive] = useState<number | null>(null);
+  const [atsScoreLoading, setAtsScoreLoading] = useState(false);
+  const atsScanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const [isProfileMode, setIsProfileMode] = useState(false);
   const [resumeData, setResumeData] = useState<ResumeData>(() => buildResumeData());
+
+  const runLightAtsScan = useCallback(async () => {
+    setAtsScoreLoading(true);
+    try {
+      const res = await fetch("/api/ats-analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeData, light: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && typeof data.atsScore === "number") {
+        setAtsScoreLive(Math.min(100, Math.max(0, Math.round(data.atsScore))));
+      } else {
+        setAtsScoreLive(null);
+      }
+    } catch {
+      setAtsScoreLive(null);
+    } finally {
+      setAtsScoreLoading(false);
+    }
+  }, [resumeData]);
+
+  useEffect(() => {
+    if (atsScanTimeoutRef.current) clearTimeout(atsScanTimeoutRef.current);
+    atsScanTimeoutRef.current = setTimeout(() => {
+      runLightAtsScan();
+    }, 1500);
+    return () => {
+      if (atsScanTimeoutRef.current) clearTimeout(atsScanTimeoutRef.current);
+    };
+  }, [resumeData, runLightAtsScan]);
 
   const handleSave = () => {
     showToast(t("profile.resumeSaved"), "success");
@@ -485,6 +521,41 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             </Button>
           </Tooltip>
 
+          <Tooltip title={t("profile.atsScoreButtonTooltip")}>
+            <Button
+              variant="outlined"
+              startIcon={<IconWrapper icon="mdi:file-document-check-outline" />}
+              onClick={() => setAtsDialogOpen(true)}
+              sx={{
+                textTransform: "none",
+                borderColor: "#e5e7eb",
+                color: "#1f2937",
+                "&:hover": {
+                  borderColor: "#6366f1",
+                  backgroundColor: "#f9fafb",
+                },
+              }}
+            >
+              {t("profile.atsScoreButton")}
+              {atsScoreLoading ? (
+                <Box component="span" sx={{ ml: 1, opacity: 0.8 }}>
+                  …
+                </Box>
+              ) : atsScoreLive !== null ? (
+                <Box
+                  component="span"
+                  sx={{
+                    ml: 1,
+                    fontWeight: 700,
+                    color: atsScoreLive >= 80 ? "#16a34a" : atsScoreLive >= 50 ? "#ca8a04" : "#dc2626",
+                  }}
+                >
+                  {atsScoreLive}
+                </Box>
+              ) : null}
+            </Button>
+          </Tooltip>
+
           <Menu
             anchorEl={templateMenuAnchor}
             open={Boolean(templateMenuAnchor)}
@@ -583,6 +654,27 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           />
         </Box>
       </Box>
+
+      <Dialog
+        open={atsDialogOpen}
+        onClose={() => setAtsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}>
+          {t("profile.atsScoreTitle")} &amp; {t("profile.atsDetails")}
+          <IconButton onClick={() => setAtsDialogOpen(false)} size="small" aria-label="close">
+            <IconWrapper icon="mdi:close" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 2 }}>
+          <ATSScoreCard
+            resumeData={resumeData}
+            initialLiveScore={atsScoreLive ?? undefined}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
