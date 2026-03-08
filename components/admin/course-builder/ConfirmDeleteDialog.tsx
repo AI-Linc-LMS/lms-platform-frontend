@@ -9,6 +9,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 interface ConfirmDeleteDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ export function ConfirmDeleteDialog({
   onCancel,
   loading = false,
 }: ConfirmDeleteDialogProps) {
+  const { t } = useTranslation("common");
   return (
     <Dialog open={open} onClose={loading ? undefined : onCancel} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, color: "#111827" }}>{title}</DialogTitle>
@@ -37,7 +39,7 @@ export function ConfirmDeleteDialog({
       </DialogContent>
       <DialogActions sx={{ p: 2, pt: 0 }}>
         <Button onClick={onCancel} disabled={loading} sx={{ color: "#6b7280" }}>
-          Cancel
+          {t("adminCourseBuilder.cancel")}
         </Button>
         <Button
           onClick={onConfirm}
@@ -46,7 +48,7 @@ export function ConfirmDeleteDialog({
           color="error"
           startIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
         >
-          {loading ? "Deleting..." : "Delete"}
+          {loading ? t("adminCourseBuilder.deleting") : t("adminCourseBuilder.delete")}
         </Button>
       </DialogActions>
     </Dialog>

@@ -196,7 +196,7 @@ export default function CommunityPage() {
     try {
       const newThread = await communityService.createThread(data);
       setThreads([newThread, ...threads]);
-      showToast("Thread created successfully!", "success");
+      showToast(t("community.threadCreated"), "success");
     } catch (error) {
       showToast(t("community.failedToCreateThread"), "error");
       throw error;
@@ -303,7 +303,7 @@ export default function CommunityPage() {
             : t
         )
       );
-      showToast("Failed to vote", "error");
+      showToast(t("community.failedToVote"), "error");
     }
   };
 
@@ -376,7 +376,7 @@ export default function CommunityPage() {
       setTags(tagsData);
 
       showToast(
-        newUserBookmarked ? "Thread bookmarked!" : "Bookmark removed!",
+        newUserBookmarked ? t("community.threadBookmarked") : t("community.bookmarkRemoved"),
         "success"
       );
     } catch (error) {
@@ -403,7 +403,7 @@ export default function CommunityPage() {
             : t
         )
       );
-      showToast("Failed to bookmark thread", "error");
+      showToast(t("community.failedToBookmark"), "error");
     }
   };
 
@@ -468,10 +468,10 @@ export default function CommunityPage() {
           >
             <Box>
               <Typography variant="h4" fontWeight={700} gutterBottom>
-                Community Forum
+                {t("community.forumTitle")}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Ask questions, share knowledge, and connect with fellow learners
+                {t("community.forumSubtitle")}
               </Typography>
             </Box>
             <Button
@@ -483,7 +483,7 @@ export default function CommunityPage() {
                 textTransform: "none",
               }}
             >
-              Ask Question
+              {t("community.askQuestion")}
             </Button>
           </Box>
 
@@ -499,7 +499,7 @@ export default function CommunityPage() {
             >
               {/* Search */}
               <TextField
-                placeholder="Search threads..."
+                placeholder={t("community.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 size="small"
@@ -520,12 +520,12 @@ export default function CommunityPage() {
                 sx={{ minHeight: 40 }}
               >
                 <Tab
-                  label="Recent"
+                  label={t("community.recent")}
                   value="recent"
                   sx={{ minHeight: 40, textTransform: "none" }}
                 />
                 <Tab
-                  label="Popular"
+                  label={t("community.popular")}
                   value="popular"
                   sx={{ minHeight: 40, textTransform: "none" }}
                 />
@@ -555,12 +555,12 @@ export default function CommunityPage() {
               style={{ marginBottom: 16 }}
             />
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              No threads found
+              {t("community.noThreadsFound")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {searchQuery
-                ? "Try a different search term"
-                : "Be the first to start a discussion!"}
+                ? t("community.tryDifferentSearch")
+                : t("community.beFirstToStart")}
             </Typography>
           </Paper>
         ) : (
@@ -575,14 +575,13 @@ export default function CommunityPage() {
               }}
             >
               <Typography variant="body2" color="text.secondary">
-                {filteredThreads.length}{" "}
-                {filteredThreads.length === 1 ? "thread" : "threads"} found
+                {t("community.threadCount", { count: filteredThreads.length })}
               </Typography>
               <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>Per Page</InputLabel>
+                <InputLabel>{t("community.perPage")}</InputLabel>
                 <Select
                   value={pageSize}
-                  label="Per Page"
+                  label={t("community.perPage")}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 >
                   <MenuItem value={10}>10</MenuItem>
@@ -625,7 +624,7 @@ export default function CommunityPage() {
                   showLastButton
                 />
                 <Typography variant="caption" color="text.secondary">
-                  Showing {startItem} - {endItem} of {filteredThreads.length}
+                  {t("community.showingRange", { start: startItem, end: endItem, total: filteredThreads.length })}
                 </Typography>
               </Box>
             )}

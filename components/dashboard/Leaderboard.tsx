@@ -130,6 +130,8 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
       const storedData = getStoredLeaderboard();
       if (storedData) {
         setLeaderboard(storedData);
+        const foundInStored = findUserEntry(storedData);
+        if (foundInStored) setMyRankEntry(foundInStored);
       } else {
         setLeaderboard([]);
       }
@@ -175,7 +177,11 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
     return leaderboard;
   }, [leaderboard]);
 
-  const currentUserEntry = myRankEntry;
+  // Derive current user entry every render (like course leaderboard) so when user loads
+  // after auth, or when we have cached data, "Your rank" still shows. Use myRankEntry
+  // when user is not in the top list but was found in the extended (10000) fetch.
+  const currentUserEntry =
+    findUserEntry(safeLeaderboard) ?? myRankEntry ?? undefined;
 
   return (
     <Box>

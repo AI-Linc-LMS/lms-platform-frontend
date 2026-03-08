@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Box, Container } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import {
   ResultHeader,
   StudentInfoCard,
@@ -24,11 +25,11 @@ function getScoreColor(percentage: number) {
   return { bg: "#fecaca", color: "#991b1b", main: "#ef4444" };
 }
 
-function getPerformanceLabel(percentage: number) {
-  if (percentage >= 80) return "Excellent";
-  if (percentage >= 60) return "Good";
-  if (percentage >= 40) return "Average";
-  return "Needs Improvement";
+function getPerformanceLabel(percentage: number, t: (key: string) => string) {
+  if (percentage >= 80) return t("adminMockInterview.excellent");
+  if (percentage >= 60) return t("adminMockInterview.good");
+  if (percentage >= 40) return t("adminMockInterview.average");
+  return t("adminMockInterview.needsImprovement");
 }
 
 function computeMaxPossibleScore(gradingScheme?: AdminInterviewDetail["grading_scheme"]): number {
@@ -43,6 +44,7 @@ export function AdminInterviewResultAdapter({
   data,
   onBack,
 }: AdminInterviewResultAdapterProps) {
+  const { t } = useTranslation("common");
   const [expandedQuestion, setExpandedQuestion] = useState<number | false>(
     data.questions_for_interview?.[0]?.question_number ?? 1
   );
@@ -73,8 +75,8 @@ export function AdminInterviewResultAdapter({
   const overallPercentage = maxPossibleScore > 0 ? (overallScore / maxPossibleScore) * 100 : 0;
   const scoreColors = useMemo(() => getScoreColor(overallPercentage), [overallPercentage]);
   const performanceLabel = useMemo(
-    () => getPerformanceLabel(overallPercentage),
-    [overallPercentage]
+    () => getPerformanceLabel(overallPercentage, t),
+    [overallPercentage, t]
   );
 
   const totalDurationSeconds = useMemo(() => {
@@ -120,7 +122,7 @@ export function AdminInterviewResultAdapter({
         performanceLabel={performanceLabel}
         scoreColors={scoreColors}
         onBack={onBack}
-        backLabel="Back to Mock Interview Admin"
+        backLabel={t("adminMockInterview.backToMockInterviewAdmin")}
       />
 
       <Container maxWidth="xl" sx={{ pb: 6 }}>
@@ -170,7 +172,7 @@ export function AdminInterviewResultAdapter({
 
         <OverallFeedback
           areas_for_improvement={evaluationScore?.areas_for_improvement ?? []}
-          overall_feedback={evaluationScore?.feedback ?? "No feedback available."}
+          overall_feedback={evaluationScore?.feedback ?? t("adminMockInterview.noFeedbackAvailable")}
         />
       </Container>
     </>

@@ -9,6 +9,7 @@ import {
   InputLabel,
   Button,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ContentType } from "@/lib/services/admin/admin-content-management.service";
 
@@ -31,6 +32,15 @@ const contentTypes: ContentType[] = [
   "VideoTutorial",
 ];
 
+const typeToLabelKey: Record<ContentType, string> = {
+  Quiz: "adminContentManagement.typeQuiz",
+  Article: "adminContentManagement.typeArticle",
+  Assignment: "adminContentManagement.typeAssignment",
+  CodingProblem: "adminContentManagement.typeCodingProblem",
+  DevCodingProblem: "adminContentManagement.typeDevCodingProblem",
+  VideoTutorial: "adminContentManagement.typeVideoTutorial",
+};
+
 export function ContentFilters({
   searchQuery,
   selectedType,
@@ -40,6 +50,7 @@ export function ContentFilters({
   onVerificationStatusChange,
   onClearFilters,
 }: ContentFiltersProps) {
+  const { t } = useTranslation("common");
   const hasActiveFilters =
     searchQuery !== "" ||
     selectedType !== "all" ||
@@ -55,7 +66,7 @@ export function ContentFilters({
       }}
     >
       <TextField
-        placeholder="Search content..."
+        placeholder={t("adminContentManagement.searchPlaceholder")}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         InputProps={{
@@ -78,35 +89,35 @@ export function ContentFilters({
       />
 
       <FormControl sx={{ minWidth: { xs: "100%", sm: 180 } }}>
-        <InputLabel>Type</InputLabel>
+        <InputLabel>{t("adminContentManagement.type")}</InputLabel>
         <Select
           value={selectedType}
-          label="Type"
+          label={t("adminContentManagement.type")}
           onChange={(e) => onTypeChange(e.target.value as ContentType | "all")}
         >
-          <MenuItem value="all">All Types</MenuItem>
+          <MenuItem value="all">{t("adminContentManagement.allTypes")}</MenuItem>
           {contentTypes.map((type) => (
             <MenuItem key={type} value={type}>
-              {type}
+              {t(typeToLabelKey[type])}
             </MenuItem>
           ))}
         </Select>
       </FormControl>
 
       <FormControl sx={{ minWidth: { xs: "100%", sm: 180 } }}>
-        <InputLabel>Verification Status</InputLabel>
+        <InputLabel>{t("adminContentManagement.verificationStatus")}</InputLabel>
         <Select
           value={selectedVerificationStatus}
-          label="Verification Status"
+          label={t("adminContentManagement.verificationStatus")}
           onChange={(e) =>
             onVerificationStatusChange(
               e.target.value as "all" | "verified" | "unverified"
             )
           }
         >
-          <MenuItem value="all">All Status</MenuItem>
-          <MenuItem value="verified">Verified</MenuItem>
-          <MenuItem value="unverified">Unverified</MenuItem>
+          <MenuItem value="all">{t("adminContentManagement.allStatus")}</MenuItem>
+          <MenuItem value="verified">{t("adminContentManagement.verified")}</MenuItem>
+          <MenuItem value="unverified">{t("adminContentManagement.unverified")}</MenuItem>
         </Select>
       </FormControl>
 
@@ -125,7 +136,7 @@ export function ContentFilters({
             },
           }}
         >
-          Clear Filters
+          {t("adminContentManagement.clearFilters")}
         </Button>
       )}
     </Box>

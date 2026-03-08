@@ -1,32 +1,15 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import {
-  transcribeAudioBlob,
-  isServerSttEnabled,
-} from "@/lib/services/speech-to-text.service";
-
-const CHUNK_MS = 4000; // Send audio every 4s when using server STT
-
-function getRecorderMimeType(): string {
-  const types = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"];
-  for (const m of types) {
-    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m))
-      return m;
-  }
-  return "audio/webm";
-}
 
 export interface UseSpeechToTextOptions {
-  /** Stream to record from (required for server STT). */
-  streamRef?: React.RefObject<MediaStream | null>;
   /** Called with final transcript segments (append to answer). */
   onFinal?: (text: string) => void;
-  /** Called with interim/combined transcript for display. */
+  /** Called with interim/live transcript for display. */
   onInterim?: (text: string) => void;
-  /** Lang for browser recognition only (e.g. "en-US"). */
+  /** Lang for browser Web Speech API (e.g. "en-US"). */
   lang?: string;
-  /** Continuous mode: keep appending (take page). Single shot: one result (device-check). */
+  /** Continuous mode: keep listening and appending. */
   continuous?: boolean;
 }
 
@@ -36,19 +19,21 @@ export interface UseSpeechToTextReturn {
   transcript: string;
   isListening: boolean;
   error: string | null;
-  /** True when using server STT (e.g. Canary Qwen 2.5B). */
-  isServerMode: boolean;
 }
 
 /**
- * Speech-to-text: uses server STT (e.g. Canary Qwen 2.5B) when configured and stream is available,
- * otherwise falls back to browser Web Speech API.
+ * Speech-to-text using the browser Web Speech API.
+ *
+ * Production agents typically use streaming cloud APIs instead (same one-click UX):
+ * - Google Cloud Speech-to-Text (streaming), AWS Transcribe, Azure Speech Services,
+ *   AssemblyAI, Deepgram — they consume the existing mic stream (already granted on
+ *   "Start Interview") and stream audio to the server; no extra user gesture needed.
+ * This hook uses the built-in Web Speech API so no backend or API key is required.
  */
 export function useSpeechToText(
   options: UseSpeechToTextOptions = {}
 ): UseSpeechToTextReturn {
   const {
-    streamRef,
     onFinal,
     onInterim,
     lang = "en-US",
@@ -58,61 +43,13 @@ export function useSpeechToText(
   const [transcript, setTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isServerMode, setIsServerMode] = useState(false);
 
   const recognitionRef = useRef<any>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunkBufferRef = useRef<Blob[]>([]);
-  const streamRefCurrent = streamRef?.current;
-
-  const tryServerStt = useCallback((): boolean => {
-    if (!isServerSttEnabled() || !streamRef?.current) return false;
-    const stream = streamRef.current;
-    const hasAudio =
-      stream.getAudioTracks().length > 0 &&
-      stream.getAudioTracks()[0].readyState === "live";
-    return hasAudio;
-  }, [streamRef?.current]);
-
-  const startServerStt = useCallback(() => {
-    const stream = streamRef?.current;
-    if (!stream) return;
-    try {
-      const mime = getRecorderMimeType();
-      const rec = new MediaRecorder(stream, { mimeType: mime });
-      mediaRecorderRef.current = rec;
-
-      rec.ondataavailable = async (e) => {
-        if (e.data.size === 0) return;
-        const blob = e.data;
-        try {
-          const { text } = await transcribeAudioBlob(blob);
-          if (text) {
-            setTranscript((prev) => (prev ? `${prev} ${text}` : text));
-            onFinal?.(text);
-          }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Transcription failed");
-        }
-      };
-
-      rec.start(CHUNK_MS);
-      setIsListening(true);
-      setIsServerMode(true);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Recording failed");
-      setIsServerMode(false);
-    }
-  }, [streamRef, onFinal]);
-
-  const stopServerStt = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-    }
-    setIsListening(false);
-  }, []);
+  const wantsListeningRef = useRef(false);
+  const onFinalRef = useRef(onFinal);
+  const onInterimRef = useRef(onInterim);
+  onFinalRef.current = onFinal;
+  onInterimRef.current = onInterim;
 
   const startBrowserStt = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -120,12 +57,13 @@ export function useSpeechToText(
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError("Speech recognition not supported");
+      setError("Speech recognition not supported in this browser. Try Chrome.");
       return;
     }
+    wantsListeningRef.current = true;
     const rec = new SpeechRecognition();
     rec.continuous = continuous;
-    rec.interimResults = continuous;
+    rec.interimResults = true;
     rec.lang = lang;
     rec.onresult = (event: any) => {
       let interim = "";
@@ -138,28 +76,48 @@ export function useSpeechToText(
       const combined = final || interim;
       if (combined) {
         setTranscript((prev) => (prev ? `${prev} ${combined.trim()}` : combined.trim()));
-        onInterim?.(combined);
-        if (final) onFinal?.(final.trim());
+        onInterimRef.current?.(combined);
+        if (final) onFinalRef.current?.(final.trim());
       }
     };
     rec.onerror = (e: any) => {
-      if (e.error !== "no-speech") setError("Speech recognition error");
+      if (e.error === "not-allowed") {
+        wantsListeningRef.current = false;
+        setIsListening(false);
+        setError("Microphone access denied. Allow microphone when you start the interview.");
+      } else if (e.error === "no-speech") {
+        // Ignore — user didn't speak yet
+      } else if (e.error === "network") {
+        wantsListeningRef.current = false;
+        setIsListening(false);
+        setError("Speech recognition needs internet. Check your connection.");
+      } else if (e.error !== "aborted") {
+        wantsListeningRef.current = false;
+        setIsListening(false);
+        setError("Speech recognition error. Use Chrome and start the interview again.");
+      }
     };
     rec.onend = () => {
-      if (isListening && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch {}
+      if (!wantsListeningRef.current) return;
+      try {
+        rec.start();
+      } catch {
+        // Restart failed; leave stopped
       }
     };
     recognitionRef.current = rec;
-    rec.start();
-    setIsListening(true);
-    setIsServerMode(false);
-    setError(null);
-  }, [continuous, lang, onFinal, onInterim, isListening]);
+    try {
+      rec.start();
+      setIsListening(true);
+      setError(null);
+    } catch (err) {
+      wantsListeningRef.current = false;
+      setError("Could not start microphone. Allow microphone permission and try again.");
+    }
+  }, [continuous, lang]);
 
   const stopBrowserStt = useCallback(() => {
+    wantsListeningRef.current = false;
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -172,24 +130,15 @@ export function useSpeechToText(
   const start = useCallback(() => {
     setTranscript("");
     setError(null);
-    if (tryServerStt()) {
-      startServerStt();
-    } else {
-      startBrowserStt();
-    }
-  }, [tryServerStt, startServerStt, startBrowserStt]);
+    startBrowserStt();
+  }, [startBrowserStt]);
 
   const stop = useCallback(() => {
-    if (isServerMode) {
-      stopServerStt();
-    } else {
-      stopBrowserStt();
-    }
-  }, [isServerMode, stopServerStt, stopBrowserStt]);
+    stopBrowserStt();
+  }, [stopBrowserStt]);
 
-  // Keep browser recognition alive when continuous
   useEffect(() => {
-    if (!continuous || !isListening || isServerMode) return;
+    if (!continuous || !isListening) return;
     const id = setInterval(() => {
       if (recognitionRef.current) {
         try {
@@ -201,15 +150,10 @@ export function useSpeechToText(
       }
     }, 2000);
     return () => clearInterval(id);
-  }, [continuous, isListening, isServerMode]);
+  }, [continuous, isListening]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current = null;
-      }
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -225,6 +169,5 @@ export function useSpeechToText(
     transcript,
     isListening,
     error,
-    isServerMode,
   };
 }

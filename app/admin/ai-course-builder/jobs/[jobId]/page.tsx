@@ -22,6 +22,7 @@ import {
   AccordionDetails,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -42,6 +43,7 @@ export default function JobDetailPage() {
   const params = useParams();
   const jobId = params.jobId as string;
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   const [data, setData] = useState<JobDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,13 +65,13 @@ export default function JobDetailPage() {
       setData(res);
     } catch (error: unknown) {
       showToast(
-        error instanceof Error ? error.message : "Failed to load job",
+        error instanceof Error ? error.message : t("adminAICourseBuilder.failedToLoadJob"),
         "error"
       );
     } finally {
       setLoading(false);
     }
-  }, [jobId, showToast]);
+  }, [jobId, showToast, t]);
 
   useEffect(() => {
     loadJob();
@@ -93,11 +95,11 @@ export default function JobDetailPage() {
     try {
       setRegenerating(true);
       await aiCourseBuilderService.regenerateOutline(jobId);
-      showToast("Outline regeneration started", "success");
+      showToast(t("adminAICourseBuilder.outlineRegenerationStarted"), "success");
       await loadJob();
     } catch (error: unknown) {
       showToast(
-        error instanceof Error ? error.message : "Regenerate failed",
+        error instanceof Error ? error.message : t("adminAICourseBuilder.regenerateFailed"),
         "error"
       );
     } finally {
@@ -115,12 +117,12 @@ export default function JobDetailPage() {
         published: approvePublished,
       };
       await aiCourseBuilderService.approveOutline(jobId, body);
-      showToast("Course structure created successfully", "success");
+      showToast(t("adminAICourseBuilder.courseStructureCreated"), "success");
       setApproveOpen(false);
       await loadJob();
     } catch (error: unknown) {
       showToast(
-        error instanceof Error ? error.message : "Approve failed",
+        error instanceof Error ? error.message : t("adminAICourseBuilder.approveFailed"),
         "error"
       );
     } finally {
@@ -132,11 +134,11 @@ export default function JobDetailPage() {
     try {
       setGeneratingContent(true);
       await aiCourseBuilderService.generateAllContent(jobId);
-      showToast("Content generation started", "success");
+      showToast(t("adminAICourseBuilder.contentGenerationStarted"), "success");
       await loadJob();
     } catch (error: unknown) {
       showToast(
-        error instanceof Error ? error.message : "Failed to start generation",
+        error instanceof Error ? error.message : t("adminAICourseBuilder.failedToStartGeneration"),
         "error"
       );
     } finally {
@@ -148,11 +150,11 @@ export default function JobDetailPage() {
     try {
       setRegeneratingTaskId(taskId);
       const res = await aiCourseBuilderService.regenerateTask(taskId);
-      showToast(res.message ?? "Regeneration started for task", "success");
+      showToast(res.message ?? t("adminAICourseBuilder.regenerationStartedTask"), "success");
       await loadJob();
     } catch (error: unknown) {
       showToast(
-        error instanceof Error ? error.message : "Regenerate task failed",
+        error instanceof Error ? error.message : t("adminAICourseBuilder.regenerateTaskFailed"),
         "error"
       );
     } finally {
@@ -164,11 +166,11 @@ export default function JobDetailPage() {
     try {
       setRegeneratingSubmoduleId(submoduleId);
       const res = await aiCourseBuilderService.regenerateSubmodule(submoduleId);
-      showToast(res.message ?? "Regeneration started for submodule", "success");
+      showToast(res.message ?? t("adminAICourseBuilder.regenerationStartedSubmodule"), "success");
       await loadJob();
     } catch (error: unknown) {
       showToast(
-        error instanceof Error ? error.message : "Regenerate submodule failed",
+        error instanceof Error ? error.message : t("adminAICourseBuilder.regenerateSubmoduleFailed"),
         "error"
       );
     } finally {
@@ -180,11 +182,11 @@ export default function JobDetailPage() {
     try {
       setRegeneratingContentId(contentId);
       const res = await aiCourseBuilderService.regenerateContent(contentId);
-      showToast(res.message ?? "Regeneration started for content", "success");
+      showToast(res.message ?? t("adminAICourseBuilder.regenerationStartedContent"), "success");
       await loadJob();
     } catch (error: unknown) {
       showToast(
-        error instanceof Error ? error.message : "Regenerate content failed",
+        error instanceof Error ? error.message : t("adminAICourseBuilder.regenerateContentFailed"),
         "error"
       );
     } finally {
@@ -215,9 +217,9 @@ export default function JobDetailPage() {
     return (
       <MainLayout>
         <Box sx={{ p: { xs: 2, sm: 3 } }}>
-          <Typography color="error">Job not found.</Typography>
+          <Typography color="error">{t("adminAICourseBuilder.jobNotFound")}</Typography>
           <Button component={Link} href="/admin/ai-course-builder" sx={{ mt: 2 }}>
-            Back to AI Course Builder
+            {t("adminAICourseBuilder.backToAICourseBuilder")}
           </Button>
         </Box>
       </MainLayout>
@@ -246,7 +248,7 @@ export default function JobDetailPage() {
             }}
           >
             <IconWrapper icon="mdi:arrow-left" size={20} />
-            Back to AI Course Builder
+            {t("adminAICourseBuilder.backToAICourseBuilder")}
           </Link>
         </Box>
 
@@ -263,10 +265,10 @@ export default function JobDetailPage() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box>
               <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5 }}>
-                Status: {status.replace(/_/g, " ")}
+                {t("adminAICourseBuilder.status")} {status.replace(/_/g, " ")}
               </Typography>
               <Typography variant="caption" sx={{ color: "#9ca3af" }}>
-                Job ID: {job.job_id}
+                {t("adminAICourseBuilder.jobId")} {job.job_id}
               </Typography>
             </Box>
             {isPolling && (
@@ -284,7 +286,7 @@ export default function JobDetailPage() {
               >
                 <CircularProgress size={14} sx={{ color: "#059669" }} />
                 <Typography variant="caption" sx={{ color: "#047857", fontWeight: 500 }}>
-                  Live
+                  {t("adminAICourseBuilder.live")}
                 </Typography>
               </Box>
             )}
@@ -306,7 +308,7 @@ export default function JobDetailPage() {
                 )
               }
             >
-              {regenerating ? "Regenerating..." : "Regenerate outline"}
+              {regenerating ? t("adminAICourseBuilder.regenerating") : t("adminAICourseBuilder.regenerateOutline")}
             </Button>
             <Button
               variant="contained"
@@ -316,7 +318,7 @@ export default function JobDetailPage() {
                 "&:hover": { bgcolor: "#059669" },
               }}
             >
-              Approve outline & create course
+              {t("adminAICourseBuilder.approveOutlineCreateCourse")}
             </Button>
           </Box>
         )}
@@ -344,7 +346,7 @@ export default function JobDetailPage() {
           return (
             <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Progress
+                {t("adminAICourseBuilder.progress")}
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <LinearProgress
@@ -359,9 +361,9 @@ export default function JobDetailPage() {
               </Box>
               {hasTaskBreakdown && (
                 <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mt: 0.5 }}>
-                  Pending: {data.pending_tasks ?? 0} • Generating:{" "}
-                  {data.generating_tasks ?? 0} • Completed: {data.completed_tasks}{" "}
-                  • Failed: {data.failed_tasks ?? 0}
+                  {t("adminAICourseBuilder.pendingLabel")} {data.pending_tasks ?? 0} • {t("adminAICourseBuilder.generatingLabel")}{" "}
+                  {data.generating_tasks ?? 0} • {t("adminAICourseBuilder.completedLabel")} {data.completed_tasks}{" "}
+                  • {t("adminAICourseBuilder.failedLabel")} {data.failed_tasks ?? 0}
                 </Typography>
               )}
             </Paper>
@@ -390,10 +392,10 @@ export default function JobDetailPage() {
               }}
             >
               {generatingContent
-                ? "Starting..."
+                ? t("adminAICourseBuilder.starting")
                 : data.pending_tasks === 0 && status === "completed"
-                  ? "All content generated"
-                  : "Generate all content"}
+                  ? t("adminAICourseBuilder.allContentGenerated")
+                  : t("adminAICourseBuilder.generateAllContent")}
             </Button>
           </Box>
         )}
@@ -401,24 +403,23 @@ export default function JobDetailPage() {
         {showRegenerateSection && (
             <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-                Regenerate content
+                {t("adminAICourseBuilder.regenerateContentSection")}
               </Typography>
               {hasFailedTasks && (
                 <Typography variant="body2" color="error" sx={{ mb: 1 }}>
-                  Some tasks failed. Use &quot;Regenerate task&quot; on failed items below to retry, or regenerate by submodule.
+                  {t("adminAICourseBuilder.someTasksFailed")}
                 </Typography>
               )}
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Regenerate by submodule or by individual task/content after
-                content has been generated.
+                {t("adminAICourseBuilder.regenerateBySubmoduleNote")}
               </Typography>
               {!hasContentTasks && hasFailedTasks ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
                   <Typography variant="body2" color="text.secondary">
-                    Task list not loaded. Refresh to see failed tasks and retry options.
+                    {t("adminAICourseBuilder.taskListNotLoaded")}
                   </Typography>
                   <Button size="small" variant="outlined" onClick={loadJob} startIcon={<IconWrapper icon="mdi:refresh" size={16} />}>
-                    Refresh
+                    {t("adminAICourseBuilder.refresh")}
                   </Button>
                 </Box>
               ) : (
@@ -515,7 +516,7 @@ export default function JobDetailPage() {
                                                 )
                                               }
                                             >
-                                              Regenerate submodule
+                                              {t("adminAICourseBuilder.regenerateSubmodule")}
                                             </Button>
                                           )}
                                         </Box>
@@ -524,20 +525,20 @@ export default function JobDetailPage() {
                                     <AccordionDetails sx={{ pt: 0, pl: 2, borderTop: "1px solid", borderColor: "divider" }}>
                                       {subTasks.length > 0 ? (
                                         <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                          {subTasks.map((t) => {
-                                            const loadingTask = regeneratingTaskId === t.id;
-                                            const loadingContent = t.content != null && regeneratingContentId === t.content;
-                                            const isPending = t.status === "pending";
+                                          {subTasks.map((task) => {
+                                            const loadingTask = regeneratingTaskId === task.id;
+                                            const loadingContent = task.content != null && regeneratingContentId === task.content;
+                                            const isPending = task.status === "pending";
                                             return (
                                               <Box
                                                 component="li"
-                                                key={t.id}
+                                                key={task.id}
                                                 sx={{
                                                   display: "flex",
                                                   alignItems: "center",
                                                   flexWrap: "wrap",
                                                   gap: 1,
-                                                  ...(t.status === "failed" && {
+                                                  ...(task.status === "failed" && {
                                                     bgcolor: "rgba(211, 47, 47, 0.08)",
                                                     borderLeft: "3px solid",
                                                     borderColor: "error.main",
@@ -546,14 +547,14 @@ export default function JobDetailPage() {
                                                   }),
                                                 }}
                                               >
-                                                <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
-                                                  {t.content_type} — {t.status}
+                                                <Typography variant="caption" sx={{ mr: 0.5 }} color={task.status === "failed" ? "error" : undefined}>
+                                                  {task.content_type} — {task.status}
                                                 </Typography>
                                                 <Button
                                                   size="small"
                                                   variant="text"
                                                   disabled={loadingTask}
-                                                  onClick={() => handleRegenerateTask(t.id)}
+                                                  onClick={() => handleRegenerateTask(task.id)}
                                                   startIcon={
                                                     loadingTask ? (
                                                       <CircularProgress size={12} />
@@ -562,14 +563,14 @@ export default function JobDetailPage() {
                                                     )
                                                   }
                                                 >
-                                                  {isPending ? "Generate task" : "Regenerate task"}
+                                                  {isPending ? t("adminAICourseBuilder.generateTask") : t("adminAICourseBuilder.regenerateTask")}
                                                 </Button>
-                                                {t.content != null && (
+                                                {task.content != null && (
                                                   <Button
                                                     size="small"
                                                     variant="text"
                                                     disabled={loadingContent}
-                                                    onClick={() => handleRegenerateContent(t.content!)}
+                                                    onClick={() => handleRegenerateContent(task.content!)}
                                                     startIcon={
                                                       loadingContent ? (
                                                         <CircularProgress size={12} />
@@ -578,7 +579,7 @@ export default function JobDetailPage() {
                                                       )
                                                     }
                                                   >
-                                                    Regenerate content
+                                                    {t("adminAICourseBuilder.regenerateContent")}
                                                   </Button>
                                                 )}
                                               </Box>
@@ -587,7 +588,7 @@ export default function JobDetailPage() {
                                         </Box>
                                       ) : (
                                         <Typography variant="caption" color="text.secondary">
-                                          No tasks for this submodule.
+                                          {t("adminAICourseBuilder.noTasksForSubmodule")}
                                         </Typography>
                                       )}
                                     </AccordionDetails>
@@ -615,7 +616,7 @@ export default function JobDetailPage() {
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
                     {Object.entries(bySubmodule).map(([subIdStr, subTasks]) => {
                       const subId = Number(subIdStr);
-                      const title = subTasks[0]?.submodule_title ?? `Submodule ${subId}`;
+                      const title = subTasks[0]?.submodule_title ?? t("adminAICourseBuilder.submoduleFallback", { id: subId });
                       const loadingSub = regeneratingSubmoduleId === subId;
                       const prog = subProgress(subTasks);
                       return (
@@ -647,27 +648,27 @@ export default function JobDetailPage() {
                                     )
                                   }
                                 >
-                                  Regenerate submodule
+                                  {t("adminAICourseBuilder.regenerateSubmodule")}
                                 </Button>
                               </Box>
                             </Box>
                           </AccordionSummary>
                           <AccordionDetails sx={{ pt: 0, borderTop: "1px solid", borderColor: "divider" }}>
                             <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                              {subTasks.map((t) => {
-                                const loadingTask = regeneratingTaskId === t.id;
-                                const loadingContent = t.content != null && regeneratingContentId === t.content;
-                                const isPending = t.status === "pending";
+                              {subTasks.map((task) => {
+                                const loadingTask = regeneratingTaskId === task.id;
+                                const loadingContent = task.content != null && regeneratingContentId === task.content;
+                                const isPending = task.status === "pending";
                                 return (
                                   <Box
                                     component="li"
-                                    key={t.id}
+                                    key={task.id}
                                     sx={{
                                       display: "flex",
                                       alignItems: "center",
                                       flexWrap: "wrap",
                                       gap: 1,
-                                      ...(t.status === "failed" && {
+                                      ...(task.status === "failed" && {
                                         bgcolor: "rgba(211, 47, 47, 0.08)",
                                         borderLeft: "3px solid",
                                         borderColor: "error.main",
@@ -676,14 +677,14 @@ export default function JobDetailPage() {
                                       }),
                                     }}
                                   >
-                                    <Typography variant="caption" sx={{ mr: 0.5 }} color={t.status === "failed" ? "error" : undefined}>
-                                      {t.content_type} — {t.status}
+                                    <Typography variant="caption" sx={{ mr: 0.5 }} color={task.status === "failed" ? "error" : undefined}>
+                                      {task.content_type} — {task.status}
                                     </Typography>
                                     <Button
                                       size="small"
                                       variant="text"
                                       disabled={loadingTask}
-                                      onClick={() => handleRegenerateTask(t.id)}
+                                      onClick={() => handleRegenerateTask(task.id)}
                                       startIcon={
                                         loadingTask ? (
                                           <CircularProgress size={12} />
@@ -692,14 +693,14 @@ export default function JobDetailPage() {
                                         )
                                       }
                                     >
-                                      {isPending ? "Generate task" : "Regenerate task"}
+                                      {isPending ? t("adminAICourseBuilder.generateTask") : t("adminAICourseBuilder.regenerateTask")}
                                     </Button>
-                                    {t.content != null && (
+                                    {task.content != null && (
                                       <Button
                                         size="small"
                                         variant="text"
                                         disabled={loadingContent}
-                                        onClick={() => handleRegenerateContent(t.content!)}
+                                        onClick={() => handleRegenerateContent(task.content!)}
                                         startIcon={
                                           loadingContent ? (
                                             <CircularProgress size={12} />
@@ -708,7 +709,7 @@ export default function JobDetailPage() {
                                           )
                                         }
                                       >
-                                        Regenerate content
+                                        {t("adminAICourseBuilder.regenerateContent")}
                                       </Button>
                                     )}
                                   </Box>
@@ -756,7 +757,7 @@ export default function JobDetailPage() {
               }}
             >
               <Typography variant="subtitle2" color="error" sx={{ mb: 1 }}>
-                Error logs
+                {t("adminAICourseBuilder.errorLogs")}
               </Typography>
               <Box
                 component="pre"
@@ -804,11 +805,11 @@ export default function JobDetailPage() {
         })()}
 
         <Dialog open={approveOpen} onClose={() => setApproveOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Approve outline & create course</DialogTitle>
+          <DialogTitle>{t("adminAICourseBuilder.approveOutlineDialogTitle")}</DialogTitle>
           <DialogContent>
             <TextField
               fullWidth
-              label="Custom slug (optional)"
+              label={t("adminAICourseBuilder.customSlugOptional")}
               value={approveSlug}
               onChange={(e) => setApproveSlug(e.target.value)}
               size="small"
@@ -816,7 +817,7 @@ export default function JobDetailPage() {
             />
             <TextField
               fullWidth
-              label="Thumbnail URL (optional)"
+              label={t("adminAICourseBuilder.thumbnailUrlOptional")}
               value={approveThumbnail}
               onChange={(e) => setApproveThumbnail(e.target.value)}
               size="small"
@@ -829,11 +830,11 @@ export default function JobDetailPage() {
                   onChange={(e) => setApprovePublished(e.target.checked)}
                 />
               }
-              label="Publish immediately"
+              label={t("adminAICourseBuilder.publishImmediately")}
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setApproveOpen(false)}>Cancel</Button>
+            <Button onClick={() => setApproveOpen(false)}>{t("adminAICourseBuilder.cancel")}</Button>
             <Button
               variant="contained"
               onClick={handleApprove}
@@ -843,7 +844,7 @@ export default function JobDetailPage() {
                 "&:hover": { bgcolor: "#059669" },
               }}
             >
-              {approving ? "Creating..." : "Create course"}
+              {approving ? t("adminAICourseBuilder.creating") : t("adminAICourseBuilder.createCourse")}
             </Button>
           </DialogActions>
         </Dialog>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ContentCountByType } from "@/lib/services/admin/admin-content-management.service";
 
@@ -11,40 +12,40 @@ interface ContentStatsCardsProps {
 
 const contentTypeConfig: Record<
   keyof ContentCountByType,
-  { label: string; icon: string; color: string; bgColor: string }
+  { labelKey: string; icon: string; color: string; bgColor: string }
 > = {
   Quiz: {
-    label: "Quiz",
+    labelKey: "adminContentManagement.typeQuiz",
     icon: "mdi:help-circle",
     color: "#6366f1",
     bgColor: "#eef2ff",
   },
   Article: {
-    label: "Article",
+    labelKey: "adminContentManagement.typeArticle",
     icon: "mdi:book-open-page-variant",
     color: "#10b981",
     bgColor: "#d1fae5",
   },
   Assignment: {
-    label: "Assignment",
+    labelKey: "adminContentManagement.typeAssignment",
     icon: "mdi:clipboard-text",
     color: "#f59e0b",
     bgColor: "#fef3c7",
   },
   CodingProblem: {
-    label: "Coding Problem",
+    labelKey: "adminContentManagement.typeCodingProblem",
     icon: "mdi:code-tags",
     color: "#8b5cf6",
     bgColor: "#ede9fe",
   },
   DevCodingProblem: {
-    label: "Dev Coding Problem",
+    labelKey: "adminContentManagement.typeDevCodingProblem",
     icon: "mdi:code-braces-box",
     color: "#ec4899",
     bgColor: "#fce7f3",
   },
   VideoTutorial: {
-    label: "Video Tutorial",
+    labelKey: "adminContentManagement.typeVideoTutorial",
     icon: "mdi:play-circle",
     color: "#ef4444",
     bgColor: "#fee2e2",
@@ -55,6 +56,7 @@ export function ContentStatsCards({
   counts,
   loading = false,
 }: ContentStatsCardsProps) {
+  const { t } = useTranslation("common");
   if (loading) {
     return (
       <Box
@@ -156,7 +158,7 @@ export function ContentStatsCards({
                       textAlign: "center",
                     }}
                   >
-                    {config.label}
+                    {t(config.labelKey)}
                   </Typography>
                 </Box>
               </Paper>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogTitle,
@@ -43,6 +44,7 @@ export function ImageUrlDialog({
   currentImageUrl,
   placeholder = "https://example.com/your-image.jpg",
 }: ImageUrlDialogProps) {
+  const { t } = useTranslation("common");
   const [urlValue, setUrlValue] = useState(currentImageUrl || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -57,7 +59,7 @@ export function ImageUrlDialog({
   const handleSave = async () => {
     const url = urlValue.trim();
     if (url && !isValidUrl(url)) {
-      setError("Please enter a valid URL");
+      setError(t("profile.pleaseEnterValidUrl"));
       return;
     }
     setError("");
@@ -66,7 +68,7 @@ export function ImageUrlDialog({
       await onSave(url);
       onClose();
     } catch {
-      setError("Failed to save. Please try again.");
+      setError(t("profile.failedToSaveTryAgain"));
     } finally {
       setSaving(false);
     }
@@ -172,7 +174,7 @@ export function ImageUrlDialog({
             "&:hover": { backgroundColor: "#f3f2ef" },
           }}
         >
-          Cancel
+          {t("profile.cancel")}
         </Button>
         <Button
           onClick={handleSave}
@@ -188,7 +190,7 @@ export function ImageUrlDialog({
             "&:hover": { backgroundColor: "#004182" },
           }}
         >
-          {saving ? "Saving..." : "Save"}
+          {saving ? t("profile.saving") : t("profile.save")}
         </Button>
       </DialogActions>
     </Dialog>

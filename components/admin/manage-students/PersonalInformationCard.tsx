@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper, TextField, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { StudentDetail } from "@/lib/services/admin/admin-student.service";
@@ -29,6 +30,7 @@ export function PersonalInformationCard({
   onSave,
   onFormChange,
 }: PersonalInformationCardProps) {
+  const { t } = useTranslation("common");
   const { personal_info } = student;
 
   return (
@@ -48,7 +50,7 @@ export function PersonalInformationCard({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
-          Personal Information
+          {t("manageStudents.personalInformation")}
         </Typography>
         {!editing && (
           <Button
@@ -57,7 +59,7 @@ export function PersonalInformationCard({
             size="small"
             sx={{ color: "#6366f1" }}
           >
-            Edit
+            {t("manageStudents.edit")}
           </Button>
         )}
       </Box>
@@ -77,7 +79,7 @@ export function PersonalInformationCard({
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            First Name
+            {t("manageStudents.firstName")}
           </Typography>
           {editing ? (
             <TextField
@@ -98,7 +100,7 @@ export function PersonalInformationCard({
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Last Name
+            {t("manageStudents.lastName")}
           </Typography>
           {editing ? (
             <TextField
@@ -119,7 +121,7 @@ export function PersonalInformationCard({
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Email
+            {t("manageStudents.email")}
           </Typography>
           {editing ? (
             <TextField
@@ -146,10 +148,10 @@ export function PersonalInformationCard({
                 size="small"
                 sx={{ bgcolor: "#6366f1" }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("manageStudents.saving") : t("manageStudents.save")}
               </Button>
               <Button variant="outlined" onClick={onCancel} size="small">
-                Cancel
+                {t("manageStudents.cancel")}
               </Button>
             </Box>
           </Box>

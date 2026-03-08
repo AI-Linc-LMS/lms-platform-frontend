@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -28,6 +29,7 @@ interface ZoomAttendanceSectionProps {
 }
 
 export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [data, setData] = useState<ZoomAttendanceResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,17 +56,17 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
       setSyncing(true);
       const res = await adminLiveActivitiesService.syncAttendance(liveClassId);
       if (res.status === "error") {
-        showToast(res.message || "Failed to sync attendance", "error");
+        showToast(res.message || t("adminLiveSessions.failedToSyncAttendance"), "error");
         return;
       }
       const d = res.data;
       const msg = d
-        ? `Synced ${d.total_participants} participant${d.total_participants !== 1 ? "s" : ""} (${d.new_records} new)`
-        : res.message || "Attendance synced";
+        ? t("adminLiveSessions.syncedParticipants", { count: d.total_participants, new: d.new_records })
+        : res.message || t("adminLiveSessions.attendanceSynced");
       showToast(msg, "success");
       await fetchAttendance();
     } catch {
-      showToast("Failed to sync attendance", "error");
+      showToast(t("adminLiveSessions.failedToSyncAttendance"), "error");
     } finally {
       setSyncing(false);
     }
@@ -113,7 +115,7 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151" }}>
-          Attendance ({count} participant{count !== 1 ? "s" : ""})
+          {t("adminLiveSessions.attendanceSection", { count })}
         </Typography>
         {syncAvailable && (
           <Button
@@ -130,27 +132,27 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
             }
             sx={{ textTransform: "none", fontSize: "0.75rem" }}
           >
-            Sync attendance
+            {t("adminLiveSessions.syncAttendance")}
           </Button>
         )}
       </Box>
       <Typography variant="caption" sx={{ color: "#9ca3af", mb: 1.5, display: "block" }}>
         {syncedAt
-          ? `Last synced: ${formatDateTimeShort(syncedAt)}`
-          : "Never synced"}
+          ? t("adminLiveSessions.lastSynced", { date: formatDateTimeShort(syncedAt) })
+          : t("adminLiveSessions.neverSynced")}
       </Typography>
       <Typography variant="caption" sx={{ color: "#6b7280", mb: 1.5, display: "block", fontStyle: "italic" }}>
-        Attendance is synced automatically when the meeting ends. Use &quot;Sync attendance&quot; to refresh or if sync hasn&apos;t run yet.
+        {t("adminLiveSessions.attendanceSyncHint")}
       </Typography>
 
       {count === 0 && neverSynced && (
         <Typography variant="body2" sx={{ color: "#6b7280", py: 1 }}>
-          No attendance data. Click &quot;Sync attendance&quot; to fetch from Zoom.
+          {t("adminLiveSessions.noAttendanceData")}
         </Typography>
       )}
       {count === 0 && !neverSynced && (
         <Typography variant="body2" sx={{ color: "#6b7280", py: 1 }}>
-          No participants found for this meeting.
+          {t("adminLiveSessions.noParticipantsFound")}
         </Typography>
       )}
 
@@ -159,11 +161,11 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
           <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
             <TableHead>
               <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "24%" }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "24%" }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "16%" }}>Join</TableCell>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "16%" }}>Leave</TableCell>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "20%" }}>Duration</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "24%" }}>{t("adminLiveSessions.name")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "24%" }}>{t("adminLiveSessions.email")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "16%" }}>{t("adminLiveSessions.join")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "16%" }}>{t("adminLiveSessions.leave")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "20%" }}>{t("adminLiveSessions.duration")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

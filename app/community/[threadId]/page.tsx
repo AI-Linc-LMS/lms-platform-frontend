@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Container,
   Box,
@@ -31,6 +32,7 @@ import { formatDistanceToNow } from "@/lib/utils/date-utils";
 export default function ThreadDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const threadId = Number(params.threadId);
 
@@ -206,7 +208,7 @@ export default function ThreadDetailPage() {
         user_bookmarked: userBookmarked,
       });
     } catch (error) {
-      showToast("Failed to load thread", "error");
+      showToast(t("community.failedToLoadThread"), "error");
     } finally {
       setLoading(false);
     }
@@ -365,7 +367,7 @@ export default function ThreadDetailPage() {
             }
           : null
       );
-      showToast("Failed to vote", "error");
+      showToast(t("community.failedToVote"), "error");
     }
   };
 
@@ -507,7 +509,7 @@ export default function ThreadDetailPage() {
     } catch (error) {
       optimisticCommentVotesRef.current.delete(commentId);
       await loadThread();
-      showToast("Failed to vote", "error");
+      showToast(t("community.failedToVote"), "error");
     }
   };
 
@@ -521,9 +523,9 @@ export default function ThreadDetailPage() {
       });
       setCommentBody("");
       await loadThread();
-      showToast("Comment added successfully!", "success");
+      showToast(t("community.commentAdded"), "success");
     } catch (error) {
-      showToast("Failed to add comment", "error");
+      showToast(t("community.failedToAddComment"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -536,9 +538,9 @@ export default function ThreadDetailPage() {
         parent_id: parentId,
       });
       await loadThread();
-      showToast("Reply added successfully!", "success");
+      showToast(t("community.replyAdded"), "success");
     } catch (error) {
-      showToast("Failed to add reply", "error");
+      showToast(t("community.failedToAddReply"), "error");
       throw error;
     }
   };
@@ -662,7 +664,7 @@ export default function ThreadDetailPage() {
       saveThreadVoteToStorage(optimisticThreadVoteRef.current ?? null);
       
       showToast(
-        newUserBookmarked ? "Thread bookmarked!" : "Bookmark removed!",
+        newUserBookmarked ? t("community.threadBookmarked") : t("community.bookmarkRemoved"),
         "success"
       );
     } catch (error) {
@@ -676,7 +678,7 @@ export default function ThreadDetailPage() {
             }
           : null
       );
-      showToast("Failed to bookmark thread", "error");
+      showToast(t("community.failedToBookmark"), "error");
     }
   };
 
@@ -698,10 +700,10 @@ export default function ThreadDetailPage() {
         <Container maxWidth="lg" sx={{ py: 4 }}>
           <Paper elevation={0} sx={{ p: 8, textAlign: "center" }}>
             <Typography variant="h6" color="text.secondary">
-              Thread not found
+              {t("community.threadNotFound")}
             </Typography>
             <Button onClick={() => router.push("/community")} sx={{ mt: 2 }}>
-              Back to Community
+              {t("community.backToCommunity")}
             </Button>
           </Paper>
         </Container>
@@ -728,7 +730,7 @@ export default function ThreadDetailPage() {
               size={20}
               style={{ marginRight: 4 }}
             />
-            Community
+            {t("community.title")}
           </Link>
           <Typography color="text.primary">{thread.title}</Typography>
         </Breadcrumbs>
@@ -905,7 +907,7 @@ export default function ThreadDetailPage() {
                     },
                   }}
                 >
-                  {thread.user_bookmarked ? "Bookmarked" : "Bookmark"} (
+                  {thread.user_bookmarked ? t("community.bookmarked") : t("community.bookmark")} (
                   {thread.bookmarks_count})
                 </Button>
               </Box>
@@ -926,13 +928,13 @@ export default function ThreadDetailPage() {
         >
           <Typography variant="h6" fontWeight={600} gutterBottom>
             {thread.comments_count}{" "}
-            {thread.comments_count === 1 ? "Answer" : "Answers"}
+            {t("community.answer", { count: thread.comments_count })}
           </Typography>
 
           {/* Add Comment Form */}
           <Box sx={{ mb: 3 }}>
             <TextField
-              placeholder="Write your answer..."
+              placeholder={t("community.writeAnswerPlaceholder")}
               value={commentBody}
               onChange={(e) => setCommentBody(e.target.value)}
               fullWidth
@@ -946,7 +948,7 @@ export default function ThreadDetailPage() {
               disabled={!commentBody.trim() || submitting}
               startIcon={<IconWrapper icon="mdi:send" />}
             >
-              {submitting ? "Posting..." : "Post Answer"}
+              {submitting ? t("community.posting") : t("community.postAnswer")}
             </Button>
           </Box>
 
@@ -980,7 +982,7 @@ export default function ThreadDetailPage() {
                   style={{ marginBottom: 8 }}
                 />
                 <Typography variant="body2" color="text.secondary">
-                  No answers yet. Be the first to answer!
+                  {t("community.noAnswersYet")}
                 </Typography>
               </Box>
             )}

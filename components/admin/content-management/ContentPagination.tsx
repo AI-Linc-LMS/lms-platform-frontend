@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography, Pagination } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 
 interface ContentPaginationProps {
@@ -18,6 +19,7 @@ export function ContentPagination({
   onPageChange,
   onLimitChange,
 }: ContentPaginationProps) {
+  const { t } = useTranslation("common");
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
   const startIndex = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const endIndex = Math.min(totalCount, page * limit);
@@ -50,7 +52,7 @@ export function ContentPagination({
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
-          Showing {startIndex} to {endIndex} of {totalCount} contents
+          {t("adminContentManagement.showingXToYOfZ", { start: startIndex, end: endIndex, total: totalCount })}
         </Typography>
         <PerPageSelect
           value={limit}

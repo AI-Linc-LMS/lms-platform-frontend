@@ -19,6 +19,7 @@ import {
   Button,
   Tooltip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { adminCourseBuilderService, CourseData } from "@/lib/services/admin/admin-course-builder.service";
@@ -58,6 +59,7 @@ interface CourseCardProps {
 
 export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: CourseCardProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -108,11 +110,11 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
       };
 
       await adminCourseBuilderService.updateCourse(course.id, courseData);
-      showToast("Course updated successfully", "success");
+      showToast(t("adminCourseBuilder.courseUpdatedSuccess"), "success");
       setEditing(false);
       onUpdate?.();
     } catch (error: any) {
-      showToast(error?.message || "Failed to update course", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToUpdateCourse"), "error");
     } finally {
       setSaving(false);
     }
@@ -133,10 +135,10 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
     try {
       setPublishing(true);
       await adminCourseBuilderService.publishCourse(course.id);
-      showToast("Course published successfully", "success");
+      showToast(t("adminCourseBuilder.coursePublishedSuccess"), "success");
       onUpdate?.();
     } catch (error: any) {
-      showToast(error?.message || "Failed to publish course", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToPublishCourse"), "error");
     } finally {
       setPublishing(false);
     }
@@ -146,10 +148,10 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
     try {
       setPublishing(true);
       await adminCourseBuilderService.unpublishCourse(course.id);
-      showToast("Course unpublished successfully", "success");
+      showToast(t("adminCourseBuilder.courseUnpublishedSuccess"), "success");
       onUpdate?.();
     } catch (error: any) {
-      showToast(error?.message || "Failed to unpublish course", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToUnpublishCourse"), "error");
     } finally {
       setPublishing(false);
     }
@@ -258,7 +260,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
               </>
             ) : (
               <>
-                <Tooltip title="Quick edit">
+                <Tooltip title={t("adminCourseBuilder.quickEdit")}>
                   <IconButton
                     size="small"
                     onClick={() => setEditing(true)}
@@ -271,7 +273,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                   </IconButton>
                 </Tooltip>
                 {onDuplicate && (
-                  <Tooltip title="Duplicate course">
+                  <Tooltip title={t("adminCourseBuilder.duplicateCourseTooltip")}>
                     <IconButton
                       size="small"
                       onClick={onDuplicate}
@@ -285,7 +287,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                   </Tooltip>
                 )}
                 {!course.published ? (
-                  <Tooltip title="Publish course">
+                  <Tooltip title={t("adminCourseBuilder.publishCourseTooltip")}>
                     <IconButton
                       size="small"
                       onClick={handlePublish}
@@ -303,7 +305,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                     </IconButton>
                   </Tooltip>
                 ) : (
-                  <Tooltip title="Unpublish course">
+                  <Tooltip title={t("adminCourseBuilder.unpublishCourseTooltip")}>
                     <IconButton
                       size="small"
                       onClick={handleUnpublish}
@@ -352,7 +354,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
               minHeight: { xs: "2.5rem", sm: "3rem" },
             }}
           >
-            {course.description || "No description available"}
+            {course.description || t("adminCourseBuilder.noDescriptionAvailable")}
           </Typography>
         )}
 
@@ -360,7 +362,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
         {editing ? (
           <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
             <Typography variant="caption" sx={{ color: "#6b7280", mb: 0.5, display: "block" }}>
-              Rating
+              {t("adminCourseBuilder.rating")}
             </Typography>
             <Rating
               value={editData.rating}
@@ -394,14 +396,14 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                   size="small"
                 />
               }
-              label="Free course"
+              label={t("adminCourseBuilder.freeCourse")}
               sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
             />
           </Box>
         ) : (
           <Box sx={{ mb: 2 }}>
             <Chip
-              label={course.is_free ? "Free" : "Paid"}
+              label={course.is_free ? t("adminCourseBuilder.free") : t("adminCourseBuilder.paid")}
               size="small"
               sx={{
                 bgcolor: course.is_free ? "#d1fae5" : "#fef3c7",
@@ -426,9 +428,9 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Tags"
+                  label={t("adminCourseBuilder.tags")}
                   size="small"
-                  placeholder="Add tags"
+                  placeholder={t("adminCourseBuilder.addTags")}
                 />
               )}
               renderTags={(value, getTagProps) =>
@@ -480,12 +482,12 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
           }}
         >
           {[
-            { icon: "mdi:video", label: course.stats?.video?.total || 0, name: "Video" },
-            { icon: "mdi:file-document", label: course.stats?.article?.total || 0, name: "Article" },
-            { icon: "mdi:help-circle", label: course.stats?.quiz?.total || 0, name: "Quiz" },
-            { icon: "mdi:assignment", label: course.stats?.assignment?.total || 0, name: "Assignment" },
-            { icon: "mdi:code-tags", label: course.stats?.coding_problem?.total || 0, name: "Coding" },
-            { icon: "mdi:file-multiple", label: totalContent, name: "Total" },
+            { icon: "mdi:video", label: course.stats?.video?.total || 0, name: t("adminCourseBuilder.video") },
+            { icon: "mdi:file-document", label: course.stats?.article?.total || 0, name: t("adminCourseBuilder.article") },
+            { icon: "mdi:help-circle", label: course.stats?.quiz?.total || 0, name: t("adminCourseBuilder.quiz") },
+            { icon: "mdi:assignment", label: course.stats?.assignment?.total || 0, name: t("adminCourseBuilder.assignment") },
+            { icon: "mdi:code-tags", label: course.stats?.coding_problem?.total || 0, name: t("adminCourseBuilder.coding") },
+            { icon: "mdi:file-multiple", label: totalContent, name: t("adminCourseBuilder.total") },
           ].map((stat, index) => (
             <Box
               key={index}
@@ -533,7 +535,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                 display: "block",
               }}
             >
-              Enrolled Students
+              {t("adminCourseBuilder.enrolledStudents")}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <AvatarGroup max={4} sx={{ "& .MuiAvatar-root": { width: 24, height: 24, fontSize: "0.7rem" } }}>
@@ -548,7 +550,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                   fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 }}
               >
-                {course.enrolled_students.total} enrolled
+                {course.enrolled_students.total} {t("adminCourseBuilder.enrolled")}
               </Typography>
             </Box>
           </Box>
@@ -577,7 +579,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
               }}
             />
             <Chip
-              label={course.published ? "Published" : "Draft"}
+              label={course.published ? t("adminCourseBuilder.published") : t("adminCourseBuilder.draft")}
               size="small"
               sx={{
                 bgcolor: course.published ? "#d1fae5" : "#fee2e2",
@@ -601,7 +603,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                 fontSize: "0.8rem",
               }}
             >
-              Manage
+              {t("adminCourseBuilder.manage")}
             </Button>
           </Box>
         </Box>

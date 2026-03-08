@@ -1,9 +1,11 @@
 "use client";
 
 import { Paper, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 export function AdminLiveSessionsEmptyState() {
+  const { t } = useTranslation("common");
   return (
     <Paper
       sx={{
@@ -19,13 +21,13 @@ export function AdminLiveSessionsEmptyState() {
         color="#9ca3af"
       />
       <Typography variant="h6" sx={{ color: "#374151", mt: 2, mb: 1 }}>
-        No live sessions yet
+        {t("adminLiveSessions.emptyStateTitle")}
       </Typography>
       <Typography variant="body2" sx={{ color: "#6b7280", mb: 1 }}>
-        There are no Zoom live sessions at the moment.
+        {t("adminLiveSessions.emptyStateDesc")}
       </Typography>
       <Typography variant="body2" sx={{ color: "#9ca3af" }}>
-        Create a live session to get started.
+        {t("adminLiveSessions.emptyStateAction")}
       </Typography>
     </Paper>
   );

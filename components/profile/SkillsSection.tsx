@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, Chip, TextField } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useEffect } from "react";
 import { UserProfile } from "@/lib/services/profile.service";
 
 function normalizeToStringArray(raw: any): string[] {
@@ -22,6 +23,7 @@ interface SkillsSectionProps {
 }
 
 export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
+  const { t } = useTranslation("common");
   const [skills, setSkills] = useState<string[]>(normalizeToStringArray(profile.skills));
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -103,7 +105,7 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
           variant="h6"
           sx={{ fontWeight: 600, color: "#000000", fontSize: "1.25rem" }}
         >
-          Skills
+          {t("profile.skills")}
         </Typography>
         {!editing ? (
           <Button
@@ -120,7 +122,7 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
               transition: "all 0.2s ease",
             }}
           >
-            Edit
+            {t("profile.edit")}
           </Button>
         ) : (
           <Box sx={{ display: "flex", gap: 1 }}>
@@ -138,7 +140,7 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
                 "&:hover": { borderColor: "#d1d5db", backgroundColor: "#f9fafb" },
               }}
             >
-              Cancel
+              {t("profile.cancel")}
             </Button>
             <Button
               variant="contained"
@@ -155,7 +157,7 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("profile.saving") : t("profile.save")}
             </Button>
           </Box>
         )}
@@ -212,14 +214,14 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
                 "&:hover": { backgroundColor: "rgba(10,102,194,0.08)" },
               }}
             >
-              Add
+              {t("profile.add")}
             </Button>
           </Box>
           <Typography
             variant="caption"
             sx={{ color: "#6b7280", fontSize: "0.75rem" }}
           >
-            Press Enter or click Add to add a skill
+            {t("profile.pressEnterToAddSkill")}
           </Typography>
         </Box>
       ) : (
@@ -266,13 +268,13 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
                 variant="body2"
                 sx={{ color: "#666666", mt: 2, fontSize: "0.9375rem", fontWeight: 500 }}
               >
-                No skills added yet
+                {t("profile.noSkillsYet")}
               </Typography>
               <Typography
                 variant="caption"
                 sx={{ color: "#9ca3af", mt: 0.5, fontSize: "0.8125rem" }}
               >
-                Click Edit to add your skills
+                {t("profile.clickEditToAddSkills")}
               </Typography>
             </Box>
           )}

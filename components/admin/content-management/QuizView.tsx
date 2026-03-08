@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Box, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { QuizLayout } from "@/components/quiz/QuizLayout";
 import { ContentDetails } from "@/lib/services/admin/admin-content-management.service";
 
@@ -70,10 +71,11 @@ export function QuizView({ content }: QuizViewProps) {
     // Read-only: do nothing
   };
 
+  const { t } = useTranslation("common");
   if (!currentQuestion || questions.length === 0) {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography variant="h6">No quiz questions available</Typography>
+        <Typography variant="h6">{t("adminContentManagement.noQuizQuestionsAvailable")}</Typography>
       </Box>
     );
   }

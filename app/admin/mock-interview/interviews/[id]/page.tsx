@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import adminMockInterviewService from "@/lib/services/admin/admin-mock-interview.service";
@@ -11,6 +12,7 @@ import { AdminInterviewResultAdapter } from "@/components/admin/mock-interview";
 export default function AdminInterviewDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Awaited<ReturnType<typeof adminMockInterviewService.getInterviewDetail>> | null>(null);
@@ -20,7 +22,7 @@ export default function AdminInterviewDetailPage() {
       const id = params.id as string;
       const numericId = parseInt(id, 10);
       if (isNaN(numericId)) {
-        showToast("Invalid interview ID", "error");
+        showToast(t("adminMockInterview.invalidInterviewId"), "error");
         router.push("/admin/admin-mock-interview");
         return;
       }
@@ -29,14 +31,14 @@ export default function AdminInterviewDetailPage() {
         const result = await adminMockInterviewService.getInterviewDetail(numericId);
         setData(result);
       } catch {
-        showToast("Failed to load interview", "error");
+        showToast(t("adminMockInterview.failedToLoadInterview"), "error");
         router.push("/admin/admin-mock-interview");
       } finally {
         setLoading(false);
       }
     };
     if (params.id) load();
-  }, [params.id, router, showToast]);
+  }, [params.id, router, showToast, t]);
 
   const handleBack = () => {
     router.push("/admin/admin-mock-interview");

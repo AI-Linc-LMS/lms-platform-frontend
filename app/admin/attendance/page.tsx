@@ -19,6 +19,7 @@ import {
   FormControl,
   IconButton,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -30,6 +31,7 @@ import { ViewActivityPanel } from "@/components/admin/attendance/ViewActivityPan
 import { CreateActivityDialog } from "@/components/admin/attendance/CreateActivityDialog";
 
 export default function AttendancePage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
 
   const [allActivities, setAllActivities] = useState<AttendanceActivity[]>([]);
@@ -66,7 +68,7 @@ export default function AttendancePage() {
       setAllActivities(list);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load attendance activities",
+        error?.response?.data?.detail || t("adminAttendance.failedToLoadActivities"),
         "error"
       );
     } finally {
@@ -93,7 +95,7 @@ export default function AttendancePage() {
       setStudentsPage(1);
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load activity details",
+        error?.response?.data?.detail || t("adminAttendance.failedToLoadActivityDetails"),
         "error"
       );
     }
@@ -112,11 +114,11 @@ export default function AttendancePage() {
         selectedActivity.id,
         data
       );
-      showToast("Activity updated successfully", "success");
+      showToast(t("adminAttendance.activityUpdatedSuccessfully"), "success");
       fetchAllActivities();
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to update activity",
+        error?.response?.data?.detail || t("adminAttendance.failedToUpdateActivity"),
         "error"
       );
     }
@@ -154,7 +156,7 @@ export default function AttendancePage() {
           }}
         >
           <Typography variant="h4" fontWeight={700}>
-            Attendance Management
+            {t("adminAttendance.title")}
           </Typography>
           <Button
             variant="contained"
@@ -162,7 +164,7 @@ export default function AttendancePage() {
             onClick={() => setCreateDialogOpen(true)}
             sx={{ bgcolor: "#10b981", "&:hover": { bgcolor: "#059669" } }}
           >
-            Create Activity
+            {t("adminAttendance.createActivity")}
           </Button>
         </Box>
 
@@ -172,13 +174,13 @@ export default function AttendancePage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Code</TableCell>
-                  <TableCell>Duration</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Attendees</TableCell>
-                  <TableCell>Expires</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t("adminAttendance.name")}</TableCell>
+                  <TableCell>{t("adminAttendance.code")}</TableCell>
+                  <TableCell>{t("adminAttendance.duration")}</TableCell>
+                  <TableCell>{t("adminAttendance.status")}</TableCell>
+                  <TableCell>{t("adminAttendance.attendees")}</TableCell>
+                  <TableCell>{t("adminAttendance.expires")}</TableCell>
+                  <TableCell>{t("adminAttendance.actions")}</TableCell>
                 </TableRow>
               </TableHead>
 
@@ -189,10 +191,10 @@ export default function AttendancePage() {
                     <TableCell>
                       <Chip label={activity.code} size="small" />
                     </TableCell>
-                    <TableCell>{activity.duration_minutes} min</TableCell>
+                    <TableCell>{t("adminAttendance.durationMin", { count: activity.duration_minutes })}</TableCell>
                     <TableCell>
                       <Chip
-                        label={activity.is_active ? "Active" : "Inactive"}
+                        label={activity.is_active ? t("adminAttendance.active") : t("adminAttendance.inactive")}
                         size="small"
                         color={activity.is_active ? "success" : "error"}
                       />

@@ -15,6 +15,7 @@ import {
   Divider,
   Tooltip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -24,6 +25,7 @@ import { ConfirmDeleteDialog } from "@/components/admin/course-builder/ConfirmDe
 
 export default function CourseViewPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const router = useRouter();
   const params = useParams();
   const courseId = Number(params.id);
@@ -50,7 +52,7 @@ export default function CourseViewPage() {
       const data = await adminCourseBuilderService.viewCourseDetails(courseId);
       setCourseDetails(data);
     } catch (error: any) {
-      showToast(error?.message || "Failed to load course details", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToLoadCourseDetails"), "error");
     } finally {
       setLoading(false);
     }
@@ -63,20 +65,20 @@ export default function CourseViewPage() {
       const list = Array.isArray(data) ? data : data?.results ?? [];
       setModules(list);
     } catch (error: any) {
-      showToast(error?.message || "Failed to load modules", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToLoadModules"), "error");
     } finally {
       setModulesLoading(false);
     }
-  }, [courseId, showToast]);
+  }, [courseId, showToast, t]);
 
   const handleDeleteCourse = async () => {
     try {
       setDeletingCourse(true);
       await adminCourseBuilderService.deleteCourse(courseId);
-      showToast("Course deleted", "success");
+      showToast(t("adminCourseBuilder.courseDeleted"), "success");
       router.push("/admin/course-builder");
     } catch (error: any) {
-      showToast(error?.message || "Failed to delete course", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToDeleteCourse"), "error");
     } finally {
       setDeletingCourse(false);
       setDeleteDialogOpen(false);
@@ -88,14 +90,14 @@ export default function CourseViewPage() {
       setPublishing(true);
       if (courseDetails.published) {
         await adminCourseBuilderService.unpublishCourse(courseId);
-        showToast("Course unpublished", "success");
+        showToast(t("adminCourseBuilder.courseUnpublished"), "success");
       } else {
         await adminCourseBuilderService.publishCourse(courseId);
-        showToast("Course published", "success");
+        showToast(t("adminCourseBuilder.coursePublished"), "success");
       }
       await loadCourseDetails();
     } catch (error: any) {
-      showToast(error?.message || "Failed to update publish status", "error");
+      showToast(error?.message || t("adminCourseBuilder.failedToUpdatePublishStatus"), "error");
     } finally {
       setPublishing(false);
     }
@@ -138,7 +140,7 @@ export default function CourseViewPage() {
       <MainLayout>
         <Box sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="h6" color="error">
-            Course not found
+            {t("adminCourseBuilder.courseNotFound")}
           </Typography>
         </Box>
       </MainLayout>
@@ -159,10 +161,10 @@ export default function CourseViewPage() {
             sx={{ cursor: "pointer", fontWeight: 500 }}
             onClick={() => router.push("/admin/course-builder")}
           >
-            Course Builder
+            {t("adminCourseBuilder.title")}
           </MuiLink>
           <Typography color="text.primary" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-            {courseDetails.course_title || "Course Details"}
+            {courseDetails.course_title || t("adminCourseBuilder.courseDetails")}
           </Typography>
         </Breadcrumbs>
 
@@ -187,7 +189,7 @@ export default function CourseViewPage() {
                 mb: 1,
               }}
             >
-              {courseDetails.course_title || "Course Details"}
+              {courseDetails.course_title || t("adminCourseBuilder.courseDetails")}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
               {courseDetails.difficulty_level && (
@@ -198,7 +200,7 @@ export default function CourseViewPage() {
                 />
               )}
               <Chip
-                label={isPublished ? "Published" : "Draft"}
+                label={isPublished ? t("adminCourseBuilder.published") : t("adminCourseBuilder.draft")}
                 size="small"
                 sx={{
                   bgcolor: isPublished ? "#d1fae5" : "#fee2e2",
@@ -209,7 +211,7 @@ export default function CourseViewPage() {
               />
               {courseDetails.is_free !== undefined && (
                 <Chip
-                  label={courseDetails.is_free ? "Free" : "Paid"}
+                  label={courseDetails.is_free ? t("adminCourseBuilder.free") : t("adminCourseBuilder.paid")}
                   size="small"
                   sx={{
                     bgcolor: courseDetails.is_free ? "#dbeafe" : "#fef3c7",
@@ -222,7 +224,7 @@ export default function CourseViewPage() {
             </Box>
           </Box>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Tooltip title={isPublished ? "Unpublish course" : "Publish course"}>
+            <Tooltip title={isPublished ? t("adminCourseBuilder.unpublishCourseTooltip") : t("adminCourseBuilder.publishCourseTooltip")}>
               <Button
                 variant="outlined"
                 onClick={handleTogglePublish}
@@ -243,7 +245,7 @@ export default function CourseViewPage() {
                   },
                 }}
               >
-                {isPublished ? "Unpublish" : "Publish"}
+                {isPublished ? t("adminCourseBuilder.unpublish") : t("adminCourseBuilder.publish")}
               </Button>
             </Tooltip>
             <Button
@@ -252,7 +254,7 @@ export default function CourseViewPage() {
               startIcon={<IconWrapper icon="mdi:delete" size={18} />}
               onClick={() => setDeleteDialogOpen(true)}
             >
-              Delete
+              {t("adminCourseBuilder.deleteCourse")}
             </Button>
             <Button
               variant="contained"
@@ -260,7 +262,7 @@ export default function CourseViewPage() {
               onClick={() => router.push(`/admin/course-builder/${courseId}/edit`)}
               sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
             >
-              Edit Course
+              {t("adminCourseBuilder.editCourse")}
             </Button>
           </Box>
         </Box>
@@ -275,16 +277,16 @@ export default function CourseViewPage() {
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Course Information
+            {t("adminCourseBuilder.courseInformation")}
           </Typography>
 
           {/* Description */}
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5, fontWeight: 500 }}>
-              Description
+              {t("adminCourseBuilder.description")}
             </Typography>
             <Typography variant="body1" sx={{ color: "#374151" }}>
-              {courseDetails.course_description || "No description available"}
+              {courseDetails.course_description || t("adminCourseBuilder.noDescriptionAvailable")}
             </Typography>
           </Box>
 
@@ -300,7 +302,7 @@ export default function CourseViewPage() {
             {courseDetails.difficulty_level && (
               <Box>
                 <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
-                  Difficulty
+                  {t("adminCourseBuilder.difficulty")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25 }}>
                   {courseDetails.difficulty_level}
@@ -310,7 +312,7 @@ export default function CourseViewPage() {
             {courseDetails.language && (
               <Box>
                 <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
-                  Language
+                  {t("adminCourseBuilder.language")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25 }}>
                   {courseDetails.language}
@@ -320,7 +322,7 @@ export default function CourseViewPage() {
             {courseDetails.enrolled_students_count !== undefined && (
               <Box>
                 <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
-                  Enrolled Students
+                  {t("adminCourseBuilder.enrolledStudents")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25 }}>
                   {courseDetails.enrolled_students_count ?? courseDetails.enrolled_students?.total ?? 0}
@@ -330,7 +332,7 @@ export default function CourseViewPage() {
             {courseDetails.slug && (
               <Box>
                 <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
-                  Slug
+                  {t("adminCourseBuilder.slug")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25, wordBreak: "break-all" }}>
                   {courseDetails.slug}
@@ -345,7 +347,7 @@ export default function CourseViewPage() {
               <Divider sx={{ my: 2 }} />
               <Box>
                 <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500, mb: 1, display: "block" }}>
-                  Tags
+                  {t("adminCourseBuilder.tags")}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
                   {(Array.isArray(courseDetails.tags) ? courseDetails.tags : []).map((tag: string, i: number) => (
@@ -372,10 +374,10 @@ export default function CourseViewPage() {
         >
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Modules
+              {t("adminCourseBuilder.modules")}
             </Typography>
             <Chip
-              label={`${modules.length} module${modules.length !== 1 ? "s" : ""}`}
+              label={t("adminCourseBuilder.moduleCount", { count: modules.length })}
               size="small"
               sx={{ bgcolor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.75rem" }}
             />
@@ -395,8 +397,8 @@ export default function CourseViewPage() {
       {/* Delete Course Confirmation */}
       <ConfirmDeleteDialog
         open={deleteDialogOpen}
-        title="Delete Course"
-        message={`Are you sure you want to delete "${courseDetails.course_title}"? This will permanently remove the course and all its modules and submodules. This action cannot be undone.`}
+        title={t("adminCourseBuilder.deleteCourseTitle")}
+        message={t("adminCourseBuilder.deleteCourseMessage", { title: courseDetails.course_title })}
         onConfirm={handleDeleteCourse}
         onCancel={() => setDeleteDialogOpen(false)}
         loading={deletingCourse}

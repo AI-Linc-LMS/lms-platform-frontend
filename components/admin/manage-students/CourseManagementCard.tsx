@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -35,6 +36,7 @@ export function CourseManagementCard({
   enrolledCourseIds,
   onEnrollmentChange,
 }: CourseManagementCardProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [selectedCourseId, setSelectedCourseId] = useState<number | "">("");
   const [courses, setCourses] = useState<Course[]>([]);
@@ -79,7 +81,7 @@ export function CourseManagementCard({
       }
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to load courses",
+        error?.response?.data?.detail || t("manageStudents.failedToLoadCourses"),
         "error"
       );
     } finally {
@@ -101,12 +103,12 @@ export function CourseManagementCard({
         "enroll_course",
         Number(selectedCourseId)
       );
-      showToast("Student enrolled successfully", "success");
+      showToast(t("manageStudents.studentEnrolledSuccess"), "success");
       setSelectedCourseId("");
       onEnrollmentChange();
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to enroll student",
+        error?.response?.data?.detail || t("manageStudents.failedToEnroll"),
         "error"
       );
     } finally {
@@ -124,12 +126,12 @@ export function CourseManagementCard({
         "unenroll_course",
         Number(selectedCourseId)
       );
-      showToast("Student unenrolled successfully", "success");
+      showToast(t("manageStudents.studentUnenrolledSuccess"), "success");
       setSelectedCourseId("");
       onEnrollmentChange();
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to unenroll student",
+        error?.response?.data?.detail || t("manageStudents.failedToUnenroll"),
         "error"
       );
     } finally {
@@ -147,12 +149,12 @@ export function CourseManagementCard({
         "reset_progress",
         Number(selectedCourseId)
       );
-      showToast("Student progress reset successfully", "success");
+      showToast(t("manageStudents.progressResetSuccess"), "success");
       setSelectedCourseId("");
       onEnrollmentChange();
     } catch (error: any) {
       showToast(
-        error?.response?.data?.detail || "Failed to reset progress",
+        error?.response?.data?.detail || t("manageStudents.failedToResetProgress"),
         "error"
       );
     } finally {
@@ -197,7 +199,7 @@ export function CourseManagementCard({
           <IconWrapper icon="mdi:book-education" size={24} color="#6366f1" />
         </Box>
         <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
-          Course Management
+          {t("manageStudents.courseManagement")}
         </Typography>
       </Box>
 
@@ -210,18 +212,18 @@ export function CourseManagementCard({
         }}
       >
         <FormControl fullWidth sx={{ minWidth: { xs: "100%", sm: 300 } }}>
-          <InputLabel id="course-select-label">Select Course</InputLabel>
+          <InputLabel id="course-select-label">{t("manageStudents.selectCourse")}</InputLabel>
           <Select
             labelId="course-select-label"
             value={selectedCourseId}
             onChange={(e) => setSelectedCourseId(e.target.value as number)}
-            label="Select Course"
+            label={t("manageStudents.selectCourse")}
             disabled={loading || loadingCourses}
           >
             {loadingCourses && courses.length === 0 ? (
               <MenuItem disabled>
                 <CircularProgress size={20} sx={{ mr: 1 }} />
-                Loading courses...
+                {t("manageStudents.loadingCourses")}
               </MenuItem>
             ) : (
               courses.map((course) => (
@@ -252,7 +254,7 @@ export function CourseManagementCard({
               minWidth: { xs: "100%", sm: 120 },
             }}
           >
-            Enroll
+            {t("manageStudents.enroll")}
           </Button>
 
           <Button
@@ -266,7 +268,7 @@ export function CourseManagementCard({
               minWidth: { xs: "100%", sm: 120 },
             }}
           >
-            Unenroll
+            {t("manageStudents.unenroll")}
           </Button>
 
           <Button
@@ -284,7 +286,7 @@ export function CourseManagementCard({
               minWidth: { xs: "100%", sm: 140 },
             }}
           >
-            Reset Progress
+            {t("manageStudents.resetProgress")}
           </Button>
         </Box>
       </Box>

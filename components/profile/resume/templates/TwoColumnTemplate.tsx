@@ -16,6 +16,7 @@ function SectionHead({ children }: { children: string }) {
   return (
     <Box sx={{ mt: 2, mb: 1 }}>
       <Typography
+        data-resume-section-title
         sx={{
           fontSize: "0.9rem",
           fontWeight: 400,
@@ -148,6 +149,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                 {exp.company}
               </Typography>
               <Typography
+                data-resume-nowrap
                 sx={{
                   fontSize: "0.72rem",
                   fontWeight: 700,
@@ -192,6 +194,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
               </Typography>
               <Box>
                 <Typography
+                  data-resume-nowrap
                   sx={{
                     fontSize: "0.7rem",
                     fontWeight: 700,
@@ -268,6 +271,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                     <IconWrapper icon={item.icon} size={12} color={MAROON} />
                   </Box>
                   <Typography
+                    data-resume-contact-item
                     sx={{
                       fontSize: "0.58rem",
                       color: "#1a1a1a",
@@ -307,6 +311,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   <Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography
+                        data-resume-nowrap
                         sx={{
                           fontSize: "0.68rem",
                           fontWeight: 700,
@@ -330,7 +335,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                             textDecoration: "none",
                           }}
                         >
-                          🔗Link
+                          Link
                         </Typography>
                       )}
                     </Box>
@@ -456,7 +461,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                             whiteSpace: "nowrap",
                           }}
                         >
-                          🔗Link
+                          Link
                         </Typography>
                       )}
                     </Box>

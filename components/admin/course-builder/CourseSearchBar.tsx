@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, TextField, InputAdornment, IconButton, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface CourseSearchBarProps {
@@ -14,6 +15,7 @@ export function CourseSearchBar({
   onSearchChange,
   onCreateClick,
 }: CourseSearchBarProps) {
+  const { t } = useTranslation("common");
   return (
     <Box
       sx={{
@@ -26,7 +28,7 @@ export function CourseSearchBar({
       }}
     >
       <TextField
-        placeholder="Search courses..."
+        placeholder={t("adminCourseBuilder.searchPlaceholder")}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         size="small"
@@ -60,7 +62,7 @@ export function CourseSearchBar({
           whiteSpace: "nowrap",
         }}
       >
-        Add New Course
+        {t("adminCourseBuilder.addNewCourse")}
       </Button>
     </Box>
   );

@@ -10,6 +10,7 @@ import {
   Paper,
   InputAdornment,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface Course {
@@ -36,6 +37,7 @@ export function StudentsFilters({
   onStatusChange,
   onSearchChange,
 }: StudentsFiltersProps) {
+  const { t } = useTranslation("common");
   return (
     <Paper
       sx={{
@@ -60,15 +62,15 @@ export function StudentsFilters({
         {/* Filter by Enrolled Course */}
         <FormControl fullWidth>
           <InputLabel id="course-filter-label">
-            Filter by Enrolled Course
+            {t("adminManageStudents.filterByCourse")}
           </InputLabel>
           <Select
             labelId="course-filter-label"
             value={selectedCourse}
             onChange={(e) => onCourseChange(e.target.value)}
-            label="Filter by Enrolled Course"
+            label={t("adminManageStudents.filterByCourse")}
           >
-            <MenuItem value="">All Courses</MenuItem>
+            <MenuItem value="">{t("adminManageStudents.allCourses")}</MenuItem>
             {courses.map((course) => (
               <MenuItem key={course.id} value={course.id.toString()}>
                 {course.title}
@@ -79,24 +81,24 @@ export function StudentsFilters({
 
         {/* Status Filter */}
         <FormControl fullWidth>
-          <InputLabel id="status-filter-label">Status</InputLabel>
+          <InputLabel id="status-filter-label">{t("adminManageStudents.status")}</InputLabel>
           <Select
             labelId="status-filter-label"
             value={status}
             onChange={(e) => onStatusChange(e.target.value)}
-            label="Status"
+            label={t("adminManageStudents.status")}
           >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
+            <MenuItem value="all">{t("adminManageStudents.all")}</MenuItem>
+            <MenuItem value="active">{t("adminManageStudents.active")}</MenuItem>
+            <MenuItem value="inactive">{t("adminManageStudents.inactive")}</MenuItem>
           </Select>
         </FormControl>
 
         {/* Search Term */}
         <TextField
           fullWidth
-          label="Search Term"
-          placeholder="Search by name or email..."
+          label={t("adminManageStudents.searchTerm")}
+          placeholder={t("adminManageStudents.searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           InputProps={{

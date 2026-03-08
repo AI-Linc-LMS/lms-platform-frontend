@@ -22,6 +22,7 @@ interface WesternTemplateProps {
 function SectionTitle({ children }: { children: string }) {
   return (
     <Typography
+      data-resume-section-title
       sx={{
         fontSize: "1.1rem",
         fontWeight: 700,
@@ -142,6 +143,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                     <IconWrapper icon={item.icon} size={14} color={COLORS.body} />
                   </Box>
                   <Typography
+                    data-resume-contact-item
                     sx={{
                       fontSize: "0.7rem",
                       ...(item.icon === "mdi:email-outline"
@@ -193,6 +195,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
               {data.workExperience.map((exp) => (
                 <Box key={exp.id} sx={{ mb: 1.5 }}>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.8rem",
                       fontWeight: 700,
@@ -253,6 +256,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                     }}
                   >
                     <Typography
+                      data-resume-nowrap
                       sx={{
                         fontSize: "0.8rem",
                         fontWeight: 700,
@@ -276,7 +280,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                           textDecoration: "none",
                         }}
                       >
-                        🔗Link
+                        Link
                       </Typography>
                     )}
                   </Box>
@@ -380,7 +384,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        🔗Link
+                        Link
                       </Typography>
                     )}
                   </Box>
@@ -494,6 +498,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
               {data.education.map((edu) => (
                 <Box key={edu.id} sx={{ mb: 1.5 }}>
                   <Typography
+                    data-resume-nowrap
                     sx={{
                       fontSize: "0.8rem",
                       fontWeight: 700,

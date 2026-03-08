@@ -21,6 +21,7 @@ import {
   Chip,
   Rating,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -31,6 +32,7 @@ import {
 
 export default function CourseEditPage() {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const router = useRouter();
   const params = useParams();
   const courseId = Number(params.id);
@@ -134,7 +136,7 @@ export default function CourseEditPage() {
             sx={{ cursor: "pointer", fontWeight: 500 }}
             onClick={() => router.push("/admin/course-builder")}
           >
-            Course Builder
+            {t("adminCourseBuilder.title")}
           </MuiLink>
           <MuiLink
             underline="hover"

@@ -8,6 +8,7 @@ export { ScheduleInterviewForm } from "./ScheduleInterviewForm";
 export { InterviewHeader } from "./InterviewHeader";
 export { VideoPreviewArea } from "./VideoPreviewArea";
 export { AnswerInputArea } from "./AnswerInputArea";
+export type { AnswerInputAreaProps } from "./AnswerInputArea";
 export { QuestionListSidebar } from "./QuestionListSidebar";
 export { FullscreenWarningDialog } from "./FullscreenWarningDialog";
 export { EndInterviewDialog } from "./EndInterviewDialog";
