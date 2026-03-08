@@ -32,6 +32,7 @@ interface VideoPreviewAreaProps {
   isSpeaking: boolean;
   questionText: string;
   onSpeakComplete: () => void;
+  isUserSpeaking?: boolean;
   // Interview info
   interviewTitle?: string;
   questionsCount?: number;
@@ -51,6 +52,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
   isSpeaking,
   questionText,
   onSpeakComplete,
+  isUserSpeaking = false,
   interviewTitle,
   questionsCount,
   durationMinutes,
@@ -155,6 +157,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               isSpeaking={isSpeaking}
               question={questionText}
               onSpeakComplete={onSpeakComplete}
+              isUserSpeaking={isUserSpeaking}
             />
             <Box
               sx={{
