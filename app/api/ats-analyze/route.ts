@@ -5,6 +5,10 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MODEL = process.env.OPENAI_ATS_MODEL || "gpt-4o-mini";
 
+function useOpenAI(): boolean {
+  return Boolean(OPENAI_API_KEY?.trim());
+}
+
 function collectUrls(data: ResumeData): { label: string; url: string }[] {
   const out: { label: string; url: string }[] = [];
   const b = data.basicInfo;
@@ -101,6 +105,32 @@ function buildResumeSummary(data: ResumeData): string {
     lines.push("\nCertifications: " + data.certifications.map((c) => c.name).join("; "));
   }
   return lines.join("\n");
+}
+
+async function callAI(prompt: string, maxTokens: number): Promise<{ text: string; error?: string }> {
+  if (!useOpenAI()) {
+    return { text: "", error: "ATS AI not configured (set OPENAI_API_KEY)" };
+  }
+  const res = await fetch(OPENAI_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      max_tokens: maxTokens,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error?.message || data?.message || "OpenAI request failed";
+    return { text: "", error: msg };
+  }
+  const text = data?.choices?.[0]?.message?.content;
+  return { text: text ?? "", error: text ? undefined : "No response from OpenAI" };
 }
 
 export interface FeedbackCategory {
@@ -295,9 +325,9 @@ function extractJsonFromResponse(text: string): ATSAnalysisResponse | null {
 }
 
 export async function POST(request: NextRequest) {
-  if (!OPENAI_API_KEY) {
+  if (!useOpenAI()) {
     return NextResponse.json(
-      { error: "ATS AI analysis is not configured (missing OPENAI_API_KEY)" },
+      { error: "ATS AI analysis is not configured (set OPENAI_API_KEY)" },
       { status: 501 }
     );
   }
@@ -318,31 +348,13 @@ export async function POST(request: NextRequest) {
   const jobText = (jobDescription && typeof jobDescription === "string") ? jobDescription.trim() : "";
 
   if (light === true) {
-    const lightPrompt = `Rate this resume for ATS (Applicant Tracking System) compatibility. Return ONLY valid JSON with two numbers, nothing else: {"overallScore":NN,"atsScore":NN} where NN is 0-100. Consider: structure, sections, keywords, clarity.
+    const lightPrompt = `Rate this resume for ATS. Return ONLY valid JSON: {"overallScore":NN,"atsScore":NN} where NN is 0-100. Weight: 80% technical (skills, experience, education, content depth, evidence) and 20% presentation (format, grammar, tone). If technical/evidence is poor, return at most 30 for both scores.
 
 RESUME:
 ${resumeSummary}`;
     try {
-      const res = await fetch(OPENAI_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: OPENAI_MODEL,
-          messages: [{ role: "user", content: lightPrompt }],
-          temperature: 0.2,
-          max_tokens: 64,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const message = data?.error?.message || data?.message || "Request failed";
-        return NextResponse.json({ error: message }, { status: res.status >= 500 ? 502 : 400 });
-      }
-      const text = data?.choices?.[0]?.message?.content;
-      if (!text) return NextResponse.json({ error: "No response" }, { status: 502 });
+      const { text, error } = await callAI(lightPrompt, 64);
+      if (error) return NextResponse.json({ error }, { status: 502 });
       const raw = text.trim().replace(/```(?:json)?\s*([\s\S]*?)(?:```|$)/, "$1").trim();
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (!jsonMatch) return NextResponse.json({ error: "Invalid format", raw: text.slice(0, 200) }, { status: 502 });
@@ -376,95 +388,40 @@ ${resumeSummary}`;
 
   const hasJob = jobText.length > 0;
 
-  const prompt = hasJob
-    ? `You are an expert ATS and HR analyst. Analyze this resume against the job description. Assess authenticity, quality standards, and use the link validation result. Return ONLY a valid JSON object—no markdown, no \`\`\` code blocks, no extra text.
+  const atsWeightsPreamble = `You are a rigorous technical evaluator. Apply this weighting logic strictly:
 
-RESUME:
-${resumeSummary}
+1. TECHNICAL CONTENT & EVIDENCE (80% weight): Depth and accuracy of technical proficiency; evidence of skill (specific examples, data, quantifiable results); correctness of claims. Include: keyword/skills match to role, experience level and recency, education and certifications, content depth (bullet quality, metrics), and evidence/authenticity (real names, working links—use LINK VALIDATION). If technical evidence is poor or shallow (e.g. weak skills, thin experience, placeholder data, broken links), the maximum total score the user can receive is 30, regardless of how well-written the document is.
 
-JOB DESCRIPTION:
-${jobText}
+2. PRESENTATION & PROFESSIONALISM (20% weight): Consolidate ALL non-technical criteria into this single dimension—formatting, grammar, spacing, alignment, tone, syntax. This is polish only. It must NOT carry a failing technical performance to a passing grade.
 
-LINK VALIDATION (server-checked; failed = unreachable, 404/5xx, or redirects to error page): ${linkSummary}
+Your goal: Ensure the final score reflects lag in technical aspects. Be critical. If skills or evidence are missing or poor, the score must stay low (at most 30 when technical is poor).`;
 
-Return JSON with these exact keys. Keep each string under 150 chars.
-- overallScore, atsScore: numbers 0-100
-- executiveSummary: one paragraph
-- detailedReport: {
-  goodThings: [4 items],
-  scopeForImprovement: [4 items],
-  suggestions: [5 items],
-  authenticityScore: number 0-100 (credibility: real names, verifiable details, working links; use LINK VALIDATION),
-  authenticityConcerns: [specific concerns: placeholder names, unverifiable links, invalid credentials]
-}
-- qualityChecks: {
-  spacingAlignment: { score: 0-100, note: "optional short note" } — consistent margins, section spacing, alignment,
-  tone: { score, note } — professional, appropriate tone,
-  languageFluency: { score, note } — natural, fluent language,
-  grammar: { score, note } — grammatical correctness, spelling,
-  consistency: { score, note } — date formats, punctuation, style across sections,
-  evidenceAuthentication: { score, note } — details look real, links work (use LINK VALIDATION), no fake/placeholder data
-}
-- tips: [3 items]
-- feedback: { toneAndStyle, content, structure, skills } — each has score, message, positivePoints[], improvementPoints[]
+  const promptWithJob =
+    "You are an expert ATS and HR analyst. Analyze this resume against the job description. " +
+    atsWeightsPreamble +
+    "\n\nEvaluate: (1) Keyword match—hard skills, tools, job title alignment, context. (2) Experience—years, recency. (3) Education and certifications. (4) Content depth—quantifiable bullets, evidence. (5) Authenticity and link validation (use LINK VALIDATION below). Then one combined presentation score (formatting, grammar, spacing, tone). Return ONLY a valid JSON object—no markdown, no code fences, no extra text.\n\nRESUME:\n" +
+    resumeSummary +
+    "\n\nJOB DESCRIPTION:\n" +
+    jobText +
+    "\n\nLINK VALIDATION (server-checked; failed = unreachable, 404/5xx, or redirects to error page): " +
+    linkSummary +
+    "\n\nReturn JSON with these exact keys. Keep each string under 150 chars.\n- overallScore, atsScore: numbers 0-100 (80% technical, 20% presentation; if technical is poor, atsScore at most 30)\n- executiveSummary: one paragraph\n- detailedReport: { goodThings: [4 items], scopeForImprovement: [4 items], suggestions: [5 items], authenticityScore: number 0-100 (use LINK VALIDATION), authenticityConcerns: [specific concerns if any] }\n- qualityChecks: { spacingAlignment: { score, note }, tone: { score, note }, languageFluency: { score, note }, grammar: { score, note }, consistency: { score, note }, evidenceAuthentication: { score, note } }\n- tips: [3 items]\n- feedback: { toneAndStyle, content, structure, skills } — each has score, message, positivePoints[], improvementPoints[]\n\nGuidelines: Apply the 30 cap when technical/evidence is poor. Use LINK VALIDATION. Be strict on skills and experience.";
 
-Guidelines: Flag placeholders, non-working or error-page links, grammar issues, inconsistent formatting. Use LINK VALIDATION in authenticityConcerns and evidenceAuthentication. Be specific. Semantic match: cyber security = SIEM, threat detection.`
-    : `You are an expert ATS and HR analyst. Analyze this resume WITHOUT a specific job description. Infer what roles, job levels, and industries this resume is best suited for. Score for general ATS readiness. Assess authenticity and quality; use the link validation result. In the report, tell the user what their resume is good for (roles, levels, industries). Return ONLY a valid JSON object—no markdown, no \`\`\` code blocks, no extra text.
+  const promptNoJob =
+    "You are an expert ATS and HR analyst. Analyze this resume WITHOUT a specific job description. " +
+    atsWeightsPreamble +
+    "\n\nEvaluate: (1) Keyword density and hard skills. (2) Experience level and recency. (3) Education and certifications. (4) Content depth and evidence. (5) Authenticity and link validation (use LINK VALIDATION below). Then one combined presentation score. Infer what roles/levels this resume fits. Return ONLY a valid JSON object—no markdown, no code fences, no extra text.\n\nRESUME:\n" +
+    resumeSummary +
+    "\n\nLINK VALIDATION (server-checked; failed = unreachable, 404/5xx, or redirects to error page): " +
+    linkSummary +
+    "\n\nReturn JSON with these exact keys. Keep each string under 150 chars.\n- overallScore, atsScore: numbers 0-100 (80% technical, 20% presentation; if technical is poor, atsScore at most 30)\n- executiveSummary: one paragraph; include what roles/levels this resume fits best\n- detailedReport: { goodThings: [4 items], scopeForImprovement: [4 items], suggestions: [5 items], resumeGoodFor: [3-5 short strings], authenticityScore: number 0-100, authenticityConcerns: [specific concerns if any] }\n- qualityChecks: { spacingAlignment: { score, note }, tone: { score, note }, languageFluency: { score, note }, grammar: { score, note }, consistency: { score, note }, evidenceAuthentication: { score, note } }\n- tips: [3 items]\n- feedback: { toneAndStyle, content, structure, skills } — each has score, message, positivePoints[], improvementPoints[]\n\nGuidelines: Apply the 30 cap when technical/evidence is poor. Use LINK VALIDATION. Be strict.";
 
-RESUME:
-${resumeSummary}
-
-LINK VALIDATION (server-checked; failed = unreachable, 404/5xx, or redirects to error page): ${linkSummary}
-
-Return JSON with these exact keys. Keep each string under 150 chars.
-- overallScore, atsScore: numbers 0-100 (general ATS readiness)
-- executiveSummary: one paragraph; include what roles/levels this resume fits best
-- detailedReport: {
-  goodThings: [4 items],
-  scopeForImprovement: [4 items],
-  suggestions: [5 items],
-  resumeGoodFor: [3-5 short strings] — e.g. "Software Engineer (mid-level)", "Full-stack roles", "Tech startups", "Backend development". What this resume is good for: roles, levels, industries.
-  authenticityScore: number 0-100,
-  authenticityConcerns: [specific concerns if any]
-}
-- qualityChecks: {
-  spacingAlignment: { score, note },
-  tone: { score, note },
-  languageFluency: { score, note },
-  grammar: { score, note },
-  consistency: { score, note },
-  evidenceAuthentication: { score, note }
-}
-- tips: [3 items]
-- feedback: { toneAndStyle, content, structure, skills } — each has score, message, positivePoints[], improvementPoints[]
-
-Guidelines: Be specific about what this resume is good for. Use LINK VALIDATION. Flag placeholders, broken links, grammar issues.`;
+  const prompt = hasJob ? promptWithJob : promptNoJob;
 
   try {
-    const res = await fetch(OPENAI_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.2,
-        max_tokens: 8192,
-      }),
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const message = data?.error?.message || data?.message || "OpenAI request failed";
-      return NextResponse.json({ error: message }, { status: res.status >= 500 ? 502 : 400 });
-    }
-
-    const text = data?.choices?.[0]?.message?.content;
-    if (!text) {
-      return NextResponse.json({ error: "No analysis in response" }, { status: 502 });
-    }
+    const { text, error } = await callAI(prompt, 8192);
+    if (error) return NextResponse.json({ error }, { status: 502 });
+    if (!text) return NextResponse.json({ error: "No analysis in response" }, { status: 502 });
 
     const parsed = extractJsonFromResponse(text);
     if (!parsed) {
@@ -472,6 +429,15 @@ Guidelines: Be specific about what this resume is good for. Use LINK VALIDATION.
         { error: "AI returned invalid format", raw: text.slice(0, 800) },
         { status: 502 }
       );
+    }
+
+    const evidenceScore = parsed.qualityChecks?.evidenceAuthentication?.score ?? 100;
+    const skillsScore = parsed.feedback?.skills?.score ?? 100;
+    const contentScore = parsed.feedback?.content?.score ?? 100;
+    const technicalLow = evidenceScore < 50 || skillsScore < 50 || contentScore < 50;
+    if (technicalLow && parsed.atsScore > 30) {
+      parsed.overallScore = Math.min(parsed.overallScore, 30);
+      parsed.atsScore = Math.min(parsed.atsScore, 30);
     }
 
     return NextResponse.json({

@@ -120,6 +120,15 @@
   --ats-bar-low: #c4b5fd;
   --surface-subtle: rgba(0, 0, 0, 0.03);
   --border-subtle: rgba(0, 0, 0, 0.08);
+
+  /* Mock interview / AI interviewer */
+  --interview-surface: #f0f2f5;
+  --interview-paper-bg: #f9fafb;
+  --interview-user-video-bg: #1f2937;
+  --interview-badge-listening-bg: rgba(34, 197, 94, 0.9);
+  --interview-badge-speaking-bg: rgba(99, 102, 241, 0.9);
+  --interview-overlay-bg: rgba(248, 250, 252, 0.85);
+  --interview-spinner-border: #e2e8f0;
 }
 
 @theme inline {

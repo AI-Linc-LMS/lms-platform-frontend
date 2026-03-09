@@ -672,6 +672,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           <ATSScoreCard
             resumeData={resumeData}
             initialLiveScore={atsScoreLive ?? undefined}
+            dialogOpen={atsDialogOpen}
           />
         </DialogContent>
       </Dialog>

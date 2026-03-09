@@ -1,17 +1,18 @@
 import type { ResumeData } from "./types";
 
-const WEIGHTS = {
-  format: 0.15,
-  completeness: 0.2,
-  contentDepth: 0.25,
-  keywordMatch: 0.4,
-} as const;
+const TECHNICAL_WEIGHT = 0.8;
+const PRESENTATION_WEIGHT = 0.2;
+const POOR_TECHNICAL_THRESHOLD = 40;
+const POOR_TECHNICAL_CAP = 30;
 
 export interface ATSBreakdown {
   format: number;
   completeness: number;
   contentDepth: number;
   keywordMatch: number;
+  experienceLevel?: number;
+  educationCerts?: number;
+  presentation?: number;
 }
 
 export interface ATSScoreResult {
@@ -110,6 +111,42 @@ function scoreContentDepth(data: ResumeData): number {
   return Math.min(100, score);
 }
 
+function scoreExperienceLevel(data: ResumeData): number {
+  const work = data.workExperience || [];
+  if (work.length === 0) return 0;
+  let score = Math.min(40, work.length * 12);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  let totalYears = 0;
+  let hasRecent = false;
+  for (const w of work) {
+    const start = w.startDate ? parseInt(w.startDate.slice(0, 4), 10) : NaN;
+    const end = w.endDate ? parseInt(w.endDate.slice(0, 4), 10) : w.current ? currentYear : NaN;
+    if (!isNaN(start)) {
+      const years = isNaN(end) ? 0 : Math.max(0, end - start);
+      totalYears += years;
+      if (currentYear - start <= 2) hasRecent = true;
+    }
+  }
+  if (totalYears >= 5) score += 35;
+  else if (totalYears >= 3) score += 28;
+  else if (totalYears >= 1) score += 20;
+  if (hasRecent) score += 25;
+  return Math.min(100, score);
+}
+
+function scoreEducationCerts(data: ResumeData): number {
+  let score = 0;
+  const edu = data.education || [];
+  const certs = data.certifications || [];
+  if (edu.length >= 1) score += 50;
+  if (edu.length >= 2) score += 15;
+  if (edu.some((e) => e.degree && e.degree.length > 2)) score += 15;
+  if (certs.length >= 1) score += 20;
+  if (certs.length >= 2) score += 10;
+  return Math.min(100, score);
+}
+
 function scoreKeywordMatch(
   resumeText: string,
   jobDescription: string
@@ -183,25 +220,30 @@ export function computeATSScore(
     missingKeywords = result.missing;
   }
 
+  const experienceLevel = scoreExperienceLevel(data);
+  const educationCerts = scoreEducationCerts(data);
+
+  const presentationScore = (format + completeness) / 2;
+  let technicalScore: number;
+  if (hasJobDesc) {
+    technicalScore = (keywordScore * 0.4 + experienceLevel * 0.25 + contentDepth * 0.2 + educationCerts * 0.15);
+  } else {
+    technicalScore = (experienceLevel * 0.35 + contentDepth * 0.35 + educationCerts * 0.3);
+  }
+
   const breakdown: ATSBreakdown = {
     format,
     completeness,
     contentDepth,
     keywordMatch: keywordScore,
+    experienceLevel,
+    educationCerts,
+    presentation: Math.round(presentationScore),
   };
 
-  let overall: number;
-  if (hasJobDesc) {
-    overall =
-      format * WEIGHTS.format +
-      completeness * WEIGHTS.completeness +
-      contentDepth * WEIGHTS.contentDepth +
-      keywordScore * WEIGHTS.keywordMatch;
-  } else {
-    const totalWeight = WEIGHTS.format + WEIGHTS.completeness + WEIGHTS.contentDepth;
-    overall =
-      (format * WEIGHTS.format + completeness * WEIGHTS.completeness + contentDepth * WEIGHTS.contentDepth) /
-      totalWeight;
+  let overall = technicalScore * TECHNICAL_WEIGHT + presentationScore * PRESENTATION_WEIGHT;
+  if (technicalScore < POOR_TECHNICAL_THRESHOLD) {
+    overall = Math.min(overall, POOR_TECHNICAL_CAP);
   }
   overall = Math.round(Math.min(100, Math.max(0, overall)));
 

@@ -842,7 +842,8 @@ export default function TakeMockInterviewPage() {
             questionText={getQuestionText(currentQuestion)}
             onSpeakComplete={handleSpeakComplete}
             isUserSpeaking={isListening}
-            interviewTitle={interview.title}
+            interviewVideoSrc="/videos/Interview.mp4"
+            interviewTitle={interview?.title}
             questionsCount={questions?.length}
             durationMinutes={interview.duration_minutes}
           />
