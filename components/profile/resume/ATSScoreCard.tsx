@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Box,
   Paper,
   Typography,
   TextField,
-  Collapse,
   IconButton,
   Tooltip,
   Button,
@@ -67,6 +66,7 @@ interface AIAnalysisResult {
 interface ATSScoreCardProps {
   resumeData: ResumeData;
   initialLiveScore?: number;
+  dialogOpen?: boolean;
 }
 
 function getScoreLabel(score: number): "strong" | "goodStart" | "needsWork" {
@@ -175,16 +175,16 @@ function ScoreBadge({
 
 const CATEGORY_KEYS = ["toneAndStyle", "content", "structure", "skills"] as const;
 
-export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps) {
+export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSScoreCardProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [jobDescription, setJobDescription] = useState("");
-  const [showJobInput, setShowJobInput] = useState(false);
   const [showJobRoleInput, setShowJobRoleInput] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<AIAnalysisResult | null>(null);
   const [detailsExpanded, setDetailsExpanded] = useState<string | false>("toneAndStyle");
+  const hasAutoRunRef = useRef(false);
 
   const baseResult: ATSScoreResult = useMemo(
     () => computeATSScore(resumeData, ""),
@@ -279,6 +279,16 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
     }
   }, [resumeData, t, setAiResultFromData, showToast]);
 
+  useEffect(() => {
+    if (!dialogOpen) {
+      hasAutoRunRef.current = false;
+      return;
+    }
+    if (hasAutoRunRef.current) return;
+    hasAutoRunRef.current = true;
+    runAIAnalysisWithoutJob();
+  }, [dialogOpen, runAIAnalysisWithoutJob]);
+
   const runAIAnalysis = useCallback(async () => {
     const job = jobDescription.trim();
     if (!job) return;
@@ -314,17 +324,15 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
   const overall = useMemo(() => {
     if (aiResult) return aiResult.atsScore;
     if (hasJobDesc) {
-      const WEIGHTS = { format: 0.15, completeness: 0.2, contentDepth: 0.25, keywordMatch: 0.4 };
-      const kw = resultWithJob.breakdown.keywordMatch;
-      return Math.round(
-        baseResult.breakdown.format * WEIGHTS.format +
-          baseResult.breakdown.completeness * WEIGHTS.completeness +
-          baseResult.breakdown.contentDepth * WEIGHTS.contentDepth +
-          kw * WEIGHTS.keywordMatch
-      );
+      const b = resultWithJob.breakdown;
+      const technical = (b.keywordMatch * 0.4 + (b.experienceLevel ?? b.contentDepth) * 0.25 + b.contentDepth * 0.2 + (b.educationCerts ?? b.contentDepth) * 0.15);
+      const presentation = (b.format + b.completeness) / 2;
+      let score = technical * 0.8 + presentation * 0.2;
+      if (technical < 40) score = Math.min(score, 30);
+      return Math.round(Math.min(100, Math.max(0, score)));
     }
-    return initialLiveScore ?? report.overallScore;
-  }, [aiResult, baseResult, resultWithJob, hasJobDesc, initialLiveScore, report.overallScore]);
+    return report.overallScore;
+  }, [aiResult, baseResult, resultWithJob, hasJobDesc, report.overallScore]);
 
   const categoryLabels: Record<string, string> = {
     toneAndStyle: t("profile.atsToneAndStyle"),
@@ -357,17 +365,62 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
         </Tooltip>
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
-        <ScoreGauge score={overall} size={140} />
-        <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 1 }}>
-          {t("profile.atsYourResumeScore")}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center" }}>
-          {t("profile.atsScoreCalculatedFrom")}
-        </Typography>
-      </Box>
+      {aiLoading && !aiResult && !aiError && (
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 4, gap: 2 }}>
+          <CircularProgress size={40} sx={{ color: "var(--ats-cta-bg)" }} />
+          <Typography variant="body2" color="text.secondary">
+            {t("profile.atsAnalyzingWithAI")}
+          </Typography>
+        </Box>
+      )}
 
-      {!aiResult && (
+      {(aiResult || aiError) && (
+        <>
+          {aiError && !aiResult && (
+            <Box
+              sx={{
+                mb: 2,
+                p: 2,
+                borderRadius: 1.5,
+                bgcolor: "var(--ats-warning-bg)",
+                border: "1px solid var(--ats-warning-border)",
+              }}
+            >
+              <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ display: "block" }}>
+                {t("profile.atsFallbackBanner")}
+              </Typography>
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  display: "block",
+                  mt: 1,
+                  color: "text.secondary",
+                  wordBreak: "break-word",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                <Box component="span" fontWeight={600} sx={{ color: "text.primary" }}>
+                  {t("profile.atsFallbackReason")}:
+                </Box>{" "}
+                {aiError}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+            <ScoreGauge score={overall} size={140} />
+            <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 1 }}>
+              {t("profile.atsYourResumeScore")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center" }}>
+              {t("profile.atsScoreCalculatedFrom")}
+            </Typography>
+          </Box>
+        </>
+      )}
+
+      {aiResult && (
         <Box
           sx={{
             mb: 2,
@@ -377,39 +430,20 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
             border: "1px solid var(--border-subtle)",
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.25 }}>
-            {t("profile.atsVerifyWithAICta")}
-          </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
             <Button
               size="small"
               variant="contained"
-              startIcon={
-                aiLoading && !showJobRoleInput ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:robot-outline" size={18} />
-                )
-              }
-              onClick={runAIAnalysisWithoutJob}
-              disabled={aiLoading}
+              aria-label={t("profile.atsCheckForJobRole")}
+              startIcon={<IconWrapper icon="mdi:briefcase-outline" size={18} />}
+              endIcon={<IconWrapper icon={showJobRoleInput ? "mdi:chevron-up" : "mdi:chevron-down"} size={18} />}
+              onClick={() => setShowJobRoleInput(!showJobRoleInput)}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
                 bgcolor: "var(--ats-cta-bg)",
                 "&:hover": { bgcolor: "var(--ats-cta-bg-hover)" },
               }}
-            >
-              {t("profile.atsAnalyzeWithAI")}
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              aria-label={t("profile.atsCheckForJobRole")}
-              startIcon={<IconWrapper icon="mdi:briefcase-outline" size={18} />}
-              onClick={() => setShowJobRoleInput(!showJobRoleInput)}
-              disabled={aiLoading}
-              sx={{ textTransform: "none", borderColor: "var(--font-tertiary)", color: "var(--font-muted)", "&:hover": { borderColor: "var(--font-secondary)", bgcolor: "var(--surface-subtle)" } }}
             >
               {t("profile.atsCheckForJobRole")}
             </Button>
@@ -454,37 +488,131 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
                 {aiLoading ? t("profile.atsAnalyzing") : t("profile.atsAnalyzeWithAI")}
               </Button>
               {aiError && (
-                <Typography variant="caption" color="error" sx={{ display: "block", mt: 1 }}>
-                  {aiError}
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                  {t("profile.atsAICurrentlyUnavailable")}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {!aiResult && aiError && (
+        <Box
+          sx={{
+            mb: 2,
+            p: 1.5,
+            borderRadius: 1.5,
+            bgcolor: "var(--surface-subtle)",
+            border: "1px solid var(--border-subtle)",
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.25 }}>
+            {t("profile.atsVerifyWithAICta")}
+          </Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={
+                aiLoading && !showJobRoleInput ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <IconWrapper icon="mdi:robot-outline" size={18} />
+                )
+              }
+              onClick={runAIAnalysisWithoutJob}
+              disabled={aiLoading}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                bgcolor: "var(--ats-cta-bg)",
+                "&:hover": { bgcolor: "var(--ats-cta-bg-hover)" },
+              }}
+            >
+              {t("profile.atsAnalyzeWithAI")}
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              aria-label={t("profile.atsCheckForJobRole")}
+              startIcon={<IconWrapper icon="mdi:briefcase-outline" size={18} />}
+              endIcon={<IconWrapper icon={showJobRoleInput ? "mdi:chevron-up" : "mdi:chevron-down"} size={18} />}
+              onClick={() => setShowJobRoleInput(!showJobRoleInput)}
+              disabled={aiLoading}
+              sx={{ textTransform: "none", borderColor: "var(--font-tertiary)", color: "var(--font-muted)", "&:hover": { borderColor: "var(--font-secondary)", bgcolor: "var(--surface-subtle)" } }}
+            >
+              {t("profile.atsCheckForJobRole")}
+            </Button>
+          </Box>
+          {showJobRoleInput && (
+            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid var(--border-subtle)" }}>
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                maxRows={4}
+                placeholder={t("profile.atsJobDescPlaceholder")}
+                value={jobDescription}
+                onChange={(e) => {
+                  setJobDescription(e.target.value);
+                  setAiResult(null);
+                  setAiError(null);
+                }}
+                size="small"
+                sx={{ mb: 1 }}
+              />
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={
+                  aiLoading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <IconWrapper icon="mdi:robot-outline" size={18} />
+                  )
+                }
+                onClick={runAIAnalysis}
+                disabled={!jobDescription.trim() || aiLoading}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  bgcolor: "var(--ats-cta-bg)",
+                  "&:hover": { bgcolor: "var(--ats-cta-bg-hover)" },
+                }}
+              >
+                {aiLoading ? t("profile.atsAnalyzing") : t("profile.atsAnalyzeWithAI")}
+              </Button>
+              {aiError && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                  {t("profile.atsAICurrentlyUnavailable")}
                 </Typography>
               )}
             </Box>
           )}
           {aiError && !showJobRoleInput && (
-            <Typography variant="caption" color="error" sx={{ display: "block", mt: 1 }}>
-              {aiError}
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+              {t("profile.atsAICurrentlyUnavailable")}
             </Typography>
           )}
         </Box>
       )}
 
-      {report.breakdown && (
+      {report.breakdown && (aiResult || aiError) && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: "block", mb: 1 }}>
             {t("profile.atsOfflineCriteria")}
           </Typography>
           {(
             [
-              { key: "format", labelKey: "profile.atsFormat" },
-              { key: "completeness", labelKey: "profile.atsCompleteness" },
               { key: "contentDepth", labelKey: "profile.atsContentDepth" },
-              { key: "sectionBalance", labelKey: "profile.atsCriteria_sectionBalance" },
-              { key: "contactCompleteness", labelKey: "profile.atsCriteria_contactCompleteness" },
+              { key: "experienceLevel", labelKey: "profile.atsCriteria_experienceLevel" },
+              { key: "educationCerts", labelKey: "profile.atsCriteria_educationCerts" },
               { key: "bulletQuality", labelKey: "profile.atsCriteria_bulletQuality" },
-              { key: "dateConsistency", labelKey: "profile.atsCriteria_dateConsistency" },
+              { key: "presentation", labelKey: "profile.atsCriteria_presentation" },
             ] as const
           ).map(({ key, labelKey }) => {
-            const value = report.breakdown![key];
+            const value = report.breakdown![key as keyof typeof report.breakdown];
             if (typeof value !== "number") return null;
             return (
               <Box key={key} sx={{ mb: 1.5 }}>
@@ -508,6 +636,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
         </Box>
       )}
 
+      {(aiResult || aiError) && (
       <>
         {CATEGORY_KEYS.map((key) => {
           const cat = report.feedback[key];
@@ -529,15 +658,15 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
             p: 2,
             borderRadius: 2,
             background:
-              report.atsScore >= 70
+              overall >= 70
                 ? "var(--ats-gradient-success)"
-                : report.atsScore >= 50
+                : overall >= 50
                   ? "var(--ats-gradient-warning)"
                   : "var(--ats-gradient-error)",
             border:
-              report.atsScore >= 70
+              overall >= 70
                 ? "1px solid var(--ats-success-border)"
-                : report.atsScore >= 50
+                : overall >= 50
                   ? "1px solid var(--ats-warning-border)"
                   : "1px solid var(--ats-error-border)",
           }}
@@ -545,13 +674,13 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <IconWrapper icon="mdi:check-circle" size={28} color="var(--ats-success-muted)" />
             <Typography variant="subtitle1" fontWeight={700}>
-              ATS Score - {report.atsScore}/100
+              ATS Score - {overall}/100
             </Typography>
           </Box>
           <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 1 }}>
-            {report.atsScore >= 70
+            {overall >= 70
               ? t("profile.atsGreatJob")
-              : report.atsScore >= 50
+              : overall >= 50
                 ? t("profile.atsLabelGoodStart")
                 : t("profile.atsLabelNeedsWork")}
           </Typography>
@@ -868,55 +997,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore }: ATSScoreCardProps
             );
           })}
       </>
-
-      <Box sx={{ mt: 2 }}>
-        <Typography
-          variant="caption"
-          sx={{ cursor: "pointer", color: "primary.main", "&:hover": { textDecoration: "underline" } }}
-          onClick={() => setShowJobInput(!showJobInput)}
-        >
-          {showJobInput ? t("profile.atsHideJobDesc") : t("profile.atsMatchToJob")}
-        </Typography>
-        <Collapse in={showJobInput}>
-          <TextField
-            fullWidth
-            multiline
-            minRows={3}
-            placeholder={t("profile.atsJobDescPlaceholder")}
-            value={jobDescription}
-            onChange={(e) => {
-              setJobDescription(e.target.value);
-              setAiResult(null);
-              setAiError(null);
-            }}
-            size="small"
-            sx={{ mt: 1 }}
-          />
-          {hasJobDesc && (
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={
-                aiLoading ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:robot-outline" />
-                )
-              }
-              onClick={runAIAnalysis}
-              disabled={aiLoading}
-              sx={{ mt: 1.5, textTransform: "none" }}
-            >
-              {aiLoading ? t("profile.atsAnalyzing") : t("profile.atsAnalyzeWithAI")}
-            </Button>
-          )}
-          {aiError && (
-            <Typography variant="caption" color="error" sx={{ display: "block", mt: 1 }}>
-              {aiError}
-            </Typography>
-          )}
-        </Collapse>
-      </Box>
+      )}
     </Paper>
   );
 }

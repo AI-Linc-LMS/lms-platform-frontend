@@ -74,29 +74,28 @@ export default async function RootLayout({
 
       <body className={`antialiased`} suppressHydrationWarning>
         <ClientThemeProvider client={client} />
-
-        <ErrorBoundary>
-          <I18nProvider clientId={client?.id}>
-            <EmotionCacheProvider>
-              <ThemeProvider>
-                <DirectionSync />
-                <ReduxProvider>
-                <ThemeModeProvider>
-                  <AuthProvider>
-                    <ClientInfoProvider>
-                      <AdminModeProvider>
-                        <CameraRouteGuard>
-                          <ToastProvider>{children}</ToastProvider>
-                        </CameraRouteGuard>
-                      </AdminModeProvider>
-                    </ClientInfoProvider>
-                  </AuthProvider>
-                </ThemeModeProvider>
-              </ReduxProvider>
-            </ThemeProvider>
-          </EmotionCacheProvider>
-          </I18nProvider>
-        </ErrorBoundary>
+        <AuthProvider>
+          <ErrorBoundary>
+            <I18nProvider clientId={client?.id}>
+              <EmotionCacheProvider>
+                <ThemeProvider>
+                  <DirectionSync />
+                  <ReduxProvider>
+                    <ThemeModeProvider>
+                      <ClientInfoProvider>
+                        <AdminModeProvider>
+                          <CameraRouteGuard>
+                            <ToastProvider>{children}</ToastProvider>
+                          </CameraRouteGuard>
+                        </AdminModeProvider>
+                      </ClientInfoProvider>
+                    </ThemeModeProvider>
+                  </ReduxProvider>
+                </ThemeProvider>
+              </EmotionCacheProvider>
+            </I18nProvider>
+          </ErrorBoundary>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -16,7 +16,15 @@ export interface OfflineCriteriaBreakdown {
   contactCompleteness: number;
   bulletQuality: number;
   dateConsistency: number;
+  experienceLevel?: number;
+  educationCerts?: number;
+  presentation?: number;
 }
+
+const TECHNICAL_WEIGHT = 0.8;
+const PRESENTATION_WEIGHT = 0.2;
+const POOR_TECHNICAL_THRESHOLD = 40;
+const POOR_TECHNICAL_CAP = 30;
 
 export interface StandardATSScoreReport {
   overallScore: number;
@@ -261,6 +269,8 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
   const bulletQuality = scoreBulletQuality(data);
   const dateRecency = scoreDateRecency(data);
 
+  const presentationAvgRaw = (spacing.score + tone.score + grammar.score + consistency.score + base.breakdown.format + base.breakdown.completeness) / 6;
+
   const breakdown: OfflineCriteriaBreakdown = {
     format: base.breakdown.format,
     completeness: base.breakdown.completeness,
@@ -269,6 +279,9 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
     contactCompleteness: contactCompleteness.score,
     bulletQuality: bulletQuality.score,
     dateConsistency: dateRecency.score,
+    experienceLevel: base.breakdown.experienceLevel,
+    educationCerts: base.breakdown.educationCerts,
+    presentation: Math.round(presentationAvgRaw),
   };
 
   const goodThings: string[] = [];
@@ -337,18 +350,19 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
     improvementPoints: improve,
   });
 
-  const breakdownScores = [
-    breakdown.format,
-    breakdown.completeness,
+  const technicalScores = [
     breakdown.contentDepth,
-    breakdown.sectionBalance,
-    breakdown.contactCompleteness,
+    breakdown.experienceLevel ?? breakdown.contentDepth,
+    breakdown.educationCerts ?? breakdown.contentDepth,
     breakdown.bulletQuality,
-    breakdown.dateConsistency,
+    evidence.score,
   ];
-  const average = breakdownScores.reduce((a, b) => a + b, 0) / breakdownScores.length;
-  const minScore = Math.min(...breakdownScores);
-  const blendedOverall = Math.round(0.78 * average + 0.22 * minScore);
+  const technicalAvg = technicalScores.reduce((a, b) => a + b, 0) / technicalScores.length;
+  let blendedOverall = technicalAvg * TECHNICAL_WEIGHT + presentationAvgRaw * PRESENTATION_WEIGHT;
+  if (technicalAvg < POOR_TECHNICAL_THRESHOLD) {
+    blendedOverall = Math.min(blendedOverall, POOR_TECHNICAL_CAP);
+  }
+  blendedOverall = Math.round(blendedOverall);
 
   return {
     overallScore: clamp(blendedOverall),
