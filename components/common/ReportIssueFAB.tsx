@@ -51,7 +51,7 @@ export function ReportIssueFAB() {
             zIndex: 1000,
           }}
         >
-          <IconWrapper icon="mdi:help-circle" size={24} color="#ffffff" />
+          <IconWrapper icon="mdi:headset" size={24} color="#ffffff" />
         </Fab>
       </Tooltip>
 
