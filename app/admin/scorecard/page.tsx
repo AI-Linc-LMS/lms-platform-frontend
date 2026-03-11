@@ -63,7 +63,7 @@ import { BehavioralMetricsSection } from "@/components/scorecard/detailed/Behavi
 import { ComparativeInsightsSection } from "@/components/scorecard/detailed/ComparativeInsightsSection";
 import { AchievementsSection } from "@/components/scorecard/detailed/AchievementsSection";
 import { ActionPanelSection } from "@/components/scorecard/detailed/ActionPanelSection";
-import { ExportShareSection } from "@/components/scorecard/detailed/ExportShareSection";
+// import { ExportShareSection } from "@/components/scorecard/detailed/ExportShareSection";
 
 const MODULE_OPTIONS = [
   { id: "overview", label: "Student Overview" },
@@ -77,7 +77,7 @@ const MODULE_OPTIONS = [
   { id: "comparative_insights", label: "Comparative Insights" },
   { id: "achievements", label: "Achievements" },
   { id: "action_panel", label: "Action Panel" },
-  { id: "export_share", label: "Export & Share" },
+  // { id: "export_share", label: "Export & Share" },
 ];
 
 const CONTENT_TABS = [
@@ -1209,6 +1209,7 @@ export default function AdminScorecardPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+                  data-scorecard-pdf-content
                 >
                   {displayOrder.map((sectionId) => {
                     switch (sectionId) {
@@ -1242,8 +1243,12 @@ export default function AdminScorecardPage() {
                         return <AchievementsSection key={sectionId} data={scorecardData.achievements} />;
                       case "action_panel":
                         return <ActionPanelSection key={sectionId} data={scorecardData.actionPanel} readOnly />;
-                      case "export_share":
-                        return <ExportShareSection key={sectionId} />;
+                      // case "export_share":
+                      //   return (
+                      //     <Box key={sectionId} data-scorecard-pdf-exclude>
+                      //       <ExportShareSection />
+                      //     </Box>
+                      //   );
                       default:
                         return null;
                     }

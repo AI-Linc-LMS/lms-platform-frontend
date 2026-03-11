@@ -18,7 +18,7 @@ import { BehavioralMetricsSection } from "@/components/scorecard/detailed/Behavi
 import { ComparativeInsightsSection } from "@/components/scorecard/detailed/ComparativeInsightsSection";
 import { AchievementsSection } from "@/components/scorecard/detailed/AchievementsSection";
 import { ActionPanelSection } from "@/components/scorecard/detailed/ActionPanelSection";
-import { ExportShareSection } from "@/components/scorecard/detailed/ExportShareSection";
+// import { ExportShareSection } from "@/components/scorecard/detailed/ExportShareSection";
 
 export default function ScorecardPage() {
   const router = useRouter();
@@ -80,7 +80,7 @@ export default function ScorecardPage() {
     "comparative_insights",
     "achievements",
     "action_panel",
-    "export_share",
+    // "export_share",
   ] as const;
 
   const sectionOrder = showAll ? SECTION_ORDER : (enabledModules as string[]);
@@ -96,6 +96,8 @@ export default function ScorecardPage() {
         }}
       >
         <Container maxWidth="xl" sx={{ py: 4 }}>
+          {/* Wrapper for PDF export capture (data attribute used by ExportShareSection) */}
+          <Box data-scorecard-pdf-content>
           {/* Header */}
           <Box
             sx={{
@@ -128,6 +130,7 @@ export default function ScorecardPage() {
               </Typography>
             </Box>
             <Button
+              data-scorecard-pdf-exclude
               variant="outlined"
               startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
               onClick={() => router.push("/dashboard")}
@@ -184,12 +187,17 @@ export default function ScorecardPage() {
                   return <AchievementsSection key={sectionId} data={data.achievements} />;
                 case "action_panel":
                   return <ActionPanelSection key={sectionId} data={data.actionPanel} />;
-                case "export_share":
-                  return <ExportShareSection key={sectionId} />;
+                // case "export_share":
+                //   return (
+                //     <Box key={sectionId} data-scorecard-pdf-exclude>
+                //       <ExportShareSection />
+                //     </Box>
+                //   );
                 default:
                   return null;
               }
             })}
+          </Box>
           </Box>
         </Container>
       </Box>

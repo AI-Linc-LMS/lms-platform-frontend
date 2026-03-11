@@ -38,10 +38,6 @@ export function AssessmentResultModal({
     if (!open || !assessmentSlug) return;
 
     let isCancelled = false;
-    setLoading(true);
-    setLoadFailed(false);
-    setAssessmentResult(null);
-    setPsychometricData(null);
 
     const loadData = async () => {
       try {
@@ -65,9 +61,19 @@ export function AssessmentResultModal({
       }
     };
 
-    loadData();
+    // Defer state updates and fetch to after mount to avoid "state update on unmounted component"
+    const timeoutId = setTimeout(() => {
+      if (isCancelled) return;
+      setLoading(true);
+      setLoadFailed(false);
+      setAssessmentResult(null);
+      setPsychometricData(null);
+      loadData();
+    }, 0);
+
     return () => {
       isCancelled = true;
+      clearTimeout(timeoutId);
     };
   }, [open, assessmentSlug]);
 
