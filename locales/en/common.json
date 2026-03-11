@@ -17,7 +17,8 @@
     "adminMockInterview": "Mock Interview",
     "verifyContent": "Verify Content",
     "assessmentManagement": "Assessment Management",
-    "adminAttendance": "Attendance"
+    "adminAttendance": "Attendance",
+    "scorecard": "Scorecard"
   },
   "common": {
     "loading": "Loading...",
@@ -950,6 +951,7 @@
       "failedToGeneratePdf": "Failed to generate PDF",
       "pdfDownloaded": "PDF downloaded successfully",
       "allCourses": "All Courses",
+      "daily": "Daily",
       "weekly": "Weekly",
       "bimonthly": "Bimonthly",
       "monthly": "Monthly",

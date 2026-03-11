@@ -108,6 +108,7 @@ export interface AssessmentResult {
   stats: {
     total_questions: number;
     attempted_questions: number;
+    skipped_questions?: number;
     correct_answers: number;
     score: number;
     incorrect_answers: number;
@@ -121,6 +122,8 @@ export interface AssessmentResult {
     time_taken_minutes: number;
     total_time_minutes: number;
     percentage_time_taken: number;
+    /** Average seconds per attempted question */
+    average_time_per_question?: number;
   };
   proctoring?: {
     eye_movement_violations?: Array<{

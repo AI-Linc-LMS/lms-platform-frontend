@@ -74,7 +74,16 @@ export function AchievementsSection({
   };
 
   const handleEdit = (index: number) => {
-    setFormData(achievements[index]);
+    const achievement = achievements[index];
+    if (achievement) {
+      setFormData({
+        id: achievement.id ?? "",
+        title: achievement.title,
+        description: achievement.description ?? "",
+        date: achievement.date ?? "",
+        organization: achievement.organization ?? "",
+      });
+    }
     setEditingIndex(index);
     setDialogOpen(true);
   };
@@ -189,12 +198,12 @@ export function AchievementsSection({
                   },
                 }}
               >
-              {t("profile.add")}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleCancel}
+                {t("profile.add")}
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleCancel}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -208,12 +217,12 @@ export function AchievementsSection({
                   },
                 }}
               >
-              {t("profile.cancel")}
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleSave}
+                {t("profile.cancel")}
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleSave}
                 disabled={saving}
                 sx={{
                   textTransform: "none",
@@ -420,7 +429,7 @@ export function AchievementsSection({
             />
             <TextField
               label="Organization / Event"
-              value={formData.organization}
+              value={formData.organization ?? ""}
               onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
               fullWidth
               size="small"
@@ -434,7 +443,7 @@ export function AchievementsSection({
             />
             <TextField
               label="Date"
-              value={formData.date}
+              value={formData.date ?? ""}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               type="date"
               fullWidth
@@ -449,7 +458,7 @@ export function AchievementsSection({
             />
             <TextField
               label="Description"
-              value={formData.description}
+              value={formData.description ?? ""}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               fullWidth
               multiline

@@ -10,21 +10,9 @@ import {
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AssessmentResultHeader } from "@/components/assessment/result/AssessmentResultHeader";
-import { ScoreDisplay } from "@/components/assessment/result/ScoreDisplay";
-import { EnhancedStatsBar } from "@/components/assessment/result/EnhancedStatsBar";
-import { TopicWiseBreakdown } from "@/components/assessment/result/TopicWiseBreakdown";
-import { StrengthsWeaknesses } from "@/components/assessment/result/StrengthsWeaknesses";
-import { EnhancedSkillsTags } from "@/components/assessment/result/EnhancedSkillsTags";
-import { OverallFeedback } from "@/components/assessment/result/OverallFeedback";
+import { AssessmentResultContent } from "@/components/assessment/result/AssessmentResultContent";
 import { PsychometricResultView } from "@/components/assessment/result/PsychometricResultView";
-import {
-  mockAptitudeTestData,
-  getMockPsychometricData,
-} from "@/lib/mock-data/assessment-mock-data";
-import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
-import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
-import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
+import { getMockPsychometricData } from "@/lib/mock-data/assessment-mock-data";
 
 export default function AssessmentResultPage() {
   const params = useParams();
@@ -260,75 +248,6 @@ export default function AssessmentResultPage() {
     );
   }
 
-  const { stats } = assessmentResult;
-  
-  // Extract strengths and weaknesses from topic-wise stats
-  const getStrengthsAndWeaknesses = () => {
-    const strengths: string[] = [];
-    const weaknesses: string[] = [];
-    
-    if (stats.topic_wise_stats) {
-      Object.entries(stats.topic_wise_stats).forEach(([topic, topicStats]) => {
-        if (topicStats.accuracy_percent >= 70) {
-          strengths.push(
-            `Strong performance in ${topic} (${topicStats.accuracy_percent.toFixed(1)}% accuracy)`
-          );
-        } else if (topicStats.accuracy_percent < 50) {
-          weaknesses.push(
-            `Needs improvement in ${topic} (${topicStats.accuracy_percent.toFixed(1)}% accuracy)`
-          );
-        }
-      });
-    }
-    
-    // If no topic-wise stats, use generic feedback
-    if (strengths.length === 0 && weaknesses.length === 0) {
-      if (stats.accuracy_percent >= 70) {
-        strengths.push("Strong understanding of core concepts");
-        strengths.push("Good problem-solving approach");
-      } else {
-        weaknesses.push("Consider reviewing fundamental concepts");
-        weaknesses.push("Practice more to improve accuracy");
-      }
-    }
-    
-    return { strengths, weaknesses };
-  };
-
-  const { strengths, weaknesses } = getStrengthsAndWeaknesses();
-
-  // Generate feedback points based on performance
-  const getFeedbackPoints = () => {
-    const feedback: string[] = [];
-    const accuracy = stats.accuracy_percent;
-    
-    if (accuracy >= 80) {
-      feedback.push("Excellent performance! You have demonstrated a strong grasp of the concepts");
-      feedback.push("Your analytical approach to problems is commendable");
-      feedback.push("Continue practicing to maintain this high level of performance");
-    } else if (accuracy >= 60) {
-      feedback.push("Good performance overall with room for improvement");
-      feedback.push("Focus on areas where you had difficulty to boost your score");
-      feedback.push("Practice more scenario-based questions to enhance your skills");
-    } else if (accuracy >= 40) {
-      feedback.push("You have a basic understanding but need more practice");
-      feedback.push("Review the topics where you struggled the most");
-      feedback.push("Focus on understanding core concepts before moving to advanced topics");
-    } else {
-      feedback.push("Consider revisiting the fundamental concepts");
-      feedback.push("Practice regularly to improve your understanding");
-      feedback.push("Don't hesitate to seek help or additional resources");
-    }
-    
-    if (stats.attempted_questions < stats.total_questions) {
-      feedback.push(`You attempted ${stats.attempted_questions} out of ${stats.total_questions} questions. Try to attempt all questions next time.`);
-    }
-    
-    return feedback;
-  };
-
-  const feedbackPoints = getFeedbackPoints();
-
   return (
     <MainLayout>
       <Box
@@ -360,80 +279,7 @@ export default function AssessmentResultPage() {
 
         {/* RESULTS VIEW */}
         <Box>
-          {/* Header */}
-          <AssessmentResultHeader 
-            assessmentTitle={assessmentResult.assessment_name}
-            status={assessmentResult.status}
-          />
-
-          {/* Prominent Score Display */}
-          <ScoreDisplay
-            score={stats.score}
-            maximumMarks={stats.maximum_marks}
-            accuracy={stats.accuracy_percent}
-            percentile={stats.percentile}
-          />
-
-          {/* Enhanced Stats Bar */}
-          <EnhancedStatsBar
-            totalQuestions={stats.total_questions}
-            attemptedQuestions={stats.attempted_questions}
-            correctAnswers={stats.correct_answers}
-            incorrectAnswers={stats.incorrect_answers}
-            timeTakenMinutes={stats.time_taken_minutes}
-            totalTimeMinutes={stats.total_time_minutes}
-          />
-
-          {/* Eye Movement Violations */}
-          {assessmentResult.proctoring?.eye_movement_count && assessmentResult.proctoring.eye_movement_count > 0 && (
-            <EyeMovementViolations
-              violations={assessmentResult.proctoring.eye_movement_violations || []}
-              count={assessmentResult.proctoring.eye_movement_count}
-            />
-          )}
-
-          {/* Topic-wise Breakdown */}
-          {stats.topic_wise_stats && Object.keys(stats.topic_wise_stats).length > 0 && (
-            <TopicWiseBreakdown topicWiseStats={stats.topic_wise_stats} />
-          )}
-
-          {/* Strengths & Weaknesses */}
-          <StrengthsWeaknesses
-            strengths={strengths}
-            weaknesses={weaknesses}
-          />
-
-          {/* Skills Tags */}
-          {((Array.isArray(stats.top_skills) && stats.top_skills.length > 0) || 
-            (Array.isArray(stats.low_skills) && stats.low_skills.length > 0)) && (
-            <EnhancedSkillsTags
-              strongSkills={Array.isArray(stats.top_skills) ? stats.top_skills : []}
-              weakSkills={Array.isArray(stats.low_skills) ? stats.low_skills : []}
-            />
-          )}
-
-          {/* Quiz Responses - one question at a time, same layout as QuizContent */}
-          {assessmentResult.user_responses?.quiz_responses &&
-            assessmentResult.user_responses.quiz_responses.length > 0 && (
-              <QuizResponsesSection
-                quizResponses={assessmentResult.user_responses.quiz_responses}
-              />
-            )}
-
-          {/* Coding Problem Responses */}
-          {assessmentResult.user_responses?.coding_problem_responses &&
-            assessmentResult.user_responses.coding_problem_responses.length > 0 && (
-              <CodingProblemResponsesSection
-                codingResponses={
-                  assessmentResult.user_responses.coding_problem_responses
-                }
-              />
-            )}
-
-          {/* Overall Feedback - at the end */}
-          <OverallFeedback
-            feedbackPoints={feedbackPoints}
-          />
+          <AssessmentResultContent assessmentResult={assessmentResult} />
         </Box>
       </Box>
     </MainLayout>

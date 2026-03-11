@@ -335,6 +335,8 @@ export const coursesService = {
         questionIndex: number;
         selectedOption: string;
       }>;
+      /** For Article complete: actual time spent reading in minutes (sent as custom_dimension.read_time_minutes). */
+      read_time_minutes?: number;
     } // Action type: view, start, complete
   ): Promise<any> => {
     // activity_type is passed as query parameter, e.g., /?activity_type=VideoTutorial
@@ -349,6 +351,9 @@ export const coursesService = {
       requestBody = {
         userAnswers: metadata.userAnswers,
       };
+    } else if (activityType === "Article" && actionType === "complete" && metadata?.read_time_minutes != null) {
+      // Article complete: backend expects custom_dimension.read_time_minutes for scorecard average
+      requestBody = { read_time_minutes: metadata.read_time_minutes };
     } else if (actionType === "complete") {
       requestBody = {};
     } else {
@@ -365,6 +370,16 @@ export const coursesService = {
 
     const response = await apiClient.post(endpoint, requestBody);
 
+    return response.data;
+  },
+
+  /** Mark an article as helpful (idempotent). Used for scorecard "articles marked as helpful" count. */
+  markArticleHelpful: async (
+    courseId: number,
+    contentId: number
+  ): Promise<{ message: string }> => {
+    const endpoint = `/activity/clients/${config.clientId}/courses/${courseId}/content/${contentId}/?activity_type=Article&sub_type=mark_helpful`;
+    const response = await apiClient.post(endpoint, {});
     return response.data;
   },
 
