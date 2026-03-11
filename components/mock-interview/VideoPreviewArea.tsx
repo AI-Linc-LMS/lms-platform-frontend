@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import {
   Box,
   Paper,
@@ -7,10 +8,9 @@ import {
   CircularProgress,
   Button,
 } from "@mui/material";
+import { ProctoringVideoPreview } from "@/components/assessment/ProctoringVideoPreview";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AIAvatar } from "./AIAvatar";
-import { ProctoringVideoPreview } from "@/components/assessment/ProctoringVideoPreview";
-import { memo } from "react";
 
 interface VideoPreviewAreaProps {
   loading: boolean;
@@ -32,6 +32,8 @@ interface VideoPreviewAreaProps {
   isSpeaking: boolean;
   questionText: string;
   onSpeakComplete: () => void;
+  isUserSpeaking?: boolean;
+  interviewVideoSrc?: string;
   // Interview info
   interviewTitle?: string;
   questionsCount?: number;
@@ -51,6 +53,8 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
   isSpeaking,
   questionText,
   onSpeakComplete,
+  isUserSpeaking = false,
+  interviewVideoSrc,
   interviewTitle,
   questionsCount,
   durationMinutes,
@@ -60,11 +64,11 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
       elevation={0}
       sx={{
         flex: 1,
-        backgroundColor: "#f9fafb",
+        backgroundColor: "var(--interview-paper-bg)",
         borderRadius: 3,
         overflow: "hidden",
         position: "relative",
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
       }}
     >
       {loading ? (
@@ -77,7 +81,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
             justifyContent: "center",
           }}
         >
-          <CircularProgress size={48} sx={{ color: "#6366f1" }} />
+          <CircularProgress size={48} sx={{ color: "var(--accent-indigo)" }} />
         </Box>
       ) : interviewStarted ? (
         <Box
@@ -95,8 +99,8 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               flex: 1,
               borderRadius: 2,
               overflow: "hidden",
-              backgroundColor: "#1f2937",
-              border: "2px solid #e5e7eb",
+              backgroundColor: "var(--interview-user-video-bg)",
+              border: "2px solid var(--border-default)",
               position: "relative",
             }}
           >
@@ -126,7 +130,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
             >
               <Typography
                 variant="caption"
-                sx={{ color: "#ffffff", fontSize: "0.75rem" }}
+                sx={{ color: "var(--font-light)", fontSize: "0.75rem" }}
               >
                 You
               </Typography>
@@ -140,14 +144,15 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               visible={isProctoringActive}
             />
           </Box>
-          {/* AI Avatar */}
+          {/* AI Avatar — fills column for classy full-panel look */}
           <Box
             sx={{
               flex: 1,
+              minHeight: 320,
               borderRadius: 2,
               overflow: "hidden",
-              backgroundColor: "#ffffff",
-              border: "2px solid #e5e7eb",
+              backgroundColor: "var(--interview-surface)",
+              border: "2px solid var(--border-default)",
               position: "relative",
             }}
           >
@@ -155,6 +160,8 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               isSpeaking={isSpeaking}
               question={questionText}
               onSpeakComplete={onSpeakComplete}
+              isUserSpeaking={isUserSpeaking}
+              interviewVideoSrc={interviewVideoSrc}
             />
             <Box
               sx={{
@@ -163,14 +170,14 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
                 left: 10,
                 px: 1.5,
                 py: 0.5,
-                backgroundColor: "rgba(99, 102, 241, 0.9)",
+                backgroundColor: "var(--interview-badge-speaking-bg)",
                 borderRadius: 1,
                 backdropFilter: "blur(10px)",
               }}
             >
               <Typography
                 variant="caption"
-                sx={{ color: "#ffffff", fontSize: "0.75rem" }}
+                sx={{ color: "var(--font-light)", fontSize: "0.75rem" }}
               >
                 AI Interviewer
               </Typography>
@@ -189,16 +196,16 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
             gap: 3,
           }}
         >
-          <IconWrapper icon="mdi:robot" size={120} color="#6366f1" />
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "#111827" }}>
+          <IconWrapper icon="mdi:video-account" size={80} color="var(--accent-indigo)" />
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary-dark)" }}>
             Ready to Start Interview?
           </Typography>
           {interviewTitle && (
             <Box sx={{ textAlign: "center", mb: 2 }}>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 1 }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1 }}>
                 {interviewTitle}
               </Typography>
-              <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
                 {questionsCount || 0} questions • {durationMinutes || 0} minutes
               </Typography>
             </Box>
@@ -208,6 +215,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
             size="large"
             onClick={onStartInterview}
             disabled={isInitializing}
+            aria-label={isInitializing ? "Starting interview" : "Start interview"}
             startIcon={
               isInitializing ? (
                 <CircularProgress size={20} color="inherit" />
@@ -216,15 +224,15 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               )
             }
             sx={{
-              backgroundColor: "#6366f1",
-              color: "#ffffff",
+              backgroundColor: "var(--accent-indigo)",
+              color: "var(--font-light)",
               px: 4,
               py: 1.5,
               fontSize: "1rem",
               fontWeight: 600,
               textTransform: "none",
               "&:hover": {
-                backgroundColor: "#4f46e5",
+                backgroundColor: "var(--accent-indigo-dark)",
               },
             }}
           >

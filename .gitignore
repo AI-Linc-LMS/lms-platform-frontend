@@ -30,3 +30,6 @@ next-env.d.ts
 # Windows reserved filename — ignore to avoid git add errors
 /CON
 package-lock.json
+
+# Local services (e.g. faster-whisper-server) — not used; STT uses OpenAI Whisper API
+services/

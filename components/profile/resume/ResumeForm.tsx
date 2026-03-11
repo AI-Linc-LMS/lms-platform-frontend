@@ -96,7 +96,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
     });
   };
 
-  const updateWorkExperience = (id: string, field: string, value: any) => {
+  const updateWorkExperience = (id: string, field: string, value: string | string[] | boolean) => {
     setResumeData({
       ...resumeData,
       workExperience: resumeData.workExperience.map((exp) =>
