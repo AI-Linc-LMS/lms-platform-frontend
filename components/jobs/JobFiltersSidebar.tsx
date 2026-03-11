@@ -8,7 +8,7 @@ import {
   Divider,
   Button,
 } from "@mui/material";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { JobFilters, Job } from "@/lib/services/jobs.service";
 import { SkillsFilter } from "./SkillsFilter";
@@ -20,22 +20,18 @@ interface JobFiltersSidebarProps {
   onClearAll?: () => void;
 }
 
-const STATIC_LOCATIONS = [
-  "Ahmedabad",
-  "Bengaluru",
-  "Bhubaneswar",
-  "Chennai",
-  "Gurugram",
-  "Guwahati",
-  "Hybrid - Delhi/NCR",
-  "Hybrid - Hyderabad",
-  "Hybrid - Mumbai (All Areas)",
-  "Hybrid - Noida",
-  "Hyderabad",
-  "Mumbai",
-  "Noida",
-  "Pune",
-  "Remote",
+const JOB_TYPE_OPTIONS = [
+  { value: "", label: "All Types" },
+  { value: "job", label: "Job" },
+  { value: "internship", label: "Internship" },
+];
+
+const EMPLOYMENT_TYPE_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "Full-time", label: "Full-time" },
+  { value: "Part-time", label: "Part-time" },
+  { value: "Internship", label: "Internship" },
+  { value: "Contract", label: "Contract" },
 ];
 
 const JobFiltersSidebarComponent = ({
@@ -58,18 +54,38 @@ const JobFiltersSidebarComponent = ({
   }, [onFilterChange]);
 
   const handleJobTypeChange = useCallback(
-    (e: any) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       onFilterChange("job_type", String(e.target.value || ""));
     },
     [onFilterChange]
   );
 
+  const handleEmploymentTypeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onFilterChange("employment_type", String(e.target.value || ""));
+    },
+    [onFilterChange]
+  );
+
   const handleLocationChange = useCallback(
-    (e: any) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       onFilterChange("location", String(e.target.value || ""));
     },
     [onFilterChange]
   );
+
+  const locationOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const locations: string[] = [];
+    for (const job of jobs) {
+      const loc = (job.location || "").trim();
+      if (loc && !seen.has(loc)) {
+        seen.add(loc);
+        locations.push(loc);
+      }
+    }
+    return locations.sort((a, b) => a.localeCompare(b));
+  }, [jobs]);
 
   return (
     <Box>
@@ -99,13 +115,13 @@ const JobFiltersSidebarComponent = ({
               px: 1,
               color: "#6366f1",
               cursor: "pointer",
-              pointerEvents: "auto", // Ensure it's always clickable
+              pointerEvents: "auto",
               "&:hover": {
                 backgroundColor: "rgba(99, 102, 241, 0.08)",
               },
               "&:disabled": {
                 color: "#6366f1",
-                opacity: 1, // Keep visible even if disabled prop is set
+                opacity: 1,
               },
             }}
           >
@@ -116,13 +132,13 @@ const JobFiltersSidebarComponent = ({
 
       <Divider sx={{ my: 2 }} />
 
-      {/* Work Type Filter */}
+      {/* Job Type Filter (job / internship) */}
       <Box sx={{ mb: 3 }}>
         <Typography
           variant="subtitle2"
           sx={{ mb: 1.5, fontWeight: 600, fontSize: "0.875rem" }}
         >
-          Work Type
+          Job Type
         </Typography>
         <TextField
           fullWidth
@@ -136,18 +152,43 @@ const JobFiltersSidebarComponent = ({
             },
           }}
         >
-          <MenuItem value="">All Types</MenuItem>
-          <MenuItem value="Hybrid">Hybrid</MenuItem>
-          <MenuItem value="On-site">On-site</MenuItem>
-          <MenuItem value="Remote">Remote</MenuItem>
-          <MenuItem value="Full-time">Full-time</MenuItem>
-          <MenuItem value="Part-time">Part-time</MenuItem>
-          <MenuItem value="Contract">Contract</MenuItem>
-          <MenuItem value="Internship">Internship</MenuItem>
+          {JOB_TYPE_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value || "all"} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
         </TextField>
       </Box>
 
-      {/* Location Filter */}
+      {/* Employment Type Filter */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{ mb: 1.5, fontWeight: 600, fontSize: "0.875rem" }}
+        >
+          Employment Type
+        </Typography>
+        <TextField
+          fullWidth
+          select
+          size="small"
+          value={filters.employment_type || ""}
+          onChange={handleEmploymentTypeChange}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1.5,
+            },
+          }}
+        >
+          {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value || "all"} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
+
+      {/* Location Filter - dynamic from jobs */}
       <Box sx={{ mb: 3 }}>
         <Typography
           variant="subtitle2"
@@ -168,7 +209,7 @@ const JobFiltersSidebarComponent = ({
           }}
         >
           <MenuItem value="">All Locations</MenuItem>
-          {STATIC_LOCATIONS.map((location) => (
+          {locationOptions.map((location) => (
             <MenuItem key={location} value={location}>
               {location}
             </MenuItem>

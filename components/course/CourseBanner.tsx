@@ -155,26 +155,24 @@ export function CourseBanner({
               {course.enrolled_students} Enrolled
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconWrapper
-              icon={
-                course.is_certified
-                  ? "mdi:certificate"
-                  : "mdi:certificate-outline"
-              }
-              size={24}
-              color="#ffffff"
-            />
-            <Typography
-              variant="body2"
-              sx={{
-                color: "#ffffff",
-                fontSize: { xs: "0.75rem", sm: "0.875rem" },
-              }}
-            >
-              {course.is_certified ? t("courses.certified") : t("courses.noCertificate")}
-            </Typography>
-          </Box>
+          {course.is_certified && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <IconWrapper
+                icon="mdi:certificate"
+                size={24}
+                color="#ffffff"
+              />
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#ffffff",
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                }}
+              >
+                {t("courses.certified")}
+              </Typography>
+            </Box>
+          )}
           {/* Like Button */}
           <Box sx={{ ml: "auto" }}>
             <IconButton

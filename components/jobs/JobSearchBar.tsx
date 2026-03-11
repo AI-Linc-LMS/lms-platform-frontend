@@ -10,6 +10,8 @@ interface JobSearchBarProps {
   onClear: () => void;
   placeholder?: string;
   size?: 'small' | 'medium';
+  /** Use in hero/dark backgrounds for elevated white look */
+  variant?: 'default' | 'hero';
 }
 
 const JobSearchBarComponent = ({
@@ -18,21 +20,25 @@ const JobSearchBarComponent = ({
   onClear,
   placeholder = 'Search jobs, companies, or keywords...',
   size = 'medium',
+  variant = 'default',
 }: JobSearchBarProps) => {
   const handleChange = useCallback((e: any) => {
     onSearchChange(String(e.target.value || ''));
   }, [onSearchChange]);
+  const isHero = variant === 'hero';
   return (
     <Paper
-      elevation={0}
+      elevation={isHero ? 2 : 0}
       sx={{
-        p: 1.5,
+        p: isHero ? 1.75 : 1.5,
         borderRadius: 2,
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: isHero ? 'rgba(255,255,255,0.3)' : 'divider',
         display: 'flex',
         alignItems: 'center',
         gap: 1,
+        backgroundColor: isHero ? '#fff' : undefined,
+        boxShadow: isHero ? '0 4px 20px rgba(0,0,0,0.15)' : undefined,
       }}
     >
       <Search size={20} style={{ color: '#6b7280', marginLeft: 8 }} />

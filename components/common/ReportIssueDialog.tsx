@@ -120,7 +120,7 @@ export function ReportIssueDialog({
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:help-circle" size={24} color="#ffffff" />
+          <IconWrapper icon="mdi:headset" size={24} color="#ffffff" />
         </Box>
         Support and Help
       </DialogTitle>

@@ -13,7 +13,7 @@ import { useProctoring } from "@/lib/hooks/useProctoring";
 import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
+import { stopAllMediaTracks, registerMediaStream } from "@/lib/utils/cameraUtils";
 import {
   InterviewHeader,
   VideoPreviewArea,
@@ -39,6 +39,7 @@ export default function TakeMockInterviewPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
+  const [interimTranscript, setInterimTranscript] = useState<string>("");
 
   const isInitializingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -123,6 +124,7 @@ export default function TakeMockInterviewPage() {
       }
 
       userStreamRef.current = stream;
+      registerMediaStream(stream);
 
       const videoTracks = stream.getVideoTracks();
       const hasVideo =
@@ -205,15 +207,17 @@ export default function TakeMockInterviewPage() {
     useFullscreenMonitor();
 
   const speechToText = useSpeechToText({
-    streamRef: userStreamRef,
-    onFinal: (text) =>
+    onFinal: (text) => {
       setCurrentAnswer((prev) =>
         prev ? `${prev.trim()} ${text}`.trim() : text
-      ),
+      );
+      setInterimTranscript("");
+    },
+    onInterim: (text) => setInterimTranscript(text || ""),
     continuous: true,
     lang: "en-US",
   });
-  const { start: startStt, stop: stopStt, transcript: recognizedText, isListening } = speechToText;
+  const { start: startStt, stop: stopStt, transcript: recognizedText, isListening, error: sttError } = speechToText;
 
   // Disable ESC and right-click
   useKeyboardShortcuts({
@@ -223,20 +227,9 @@ export default function TakeMockInterviewPage() {
     },
   });
 
-  // Start speech-to-text when interview starts (uses Canary Qwen 2.5B when STT_API_URL is set, else browser)
-  const hasStartedSttRef = useRef(false);
   useEffect(() => {
-    if (!interviewStarted) {
-      hasStartedSttRef.current = false;
-      return;
-    }
-    if (hasStartedSttRef.current) return;
-    hasStartedSttRef.current = true;
-    const t = setTimeout(() => {
-      startStt();
-    }, 500);
-    return () => clearTimeout(t);
-  }, [interviewStarted, startStt]);
+    if (sttError) showToast(sttError, "error");
+  }, [sttError, showToast]);
 
   // Load interview data on mount: use sessionStorage if coming from device-check, else call start API
   useEffect(() => {
@@ -291,6 +284,7 @@ export default function TakeMockInterviewPage() {
           audio: true,
         });
         userStreamRef.current = audioStream;
+        registerMediaStream(audioStream);
 
         // Setup audio level monitoring
         const audioContext = new AudioContext();
@@ -343,12 +337,12 @@ export default function TakeMockInterviewPage() {
   const handleStartInterview = useCallback(async () => {
     if (isInitializingRef.current || !interview) return;
     isInitializingRef.current = true;
+    // Start speech-to-text first (same user gesture as click — required by browser for mic)
+    startStt();
     setShowStartButton(false);
+    setInterviewStarted(true);
 
     try {
-      // Set interview started first to render video element
-      setInterviewStarted(true);
-
       // Wait for video element to be rendered (use requestAnimationFrame for next render)
       await new Promise<void>((resolve) => {
         const checkVideoElement = () => {
@@ -388,7 +382,7 @@ export default function TakeMockInterviewPage() {
       setInterviewStarted(false);
       isInitializingRef.current = false;
     }
-  }, [interview, startProctoring, enterFullscreen, showToast]);
+  }, [interview, startProctoring, enterFullscreen, showToast, startStt]);
 
   // Speech recognition is always active - no toggle needed
 
@@ -411,9 +405,10 @@ export default function TakeMockInterviewPage() {
     setIsSpeaking(false);
   }, []);
 
-  // Handle answer change
+  // Handle answer change (clear interim when user types)
   const handleAnswerChange = useCallback((answer: string) => {
     setCurrentAnswer(answer);
+    setInterimTranscript("");
   }, []);
 
   // Handle save answer
@@ -552,13 +547,24 @@ export default function TakeMockInterviewPage() {
         // Silently fail if fullscreen exit fails
       }
 
-      // Stop proctoring
       stopProctoring();
+      stopStt();
 
-      // Stop all media tracks (camera and audio)
+      if (animationFrameRef.current != null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      if (userStreamRef.current) {
+        userStreamRef.current.getTracks().forEach((track) => track.stop());
+        userStreamRef.current = null;
+      }
+
       stopAllMediaTracks();
 
-      // Stop all media tracks again after a brief delay to catch any missed streams
       await new Promise((resolve) => setTimeout(resolve, 50));
       stopAllMediaTracks();
 
@@ -578,6 +584,7 @@ export default function TakeMockInterviewPage() {
     violations,
     fullscreenViolations,
     stopProctoring,
+    stopStt,
     router,
     showToast,
   ]);
@@ -758,21 +765,21 @@ export default function TakeMockInterviewPage() {
     };
   }, [interviewStarted, showToast]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (isProctoringActive) {
         stopProctoring();
       }
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop();
-      }
     };
   }, [isProctoringActive, stopProctoring]);
 
+  const latestViolationProp = useMemo(
+    () =>
+      latestViolation
+        ? { type: latestViolation.type, message: latestViolation.message }
+        : null,
+    [latestViolation?.type, latestViolation?.message]
+  );
 
   if (!interview) {
     return null;
@@ -812,14 +819,7 @@ export default function TakeMockInterviewPage() {
         isProctoringActive={isProctoringActive}
         proctoringStatus={proctoringStatus}
         faceCount={faceCount}
-        latestViolation={
-          latestViolation
-            ? {
-                type: latestViolation.type,
-                message: latestViolation.message,
-              }
-            : null
-        }
+        latestViolation={latestViolationProp}
       />
 
       {/* Main Content */}
@@ -844,18 +844,13 @@ export default function TakeMockInterviewPage() {
             isProctoringActive={isProctoringActive}
             proctoringStatus={proctoringStatus}
             faceCount={faceCount}
-            latestViolation={
-              latestViolation
-                ? {
-                    type: latestViolation.type,
-                    message: latestViolation.message,
-                  }
-                : null
-            }
+            latestViolation={latestViolationProp}
             isSpeaking={isSpeaking}
             questionText={getQuestionText(currentQuestion)}
             onSpeakComplete={handleSpeakComplete}
-            interviewTitle={interview.title}
+            isUserSpeaking={isListening}
+            interviewVideoSrc="/videos/Interview.mp4"
+            interviewTitle={interview?.title}
             questionsCount={questions?.length}
             durationMinutes={interview.duration_minutes}
           />
@@ -863,6 +858,7 @@ export default function TakeMockInterviewPage() {
           {interviewStarted && currentQuestion && (
             <AnswerInputArea
               currentAnswer={currentAnswer}
+              interimTranscript={interimTranscript}
               onAnswerChange={handleAnswerChange}
               onSaveAnswer={handleSaveAnswer}
               onPreviousQuestion={handlePreviousQuestion}
@@ -870,6 +866,7 @@ export default function TakeMockInterviewPage() {
               isQuestionAnswered={isQuestionAnswered}
               canGoPrevious={currentQuestionIndex > 0}
               isLastQuestion={currentQuestionIndex >= totalQuestions - 1}
+              isListening={isListening}
             />
           )}
         </Box>

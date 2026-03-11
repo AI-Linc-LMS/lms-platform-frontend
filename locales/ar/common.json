@@ -5,6 +5,7 @@
     "assessments": "التقييمات",
     "mockInterview": "مقابلة تجريبية",
     "jobPortal": "بوابة الوظائف",
+    "jobsV2": "الوظائف",
     "attendance": "الحضور",
     "liveSessions": "الجلسات المباشرة",
     "community": "المجتمع",
@@ -17,6 +18,7 @@
     "adminMockInterview": "المقابلة التجريبية",
     "verifyContent": "التحقق من المحتوى",
     "assessmentManagement": "إدارة التقييمات",
+    "adminJobsV2": "الوظائف",
     "adminAttendance": "الحضور"
   },
   "common": {
@@ -691,6 +693,17 @@
   "jobs": {
     "title": "بوابة الوظائف",
     "failedToLoad": "فشل تحميل الوظائف"
+  },
+  "jobsV2": {
+    "title": "الوظائف",
+    "failedToLoad": "فشل تحميل الوظائف",
+    "noJobsFound": "لم يتم العثور على وظائف",
+    "tryAdjustFilters": "حاول تعديل الفلاتر أو مصطلحات البحث",
+    "apply": "تقدم",
+    "applyOnExternalLink": "تقدم عبر الرابط الخارجي",
+    "notEligible": "غير مؤهل للتقديم",
+    "viewDetails": "عرض التفاصيل",
+    "backToJobs": "العودة للوظائف"
   },
   "attendance": {
     "title": "الحضور",
