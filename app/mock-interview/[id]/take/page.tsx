@@ -13,7 +13,7 @@ import { useProctoring } from "@/lib/hooks/useProctoring";
 import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
+import { stopAllMediaTracks, registerMediaStream } from "@/lib/utils/cameraUtils";
 import {
   InterviewHeader,
   VideoPreviewArea,
@@ -124,6 +124,7 @@ export default function TakeMockInterviewPage() {
       }
 
       userStreamRef.current = stream;
+      registerMediaStream(stream);
 
       const videoTracks = stream.getVideoTracks();
       const hasVideo =
@@ -283,6 +284,7 @@ export default function TakeMockInterviewPage() {
           audio: true,
         });
         userStreamRef.current = audioStream;
+        registerMediaStream(audioStream);
 
         // Setup audio level monitoring
         const audioContext = new AudioContext();
@@ -545,13 +547,24 @@ export default function TakeMockInterviewPage() {
         // Silently fail if fullscreen exit fails
       }
 
-      // Stop proctoring
       stopProctoring();
+      stopStt();
 
-      // Stop all media tracks (camera and audio)
+      if (animationFrameRef.current != null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      if (userStreamRef.current) {
+        userStreamRef.current.getTracks().forEach((track) => track.stop());
+        userStreamRef.current = null;
+      }
+
       stopAllMediaTracks();
 
-      // Stop all media tracks again after a brief delay to catch any missed streams
       await new Promise((resolve) => setTimeout(resolve, 50));
       stopAllMediaTracks();
 
@@ -571,6 +584,7 @@ export default function TakeMockInterviewPage() {
     violations,
     fullscreenViolations,
     stopProctoring,
+    stopStt,
     router,
     showToast,
   ]);
@@ -751,17 +765,10 @@ export default function TakeMockInterviewPage() {
     };
   }, [interviewStarted, showToast]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (isProctoringActive) {
         stopProctoring();
-      }
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop();
       }
     };
   }, [isProctoringActive, stopProctoring]);

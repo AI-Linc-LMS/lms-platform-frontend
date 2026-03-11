@@ -1,17 +1,23 @@
 "use client";
 
 import { getProctoringService } from "@/lib/services/proctoring.service";
+import {
+  registerMediaStream,
+  stopAndClearRegisteredStreams,
+} from "@/lib/utils/media-stream-registry";
 
-/**
- * Comprehensive function to stop all active camera and microphone streams.
- * This handles:
- * - Streams attached to DOM video/audio elements
- * - Streams stored in ProctoringService
- * - Global window stream references
- * - All active MediaStreamTracks
- */
+declare global {
+  interface Window {
+    __mockInterviewStream?: MediaStream;
+  }
+}
+
+export { registerMediaStream };
+
 export function stopAllMediaTracks(): void {
   try {
+    stopAndClearRegisteredStreams();
+
     // 1. Stop all video elements' streams
     const videoElements = document.querySelectorAll("video");
     videoElements.forEach((video) => {
@@ -52,20 +58,16 @@ export function stopAllMediaTracks(): void {
       // ProctoringService might not be initialized, ignore
     }
 
-    // 4. Clean up global window stream references
-    if (typeof window !== "undefined") {
-      if ((window as any).__mockInterviewStream) {
-        const globalStream = (window as any).__mockInterviewStream;
-        if (globalStream instanceof MediaStream) {
-          globalStream.getTracks().forEach((track) => {
-            // Stop tracks that are live or ended
-            if (track.readyState === "live" || track.readyState === "ended") {
-              track.stop();
-            }
-          });
-        }
-        delete (window as any).__mockInterviewStream;
+    if (typeof window !== "undefined" && window.__mockInterviewStream) {
+      const globalStream = window.__mockInterviewStream;
+      if (globalStream instanceof MediaStream) {
+        globalStream.getTracks().forEach((track) => {
+          if (track.readyState === "live" || track.readyState === "ended") {
+            track.stop();
+          }
+        });
       }
+      delete window.__mockInterviewStream;
     }
 
     // 5. Additional cleanup: Try to find and stop any tracks that might be active

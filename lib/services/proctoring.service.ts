@@ -1,6 +1,7 @@
 import * as blazeface from "@tensorflow-models/blazeface";
 import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs-core";
+import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 
 export type ProctoringViolationType =
   | "NO_FACE"
@@ -234,6 +235,8 @@ export class ProctoringService {
           );
         }
       }
+
+      registerMediaStream(this.stream);
 
       this.videoElement = videoElement;
 

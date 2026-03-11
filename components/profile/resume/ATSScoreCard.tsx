@@ -90,7 +90,12 @@ function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
   const color = getScoreColor(score) === "success" ? "var(--ats-success)" : getScoreColor(score) === "warning" ? "var(--ats-warning)" : "var(--ats-error)";
   return (
     <Box sx={{ position: "relative", width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+      <Box
+        component="svg"
+        width={size}
+        height={size}
+        sx={{ transform: "rotate(-90deg)", display: "block" }}
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -111,7 +116,7 @@ function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
           strokeLinecap="round"
           style={{ transition: "stroke-dashoffset 0.5s ease" }}
         />
-      </svg>
+      </Box>
       <Box
         sx={{
           position: "absolute",
@@ -457,11 +462,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
                 maxRows={4}
                 placeholder={t("profile.atsJobDescPlaceholder")}
                 value={jobDescription}
-                onChange={(e) => {
-                  setJobDescription(e.target.value);
-                  setAiResult(null);
-                  setAiError(null);
-                }}
+                onChange={(e) => setJobDescription(e.target.value)}
                 size="small"
                 sx={{ mb: 1 }}
               />
@@ -554,11 +555,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
                 maxRows={4}
                 placeholder={t("profile.atsJobDescPlaceholder")}
                 value={jobDescription}
-                onChange={(e) => {
-                  setJobDescription(e.target.value);
-                  setAiResult(null);
-                  setAiError(null);
-                }}
+                onChange={(e) => setJobDescription(e.target.value)}
                 size="small"
                 sx={{ mb: 1 }}
               />
