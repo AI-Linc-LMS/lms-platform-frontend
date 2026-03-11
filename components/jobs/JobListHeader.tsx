@@ -24,19 +24,21 @@ const JobListHeaderComponent = ({
         justifyContent: 'space-between',
         alignItems: 'center',
         mb: 0.5,
+        flexWrap: 'wrap',
+        gap: 1,
       }}
     >
       <Typography
         variant="body2"
         color="text.secondary"
         sx={{
-          fontSize: '0.875rem',
+          fontSize: { xs: '0.8125rem', sm: '0.875rem' },
           fontWeight: 500,
         }}
       >
         {totalCount || 0} {totalCount === 1 ? 'job' : 'jobs'} found
       </Typography>
-      <FormControl size="small" sx={{ minWidth: 120 }}>
+      <FormControl size="small" sx={{ minWidth: { xs: 90, sm: 120 } }}>
         <InputLabel>Per Page</InputLabel>
         <Select
           value={pageSize || 10}

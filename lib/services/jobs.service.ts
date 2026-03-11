@@ -22,6 +22,8 @@ export interface Job {
 export interface JobFilters {
   location?: string;
   job_type?: string;
+  employment_type?: string;
+  experience?: string;
   search?: string;
   skills?: string[];
   page?: number;
