@@ -16,8 +16,7 @@ interface ComparisonData {
   metric: string;
   studentValue: number;
   batchAverage: number;
-  top10Percent?: number;
-  interviewCleared?: number;
+  top10Percent: number;
 }
 
 interface ComparisonChartProps {
@@ -31,6 +30,9 @@ export function ComparisonChart({
   title,
   height = 300,
 }: ComparisonChartProps) {
+  const hasData = Array.isArray(data) && data.length > 0;
+  if (!hasData) return null;
+
   return (
     <Box>
       {title && (
@@ -100,22 +102,12 @@ export function ComparisonChart({
               fill="#9ca3af"
               radius={[4, 4, 0, 0]}
             />
-            {data[0]?.top10Percent !== undefined && (
-              <Bar
-                dataKey="top10Percent"
-                name="Top 10%"
-                fill="#10b981"
-                radius={[4, 4, 0, 0]}
-              />
-            )}
-            {data[0]?.interviewCleared !== undefined && (
-              <Bar
-                dataKey="interviewCleared"
-                name="Interview Cleared"
-                fill="#6366f1"
-                radius={[4, 4, 0, 0]}
-              />
-            )}
+            <Bar
+              dataKey="top10Percent"
+              name="Top 10%"
+              fill="#10b981"
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </Paper>

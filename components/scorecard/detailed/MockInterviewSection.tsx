@@ -1,16 +1,19 @@
 "use client";
 
-import { Box, Typography, Paper, Grid, Chip, Button } from "@mui/material";
+import { Box, Typography, Paper, Grid, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { MockInterviewPerformance } from "@/lib/types/scorecard.types";
 import { SkillRadarChart } from "../charts/SkillRadarChart";
 
 interface MockInterviewSectionProps {
   data: MockInterviewPerformance;
+  /** When true (e.g. admin view), hide Watch Interview Playback button */
+  readOnly?: boolean;
 }
 
-export function MockInterviewSection({ data }: MockInterviewSectionProps) {
-  const latestInterview = data.interviews[data.interviews.length - 1];
+export function MockInterviewSection({ data, readOnly }: MockInterviewSectionProps) {
+  // Backend returns newest first; use [0] for latest
+  const latestInterview = data.interviews[0] ?? data.interviews[data.interviews.length - 1];
 
   const radarData = latestInterview
     ? latestInterview.parameters.map((param) => ({
@@ -42,9 +45,30 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
         Mock Interview Performance
       </Typography>
 
+      {data.interviews.length === 0 ? (
+        <Box
+          sx={{
+            py: 8,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          <IconWrapper icon="mdi:microphone-question-outline" size={56} color="#9ca3af" />
+          <Typography variant="body1" sx={{ mt: 2, color: "#374151", fontWeight: 500 }}>
+            No mock interviews yet
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: "#6b7280" }}>
+            Complete mock interviews to see your performance here.
+          </Typography>
+        </Box>
+      ) : (
+        <>
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
               p: 2,
@@ -61,7 +85,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
             </Typography>
           </Box>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
               p: 2,
@@ -78,7 +102,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
             </Typography>
           </Box>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
               p: 2,
@@ -95,7 +119,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
             </Typography>
           </Box>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
               p: 2,
@@ -107,8 +131,23 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
             <Typography variant="body2" sx={{ color: "#666666", mb: 0.5 }}>
               Improvement
             </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "#10b981" }}>
-              +{data.improvementSinceFirst}%
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color:
+                  data.improvementSinceFirst > 0
+                    ? "#10b981"
+                    : data.improvementSinceFirst < 0
+                      ? "#ef4444"
+                      : "#666666",
+              }}
+            >
+              {data.improvementSinceFirst > 0
+                ? `+${data.improvementSinceFirst}%`
+                : data.improvementSinceFirst < 0
+                  ? `${data.improvementSinceFirst}%`
+                  : `${data.improvementSinceFirst}%`}
             </Typography>
           </Box>
         </Grid>
@@ -140,7 +179,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
             Latest Interview Feedback
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box
                 sx={{
                   p: 2.5,
@@ -160,7 +199,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                   Strengths
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2.5, listStyle: "none" }}>
-                  {latestInterview.feedback.strengths.map((strength, index) => (
+                  {latestInterview.feedback.strengths.length > 0 ? latestInterview.feedback.strengths.map((strength, index) => (
                     <Box
                       component="li"
                       key={index}
@@ -180,11 +219,22 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                     >
                       {strength}
                     </Box>
-                  ))}
+                  )) : (
+                    <Box
+                      component="li"
+                      sx={{
+                        color: "#666666",
+                        fontSize: "0.875rem",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      No strengths recorded
+                    </Box>
+                  )}
                 </Box>
               </Box>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box
                 sx={{
                   p: 2.5,
@@ -204,7 +254,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                   Areas of Improvement
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2.5, listStyle: "none" }}>
-                  {latestInterview.feedback.areasOfImprovement.map((area, index) => (
+                  {latestInterview.feedback.areasOfImprovement.length > 0 ? latestInterview.feedback.areasOfImprovement.map((area, index) => (
                     <Box
                       component="li"
                       key={index}
@@ -224,12 +274,49 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                     >
                       {area}
                     </Box>
-                  ))}
+                  )) : (
+                    <Box
+                      component="li"
+                      sx={{
+                        color: "#666666",
+                        fontSize: "0.875rem",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      No areas of improvement recorded
+                    </Box>
+                  )}
                 </Box>
               </Box>
             </Grid>
-            {latestInterview.playbackLink && (
-              <Grid item xs={12}>
+            {latestInterview.feedback.mentorComments && (
+              <Grid size={{ xs: 12 }}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontWeight: 600,
+                      color: "#000000",
+                      mb: 1.5,
+                    }}
+                  >
+                    Mentor Comments
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#666666", whiteSpace: "pre-wrap" }}>
+                    {latestInterview.feedback.mentorComments}
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
+            {latestInterview.playbackLink && !readOnly && (
+              <Grid size={{ xs: 12 }}>
                 <Button
                   variant="outlined"
                   startIcon={<IconWrapper icon="mdi:play-circle" size={18} />}
@@ -255,6 +342,8 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
             )}
           </Grid>
         </Box>
+      )}
+        </>
       )}
     </Paper>
   );

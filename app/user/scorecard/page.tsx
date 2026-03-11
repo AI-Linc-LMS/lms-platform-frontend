@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Box, Container, Typography, Button, Paper } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -25,20 +25,21 @@ export default function ScorecardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ScorecardData | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const scorecardData = await scorecardService.getScorecardData();
-        setData(scorecardData);
-      } catch (error) {
-        console.error("Failed to load scorecard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const scorecardData = await scorecardService.getScorecardData();
+      setData(scorecardData);
+    } catch (error) {
+      console.error("Failed to load scorecard data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -63,6 +64,26 @@ export default function ScorecardPage() {
       </MainLayout>
     );
   }
+
+  const enabledModules = data.scorecardConfig?.enabledModules;
+  const showAll = !enabledModules || enabledModules.length === 0;
+
+  const SECTION_ORDER = [
+    "overview",
+    "learning_consumption",
+    "performance_trends",
+    "skill_scorecard",
+    "weak_areas",
+    "assessment_performance",
+    "mock_interview",
+    "behavioral_metrics",
+    "comparative_insights",
+    "achievements",
+    "action_panel",
+    "export_share",
+  ] as const;
+
+  const sectionOrder = showAll ? SECTION_ORDER : (enabledModules as string[]);
 
   return (
     <MainLayout>
@@ -129,20 +150,46 @@ export default function ScorecardPage() {
             </Button>
           </Box>
 
-          {/* Sections */}
+          {/* Sections - order from enabled_modules when configured */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <StudentOverviewSection data={data.overview} />
-            <LearningConsumptionSection data={data.learningConsumption} />
-            <PerformanceTrendsSection data={data.performanceTrends} />
-            <SkillScorecardSection skills={data.skills} />
-            <WeakAreasSection data={data.weakAreas} />
-            <AssessmentPerformanceSection assessments={data.assessmentPerformance} />
-            <MockInterviewSection data={data.mockInterviewPerformance} />
-            <BehavioralMetricsSection data={data.behavioralMetrics} />
-            <ComparativeInsightsSection data={data.comparativeInsights} />
-            <AchievementsSection data={data.achievements} />
-            <ActionPanelSection data={data.actionPanel} />
-            <ExportShareSection />
+            {sectionOrder.map((sectionId) => {
+              const visible = showAll || (enabledModules && enabledModules.includes(sectionId));
+              if (!visible) return null;
+              switch (sectionId) {
+                case "overview":
+                  return <StudentOverviewSection key={sectionId} data={data.overview} />;
+                case "learning_consumption":
+                  return <LearningConsumptionSection key={sectionId} data={data.learningConsumption} />;
+                case "performance_trends":
+                  return <PerformanceTrendsSection key={sectionId} initialData={data.performanceTrends} />;
+                case "skill_scorecard":
+                  return <SkillScorecardSection key={sectionId} skills={data.skills} />;
+                case "weak_areas":
+                  return <WeakAreasSection key={sectionId} data={data.weakAreas} />;
+                case "assessment_performance":
+                  return (
+                    <AssessmentPerformanceSection
+                      key={sectionId}
+                      assessments={data.assessmentPerformance}
+                      totalAssessmentsAvailable={data.learningConsumption?.practice?.totalAssessmentsPresent}
+                    />
+                  );
+                case "mock_interview":
+                  return <MockInterviewSection key={sectionId} data={data.mockInterviewPerformance} />;
+                case "behavioral_metrics":
+                  return <BehavioralMetricsSection key={sectionId} data={data.behavioralMetrics} />;
+                case "comparative_insights":
+                  return <ComparativeInsightsSection key={sectionId} data={data.comparativeInsights} />;
+                case "achievements":
+                  return <AchievementsSection key={sectionId} data={data.achievements} />;
+                case "action_panel":
+                  return <ActionPanelSection key={sectionId} data={data.actionPanel} />;
+                case "export_share":
+                  return <ExportShareSection key={sectionId} />;
+                default:
+                  return null;
+              }
+            })}
           </Box>
         </Container>
       </Box>

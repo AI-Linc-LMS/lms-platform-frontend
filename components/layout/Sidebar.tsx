@@ -223,6 +223,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_assessment",
     },
     {
+      label: "Scorecard",
+      labelKey: "nav.scorecard",
+      path: "/admin/scorecard",
+      icon: "mdi:chart-box-outline",
+      featureName: "admin_scorecard",
+    },
+    {
       label: "Attendance",
       labelKey: "nav.adminAttendance",
       path: "/admin/attendance",
@@ -280,6 +287,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
         if (!isAdminMode && item.featureName === "dashboard") {
+          return true;
+        }
+        // Always show scorecard for admin users (admins need to configure it)
+        if (isAdminMode && item.featureName === "admin_scorecard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);

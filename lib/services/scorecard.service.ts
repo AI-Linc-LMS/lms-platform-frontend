@@ -1,455 +1,920 @@
-import { ScorecardData } from "@/lib/types/scorecard.types";
+import {
+  Achievement,
+  ActionPanel,
+  AssessmentPerformance,
+  BehavioralMetrics,
+  ComparativeInsights,
+  ContentCompletionOverview,
+  LearningConsumption,
+  MockInterviewPerformance,
+  PerformanceTrends,
+  Recommendation,
+  ScorecardData,
+  Skill,
+  StudentOverview,
+  TopicIncorrect,
+  WeakArea,
+  WeakAreas,
+} from "@/lib/types/scorecard.types";
+import apiClient from "./api";
+import { config } from "@/lib/config";
+import { profileService } from "./profile.service";
 
-// Mock data service for scorecard
-// This will be replaced with actual API calls when backend is ready
+export function mapOverviewFromApi(overview: Record<string, unknown>): StudentOverview {
+  const mapped: StudentOverview = {
+    studentName: (overview.student_name as string) ?? "",
+    programName: (overview.program_name as string) ?? "—",
+    cohort: (overview.cohort as string) ?? "—",
+    currentWeek: Number(overview.current_week) ?? 1,
+    currentModule: (overview.current_module as string) ?? "—",
+    overallPerformanceScore: Number(overview.overall_performance_score) ?? 0,
+    overallGrade: (overview.overall_grade as StudentOverview["overallGrade"]) ?? "Beginner",
+    totalTimeSpentSeconds:
+      Number(overview.total_time_spent_seconds) ??
+      (Number(overview.total_time_spent) || 0) * 3600,
+    totalDaysActive: Number(overview.total_days_active) ?? 0,
+    activeDaysStreak: Number(overview.active_days_streak) ?? 0,
+    completionPercentage: Number(overview.completion_percentage) ?? 0,
+    statusBadge: (overview.status_badge as StudentOverview["statusBadge"]) ?? "Amber",
+  };
+  if (overview.current_course_name != null && overview.current_course_name !== "") {
+    mapped.currentCourseName = overview.current_course_name as string;
+  }
+  const rawProgress = overview.course_progress as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(rawProgress) && rawProgress.length > 0) {
+    mapped.courseProgress = rawProgress.map((p) => ({
+      courseId: Number(p.course_id),
+      courseName: (p.course_name as string) ?? "—",
+      currentWeek: Number(p.current_week) ?? 1,
+      currentModule: (p.current_module as string) ?? "—",
+    }));
+  }
+  if (overview.daily_progress_percentage != null) {
+    mapped.dailyProgressPercentage = Number(overview.daily_progress_percentage);
+  }
+  if (overview.daily_performance_score != null) {
+    mapped.dailyPerformanceScore = Number(overview.daily_performance_score);
+  } else if (overview.daily_performance_score === null) {
+    mapped.dailyPerformanceScore = null;
+  }
+  if (typeof overview.grade_criteria === "string") {
+    mapped.gradeCriteria = overview.grade_criteria;
+  }
+  if (typeof overview.status_criteria === "string") {
+    mapped.statusCriteria = overview.status_criteria;
+  }
+  if (overview.profile_pic_url != null && overview.profile_pic_url !== "") {
+    mapped.profilePicUrl = overview.profile_pic_url as string;
+  }
+  return mapped;
+}
 
-const generateMockScorecardData = (): ScorecardData => {
-  // Generate 12 weeks of weekly performance data
-  const weeklyData = Array.from({ length: 12 }, (_, i) => ({
-    week: i + 1,
-    weekLabel: `Week ${i + 1}`,
-    mcqAccuracy: Math.floor(Math.random() * 30) + 60, // 60-90
-    subjectiveScore: Math.floor(Math.random() * 30) + 65, // 65-95
-    assessmentScore: Math.floor(Math.random() * 25) + 70, // 70-95
-    interviewScore: i < 3 ? 0 : Math.floor(Math.random() * 20) + 75, // 75-95 after week 3
-  }));
+/** Format cumulative seconds as "Xh Ym" (e.g. 3661 → "1h 1m") */
+export function formatTimeSpent(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0m";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  if (m > 0) return `${m}m`;
+  return "0m";
+}
 
-  // Generate skills data
-  const skillNames = [
-    "React",
-    "JavaScript",
-    "Node.js",
-    "SQL",
-    "Python",
-    "Communication",
-    "Problem Solving",
-    "Data Structures",
-    "Algorithms",
-    "System Design",
-  ];
+function num(v: unknown): number {
+  if (v === null || v === undefined) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
 
-  const skills = skillNames.map((name, index) => {
-    const proficiencyScore = Math.floor(Math.random() * 40) + 50; // 50-90
-    const level =
-      proficiencyScore >= 80
-        ? "Advanced"
-        : proficiencyScore >= 65
-        ? "Intermediate"
-        : "Beginner";
-    const strength = proficiencyScore >= 70 ? "Strong" : "Needs Attention";
+function numOrUndefined(v: unknown): number | undefined {
+  if (v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
 
-    return {
-      id: `skill-${index + 1}`,
-      name,
-      proficiencyScore,
-      level: level as any,
-      strength: strength as any,
-      confidenceScore: Math.floor(Math.random() * 30) + 60,
-      breakdown: {
-        mcqAccuracy: Math.floor(Math.random() * 30) + 60,
-        subjectiveScore: Math.floor(Math.random() * 30) + 65,
-        projectScore: Math.floor(Math.random() * 25) + 70,
-        interviewScore: Math.floor(Math.random() * 20) + 75,
-      },
-      category: index < 5 ? "Technical" : "Soft Skills",
+export function mapLearningConsumptionFromApi(api: Record<string, unknown>): LearningConsumption {
+  const v = (api.videos as Record<string, unknown>) ?? {};
+  const a = (api.articles as Record<string, unknown>) ?? {};
+  const p = (api.practice as Record<string, unknown>) ?? {};
+  const overview = api.content_completion_overview as Record<string, unknown> | undefined;
+  const byType = overview?.by_type as Record<string, { total?: unknown; completed?: unknown }> | undefined;
+
+  const videos = {
+    totalAssigned: num(v.total_assigned),
+    completed: num(v.completed),
+    averageWatchPercentage: num(v.average_watch_percentage),
+    rewatchCount: num(v.rewatch_count),
+    skippedVideos: Array.isArray(v.skipped_video_titles) ? (v.skipped_video_titles as string[]) : [],
+    skippedCount: numOrUndefined(v.skipped_count),
+    engagementCount: numOrUndefined(v.engagement_count),
+  };
+
+  const articles = {
+    totalAssigned: num(a.total_assigned),
+    read: num(a.read),
+    averageReadingTime: num(a.average_reading_time_minutes),
+    expectedReadingTime: num(a.expected_reading_time_minutes),
+    markedAsHelpful: num(a.marked_as_helpful),
+    efficiencyPercentage: numOrUndefined(a.efficiency_percentage),
+  };
+
+  const practice = {
+    mcqsAttempted: num(p.mcqs_attempted),
+    mcqsTotal: num(p.mcqs_total),
+    subjectiveSubmitted: num(p.subjective_submitted),
+    subjectivePending: num(p.subjective_pending),
+    assessmentsAttempted: num(p.assessments_attempted),
+    assessmentsMissed: num(p.assessments_missed),
+    totalAssessmentsPresent: numOrUndefined(p.total_assessments_present),
+    totalQuizContents: numOrUndefined(p.total_quiz_contents),
+    totalItems: numOrUndefined(p.total_items),
+    assessmentsEngagementPercentage: numOrUndefined(p.assessments_engagement_percentage),
+  };
+
+  let contentCompletionOverview: ContentCompletionOverview | undefined;
+  if (overview && typeof overview.total_present === "number" && typeof overview.total_completed === "number") {
+    contentCompletionOverview = {
+      totalPresent: Number(overview.total_present),
+      totalCompleted: Number(overview.total_completed),
+      byType: byType
+        ? {
+            videos: {
+              total: num(byType.videos?.total),
+              completed: num(byType.videos?.completed),
+            },
+            articles: {
+              total: num(byType.articles?.total),
+              completed: num(byType.articles?.completed),
+            },
+            quizzes: {
+              total: num(byType.quizzes?.total),
+              completed: num(byType.quizzes?.completed),
+            },
+          }
+        : undefined,
     };
-  });
-
-  // Generate assessment performance data
-  const assessments = Array.from({ length: 8 }, (_, i) => ({
-    assessmentId: `assessment-${i + 1}`,
-    assessmentName: `Assessment ${i + 1}`,
-    dateAttempted: new Date(
-      Date.now() - (7 - i) * 7 * 24 * 60 * 60 * 1000
-    ).toISOString(),
-    score: Math.floor(Math.random() * 30) + 65,
-    percentile: Math.floor(Math.random() * 40) + 50,
-    rank: Math.floor(Math.random() * 100) + 1,
-    timeTaken: Math.floor(Math.random() * 30) + 45,
-    timeAllowed: 60,
-    accuracy: Math.floor(Math.random() * 25) + 70,
-    difficultyBreakdown: {
-      easy: {
-        correct: Math.floor(Math.random() * 5) + 8,
-        total: 10,
-      },
-      medium: {
-        correct: Math.floor(Math.random() * 5) + 6,
-        total: 10,
-      },
-      hard: {
-        correct: Math.floor(Math.random() * 4) + 4,
-        total: 8,
-      },
-    },
-    questionAnalytics: {
-      correct: Math.floor(Math.random() * 10) + 18,
-      incorrect: Math.floor(Math.random() * 5) + 3,
-      skipped: Math.floor(Math.random() * 3) + 1,
-      averageTimePerQuestion: Math.floor(Math.random() * 30) + 90,
-      negativeMarkImpact: Math.floor(Math.random() * 5),
-    },
-  }));
-
-  // Generate mock interview data
-  const mockInterviews = Array.from({ length: 5 }, (_, i) => ({
-    interviewId: `interview-${i + 1}`,
-    date: new Date(
-      Date.now() - (4 - i) * 14 * 24 * 60 * 60 * 1000
-    ).toISOString(),
-    overallScore: Math.floor(Math.random() * 20) + 75,
-    parameters: [
-      { name: "Communication Clarity", score: Math.floor(Math.random() * 20) + 75 },
-      { name: "Technical Knowledge", score: Math.floor(Math.random() * 20) + 75 },
-      { name: "Problem-Solving Approach", score: Math.floor(Math.random() * 20) + 75 },
-      { name: "Confidence & Body Language", score: Math.floor(Math.random() * 20) + 75 },
-      { name: "Structure of Answers", score: Math.floor(Math.random() * 20) + 75 },
-    ],
-    feedback: {
-      strengths: [
-        "Strong technical foundation",
-        "Clear communication",
-        "Good problem-solving approach",
-      ],
-      areasOfImprovement: [
-        "Could improve time management",
-        "More practice with system design",
-      ],
-      mentorComments: "Great progress! Keep practicing.",
-      mentorRatings: {
-        overall: Math.floor(Math.random() * 20) + 75,
-        technical: Math.floor(Math.random() * 20) + 75,
-        communication: Math.floor(Math.random() * 20) + 75,
-      },
-    },
-    playbackLink: `https://example.com/interview-${i + 1}`,
-  }));
-
-  // Generate login frequency data (last 8 weeks)
-  const loginFrequency = Array.from({ length: 8 }, (_, i) => ({
-    week: `Week ${8 - i}`,
-    loginCount: Math.floor(Math.random() * 10) + 15,
-  }));
-
-  // Generate study time distribution
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const studyTimeDistribution = days.map((day) => ({
-    day,
-    hours: Math.floor(Math.random() * 4) + 2,
-  }));
-
-  // Generate activity calendar (last 30 days)
-  const activityCalendar: { [date: string]: number } = {};
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-    const dateStr = date.toISOString().split("T")[0];
-    activityCalendar[dateStr] = Math.floor(Math.random() * 5); // 0-4
   }
 
-  // Calculate overall performance score
-  const overallScore = Math.floor(
-    (skills.reduce((sum, s) => sum + s.proficiencyScore, 0) / skills.length +
-      assessments.reduce((sum, a) => sum + a.score, 0) / assessments.length +
-      (mockInterviews.length > 0
-        ? mockInterviews.reduce((sum, m) => sum + m.overallScore, 0) /
-          mockInterviews.length
-        : 0)) /
-      3
-  );
+  const result: LearningConsumption = {
+    videos,
+    articles,
+    practice,
+  };
+  if (typeof api.total_content === "number") {
+    result.totalContent = api.total_content;
+  }
+  if (contentCompletionOverview) {
+    result.contentCompletionOverview = contentCompletionOverview;
+  }
+  return result;
+}
 
-  const overallGrade =
-    overallScore >= 85
-      ? "Interview-Ready"
-      : overallScore >= 75
-      ? "Advanced"
-      : overallScore >= 65
-      ? "Intermediate"
-      : "Beginner";
+// Map backend snake_case performance_trends to frontend PerformanceTrends type (exported for admin scorecard)
+export function mapPerformanceTrendsFromApi(api: unknown): PerformanceTrends {
+  if (!api || typeof api !== "object") {
+    return { weeklyData: [], skillWiseAccuracy: [] };
+  }
+  const raw = api as Record<string, unknown>;
+  const weeklyData = Array.isArray(raw.weekly_data)
+    ? (raw.weekly_data as Record<string, unknown>[]).map((w) => ({
+        week: num(w.week),
+        weekLabel: (w.week_label as string) ?? "",
+        mcqAccuracy: num(w.mcq_accuracy),
+        subjectiveScore: num(w.subjective_score),
+        assessmentScore: num(w.assessment_score),
+        interviewScore: num(w.interview_score),
+      }))
+    : [];
+  const skillWiseAccuracy = Array.isArray(raw.skill_wise_accuracy)
+    ? (raw.skill_wise_accuracy as Record<string, unknown>[]).map((s) => ({
+        skillName: (s.skill_name as string) ?? "",
+        accuracy: num(s.accuracy),
+        attemptCount: num(s.attempt_count),
+        confidenceScore: num(s.confidence_score),
+      }))
+    : [];
+  return { weeklyData, skillWiseAccuracy };
+}
 
+// Map backend snake_case skills to frontend Skill type (exported for admin scorecard)
+export function mapSkillsFromApi(apiSkills: unknown[]): Skill[] {
+  if (!Array.isArray(apiSkills)) return [];
+  return apiSkills.map((s, idx) => {
+    const raw = s as Record<string, unknown>;
+    const breakdown = (raw.breakdown as Record<string, unknown>) ?? {};
+    const counts = (raw.breakdown_counts as Record<string, unknown>) ?? {};
+    const id = raw.skill_id ?? raw.id ?? idx;
+    return {
+      id: typeof id === "number" || typeof id === "string" ? id : String(id),
+      name: (raw.skill_name ?? raw.name ?? "") as string,
+      proficiencyScore: num(raw.proficiency),
+      level: (raw.level ?? "Beginner") as Skill["level"],
+      strength: (raw.strength ?? "Needs Attention") as Skill["strength"],
+      confidenceScore: num(raw.confidence),
+      breakdown: {
+        quizScore: num(breakdown.quiz_score),
+        assessmentScore: num(breakdown.assessment_score),
+        interviewScore: num(breakdown.interview_score),
+        codingScore: num(breakdown.coding_score),
+        videoScore: num(breakdown.video_score),
+      },
+      breakdownCounts:
+        counts.quiz_count != null || counts.video_count != null
+          ? {
+              quizCount: num(counts.quiz_count),
+              videoCount: num(counts.video_count),
+              assessmentCount: num(counts.assessment_count),
+              codingCount: num(counts.coding_count),
+              interviewCount: num(counts.interview_count),
+            }
+          : undefined,
+      breakdownItems: mapBreakdownItems(raw.breakdown_items),
+      category: raw.category as string | undefined,
+    };
+  });
+}
+
+function mapBreakdownItems(items: unknown): Skill["breakdownItems"] | undefined {
+  if (!items || typeof items !== "object") return undefined;
+  const raw = items as Record<string, unknown>;
+  const mapList = (arr: unknown) => {
+    if (!Array.isArray(arr)) return [];
+    return arr.map((x) => {
+      const o = x as Record<string, unknown>;
+      return {
+        name: (o.name as string) ?? "",
+        score: o.score != null ? num(o.score) : undefined,
+        courseName: (o.course_name as string) || undefined,
+        moduleName: (o.module_name as string) || undefined,
+        submoduleName: (o.submodule_name as string) || undefined,
+      };
+    });
+  };
   return {
-    overview: {
-      studentName: "Utkarsh Singh",
-      programName: "Full Stack Development",
-      cohort: "Cohort 2024",
-      currentWeek: 8,
-      currentModule: "Advanced React & Node.js",
-      overallPerformanceScore: overallScore,
-      overallGrade: overallGrade as any,
-      totalTimeSpent: 245,
-      activeDaysStreak: 12,
-      completionPercentage: 72,
-      statusBadge: overallScore >= 75 ? "Green" : overallScore >= 60 ? "Amber" : "Red",
-    },
-    learningConsumption: {
-      videos: {
-        totalAssigned: 120,
-        completed: 85,
-        averageWatchPercentage: 78,
-        rewatchCount: 15,
-        skippedVideos: ["Video 12", "Video 45", "Video 67"],
+    quiz: mapList(raw.quiz),
+    video: mapList(raw.video),
+    coding: mapList(raw.coding),
+    assessment: mapList(raw.assessment),
+    interview: mapList(raw.interview),
+    article: mapList(raw.article),
+  };
+}
+
+// Map backend assessment_performance (snake_case) to frontend AssessmentPerformance (camelCase)
+export function mapAssessmentPerformanceFromApi(apiList: unknown[]): AssessmentPerformance[] {
+  if (!Array.isArray(apiList)) return [];
+  return apiList.map((item) => {
+    const raw = item as Record<string, unknown>;
+    const diff = (raw.difficulty_breakdown as Record<string, { correct: number; total: number }>) ?? {};
+    const qa = (raw.question_analytics as Record<string, unknown>) ?? {};
+    return {
+      assessmentId: (raw.assessment_id as string) ?? "",
+      assessmentName: (raw.assessment_name as string) ?? "",
+      dateAttempted: (raw.date_attempted as string) ?? "",
+      score: num(raw.score),
+      percentile: raw.percentile != null ? num(raw.percentile) : undefined,
+      rank: raw.rank != null ? num(raw.rank) : undefined,
+      timeTaken: num(raw.time_taken_minutes),
+      timeAllowed: num(raw.total_time_minutes),
+      accuracy: num(raw.accuracy_percent),
+      difficultyBreakdown: {
+        easy: diff.easy ?? { correct: 0, total: 0 },
+        medium: diff.medium ?? { correct: 0, total: 0 },
+        hard: diff.hard ?? { correct: 0, total: 0 },
       },
-      articles: {
-        totalAssigned: 45,
-        read: 38,
-        averageReadingTime: 12,
-        expectedReadingTime: 15,
-        markedAsHelpful: 28,
+      questionAnalytics: {
+        correct: num(qa.correct),
+        incorrect: num(qa.incorrect),
+        skipped: num(qa.skipped),
+        averageTimePerQuestion: num(qa.average_time_per_question),
+        negativeMarkImpact: num(qa.negative_mark_impact),
       },
-      practice: {
-        mcqsAttempted: 450,
-        mcqsTotal: 600,
-        subjectiveSubmitted: 35,
-        subjectivePending: 8,
-        assessmentsAttempted: 8,
-        assessmentsMissed: 2,
+    };
+  });
+}
+
+// Map backend weak_areas (snake_case) to frontend WeakAreas (camelCase) (exported for admin scorecard)
+export function mapWeakAreasFromApi(api: unknown): WeakAreas {
+  if (!api || typeof api !== "object") return getEmptyWeakAreas();
+  const raw = api as Record<string, unknown>;
+  const mapSourceContext = (sc: unknown): WeakArea["sourceContext"] | undefined => {
+    if (!sc || typeof sc !== "object") return undefined;
+    const s = sc as Record<string, unknown>;
+    const course = (s.course_name as string) ?? "";
+    const module = (s.module_name as string) ?? "";
+    const submodule = (s.submodule_name as string) ?? "";
+    if (!course && !module && !submodule) return undefined;
+    return {
+      contentType: (s.content_type as string) || undefined,
+      itemName: (s.item_name as string) || undefined,
+      courseName: course || undefined,
+      moduleName: module || undefined,
+      submoduleName: submodule || undefined,
+    };
+  };
+  const mapSkill = (s: unknown): WeakArea => {
+    const o = (s as Record<string, unknown>) ?? {};
+    const skill: WeakArea = {
+      skillName: (o.skill_name as string) ?? "",
+      currentScore: num(o.current_score),
+      threshold: num(o.threshold),
+      recommendation: (o.recommendation as string) ?? "",
+    };
+    const src = mapSourceContext(o.source_context);
+    if (src) skill.sourceContext = src;
+    return skill;
+  };
+  const mapTopic = (t: unknown): TopicIncorrect => {
+    const o = (t as Record<string, unknown>) ?? {};
+    const topic: TopicIncorrect = {
+      topicName: (o.topic_name as string) ?? "",
+      incorrectCount: num(o.incorrect_count),
+      totalAttempts: num(o.total_attempts),
+    };
+    const src = mapSourceContext(o.source_context);
+    if (src) topic.sourceContext = src;
+    return topic;
+  };
+  const mapRec = (r: unknown): Recommendation => {
+    const o = (r as Record<string, unknown>) ?? {};
+    return {
+      type: (o.type as Recommendation["type"]) ?? "revise",
+      title: (o.title as string) ?? "",
+      description: (o.description as string) ?? "",
+      actionUrl: (o.action_url as string) || undefined,
+      priority: num(o.priority),
+    };
+  };
+  const skillsRaw = Array.isArray(raw.skills_below_threshold) ? raw.skills_below_threshold : [];
+  const topicsRaw = Array.isArray(raw.topics_frequently_incorrect) ? raw.topics_frequently_incorrect : [];
+  const skippedRaw = Array.isArray(raw.skipped_questions) ? raw.skipped_questions : [];
+  const recsRaw = Array.isArray(raw.recommendations) ? raw.recommendations : [];
+  return {
+    skillsBelowThreshold: skillsRaw.map(mapSkill),
+    topicsFrequentlyIncorrect: topicsRaw.map(mapTopic),
+    skippedQuestions: skippedRaw.map((x) => String(x ?? "")),
+    recommendations: recsRaw.map(mapRec),
+  };
+}
+
+export function getEmptyWeakAreas(): WeakAreas {
+  return {
+    skillsBelowThreshold: [],
+    topicsFrequentlyIncorrect: [],
+    skippedQuestions: [],
+    recommendations: [],
+  };
+}
+
+// Map backend mock_interview_performance (snake_case) to frontend MockInterviewPerformance (camelCase)
+export function mapMockInterviewPerformanceFromApi(api: unknown): MockInterviewPerformance {
+  if (!api || typeof api !== "object") return getEmptyMockInterviewPerformance();
+  const raw = api as Record<string, unknown>;
+  const interviewsRaw = Array.isArray(raw.interviews) ? raw.interviews : [];
+  const interviews = interviewsRaw.map((item) => {
+    const i = item as Record<string, unknown>;
+    const fb = (i.feedback as Record<string, unknown>) ?? {};
+    const ratings = (fb.mentor_ratings as Record<string, unknown>) ?? {};
+    return {
+      interviewId: (i.interview_id as string) ?? String(i.id ?? ""),
+      date: (i.date as string) ?? "",
+      overallScore: num(i.overall_score),
+      parameters: Array.isArray(i.parameters)
+        ? (i.parameters as Array<{ name: string; score: number }>).map((p) => ({
+            name: p.name ?? "",
+            score: num(p.score),
+          }))
+        : [],
+      feedback: {
+        strengths: Array.isArray(fb.strengths) ? (fb.strengths as string[]) : [],
+        areasOfImprovement: Array.isArray(fb.areas_of_improvement)
+          ? (fb.areas_of_improvement as string[])
+          : [],
+        mentorComments: (fb.mentor_comments as string) ?? "",
+        mentorRatings: {
+          overall: num(ratings.overall),
+          technical: num(ratings.technical),
+          communication: num(ratings.communication),
+        },
       },
-    },
-    performanceTrends: {
-      weeklyData,
-      skillWiseAccuracy: skills.map((skill) => ({
-        skillName: skill.name,
-        accuracy: skill.breakdown.mcqAccuracy,
-        attemptCount: Math.floor(Math.random() * 50) + 20,
-        confidenceScore: skill.confidenceScore,
-      })),
-    },
-    skills,
-    weakAreas: {
-      skillsBelowThreshold: skills
-        .filter((s) => s.proficiencyScore < 60)
-        .map((s) => ({
-          skillName: s.name,
-          currentScore: s.proficiencyScore,
-          threshold: 60,
-          recommendation: `Focus on ${s.name} fundamentals and practice more MCQs`,
-        })),
-      topicsFrequentlyIncorrect: [
-        { topicName: "React Hooks", incorrectCount: 12, totalAttempts: 45 },
-        { topicName: "Async/Await", incorrectCount: 8, totalAttempts: 32 },
-        { topicName: "SQL Joins", incorrectCount: 6, totalAttempts: 28 },
-      ],
-      skippedQuestions: [
-        "Question ID: MCQ-123",
-        "Question ID: MCQ-456",
-        "Question ID: MCQ-789",
-      ],
-      recommendations: [
-        {
-          type: "revise",
-          title: "Revise React Hooks",
-          description: "You've missed 12 questions on React Hooks. Review the concepts.",
-          actionUrl: "/courses/react-hooks",
-          priority: 1,
-        },
-        {
-          type: "mcq",
-          title: "Attempt 10 MCQs on Async/Await",
-          description: "Practice more to improve your accuracy.",
-          actionUrl: "/practice/async-await",
-          priority: 2,
-        },
-        {
-          type: "video",
-          title: "Watch SQL Joins Video Again",
-          description: "Rewatch to strengthen your understanding.",
-          actionUrl: "/videos/sql-joins",
-          priority: 3,
-        },
-        {
-          type: "interview",
-          title: "Book a Mock Interview",
-          description: "Practice your interview skills with a mentor.",
-          actionUrl: "/mock-interview",
-          priority: 4,
-        },
-      ],
-    },
-    assessmentPerformance: assessments,
-    mockInterviewPerformance: {
-      totalInterviews: mockInterviews.length,
-      latestInterviewScore: mockInterviews[mockInterviews.length - 1]?.overallScore || 0,
-      interviewReadinessIndex: Math.floor(
-        mockInterviews.reduce((sum, m) => sum + m.overallScore, 0) /
-          mockInterviews.length
-      ),
-      improvementSinceFirst: 15,
-      interviews: mockInterviews,
-    },
-    behavioralMetrics: {
-      loginFrequency,
-      studyTimeDistribution,
-      missedDeadlinesCount: 3,
-      lastActiveDate: new Date().toISOString(),
-      consistencyScore: 82,
-      activityCalendar,
-    },
-    comparativeInsights: {
-      comparisons: [
-        {
-          metric: "Overall Score",
-          studentValue: overallScore,
-          batchAverage: 68,
-          top10Percent: 88,
-          interviewCleared: 85,
-        },
-        {
-          metric: "MCQ Accuracy",
-          studentValue: 75,
-          batchAverage: 70,
-          top10Percent: 90,
-          interviewCleared: 85,
-        },
-        {
-          metric: "Assessment Score",
-          studentValue: 78,
-          batchAverage: 72,
-          top10Percent: 92,
-          interviewCleared: 88,
-        },
-      ],
-      percentileRank: 72,
-      vsBatchAverage: {
-        better: 5,
-        worse: 2,
-        equal: 1,
-      },
-    },
-    achievements: {
-      badges: [
-        {
-          id: "badge-1",
-          name: "Week Warrior",
-          description: "Completed 7 days streak",
-          earnedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "badge-2",
-          name: "Quiz Master",
-          description: "Scored 90%+ in 5 assessments",
-          earnedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "badge-3",
-          name: "Video Enthusiast",
-          description: "Watched 50+ videos",
-          earnedDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ],
-      milestones: [
-        {
-          id: "milestone-1",
-          name: "50% Course Completion",
-          description: "Completed half of the course",
-          completedDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          progress: 100,
-        },
-        {
-          id: "milestone-2",
-          name: "First Mock Interview",
-          description: "Completed your first mock interview",
-          completedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          progress: 100,
-        },
-      ],
-      skillUnlocks: ["Advanced React Patterns", "System Design Basics"],
-      streakRewards: {
-        currentStreak: 12,
-        longestStreak: 18,
-        rewards: ["7-day streak badge", "14-day streak bonus"],
-      },
-      certificatesProgress: {
-        total: 5,
-        completed: 2,
-        inProgress: 1,
-      },
-    },
-    actionPanel: {
-      priorityActions: [
-        {
-          id: "action-1",
-          title: "Complete Week 8 Assessment",
-          description: "Due in 2 days",
-          priority: 1,
-          actionUrl: "/assessments/week-8",
-          type: "assessment",
-        },
-        {
-          id: "action-2",
-          title: "Review React Hooks",
-          description: "Focus area for improvement",
-          priority: 2,
-          actionUrl: "/courses/react-hooks",
-          type: "video",
-        },
-        {
-          id: "action-3",
-          title: "Practice SQL MCQs",
-          description: "10 questions remaining",
-          priority: 3,
-          actionUrl: "/practice/sql",
-          type: "mcq",
-        },
-      ],
-      recommendedContent: [
-        {
-          id: "rec-1",
-          title: "Advanced React Patterns",
-          type: "video",
-          reason: "Based on your learning progress",
-          url: "/videos/advanced-react-patterns",
-        },
-        {
-          id: "rec-2",
-          title: "System Design Fundamentals",
-          type: "article",
-          reason: "Recommended for interview preparation",
-          url: "/articles/system-design-fundamentals",
-        },
-      ],
-      pendingTasks: [
-        {
-          id: "task-1",
-          title: "Complete Project Assignment 3",
-          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          type: "project",
-          url: "/assignments/project-3",
-        },
-        {
-          id: "task-2",
-          title: "Submit Week 7 Reflection",
-          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-          type: "assignment",
-          url: "/assignments/week-7-reflection",
-        },
-      ],
-      upcomingAssessments: [
-        {
-          id: "assess-1",
-          name: "Final Assessment",
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          duration: 120,
-          url: "/assessments/final",
-        },
-      ],
+      playbackLink: (i.playback_link as string) || undefined,
+    };
+  });
+  return {
+    totalInterviews: num(raw.total_interviews),
+    latestInterviewScore: num(raw.latest_interview_score),
+    interviewReadinessIndex: num(raw.interview_readiness_index),
+    improvementSinceFirst: num(raw.improvement_since_first),
+    interviews,
+  };
+}
+
+export function getEmptyMockInterviewPerformance(): MockInterviewPerformance {
+  return {
+    totalInterviews: 0,
+    latestInterviewScore: 0,
+    interviewReadinessIndex: 0,
+    improvementSinceFirst: 0,
+    interviews: [],
+  };
+}
+
+// Map backend behavioral_metrics (snake_case) to frontend BehavioralMetrics (camelCase)
+export function mapBehavioralMetricsFromApi(api: unknown): BehavioralMetrics {
+  if (!api || typeof api !== "object") return getEmptyBehavioralMetrics();
+  const raw = api as Record<string, unknown>;
+  const loginRaw = Array.isArray(raw.login_frequency) ? raw.login_frequency : [];
+  const studyByWeekRaw = Array.isArray(raw.study_time_by_week) ? raw.study_time_by_week : [];
+  const studyRaw = Array.isArray(raw.study_time_distribution) ? raw.study_time_distribution : [];
+  const calendar = raw.activity_calendar;
+  return {
+    missedDeadlinesCount: num(raw.missed_deadlines_count),
+    lastActiveDate: (raw.last_active_date as string) ?? new Date().toISOString().split("T")[0],
+    consistencyScore: num(raw.consistency_score),
+    loginFrequency: loginRaw.map((item) => {
+      const i = item as Record<string, unknown>;
+      return {
+        week: (i.week as string) ?? "",
+        loginCount: num(i.login_count),
+      };
+    }),
+    studyTimeByWeek: studyByWeekRaw.map((item) => {
+      const i = item as Record<string, unknown>;
+      return {
+        week: (i.week as string) ?? "",
+        hours: num(i.hours),
+      };
+    }),
+    studyTimeDistribution: studyRaw.map((item) => {
+      const i = item as Record<string, unknown>;
+      return {
+        day: (i.day as string) ?? "",
+        hours: num(i.hours),
+      };
+    }),
+    activityCalendar: calendar && typeof calendar === "object" ? (calendar as Record<string, number>) : {},
+  };
+}
+
+export function getEmptyBehavioralMetrics(): BehavioralMetrics {
+  return {
+    missedDeadlinesCount: 0,
+    lastActiveDate: "",
+    consistencyScore: 0,
+    loginFrequency: [],
+    studyTimeByWeek: [],
+    studyTimeDistribution: [],
+    activityCalendar: {},
+  };
+}
+
+export function mapComparativeInsightsFromApi(api: unknown): ComparativeInsights {
+  if (!api || typeof api !== "object") return getEmptyComparativeInsights();
+  const raw = api as Record<string, unknown>;
+  const comparisonsRaw = Array.isArray(raw.comparisons) ? raw.comparisons : [];
+  const vsRaw = raw.vs_batch_average;
+  const vs =
+    vsRaw && typeof vsRaw === "object"
+      ? (vsRaw as Record<string, unknown>)
+      : { better: 0, worse: 0, equal: 0 };
+  const comparisons = comparisonsRaw
+    .filter((item): item is Record<string, unknown> => item != null && typeof item === "object")
+    .map((i) => ({
+      metric: (i.metric as string) ?? "",
+      studentValue: num(i.student_value),
+      batchAverage: num(i.batch_average),
+      top10Percent: num(i.top_10_percent),
+    }));
+  return {
+    percentileRank: num(raw.percentile_rank),
+    comparisons,
+    vsBatchAverage: {
+      better: num(vs.better),
+      worse: num(vs.worse),
+      equal: num(vs.equal),
     },
   };
-};
+}
+
+export function getEmptyComparativeInsights(): ComparativeInsights {
+  return {
+    comparisons: [],
+    percentileRank: 0,
+    vsBatchAverage: { better: 0, worse: 0, equal: 0 },
+  };
+}
+
+export function mapActionPanelFromApi(api: unknown): ActionPanel {
+  if (!api || typeof api !== "object") return getEmptyActionPanel();
+  const raw = api as Record<string, unknown>;
+  const paRaw = Array.isArray(raw.priority_actions) ? raw.priority_actions : [];
+  const rcRaw = Array.isArray(raw.recommended_content) ? raw.recommended_content : [];
+  const ptRaw = Array.isArray(raw.pending_tasks) ? raw.pending_tasks : [];
+  const uaRaw = Array.isArray(raw.upcoming_assessments) ? raw.upcoming_assessments : [];
+  return {
+    priorityActions: paRaw.map((item) => {
+      const i = item as Record<string, unknown>;
+      return {
+        id: (i.id as string) ?? "",
+        title: (i.title as string) ?? "",
+        description: (i.description as string) ?? "",
+        priority: num(i.priority),
+        actionUrl: (i.action_url as string) ?? undefined,
+        type: (i.type as "assessment" | "video" | "article" | "mcq" | "interview") ?? "video",
+      };
+    }),
+    recommendedContent: rcRaw.map((item) => {
+      const i = item as Record<string, unknown>;
+      return {
+        id: (i.id as string) ?? "",
+        title: (i.title as string) ?? "",
+        type: (i.type as "video" | "article" | "assessment") ?? "video",
+        reason: (i.reason as string) ?? "",
+        url: (i.url as string) ?? "",
+      };
+    }),
+    pendingTasks: ptRaw.map((item) => {
+      const i = item as Record<string, unknown>;
+      return {
+        id: (i.id as string) ?? "",
+        title: (i.title as string) ?? "",
+        dueDate: (i.due_date as string) ?? undefined,
+        type: (i.type as "assignment" | "assessment" | "project") ?? "assignment",
+        url: (i.url as string) ?? "",
+      };
+    }),
+    upcomingAssessments: uaRaw.map((item) => {
+      const i = item as Record<string, unknown>;
+      return {
+        id: (i.id as string) ?? "",
+        name: (i.name as string) ?? "",
+        date: (i.date as string) ?? "",
+        duration: num(i.duration),
+        url: (i.url as string) ?? "",
+      };
+    }),
+  };
+}
+
+export function getEmptyAchievements(): Achievement {
+  return {
+    badges: [],
+    milestones: [],
+    streakRewards: {
+      currentStreak: 0,
+      longestStreak: 0,
+      rewards: [],
+    },
+    certificatesProgress: {
+      total: 0,
+      completed: 0,
+      inProgress: 0,
+    },
+  };
+}
+
+export function mapAchievementsFromApi(api: unknown): Achievement {
+  if (!api || typeof api !== "object") return getEmptyAchievements();
+  const raw = api as Record<string, unknown>;
+  const badgesRaw = Array.isArray(raw.badges) ? raw.badges : [];
+  const milestonesRaw = Array.isArray(raw.milestones) ? raw.milestones : [];
+  const streakRaw = raw.streak_rewards as Record<string, unknown> | undefined;
+  const certRaw = raw.certificates_progress as Record<string, unknown> | undefined;
+
+  const badges =
+    badgesRaw.length > 0
+      ? badgesRaw
+          .filter((item): item is Record<string, unknown> => item != null && typeof item === "object")
+          .map((b) => ({
+            id: (b.id as string) ?? "",
+            name: (b.name as string) ?? "",
+            description: (b.description as string) ?? "",
+            iconUrl: (b.icon_url as string) ?? undefined,
+            iconSlug: (b.icon_slug as string) ?? undefined,
+            earnedDate: (b.earned_date as string) ?? undefined,
+          }))
+      : [];
+
+  const milestones =
+    milestonesRaw.length > 0
+      ? milestonesRaw
+          .filter((item): item is Record<string, unknown> => item != null && typeof item === "object")
+          .map((m) => ({
+            id: (m.id as string) ?? "",
+            name: (m.name as string) ?? "",
+            description: (m.description as string) ?? "",
+            completedDate: (m.completed_date as string) ?? undefined,
+            progress: num(m.progress),
+          }))
+      : [];
+
+  const streakRewards = {
+    currentStreak: num(streakRaw?.current_streak),
+    longestStreak: num(streakRaw?.longest_streak),
+    rewards: Array.isArray(streakRaw?.rewards)
+      ? (streakRaw.rewards as string[]).filter((r): r is string => typeof r === "string")
+      : [],
+  };
+
+  const certificatesProgress = {
+    total: num(certRaw?.total),
+    completed: num(certRaw?.completed),
+    inProgress: num(certRaw?.in_progress),
+  };
+
+  return {
+    badges,
+    milestones,
+    streakRewards,
+    certificatesProgress,
+  };
+}
+
+export function getEmptyActionPanel(): ActionPanel {
+  return {
+    priorityActions: [],
+    recommendedContent: [],
+    pendingTasks: [],
+    upcomingAssessments: [],
+  };
+}
+
+// Empty/minimal data for Module 1 (Student Overview) and Module 2 (Learning Consumption) when API has no data (exported for admin scorecard)
+export function getEmptyOverview(): StudentOverview {
+  return {
+    studentName: "",
+    programName: "—",
+    cohort: "—",
+    currentWeek: 1,
+    currentModule: "—",
+    overallPerformanceScore: 0,
+    overallGrade: "Beginner",
+    totalTimeSpentSeconds: 0,
+    totalDaysActive: 0,
+    activeDaysStreak: 0,
+    completionPercentage: 0,
+    statusBadge: "Amber",
+  };
+}
+
+export function getEmptyLearningConsumption(): LearningConsumption {
+  return {
+    videos: {
+      totalAssigned: 0,
+      completed: 0,
+      averageWatchPercentage: 0,
+      rewatchCount: 0,
+      skippedVideos: [],
+    },
+    articles: {
+      totalAssigned: 0,
+      read: 0,
+      averageReadingTime: 0,
+      expectedReadingTime: 0,
+      markedAsHelpful: 0,
+    },
+    practice: {
+      mcqsAttempted: 0,
+      mcqsTotal: 0,
+      subjectiveSubmitted: 0,
+      subjectivePending: 0,
+      assessmentsAttempted: 0,
+      assessmentsMissed: 0,
+    },
+  };
+}
+
+/** Empty scorecard structure (API-only; no mock data). Used as base before mapping API response. */
+export function getEmptyScorecardData(): ScorecardData {
+  return {
+    overview: getEmptyOverview(),
+    learningConsumption: getEmptyLearningConsumption(),
+    performanceTrends: { weeklyData: [], skillWiseAccuracy: [] },
+    skills: [],
+    weakAreas: getEmptyWeakAreas(),
+    assessmentPerformance: [],
+    mockInterviewPerformance: getEmptyMockInterviewPerformance(),
+    behavioralMetrics: getEmptyBehavioralMetrics(),
+    comparativeInsights: getEmptyComparativeInsights(),
+    achievements: getEmptyAchievements(),
+    actionPanel: getEmptyActionPanel(),
+  };
+}
+
+export type PerformanceTrendsGranularity = "weekly" | "bimonthly" | "monthly";
 
 export const scorecardService = {
-  // Get complete scorecard data
-  getScorecardData: async (): Promise<ScorecardData> => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return generateMockScorecardData();
+  // Get performance trends only (for granularity switching without full page refresh)
+  getPerformanceTrends: async (granularity: PerformanceTrendsGranularity): Promise<PerformanceTrends> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<Record<string, unknown>>(
+      `/api/clients/${clientId}/student/scorecard/performance-trends/`,
+      { params: { granularity } }
+    );
+    return mapPerformanceTrendsFromApi(response.data);
   },
 
-  // Get dashboard summary (compact version)
+  // Get complete scorecard data from API only (no mock data)
+  getScorecardData: async (): Promise<ScorecardData> => {
+    const clientId = config.clientId;
+    try {
+      const response = await apiClient.get<{
+        scorecard_config?: { enabled_modules?: string[] };
+        overview?: Record<string, unknown>;
+        learning_consumption?: unknown;
+        performance_trends?: unknown;
+        skills?: unknown[];
+        weak_areas?: unknown;
+        assessment_performance?: unknown[];
+        mock_interview_performance?: unknown;
+        behavioral_metrics?: unknown;
+        comparative_insights?: unknown;
+        achievements?: unknown;
+        action_panel?: unknown;
+      }>(`/api/clients/${clientId}/student/scorecard/`);
+
+      const data = response.data;
+      const result = getEmptyScorecardData();
+      if (data?.scorecard_config != null) {
+        result.scorecardConfig = {
+          enabledModules: Array.isArray(data.scorecard_config.enabled_modules)
+            ? data.scorecard_config.enabled_modules
+            : [],
+        };
+      }
+
+      result.overview =
+        data?.overview && typeof data.overview === "object"
+          ? mapOverviewFromApi(data.overview as Record<string, unknown>)
+          : getEmptyOverview();
+
+      try {
+        const profile = await profileService.getUserProfile();
+        if (profile?.profile_picture) {
+          result.overview.profilePicUrl = profile.profile_picture;
+        }
+      } catch {
+
+      }
+
+      result.learningConsumption =
+        data?.learning_consumption != null && typeof data.learning_consumption === "object"
+          ? mapLearningConsumptionFromApi(data.learning_consumption as Record<string, unknown>)
+          : getEmptyLearningConsumption();
+
+      result.performanceTrends =
+        data?.performance_trends != null && typeof data.performance_trends === "object"
+          ? mapPerformanceTrendsFromApi(data.performance_trends)
+          : { weeklyData: [], skillWiseAccuracy: [] };
+
+      result.skills = Array.isArray(data?.skills) ? mapSkillsFromApi(data.skills) : [];
+
+      result.weakAreas =
+        data?.weak_areas != null && typeof data.weak_areas === "object"
+          ? mapWeakAreasFromApi(data.weak_areas)
+          : getEmptyWeakAreas();
+
+      result.assessmentPerformance = Array.isArray(data?.assessment_performance)
+        ? mapAssessmentPerformanceFromApi(data.assessment_performance)
+        : [];
+
+      result.mockInterviewPerformance =
+        data?.mock_interview_performance != null && typeof data.mock_interview_performance === "object"
+          ? mapMockInterviewPerformanceFromApi(data.mock_interview_performance)
+          : getEmptyMockInterviewPerformance();
+
+      result.behavioralMetrics =
+        data?.behavioral_metrics != null && typeof data.behavioral_metrics === "object"
+          ? mapBehavioralMetricsFromApi(data.behavioral_metrics)
+          : getEmptyBehavioralMetrics();
+
+      result.comparativeInsights =
+        data?.comparative_insights != null && typeof data.comparative_insights === "object"
+          ? mapComparativeInsightsFromApi(data.comparative_insights)
+          : getEmptyComparativeInsights();
+
+      result.achievements =
+        data?.achievements != null && typeof data.achievements === "object"
+          ? mapAchievementsFromApi(data.achievements)
+          : getEmptyAchievements();
+
+      result.actionPanel =
+        data?.action_panel != null && typeof data.action_panel === "object"
+          ? mapActionPanelFromApi(data.action_panel)
+          : getEmptyActionPanel();
+
+      return result;
+    } catch (error) {
+      console.warn("Scorecard API failed:", error);
+      const result = getEmptyScorecardData();
+      result.overview = getEmptyOverview();
+      result.learningConsumption = getEmptyLearningConsumption();
+      result.weakAreas = getEmptyWeakAreas();
+      result.assessmentPerformance = [];
+      result.mockInterviewPerformance = getEmptyMockInterviewPerformance();
+      result.behavioralMetrics = getEmptyBehavioralMetrics();
+      result.comparativeInsights = getEmptyComparativeInsights();
+      result.achievements = getEmptyAchievements();
+      result.actionPanel = getEmptyActionPanel();
+      try {
+        const profile = await profileService.getUserProfile();
+        if (profile?.profile_picture) {
+          result.overview.profilePicUrl = profile.profile_picture;
+        }
+      } catch {
+        // ignore
+      }
+      return result;
+    }
+  },
+
+  getScorecardDataForPdf: async (
+    pdfToken: string,
+    clientId: string
+  ): Promise<ScorecardData> => {
+    const url = `${config.apiBaseUrl}/api/clients/${clientId}/student/scorecard/?pdf_token=${encodeURIComponent(pdfToken)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Invalid or expired PDF link");
+    const data = (await res.json()) as {
+      scorecard_config?: { enabled_modules?: string[] };
+      overview?: Record<string, unknown>;
+      learning_consumption?: unknown;
+      performance_trends?: unknown;
+      skills?: unknown[];
+      weak_areas?: unknown;
+      assessment_performance?: unknown[];
+      mock_interview_performance?: unknown;
+      behavioral_metrics?: unknown;
+      comparative_insights?: unknown;
+      achievements?: unknown;
+      action_panel?: unknown;
+    };
+    const result = getEmptyScorecardData();
+    if (data?.scorecard_config != null) {
+      result.scorecardConfig = {
+        enabledModules: Array.isArray(data.scorecard_config.enabled_modules)
+          ? data.scorecard_config.enabled_modules
+          : [],
+      };
+    }
+    result.overview =
+      data?.overview && typeof data.overview === "object"
+        ? mapOverviewFromApi(data.overview as Record<string, unknown>)
+        : getEmptyOverview();
+    result.learningConsumption =
+      data?.learning_consumption != null && typeof data.learning_consumption === "object"
+        ? mapLearningConsumptionFromApi(data.learning_consumption as Record<string, unknown>)
+        : getEmptyLearningConsumption();
+    result.performanceTrends =
+      data?.performance_trends != null && typeof data.performance_trends === "object"
+        ? mapPerformanceTrendsFromApi(data.performance_trends)
+        : { weeklyData: [], skillWiseAccuracy: [] };
+    result.skills = Array.isArray(data?.skills) ? mapSkillsFromApi(data.skills) : [];
+    result.weakAreas =
+      data?.weak_areas != null && typeof data.weak_areas === "object"
+        ? mapWeakAreasFromApi(data.weak_areas)
+        : getEmptyWeakAreas();
+    result.assessmentPerformance = Array.isArray(data?.assessment_performance)
+      ? mapAssessmentPerformanceFromApi(data.assessment_performance)
+      : [];
+    result.mockInterviewPerformance =
+      data?.mock_interview_performance != null && typeof data.mock_interview_performance === "object"
+        ? mapMockInterviewPerformanceFromApi(data.mock_interview_performance)
+        : getEmptyMockInterviewPerformance();
+    result.behavioralMetrics =
+      data?.behavioral_metrics != null && typeof data.behavioral_metrics === "object"
+        ? mapBehavioralMetricsFromApi(data.behavioral_metrics)
+        : getEmptyBehavioralMetrics();
+    result.comparativeInsights =
+      data?.comparative_insights != null && typeof data.comparative_insights === "object"
+        ? mapComparativeInsightsFromApi(data.comparative_insights)
+        : getEmptyComparativeInsights();
+    result.achievements =
+      data?.achievements != null && typeof data.achievements === "object"
+        ? mapAchievementsFromApi(data.achievements)
+        : getEmptyAchievements();
+    result.actionPanel =
+      data?.action_panel != null && typeof data.action_panel === "object"
+        ? mapActionPanelFromApi(data.action_panel)
+        : getEmptyActionPanel();
+    return result;
+  },
+
+  exportScorecardPdf: async (): Promise<Blob> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get(
+      `/api/clients/${clientId}/student/scorecard/export/pdf/`,
+      { responseType: "blob" }
+    );
+    return response.data as Blob;
+  },
+
   getDashboardSummary: async () => {
     const fullData = await scorecardService.getScorecardData();
     return {
       overallScore: fullData.overview.overallPerformanceScore,
       overallGrade: fullData.overview.overallGrade,
-      totalTimeSpent: fullData.overview.totalTimeSpent,
+      totalTimeSpentSeconds: fullData.overview.totalTimeSpentSeconds,
       activeDaysStreak: fullData.overview.activeDaysStreak,
       completionPercentage: fullData.overview.completionPercentage,
       currentWeek: fullData.overview.currentWeek,

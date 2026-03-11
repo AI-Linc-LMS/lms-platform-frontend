@@ -8,7 +8,12 @@ interface ComparativeInsightsSectionProps {
   data: ComparativeInsights;
 }
 
+const hasData = (data: ComparativeInsights) =>
+  Array.isArray(data.comparisons) && data.comparisons.length > 0;
+
 export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionProps) {
+  const isEmpty = !hasData(data);
+
   return (
     <Paper
       elevation={0}
@@ -43,15 +48,19 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
           }}
         >
           <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
-            Your Percentile Rank: {data.percentileRank}%
+            Your Percentile Rank: {isEmpty ? "—" : `${data.percentileRank}%`}
           </Typography>
           <Typography variant="body2" sx={{ color: "#666666" }}>
-            You are performing better than {data.percentileRank}% of your batch
+            {isEmpty
+              ? "No comparative data available for your cohort."
+              : `You are performing better than ${data.percentileRank}% of your batch`}
           </Typography>
         </Box>
       </Box>
 
-      <ComparisonChart data={data.comparisons} title="Performance Comparison" />
+      {!isEmpty && data.comparisons.length > 0 && (
+        <ComparisonChart data={data.comparisons} title="Performance Comparison" />
+      )}
     </Paper>
   );
 }

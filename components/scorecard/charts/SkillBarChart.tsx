@@ -10,11 +10,14 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Box, Typography, Paper } from "@mui/material";
+import { Box, Typography, Paper, Tooltip as MuiTooltip, IconButton } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface SkillData {
   skillName: string;
   accuracy: number;
+  attemptCount?: number;
+  confidenceScore?: number;
   [key: string]: any;
 }
 
@@ -24,6 +27,54 @@ interface SkillBarChartProps {
   height?: number;
   dataKey?: string;
   color?: string;
+  showInfoTooltip?: boolean;
+  infoTooltipTitle?: React.ReactNode;
+}
+
+const SKILL_WISE_ACCURACY_TOOLTIP =
+  "Accuracy = proficiency from quizzes, assessments, videos, coding, and interviews. Confidence = min(100, √(attempt count) × 20). See Skill Scorecard for full breakdown per skill.";
+
+function CustomBarTooltip(props: {
+  active?: boolean;
+  payload?: readonly { payload: SkillData }[];
+  label?: string | number;
+}) {
+  const { active, payload } = props;
+  if (!active || !payload?.length) return null;
+  const entry = payload[0]?.payload;
+  if (!entry) return null;
+  const { skillName, accuracy, attemptCount, confidenceScore } = entry;
+  return (
+    <Paper
+      elevation={8}
+      sx={{
+        px: 2,
+        py: 1.5,
+        borderRadius: 2,
+        border: "1px solid rgba(0,0,0,0.08)",
+        minWidth: 180,
+      }}
+    >
+      <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
+        {skillName}
+      </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+        <Typography variant="body2" sx={{ color: "#0f766e", fontWeight: 600 }}>
+          Accuracy: {accuracy}%
+        </Typography>
+        {attemptCount != null && (
+          <Typography variant="body2" sx={{ color: "#6b7280", fontWeight: 500 }}>
+            Attempts: {attemptCount} activities completed
+          </Typography>
+        )}
+        {confidenceScore != null && (
+          <Typography variant="body2" sx={{ color: "#6b7280", fontWeight: 500 }}>
+            Confidence: {confidenceScore}% (√attempts × 20, capped at 100)
+          </Typography>
+        )}
+      </Box>
+    </Paper>
+  );
 }
 
 export function SkillBarChart({
@@ -32,6 +83,8 @@ export function SkillBarChart({
   height = 300,
   dataKey = "accuracy",
   color = "#0a66c2",
+  showInfoTooltip = false,
+  infoTooltipTitle,
 }: SkillBarChartProps) {
   const getColor = (value: number) => {
     if (value >= 80) return "#10b981"; // Green
@@ -43,17 +96,25 @@ export function SkillBarChart({
   return (
     <Box>
       {title && (
-        <Typography
-          variant="h6"
-          sx={{
-            mb: 2,
-            fontWeight: 600,
-            color: "#000000",
-            fontSize: "1.125rem",
-          }}
-        >
-          {title}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 600,
+              color: "#000000",
+              fontSize: "1.125rem",
+            }}
+          >
+            {title}
+          </Typography>
+          {showInfoTooltip && (
+            <MuiTooltip title={infoTooltipTitle ?? SKILL_WISE_ACCURACY_TOOLTIP} placement="top" arrow>
+              <IconButton size="small" sx={{ p: 0.25, color: "#0a66c2" }}>
+                <IconWrapper icon="mdi:information-outline" size={18} color="currentColor" />
+              </IconButton>
+            </MuiTooltip>
+          )}
+        </Box>
       )}
       <Paper
         elevation={0}
@@ -86,16 +147,7 @@ export function SkillBarChart({
               tick={{ fill: "#666666" }}
               width={70}
             />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#ffffff",
-                border: "1px solid rgba(0,0,0,0.08)",
-                borderRadius: "8px",
-                padding: "8px 12px",
-              }}
-              labelStyle={{ color: "#000000", fontWeight: 600 }}
-              formatter={(value: number) => [`${value}%`, "Accuracy"]}
-            />
+            <Tooltip content={({ active, payload, label }) => <CustomBarTooltip active={active} payload={payload} label={label} />} />
             <Bar dataKey={dataKey} radius={[0, 4, 4, 0]}>
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getColor(entry[dataKey])} />

@@ -92,7 +92,7 @@ export function MiniBarChart({
                 fontSize: "0.75rem",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
-              formatter={(value: number) => [`${value}%`, "Proficiency"]}
+              formatter={(value: number | undefined) => [`${value != null ? value : 0}%`, "Proficiency"]}
               labelStyle={{ fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}
               cursor={{ fill: "rgba(0,0,0,0.05)" }}
             />

@@ -18,7 +18,7 @@ export function QuickStatsGrid({ stats }: QuickStatsGridProps) {
   return (
     <Grid container spacing={2.5}>
       {stats.map((stat, index) => (
-        <Grid item xs={12} sm={4} key={index}>
+        <Grid size={{ xs: 12, sm: 4 }} key={index}>
           <Box
             sx={{
               p: 2.5,

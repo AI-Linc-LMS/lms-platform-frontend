@@ -1,12 +1,45 @@
 "use client";
 
-import { Box, Typography, Paper, Button } from "@mui/material";
+import { useState } from "react";
+import { Box, Typography, Paper, Button, CircularProgress, Alert } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { scorecardService } from "@/lib/services/scorecard.service";
+
+function getSuggestedFilename(): string {
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  return `scorecard_${dateStr}.pdf`;
+}
 
 export function ExportShareSection() {
-  const handleDownloadPDF = () => {
-    // TODO: Implement PDF download
-    console.log("Download PDF");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDownloadPDF = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const blob = await scorecardService.exportScorecardPdf();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = getSuggestedFilename();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      const message = e && typeof e === "object" && "response" in e
+        ? (e as { response?: { data?: Blob; status?: number } }).response?.status === 503
+          ? "PDF export is not available. Please try again later."
+          : (e as { response?: { data?: Blob } }).response?.data instanceof Blob
+            ? "Failed to generate PDF."
+            : "Failed to download PDF."
+        : "Failed to download PDF.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -20,6 +53,11 @@ export function ExportShareSection() {
         boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)",
       }}
     >
+      {error && (
+        <Alert severity="error" onClose={() => setError(null)} sx={{ width: "100%", mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       <Box
         sx={{
           display: "flex",
@@ -68,7 +106,8 @@ export function ExportShareSection() {
         </Box>
         <Button
           variant="contained"
-          startIcon={<IconWrapper icon="mdi:download" size={20} />}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <IconWrapper icon="mdi:download" size={20} />}
           onClick={handleDownloadPDF}
           sx={{
             backgroundColor: "#0a66c2",

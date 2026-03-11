@@ -8,13 +8,13 @@ import { OverallScoreCard } from "./OverallScoreCard";
 import { QuickStatsGrid } from "./QuickStatsGrid";
 import { MiniChartCard } from "./MiniChartCard";
 import { MiniBarChart } from "./MiniBarChart";
-import { scorecardService } from "@/lib/services/scorecard.service";
-import { PerformanceLevel, Skill } from "@/lib/types/scorecard.types";
+import { formatTimeSpent, scorecardService } from "@/lib/services/scorecard.service";
+import { LearningConsumption, PerformanceLevel, Skill } from "@/lib/types/scorecard.types";
 
 interface DashboardSummary {
   overallScore: number;
   overallGrade: PerformanceLevel;
-  totalTimeSpent: number;
+  totalTimeSpentSeconds: number;
   activeDaysStreak: number;
   completionPercentage: number;
   currentWeek: number;
@@ -82,7 +82,7 @@ export function ScorecardWidget() {
   const stats = [
     {
       label: "Total Time Spent",
-      value: `${data.totalTimeSpent}h`,
+      value: formatTimeSpent(data.totalTimeSpentSeconds),
       icon: "mdi:clock-outline",
       color: "#0a66c2",
     },
@@ -192,12 +192,12 @@ export function ScorecardWidget() {
       {/* Main Content Grid */}
       <Grid container spacing={3}>
         {/* Left: Overall Performance */}
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <OverallScoreCard score={data.overallScore} grade={data.overallGrade} />
         </Grid>
 
         {/* Middle: Performance Graph */}
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Box
             sx={{
               p: 2.5,
@@ -256,7 +256,7 @@ export function ScorecardWidget() {
         </Grid>
 
         {/* Right: Top Skills Graph */}
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Box
             sx={{
               p: 2.5,
@@ -325,7 +325,7 @@ export function ScorecardWidget() {
         </Grid>
 
         {/* Quick Stats - Full Width Below */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <QuickStatsGrid stats={stats} />
         </Grid>
       </Grid>

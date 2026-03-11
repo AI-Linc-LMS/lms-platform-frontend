@@ -1,22 +1,37 @@
 // Scorecard Type Definitions
 
 export type PerformanceLevel = "Beginner" | "Intermediate" | "Advanced" | "Interview-Ready";
-export type SkillStrength = "Strong" | "Needs Attention";
+export type SkillStrength = "Strong" | "Intermediate" | "Needs Attention";
 export type StatusBadge = "Green" | "Amber" | "Red";
+
+export interface CourseProgressItem {
+  courseId: number;
+  courseName: string;
+  currentWeek: number;
+  currentModule: string;
+}
 
 // Student Overview
 export interface StudentOverview {
+  profilePicUrl?: string;
   studentName: string;
   programName: string;
   cohort: string;
   currentWeek: number;
   currentModule: string;
+  currentCourseName?: string;
+  courseProgress?: CourseProgressItem[];
   overallPerformanceScore: number; // 0-100
   overallGrade: PerformanceLevel;
-  totalTimeSpent: number; // in hours
+  totalTimeSpentSeconds: number;
+  totalDaysActive: number;
   activeDaysStreak: number;
   completionPercentage: number; // 0-100
   statusBadge: StatusBadge;
+  dailyProgressPercentage?: number;
+  dailyPerformanceScore?: number | null;
+  gradeCriteria?: string;
+  statusCriteria?: string;
 }
 
 // Learning Consumption Metrics
@@ -26,6 +41,8 @@ export interface VideoMetrics {
   averageWatchPercentage: number;
   rewatchCount: number;
   skippedVideos: string[];
+  skippedCount?: number;
+  engagementCount?: number;
 }
 
 export interface ArticleMetrics {
@@ -34,6 +51,7 @@ export interface ArticleMetrics {
   averageReadingTime: number; // in minutes
   expectedReadingTime: number; // in minutes
   markedAsHelpful: number;
+  efficiencyPercentage?: number;
 }
 
 export interface PracticeMetrics {
@@ -43,12 +61,28 @@ export interface PracticeMetrics {
   subjectivePending: number;
   assessmentsAttempted: number;
   assessmentsMissed: number;
+  totalAssessmentsPresent?: number;
+  totalQuizContents?: number;
+  totalItems?: number;
+  assessmentsEngagementPercentage?: number;
+}
+
+export interface ContentCompletionOverview {
+  totalPresent: number;
+  totalCompleted: number;
+  byType?: {
+    videos: { total: number; completed: number };
+    articles: { total: number; completed: number };
+    quizzes: { total: number; completed: number };
+  };
 }
 
 export interface LearningConsumption {
   videos: VideoMetrics;
   articles: ArticleMetrics;
   practice: PracticeMetrics;
+  totalContent?: number;
+  contentCompletionOverview?: ContentCompletionOverview;
 }
 
 // Performance Trends
@@ -75,21 +109,57 @@ export interface PerformanceTrends {
 
 // Skill Scorecard
 export interface SkillBreakdown {
-  mcqAccuracy: number;
-  subjectiveScore: number;
-  projectScore: number;
+  quizScore: number; // 0-100
+  assessmentScore: number;
   interviewScore: number;
+  codingScore: number;
+  videoScore: number;
+}
+
+export interface SkillBreakdownCounts {
+  quizCount: number;
+  videoCount: number;
+  assessmentCount: number;
+  codingCount: number;
+  interviewCount: number;
+}
+
+export interface SkillBreakdownItem {
+  name: string;
+  score?: number;
+  courseName?: string;
+  moduleName?: string;
+  submoduleName?: string;
+}
+
+export interface SkillBreakdownItems {
+  quiz: SkillBreakdownItem[];
+  video: SkillBreakdownItem[];
+  coding: SkillBreakdownItem[];
+  assessment: SkillBreakdownItem[];
+  interview: SkillBreakdownItem[];
+  article: SkillBreakdownItem[];
 }
 
 export interface Skill {
-  id: string;
+  id: string | number;
   name: string;
   proficiencyScore: number; // 0-100
   level: PerformanceLevel;
   strength: SkillStrength;
   confidenceScore: number; // 0-100
   breakdown: SkillBreakdown;
+  breakdownCounts?: SkillBreakdownCounts;
+  breakdownItems?: SkillBreakdownItems;
   category?: string;
+}
+
+export interface WeakAreaSourceContext {
+  contentType?: string;
+  itemName?: string;
+  courseName?: string;
+  moduleName?: string;
+  submoduleName?: string;
 }
 
 // Weak Areas & Recommendations
@@ -98,12 +168,14 @@ export interface WeakArea {
   currentScore: number;
   threshold: number;
   recommendation: string;
+  sourceContext?: WeakAreaSourceContext;
 }
 
 export interface TopicIncorrect {
   topicName: string;
   incorrectCount: number;
   totalAttempts: number;
+  sourceContext?: WeakAreaSourceContext;
 }
 
 export interface Recommendation {
@@ -191,8 +263,14 @@ export interface StudyTimeDistribution {
   hours: number;
 }
 
+export interface StudyTimeByWeek {
+  week: string;
+  hours: number;
+}
+
 export interface BehavioralMetrics {
   loginFrequency: LoginFrequency[];
+  studyTimeByWeek?: StudyTimeByWeek[];
   studyTimeDistribution: StudyTimeDistribution[];
   missedDeadlinesCount: number;
   lastActiveDate: string;
@@ -206,7 +284,6 @@ export interface BenchmarkComparison {
   studentValue: number;
   batchAverage: number;
   top10Percent: number;
-  interviewCleared: number;
 }
 
 export interface ComparativeInsights {
@@ -225,21 +302,21 @@ export interface Badge {
   name: string;
   description: string;
   iconUrl?: string;
-  earnedDate: string;
+  iconSlug?: string;
+  earnedDate?: string;
 }
 
 export interface Milestone {
   id: string;
   name: string;
   description: string;
-  completedDate: string;
+  completedDate?: string;
   progress: number; // 0-100
 }
 
 export interface Achievement {
   badges: Badge[];
   milestones: Milestone[];
-  skillUnlocks: string[];
   streakRewards: {
     currentStreak: number;
     longestStreak: number;
@@ -293,8 +370,13 @@ export interface ActionPanel {
   upcomingAssessments: UpcomingAssessment[];
 }
 
+export interface ScorecardConfig {
+  enabledModules: string[];
+}
+
 // Complete Scorecard Data
 export interface ScorecardData {
+  scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
   learningConsumption: LearningConsumption;
   performanceTrends: PerformanceTrends;

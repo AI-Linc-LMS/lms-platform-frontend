@@ -10,6 +10,7 @@ interface EnhancedStatsBarProps {
   incorrectAnswers: number;
   timeTakenMinutes: number;
   totalTimeMinutes: number;
+  averageTimePerQuestion?: number;
 }
 
 export function EnhancedStatsBar({
@@ -19,9 +20,11 @@ export function EnhancedStatsBar({
   incorrectAnswers,
   timeTakenMinutes,
   totalTimeMinutes,
+  averageTimePerQuestion,
 }: EnhancedStatsBarProps) {
   const attemptRate = totalQuestions > 0 ? (attemptedQuestions / totalQuestions) * 100 : 0;
   const correctRate = attemptedQuestions > 0 ? (correctAnswers / attemptedQuestions) * 100 : 0;
+  const skippedQuestions = totalQuestions - attemptedQuestions;
   // Cap time utilization at 100% to handle edge cases where time_taken > total_time
   const timeUtilization = totalTimeMinutes > 0 
     ? Math.min((timeTakenMinutes / totalTimeMinutes) * 100, 100) 
@@ -36,6 +39,8 @@ export function EnhancedStatsBar({
     const mins = Math.round(minutes % 60);
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
+
+  const hasAvgTime = Number.isFinite(averageTimePerQuestion) && averageTimePerQuestion !== undefined;
 
   const stats = [
     {
@@ -66,6 +71,15 @@ export function EnhancedStatsBar({
       progress: attemptRate,
     },
     {
+      icon: "mdi:skip-next",
+      label: "Skipped",
+      value: skippedQuestions,
+      total: totalQuestions,
+      color: "#f59e0b",
+      bgColor: "rgba(245, 158, 11, 0.1)",
+      progress: totalQuestions > 0 ? (skippedQuestions / totalQuestions) * 100 : 0,
+    },
+    {
       icon: "mdi:clock-time-four",
       label: "Time Used",
       value: formatTime(timeTakenMinutes),
@@ -75,13 +89,33 @@ export function EnhancedStatsBar({
       progress: timeUtilization,
       isTime: true,
     },
+    ...(hasAvgTime
+      ? [
+          {
+            icon: "mdi:timer-outline" as const,
+            label: "Avg Time/Question",
+            value: `${Math.round(averageTimePerQuestion)}s`,
+            total: "",
+            color: "#0ea5e9",
+            bgColor: "rgba(14, 165, 233, 0.1)",
+            progress: 0,
+            isTime: true,
+            hideProgress: true,
+          },
+        ]
+      : []),
   ];
 
   return (
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
+        gridTemplateColumns: {
+          xs: "1fr",
+          sm: "repeat(2, 1fr)",
+          md: "repeat(3, 1fr)",
+          lg: hasAvgTime ? "repeat(6, 1fr)" : "repeat(5, 1fr)",
+        },
         gap: 2.5,
         mb: 3,
       }}
@@ -167,6 +201,7 @@ export function EnhancedStatsBar({
           </Box>
 
           {/* Progress Bar */}
+          {!stat.hideProgress && (
           <Box>
             <Box
               sx={{
@@ -221,6 +256,7 @@ export function EnhancedStatsBar({
               }}
             />
           </Box>
+          )}
         </Paper>
       ))}
     </Box>
