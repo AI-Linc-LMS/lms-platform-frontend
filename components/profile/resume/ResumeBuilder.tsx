@@ -379,8 +379,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
       pdf.save(fileName);
 
       showToast(t("profile.pdfDownloadSuccess"), "success");
-    } catch (error) {
-      console.error("PDF generation error:", error);
+    } catch {
       showToast(t("profile.pdfDownloadFailed"), "error");
     } finally {
       if (patched && origDescriptor) {
