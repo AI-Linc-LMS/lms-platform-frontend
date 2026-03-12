@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { activityService } from "@/lib/services/activity.service";
+import {
+  activityService,
+  getTimeTrackingSessionId,
+} from "@/lib/services/activity.service";
 
 export const useTimeTracking = (active: boolean = true) => {
-  const sessionIdRef = useRef<string>(crypto.randomUUID());
   const startTimeRef = useRef<number>(Date.now());
   const accumulatedTimeRef = useRef<number>(0);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const getDeviceType = () => {
     if (typeof window === "undefined") return "desktop";
@@ -31,14 +32,12 @@ export const useTimeTracking = (active: boolean = true) => {
     try {
       await activityService.trackTime({
         time_spent_seconds: totalToSend,
-        session_id: sessionIdRef.current,
+        session_id: getTimeTrackingSessionId(),
         date: getFormattedDate(),
         device_type: getDeviceType(),
         session_only: isSessionEnd,
       });
 
-      // After a successful heartbeat, reset start time and accumulated time
-      // so we don't double count in the next heartbeat
       startTimeRef.current = now;
       accumulatedTimeRef.current = 0;
     } catch (error) {
@@ -46,44 +45,27 @@ export const useTimeTracking = (active: boolean = true) => {
     }
   };
 
-  const startNewSession = () => {
-    sessionIdRef.current = crypto.randomUUID();
+  const resetSegmentStart = () => {
     startTimeRef.current = Date.now();
     accumulatedTimeRef.current = 0;
-    
-    // Start heartbeat
-    if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-    heartbeatIntervalRef.current = setInterval(() => {
-      sendTrackingData(false);
-    }, 30000); // 30 second heartbeat
-  };
-
-  const endCurrentSession = async () => {
-    if (heartbeatIntervalRef.current) {
-      clearInterval(heartbeatIntervalRef.current);
-      heartbeatIntervalRef.current = null;
-    }
-    await sendTrackingData(true);
   };
 
   useEffect(() => {
     if (!active) return;
 
-    // Initial session start
-    startNewSession();
+    resetSegmentStart();
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // User switched tab or left browser - end session
-        endCurrentSession();
+        // User switched tab or left — send time for this segment
+        sendTrackingData(true);
       } else {
-        // User came back - start new session
-        startNewSession();
+        // User came back — new segment, same session_id
+        resetSegmentStart();
       }
     };
 
     const handleBeforeUnload = () => {
-      // Tab is being closed
       sendTrackingData(true);
     };
 
@@ -93,7 +75,6 @@ export const useTimeTracking = (active: boolean = true) => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
     };
   }, [active]);
 
