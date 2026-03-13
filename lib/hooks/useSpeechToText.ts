@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 
-const WHISPER_CHUNK_MS = 4000;
+const WHISPER_CHUNK_MS = 2000;
 const TRANSCRIBE_API = "/api/transcribe";
 
 interface SpeechRecognitionInstance {
@@ -76,15 +76,17 @@ export function useSpeechToText(
   onInterimRef.current = onInterim;
 
   const sendChunkToWhisper = useCallback(async (blob: Blob) => {
-    if (whisperFailedRef.current || blob.size < 100) return;
+    if (whisperFailedRef.current || blob.size < 1000) return;
+    const ext =
+      blob.type.includes("mp4") || blob.type.includes("m4a") ? "m4a" : "webm";
     const form = new FormData();
-    form.append("file", blob, "chunk.webm");
+    form.append("file", blob, `chunk.${ext}`);
     const langCode = lang.slice(0, 2);
     if (langCode) form.append("language", langCode);
     try {
       const res = await fetch(TRANSCRIBE_API, { method: "POST", body: form });
       if (!res.ok) {
-        if (res.status === 401 || res.status === 502 || res.status === 503) whisperFailedRef.current = true;
+        if ([400, 401, 502, 503].includes(res.status)) whisperFailedRef.current = true;
         return;
       }
       const data = (await res.json()) as { text?: string };
@@ -171,7 +173,14 @@ export function useSpeechToText(
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       registerMediaStream(stream);
-      const recorder = new MediaRecorder(stream);
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : "";
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) sendChunkToWhisper(e.data);
