@@ -32,8 +32,10 @@ export async function POST(request: NextRequest) {
 
   const lang = (formData.get("language") as string) || undefined;
 
+  const ext =
+    file.type.includes("mp4") || file.type.includes("m4a") ? "m4a" : "webm";
   const body = new FormData();
-  body.append("file", file);
+  body.append("file", file, `chunk.${ext}`);
   body.append("model", WHISPER_MODEL);
   body.append("response_format", "json");
   if (lang) body.append("language", lang);
