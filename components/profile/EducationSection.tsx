@@ -9,11 +9,13 @@ import { UserProfile, Education } from "@/lib/services/profile.service";
 interface EducationSectionProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onRemoveSection?: () => void;
 }
 
 export function EducationSection({
   profile,
   onSave,
+  onRemoveSection,
 }: EducationSectionProps) {
   const { t } = useTranslation("common");
   const [educations, setEducations] = useState<Education[]>(profile.education || []);
@@ -100,7 +102,7 @@ export function EducationSection({
     return d.toISOString().split("T")[0];
   };
 
-  const handleDialogSave = () => {
+  const handleDialogSave = async () => {
     const newEducation: Education = {
       ...formData,
       id: formData.id || Date.now().toString(),
@@ -108,16 +110,38 @@ export function EducationSection({
       end_date: toISODate(formData.end_date || ""),
     };
 
+    let updated: Education[];
     if (editingIndex !== null) {
-      const updated = [...educations];
+      updated = [...educations];
       updated[editingIndex] = newEducation;
-      setEducations(updated);
     } else {
-      setEducations([...educations, newEducation]);
+      updated = [...educations, newEducation];
     }
-
+    setEducations(updated);
     setDialogOpen(false);
     setEditingIndex(null);
+
+    if (editingIndex === null && educations.length === 0) {
+      try {
+        setSaving(true);
+        await onSave({
+          education: updated.map((edu) => ({
+            id: edu.id,
+            institution: edu.institution,
+            degree: edu.degree,
+            field_of_study: edu.field_of_study || undefined,
+            start_date: edu.start_date || undefined,
+            end_date: edu.end_date || undefined,
+            gpa: edu.gpa || undefined,
+            description: edu.description || undefined,
+          })),
+        });
+      } catch {
+        // handled by parent
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   const formatDate = (date: string) => {
@@ -162,6 +186,24 @@ export function EducationSection({
           >
             {t("profile.education")}
           </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {onRemoveSection && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:close" size={16} />}
+              onClick={onRemoveSection}
+              sx={{
+                textTransform: "none",
+                color: "#6b7280",
+                fontWeight: 500,
+                fontSize: "0.8125rem",
+                "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+              }}
+            >
+              Remove
+            </Button>
+          )}
           {!editing ? (
             <Button
               variant="text"
@@ -238,6 +280,7 @@ export function EducationSection({
               </Button>
             </Box>
           )}
+          </Box>
         </Box>
 
         {educations.length > 0 ? (
@@ -359,10 +402,29 @@ export function EducationSection({
                 color: "#9ca3af",
                 mt: 0.5,
                 fontSize: "0.8125rem",
+                display: "block",
               }}
             >
               {t("profile.clickEditToAddEducation")}
             </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              onClick={handleAddNew}
+              sx={{
+                mt: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "#0a66c2",
+                borderRadius: 2,
+                px: 2.5,
+                py: 1,
+                "&:hover": { backgroundColor: "#004182" },
+              }}
+            >
+              {t("profile.add")} {t("profile.education")}
+            </Button>
           </Box>
         )}
       </Paper>

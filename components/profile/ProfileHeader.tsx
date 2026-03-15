@@ -57,7 +57,7 @@ export function ProfileHeader({
       sx={{
         position: "relative",
         width: "100%",
-        px: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
         pb: 3,
         pt: { xs: 8, sm: 9, md: 10 },
       }}
@@ -66,8 +66,8 @@ export function ProfileHeader({
       <Box
         sx={{
           position: "absolute",
-          top: { xs: -60, sm: -80, md: -120 },
-          left: { xs: 12, sm: 20, md: 32 },
+          top: { xs: -64, sm: -88, md: -128 },
+          left: { xs: 16, sm: 24, md: 40, lg: 48, xl: 56 },
           zIndex: 1,
         }}
         onMouseEnter={() => setProfilePicHovered(true)}
@@ -78,12 +78,12 @@ export function ProfileHeader({
             src={profilePicUrl}
             alt={userName}
             sx={{
-              width: { xs: 96, sm: 120, md: 168 },
-              height: { xs: 96, sm: 120, md: 168 },
-              border: { xs: "3px solid #ffffff", sm: "4px solid #ffffff" },
-              boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+              width: { xs: 104, sm: 132, md: 180 },
+              height: { xs: 104, sm: 132, md: 180 },
+              border: { xs: "4px solid #ffffff", sm: "5px solid #ffffff" },
+              boxShadow: "0 4px 24px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06)",
               cursor: onEditProfilePicUrl ? "pointer" : "default",
-              backgroundColor: "#1a1f2e",
+              backgroundColor: "#0f172a",
               color: "#ffffff",
             }}
           >
@@ -95,8 +95,8 @@ export function ProfileHeader({
                 position: "absolute",
                 bottom: 0,
                 insetInlineEnd: 0,
-                width: { xs: 36, sm: 40, md: 48 },
-                height: { xs: 36, sm: 40, md: 48 },
+                width: { xs: 40, sm: 44, md: 52 },
+                height: { xs: 40, sm: 44, md: 52 },
                 borderRadius: "50%",
                 backgroundColor: "#0a66c2",
                 display: "flex",
@@ -145,15 +145,16 @@ export function ProfileHeader({
           >
             {userName}
           </Typography>
-          {/* Headline Section */}
+          {/* Headline Section - Edit icon always in DOM to prevent layout shift */}
           <Box
             onMouseEnter={() => setHeadlineHovered(true)}
             onMouseLeave={() => setHeadlineHovered(false)}
             sx={{
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
               gap: { xs: 0.5, sm: 0.75 },
               mb: { xs: 0.5, sm: 1 },
+              minHeight: { xs: 28, sm: 32 },
             }}
           >
             <Typography
@@ -168,7 +169,7 @@ export function ProfileHeader({
             >
               {headline || t("profile.addHeadline")}
             </Typography>
-            {onEditHeadline && (headlineHovered || !headline) && (
+            {onEditHeadline && (
               <IconButton
                 size="small"
                 onClick={() => {
@@ -178,11 +179,15 @@ export function ProfileHeader({
                 sx={{
                   width: { xs: 28, sm: 32 },
                   height: { xs: 28, sm: 32 },
+                  minWidth: { xs: 28, sm: 32 },
+                  flexShrink: 0,
                   color: "#0a66c2",
+                  opacity: headlineHovered || !headline ? 1 : 0,
+                  pointerEvents: headlineHovered || !headline ? "auto" : "none",
+                  transition: "opacity 0.2s ease",
                   "&:hover": {
                     backgroundColor: "rgba(10, 102, 194, 0.08)",
                   },
-                  transition: "all 0.2s ease",
                 }}
               >
                 <IconWrapper icon="mdi:pencil" size={16} />

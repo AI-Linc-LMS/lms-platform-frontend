@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Button } from "@mui/material";
+import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ImageUrlDialog } from "./ImageUrlDialog";
 
@@ -19,51 +20,79 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
   return (
     <>
       <Box
+        component={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
         sx={{
           position: "relative",
           width: "100%",
-          height: { xs: 200, sm: 250, md: 300 },
+          height: { xs: 220, sm: 280, md: 340, lg: 400 },
           overflow: "hidden",
-          backgroundColor: coverPhotoUrl ? "transparent" : "#e0e0e0",
-          backgroundImage: coverPhotoUrl ? `url(${coverPhotoUrl})` : "none",
+          backgroundColor: coverPhotoUrl ? "transparent" : "#0f172a",
+          backgroundImage: coverPhotoUrl
+            ? `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%), url(${coverPhotoUrl})`
+            : "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          boxShadow: coverPhotoUrl ? "inset 0 -2px 8px rgba(0,0,0,0.05)" : "none",
-          borderBottom: coverPhotoUrl ? "none" : "1px solid rgba(0,0,0,0.08)",
+          "&::after": coverPhotoUrl
+            ? {}
+            : {
+                content: '""',
+                position: "absolute",
+                inset: 0,
+                background:
+                  "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(10, 102, 194, 0.15) 0%, transparent 70%)",
+                pointerEvents: "none",
+              },
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
+        {/* Bottom gradient overlay for profile pic overlap */}
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "40%",
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)",
+            pointerEvents: "none",
+          }}
+        />
         {onEditCoverUrl && (
           <Box
             sx={{
               position: "absolute",
-              top: { xs: 12, sm: 16 },
-              right: { xs: 12, sm: 16 },
+              top: { xs: 16, sm: 20 },
+              right: { xs: 16, sm: 24 },
               zIndex: 2,
               opacity: { xs: 1, sm: hovered ? 1 : 0 },
-              transition: "opacity 0.2s ease",
+              transition: "opacity 0.25s ease, transform 0.25s ease",
             }}
           >
             <Button
               variant="contained"
-              startIcon={<IconWrapper icon="mdi:link-variant" size={18} />}
+              startIcon={<IconWrapper icon="mdi:image-edit-outline" size={18} />}
               onClick={() => setUrlDialogOpen(true)}
               sx={{
-                backgroundColor: "rgba(0, 0, 0, 0.65)",
-                backdropFilter: "blur(8px)",
-                color: "#ffffff",
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                backdropFilter: "blur(12px)",
+                color: "#0f172a",
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: { xs: "0.8125rem", sm: "0.9375rem" },
-                borderRadius: "24px",
-                px: { xs: 1.5, sm: 2.5 },
-                py: { xs: 0.75, sm: 1 },
-                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                borderRadius: "12px",
+                px: { xs: 2, sm: 2.5 },
+                py: { xs: 0.875, sm: 1 },
+                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                 "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.85)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 6px 24px rgba(0,0,0,0.2)",
+                  transform: "translateY(-1px)",
                 },
                 transition: "all 0.2s ease",
               }}
