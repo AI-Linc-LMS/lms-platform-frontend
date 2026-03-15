@@ -19,7 +19,6 @@ import { useAuth } from "@/lib/auth/auth-context";
 
 const LEADERBOARD_STORAGE_KEY = "leaderboard_data";
 
-// Helper functions for localStorage
 const getStoredLeaderboard = (): OverallLeaderboardEntry[] | null => {
   if (typeof window === "undefined") return null;
   try {
@@ -27,9 +26,7 @@ const getStoredLeaderboard = (): OverallLeaderboardEntry[] | null => {
     if (stored) {
       return JSON.parse(stored);
     }
-  } catch (error) {
-    // Silently fail if localStorage is not available or data is corrupted
-  }
+  } catch (error) {}
   return null;
 };
 
@@ -37,22 +34,18 @@ const setStoredLeaderboard = (data: OverallLeaderboardEntry[]) => {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    // Silently fail if localStorage is not available
-  }
+  } catch (error) {}
 };
 
 export const invalidateLeaderboardCache = () => {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(LEADERBOARD_STORAGE_KEY);
-  } catch (error) {
-    // Silently fail
-  }
+  } catch (error) {}
 };
 
 interface LeaderboardProps {
-  courseId?: number; // Kept for backward compatibility but not used
+  courseId?: number;
 }
 
 export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
@@ -66,31 +59,12 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
   const findUserEntry = useCallback(
     (data: OverallLeaderboardEntry[]) => {
       if (!user || !data?.length) return undefined;
-
-      const fullName = `${user.first_name} ${user.last_name}`
-        .trim()
-        .toLowerCase();
-      const userName = (user.user_name || "").toLowerCase();
       const userEmail = (user.email || "").toLowerCase();
-      const firstName = (user.first_name || "").toLowerCase();
-      const lastName = (user.last_name || "").toLowerCase();
+      const userId = user.id;
 
       return data.find((entry) => {
-        const entryName = (entry?.name || "").toLowerCase().trim();
-        const entryEmail = (entry?.email || "").toLowerCase();
-        const entryUserName = (entry?.user_name || "").toLowerCase();
-
-        if (userEmail && entryEmail && userEmail === entryEmail) return true;
-        if (userName && entryUserName && userName === entryUserName) return true;
-        if (fullName && entryName && fullName === entryName) return true;
-        if (userName && entryName && userName === entryName) return true;
-        if (
-          firstName &&
-          lastName &&
-          entryName.includes(firstName) &&
-          entryName.includes(lastName)
-        )
-          return true;
+        if (userId != null && entry.id != null && Number(entry.id) === Number(userId)) return true;
+        if (userEmail && (entry?.email || "").toLowerCase() === userEmail) return true;
         return false;
       });
     },
@@ -122,9 +96,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
             const foundInFull = findUserEntry(fullData);
             setMyRankEntry(foundInFull ?? null);
           }
-        } catch {
-          // Silently fail — user rank is optional
-        }
+        } catch {}
       }
     } catch {
       const storedData = getStoredLeaderboard();
@@ -168,7 +140,6 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
     return String(rank);
   };
 
-  // Ensure leaderboard is always an array - defensive check
   const safeLeaderboard = useMemo(() => {
     if (!leaderboard) return [];
     if (!Array.isArray(leaderboard)) {
@@ -177,9 +148,6 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
     return leaderboard;
   }, [leaderboard]);
 
-  // Derive current user entry every render (like course leaderboard) so when user loads
-  // after auth, or when we have cached data, "Your rank" still shows. Use myRankEntry
-  // when user is not in the top list but was found in the extended (10000) fetch.
   const currentUserEntry =
     findUserEntry(safeLeaderboard) ?? myRankEntry ?? undefined;
 
@@ -205,7 +173,6 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
         </Typography>
       </Box>
       
-      {/* Loading Progress Bar and Message */}
       {loading && (
         <Box sx={{ mb: 2 }}>
           <LinearProgress
@@ -305,7 +272,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
             }}
           >
             {safeLeaderboard.map((entry, index) => {
-              const userName = entry?.name || "User";
+              const userName = entry?.name ?? entry?.email ?? (entry?.id != null ? `User #${entry.id}` : "User");
               const rank = entry?.rank ?? 0;
               const totalScore = entry?.marks ?? 0;
               const profilePicUrl = entry?.profile_pic_url;
@@ -314,18 +281,16 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
               const handleClick = (e: React.MouseEvent) => {
                 e.stopPropagation();
                 if (linkedinUrl) {
-                  // Ensure URL is valid and starts with http/https
                   const url = linkedinUrl.startsWith("http") 
                     ? linkedinUrl 
                     : `https://${linkedinUrl}`;
-                  // Open LinkedIn in new tab
                   window.open(url, "_blank", "noopener,noreferrer");
                 }
               };
 
               return (
                 <Box
-                  key={rank || index}
+                  key={entry?.id ?? entry?.email ?? index}
                     onClick={handleClick}
                     onKeyDown={(e) => {
                       if ((e.key === "Enter" || e.key === " ") && linkedinUrl) {
@@ -444,7 +409,6 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
         )}
       </Card>
 
-      {/* Current User Rank - Pinned at Bottom */}
       {currentUserEntry && safeLeaderboard.length > 0 && (
         <Box sx={{ mt: 1.5 }}>
           <Divider sx={{ mb: 1.5 }} />
@@ -485,7 +449,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                 user?.profile_picture ||
                 undefined
               }
-              alt={currentUserEntry.name || "You"}
+              alt={currentUserEntry.name ?? currentUserEntry.email ?? "You"}
               sx={{
                 width: 32,
                 height: 32,
@@ -494,7 +458,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                 boxShadow: "0 2px 8px rgba(99, 102, 241, 0.15)",
               }}
             >
-              {(currentUserEntry.name || "U")[0]}
+              {(currentUserEntry.name ?? currentUserEntry.email ?? "U")[0]}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
@@ -509,7 +473,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                   lineHeight: 1.3,
                 }}
               >
-                {currentUserEntry.name || "You"}
+                {currentUserEntry.name ?? currentUserEntry.email ?? "You"}
               </Typography>
               <Typography
                 variant="caption"
