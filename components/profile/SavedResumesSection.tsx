@@ -623,30 +623,6 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
               >
                 Click here or use the button above to upload
               </Typography>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<IconWrapper icon="mdi:upload" size={22} />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setUploadDialogOpen(true);
-                }}
-                sx={{
-                  mt: 3,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  px: 4,
-                  py: 1.5,
-                  fontSize: "1rem",
-                  backgroundColor: "#6366f1",
-                  color: "#ffffff",
-                  "&:hover": {
-                    backgroundColor: "#4f46e5",
-                  },
-                }}
-              >
-                {t("profile.uploadResume")}
-              </Button>
             </Box>
           </motion.div>
         )}
