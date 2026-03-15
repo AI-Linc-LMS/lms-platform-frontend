@@ -19,6 +19,7 @@ interface MainLayoutProps {
   children: ReactNode;
   hideSidebar?: boolean;
   fullPage?: boolean;
+  fullWidthContent?: boolean;
   DrawerWidth?: number;
 }
 
@@ -26,6 +27,7 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
   children,
   hideSidebar = false,
   fullPage = false,
+  fullWidthContent = false,
   DrawerWidth = 240,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -127,7 +129,7 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
             flexGrow: 1,
             p: fullPage ? 0 : { xs: 2, sm: 3, md: 4 },
             width: "100%",
-            maxWidth: fullPage ? "100%" : "1400px",
+            maxWidth: fullPage ? "100%" : fullWidthContent ? "none" : "1400px",
             mx: fullPage ? 0 : "auto",
             pb: fullPage ? 0 : { xs: "72px", md: 4 }, // Add bottom padding for mobile bottom nav (only when not fullPage)
             height: fullPage ? "100%" : "auto",
