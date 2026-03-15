@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
+import { blobToWav } from "@/lib/utils/audio-to-wav";
 
 const WHISPER_CHUNK_MS = 2000;
 const TRANSCRIBE_API = "/api/transcribe";
@@ -77,10 +78,18 @@ export function useSpeechToText(
 
   const sendChunkToWhisper = useCallback(async (blob: Blob) => {
     if (whisperFailedRef.current || blob.size < 1000) return;
-    const ext =
-      blob.type.includes("mp4") || blob.type.includes("m4a") ? "m4a" : "webm";
+    let file: Blob = blob;
+    let filename = "chunk.webm";
+    if (blob.type.includes("mp4") || blob.type.includes("m4a")) filename = "chunk.m4a";
+    try {
+      const wavBlob = await blobToWav(blob);
+      if (wavBlob.size > 0) {
+        file = wavBlob;
+        filename = "chunk.wav";
+      }
+    } catch {}
     const form = new FormData();
-    form.append("file", blob, `chunk.${ext}`);
+    form.append("file", file, filename);
     const langCode = lang.slice(0, 2);
     if (langCode) form.append("language", langCode);
     try {
@@ -170,7 +179,9 @@ export function useSpeechToText(
   const startWhisperRecording = useCallback(async () => {
     if (!preferWhisper) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { noiseSuppression: true, echoCancellation: true },
+      });
       streamRef.current = stream;
       registerMediaStream(stream);
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")

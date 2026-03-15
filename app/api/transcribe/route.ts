@@ -30,10 +30,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const lang = (formData.get("language") as string) || undefined;
+  const langRaw = formData.get("language");
+  const lang = typeof langRaw === "string" ? langRaw : undefined;
 
-  const ext =
-    file.type.includes("mp4") || file.type.includes("m4a") ? "m4a" : "webm";
+  const ext = file.type.includes("wav")
+    ? "wav"
+    : file.type.includes("mp4") || file.type.includes("m4a")
+      ? "m4a"
+      : "webm";
   const body = new FormData();
   body.append("file", file, `chunk.${ext}`);
   body.append("model", WHISPER_MODEL);
