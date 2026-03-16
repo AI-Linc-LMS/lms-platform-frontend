@@ -9,11 +9,13 @@ import { UserProfile } from "@/lib/services/profile.service";
 interface ExternalProfilesCardProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onRemoveSection?: () => void;
 }
 
 export function ExternalProfilesCard({
   profile,
   onSave,
+  onRemoveSection,
 }: ExternalProfilesCardProps) {
   const { t } = useTranslation("common");
   const [formData, setFormData] = useState({
@@ -296,6 +298,24 @@ export function ExternalProfilesCard({
         >
           {t("profile.externalProfiles")}
         </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        {onRemoveSection && (
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<IconWrapper icon="mdi:close" size={16} />}
+            onClick={onRemoveSection}
+            sx={{
+              textTransform: "none",
+              color: "#6b7280",
+              fontWeight: 500,
+              fontSize: "0.8125rem",
+              "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+            }}
+          >
+            Remove
+          </Button>
+        )}
         {!editing ? (
           <Button
             variant="text"
@@ -360,6 +380,7 @@ export function ExternalProfilesCard({
             </Button>
           </Box>
         )}
+        </Box>
       </Box>
 
       <Box 

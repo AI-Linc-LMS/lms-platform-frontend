@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState, memo } from "react";
 import { Box } from "@mui/material";
 
+const SPEAKING_LOOP_END = 2.2;
+const POST_QUESTION_START = 2.6;
+const POST_QUESTION_END = 6;
+const WAITING_LAST_FRAME = 5.8;
+
+type VideoPhase = "speaking" | "post-question" | "waiting";
+
 interface AIAvatarProps {
   isSpeaking?: boolean;
   question?: string;
@@ -21,27 +28,64 @@ export const AIAvatar = memo(function AIAvatar({
   const [isAnimating, setIsAnimating] = useState(false);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const interviewVideoRef = useRef<HTMLVideoElement | null>(null);
+  const videoPhaseRef = useRef<VideoPhase>("waiting");
 
   useEffect(() => {
+    if (interviewVideoSrc?.toLowerCase().endsWith(".gif")) return;
+    const video = interviewVideoRef.current;
+    if (!interviewVideoSrc || !video) return;
+
+    const seekToLastFrame = () => {
+      const v = interviewVideoRef.current;
+      if (!v || videoPhaseRef.current !== "waiting") return;
+      const end = Number.isFinite(v.duration) ? Math.min(WAITING_LAST_FRAME, v.duration) : WAITING_LAST_FRAME;
+      v.currentTime = end;
+      v.pause();
+    };
+
+    const onTimeUpdate = () => {
+      const phase = videoPhaseRef.current;
+      const t = video.currentTime;
+      const duration = video.duration;
+      const end = Number.isFinite(duration) ? Math.min(POST_QUESTION_END, duration) : POST_QUESTION_END;
+
+      if (phase === "speaking" && t >= SPEAKING_LOOP_END) {
+        video.currentTime = 0;
+      } else if (phase === "post-question" && t >= end) {
+        videoPhaseRef.current = "waiting";
+        seekToLastFrame();
+      }
+    };
+
+    const onEnded = () => {
+      const phase = videoPhaseRef.current;
+      if (phase === "post-question") {
+        videoPhaseRef.current = "waiting";
+        seekToLastFrame();
+      } else if (phase === "waiting") {
+        seekToLastFrame();
+      }
+    };
+
+    video.muted = true;
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("ended", onEnded);
+    return () => {
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("ended", onEnded);
+    };
+  }, [interviewVideoSrc]);
+
+  useEffect(() => {
+    if (interviewVideoSrc?.toLowerCase().endsWith(".gif")) return;
     const video = interviewVideoRef.current;
     if (!interviewVideoSrc || !video) return;
 
     if (isAnimating) {
-      video.loop = true;
-      video.muted = true;
+      videoPhaseRef.current = "speaking";
+      video.loop = false;
+      video.currentTime = 0;
       video.play().catch(() => {});
-    } else {
-      video.pause();
-      const seekToLastFrame = () => {
-        if (!isNaN(video.duration) && isFinite(video.duration)) {
-          video.currentTime = video.duration;
-        }
-      };
-      if (video.readyState >= 1) {
-        seekToLastFrame();
-      } else {
-        video.addEventListener("loadedmetadata", seekToLastFrame, { once: true });
-      }
     }
   }, [interviewVideoSrc, isAnimating]);
 
@@ -59,6 +103,14 @@ export const AIAvatar = memo(function AIAvatar({
 
       utterance.onstart = () => setIsAnimating(true);
       utterance.onend = () => {
+        if (!interviewVideoSrc?.toLowerCase().endsWith(".gif")) {
+          const video = interviewVideoRef.current;
+          if (video) {
+            videoPhaseRef.current = "post-question";
+            video.currentTime = POST_QUESTION_START;
+            video.play().catch(() => {});
+          }
+        }
         setIsAnimating(false);
         onSpeakComplete?.();
       };
@@ -80,6 +132,8 @@ export const AIAvatar = memo(function AIAvatar({
 
   const isTalking = isAnimating && !isUserSpeaking;
   const isListening = isUserSpeaking && !isAnimating;
+
+  const isGif = interviewVideoSrc?.toLowerCase().endsWith(".gif");
 
   return (
     <Box
@@ -121,30 +175,40 @@ export const AIAvatar = memo(function AIAvatar({
               minHeight: 280,
               overflow: "hidden",
               zIndex: 1,
-              "& video": {
+              "& video, & img": {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                objectPosition: "center center",
-                transform: "scale(1.06)",
+                objectPosition: "center 28%",
+                transform: "none",
                 transformOrigin: "center center",
               },
             }}
           >
-            <video
-              ref={interviewVideoRef}
-              src={interviewVideoSrc}
-              muted
-              playsInline
-              aria-label="AI interviewer video"
-              onLoadedMetadata={(e) => {
-                const v = e.currentTarget;
-                if (!isAnimating && !isNaN(v.duration) && isFinite(v.duration)) {
-                  v.currentTime = v.duration;
-                  v.pause();
-                }
-              }}
-            />
+            {isGif ? (
+              <img
+                src={interviewVideoSrc}
+                alt="AI interviewer"
+                style={{ display: "block" }}
+              />
+            ) : (
+              <video
+                ref={interviewVideoRef}
+                src={interviewVideoSrc}
+                muted
+                playsInline
+                aria-label="AI interviewer video"
+                onLoadedMetadata={(e) => {
+                  const v = e.currentTarget;
+                  if (!isAnimating) {
+                    videoPhaseRef.current = "waiting";
+                    const end = Number.isFinite(v.duration) ? Math.min(WAITING_LAST_FRAME, v.duration) : WAITING_LAST_FRAME;
+                    v.currentTime = end;
+                    v.pause();
+                  }
+                }}
+              />
+            )}
           </Box>
         )}
 

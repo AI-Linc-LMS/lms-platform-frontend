@@ -9,11 +9,13 @@ import { UserProfile, Achievement } from "@/lib/services/profile.service";
 interface AchievementsSectionProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onRemoveSection?: () => void;
 }
 
 export function AchievementsSection({
   profile,
   onSave,
+  onRemoveSection,
 }: AchievementsSectionProps) {
   const { t } = useTranslation("common");
   const [achievements, setAchievements] = useState<Achievement[]>(profile.achievements || []);
@@ -91,23 +93,42 @@ export function AchievementsSection({
     return d.toISOString().split("T")[0];
   };
 
-  const handleDialogSave = () => {
+  const handleDialogSave = async () => {
     const newAchievement: Achievement = {
       ...formData,
       id: formData.id || Date.now().toString(),
       date: toISODate(formData.date || ""),
     };
 
+    let updated: Achievement[];
     if (editingIndex !== null) {
-      const updated = [...achievements];
+      updated = [...achievements];
       updated[editingIndex] = newAchievement;
-      setAchievements(updated);
     } else {
-      setAchievements([...achievements, newAchievement]);
+      updated = [...achievements, newAchievement];
     }
-
+    setAchievements(updated);
     setDialogOpen(false);
     setEditingIndex(null);
+
+    if (editingIndex === null && achievements.length === 0) {
+      try {
+        setSaving(true);
+        await onSave({
+          achievements: updated.map((ach) => ({
+            id: ach.id,
+            title: ach.title,
+            description: ach.description || undefined,
+            date: ach.date || undefined,
+            organization: ach.organization || undefined,
+          })),
+        });
+      } catch {
+        // handled by parent
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   const formatDate = (date: string) => {
@@ -153,6 +174,24 @@ export function AchievementsSection({
           >
             {t("profile.achievements")}
           </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {onRemoveSection && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:close" size={16} />}
+              onClick={onRemoveSection}
+              sx={{
+                textTransform: "none",
+                color: "#6b7280",
+                fontWeight: 500,
+                fontSize: "0.8125rem",
+                "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+              }}
+            >
+              Remove
+            </Button>
+          )}
           {!editing ? (
             <Button
               variant="text"
@@ -229,6 +268,7 @@ export function AchievementsSection({
               </Button>
             </Box>
           )}
+          </Box>
         </Box>
 
         {achievements.length > 0 ? (
@@ -352,10 +392,29 @@ export function AchievementsSection({
                 color: "#9ca3af",
                 mt: 0.5,
                 fontSize: "0.8125rem",
+                display: "block",
               }}
             >
               {t("profile.clickEditToAddAchievements")}
             </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              onClick={handleAddNew}
+              sx={{
+                mt: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "#0a66c2",
+                borderRadius: 2,
+                px: 2.5,
+                py: 1,
+                "&:hover": { backgroundColor: "#004182" },
+              }}
+            >
+              {t("profile.add")} {t("profile.achievements")}
+            </Button>
           </Box>
         )}
       </Paper>

@@ -28,11 +28,13 @@ function getProjectLinkUrl(url: string | undefined): string | null {
 interface ProjectsSectionProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onRemoveSection?: () => void;
 }
 
 export function ProjectsSection({
   profile,
   onSave,
+  onRemoveSection,
 }: ProjectsSectionProps) {
   const { t } = useTranslation("common");
   const [projects, setProjects] = useState<Project[]>(profile.projects || []);
@@ -119,7 +121,7 @@ export function ProjectsSection({
     return d.toISOString().split("T")[0];
   };
 
-  const handleDialogSave = () => {
+  const handleDialogSave = async () => {
     const newProject: Project = {
       ...formData,
       id: formData.id || Date.now().toString(),
@@ -127,16 +129,38 @@ export function ProjectsSection({
       end_date: toISODate(formData.end_date || ""),
     };
 
+    let updated: Project[];
     if (editingIndex !== null) {
-      const updated = [...projects];
+      updated = [...projects];
       updated[editingIndex] = newProject;
-      setProjects(updated);
     } else {
-      setProjects([...projects, newProject]);
+      updated = [...projects, newProject];
     }
-
+    setProjects(updated);
     setDialogOpen(false);
     setEditingIndex(null);
+
+    if (editingIndex === null && projects.length === 0) {
+      try {
+        setSaving(true);
+        await onSave({
+          projects: updated.map((proj) => ({
+            id: proj.id,
+            name: proj.name,
+            description: proj.description ?? "",
+            technologies: proj.technologies,
+            url: proj.url || undefined,
+            start_date: proj.start_date || undefined,
+            end_date: proj.end_date || undefined,
+            current: proj.current,
+          })),
+        });
+      } catch {
+        // handled by parent
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   const formatDate = (date: string) => {
@@ -181,6 +205,24 @@ export function ProjectsSection({
           >
             {t("profile.projects")}
           </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {onRemoveSection && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:close" size={16} />}
+              onClick={onRemoveSection}
+              sx={{
+                textTransform: "none",
+                color: "#6b7280",
+                fontWeight: 500,
+                fontSize: "0.8125rem",
+                "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+              }}
+            >
+              Remove
+            </Button>
+          )}
           {!editing ? (
             <Button
               variant="text"
@@ -257,6 +299,7 @@ export function ProjectsSection({
               </Button>
             </Box>
           )}
+          </Box>
         </Box>
 
         {projects.length > 0 ? (
@@ -413,10 +456,29 @@ export function ProjectsSection({
                 color: "#9ca3af",
                 mt: 0.5,
                 fontSize: "0.8125rem",
+                display: "block",
               }}
             >
               {t("profile.clickEditToAddProjects")}
             </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              onClick={handleAddNew}
+              sx={{
+                mt: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "#0a66c2",
+                borderRadius: 2,
+                px: 2.5,
+                py: 1,
+                "&:hover": { backgroundColor: "#004182" },
+              }}
+            >
+              {t("profile.add")} {t("profile.projects")}
+            </Button>
           </Box>
         )}
       </Paper>
