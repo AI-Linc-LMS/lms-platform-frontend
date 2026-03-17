@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import NextLink from "next/link";
 import {
   Box,
   Typography,
@@ -32,12 +32,14 @@ import type { JobApplicationV2, JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
 import { ApplicationsIllustration } from "@/components/jobs-v2/illustrations";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { FileDown, Users } from "lucide-react";
+import { ResumeUrlPreviewModal } from "@/components/admin/ResumeUrlPreviewModal";
+import { FileDown, Users, ExternalLink, FileText, FileUp } from "lucide-react";
 
 const STATUS_OPTIONS = [
   { value: "applying", label: "Applying" },
   { value: "applied", label: "Applied" },
   { value: "shortlisted", label: "Shortlisted" },
+  { value: "interview_stage", label: "Interview Stage" },
   { value: "rejected", label: "Rejected" },
   { value: "selected", label: "Selected" },
 ] as const;
@@ -46,6 +48,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   applying: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
   applied: { bg: "rgba(59, 130, 246, 0.12)", color: "#2563eb" },
   shortlisted: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
+  interview_stage: { bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" },
   rejected: { bg: "rgba(239, 68, 68, 0.12)", color: "#dc2626" },
   selected: { bg: "rgba(34, 197, 94, 0.2)", color: "#15803d" },
 };
@@ -72,6 +75,10 @@ export default function JobApplicationsPage() {
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [updating, setUpdating] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [importing, setImporting] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const [resumePreviewUrl, setResumePreviewUrl] = useState<string | null>(null);
 
   const loadJob = useCallback(async () => {
     if (!jobId || isNaN(jobId)) return;
@@ -87,7 +94,9 @@ export default function JobApplicationsPage() {
     if (!jobId || isNaN(jobId)) return;
     try {
       setLoading(true);
-      const data = await adminJobsV2Service.getJobApplications(jobId, config.clientId);
+      const data = await adminJobsV2Service.getJobApplications(jobId, config.clientId, {
+        status: statusFilter || undefined,
+      });
       setApplications(data.results ?? []);
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to load applications", "error");
@@ -95,7 +104,7 @@ export default function JobApplicationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [jobId, showToast]);
+  }, [jobId, statusFilter, showToast]);
 
   useEffect(() => {
     loadJob();
@@ -111,7 +120,7 @@ export default function JobApplicationsPage() {
         setUpdating(true);
         await adminJobsV2Service.updateApplicationStatus(
           appId,
-          status as "applying" | "applied" | "shortlisted" | "rejected" | "selected",
+          status as "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected",
           config.clientId
         );
         showToast("Status updated", "success");
@@ -131,7 +140,7 @@ export default function JobApplicationsPage() {
       setUpdating(true);
         await adminJobsV2Service.bulkUpdateApplicationStatus(
           Array.from(selectedIds),
-          bulkStatus as "applying" | "applied" | "shortlisted" | "rejected" | "selected",
+          bulkStatus as "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected",
         config.clientId
       );
       showToast(`Updated ${selectedIds.size} application(s)`, "success");
@@ -153,6 +162,25 @@ export default function JobApplicationsPage() {
       return next;
     });
   };
+
+  const handleImportStatus = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        setImporting(true);
+        const res = await adminJobsV2Service.importApplicationStatusFromCsv(file, config.clientId);
+        showToast(`Updated ${res.updated} application(s) from CSV`, "success");
+        loadApplications();
+      } catch (err) {
+        showToast((err as Error)?.message ?? "Failed to import CSV", "error");
+      } finally {
+        setImporting(false);
+        e.target.value = "";
+      }
+    },
+    [loadApplications, showToast]
+  );
 
   const handleExportCsv = useCallback(async () => {
     try {
@@ -196,7 +224,7 @@ export default function JobApplicationsPage() {
     <MainLayout>
       <Box sx={{ p: { xs: 2, md: 3 } }}>
         <Button
-          component={Link}
+          component={NextLink}
           href="/admin/jobs-v2"
           startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
           sx={{
@@ -263,6 +291,52 @@ export default function JobApplicationsPage() {
                   {loading ? "—" : `${applications.length} applicant${applications.length !== 1 ? "s" : ""}`}
                 </Typography>
               </Box>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Filter by status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Filter by status"
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  sx={{
+                    backgroundColor: "#fff",
+                    borderRadius: 1.5,
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" },
+                  }}
+                >
+                  <MenuItem value="">All</MenuItem>
+                  {STATUS_OPTIONS.map((o) => (
+                    <MenuItem key={o.value} value={o.value}>
+                      {o.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept=".csv"
+                onChange={handleImportStatus}
+                style={{ display: "none" }}
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => importFileRef.current?.click()}
+                disabled={importing}
+                startIcon={<FileUp size={16} />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderColor: "rgba(99, 102, 241, 0.5)",
+                  color: "#6366f1",
+                  "&:hover": {
+                    borderColor: "#6366f1",
+                    backgroundColor: "rgba(99, 102, 241, 0.04)",
+                  },
+                }}
+              >
+                {importing ? "Importing..." : "Import Status CSV"}
+              </Button>
               <Button
                 variant="outlined"
                 size="small"
@@ -391,7 +465,7 @@ export default function JobApplicationsPage() {
                 Applications will appear here when students apply for this job
               </Typography>
               <Button
-                component={Link}
+                component={NextLink}
                 href="/admin/jobs-v2"
                 variant="outlined"
                 size="small"
@@ -480,6 +554,30 @@ export default function JobApplicationsPage() {
                             {app.student_college}
                           </Typography>
                         )}
+                        <Box sx={{ display: "flex", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
+                          <Button
+                            component={NextLink}
+                            href={`/admin/profile/${app.student}`}
+                            size="small"
+                            sx={{ textTransform: "none", fontSize: "0.7rem", minWidth: 0, p: 0.5 }}
+                          >
+                            Profile
+                          </Button>
+                          {app.resume_url && (
+                            <Button
+                              size="small"
+                              onClick={() => setResumePreviewUrl(app.resume_url ?? null)}
+                              sx={{ textTransform: "none", fontSize: "0.7rem", minWidth: 0, p: 0.5 }}
+                            >
+                              Preview
+                            </Button>
+                          )}
+                          {app.student_batch && (
+                            <Typography variant="caption" color="text.secondary">
+                              Batch: {app.student_batch}
+                            </Typography>
+                          )}
+                        </Box>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, flexWrap: "wrap" }}>
                           <FormControl size="small" sx={{ minWidth: 110 }}>
                             <Select
@@ -531,16 +629,19 @@ export default function JobApplicationsPage() {
                       />
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider" }}>
-                      Applicant
+                      Name
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider" }}>
-                      Email
+                      Profile
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider" }}>
-                      College
+                      Batch
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider" }}>
-                      Status
+                      Resume
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider" }}>
+                      Action
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider" }}>
                       Applied At
@@ -586,21 +687,44 @@ export default function JobApplicationsPage() {
                           </Box>
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider" }}>
-                          <Typography
-                            variant="body2"
+                          <Button
+                            component={NextLink}
+                            href={`/admin/profile/${app.student}`}
+                            size="small"
+                            startIcon={<ExternalLink size={14} />}
                             sx={{
-                              color: "#64748b",
-                              fontFamily: "monospace",
-                              fontSize: "0.8rem",
+                              textTransform: "none",
+                              color: "#6366f1",
+                              fontWeight: 500,
+                              "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
                             }}
                           >
-                            {app.student_email ?? "-"}
-                          </Typography>
+                            View
+                          </Button>
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider" }}>
                           <Typography variant="body2" color="text.secondary">
-                            {app.student_college ?? "-"}
+                            {app.student_batch ?? "-"}
                           </Typography>
+                        </TableCell>
+                        <TableCell sx={{ borderColor: "divider" }}>
+                          {app.resume_url ? (
+                            <Button
+                              size="small"
+                              onClick={() => setResumePreviewUrl(app.resume_url ?? null)}
+                              startIcon={<FileText size={14} />}
+                              sx={{
+                                textTransform: "none",
+                                color: "#6366f1",
+                                fontWeight: 500,
+                                "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                              }}
+                            >
+                              Preview
+                            </Button>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">—</Typography>
+                          )}
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider" }}>
                           <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -645,6 +769,12 @@ export default function JobApplicationsPage() {
           )}
         </Paper>
       </Box>
+      <ResumeUrlPreviewModal
+        open={!!resumePreviewUrl}
+        onClose={() => setResumePreviewUrl(null)}
+        resumeUrl={resumePreviewUrl}
+        resumeName="Resume"
+      />
     </MainLayout>
   );
 }

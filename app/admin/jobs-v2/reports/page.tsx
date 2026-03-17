@@ -273,6 +273,7 @@ export default function AdminJobsV2ReportsPage() {
                     <MenuItem value="applying">Applying</MenuItem>
                     <MenuItem value="applied">Applied</MenuItem>
                     <MenuItem value="shortlisted">Shortlisted</MenuItem>
+                    <MenuItem value="interview_stage">Interview Stage</MenuItem>
                     <MenuItem value="rejected">Rejected</MenuItem>
                     <MenuItem value="selected">Selected</MenuItem>
                   </Select>

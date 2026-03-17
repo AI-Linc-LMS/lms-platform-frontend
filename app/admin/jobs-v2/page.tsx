@@ -28,17 +28,12 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import {
-  adminJobsV2Service,
-  type JobCreateUpdatePayload,
-} from "@/lib/services/admin/admin-jobs-v2.service";
+import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
-import { JobCreateEditDialog } from "@/components/admin/jobs-v2/JobCreateEditDialog";
 import { JobDetailModal } from "@/components/admin/jobs-v2/JobDetailModal";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { CreateJobIllustration, EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 
 export default function AdminJobsV2Page() {
   const router = useRouter();
@@ -47,23 +42,9 @@ export default function AdminJobsV2Page() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [jobs, setJobs] = useState<JobV2[]>([]);
   const [loading, setLoading] = useState(true);
-  const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editingJob, setEditingJob] = useState<JobV2 | null>(null);
   const [detailJob, setDetailJob] = useState<JobV2 | null>(null);
-  const [loadingEdit, setLoadingEdit] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; job: JobV2 } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<JobV2 | null>(null);
-
-  const loadCourses = useCallback(async () => {
-    try {
-      const data = await adminCoursesService.getCourses({ limit: 1000 });
-      const list = Array.isArray(data) ? data : (data.results || data.data || []);
-      setCourses(list);
-    } catch {
-      setCourses([]);
-    }
-  }, []);
 
   const loadJobs = useCallback(async () => {
     try {
@@ -82,36 +63,6 @@ export default function AdminJobsV2Page() {
     loadJobs();
   }, [loadJobs]);
 
-  useEffect(() => {
-    loadCourses();
-  }, [loadCourses]);
-
-  const handleCreate = async (
-    payload: JobCreateUpdatePayload | Partial<JobCreateUpdatePayload>
-  ) => {
-    if (!payload.job_title || !payload.company_name) return;
-    try {
-      await adminJobsV2Service.createJob(payload as JobCreateUpdatePayload, config.clientId);
-      showToast("Job created successfully", "success");
-      setCreateDialogOpen(false);
-      loadJobs();
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const handleUpdate = async (payload: Partial<JobCreateUpdatePayload>) => {
-    if (!editingJob) return;
-    try {
-      await adminJobsV2Service.updateJob(editingJob.id, payload, config.clientId);
-      showToast("Job updated successfully", "success");
-      setEditingJob(null);
-      loadJobs();
-    } catch (err) {
-      throw err;
-    }
-  };
-
   const handleRowClick = useCallback(
     async (job: JobV2) => {
       try {
@@ -119,22 +70,6 @@ export default function AdminJobsV2Page() {
         setDetailJob(fullJob);
       } catch (err) {
         showToast((err as Error)?.message ?? "Failed to load job details", "error");
-      }
-    },
-    [showToast]
-  );
-
-  const openEditDialog = useCallback(
-    async (job: JobV2) => {
-      try {
-        setLoadingEdit(true);
-        const fullJob = await adminJobsV2Service.getJob(job.id, config.clientId);
-        setEditingJob(fullJob);
-        setDetailJob(null);
-      } catch (err) {
-        showToast((err as Error)?.message ?? "Failed to load job", "error");
-      } finally {
-        setLoadingEdit(false);
       }
     },
     [showToast]
@@ -148,7 +83,9 @@ export default function AdminJobsV2Page() {
   const handleMenuClose = () => setMenuAnchor(null);
 
   const handleMenuEdit = () => {
-    if (menuAnchor) openEditDialog(menuAnchor.job);
+    if (menuAnchor) {
+      router.push(`/admin/jobs-v2/${menuAnchor.job.id}/edit`);
+    }
     handleMenuClose();
   };
 
@@ -233,7 +170,8 @@ export default function AdminJobsV2Page() {
             </Button>
             <Button
               variant="contained"
-              onClick={() => setCreateDialogOpen(true)}
+              component={Link}
+              href="/admin/jobs-v2/new"
               startIcon={<IconWrapper icon="mdi:plus" size={20} />}
               sx={{
                 textTransform: "none",
@@ -523,7 +461,7 @@ export default function AdminJobsV2Page() {
           transformOrigin={{ vertical: "top", horizontal: "right" }}
           slotProps={{ paper: { sx: { minWidth: 160 } } }}
         >
-          <MenuItem onClick={handleMenuEdit} disabled={loadingEdit}>
+          <MenuItem onClick={handleMenuEdit}>
             <ListItemIcon>
               <IconWrapper icon="mdi:pencil" size={18} />
             </ListItemIcon>
@@ -558,28 +496,14 @@ export default function AdminJobsV2Page() {
           onCancel={() => setDeleteConfirm(null)}
         />
 
-        <JobCreateEditDialog
-          open={createDialogOpen}
-          onClose={() => setCreateDialogOpen(false)}
-          onSubmit={handleCreate}
-          title="Create Job"
-          courses={courses}
-        />
-        {editingJob && (
-          <JobCreateEditDialog
-            open={!!editingJob}
-            onClose={() => setEditingJob(null)}
-            onSubmit={handleUpdate}
-            title="Edit Job"
-            initialData={editingJob}
-            courses={courses}
-          />
-        )}
         <JobDetailModal
           open={!!detailJob}
           onClose={() => setDetailJob(null)}
           job={detailJob}
-          onEdit={(job) => openEditDialog(job)}
+          onEdit={(job) => {
+            setDetailJob(null);
+            router.push(`/admin/jobs-v2/${job.id}/edit`);
+          }}
           onDelete={(job) => {
             setDetailJob(null);
             setDeleteConfirm(job);

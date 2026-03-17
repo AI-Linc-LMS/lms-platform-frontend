@@ -89,17 +89,8 @@ export default function JobDetailPage() {
       showToast("You are not eligible to apply for this job based on college targeting.", "error");
       return;
     }
-    try {
-      setApplying(true);
-      await jobsV2Service.applyForJob(job.id);
-      showToast("Application submitted successfully", "success");
-      fetchJob();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to apply", "error");
-    } finally {
-      setApplying(false);
-    }
-  }, [job, showToast, fetchJob]);
+    // Internal apply: navigate to apply page (handled by Link)
+  }, [job, showToast]);
 
   const handleConfirmAppliedYes = useCallback(async () => {
     if (pendingApplicationId == null) {
@@ -402,37 +393,74 @@ export default function JobDetailPage() {
                     </IconButton>
                   </Tooltip>
                 )}
-                <Button
-                  variant="contained"
-                  onClick={handleApply}
-                  disabled={hasApplied || applying || (!hasExternalLink && !canApply)}
-                  startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
-                  sx={{
-                    borderRadius: 2,
-                    backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
-                    color: "#fff",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: { xs: 2, md: 3 },
-                    py: 1.25,
-                    fontSize: { xs: "0.875rem", md: "1rem" },
-                    whiteSpace: "nowrap",
-                    "&:hover": hasApplied ? { backgroundColor: "#22c55e" } : { backgroundColor: "#4f46e5" },
-                    "&.Mui-disabled": hasApplied
-                      ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
-                      : undefined,
-                  }}
-                >
-                  {hasApplied
-                    ? "Applied"
-                    : hasExternalLink
-                      ? "Apply on External Link"
-                      : !canApply
-                        ? "Not eligible to apply"
-                        : applying
-                          ? "Applying..."
-                          : "Apply"}
-                </Button>
+                {hasExternalLink ? (
+                  <Button
+                    variant="contained"
+                    onClick={handleApply}
+                    disabled={hasApplied || applying}
+                    startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: { xs: 2, md: 3 },
+                      py: 1.25,
+                      fontSize: { xs: "0.875rem", md: "1rem" },
+                      whiteSpace: "nowrap",
+                      "&:hover": hasApplied ? { backgroundColor: "#22c55e" } : { backgroundColor: "#4f46e5" },
+                      "&.Mui-disabled": hasApplied
+                        ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                        : undefined,
+                    }}
+                  >
+                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+                  </Button>
+                ) : hasApplied || !canApply ? (
+                  <Button
+                    variant="contained"
+                    disabled
+                    startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: { xs: 2, md: 3 },
+                      py: 1.25,
+                      fontSize: { xs: "0.875rem", md: "1rem" },
+                      whiteSpace: "nowrap",
+                      "&.Mui-disabled": hasApplied
+                        ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                        : undefined,
+                    }}
+                  >
+                    {hasApplied ? "Applied" : "Not eligible to apply"}
+                  </Button>
+                ) : (
+                  <Button
+                    component={Link}
+                    href={`/jobs-v2/${job.id}/apply`}
+                    variant="contained"
+                    startIcon={<ExternalLink size={18} />}
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: "#6366f1",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: { xs: 2, md: 3 },
+                      py: 1.25,
+                      fontSize: { xs: "0.875rem", md: "1rem" },
+                      whiteSpace: "nowrap",
+                      "&:hover": { backgroundColor: "#4f46e5" },
+                    }}
+                  >
+                    Apply
+                  </Button>
+                )}
               </Box>
             </Box>
           </Box>
@@ -673,34 +701,65 @@ export default function JobDetailPage() {
             boxShadow: "0 -4px 12px rgba(0,0,0,0.08)",
           }}
         >
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleApply}
-            disabled={hasApplied || applying || (!hasExternalLink && !canApply)}
-            startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
-            sx={{
-              borderRadius: 2,
-              backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
-              py: 1.5,
-              textTransform: "none",
-              fontWeight: 600,
-              "&:hover": { backgroundColor: hasApplied ? "#22c55e" : "#4f46e5" },
-              "&.Mui-disabled": hasApplied
-                ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
-                : undefined,
-            }}
-          >
-            {hasApplied
-              ? "Applied"
-              : hasExternalLink
-                ? "Apply on External Link"
-                : !canApply
-                  ? "Not eligible to apply"
-                  : applying
-                    ? "Applying..."
-                    : "Apply"}
-          </Button>
+          {hasExternalLink ? (
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleApply}
+              disabled={hasApplied || applying}
+              startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                py: 1.5,
+                textTransform: "none",
+                fontWeight: 600,
+                "&:hover": { backgroundColor: hasApplied ? "#22c55e" : "#4f46e5" },
+                "&.Mui-disabled": hasApplied
+                  ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                  : undefined,
+              }}
+            >
+              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+            </Button>
+          ) : hasApplied || !canApply ? (
+            <Button
+              variant="contained"
+              fullWidth
+              disabled
+              startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                py: 1.5,
+                textTransform: "none",
+                fontWeight: 600,
+                "&.Mui-disabled": hasApplied
+                  ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                  : undefined,
+              }}
+            >
+              {hasApplied ? "Applied" : "Not eligible to apply"}
+            </Button>
+          ) : (
+            <Button
+              component={Link}
+              href={`/jobs-v2/${job.id}/apply`}
+              variant="contained"
+              fullWidth
+              startIcon={<ExternalLink size={18} />}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: "#6366f1",
+                py: 1.5,
+                textTransform: "none",
+                fontWeight: 600,
+                "&:hover": { backgroundColor: "#4f46e5" },
+              }}
+            >
+              Apply
+            </Button>
+          )}
         </Box>
 
         <ConfirmDialog
