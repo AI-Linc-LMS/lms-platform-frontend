@@ -627,22 +627,42 @@ export function StudentsTable({
                         textAlign: "center",
                       }}
                     >
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          router.push(`/admin/manage-students/${student.id}`)
-                        }
-                        sx={{
-                          color: "#6366f1",
-                          "&:hover": {
-                            backgroundColor: "#eef2ff",
-                            transform: "scale(1.1)",
-                          },
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <IconWrapper icon="mdi:eye" size={18} />
-                      </IconButton>
+                      <Box sx={{ display: "flex", gap: 0.5, justifyContent: "center" }}>
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            router.push(`/admin/profile/${student.id}`)
+                          }
+                          title={t("profile.tabProfile")}
+                          sx={{
+                            color: "#6366f1",
+                            "&:hover": {
+                              backgroundColor: "#eef2ff",
+                              transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          <IconWrapper icon="mdi:eye" size={18} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            router.push(`/admin/manage-students/${student.id}`)
+                          }
+                          title={t("manageStudents.courseManagement")}
+                          sx={{
+                            color: "#6366f1",
+                            "&:hover": {
+                              backgroundColor: "#eef2ff",
+                              transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          <IconWrapper icon="mdi:school-outline" size={18} />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 );

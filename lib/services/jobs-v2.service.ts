@@ -34,6 +34,15 @@ export interface JobV2 {
   favorites_count?: number;
   courses?: Array<{ id: number; title: string }>;
   college_mappings?: Array<{ id?: number; college_name: string; department?: string; batch?: string }>;
+  questions?: Array<{
+    id: number;
+    question_text: string;
+    question_type: string;
+    is_required: boolean;
+    order: number;
+    options?: string[];
+  }>;
+  question_ids?: number[];
 }
 
 export interface JobV2Filters {
@@ -58,7 +67,8 @@ export interface JobApplicationV2 {
   student_name: string;
   student_email: string;
   student_college?: string;
-  status: "applying" | "applied" | "shortlisted" | "rejected" | "selected";
+  student_batch?: string;
+  status: "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected";
   resume_url?: string;
   applied_at: string;
   updated_at: string;
@@ -117,7 +127,13 @@ export const jobsV2Service = {
 
   applyForJob: async (
     jobId: number,
-    payload?: { resume_url?: string; client_id?: string | number; external?: boolean }
+    payload?: {
+      resume_url?: string;
+      saved_resume_id?: number;
+      responses?: Array<{ question_id: number; response_text: string }>;
+      client_id?: string | number;
+      external?: boolean;
+    }
   ): Promise<{ id: number; status: string }> => {
     const clientId = payload?.client_id ?? config.clientId;
     try {
@@ -126,6 +142,8 @@ export const jobsV2Service = {
         {
           client_id: clientId,
           resume_url: payload?.resume_url,
+          saved_resume_id: payload?.saved_resume_id,
+          responses: payload?.responses,
           external: payload?.external ?? false,
         }
       );
