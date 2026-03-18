@@ -24,6 +24,9 @@ import {
   ListItemText,
   useMediaQuery,
   useTheme,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -31,7 +34,6 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
-import { JobDetailModal } from "@/components/admin/jobs-v2/JobDetailModal";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { CreateJobIllustration, EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
 
@@ -42,14 +44,18 @@ export default function AdminJobsV2Page() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [jobs, setJobs] = useState<JobV2[]>([]);
   const [loading, setLoading] = useState(true);
-  const [detailJob, setDetailJob] = useState<JobV2 | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "active" | "inactive" | "closed" | "completed" | ""
+  >("");
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; job: JobV2 } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<JobV2 | null>(null);
 
   const loadJobs = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await adminJobsV2Service.getJobs(config.clientId);
+      const data = await adminJobsV2Service.getJobs(config.clientId, {
+        status: statusFilter || undefined,
+      });
       setJobs(data.results ?? []);
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to load jobs", "error");
@@ -57,22 +63,17 @@ export default function AdminJobsV2Page() {
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, statusFilter]);
 
   useEffect(() => {
     loadJobs();
   }, [loadJobs]);
 
   const handleRowClick = useCallback(
-    async (job: JobV2) => {
-      try {
-        const fullJob = await adminJobsV2Service.getJob(job.id, config.clientId);
-        setDetailJob(fullJob);
-      } catch (err) {
-        showToast((err as Error)?.message ?? "Failed to load job details", "error");
-      }
+    (job: JobV2) => {
+      router.push(`/admin/jobs-v2/${job.id}`);
     },
-    [showToast]
+    [router]
   );
 
   const handleMenuOpen = (e: React.MouseEvent, job: JobV2) => {
@@ -107,7 +108,6 @@ export default function AdminJobsV2Page() {
       await adminJobsV2Service.deleteJob(deleteConfirm.id, config.clientId);
       showToast("Job deleted successfully", "success");
       setDeleteConfirm(null);
-      setDetailJob(null);
       loadJobs();
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to delete job", "error");
@@ -159,7 +159,25 @@ export default function AdminJobsV2Page() {
               </Typography>
             </Box>
           </Box>
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value as "active" | "inactive" | "closed" | "completed" | ""
+                  )
+                }
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="closed">Closed</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+              </Select>
+            </FormControl>
             <Button
               variant="outlined"
               component={Link}
@@ -229,7 +247,7 @@ export default function AdminJobsV2Page() {
                 <Paper
                   key={job.id}
                   elevation={0}
-                  onClick={() => void handleRowClick(job)}
+                  onClick={() => handleRowClick(job)}
                   sx={{
                     p: 2,
                     cursor: "pointer",
@@ -281,9 +299,35 @@ export default function AdminJobsV2Page() {
                           }}
                         />
                         <Chip
+                          label={
+                            (job.status === "active" && "Active") ||
+                            (job.status === "inactive" && "Inactive") ||
+                            (job.status === "closed" && "Closed") ||
+                            (job.status === "completed" && "Completed") ||
+                            "Active"
+                          }
+                          size="small"
+                          sx={{
+                            height: 24,
+                            fontSize: "0.75rem",
+                            backgroundColor:
+                              job.status === "active"
+                                ? "rgba(34, 197, 94, 0.12)"
+                                : job.status === "closed" || job.status === "completed"
+                                  ? "rgba(100, 116, 139, 0.12)"
+                                  : "rgba(99, 102, 241, 0.12)",
+                            color:
+                              job.status === "active"
+                                ? "#16a34a"
+                                : job.status === "closed" || job.status === "completed"
+                                  ? "#64748b"
+                                  : "#6366f1",
+                            fontWeight: 600,
+                          }}
+                        />
+                        <Chip
                           label={job.is_published ? "Published" : "Draft"}
                           size="small"
-                          color={job.is_published ? "success" : "default"}
                           variant="outlined"
                           sx={{ height: 24, fontSize: "0.75rem" }}
                         />
@@ -323,13 +367,13 @@ export default function AdminJobsV2Page() {
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Company</TableCell>
                     <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Type</TableCell>
-                    <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Job Status</TableCell>
                     <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Courses</TableCell>
                     <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa", width: 90 }} align="center">
                       Favourites
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Created</TableCell>
-                    <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Deadline</TableCell>
+                    <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa" }}>Closing Date</TableCell>
                     <TableCell sx={{ fontWeight: 600, backgroundColor: "#fafafa", width: 180 }} align="right">
                       Actions
                     </TableCell>
@@ -340,7 +384,7 @@ export default function AdminJobsV2Page() {
                     <TableRow
                       key={job.id}
                       hover
-                      onClick={() => void handleRowClick(job)}
+                      onClick={() => handleRowClick(job)}
                       sx={{
                         cursor: "pointer",
                         "&:hover": { backgroundColor: "action.hover" },
@@ -390,12 +434,40 @@ export default function AdminJobsV2Page() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          label={job.is_published ? "Published" : "Draft"}
-                          size="small"
-                          color={job.is_published ? "success" : "default"}
-                          variant="outlined"
-                        />
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                          <Chip
+                            label={
+                              (job.status === "active" && "Active") ||
+                              (job.status === "inactive" && "Inactive") ||
+                              (job.status === "closed" && "Closed") ||
+                              (job.status === "completed" && "Completed") ||
+                              "Active"
+                            }
+                            size="small"
+                            sx={{
+                              backgroundColor:
+                                job.status === "active"
+                                  ? "rgba(34, 197, 94, 0.12)"
+                                  : job.status === "closed" || job.status === "completed"
+                                    ? "rgba(100, 116, 139, 0.12)"
+                                    : "rgba(99, 102, 241, 0.12)",
+                              color:
+                                job.status === "active"
+                                  ? "#16a34a"
+                                  : job.status === "closed" || job.status === "completed"
+                                    ? "#64748b"
+                                    : "#6366f1",
+                              fontWeight: 600,
+                              fontSize: "0.7rem",
+                            }}
+                          />
+                          <Chip
+                            label={job.is_published ? "Published" : "Draft"}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 22, fontSize: "0.7rem" }}
+                          />
+                        </Box>
                       </TableCell>
                       <TableCell sx={{ maxWidth: 180 }}>
                         <Tooltip title={(job.courses ?? []).map((c) => c.title).join(", ") || "—"} arrow>
@@ -496,19 +568,6 @@ export default function AdminJobsV2Page() {
           onCancel={() => setDeleteConfirm(null)}
         />
 
-        <JobDetailModal
-          open={!!detailJob}
-          onClose={() => setDetailJob(null)}
-          job={detailJob}
-          onEdit={(job) => {
-            setDetailJob(null);
-            router.push(`/admin/jobs-v2/${job.id}/edit`);
-          }}
-          onDelete={(job) => {
-            setDetailJob(null);
-            setDeleteConfirm(job);
-          }}
-        />
       </Box>
     </MainLayout>
   );

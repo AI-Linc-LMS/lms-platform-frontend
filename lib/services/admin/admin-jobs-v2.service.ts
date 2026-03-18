@@ -33,7 +33,13 @@ export interface JobCreateUpdatePayload {
   apply_link?: string;
   job_type?: string;
   is_published?: boolean;
+  status?: "active" | "inactive" | "closed" | "completed";
   application_deadline?: string | null;
+  number_of_openings?: number | null;
+  applicable_passout_year?: string | null;
+  min_10th_percentage?: number | null;
+  min_12th_percentage?: number | null;
+  min_graduation_percentage?: number | null;
   college_mappings?: Array<{
     college_name: string;
     department?: string;
@@ -78,12 +84,17 @@ export const adminJobsV2Service = {
     }
   },
 
-  getJobs: async (clientId?: string | number): Promise<{ results: JobV2[]; count: number }> => {
+  getJobs: async (
+    clientId?: string | number,
+    options?: { status?: "active" | "inactive" | "closed" | "completed" }
+  ): Promise<{ results: JobV2[]; count: number }> => {
     const cid = clientId ?? getClientId();
+    const params: Record<string, string> = { client_id: String(cid) };
+    if (options?.status) params.status = options.status;
     try {
       const response = await apiClient.get<{ results: JobV2[]; count: number }>(
         `/jobs-v2/api/admin/jobs/`,
-        { params: { client_id: cid } }
+        { params }
       );
       return {
         results: response.data?.results ?? [],
@@ -149,6 +160,24 @@ export const adminJobsV2Service = {
     }
   },
 
+  uploadJobJd: async (
+    jobId: number,
+    file: File,
+    clientId?: string | number
+  ): Promise<JobV2> => {
+    const cid = clientId ?? getClientId();
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<JobV2>(
+      `/jobs-v2/api/admin/jobs/${jobId}/upload-jd/`,
+      formData,
+      {
+        params: { client_id: cid },
+      }
+    );
+    return response.data;
+  },
+
   deleteJob: async (jobId: number, clientId?: string | number): Promise<void> => {
     const cid = clientId ?? getClientId();
     try {
@@ -197,14 +226,25 @@ export const adminJobsV2Service = {
 
   updateApplicationStatus: async (
     applicationId: number,
-    status: "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected",
+    updates: {
+      status?: "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected";
+      drive?: string;
+      internal_shortlisting?: string;
+      reason_not_shortlisted?: string;
+      shortlisted_by_hr?: string;
+      round_1?: string;
+      round_2?: string;
+      round_3?: string;
+      round_4?: string;
+      offered?: string;
+    },
     clientId?: string | number
   ): Promise<JobApplicationV2> => {
     const cid = clientId ?? getClientId();
     try {
       const response = await apiClient.patch<JobApplicationV2>(
         `/jobs-v2/api/admin/applications/${applicationId}/`,
-        { status },
+        updates,
         { params: { client_id: cid } }
       );
       return response.data;

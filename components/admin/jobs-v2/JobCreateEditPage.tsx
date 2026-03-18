@@ -38,8 +38,15 @@ interface CourseOption {
   name?: string;
 }
 
+interface JobCreateEditSubmitOptions {
+  jdFile?: File;
+}
+
 interface JobCreateEditPageProps {
-  onSubmit: (data: JobCreateUpdatePayload | Partial<JobCreateUpdatePayload>) => Promise<void>;
+  onSubmit: (
+    data: JobCreateUpdatePayload | Partial<JobCreateUpdatePayload>,
+    options?: JobCreateEditSubmitOptions
+  ) => Promise<void>;
   onCancel: () => void;
   title: string;
   initialData?: JobV2 | null;
@@ -69,7 +76,13 @@ const emptyPayload: JobCreateUpdatePayload = {
   apply_link: "",
   job_type: "job",
   is_published: false,
+  status: "active",
   application_deadline: "",
+  number_of_openings: null,
+  applicable_passout_year: null,
+  min_10th_percentage: null,
+  min_12th_percentage: null,
+  min_graduation_percentage: null,
   college_mappings: [],
   course_ids: [],
   question_ids: [],
@@ -173,6 +186,7 @@ export function JobCreateEditPage({
   const [activeStep, setActiveStep] = useState(0);
   const [skillInput, setSkillInput] = useState("");
   const [collegeInput, setCollegeInput] = useState("");
+  const [jdFile, setJdFile] = useState<File | null>(null);
   const [questionBank, setQuestionBank] = useState<JobQuestionV2[]>([]);
   const [addQuestionModalOpen, setAddQuestionModalOpen] = useState(false);
   const [questionsPage, setQuestionsPage] = useState(1);
@@ -197,6 +211,14 @@ export function JobCreateEditPage({
             ? rawDeadline.split("T")[0]
             : rawDeadline.trim()
           : "";
+      const init = initialData as {
+        status?: "active" | "inactive" | "closed" | "completed";
+        number_of_openings?: number | null;
+        applicable_passout_year?: string | null;
+        min_10th_percentage?: number | null;
+        min_12th_percentage?: number | null;
+        min_graduation_percentage?: number | null;
+      };
       setFormData({
         job_title: initialData.job_title ?? "",
         company_name: initialData.company_name ?? "",
@@ -219,7 +241,13 @@ export function JobCreateEditPage({
         apply_link: initialData.apply_link ?? "",
         job_type: initialData.job_type ?? "job",
         is_published: initialData.is_published ?? false,
+        status: init.status ?? "active",
         application_deadline: formattedDeadline,
+        number_of_openings: init.number_of_openings ?? null,
+        applicable_passout_year: init.applicable_passout_year ?? null,
+        min_10th_percentage: init.min_10th_percentage ?? null,
+        min_12th_percentage: init.min_12th_percentage ?? null,
+        min_graduation_percentage: init.min_graduation_percentage ?? null,
         college_mappings: (data.college_mappings ?? []).map((m) => ({
           college_name: m.college_name,
           department: m.department,
@@ -337,18 +365,24 @@ export function JobCreateEditPage({
         course_ids: formData.course_ids ?? [],
         question_ids: formData.question_ids ?? [],
         is_published: Boolean(formData.is_published),
+        status: formData.status ?? "active",
         application_deadline: formData.application_deadline?.trim()
           ? formData.application_deadline.trim()
           : null,
+        number_of_openings: formData.number_of_openings ?? null,
+        applicable_passout_year: formData.applicable_passout_year?.trim() || null,
+        min_10th_percentage: formData.min_10th_percentage ?? null,
+        min_12th_percentage: formData.min_12th_percentage ?? null,
+        min_graduation_percentage: formData.min_graduation_percentage ?? null,
       };
-      await onSubmit(payload);
+      await onSubmit(payload, { jdFile: jdFile ?? undefined });
       onCancel();
     } catch {
       // Error shown by parent
     } finally {
       setSubmitting(false);
     }
-  }, [formData, onSubmit, onCancel]);
+  }, [formData, jdFile, onSubmit, onCancel]);
 
   const canProceedStep0 = formData.job_title.trim() && formData.company_name.trim();
   const isLastStep = activeStep === STEPS.length - 1;
@@ -433,6 +467,86 @@ export function JobCreateEditPage({
                 sx={inputSx}
               />
             </Box>
+            <Box sx={{ mt: 2.5, pt: 2.5, borderTop: "1px solid", borderColor: "divider" }}>
+              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: "#0f172a" }}>
+                Company & Eligibility
+              </Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                <TextField
+                  label="Number of Openings"
+                  type="number"
+                  value={formData.number_of_openings ?? ""}
+                  onChange={(e) =>
+                    handleChange(
+                      "number_of_openings",
+                      e.target.value === "" ? null : Number(e.target.value)
+                    )
+                  }
+                  fullWidth
+                  size="small"
+                  placeholder="e.g. 5"
+                  inputProps={{ min: 1 }}
+                  sx={inputSx}
+                />
+                <TextField
+                  label="Applicable Passout Year"
+                  value={formData.applicable_passout_year ?? ""}
+                  onChange={(e) => handleChange("applicable_passout_year", e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="e.g. 2025 or 2024-2026"
+                  sx={inputSx}
+                />
+                <TextField
+                  label="Min 10th %"
+                  type="number"
+                  value={formData.min_10th_percentage ?? ""}
+                  onChange={(e) =>
+                    handleChange(
+                      "min_10th_percentage",
+                      e.target.value === "" ? null : Number(e.target.value)
+                    )
+                  }
+                  fullWidth
+                  size="small"
+                  placeholder="e.g. 60"
+                  inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  sx={inputSx}
+                />
+                <TextField
+                  label="Min 12th %"
+                  type="number"
+                  value={formData.min_12th_percentage ?? ""}
+                  onChange={(e) =>
+                    handleChange(
+                      "min_12th_percentage",
+                      e.target.value === "" ? null : Number(e.target.value)
+                    )
+                  }
+                  fullWidth
+                  size="small"
+                  placeholder="e.g. 60"
+                  inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  sx={inputSx}
+                />
+                <TextField
+                  label="Min Graduation %"
+                  type="number"
+                  value={formData.min_graduation_percentage ?? ""}
+                  onChange={(e) =>
+                    handleChange(
+                      "min_graduation_percentage",
+                      e.target.value === "" ? null : Number(e.target.value)
+                    )
+                  }
+                  fullWidth
+                  size="small"
+                  placeholder="e.g. 60"
+                  inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  sx={inputSx}
+                />
+              </Box>
+            </Box>
           </SectionCard>
         );
       case 1:
@@ -450,6 +564,46 @@ export function JobCreateEditPage({
                 placeholder="Describe the role, responsibilities, and what you're looking for..."
                 sx={inputSx}
               />
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: "#0f172a" }}>
+                  Upload JD (PDF)
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                  Optional. Upload a PDF job description. Students can view it on the job detail page.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  size="small"
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: "rgba(99, 102, 241, 0.4)",
+                    color: "#6366f1",
+                    "&:hover": {
+                      borderColor: "#6366f1",
+                      backgroundColor: "rgba(99, 102, 241, 0.08)",
+                    },
+                  }}
+                >
+                  {jdFile ? jdFile.name : "Choose PDF"}
+                  <input
+                    type="file"
+                    hidden
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f && f.type === "application/pdf") setJdFile(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </Button>
+                {jdFile && (
+                  <Typography variant="caption" sx={{ ml: 1.5, color: "#64748b" }}>
+                    Selected: {jdFile.name}
+                  </Typography>
+                )}
+              </Box>
             </SectionCard>
             <SectionCard title="Role Process" icon="mdi:format-list-checks">
               <TextField
@@ -1087,8 +1241,23 @@ export function JobCreateEditPage({
                     </Select>
                   </FormControl>
                 </Box>
+                <FormControl fullWidth size="small" sx={inputSx}>
+                  <InputLabel>Job Status</InputLabel>
+                  <Select
+                    value={formData.status ?? "active"}
+                    label="Job Status"
+                    onChange={(e) =>
+                      handleChange("status", e.target.value as "active" | "inactive" | "closed" | "completed")
+                    }
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                    <MenuItem value="closed">Closed</MenuItem>
+                    <MenuItem value="completed">Completed</MenuItem>
+                  </Select>
+                </FormControl>
                 <TextField
-                  label="Application Deadline (optional)"
+                  label="Closing Date (optional)"
                   value={formData.application_deadline}
                   onChange={(e) => handleChange("application_deadline", e.target.value)}
                   fullWidth
@@ -1136,20 +1305,22 @@ export function JobCreateEditPage({
           },
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            width: { xs: "100%", md: 110 },
-            height: { xs: 88, md: 110 },
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <CreateJobIllustration width={100} height={88} primaryColor="#6366f1" />
-        </Box>
+        {!isEditMode && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              width: { xs: "100%", md: 110 },
+              height: { xs: 88, md: 110 },
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <CreateJobIllustration width={100} height={88} primaryColor="#6366f1" />
+          </Box>
+        )}
         <Box sx={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", mb: 0.5 }}>
             <Typography variant="h5" sx={{ fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>

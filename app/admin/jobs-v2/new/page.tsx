@@ -37,10 +37,19 @@ export default function NewJobPage() {
   }, [loadCourses]);
 
   const handleSubmit = useCallback(
-    async (payload: JobCreateUpdatePayload | Partial<JobCreateUpdatePayload>) => {
+    async (
+      payload: JobCreateUpdatePayload | Partial<JobCreateUpdatePayload>,
+      options?: { jdFile?: File }
+    ) => {
       if (!payload.job_title || !payload.company_name) return;
       try {
-        await adminJobsV2Service.createJob(payload as JobCreateUpdatePayload, config.clientId);
+        const job = await adminJobsV2Service.createJob(
+          payload as JobCreateUpdatePayload,
+          config.clientId
+        );
+        if (options?.jdFile) {
+          await adminJobsV2Service.uploadJobJd(job.id, options.jdFile, config.clientId);
+        }
         showToast("Job created successfully", "success");
         router.push("/admin/jobs-v2");
       } catch (err) {
