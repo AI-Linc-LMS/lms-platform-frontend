@@ -31,8 +31,11 @@ export async function initBrowserTracer() {
   const { registerInstrumentations } = await import(
     "@opentelemetry/instrumentation"
   );
-  const { getWebAutoInstrumentations } = await import(
-    "@opentelemetry/auto-instrumentations-web"
+  const { FetchInstrumentation } = await import(
+    "@opentelemetry/instrumentation-fetch"
+  );
+  const { XMLHttpRequestInstrumentation } = await import(
+    "@opentelemetry/instrumentation-xml-http-request"
   );
   const { resourceFromAttributes } = await import("@opentelemetry/resources");
   const { ATTR_SERVICE_NAME } = await import(
@@ -125,15 +128,11 @@ export async function initBrowserTracer() {
   registerInstrumentations({
     tracerProvider: provider,
     instrumentations: [
-      getWebAutoInstrumentations({
-        "@opentelemetry/instrumentation-fetch": {
-          propagateTraceHeaderCorsUrls: [new RegExp(`^${escapedOrigin}`)],
-          clearTimingResources: true,
-        },
-        "@opentelemetry/instrumentation-xml-http-request": {},
-        "@opentelemetry/instrumentation-document-load": { enabled: false },
-        "@opentelemetry/instrumentation-user-interaction": { enabled: false },
+      new FetchInstrumentation({
+        propagateTraceHeaderCorsUrls: [new RegExp(`^${escapedOrigin}`)],
+        clearTimingResources: true,
       }),
+      new XMLHttpRequestInstrumentation(),
     ],
   });
 
