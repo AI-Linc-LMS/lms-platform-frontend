@@ -61,10 +61,16 @@ export default function EditJobPage() {
   }, [loadJob, loadCourses]);
 
   const handleSubmit = useCallback(
-    async (payload: Partial<JobCreateUpdatePayload>) => {
+    async (
+      payload: Partial<JobCreateUpdatePayload>,
+      options?: { jdFile?: File }
+    ) => {
       if (!job) return;
       try {
         await adminJobsV2Service.updateJob(job.id, payload, config.clientId);
+        if (options?.jdFile) {
+          await adminJobsV2Service.uploadJobJd(job.id, options.jdFile, config.clientId);
+        }
         showToast("Job updated successfully", "success");
         router.push("/admin/jobs-v2");
       } catch (err) {

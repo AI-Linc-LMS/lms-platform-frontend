@@ -183,6 +183,43 @@ export default function ApplyJobRoutePage() {
     );
   }
 
+  if (job.status !== "active") {
+    const statusMessage =
+      job.status === "inactive"
+        ? "Applications are closed for this job (Inactive)."
+        : job.status === "closed"
+          ? "Applications are closed for this job."
+          : job.status === "completed"
+            ? "Applications are completed for this job."
+            : "Applications are not open for this job.";
+    return (
+      <MainLayout>
+        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
+          <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1e293b" }}>
+              Applications closed
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
+              {statusMessage}
+            </Typography>
+            <Button
+              component={Link}
+              href={`/jobs-v2/${job.id}`}
+              startIcon={<ArrowLeft size={18} />}
+              sx={{
+                textTransform: "none",
+                backgroundColor: "#6366f1",
+                "&:hover": { backgroundColor: "#4f46e5" },
+              }}
+            >
+              Back to Job
+            </Button>
+          </Box>
+        </Box>
+      </MainLayout>
+    );
+  }
+
   if (job.eligible_to_apply === false) {
     return (
       <MainLayout>

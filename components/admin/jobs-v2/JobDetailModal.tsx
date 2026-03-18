@@ -276,7 +276,7 @@ export function JobDetailModal({
           )}
           <InfoPill icon={<Calendar size={18} />} label="Created" value={formatDate(job.created_at)} />
           {job.application_deadline && (
-            <InfoPill icon={<Clock size={18} />} label="Deadline" value={formatDate(job.application_deadline)} />
+            <InfoPill icon={<Clock size={18} />} label="Closing Date" value={formatDate(job.application_deadline)} />
           )}
         </Box>
 
