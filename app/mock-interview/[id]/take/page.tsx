@@ -219,6 +219,7 @@ export default function TakeMockInterviewPage() {
     continuous: true,
     lang: "en-US",
     preferWhisper: true,
+    paused: isSpeaking,
   });
   const { start: startStt, stop: stopStt, transcript: recognizedText, isListening, error: sttError } = speechToText;
 

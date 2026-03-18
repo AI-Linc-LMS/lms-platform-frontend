@@ -41,6 +41,7 @@ export interface UseSpeechToTextOptions {
   lang?: string;
   continuous?: boolean;
   preferWhisper?: boolean;
+  paused?: boolean;
 }
 
 export interface UseSpeechToTextReturn {
@@ -60,6 +61,7 @@ export function useSpeechToText(
     lang = "en-US",
     continuous = true,
     preferWhisper = true,
+    paused = false,
   } = options;
 
   const [transcript, setTranscript] = useState("");
@@ -70,14 +72,17 @@ export function useSpeechToText(
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const wantsListeningRef = useRef(false);
+  const startedRef = useRef(false);
   const whisperFailedRef = useRef(false);
+  const pausedRef = useRef(paused);
   const onFinalRef = useRef(onFinal);
   const onInterimRef = useRef(onInterim);
   onFinalRef.current = onFinal;
   onInterimRef.current = onInterim;
+  pausedRef.current = paused;
 
   const sendChunkToWhisper = useCallback(async (blob: Blob) => {
-    if (whisperFailedRef.current || blob.size < 1000) return;
+    if (pausedRef.current || whisperFailedRef.current || blob.size < 1000) return;
     let file: Blob = blob;
     let filename = "chunk.webm";
     if (blob.type.includes("mp4") || blob.type.includes("m4a")) filename = "chunk.m4a";
@@ -127,6 +132,7 @@ export function useSpeechToText(
     rec.interimResults = true;
     rec.lang = lang;
     rec.onresult = (event: SpeechRecognitionResultEvent) => {
+      if (pausedRef.current) return;
       let interim = "";
       let final = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -160,7 +166,7 @@ export function useSpeechToText(
       }
     };
     rec.onend = () => {
-      if (!wantsListeningRef.current) return;
+      if (!wantsListeningRef.current || pausedRef.current) return;
       try {
         rec.start();
       } catch {}
@@ -225,15 +231,59 @@ export function useSpeechToText(
   }, []);
 
   const start = useCallback(() => {
+    startedRef.current = true;
     setTranscript("");
     setError(null);
-    startBrowserStt();
-    startWhisperRecording();
+    if (!pausedRef.current) {
+      startBrowserStt();
+      startWhisperRecording();
+    }
   }, [startBrowserStt, startWhisperRecording]);
 
   const stop = useCallback(() => {
+    startedRef.current = false;
     stopBrowserStt();
   }, [stopBrowserStt]);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    if (!startedRef.current) return;
+    if (paused) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        recognitionRef.current = null;
+      }
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch {}
+        mediaRecorderRef.current = null;
+      }
+    } else {
+      startBrowserStt();
+      if (preferWhisper && streamRef.current) {
+        const stream = streamRef.current;
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : MediaRecorder.isTypeSupported("audio/mp4")
+              ? "audio/mp4"
+              : "";
+        const rec = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+        mediaRecorderRef.current = rec;
+        rec.ondataavailable = (e) => {
+          if (e.data.size > 0) sendChunkToWhisper(e.data);
+        };
+        rec.start(WHISPER_CHUNK_MS);
+      } else if (preferWhisper) {
+        startWhisperRecording();
+      }
+    }
+  }, [paused, preferWhisper, startBrowserStt, startWhisperRecording, sendChunkToWhisper]);
 
   useEffect(() => {
     if (!continuous || !isListening) return;

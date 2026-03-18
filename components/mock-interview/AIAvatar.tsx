@@ -7,6 +7,8 @@ const SPEAKING_LOOP_END = 2.2;
 const POST_QUESTION_START = 2.6;
 const POST_QUESTION_END = 6;
 const WAITING_LAST_FRAME = 5.8;
+const TTS_RESUME_DELAY_MS = 120;
+const TTS_SAFETY_TIMEOUT_MS = 45000;
 
 type VideoPhase = "speaking" | "post-question" | "waiting";
 
@@ -84,51 +86,72 @@ export const AIAvatar = memo(function AIAvatar({
     if (isAnimating) {
       videoPhaseRef.current = "speaking";
       video.loop = false;
+      video.pause();
       video.currentTime = 0;
-      video.play().catch(() => {});
+      video.play().catch((e: unknown) => {
+        if ((e as { name?: string })?.name === "AbortError") return;
+      });
     }
   }, [interviewVideoSrc, isAnimating]);
 
   useEffect(() => {
-    if (question && isSpeaking) {
-      if (speechSynthesisRef.current) {
-        window.speechSynthesis.cancel();
-      }
+    if (!question || !isSpeaking) return;
 
+    window.speechSynthesis.cancel();
+    let safetyTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const finishSpeaking = () => {
+      if (cancelled) return;
+      if (safetyTimeoutId != null) {
+        clearTimeout(safetyTimeoutId);
+        safetyTimeoutId = null;
+      }
+      if (!interviewVideoSrc?.toLowerCase().endsWith(".gif")) {
+        const video = interviewVideoRef.current;
+        if (video) {
+          videoPhaseRef.current = "post-question";
+          video.pause();
+          video.currentTime = POST_QUESTION_START;
+          video.play().catch((e: unknown) => {
+            if ((e as { name?: string })?.name === "AbortError") return;
+          });
+        }
+      }
+      setIsAnimating(false);
+      onSpeakComplete?.();
+    };
+
+    const startSpeaking = () => {
+      if (cancelled) return;
       const utterance = new SpeechSynthesisUtterance(question);
       utterance.lang = "en-US";
       utterance.rate = 0.9;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
-      utterance.onstart = () => setIsAnimating(true);
-      utterance.onend = () => {
-        if (!interviewVideoSrc?.toLowerCase().endsWith(".gif")) {
-          const video = interviewVideoRef.current;
-          if (video) {
-            videoPhaseRef.current = "post-question";
-            video.currentTime = POST_QUESTION_START;
-            video.play().catch(() => {});
-          }
-        }
-        setIsAnimating(false);
-        onSpeakComplete?.();
+      utterance.onstart = () => {
+        if (cancelled) return;
+        setIsAnimating(true);
       };
-      utterance.onerror = () => {
-        setIsAnimating(false);
-        onSpeakComplete?.();
-      };
+      utterance.onend = finishSpeaking;
+      utterance.onerror = finishSpeaking;
 
       speechSynthesisRef.current = utterance;
       window.speechSynthesis.speak(utterance);
-    }
+      safetyTimeoutId = setTimeout(finishSpeaking, TTS_SAFETY_TIMEOUT_MS);
+    };
+
+    const id = setTimeout(startSpeaking, TTS_RESUME_DELAY_MS);
 
     return () => {
-      if (speechSynthesisRef.current) {
-        window.speechSynthesis.cancel();
-      }
+      cancelled = true;
+      clearTimeout(id);
+      if (safetyTimeoutId != null) clearTimeout(safetyTimeoutId);
+      window.speechSynthesis.cancel();
+      speechSynthesisRef.current = null;
     };
-  }, [question, isSpeaking, onSpeakComplete]);
+  }, [question, isSpeaking, onSpeakComplete, interviewVideoSrc]);
 
   const isTalking = isAnimating && !isUserSpeaking;
   const isListening = isUserSpeaking && !isAnimating;
