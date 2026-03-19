@@ -188,6 +188,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:email-multiple",
       featureName: "admin_emails",
     },
+    {
+      label: "Notifications",
+      labelKey: "nav.notifications",
+      path: "/admin/notifications",
+      icon: "mdi:bell-badge",
+      featureName: "admin_notifications",
+    },
     // {
     //   label: "Payment",
     //   path: "/admin/payment",

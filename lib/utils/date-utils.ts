@@ -1,82 +1,66 @@
 /**
- * Format a date to "time ago" format
- * e.g., "2 hours ago", "3 days ago"
+ * Format a date string to relative time (e.g., "2m ago", "1h ago", "Yesterday")
  */
-export function formatDistanceToNow(date: string | Date): string {
+export function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
   const now = new Date();
-  const then = typeof date === "string" ? new Date(date) : date;
-  const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
 
-  if (seconds < 60) {
-    return "just now";
-  }
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay === 1) return "Yesterday";
+  if (diffDay < 7) return `${diffDay}d ago`;
+  if (diffDay < 30) return `${Math.floor(diffDay / 7)}w ago`;
 
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-  }
-
-  const days = Math.floor(hours / 24);
-  if (days < 30) {
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  }
-
-  const months = Math.floor(days / 30);
-  if (months < 12) {
-    return `${months} ${months === 1 ? "month" : "months"} ago`;
-  }
-
-  const years = Math.floor(months / 12);
-  return `${years} ${years === 1 ? "year" : "years"} ago`;
-}
-
-/**
- * Format date to a readable string
- */
-export function formatDate(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-/**
- * Format date and time
- */
-export function formatDateTime(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleString("en-US", {
-    year: "numeric",
+  return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
   });
 }
 
 /**
- * Format duration in seconds to a readable string (e.g. "54s", "1m 30s", "1h 5m").
+ * Alias for formatRelativeTime. Compatible with date-fns formatDistanceToNow usage.
  */
-export function formatDurationSeconds(seconds: number | null | undefined): string {
-  if (seconds == null || Number.isNaN(seconds) || seconds < 0) return "—";
-  const s = Math.floor(seconds);
-  if (s < 60) return `${s}s`;
-  if (s < 3600) {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return sec > 0 ? `${m}m ${sec}s` : `${m}m`;
+export function formatDistanceToNow(dateStr: string | Date): string {
+  const str = typeof dateStr === "string" ? dateStr : dateStr.toISOString();
+  return formatRelativeTime(str);
+}
+
+/**
+ * Format a date string to a readable date (e.g., "Mar 18, 2025").
+ */
+export function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return "—";
+  try {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "—";
   }
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (m === 0 && sec === 0) return `${h}h`;
-  if (sec === 0) return `${h}h ${m}m`;
-  return `${h}h ${m}m ${sec}s`;
+}
+
+/**
+ * Format duration in seconds to human-readable string (e.g., "2h 30m", "45m").
+ */
+export function formatDurationSeconds(seconds: number | undefined | null): string {
+  if (seconds == null || seconds < 0) return "—";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const parts: string[] = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
+  if (s > 0 || parts.length === 0) parts.push(`${s}s`);
+  return parts.join(" ");
 }
