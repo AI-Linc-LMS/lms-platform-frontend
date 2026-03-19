@@ -10,6 +10,7 @@ import React, {
 import { accountsService, UserProfile } from "../services/accounts.service";
 import { authUtils } from "./auth-utils";
 import { clearResumeData } from "@/components/profile/resume/utils";
+import { clearTimeTrackingSession } from "../services/activity.service";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -182,7 +183,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Logout error
     } finally {
       authUtils.clearTokens();
-      clearResumeData(); // Clear saved resume data from localStorage
+      clearResumeData();
+      clearTimeTrackingSession(); // New login will get a new time-tracking session
       setUser(null);
     }
   };

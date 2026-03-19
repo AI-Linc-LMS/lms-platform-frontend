@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Box, LinearProgress, Typography } from "@mui/material";
+import { Box, LinearProgress, Typography, Tabs, Tab } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { JobCardV2 } from "@/components/jobs-v2/JobCardV2";
 import { NaukriJobSearchBar } from "@/components/jobs/NaukriJobSearchBar";
@@ -10,6 +10,7 @@ import { MobileJobFilters } from "@/components/jobs/MobileJobFilters";
 import { JobListHeader } from "@/components/jobs/JobListHeader";
 import { JobPagination } from "@/components/jobs/JobPagination";
 import { EmptyJobsIllustration, JobSearchIllustration } from "@/components/jobs-v2/illustrations";
+import { AppliedJobsSection } from "@/components/jobs-v2/AppliedJobsSection";
 import type { Job, JobFilters } from "@/lib/services/jobs.service";
 import { jobsV2Service, JobV2, JobV2Filters } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
@@ -99,6 +100,7 @@ export default function JobsV2Page() {
   const [experienceInput, setExperienceInput] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
+  const [activeTab, setActiveTab] = useState<"browse" | "applied">("browse");
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -374,7 +376,22 @@ export default function JobsV2Page() {
           </Box>
 
           <Box sx={{ flex: 1, p: 3, backgroundColor: "#f8fafc", minWidth: 0 }}>
-            {loading ? (
+            <Tabs
+              value={activeTab}
+              onChange={(_, v: "browse" | "applied") => setActiveTab(v)}
+              sx={{
+                mb: 2,
+                "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
+                "& .Mui-selected": { color: "#6366f1" },
+                "& .MuiTabs-indicator": { backgroundColor: "#6366f1" },
+              }}
+            >
+              <Tab label="Browse Jobs" value="browse" />
+              <Tab label="Applied Jobs" value="applied" />
+            </Tabs>
+            {activeTab === "applied" ? (
+              <AppliedJobsSection onBrowseJobs={() => setActiveTab("browse")} />
+            ) : loading ? (
               <Box
                 sx={{
                   display: "flex",
@@ -389,7 +406,7 @@ export default function JobsV2Page() {
                 <Typography color="text.secondary">Loading jobs...</Typography>
                 <LinearProgress sx={{ width: "60%", height: 4, borderRadius: 2 }} />
               </Box>
-            ) : paginatedJobs.length === 0 ? (
+            ) : paginatedJobs.length === 0 && activeTab === "browse" ? (
               <Box
                 sx={{
                   p: 6,
@@ -411,7 +428,7 @@ export default function JobsV2Page() {
                   Try adjusting your filters or search terms to find more opportunities
                 </Typography>
               </Box>
-            ) : (
+            ) : activeTab === "browse" ? (
               <>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
                   <JobListHeader
@@ -434,7 +451,7 @@ export default function JobsV2Page() {
                   />
                 </Box>
               </>
-            )}
+            ) : null}
           </Box>
         </Box>
       </Box>
@@ -516,7 +533,23 @@ export default function JobsV2Page() {
             />
           </Box>
 
-          {loading ? (
+          <Tabs
+            value={activeTab}
+            onChange={(_, v: "browse" | "applied") => setActiveTab(v)}
+            sx={{
+              mb: 2,
+              "& .MuiTab-root": { textTransform: "none", fontWeight: 600, minHeight: 40 },
+              "& .Mui-selected": { color: "#6366f1" },
+              "& .MuiTabs-indicator": { backgroundColor: "#6366f1" },
+            }}
+          >
+            <Tab label="Browse Jobs" value="browse" />
+            <Tab label="Applied Jobs" value="applied" />
+          </Tabs>
+
+          {activeTab === "applied" ? (
+            <AppliedJobsSection onBrowseJobs={() => setActiveTab("browse")} />
+          ) : loading ? (
             <Box
               sx={{
                 display: "flex",
@@ -531,7 +564,7 @@ export default function JobsV2Page() {
               <Typography variant="body2" color="text.secondary">Loading jobs...</Typography>
               <LinearProgress sx={{ width: "60%", height: 4, borderRadius: 2 }} />
             </Box>
-          ) : paginatedJobs.length === 0 ? (
+          ) : paginatedJobs.length === 0 && activeTab === "browse" ? (
             <Box
               sx={{
                 p: 5,
@@ -553,7 +586,7 @@ export default function JobsV2Page() {
                 Try adjusting your filters or search terms
               </Typography>
             </Box>
-          ) : (
+          ) : activeTab === "browse" ? (
             <>
               <JobListHeader
                 totalCount={filteredJobs.length}
@@ -574,7 +607,7 @@ export default function JobsV2Page() {
                 />
               </Box>
             </>
-          )}
+          ) : null}
         </Box>
       </Box>
     </MainLayout>

@@ -20,9 +20,10 @@ function normalizeToStringArray(raw: any): string[] {
 interface SkillsSectionProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onRemoveSection?: () => void;
 }
 
-export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
+export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectionProps) {
   const { t } = useTranslation("common");
   const [skills, setSkills] = useState<string[]>(normalizeToStringArray(profile.skills));
   const [editing, setEditing] = useState(false);
@@ -107,6 +108,24 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
         >
           {t("profile.skills")}
         </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        {onRemoveSection && (
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<IconWrapper icon="mdi:close" size={16} />}
+            onClick={onRemoveSection}
+            sx={{
+              textTransform: "none",
+              color: "#6b7280",
+              fontWeight: 500,
+              fontSize: "0.8125rem",
+              "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+            }}
+          >
+            Remove
+          </Button>
+        )}
         {!editing ? (
           <Button
             variant="text"
@@ -161,6 +180,7 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
             </Button>
           </Box>
         )}
+        </Box>
       </Box>
 
       {editing ? (
@@ -272,10 +292,30 @@ export function SkillsSection({ profile, onSave }: SkillsSectionProps) {
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: "#9ca3af", mt: 0.5, fontSize: "0.8125rem" }}
+                sx={{ color: "#9ca3af", mt: 0.5, fontSize: "0.8125rem", display: "block" }}
               >
                 {t("profile.clickEditToAddSkills")}
               </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+                onClick={() => {
+                  setEditing(true);
+                }}
+                sx={{
+                  mt: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  backgroundColor: "#0a66c2",
+                  borderRadius: 2,
+                  px: 2.5,
+                  py: 1,
+                  "&:hover": { backgroundColor: "#004182" },
+                }}
+              >
+                {t("profile.add")} {t("profile.skills")}
+              </Button>
             </Box>
           )}
         </Box>

@@ -13,7 +13,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import { ArrowLeft, ExternalLink, MapPin, Briefcase, Calendar, Heart, Banknote } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin, Briefcase, Calendar, Heart, Banknote, FileText, Building2, Users, GraduationCap } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { jobsV2Service, JobV2 } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
@@ -89,17 +89,8 @@ export default function JobDetailPage() {
       showToast("You are not eligible to apply for this job based on college targeting.", "error");
       return;
     }
-    try {
-      setApplying(true);
-      await jobsV2Service.applyForJob(job.id);
-      showToast("Application submitted successfully", "success");
-      fetchJob();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to apply", "error");
-    } finally {
-      setApplying(false);
-    }
-  }, [job, showToast, fetchJob]);
+    // Internal apply: navigate to apply page (handled by Link)
+  }, [job, showToast]);
 
   const handleConfirmAppliedYes = useCallback(async () => {
     if (pendingApplicationId == null) {
@@ -204,9 +195,18 @@ export default function JobDetailPage() {
     );
   }
 
-  const canApply = job.eligible_to_apply !== false;
+  const canApply = job.status === "active" && job.eligible_to_apply !== false;
   const hasExternalLink = Boolean(job.apply_link?.trim());
   const hasApplied = Boolean(job.has_applied);
+
+  const getApplyDisabledLabel = () => {
+    if (hasApplied) return "Applied";
+    if (job.eligible_to_apply === false) return "Not eligible to apply";
+    if (job.status === "inactive") return "Applications closed (Inactive)";
+    if (job.status === "closed") return "Applications closed";
+    if (job.status === "completed") return "Applications completed";
+    return "Applications closed";
+  };
 
   const skills = [
     ...(job.mandatory_skills ?? []),
@@ -402,37 +402,74 @@ export default function JobDetailPage() {
                     </IconButton>
                   </Tooltip>
                 )}
-                <Button
-                  variant="contained"
-                  onClick={handleApply}
-                  disabled={hasApplied || applying || (!hasExternalLink && !canApply)}
-                  startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
-                  sx={{
-                    borderRadius: 2,
-                    backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
-                    color: "#fff",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: { xs: 2, md: 3 },
-                    py: 1.25,
-                    fontSize: { xs: "0.875rem", md: "1rem" },
-                    whiteSpace: "nowrap",
-                    "&:hover": hasApplied ? { backgroundColor: "#22c55e" } : { backgroundColor: "#4f46e5" },
-                    "&.Mui-disabled": hasApplied
-                      ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
-                      : undefined,
-                  }}
-                >
-                  {hasApplied
-                    ? "Applied"
-                    : hasExternalLink
-                      ? "Apply on External Link"
-                      : !canApply
-                        ? "Not eligible to apply"
-                        : applying
-                          ? "Applying..."
-                          : "Apply"}
-                </Button>
+                {hasExternalLink ? (
+                  <Button
+                    variant="contained"
+                    onClick={handleApply}
+                    disabled={hasApplied || applying || !canApply}
+                    startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: { xs: 2, md: 3 },
+                      py: 1.25,
+                      fontSize: { xs: "0.875rem", md: "1rem" },
+                      whiteSpace: "nowrap",
+                      "&:hover": hasApplied ? { backgroundColor: "#22c55e" } : { backgroundColor: "#4f46e5" },
+                      "&.Mui-disabled": hasApplied
+                        ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                        : undefined,
+                    }}
+                  >
+                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+                  </Button>
+                ) : hasApplied || !canApply ? (
+                  <Button
+                    variant="contained"
+                    disabled
+                    startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: { xs: 2, md: 3 },
+                      py: 1.25,
+                      fontSize: { xs: "0.875rem", md: "1rem" },
+                      whiteSpace: "nowrap",
+                      "&.Mui-disabled": hasApplied
+                        ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                        : undefined,
+                    }}
+                  >
+                    {getApplyDisabledLabel()}
+                  </Button>
+                ) : (
+                  <Button
+                    component={Link}
+                    href={`/jobs-v2/${job.id}/apply`}
+                    variant="contained"
+                    startIcon={<ExternalLink size={18} />}
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: "#6366f1",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: { xs: 2, md: 3 },
+                      py: 1.25,
+                      fontSize: { xs: "0.875rem", md: "1rem" },
+                      whiteSpace: "nowrap",
+                      "&:hover": { backgroundColor: "#4f46e5" },
+                    }}
+                  >
+                    Apply
+                  </Button>
+                )}
               </Box>
             </Box>
           </Box>
@@ -450,28 +487,61 @@ export default function JobDetailPage() {
           >
             {/* Left panel - main content */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {job.job_description && (
-                <Paper
-                  elevation={0}
+              {/* Job Description section - combined JD file + text */}
+              <Paper
+                elevation={0}
+                sx={{
+                  overflow: "hidden",
+                  borderRadius: 2.5,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  backgroundColor: "#fff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                }}
+              >
+                {/* Section header */}
+                <Box
                   sx={{
-                    p: 2.5,
-                    borderRadius: 2,
-                    border: "1px solid",
+                    px: 2.5,
+                    py: 2,
+                    borderBottom: job.job_description ? "1px solid" : "none",
                     borderColor: "divider",
-                    backgroundColor: "#fff",
+                    background: "linear-gradient(180deg, rgba(99, 102, 241, 0.04) 0%, transparent 100%)",
                   }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "#0f172a" }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
                     Job Description
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "#475569" }}
-                  >
-                    {job.job_description}
-                  </Typography>
-                </Paper>
-              )}
+                </Box>
+
+                {/* Text description */}
+                {job.job_description && (
+                  <Box sx={{ px: 2.5, py: 2.5 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.8,
+                        color: "#334155",
+                        fontSize: "0.9375rem",
+                        "& p": { mb: 1.5 },
+                        "& ul, & ol": { pl: 2.5, mb: 1.5 },
+                        "& li": { mb: 0.5 },
+                      }}
+                    >
+                      {job.job_description}
+                    </Typography>
+                  </Box>
+                )}
+
+                {!job.job_description && !job.jd_file_url && (
+                  <Box sx={{ px: 2.5, py: 3, textAlign: "center" }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No job description available
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
 
               {job.role_process && (
                 <Paper
@@ -558,63 +628,220 @@ export default function JobDetailPage() {
             <Paper
               elevation={0}
               sx={{
-                p: 2.5,
-                borderRadius: 2,
+                overflow: "hidden",
+                borderRadius: 2.5,
                 border: "1px solid",
                 borderColor: "divider",
                 backgroundColor: "#fff",
                 position: { lg: "sticky" },
                 top: { lg: 24 },
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
               }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
-                Job Details
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 2,
+                  background: "linear-gradient(180deg, rgba(99, 102, 241, 0.06) 0%, transparent 100%)",
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
+                  Job Details
+                </Typography>
+              </Box>
+              <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 0 }}>
                 {job.industry_type && (
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>Industry</Typography>
-                    <Typography variant="body2" sx={{ display: "block", color: "#0f172a" }}>{job.industry_type}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <Briefcase size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Industry</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.industry_type}</Typography>
+                    </Box>
                   </Box>
                 )}
                 {job.department && (
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>Department</Typography>
-                    <Typography variant="body2" sx={{ display: "block", color: "#0f172a" }}>{job.department}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <Building2 size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Department</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.department}</Typography>
+                    </Box>
                   </Box>
                 )}
                 {job.employment_type && (
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>Employment Type</Typography>
-                    <Typography variant="body2" sx={{ display: "block", color: "#0f172a" }}>{job.employment_type}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <Briefcase size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Employment Type</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.employment_type}</Typography>
+                    </Box>
                   </Box>
                 )}
                 {job.role_category && (
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>Role Category</Typography>
-                    <Typography variant="body2" sx={{ display: "block", color: "#0f172a" }}>{job.role_category}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <Briefcase size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Role Category</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.role_category}</Typography>
+                    </Box>
                   </Box>
                 )}
                 {job.education && (
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>Education</Typography>
-                    <Typography variant="body2" sx={{ display: "block", color: "#0f172a" }}>{job.education}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <GraduationCap size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Education</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.education}</Typography>
+                    </Box>
                   </Box>
                 )}
                 {job.ug_requirements && (
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>UG Requirements</Typography>
-                    <Typography variant="body2" sx={{ display: "block", color: "#0f172a" }}>{job.ug_requirements}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <GraduationCap size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>UG Requirements</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.ug_requirements}</Typography>
+                    </Box>
                   </Box>
                 )}
                 {job.pg_requirements && (
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>PG Requirements</Typography>
-                    <Typography variant="body2" sx={{ display: "block", color: "#0f172a" }}>{job.pg_requirements}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <GraduationCap size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>PG Requirements</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.pg_requirements}</Typography>
+                    </Box>
                   </Box>
                 )}
-                {!job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !job.ug_requirements && !job.pg_requirements && (
-                  <Typography variant="body2" color="text.secondary">No additional details</Typography>
+                {job.application_deadline && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <Calendar size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Closing Date</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>
+                        {new Date(job.application_deadline).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                {job.number_of_openings != null && job.number_of_openings > 0 && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <Users size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Openings</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.number_of_openings}</Typography>
+                    </Box>
+                  </Box>
+                )}
+                {!job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !job.ug_requirements && !job.pg_requirements && !job.application_deadline && (job.number_of_openings == null || job.number_of_openings === 0) && (
+                  <Box sx={{ py: 2, textAlign: "center" }}>
+                    <Typography variant="body2" color="text.secondary">No additional details</Typography>
+                  </Box>
                 )}
               </Box>
             </Paper>
@@ -653,6 +880,69 @@ export default function JobDetailPage() {
                 </Button>
               </Paper>
             )}
+
+            {/* Attached JD (PDF) - at end of right panel */}
+            {job.jd_file_url && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "rgba(99, 102, 241, 0.2)",
+                  backgroundColor: "rgba(99, 102, 241, 0.06)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "rgba(99, 102, 241, 0.08)",
+                    borderColor: "rgba(99, 102, 241, 0.3)",
+                  },
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 48,
+                      borderRadius: 1.5,
+                      backgroundColor: "#dc2626",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FileText size={20} color="#fff" />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#0f172a", fontSize: "0.875rem" }}>
+                      Attached JD (PDF)
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Full job description document
+                    </Typography>
+                  </Box>
+                </Box>
+                <Button
+                  component="a"
+                  href={job.jd_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="contained"
+                  fullWidth
+                  size="small"
+                  startIcon={<FileText size={16} />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderRadius: 1.5,
+                    backgroundColor: "#6366f1",
+                    "&:hover": { backgroundColor: "#4f46e5" },
+                  }}
+                >
+                  View JD (PDF)
+                </Button>
+              </Paper>
+            )}
             </Box>
           </Box>
         </Box>
@@ -673,34 +963,65 @@ export default function JobDetailPage() {
             boxShadow: "0 -4px 12px rgba(0,0,0,0.08)",
           }}
         >
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleApply}
-            disabled={hasApplied || applying || (!hasExternalLink && !canApply)}
-            startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
-            sx={{
-              borderRadius: 2,
-              backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
-              py: 1.5,
-              textTransform: "none",
-              fontWeight: 600,
-              "&:hover": { backgroundColor: hasApplied ? "#22c55e" : "#4f46e5" },
-              "&.Mui-disabled": hasApplied
-                ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
-                : undefined,
-            }}
-          >
-            {hasApplied
-              ? "Applied"
-              : hasExternalLink
-                ? "Apply on External Link"
-                : !canApply
-                  ? "Not eligible to apply"
-                  : applying
-                    ? "Applying..."
-                    : "Apply"}
-          </Button>
+          {hasExternalLink ? (
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleApply}
+              disabled={hasApplied || applying || !canApply}
+              startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                py: 1.5,
+                textTransform: "none",
+                fontWeight: 600,
+                "&:hover": { backgroundColor: hasApplied ? "#22c55e" : "#4f46e5" },
+                "&.Mui-disabled": hasApplied
+                  ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                  : undefined,
+              }}
+            >
+              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+            </Button>
+          ) : hasApplied || !canApply ? (
+            <Button
+              variant="contained"
+              fullWidth
+              disabled
+              startIcon={hasApplied ? undefined : <ExternalLink size={18} />}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: hasApplied ? "#22c55e" : "#6366f1",
+                py: 1.5,
+                textTransform: "none",
+                fontWeight: 600,
+                "&.Mui-disabled": hasApplied
+                  ? { backgroundColor: "#22c55e", color: "#fff", opacity: 1 }
+                  : undefined,
+              }}
+            >
+              {getApplyDisabledLabel()}
+            </Button>
+          ) : (
+            <Button
+              component={Link}
+              href={`/jobs-v2/${job.id}/apply`}
+              variant="contained"
+              fullWidth
+              startIcon={<ExternalLink size={18} />}
+              sx={{
+                borderRadius: 2,
+                backgroundColor: "#6366f1",
+                py: 1.5,
+                textTransform: "none",
+                fontWeight: 600,
+                "&:hover": { backgroundColor: "#4f46e5" },
+              }}
+            >
+              Apply
+            </Button>
+          )}
         </Box>
 
         <ConfirmDialog

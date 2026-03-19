@@ -14,12 +14,16 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and fix FormData uploads
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = Cookies.get("access_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // When sending FormData, remove Content-Type so the browser sets it with the correct boundary
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers["Content-Type"];
     }
     return config;
   },

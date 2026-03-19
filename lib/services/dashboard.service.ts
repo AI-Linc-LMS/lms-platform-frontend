@@ -1,7 +1,35 @@
 import apiClient from "./api";
 import { config } from "../config";
 
-// Daily Progress Leaderboard Entry
+interface RawDailyLeaderboardEntry {
+  user?: { id?: number; user_name?: string; profile_pic_url?: string };
+  name?: string;
+  profile_pic_url?: string;
+  score?: number;
+  rank?: number;
+}
+
+interface RawOverallLeaderboardEntry {
+  id?: number;
+  user?: { id?: number; name?: string; email?: string; profile_pic_url?: string; user_name?: string };
+  name?: string;
+  full_name?: string;
+  marks?: number;
+  score?: number;
+  rank?: number;
+  course_name?: unknown;
+  profile_pic_url?: string;
+  college?: string;
+  college_name?: string;
+  university?: string;
+  linkedin_url?: string;
+  linkedin_profile_url?: string;
+  social_links?: { linkedin?: string };
+  email?: string;
+  user_name?: string;
+  username?: string;
+}
+
 export interface DailyProgressLeaderboardEntry {
   user: {
     id?: number;
@@ -10,22 +38,21 @@ export interface DailyProgressLeaderboardEntry {
   };
   score?: number;
   rank?: number;
-  college?: string; // College/University name
-  linkedin_url?: string; // LinkedIn profile URL
+  college?: string;
+  linkedin_url?: string;
 }
 
-// Monthly Streak
 export interface MonthlyStreak {
   year?: number;
   month?: number;
-  streak?: { [date: string]: boolean }; // Object with date keys (YYYY-MM-DD) and boolean values
+  streak?: { [date: string]: boolean };
   current_streak: number;
   longest_streak?: number;
-  monthly_days?: number[]; // Array of day numbers with activity (deprecated, use streak object)
+  monthly_days?: number[];
 }
 
-// Overall Leaderboard Entry
 export interface OverallLeaderboardEntry {
+  id?: number;
   name: string;
   marks: number;
   course_name?: number;
@@ -38,7 +65,6 @@ export interface OverallLeaderboardEntry {
 }
 
 export const dashboardService = {
-  // Get daily progress leaderboard
   getDailyProgressLeaderboard: async (): Promise<
     DailyProgressLeaderboardEntry[]
   > => {
@@ -47,8 +73,7 @@ export const dashboardService = {
         `/api/clients/${config.clientId}/student/daily-progress-leaderboard/`
       );
 
-      // Handle different response formats
-      let leaderboardData: any[] = [];
+      let leaderboardData: unknown[] = [];
 
       if (Array.isArray(response.data)) {
         leaderboardData = response.data;
@@ -74,7 +99,6 @@ export const dashboardService = {
         typeof response.data === "object" &&
         !Array.isArray(response.data)
       ) {
-        // If response.data is an object but not an array, try to find any array property
         const keys = Object.keys(response.data);
         for (const key of keys) {
           if (Array.isArray(response.data[key])) {
@@ -84,38 +108,25 @@ export const dashboardService = {
         }
       }
 
-      // Validate and sanitize each entry
-      const validatedData = leaderboardData
-        .filter((entry) => entry != null) // Remove null/undefined entries
-        .map((entry) => {
-          // Handle different response formats:
-          // Format 1: { user: { user_name, profile_pic_url }, score, rank }
-          // Format 2: { name, profile_pic_url, progress, seconds }
-          const userName =
-            entry?.user?.user_name ?? entry?.name ?? "Unknown User";
-          const profilePicUrl =
-            entry?.user?.profile_pic_url ??
-            entry?.profile_pic_url ??
-            "";
-
-          return {
-            user: {
-              id: entry?.user?.id ?? 0,
-              user_name: userName,
-              profile_pic_url: profilePicUrl,
-            },
-            score: entry?.score ?? 0,
-            rank: entry?.rank ?? 0,
-          };
-        });
+      const validatedData = (leaderboardData as RawDailyLeaderboardEntry[])
+        .filter((entry): entry is RawDailyLeaderboardEntry => entry != null)
+        .map((entry) => ({
+          user: {
+            id: entry?.user?.id ?? 0,
+            user_name: entry?.user?.user_name ?? entry?.name ?? "Unknown User",
+            profile_pic_url:
+              entry?.user?.profile_pic_url ?? entry?.profile_pic_url ?? "",
+          },
+          score: entry?.score ?? 0,
+          rank: entry?.rank ?? 0,
+        }));
 
       return validatedData;
-    } catch (error: any) {
+    } catch {
       return [];
     }
   },
 
-  // Get monthly streak
   getMonthlyStreak: async (month?: string): Promise<MonthlyStreak> => {
     try {
       const params = month ? { month } : {};
@@ -124,7 +135,6 @@ export const dashboardService = {
         { params }
       );
 
-      // Handle different response formats
       const data = response.data?.data || response.data || {};
 
       return {
@@ -135,7 +145,7 @@ export const dashboardService = {
         longest_streak: data.longest_streak || 0,
         monthly_days: Array.isArray(data.monthly_days) ? data.monthly_days : [],
       };
-    } catch (error: any) {
+    } catch {
       return {
         current_streak: 0,
         longest_streak: 0,
@@ -145,7 +155,6 @@ export const dashboardService = {
     }
   },
 
-  // Get student activity analytics (streak holders)
   getStudentActivityAnalytics: async (params?: {
     start_date?: string;
     end_date?: string;
@@ -170,7 +179,6 @@ export const dashboardService = {
         profile_pic_url?: string;
       }>>(url);
 
-      // Map the response to ensure profile_pic_url is included
       const data = Array.isArray(response.data) ? response.data : [];
       return data.map((entry) => ({
         studentName: entry?.studentName ?? "",
@@ -178,12 +186,11 @@ export const dashboardService = {
         Active_days: entry?.Active_days ?? 0,
         profile_pic_url: entry?.profile_pic_url ?? "",
       }));
-    } catch (error: any) {
+    } catch {
       return [];
     }
   },
 
-  // Get overall leaderboard
   getOverallLeaderboard: async (
     limit?: number
   ): Promise<OverallLeaderboardEntry[]> => {
@@ -194,8 +201,7 @@ export const dashboardService = {
         { params }
       );
 
-      // Handle different response formats
-      let leaderboardData: any[] = [];
+      let leaderboardData: unknown[] = [];
 
       if (Array.isArray(response.data)) {
         leaderboardData = response.data;
@@ -221,7 +227,6 @@ export const dashboardService = {
         typeof response.data === "object" &&
         !Array.isArray(response.data)
       ) {
-        // If response.data is an object but not an array, try to find any array property
         const keys = Object.keys(response.data);
         for (const key of keys) {
           if (Array.isArray(response.data[key])) {
@@ -231,23 +236,33 @@ export const dashboardService = {
         }
       }
 
-      // Validate and sanitize each entry
-      const validatedData = leaderboardData
-        .filter((entry) => entry != null)
-        .map((entry) => ({
-          name: entry?.name ?? entry?.full_name ?? entry?.user?.name ?? " User",
-          marks: entry?.marks ?? entry?.score ?? 0,
-          course_name: entry?.course_name ?? " Course",
-          rank: entry?.rank ?? 0,
-          profile_pic_url: entry?.profile_pic_url ?? entry?.user?.profile_pic_url ?? "",
-          college: entry?.college ?? entry?.college_name ?? entry?.university ?? undefined,
-          linkedin_url: entry?.linkedin_url ?? entry?.linkedin_profile_url ?? entry?.social_links?.linkedin ?? undefined,
-          email: entry?.email ?? entry?.user?.email ?? undefined,
-          user_name: entry?.user_name ?? entry?.username ?? entry?.user?.user_name ?? undefined,
-        })) as OverallLeaderboardEntry[];
+      const validatedData = (leaderboardData as RawOverallLeaderboardEntry[])
+        .filter((entry): entry is RawOverallLeaderboardEntry => entry != null)
+        .map((entry) => {
+          const id = entry?.id ?? entry?.user?.id ?? undefined;
+          const email = entry?.email ?? entry?.user?.email ?? undefined;
+          const name =
+            entry?.name ??
+            entry?.full_name ??
+            entry?.user?.name ??
+            email ??
+            (id != null ? `User #${id}` : "User");
+          return {
+            id,
+            name,
+            marks: entry?.marks ?? entry?.score ?? 0,
+            course_name: entry?.course_name ?? " Course",
+            rank: entry?.rank ?? 0,
+            profile_pic_url: entry?.profile_pic_url ?? entry?.user?.profile_pic_url ?? "",
+            college: entry?.college ?? entry?.college_name ?? entry?.university ?? undefined,
+            linkedin_url: entry?.linkedin_url ?? entry?.linkedin_profile_url ?? entry?.social_links?.linkedin ?? undefined,
+            email,
+            user_name: entry?.user_name ?? entry?.username ?? entry?.user?.user_name ?? undefined,
+          } as OverallLeaderboardEntry;
+        });
 
       return validatedData;
-    } catch (error: any) {
+    } catch {
       return [];
     }
   },

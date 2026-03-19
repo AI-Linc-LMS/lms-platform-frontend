@@ -10,13 +10,12 @@ import {
   IconButton,
   Typography,
   Divider,
-  Badge,
   Popover,
   Tooltip,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
-import { LogOut, User, Menu as MenuIcon, Bell } from "lucide-react";
+import { LogOut, User, Menu as MenuIcon } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
 import {
@@ -35,6 +34,15 @@ import { LanguageSelect } from "@/components/common/LanguageSelect";
 import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
 import { useToast } from "@/components/common/Toast";
+import { config } from "@/lib/config";
+import {
+  notificationService,
+  type Notification,
+} from "@/lib/services/notification.service";
+import {
+  NotificationPopover,
+  NotificationBell,
+} from "@/components/notifications/NotificationPopover";
 
 interface AppBarProps {
   onMenuClick?: () => void;
@@ -71,6 +79,13 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const [streakAnchorEl, setStreakAnchorEl] = useState<null | HTMLElement>(
     null
   );
+  const [notificationAnchorEl, setNotificationAnchorEl] =
+    useState<null | HTMLElement>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const clientId = clientInfo?.id ?? config.clientId;
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -96,6 +111,83 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
   const handleStreakHover = (event: React.MouseEvent<HTMLElement>) => {
     setStreakAnchorEl(event.currentTarget);
+  };
+
+  const fetchUnreadCount = React.useCallback(async () => {
+    if (!isAuthenticated || !clientId) return;
+    try {
+      const count = await notificationService.getUnreadCount(clientId);
+      setUnreadCount(count);
+    } catch {
+      // Silently ignore - user may not have notifications
+    }
+  }, [isAuthenticated, clientId]);
+
+  const fetchNotifications = React.useCallback(async () => {
+    if (!isAuthenticated || !clientId) return;
+    setNotificationsLoading(true);
+    try {
+      const data = await notificationService.getNotifications(clientId);
+      setNotifications(data.results);
+      fetchUnreadCount();
+    } catch {
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [isAuthenticated, clientId, fetchUnreadCount]);
+
+  useEffect(() => {
+    if (isAuthenticated && clientId) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, clientId, fetchUnreadCount]);
+
+  const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
+    setNotificationAnchorEl(event.currentTarget);
+    fetchNotifications();
+  };
+
+  const handleNotificationClose = () => {
+    setNotificationAnchorEl(null);
+  };
+
+  const handleNotificationItemClick = async (n: Notification) => {
+    if (!clientId) return;
+    try {
+      if (!n.is_read) {
+        await notificationService.markAsRead(clientId, n.id);
+        setNotifications((prev) =>
+          prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x))
+        );
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+      handleNotificationClose();
+      if (n.action_url) {
+        router.push(n.action_url);
+      }
+    } catch {
+      if (n.action_url) {
+        router.push(n.action_url);
+      }
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!clientId) return;
+    try {
+      await notificationService.markAllAsRead(clientId);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+      showToast("All notifications marked as read", "success");
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : "Failed to mark all as read",
+        "error"
+      );
+    }
   };
 
   const handleStreakLeave = () => {
@@ -834,22 +926,23 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           )}
 
           {/* Notifications */}
-          <IconButton
-            aria-label="Notifications"
-            onClick={() => showToast("No New Notifications", "info")}
-            sx={{
-              color: "#6b7280",
-              width: 40,
-              height: 40,
-              "&:hover": {
-                backgroundColor: "#f3f4f6",
-              },
-            }}
-          >
-            <Badge badgeContent={0} color="error">
-              <Bell size={18} />
-            </Badge>
-          </IconButton>
+          {isAuthenticated && (
+            <>
+              <NotificationBell
+                unreadCount={unreadCount}
+                onClick={handleNotificationClick}
+              />
+              <NotificationPopover
+                anchorEl={notificationAnchorEl}
+                onClose={handleNotificationClose}
+                notifications={notifications}
+                unreadCount={unreadCount}
+                loading={notificationsLoading}
+                onNotificationClick={handleNotificationItemClick}
+                onMarkAllRead={handleMarkAllRead}
+              />
+            </>
+          )}
 
           {/* User Info - Desktop */}
           <Box

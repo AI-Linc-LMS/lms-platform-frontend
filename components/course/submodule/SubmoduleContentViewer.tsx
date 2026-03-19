@@ -163,6 +163,7 @@ export function SubmoduleContentViewer({
           content={content}
           courseId={courseId}
           onArticleComplete={onArticleComplete}
+          isCompleted={currentItem?.status === "complete"}
         />
       )}
     </Box>

@@ -1,6 +1,25 @@
 import apiClient from "./api";
 import { config } from "../config";
 
+const TIME_TRACKING_SESSION_KEY = `lms_activity_session_${config.clientId}`;
+
+/** Persist session id for time tracking (cleared on logout). */
+export function getTimeTrackingSessionId(): string {
+  if (typeof window === "undefined") return crypto.randomUUID();
+  let id = localStorage.getItem(TIME_TRACKING_SESSION_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(TIME_TRACKING_SESSION_KEY, id);
+  }
+  return id;
+}
+
+/** Clear persisted session so next load gets a new session (call on logout / login as different user). */
+export function clearTimeTrackingSession(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TIME_TRACKING_SESSION_KEY);
+}
+
 export interface TrackTimePayload {
   time_spent_seconds: number;
   session_id: string;

@@ -33,13 +33,30 @@ export interface JobCreateUpdatePayload {
   apply_link?: string;
   job_type?: string;
   is_published?: boolean;
+  status?: "active" | "inactive" | "closed" | "completed";
   application_deadline?: string | null;
+  number_of_openings?: number | null;
+  applicable_passout_year?: string | null;
+  min_10th_percentage?: number | null;
+  min_12th_percentage?: number | null;
+  min_graduation_percentage?: number | null;
   college_mappings?: Array<{
     college_name: string;
     department?: string;
     batch?: string;
   }>;
   course_ids?: number[];
+  question_ids?: number[];
+}
+
+export interface JobQuestionV2 {
+  id: number;
+  question_text: string;
+  question_type: string;
+  is_required: boolean;
+  order: number;
+  options?: string[];
+  created_at?: string;
 }
 
 const getClientId = () => String(config.clientId);
@@ -67,12 +84,17 @@ export const adminJobsV2Service = {
     }
   },
 
-  getJobs: async (clientId?: string | number): Promise<{ results: JobV2[]; count: number }> => {
+  getJobs: async (
+    clientId?: string | number,
+    options?: { status?: "active" | "inactive" | "closed" | "completed" }
+  ): Promise<{ results: JobV2[]; count: number }> => {
     const cid = clientId ?? getClientId();
+    const params: Record<string, string> = { client_id: String(cid) };
+    if (options?.status) params.status = options.status;
     try {
       const response = await apiClient.get<{ results: JobV2[]; count: number }>(
         `/jobs-v2/api/admin/jobs/`,
-        { params: { client_id: cid } }
+        { params }
       );
       return {
         results: response.data?.results ?? [],
@@ -138,6 +160,24 @@ export const adminJobsV2Service = {
     }
   },
 
+  uploadJobJd: async (
+    jobId: number,
+    file: File,
+    clientId?: string | number
+  ): Promise<JobV2> => {
+    const cid = clientId ?? getClientId();
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<JobV2>(
+      `/jobs-v2/api/admin/jobs/${jobId}/upload-jd/`,
+      formData,
+      {
+        params: { client_id: cid },
+      }
+    );
+    return response.data;
+  },
+
   deleteJob: async (jobId: number, clientId?: string | number): Promise<void> => {
     const cid = clientId ?? getClientId();
     try {
@@ -157,14 +197,18 @@ export const adminJobsV2Service = {
 
   getJobApplications: async (
     jobId: number,
-    clientId?: string | number
+    clientId?: string | number,
+    options?: { status?: string }
   ): Promise<{ results: JobApplicationV2[]; count: number }> => {
     const cid = clientId ?? getClientId();
+    const params = new URLSearchParams();
+    params.append("client_id", String(cid));
+    if (options?.status) params.append("status", options.status);
     try {
       const response = await apiClient.get<{
         results: JobApplicationV2[];
         count: number;
-      }>(`/jobs-v2/api/admin/jobs/${jobId}/applications/?client_id=${cid}`);
+      }>(`/jobs-v2/api/admin/jobs/${jobId}/applications/?${params.toString()}`);
       return {
         results: response.data?.results ?? [],
         count: response.data?.count ?? 0,
@@ -182,14 +226,25 @@ export const adminJobsV2Service = {
 
   updateApplicationStatus: async (
     applicationId: number,
-    status: "applying" | "applied" | "shortlisted" | "rejected" | "selected",
+    updates: {
+      status?: "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected";
+      drive?: string;
+      internal_shortlisting?: string;
+      reason_not_shortlisted?: string;
+      shortlisted_by_hr?: string;
+      round_1?: string;
+      round_2?: string;
+      round_3?: string;
+      round_4?: string;
+      offered?: string;
+    },
     clientId?: string | number
   ): Promise<JobApplicationV2> => {
     const cid = clientId ?? getClientId();
     try {
       const response = await apiClient.patch<JobApplicationV2>(
         `/jobs-v2/api/admin/applications/${applicationId}/`,
-        { status },
+        updates,
         { params: { client_id: cid } }
       );
       return response.data;
@@ -206,7 +261,7 @@ export const adminJobsV2Service = {
 
   bulkUpdateApplicationStatus: async (
     applicationIds: number[],
-    status: "applying" | "applied" | "shortlisted" | "rejected" | "selected",
+    status: "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected",
     clientId?: string | number
   ): Promise<{ updated: number }> => {
     const cid = clientId ?? getClientId();
@@ -266,5 +321,81 @@ export const adminJobsV2Service = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  getQuestions: async (clientId?: string | number): Promise<JobQuestionV2[]> => {
+    const cid = clientId ?? getClientId();
+    try {
+      const response = await apiClient.get<JobQuestionV2[]>(
+        `/jobs-v2/api/admin/questions/`,
+        { params: { client_id: cid } }
+      );
+      return response.data ?? [];
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorPayload>;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to fetch questions";
+      throw new Error(message);
+    }
+  },
+
+  importQuestionsFromCsv: async (file: File, clientId?: string | number): Promise<{ created: number }> => {
+    const cid = clientId ?? getClientId();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("client_id", String(cid));
+    const response = await apiClient.post<{ created: number }>(
+      `/jobs-v2/api/admin/questions/import/`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+    return response.data;
+  },
+
+  importApplicationStatusFromCsv: async (
+    file: File,
+    clientId?: string | number
+  ): Promise<{ updated: number }> => {
+    const cid = clientId ?? getClientId();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("client_id", String(cid));
+    const response = await apiClient.post<{ updated: number }>(
+      `/jobs-v2/api/admin/applications/import-status/`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+    return response.data;
+  },
+
+  createQuestion: async (
+    data: {
+      question_text: string;
+      question_type?: string;
+      is_required?: boolean;
+      order?: number;
+      options?: string[];
+    },
+    clientId?: string | number
+  ): Promise<JobQuestionV2> => {
+    const cid = clientId ?? getClientId();
+    try {
+      const response = await apiClient.post<JobQuestionV2>(
+        `/jobs-v2/api/admin/questions/`,
+        { ...data, client_id: cid }
+      );
+      return response.data;
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorPayload>;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to create question";
+      throw new Error(message);
+    }
   },
 };

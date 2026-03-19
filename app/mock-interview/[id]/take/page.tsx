@@ -23,6 +23,8 @@ import {
   EndInterviewDialog,
 } from "@/components/mock-interview";
 
+const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
+
 export default function TakeMockInterviewPage() {
   const params = useParams();
   const router = useRouter();
@@ -40,6 +42,9 @@ export default function TakeMockInterviewPage() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const [interimTranscript, setInterimTranscript] = useState<string>("");
+  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
+  const [showEndInterviewDialog, setShowEndInterviewDialog] = useState(false);
+  const [isEndingInterview, setIsEndingInterview] = useState(false);
 
   const isInitializingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -216,6 +221,8 @@ export default function TakeMockInterviewPage() {
     onInterim: (text) => setInterimTranscript(text || ""),
     continuous: true,
     lang: "en-US",
+    preferWhisper: true,
+    paused: isSpeaking,
   });
   const { start: startStt, stop: stopStt, transcript: recognizedText, isListening, error: sttError } = speechToText;
 
@@ -271,25 +278,32 @@ export default function TakeMockInterviewPage() {
     }
   }, [interviewId, router, showToast]);
 
-  // Get user video stream for preview and audio monitoring
+  // Use existing camera stream for audio level (avoid second mic request so mic works for STT)
   useEffect(() => {
     if (!interviewStarted || !isProctoringActive) return;
 
     let isActive = true;
+    let streamToClean: MediaStream | null = null;
 
-    const getUserStream = async () => {
+    const setupAudioLevel = async () => {
       try {
-        // Get audio stream for microphone level monitoring
-        const audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        userStreamRef.current = audioStream;
-        registerMediaStream(audioStream);
+        const videoEl = proctoringVideoRef.current;
+        const existingStream = (videoEl?.srcObject as MediaStream) ?? null;
+        const hasAudio = existingStream?.getAudioTracks().some((t) => t.readyState === "live");
 
-        // Setup audio level monitoring
+        const stream = hasAudio
+          ? existingStream!
+          : await navigator.mediaDevices.getUserMedia({
+          audio: { noiseSuppression: true, echoCancellation: true },
+        });
+        if (!hasAudio) streamToClean = stream;
+
+        userStreamRef.current = stream;
+        if (!hasAudio) registerMediaStream(stream);
+
         const audioContext = new AudioContext();
         const analyser = audioContext.createAnalyser();
-        const microphone = audioContext.createMediaStreamSource(audioStream);
+        const microphone = audioContext.createMediaStreamSource(stream);
         microphone.connect(analyser);
 
         analyser.fftSize = 256;
@@ -301,7 +315,6 @@ export default function TakeMockInterviewPage() {
 
         const updateAudioLevel = () => {
           if (!isActive || !analyserRef.current) return;
-
           analyserRef.current.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
           setAudioLevel(average / 255);
@@ -314,7 +327,7 @@ export default function TakeMockInterviewPage() {
       }
     };
 
-    getUserStream();
+    setupAudioLevel();
 
     return () => {
       isActive = false;
@@ -326,10 +339,10 @@ export default function TakeMockInterviewPage() {
         audioContextRef.current.close();
         audioContextRef.current = null;
       }
-      if (userStreamRef.current) {
-        userStreamRef.current.getTracks().forEach((track) => track.stop());
-        userStreamRef.current = null;
+      if (streamToClean) {
+        streamToClean.getTracks().forEach((t) => t.stop());
       }
+      userStreamRef.current = null;
     };
   }, [interviewStarted, isProctoringActive, showToast]);
 
@@ -647,12 +660,14 @@ export default function TakeMockInterviewPage() {
 
   // Handle end interview
   const handleEndInterview = useCallback(() => {
+    if (isEndingInterview) return;
     setShowEndInterviewDialog(true);
-  }, []);
+  }, [isEndingInterview]);
 
   // Confirm end interview
   const handleConfirmEndInterview = useCallback(() => {
     setShowEndInterviewDialog(false);
+    setIsEndingInterview(true);
     handleSubmitInterview();
   }, [handleSubmitInterview]);
 
@@ -660,10 +675,6 @@ export default function TakeMockInterviewPage() {
   const handleCancelEndInterview = useCallback(() => {
     setShowEndInterviewDialog(false);
   }, []);
-
-  // Fullscreen warning state
-  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
-  const [showEndInterviewDialog, setShowEndInterviewDialog] = useState(false);
 
   // Handle re-enter fullscreen
   const handleReEnterFullscreen = useCallback(async () => {
@@ -816,6 +827,7 @@ export default function TakeMockInterviewPage() {
         }
         onTimeUp={handleSubmitInterview}
         onEndInterview={handleEndInterview}
+        endInterviewDisabled={showEndInterviewDialog || isEndingInterview}
         isProctoringActive={isProctoringActive}
         proctoringStatus={proctoringStatus}
         faceCount={faceCount}
@@ -849,7 +861,7 @@ export default function TakeMockInterviewPage() {
             questionText={getQuestionText(currentQuestion)}
             onSpeakComplete={handleSpeakComplete}
             isUserSpeaking={isListening}
-            interviewVideoSrc="/videos/Interview.mp4"
+            interviewVideoSrc={INTERVIEW_AVATAR_SRC}
             interviewTitle={interview?.title}
             questionsCount={questions?.length}
             durationMinutes={interview.duration_minutes}

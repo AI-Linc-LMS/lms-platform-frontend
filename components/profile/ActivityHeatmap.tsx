@@ -20,10 +20,8 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
-  // Generate years from last 2 years to current year
   const years = Array.from({ length: 3 }, (_, i) => currentYear - 2 + i);
 
-  // Calculate level based on activity count
   const calculateLevel = (count: number): number => {
     if (count === 0) return 0;
     if (count <= 2) return 1;
@@ -32,20 +30,12 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     return 4;
   };
 
-  // Generate a full year of dates
   const generateYearDates = () => {
     const dates: {
       date: string;
       count: number;
       level: number;
-      activities: {
-        Quiz: number;
-        Article: number;
-        Assignment: number;
-        CodingProblem: number;
-        DevCodingProblem: number;
-        VideoTutorial: number;
-      };
+      activities: Record<string, number>;
     }[] = [];
     const startDate = new Date(selectedYear, 0, 1);
     const endDate = new Date(selectedYear, 11, 31);
@@ -60,7 +50,7 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
       const count = activityData?.total || 0;
       dates.push({
         date: dateStr,
-        count: count,
+        count,
         level: calculateLevel(count),
         activities: {
           Quiz: activityData?.Quiz || 0,
@@ -77,17 +67,13 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
 
   const allDates = generateYearDates();
 
-  // Group dates by week
   const weeks: (typeof allDates)[] = [];
   let currentWeek: typeof allDates = [];
 
-  // Helper function to format tooltip content
   const formatTooltipContent = (day: (typeof allDates)[0]) => {
-    if (day.count === 0) {
-      return `${day.date}: No activities`;
-    }
+    if (day.count === 0) return `${day.date}: No activities`;
 
-    const activityLabels: { [key: string]: string } = {
+    const activityLabels: Record<string, string> = {
       Quiz: "Quizzes",
       Article: "Articles",
       Assignment: "Assignments",
@@ -97,29 +83,30 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     };
 
     const activitiesList = Object.entries(day.activities)
-      .filter(([_, count]) => count > 0)
+      .filter(([, count]) => count > 0)
       .map(([key, count]) => `${activityLabels[key]}: ${count}`)
       .join("\n");
 
     return `${day.date}\nTotal: ${day.count}\n\n${activitiesList}`;
   };
 
-  // Pad the start to align with Sunday
+  const emptyDay = {
+    date: "",
+    count: 0,
+    level: -1,
+    activities: {
+      Quiz: 0,
+      Article: 0,
+      Assignment: 0,
+      CodingProblem: 0,
+      DevCodingProblem: 0,
+      VideoTutorial: 0,
+    },
+  };
+
   const firstDay = new Date(allDates[0].date).getDay();
   for (let i = 0; i < firstDay; i++) {
-    currentWeek.push({
-      date: "",
-      count: 0,
-      level: -1,
-      activities: {
-        Quiz: 0,
-        Article: 0,
-        Assignment: 0,
-        CodingProblem: 0,
-        DevCodingProblem: 0,
-        VideoTutorial: 0,
-      },
-    });
+    currentWeek.push({ ...emptyDay, activities: { ...emptyDay.activities } });
   }
 
   allDates.forEach((date, index) => {
@@ -132,42 +119,15 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     currentWeek.push(date);
 
     if (index === allDates.length - 1 && currentWeek.length > 0) {
-      // Pad the end to complete the week
       while (currentWeek.length < 7) {
-        currentWeek.push({
-          date: "",
-          count: 0,
-          level: -1,
-          activities: {
-            Quiz: 0,
-            Article: 0,
-            Assignment: 0,
-            CodingProblem: 0,
-            DevCodingProblem: 0,
-            VideoTutorial: 0,
-          },
-        });
+        currentWeek.push({ ...emptyDay, activities: { ...emptyDay.activities } });
       }
       weeks.push(currentWeek);
     }
   });
 
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  // Calculate month labels positions
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
   const monthLabels = useMemo(() => {
     const labels: { month: string; weekIndex: number }[] = [];
     let lastMonth = -1;
@@ -175,22 +135,16 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     weeks.forEach((week, weekIndex) => {
       const firstValidDate = week.find((day) => day.date !== "");
       if (firstValidDate) {
-        const date = new Date(firstValidDate.date);
-        const month = date.getMonth();
+        const month = new Date(firstValidDate.date).getMonth();
         if (month !== lastMonth) {
-          labels.push({
-            month: months[month],
-            weekIndex,
-          });
+          labels.push({ month: months[month], weekIndex });
           lastMonth = month;
         }
       }
     });
-
     return labels;
   }, [weeks]);
 
-  // Color scheme based on level (0-4)
   const getColor = (level: number) => {
     switch (level) {
       case 0:
@@ -208,20 +162,18 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     }
   };
 
+  const cellSize = 14;
+  const cellGap = 4;
+
   return (
     <Paper
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
         border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: { xs: 1, sm: 2 },
-        mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+        borderRadius: 3,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
         backgroundColor: "#ffffff",
-        transition: "box-shadow 0.2s ease",
-        "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
-        },
       }}
     >
       <Box
@@ -230,34 +182,66 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
           alignItems: "center",
           justifyContent: "space-between",
           mb: 2.5,
+          flexWrap: "wrap",
+          gap: 2,
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 600,
-            color: "#000000",
-            fontSize: "1.25rem",
-          }}
-        >
-          Activity
-        </Typography>
-        <FormControl size="small" sx={{ minWidth: 100 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              background: "linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.06) 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Box
+              component="span"
+              sx={{
+                fontSize: 24,
+                lineHeight: 1,
+              }}
+            >
+              📊
+            </Box>
+          </Box>
+          <Box>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: "#111827",
+                fontSize: "1.25rem",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Activity
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#6b7280", fontSize: "0.875rem", mt: 0.25 }}>
+              Your learning activity this year
+            </Typography>
+          </Box>
+        </Box>
+        <FormControl size="small" sx={{ minWidth: 110 }}>
           <Select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: 2,
               fontWeight: 600,
-              fontSize: "0.875rem",
+              fontSize: "0.9375rem",
               "& .MuiOutlinedInput-notchedOutline": {
                 borderColor: "#e5e7eb",
               },
               "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#d1d5db",
+                borderColor: "#0a66c2",
               },
               "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#6366f1",
+                borderColor: "#0a66c2",
+                borderWidth: "2px",
               },
             }}
           >
@@ -270,14 +254,9 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
         </FormControl>
       </Box>
 
-      {/* Heatmap */}
-      <Box
-        sx={{
-          overflowX: "auto",
-          pb: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", gap: 1 }}>
+      {/* Heatmap - Full width */}
+      <Box sx={{ overflowX: "auto", pb: 1, width: "100%" }}>
+        <Box sx={{ display: "flex", gap: 2, minWidth: "fit-content" }}>
           {/* Day labels */}
           <Box
             sx={{
@@ -292,10 +271,11 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
                 key={day}
                 variant="caption"
                 sx={{
-                  fontSize: "0.625rem",
+                  fontSize: "0.6875rem",
                   color: "#6b7280",
-                  lineHeight: "12px",
-                  height: index === 0 ? "24px" : "36px",
+                  fontWeight: 500,
+                  lineHeight: `${cellSize + cellGap}px`,
+                  height: index === 0 ? cellSize + cellGap : (cellSize + cellGap) * 2,
                   display: "flex",
                   alignItems: index === 0 ? "flex-start" : "center",
                 }}
@@ -305,27 +285,24 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
             ))}
           </Box>
 
-          {/* Heatmap grid */}
-          <Box>
-            {/* Month labels */}
+          {/* Heatmap grid - larger cells for better visibility */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box
               sx={{
                 display: "flex",
-                gap: "3px",
+                gap: `${cellGap}px`,
                 mb: 0.5,
                 minWidth: "fit-content",
               }}
             >
               {weeks.map((_, weekIndex) => {
-                const monthLabel = monthLabels.find(
-                  (label) => label.weekIndex === weekIndex
-                );
+                const monthLabel = monthLabels.find((l) => l.weekIndex === weekIndex);
                 return (
                   <Box
                     key={weekIndex}
                     sx={{
-                      width: 12,
-                      height: 14,
+                      width: cellSize + cellGap,
+                      height: 16,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -335,7 +312,7 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
                       <Typography
                         variant="caption"
                         sx={{
-                          fontSize: "0.625rem",
+                          fontSize: "0.6875rem",
                           color: "#6b7280",
                           fontWeight: 600,
                         }}
@@ -348,11 +325,10 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
               })}
             </Box>
 
-            {/* Weeks grid */}
             <Box
               sx={{
                 display: "flex",
-                gap: "3px",
+                gap: `${cellGap}px`,
                 minWidth: "fit-content",
               }}
             >
@@ -362,23 +338,17 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
                   sx={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "3px",
+                    gap: `${cellGap}px`,
                   }}
                 >
                   {week.map((day, dayIndex) =>
                     day.level === -1 ? (
-                      <Box
-                        key={dayIndex}
-                        sx={{
-                          width: 12,
-                          height: 12,
-                        }}
-                      />
+                      <Box key={dayIndex} sx={{ width: cellSize, height: cellSize }} />
                     ) : (
                       <Tooltip
                         key={dayIndex}
                         title={
-                          <Box sx={{ whiteSpace: "pre-line" }}>
+                          <Box sx={{ whiteSpace: "pre-line", py: 0.5, px: 0.5 }}>
                             {formatTooltipContent(day)}
                           </Box>
                         }
@@ -386,15 +356,15 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
                       >
                         <Box
                           sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: "2px",
+                            width: cellSize,
+                            height: cellSize,
+                            borderRadius: "3px",
                             backgroundColor: getColor(day.level),
                             cursor: "pointer",
                             transition: "all 0.2s",
                             "&:hover": {
-                              transform: "scale(1.2)",
-                              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                              transform: "scale(1.25)",
+                              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
                             },
                           }}
                         />
@@ -414,39 +384,25 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-end",
-          gap: 1,
-          mt: 2,
+          gap: 1.5,
+          mt: 2.5,
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{
-            color: "#6b7280",
-            fontSize: "0.75rem",
-            mr: 0.5,
-          }}
-        >
+        <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
           Less
         </Typography>
         {[0, 1, 2, 3, 4].map((level) => (
           <Box
             key={level}
             sx={{
-              width: 12,
-              height: 12,
-              borderRadius: "2px",
+              width: cellSize,
+              height: cellSize,
+              borderRadius: "3px",
               backgroundColor: getColor(level),
             }}
           />
         ))}
-        <Typography
-          variant="caption"
-          sx={{
-            color: "#6b7280",
-            fontSize: "0.75rem",
-            ml: 0.5,
-          }}
-        >
+        <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
           More
         </Typography>
       </Box>

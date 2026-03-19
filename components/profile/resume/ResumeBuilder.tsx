@@ -11,6 +11,7 @@ import { ResumeData } from "./types";
 import { useToast } from "@/components/common/Toast";
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
+import { resumeService } from "@/lib/services/resume.service";
 
 interface ResumeBuilderProps {
   initialData?: Partial<ResumeData>;
@@ -225,14 +226,22 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   const convertImagesInElementToDataUrls = async (el: HTMLElement) => {
     const imgs = el.querySelectorAll("img[src]");
     await Promise.all(
-      Array.from(imgs).map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            const src = (img as HTMLImageElement).getAttribute("src");
-            if (!src || src.startsWith("data:")) {
-              resolve();
-              return;
-            }
+      Array.from(imgs).map(async (imgEl) => {
+        const img = imgEl as HTMLImageElement;
+        const src = img.getAttribute("src");
+        if (!src || src.startsWith("data:")) return;
+
+        const isExternalUrl = src.startsWith("http://") || src.startsWith("https://");
+        let dataUrl: string;
+
+        if (isExternalUrl) {
+          try {
+            dataUrl = await resumeService.fetchImageViaProxy(src);
+          } catch {
+            return;
+          }
+        } else {
+          dataUrl = await new Promise<string>((resolve) => {
             const image = new Image();
             image.crossOrigin = "anonymous";
             image.onload = () => {
@@ -243,27 +252,105 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 const ctx = canvas.getContext("2d");
                 if (ctx) {
                   ctx.drawImage(image, 0, 0);
-                  (img as HTMLImageElement).setAttribute(
-                    "src",
-                    canvas.toDataURL("image/png")
-                  );
+                  resolve(canvas.toDataURL("image/png"));
+                } else {
+                  resolve("");
                 }
-              } finally {
-                resolve();
+              } catch {
+                resolve("");
               }
             };
-            image.onerror = () => resolve();
+            image.onerror = () => resolve("");
             image.src = src;
-          })
-      )
+          });
+        }
+
+        if (dataUrl) img.setAttribute("src", dataUrl);
+      })
     );
+  };
+
+  /** Generate PDF and return blob + filename for download or upload. */
+  const generatePDFBlob = async (): Promise<{ blob: Blob; fileName: string }> => {
+    if (!previewRef.current) throw new Error("No preview");
+    const element = previewRef.current;
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await convertImagesInElementToDataUrls(element);
+
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText =
+      "position:fixed;left:-9999px;top:0;width:210mm;height:297mm;overflow:visible;pointer-events:none;z-index:-1;";
+    document.body.appendChild(wrapper);
+
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.setProperty("transform", "none", "important");
+    clone.style.setProperty("box-shadow", "none", "important");
+    clone.style.setProperty("width", "210mm", "important");
+    clone.style.setProperty("height", "297mm", "important");
+    clone.style.setProperty("overflow", "hidden");
+    wrapper.appendChild(clone);
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const cloneRect = clone.getBoundingClientRect();
+    const linkAnnotations: { x: number; y: number; w: number; h: number; url: string }[] = [];
+    clone.querySelectorAll("a[href]").forEach((a) => {
+      const href = (a as HTMLAnchorElement).getAttribute("href");
+      if (!href) return;
+      const r = a.getBoundingClientRect();
+      linkAnnotations.push({
+        x: ((r.left - cloneRect.left) / cloneRect.width) * 210,
+        y: ((r.top - cloneRect.top) / cloneRect.height) * 297,
+        w: (r.width / cloneRect.width) * 210,
+        h: (r.height / cloneRect.height) * 297,
+        url: href,
+      });
+    });
+
+    const dataUrl = await toPng(clone, {
+      pixelRatio: 3,
+      backgroundColor: "#ffffff",
+      cacheBust: true,
+    });
+    document.body.removeChild(wrapper);
+
+    const img = new Image();
+    img.src = dataUrl;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Image load failed"));
+    });
+
+    const imgWidth = 210;
+    const pageHeight = 297;
+    const rawHeight = (img.naturalHeight * imgWidth) / img.naturalWidth;
+    const imgHeight = Math.min(rawHeight, pageHeight);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas context unavailable");
+    ctx.drawImage(img, 0, 0);
+    const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.97);
+
+    const pdf = new jsPDF("p", "mm", "a4");
+    pdf.addImage(jpegDataUrl, "JPEG", 0, 0, imgWidth, imgHeight);
+    linkAnnotations.forEach((link) => {
+      const pageIndex = Math.floor(link.y / pageHeight);
+      const yOnPage = link.y - pageIndex * pageHeight;
+      pdf.setPage(pageIndex + 1);
+      pdf.link(link.x, yOnPage, link.w, link.h, { url: link.url });
+    });
+
+    const fileName = `${resumeData.basicInfo.firstName}_${resumeData.basicInfo.lastName}_Resume.pdf`;
+    const blob = pdf.output("blob") as Blob;
+    return { blob, fileName };
   };
 
   const handleDownloadPDF = async () => {
     if (!previewRef.current) return;
-
-    // Patch CSSStyleSheet.cssRules to prevent SecurityError on cross-origin
-    // stylesheets (Google Fonts, CDN CSS) — html-to-image reads all rules.
     const origDescriptor = Object.getOwnPropertyDescriptor(
       CSSStyleSheet.prototype,
       "cssRules"
@@ -283,105 +370,71 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
       });
       patched = true;
     } catch {
-      /* continue without patch */
+      /* continue */
     }
-
     try {
       showToast(t("profile.generatingPdf"), "info");
-
-      const element = previewRef.current;
-
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      await convertImagesInElementToDataUrls(element);
-
-      // Off-screen wrapper at left:-9999px avoids any visible flash.
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText =
-        "position:fixed;left:-9999px;top:0;width:210mm;height:297mm;overflow:visible;pointer-events:none;z-index:-1;";
-      document.body.appendChild(wrapper);
-
-      const clone = element.cloneNode(true) as HTMLElement;
-      clone.style.setProperty("transform", "none", "important");
-      clone.style.setProperty("box-shadow", "none", "important");
-      clone.style.setProperty("width", "210mm", "important");
-      clone.style.setProperty("height", "297mm", "important");
-      clone.style.setProperty("overflow", "hidden");
-      wrapper.appendChild(clone);
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Measure link positions from the untransformed clone
-      const cloneRect = clone.getBoundingClientRect();
-      const linkAnnotations: {
-        x: number;
-        y: number;
-        w: number;
-        h: number;
-        url: string;
-      }[] = [];
-
-      clone.querySelectorAll("a[href]").forEach((a) => {
-        const href = (a as HTMLAnchorElement).getAttribute("href");
-        if (!href) return;
-        const r = a.getBoundingClientRect();
-        linkAnnotations.push({
-          x: ((r.left - cloneRect.left) / cloneRect.width) * 210,
-          y: ((r.top - cloneRect.top) / cloneRect.height) * 297,
-          w: (r.width / cloneRect.width) * 210,
-          h: (r.height / cloneRect.height) * 297,
-          url: href,
-        });
-      });
-
-      // html-to-image uses SVG foreignObject — the browser's own CSS engine
-      // handles rendering, so the output is pixel-perfect.
-      // The cssRules patch above handles CORS for cross-origin stylesheets.
-      const dataUrl = await toPng(clone, {
-        pixelRatio: 3,
-        backgroundColor: "#ffffff",
-        cacheBust: true,
-      });
-
-      document.body.removeChild(wrapper);
-
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("Image load failed"));
-      });
-
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const rawHeight = (img.naturalHeight * imgWidth) / img.naturalWidth;
-      const imgHeight = Math.min(rawHeight, pageHeight);
-
-      // Compress to JPEG (quality 0.92) to keep PDF under 5 MB with minimal visual loss.
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas context unavailable");
-      ctx.drawImage(img, 0, 0);
-      const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.97);
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      pdf.addImage(jpegDataUrl, "JPEG", 0, 0, imgWidth, imgHeight);
-
-      linkAnnotations.forEach((link) => {
-        const pageIndex = Math.floor(link.y / pageHeight);
-        const yOnPage = link.y - pageIndex * pageHeight;
-        pdf.setPage(pageIndex + 1);
-        pdf.link(link.x, yOnPage, link.w, link.h, { url: link.url });
-      });
-
-      const fileName = `${resumeData.basicInfo.firstName}_${resumeData.basicInfo.lastName}_Resume.pdf`;
-      pdf.save(fileName);
-
+      const { blob, fileName } = await generatePDFBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
       showToast(t("profile.pdfDownloadSuccess"), "success");
     } catch {
       showToast(t("profile.pdfDownloadFailed"), "error");
     } finally {
+      if (patched && origDescriptor) {
+        try {
+          Object.defineProperty(
+            CSSStyleSheet.prototype,
+            "cssRules",
+            origDescriptor
+          );
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  };
+
+  const [saveResumeLoading, setSaveResumeLoading] = useState(false);
+  const handleSaveResume = async () => {
+    if (!previewRef.current) return;
+    const origDescriptor = Object.getOwnPropertyDescriptor(
+      CSSStyleSheet.prototype,
+      "cssRules"
+    );
+    let patched = false;
+    try {
+      Object.defineProperty(CSSStyleSheet.prototype, "cssRules", {
+        get: function () {
+          try {
+            return origDescriptor?.get?.call(this) ?? [];
+          } catch {
+            return [];
+          }
+        },
+        configurable: true,
+        enumerable: origDescriptor?.enumerable ?? true,
+      });
+      patched = true;
+    } catch {
+      /* continue */
+    }
+    try {
+      setSaveResumeLoading(true);
+      showToast(t("profile.generatingPdf"), "info");
+      const { blob, fileName } = await generatePDFBlob();
+      const file = new File([blob], fileName, { type: "application/pdf" });
+      await resumeService.uploadResume(file, fileName);
+      showToast(t("profile.resumeSaveSuccess"), "success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t("profile.resumeSaveFailed");
+      showToast(message, "error");
+    } finally {
+      setSaveResumeLoading(false);
       if (patched && origDescriptor) {
         try {
           Object.defineProperty(
@@ -599,22 +652,43 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           </Menu>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<IconWrapper icon="mdi:download" />}
-          onClick={handleDownloadPDF}
-          sx={{
-            textTransform: "none",
-            backgroundColor: "#6366f1",
-            color: "#ffffff",
-            px: 3,
-            "&:hover": {
-              backgroundColor: "#4f46e5",
-            },
-          }}
-        >
-          {t("profile.downloadPdf")}
-        </Button>
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+          <Tooltip title={t("profile.saveResume")}>
+            <Button
+              variant="contained"
+              startIcon={<IconWrapper icon="mdi:content-save" />}
+              onClick={handleSaveResume}
+              disabled={saveResumeLoading}
+              sx={{
+                textTransform: "none",
+                backgroundColor: "#6366f1",
+                color: "#ffffff",
+                px: 3,
+                "&:hover": {
+                  backgroundColor: "#4f46e5",
+                },
+              }}
+            >
+              {saveResumeLoading ? "…" : t("profile.saveResume")}
+            </Button>
+          </Tooltip>
+          <Button
+            variant="contained"
+            startIcon={<IconWrapper icon="mdi:download" />}
+            onClick={handleDownloadPDF}
+            sx={{
+              textTransform: "none",
+              backgroundColor: "#6366f1",
+              color: "#ffffff",
+              px: 3,
+              "&:hover": {
+                backgroundColor: "#4f46e5",
+              },
+            }}
+          >
+            {t("profile.downloadPdf")}
+          </Button>
+        </Box>
       </Paper>
 
       {/* Side by Side Layout */}
