@@ -15,6 +15,7 @@ interface InterviewHeaderProps {
   startedAt: Date | null;
   onTimeUp: () => void;
   onEndInterview: () => void;
+  endInterviewDisabled?: boolean;
   // Proctoring status
   isProctoringActive: boolean;
   proctoringStatus: "NORMAL" | "WARNING" | "VIOLATION";
@@ -35,6 +36,7 @@ export const InterviewHeader = memo(function InterviewHeader({
   startedAt,
   onTimeUp,
   onEndInterview,
+  endInterviewDisabled = false,
   isProctoringActive,
   proctoringStatus,
   faceCount,
@@ -162,6 +164,7 @@ export const InterviewHeader = memo(function InterviewHeader({
               variant="outlined"
               size="small"
               onClick={onEndInterview}
+              disabled={endInterviewDisabled}
               sx={{
                 borderColor: "#d1d5db",
                 color: "#374151",

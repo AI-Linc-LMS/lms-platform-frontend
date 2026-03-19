@@ -42,6 +42,9 @@ export default function TakeMockInterviewPage() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const [interimTranscript, setInterimTranscript] = useState<string>("");
+  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
+  const [showEndInterviewDialog, setShowEndInterviewDialog] = useState(false);
+  const [isEndingInterview, setIsEndingInterview] = useState(false);
 
   const isInitializingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -657,12 +660,14 @@ export default function TakeMockInterviewPage() {
 
   // Handle end interview
   const handleEndInterview = useCallback(() => {
+    if (isEndingInterview) return;
     setShowEndInterviewDialog(true);
-  }, []);
+  }, [isEndingInterview]);
 
   // Confirm end interview
   const handleConfirmEndInterview = useCallback(() => {
     setShowEndInterviewDialog(false);
+    setIsEndingInterview(true);
     handleSubmitInterview();
   }, [handleSubmitInterview]);
 
@@ -670,10 +675,6 @@ export default function TakeMockInterviewPage() {
   const handleCancelEndInterview = useCallback(() => {
     setShowEndInterviewDialog(false);
   }, []);
-
-  // Fullscreen warning state
-  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
-  const [showEndInterviewDialog, setShowEndInterviewDialog] = useState(false);
 
   // Handle re-enter fullscreen
   const handleReEnterFullscreen = useCallback(async () => {
@@ -826,6 +827,7 @@ export default function TakeMockInterviewPage() {
         }
         onTimeUp={handleSubmitInterview}
         onEndInterview={handleEndInterview}
+        endInterviewDisabled={showEndInterviewDialog || isEndingInterview}
         isProctoringActive={isProctoringActive}
         proctoringStatus={proctoringStatus}
         faceCount={faceCount}
