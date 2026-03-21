@@ -3,20 +3,21 @@
 import { Box, Paper, Typography, Chip, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { SkillStats } from "@/lib/services/assessment.service";
+import {
+  parseSkillListString,
+  stripSkillArrayDecor,
+} from "@/lib/utils/assessment-skill-labels.utils";
 
 interface EnhancedSkillsTagsProps {
   strongSkills: SkillStats[] | string[];
   weakSkills: SkillStats[] | string[];
 }
 
-// Helper function to clean skill names
 const cleanSkillName = (skill: string): string => {
-  // Remove brackets, quotes, and extra whitespace
-  return skill
-    .replace(/^\[?['"]?/g, "")
-    .replace(/['"]?\]?$/g, "")
-    .replace(/['"]/g, "")
-    .trim();
+  const t = skill.trim();
+  const list = parseSkillListString(t);
+  if (list && list.length > 0) return list.join(", ");
+  return stripSkillArrayDecor(t);
 };
 
 // Helper function to check if it's a SkillStats object

@@ -33,7 +33,7 @@ export interface JobCreateUpdatePayload {
   apply_link?: string;
   job_type?: string;
   is_published?: boolean;
-  status?: "active" | "inactive" | "closed" | "completed";
+  status?: "active" | "inactive" | "closed" | "completed" | "on_hold";
   application_deadline?: string | null;
   number_of_openings?: number | null;
   applicable_passout_year?: string | null;
@@ -86,7 +86,7 @@ export const adminJobsV2Service = {
 
   getJobs: async (
     clientId?: string | number,
-    options?: { status?: "active" | "inactive" | "closed" | "completed" }
+    options?: { status?: "active" | "inactive" | "closed" | "completed" | "on_hold" }
   ): Promise<{ results: JobV2[]; count: number }> => {
     const cid = clientId ?? getClientId();
     const params: Record<string, string> = { client_id: String(cid) };
@@ -176,6 +176,52 @@ export const adminJobsV2Service = {
       }
     );
     return response.data;
+  },
+
+  bulkUpdateJobStatus: async (
+    jobIds: number[],
+    status: "active" | "inactive" | "closed" | "completed" | "on_hold",
+    clientId?: string | number
+  ): Promise<{ updated: number }> => {
+    const cid = clientId ?? getClientId();
+    try {
+      const response = await apiClient.post<{ updated: number }>(
+        `/jobs-v2/api/admin/jobs/bulk-update-status/`,
+        { job_ids: jobIds, status, client_id: cid }
+      );
+      return response.data;
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorPayload>;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to bulk update job status";
+      throw new Error(message);
+    }
+  },
+
+  bulkUpdateJobVisibility: async (
+    jobIds: number[],
+    isPublished: boolean,
+    clientId?: string | number
+  ): Promise<{ updated: number }> => {
+    const cid = clientId ?? getClientId();
+    try {
+      const response = await apiClient.post<{ updated: number }>(
+        `/jobs-v2/api/admin/jobs/bulk-update-visibility/`,
+        { job_ids: jobIds, is_published: isPublished, client_id: cid }
+      );
+      return response.data;
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorPayload>;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to bulk update visibility";
+      throw new Error(message);
+    }
   },
 
   deleteJob: async (jobId: number, clientId?: string | number): Promise<void> => {
@@ -349,22 +395,6 @@ export const adminJobsV2Service = {
     formData.append("client_id", String(cid));
     const response = await apiClient.post<{ created: number }>(
       `/jobs-v2/api/admin/questions/import/`,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
-    return response.data;
-  },
-
-  importApplicationStatusFromCsv: async (
-    file: File,
-    clientId?: string | number
-  ): Promise<{ updated: number }> => {
-    const cid = clientId ?? getClientId();
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("client_id", String(cid));
-    const response = await apiClient.post<{ updated: number }>(
-      `/jobs-v2/api/admin/applications/import-status/`,
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
     );

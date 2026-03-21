@@ -24,7 +24,7 @@ export interface JobV2 {
   salary?: string;
   apply_link?: string;
   job_type?: string;
-  status?: "active" | "inactive" | "closed" | "completed";
+  status?: "active" | "inactive" | "closed" | "completed" | "on_hold";
   application_deadline?: string;
   jd_file_url?: string;
   number_of_openings?: number | null;
@@ -39,6 +39,7 @@ export interface JobV2 {
   is_favourited?: boolean;
   has_applied?: boolean;
   favorites_count?: number;
+  applications_count?: number;
   courses?: Array<{ id: number; title: string }>;
   college_mappings?: Array<{ id?: number; college_name: string; department?: string; batch?: string }>;
   questions?: Array<{
