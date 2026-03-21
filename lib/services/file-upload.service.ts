@@ -16,6 +16,29 @@ export interface FileUploadResponse {
   created_at: string;
 }
 
+export interface GetUploadedFilesResponse {
+  files: FileUploadResponse[];
+}
+
+/**
+ * List uploaded files for a client.
+ *
+ * @param clientId - Client ID
+ * @param module - Optional module filter (e.g. report_issue, assessment_screenshots)
+ * @returns List of uploaded files
+ */
+export const getUploadedFiles = async (
+  clientId: number,
+  module?: FileUploadModule
+): Promise<GetUploadedFilesResponse> => {
+  const params = module ? { module } : {};
+  const response = await apiClient.get<GetUploadedFilesResponse>(
+    `/api/clients/${clientId}/upload/`,
+    { params }
+  );
+  return response.data;
+};
+
 /**
  * Upload a file (PDF, PNG, JPEG, GIF, WEBP) to S3.
  * Files are organized by module in the bucket.
