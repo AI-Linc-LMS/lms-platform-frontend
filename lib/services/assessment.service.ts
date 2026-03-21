@@ -167,6 +167,18 @@ export interface CodingProblemResponseItem {
   all_test_cases_passed: boolean;
 }
 
+/** Evidence row for proctoring screenshots uploaded during the assessment (final submit only). */
+export interface ViolationScreenshotSample {
+  screenshot_url: string;
+  file_id?: number;
+  captured_at: string;
+  total_violation_count_at_capture: number;
+  /** Face/trackpad/etc. from proctoring; use "TAB_SWITCH" when this row was tied to a tab visibility violation. */
+  latest_violation_type?: string | null;
+  /** Tab-switch count after visibility return (same as metadata when captured). */
+  tab_switch_count_at_capture?: number;
+}
+
 export interface AssessmentMetadata {
   proctoring: {
     face_violations: Array<{
@@ -197,6 +209,7 @@ export interface AssessmentMetadata {
     }>;
     total_violation_count: number;
     violation_threshold_reached: boolean;
+    violation_screenshot_samples?: ViolationScreenshotSample[];
   };
   timing: {
     started_at: string;
