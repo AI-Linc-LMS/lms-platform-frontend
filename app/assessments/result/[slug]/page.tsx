@@ -142,7 +142,9 @@ export default function AssessmentResultPage() {
 
         {/* RESULTS VIEW */}
         <Box>
-          <AssessmentResultContent assessmentResult={assessmentResult} />
+          {assessmentResult && (
+            <AssessmentResultContent assessmentResult={assessmentResult} />
+          )}
         </Box>
       </Box>
     </MainLayout>
