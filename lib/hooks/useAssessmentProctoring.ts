@@ -15,7 +15,10 @@ import {
   TrackpadSwipeViolation,
 } from "./useTrackpadSwipeDetector";
 import { ProctoringViolation } from "@/lib/services/proctoring.service";
-import type { ViolationScreenshotSample } from "@/lib/services/assessment.service";
+import type {
+  AssessmentImageProof,
+  ViolationScreenshotSample,
+} from "@/lib/services/assessment.service";
 
 export interface AssessmentMetadata {
   proctoring: {
@@ -43,6 +46,7 @@ export interface AssessmentMetadata {
     total_violation_count: number;
     violation_threshold_reached: boolean;
     violation_screenshot_samples?: ViolationScreenshotSample[];
+    image_proofs?: AssessmentImageProof[];
   };
   timing: {
     started_at: string;

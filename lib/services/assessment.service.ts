@@ -169,13 +169,33 @@ export interface CodingProblemResponseItem {
 
 /** Evidence row for proctoring screenshots uploaded during the assessment (final submit only). */
 export interface ViolationScreenshotSample {
-  screenshot_url: string;
+  /** Same as upload API `id`. */
+  id?: number;
   file_id?: number;
+  /** Same as upload API `url`. */
+  url?: string;
+  screenshot_url: string;
+  filename?: string;
+  module?: string;
+  /** Upload API `created_at` when available. */
+  created_at?: string;
   captured_at: string;
   total_violation_count_at_capture: number;
   /** Face/trackpad/etc. from proctoring; use "TAB_SWITCH" when this row was tied to a tab visibility violation. */
   latest_violation_type?: string | null;
   /** Tab-switch count after visibility return (same as metadata when captured). */
+  tab_switch_count_at_capture?: number;
+}
+
+/** `response_sheet.image_proofs` — upload API shape plus proctoring context (final submit). */
+export interface AssessmentImageProof {
+  id: number;
+  url: string;
+  filename: string;
+  module: string;
+  created_at: string;
+  total_violation_count_at_capture: number;
+  latest_violation_type?: string | null;
   tab_switch_count_at_capture?: number;
 }
 
@@ -210,6 +230,8 @@ export interface AssessmentMetadata {
     total_violation_count: number;
     violation_threshold_reached: boolean;
     violation_screenshot_samples?: ViolationScreenshotSample[];
+    /** Duplicate of top-level `response_sheet.image_proofs` for consumers reading proctoring only. */
+    image_proofs?: AssessmentImageProof[];
   };
   timing: {
     started_at: string;
@@ -222,7 +244,7 @@ export const assessmentService = {
   // Get active assessments
   getActiveAssessments: async (): Promise<Assessment[]> => {
     const response = await apiClient.get<Assessment[]>(
-      `/assessment/api/client/${config.clientId}/active-assessments/`
+      `/assessment/api/client/${config.clientId}/active-assessments/`,
     );
     return response.data;
   },
@@ -230,17 +252,17 @@ export const assessmentService = {
   // Get assessment detail
   getAssessmentDetail: async (slug: string): Promise<AssessmentDetail> => {
     const response = await apiClient.get<AssessmentDetail>(
-      `/assessment/api/client/${config.clientId}/assessment-details/${slug}/`
+      `/assessment/api/client/${config.clientId}/assessment-details/${slug}/`,
     );
     return response.data;
   },
 
   // Start assessment
   startAssessment: async (
-    assessmentId: number | string
+    assessmentId: number | string,
   ): Promise<AssessmentSubmission> => {
     const response = await apiClient.get<AssessmentSubmission>(
-      `/assessment/api/client/${config.clientId}/start-assessment/${assessmentId}/`
+      `/assessment/api/client/${config.clientId}/start-assessment/${assessmentId}/`,
     );
     return response.data;
   },
@@ -255,16 +277,18 @@ export const assessmentService = {
           metadata: any;
           total_duration_seconds: number;
         };
+
+        image_proofs?: AssessmentImageProof[];
       };
       quizSectionId: Array<Record<string, any>>;
       codingProblemSectionId: Array<Record<string, any>>;
-    }
+    },
   ): Promise<SubmissionResponse> => {
     const response = await apiClient.put<SubmissionResponse>(
       `/assessment/api/client/${config.clientId}/assessment-submission/${assessmentId}/`,
       {
         response_sheet: payload,
-      }
+      },
     );
     return response.data;
   },
@@ -273,14 +297,14 @@ export const assessmentService = {
   updateSubmission: async (
     assessmentId: number,
     responseSheet: Record<string, Record<string, any>>,
-    metadata?: AssessmentMetadata
+    metadata?: AssessmentMetadata,
   ): Promise<SubmissionResponse> => {
     const response = await apiClient.put<SubmissionResponse>(
       `/assessment/api/client/${config.clientId}/assessment-submission/${assessmentId}/`,
       {
         response_sheet: responseSheet,
         metadata: metadata,
-      }
+      },
     );
     return response.data;
   },
@@ -295,16 +319,18 @@ export const assessmentService = {
           metadata: any;
           total_duration_seconds: number;
         };
+
+        image_proofs?: AssessmentImageProof[];
       };
       quizSectionId: Array<Record<string, any>>;
       codingProblemSectionId: Array<Record<string, any>>;
-    }
+    },
   ): Promise<FinalSubmissionResponse> => {
     const response = await apiClient.put<FinalSubmissionResponse>(
       `/assessment/api/client/${config.clientId}/assessment-submission/${assessmentId}/final/`,
       {
         response_sheet: payload,
-      }
+      },
     );
     return response.data;
   },
@@ -312,7 +338,7 @@ export const assessmentService = {
   // Redeem scholarship
   redeemScholarship: async (
     assessmentIdOrSlug: number | string,
-    referralCode?: string
+    referralCode?: string,
   ): Promise<{
     scholarship_percentage: number;
     referral_code: string;
@@ -320,17 +346,17 @@ export const assessmentService = {
   }> => {
     const response = await apiClient.post(
       `/assessment/api/client/${config.clientId}/redeem-scholarship/${assessmentIdOrSlug}/`,
-      referralCode ? { referral_code: referralCode } : {}
+      referralCode ? { referral_code: referralCode } : {},
     );
     return response.data;
   },
 
   // Get scholarship assessment status
   getScholarshipStatus: async (
-    assessmentIdOrSlug: number | string
+    assessmentIdOrSlug: number | string,
   ): Promise<ScholarshipStatus> => {
     const response = await apiClient.get<ScholarshipStatus>(
-      `/assessment/api/client/${config.clientId}/scholarship-assessment-status/${assessmentIdOrSlug}/`
+      `/assessment/api/client/${config.clientId}/scholarship-assessment-status/${assessmentIdOrSlug}/`,
     );
     return response.data;
   },
@@ -338,16 +364,16 @@ export const assessmentService = {
   // Get attempted assessments
   getAttemptedAssessments: async (): Promise<AttemptedAssessment[]> => {
     const response = await apiClient.get<AttemptedAssessment[]>(
-      `/assessment/api/client/${config.clientId}/attempted-assessments/`
+      `/assessment/api/client/${config.clientId}/attempted-assessments/`,
     );
     return response.data;
   },
 
   getAssessmentResult: async (
-    assessmentIdOrSlug: number | string
+    assessmentIdOrSlug: number | string,
   ): Promise<AssessmentResult> => {
     const response = await apiClient.get<AssessmentResult>(
-      `/assessment/api/client/${config.clientId}/assessment-result/${assessmentIdOrSlug}/`
+      `/assessment/api/client/${config.clientId}/assessment-result/${assessmentIdOrSlug}/`,
     );
     return response.data;
   },
@@ -358,7 +384,7 @@ export const assessmentService = {
     questionId: number,
     sourceCode: string,
     languageId: number,
-    customInput?: string
+    customInput?: string,
   ): Promise<any> => {
     const endpoint = `/assessment/api/client/${config.clientId}/run-code/${slug}/${questionId}/`;
 
@@ -381,7 +407,7 @@ export const assessmentService = {
     slug: string,
     questionId: number,
     sourceCode: string,
-    languageId: number
+    languageId: number,
   ): Promise<any> => {
     const endpoint = `/assessment/api/client/${config.clientId}/submit-code/${slug}/${questionId}/`;
 

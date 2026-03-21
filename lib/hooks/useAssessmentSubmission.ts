@@ -4,6 +4,7 @@ import { useToast } from "@/components/common/Toast";
 import { assessmentService } from "@/lib/services/assessment.service";
 import {
   AssessmentMetadata,
+  type AssessmentImageProof,
   type ViolationScreenshotSample,
 } from "@/lib/services/assessment.service";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
@@ -23,6 +24,28 @@ function pickRandomUpTo<T>(items: T[], max: number): T[] {
     copy[j] = a;
   }
   return copy.slice(0, max);
+}
+
+function violationSamplesToImageProofs(
+  samples: ViolationScreenshotSample[]
+): AssessmentImageProof[] {
+  const out: AssessmentImageProof[] = [];
+  for (const s of samples) {
+    const id = s.file_id ?? s.id;
+    const url = s.url ?? s.screenshot_url;
+    if (id == null || !url) continue;
+    out.push({
+      id,
+      url,
+      filename: s.filename ?? "",
+      module: s.module ?? "assessment_screenshots",
+      created_at: s.created_at ?? s.captured_at,
+      total_violation_count_at_capture: s.total_violation_count_at_capture,
+      latest_violation_type: s.latest_violation_type ?? null,
+      tab_switch_count_at_capture: s.tab_switch_count_at_capture,
+    });
+  }
+  return out;
 }
 
 interface UseAssessmentSubmissionOptions {
@@ -221,6 +244,9 @@ export function useAssessmentSubmission({
         VIOLATION_SCREENSHOT_SUBMIT_MAX
       );
 
+      const imageProofs =
+        violationSamplesToImageProofs(violationScreenshotSamples);
+
       // Prepare metadata for transcript
       const transcriptMetadata = {
         timing: {
@@ -237,6 +263,7 @@ export function useAssessmentSubmission({
           ...(violationScreenshotSamples.length > 0
             ? { violation_screenshot_samples: violationScreenshotSamples }
             : {}),
+          ...(imageProofs.length > 0 ? { image_proofs: imageProofs } : {}),
         },
         total_questions: totalQuestions,
         fullscreen_exits: fullscreenExits,
@@ -257,6 +284,7 @@ export function useAssessmentSubmission({
         },
         quizSectionId,
         codingProblemSectionId,
+        ...(imageProofs.length > 0 ? { image_proofs: imageProofs } : {}),
       };
 
       // Submit assessment - THIS IS THE CRITICAL STEP
