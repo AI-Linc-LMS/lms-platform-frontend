@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import NextLink from "next/link";
 import {
@@ -32,6 +32,7 @@ import {
   IconButton,
   InputAdornment,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -41,7 +42,7 @@ import { config } from "@/lib/config";
 import { ApplicationsIllustration } from "@/components/jobs-v2/illustrations";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeUrlPreviewModal } from "@/components/admin/ResumeUrlPreviewModal";
-import { FileDown, Users, FileText, FileUp, Search, X, ChevronDown, ChevronUp, ExternalLink, Calendar, Save } from "lucide-react";
+import { FileDown, Users, FileText, Search, X, ChevronDown, ChevronUp, ExternalLink, Calendar, Save, CheckSquare } from "lucide-react";
 
 const STATUS_OPTIONS = [
   { value: "applying", label: "Applying" },
@@ -156,8 +157,6 @@ export default function JobApplicationsPage() {
   const [exporting, setExporting] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [importing, setImporting] = useState(false);
-  const importFileRef = useRef<HTMLInputElement>(null);
   const [resumePreviewUrl, setResumePreviewUrl] = useState<string | null>(null);
   const [detailApp, setDetailApp] = useState<JobApplicationV2 | null>(null);
   const [sortBy, setSortBy] = useState<"applied_at" | "name" | "status">("applied_at");
@@ -274,25 +273,6 @@ export default function JobApplicationsPage() {
       return next;
     });
   };
-
-  const handleImportStatus = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      try {
-        setImporting(true);
-        const res = await adminJobsV2Service.importApplicationStatusFromCsv(file, config.clientId);
-        showToast(`Updated ${res.updated} application(s) from CSV`, "success");
-        loadApplications();
-      } catch (err) {
-        showToast((err as Error)?.message ?? "Failed to import CSV", "error");
-      } finally {
-        setImporting(false);
-        e.target.value = "";
-      }
-    },
-    [loadApplications, showToast]
-  );
 
   const handleExportCsv = useCallback(async () => {
     try {
@@ -498,10 +478,35 @@ export default function JobApplicationsPage() {
         </Paper>
 
         {/* Applicants section: filters + grid */}
-        <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, px: 1.5, py: 0.75, borderRadius: 1.5, backgroundColor: "#f8fafc", border: "1px solid", borderColor: "divider" }}>
-            <Users size={18} style={{ color: "#6366f1" }} />
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        <Box
+          sx={{
+            mb: 2,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 1.5,
+            p: 2,
+            borderRadius: 2,
+            backgroundColor: "#fafbff",
+            border: "1px solid",
+            borderColor: "rgba(99, 102, 241, 0.12)",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.06) 100%)",
+              border: "1px solid",
+              borderColor: "rgba(99, 102, 241, 0.25)",
+            }}
+          >
+            <Users size={20} style={{ color: "#6366f1" }} />
+            <Typography variant="body1" sx={{ fontWeight: 700, color: "#0f172a" }}>
               {loading ? "—" : `${applications.length} applicant${applications.length !== 1 ? "s" : ""}`}
             </Typography>
           </Box>
@@ -574,19 +579,6 @@ export default function JobApplicationsPage() {
               ))}
             </Select>
           </FormControl>
-          <input ref={importFileRef} type="file" accept=".csv" onChange={handleImportStatus} style={{ display: "none" }} />
-          <Tooltip title="CSV columns: application_id (or email + job_id) and status" placement="top">
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => importFileRef.current?.click()}
-              disabled={importing}
-              startIcon={<FileUp size={16} />}
-              sx={{ textTransform: "none", fontWeight: 600, borderColor: "rgba(99, 102, 241, 0.5)", color: "#6366f1", "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.04)" } }}
-            >
-              {importing ? "Importing..." : "Import CSV"}
-            </Button>
-          </Tooltip>
           <Button
             variant="outlined"
             size="small"
@@ -612,31 +604,78 @@ export default function JobApplicationsPage() {
               justifyContent: "space-between",
               flexWrap: "wrap",
               gap: 2,
-              border: "1px solid",
-              borderColor: "rgba(99, 102, 241, 0.3)",
-              backgroundColor: "rgba(99, 102, 241, 0.04)",
+              border: "2px solid",
+              borderColor: "rgba(99, 102, 241, 0.4)",
+              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0.02) 100%)",
               borderRadius: 2,
+              boxShadow: "0 2px 8px rgba(99, 102, 241, 0.08)",
             }}
           >
-            <Typography variant="body2" sx={{ fontWeight: 600, color: "#6366f1" }}>
-              {selectedIds.size} selected
-            </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", width: { xs: "100%", sm: "auto" } }}>
-              <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 160 }, flex: { xs: 1, sm: "none" } }}>
-                <InputLabel>Update Status</InputLabel>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  backgroundColor: "rgba(99, 102, 241, 0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CheckSquare size={20} style={{ color: "#6366f1" }} />
+              </Box>
+              <Box>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                  {selectedIds.size} application{selectedIds.size !== 1 ? "s" : ""} selected
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Update status for all selected applicants
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}
+                startIcon={<X size={16} />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "text.secondary",
+                  ml: 1,
+                  "&:hover": { backgroundColor: "rgba(0,0,0,0.04)", color: "text.primary" },
+                }}
+              >
+                Clear
+              </Button>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", width: { xs: "100%", sm: "auto" } }}>
+              <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 180 }, flex: { xs: 1, sm: "none" } }}>
+                <InputLabel>New Status</InputLabel>
                 <Select
                   value={bulkStatus}
-                  label="Update Status"
+                  label="New Status"
                   onChange={(e) => setBulkStatus(e.target.value)}
                   sx={{
                     backgroundColor: "#fff",
-                    borderRadius: 1.5,
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.3)" },
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
+                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
                   }}
                 >
                   {STATUS_OPTIONS.map((o) => (
                     <MenuItem key={o.value} value={o.value}>
-                      {o.label}
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            backgroundColor: (STATUS_COLORS[o.value] ?? STATUS_COLORS.applied).color,
+                          }}
+                        />
+                        {o.label}
+                      </Box>
                     </MenuItem>
                   ))}
                 </Select>
@@ -649,12 +688,22 @@ export default function JobApplicationsPage() {
                   textTransform: "none",
                   fontWeight: 600,
                   backgroundColor: "#6366f1",
-                  px: 2.5,
+                  px: 3,
+                  py: 1.25,
                   borderRadius: 2,
-                  "&:hover": { backgroundColor: "#4f46e5" },
+                  boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
+                  "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
+                  "&:disabled": { backgroundColor: "rgba(99, 102, 241, 0.5)" },
                 }}
               >
-                {updating ? "Updating..." : "Apply"}
+                {updating ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <CircularProgress size={16} sx={{ color: "#fff" }} />
+                    Updating...
+                  </Box>
+                ) : (
+                  "Apply to Selected"
+                )}
               </Button>
             </Box>
           </Paper>
