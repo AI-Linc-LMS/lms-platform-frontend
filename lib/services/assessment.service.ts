@@ -105,6 +105,8 @@ export interface AssessmentResult {
   maximum_marks: number;
   /** When false, show evaluation-in-progress message instead of full result */
   show_result?: boolean;
+  /** Optional server-provided feedback lines for the report */
+  feedback_points?: string[];
   stats: {
     total_questions: number;
     attempted_questions: number;
