@@ -2,8 +2,9 @@ import jsPDF from "jspdf";
 import type { AssessmentResult } from "@/lib/services/assessment.service";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import {
-  formatWeakSkillsForReport,
+  getWeakSkillDisplayRows,
   normalizeTopSkillDisplayNames,
+  type WeakSkillDisplayRow,
 } from "@/lib/utils/assessment-skill-labels.utils";
 import {
   formatAccuracyReportPercent,
@@ -28,8 +29,6 @@ const INK = { r: 15, g: 23, b: 42 };
 const TRACK = { r: 226, g: 232, b: 240 };
 const FOOTER_LINE = { r: 203, g: 213, b: 225 };
 const FEEDBACK_BG = { r: 239, g: 246, b: 255 };
-const ATTENTION_BG = { r: 255, g: 247, b: 237 };
-const ATTENTION_BORDER = { r: 251, g: 191, b: 36 };
 
 function pct(n: number, total: number): number {
   if (!total || !Number.isFinite(n)) return 0;
@@ -39,6 +38,11 @@ function pct(n: number, total: number): number {
 function clampPct(v: number): number {
   if (!Number.isFinite(v)) return 0;
   return Math.min(100, Math.max(0, Math.round(v)));
+}
+
+function capitalizeFirstPdf(s: string): string {
+  if (!s || s === "—") return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function drawTopAccentBar(pdf: jsPDF, pageW: number) {
@@ -74,7 +78,7 @@ function drawFootersOnAllPages(
     pdf.setFontSize(7);
     pdf.setTextColor(148, 163, 184);
     pdf.text(
-      `© ${year} LMS · Confidential assessment report`,
+      `© Confidential assessment report`,
       pageW - margin,
       textY,
       { align: "right" }
@@ -248,11 +252,20 @@ export function generateAssessmentResultPdfVector(
     return topY + panelH;
   };
 
-  // --- Header ---
-  ensureSpace(36);
+  // --- Header: left column (titles + ID) + YOUR SCORE panel top-aligned on the right ---
+  const panelW = 58;
+  const headerGap = 5;
+  const headerLeftW = contentW - panelW - headerGap;
+  const panelX = margin + headerLeftW + headerGap;
+
+  ensureSpace(72);
   pdf.setFillColor(SKY.r, SKY.g, SKY.b);
   pdf.rect(margin, y, 22, 1.4, "F");
   y += 6;
+
+  const panelTop = y - 1;
+  const panelBottom = drawScoreSummaryPanel(panelX, panelTop, panelW);
+
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(8);
   pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
@@ -263,10 +276,9 @@ export function generateAssessmentResultPdfVector(
   pdf.text("Assessment performance", margin, y);
   y += 9;
 
-  ensureSpace(20);
   pdf.setFontSize(20);
   pdf.setFont("helvetica", "bold");
-  const titleLines = pdf.splitTextToSize(data.assessment_name, contentW - 6);
+  const titleLines = pdf.splitTextToSize(data.assessment_name, headerLeftW - 2);
   pdf.text(titleLines, margin, y);
   y += titleLines.length * 7 + 3;
 
@@ -278,15 +290,11 @@ export function generateAssessmentResultPdfVector(
   y += 7;
   setInk();
 
-  const panelW = 58;
-  const introGap = 5;
-  const introW = contentW - panelW - introGap;
-  const panelX = margin + introW + introGap;
-  ensureSpace(62);
-  const summaryTop = y;
-  const introEndY = drawFlowingIntro(margin, summaryTop, margin + introW);
-  const panelEndY = drawScoreSummaryPanel(panelX, summaryTop, panelW);
-  y = Math.max(introEndY, panelEndY) + 10;
+  y = Math.max(y, panelBottom) + 8;
+
+  ensureSpace(28);
+  const introEndY = drawFlowingIntro(margin, y, margin + contentW);
+  y = introEndY + 10;
   setInk();
 
   // --- Hero ---
@@ -328,7 +336,7 @@ export function generateAssessmentResultPdfVector(
   pdf.setFontSize(11);
   let hy = heroY + 19;
   for (const name of topThree) {
-    const lines = pdf.splitTextToSize(name, boxW - 8);
+    const lines = pdf.splitTextToSize(capitalizeFirstPdf(name), boxW - 8);
     pdf.text(lines, margin + boxW + heroGap + 4, hy);
     hy += lines.length * 4.6 + 1;
   }
@@ -476,7 +484,142 @@ export function generateAssessmentResultPdfVector(
   setInk();
 
   const feedbackPoints = buildAssessmentFeedbackPoints(data);
-  const weakLines = formatWeakSkillsForReport(stats.low_skills, 6);
+  const weakSkillRows = getWeakSkillDisplayRows(stats.low_skills, 6);
+
+  const drawWeakSkillsSection = () => {
+    const cardH = 20;
+    const cardGap = 4.5;
+    const innerW = contentW - 10;
+    const cardX = margin + 5;
+
+    const drawOneCard = (row: WeakSkillDisplayRow, cardTop: number) => {
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(253, 186, 116);
+      pdf.setLineWidth(0.25);
+      pdf.roundedRect(cardX, cardTop, innerW, cardH, 1.3, 1.3, "FD");
+
+      const acc = row.accuracyPercent ?? 0;
+      const hasAcc = row.accuracyPercent != null;
+      const hasCounts =
+        row.correct != null &&
+        row.total != null &&
+        (row.total as number) > 0;
+
+      const label = capitalizeFirstPdf(row.label);
+      const labelMaxW = hasAcc ? innerW - 32 : innerW - 6;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      setInk();
+      const nameLines = pdf.splitTextToSize(label, labelMaxW);
+      pdf.text(nameLines, cardX + 3, cardTop + 5);
+
+      if (hasAcc) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        const badgeText = `${acc}%`;
+        const accTone =
+          acc < 25
+            ? { bg: [254, 226, 226] as const, fg: [185, 28, 28] as const }
+            : acc < 50
+              ? { bg: [255, 237, 213] as const, fg: [194, 65, 12] as const }
+              : { bg: [254, 243, 199] as const, fg: [180, 83, 9] as const };
+        const bw = pdf.getTextWidth(badgeText) + 5;
+        pdf.setFillColor(accTone.bg[0], accTone.bg[1], accTone.bg[2]);
+        pdf.roundedRect(
+          cardX + innerW - bw - 3,
+          cardTop + 2,
+          bw,
+          5.2,
+          1.5,
+          1.5,
+          "F"
+        );
+        pdf.setTextColor(accTone.fg[0], accTone.fg[1], accTone.fg[2]);
+        pdf.text(badgeText, cardX + innerW - 3, cardTop + 5.5, { align: "right" });
+      }
+
+      const barY = cardTop + 11;
+      const barW = innerW - 6;
+      pdf.setFillColor(255, 237, 213);
+      pdf.rect(cardX + 3, barY, barW, 2.8, "F");
+      if (hasAcc) {
+        const barFill = Math.min(100, acc);
+        const fillRgb =
+          acc < 25
+            ? [220, 38, 38]
+            : acc < 50
+              ? [234, 88, 12]
+              : [245, 158, 11];
+        pdf.setFillColor(fillRgb[0], fillRgb[1], fillRgb[2]);
+        pdf.rect(cardX + 3, barY, (barW * barFill) / 100, 2.8, "F");
+      }
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+      if (hasCounts) {
+        pdf.text(
+          `${row.correct}/${row.total} correct · practice priority`,
+          cardX + 3,
+          cardTop + 17.5
+        );
+      } else if (!hasAcc) {
+        pdf.text("No numeric breakdown in report data.", cardX + 3, cardTop + 17.5);
+      } else {
+        pdf.text("Practice priority", cardX + innerW - 3, cardTop + 17.5, { align: "right" });
+      }
+      setInk();
+    };
+
+    if (weakSkillRows.length === 0) {
+      ensureSpace(22);
+      const h = 18;
+      pdf.setFillColor(255, 251, 235);
+      pdf.rect(margin, y, contentW, h, "F");
+      pdf.setFillColor(245, 158, 11);
+      pdf.rect(margin, y, 1.5, h, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10.5);
+      setInk();
+      pdf.text("Skills needing attention", margin + 5, y + 6);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+      pdf.text("None flagged for this attempt.", margin + 5, y + 12);
+      y += h + 6;
+      setInk();
+      return;
+    }
+
+    ensureSpace(24);
+    const headerTop = y;
+    const subLines = pdf.splitTextToSize(
+      "Focus your next study blocks on these areas — accuracy reflects this attempt only.",
+      contentW - 12
+    );
+    const headerH = 7 + subLines.length * 3.8 + 5;
+    pdf.setFillColor(255, 251, 235);
+    pdf.rect(margin, headerTop, contentW, headerH, "F");
+    pdf.setFillColor(245, 158, 11);
+    pdf.rect(margin, headerTop, 1.5, headerH, "F");
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10.5);
+    setInk();
+    pdf.text("Skills needing attention", margin + 5, headerTop + 6);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+    pdf.text(subLines, margin + 5, headerTop + 11);
+    y = headerTop + headerH + 4;
+
+    for (const row of weakSkillRows) {
+      ensureSpace(cardH + cardGap + 2);
+      drawOneCard(row, y);
+      y += cardH + cardGap;
+    }
+    y += 4;
+    setInk();
+  };
 
   const drawTintedBulletBlock = (
     title: string,
@@ -533,6 +676,8 @@ export function generateAssessmentResultPdfVector(
     setInk();
   };
 
+  drawWeakSkillsSection();
+
   if (feedbackPoints.length > 0) {
     drawTintedBulletBlock(
       "Feedback",
@@ -542,14 +687,6 @@ export function generateAssessmentResultPdfVector(
       SKY
     );
   }
-
-  drawTintedBulletBlock(
-    "Skills needing attention",
-    weakLines,
-    "None flagged for this attempt.",
-    ATTENTION_BG,
-    ATTENTION_BORDER
-  );
 
   const year = new Date().getFullYear();
   drawFootersOnAllPages(pdf, pageW, pageH, margin, year);

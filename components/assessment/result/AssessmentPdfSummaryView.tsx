@@ -4,8 +4,9 @@ import React, { forwardRef, useMemo } from "react";
 import { AssessmentResult } from "@/lib/services/assessment.service";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import {
-  formatWeakSkillsForReport,
+  getWeakSkillDisplayRows,
   normalizeTopSkillDisplayNames,
+  type WeakSkillDisplayRow,
 } from "@/lib/utils/assessment-skill-labels.utils";
 import {
   formatAccuracyReportPercent,
@@ -35,6 +36,131 @@ function pct(n: number, total: number): number {
 function capitalizeFirstChar(s: string): string {
   if (!s || s === "—") return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function WeakSkillCard({ row }: { row: WeakSkillDisplayRow }) {
+  const label = capitalizeFirstChar(row.label);
+  const acc = row.accuracyPercent ?? 0;
+  const hasCounts =
+    row.correct != null && row.total != null && (row.total as number) > 0;
+  const hasAccuracy = row.accuracyPercent != null;
+
+  const badgeBg =
+    !hasAccuracy || acc >= 50 ? "#fef3c7" : acc >= 25 ? "#ffedd5" : "#fee2e2";
+  const badgeColor =
+    !hasAccuracy || acc >= 50 ? "#b45309" : acc >= 25 ? "#c2410c" : "#b91c1c";
+  const barTrack = "#ffedd5";
+  const barFill =
+    acc >= 50
+      ? "linear-gradient(90deg,#f59e0b,#fbbf24)"
+      : acc >= 25
+        ? "linear-gradient(90deg,#ea580c,#fb923c)"
+        : "linear-gradient(90deg,#dc2626,#f87171)";
+
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        borderRadius: 10,
+        padding: "14px 16px 12px",
+        border: "1px solid #fed7aa",
+        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.05)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 12,
+          marginBottom: 10,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: INK,
+            lineHeight: 1.35,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {label}
+        </span>
+        {hasAccuracy && (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              padding: "5px 11px",
+              borderRadius: 999,
+              background: badgeBg,
+              color: badgeColor,
+              flexShrink: 0,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {acc}%
+          </span>
+        )}
+      </div>
+      {hasAccuracy ? (
+        <div
+          style={{
+            height: 7,
+            background: barTrack,
+            borderRadius: 6,
+            overflow: "hidden",
+            marginBottom: 10,
+          }}
+        >
+          <div
+            style={{
+              width: `${Math.min(100, acc)}%`,
+              height: "100%",
+              borderRadius: 6,
+              background: barFill,
+              minWidth: acc > 0 ? 4 : 0,
+              transition: "width 0.2s ease",
+            }}
+          />
+        </div>
+      ) : (
+        <p style={{ margin: "0 0 10px", fontSize: 11, color: MUTED, lineHeight: 1.45 }}>
+          No numeric breakdown for this skill in the report data.
+        </p>
+      )}
+      {hasCounts ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: 11, color: MUTED, lineHeight: 1.4 }}>
+            <strong style={{ color: "#475569", fontWeight: 600 }}>
+              {row.correct}/{row.total}
+            </strong>{" "}
+            correct
+          </span>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "#d97706",
+            }}
+          >
+            Practice priority
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function BarRow({ label, value }: { label: string; value: number }) {
@@ -74,69 +200,6 @@ function BarRow({ label, value }: { label: string; value: number }) {
   );
 }
 
-function HeaderDecoration() {
-  return (
-    <div
-      style={{
-        position: "relative",
-        width: 120,
-        height: 72,
-        flexShrink: 0,
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "grid",
-          gridTemplateColumns: "repeat(8, 1fr)",
-          gridTemplateRows: "repeat(5, 1fr)",
-          gap: 5,
-          opacity: 0.35,
-        }}
-      >
-        {Array.from({ length: 40 }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: 4,
-              height: 4,
-              borderRadius: "50%",
-              background: "#d1d5db",
-              alignSelf: "center",
-              justifySelf: "center",
-            }}
-          />
-        ))}
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          right: 8,
-          top: 8,
-          width: 48,
-          height: 48,
-          border: `2px solid ${SKY}`,
-          borderRadius: "50%",
-          opacity: 0.45,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          right: 28,
-          top: 20,
-          width: 36,
-          height: 36,
-          border: `2px solid ${SKY}`,
-          borderRadius: "50%",
-          opacity: 0.3,
-        }}
-      />
-    </div>
-  );
-}
-
 const AssessmentPdfSummaryView = forwardRef<
   HTMLDivElement,
   { data: AssessmentResult }
@@ -168,8 +231,8 @@ const AssessmentPdfSummaryView = forwardRef<
 
   const feedbackPoints = useMemo(() => buildAssessmentFeedbackPoints(data), [data]);
 
-  const weakSkillLines = useMemo(
-    () => formatWeakSkillsForReport(stats.low_skills, 6),
+  const weakSkillRows = useMemo(
+    () => getWeakSkillDisplayRows(stats.low_skills, 6),
     [stats.low_skills]
   );
 
@@ -196,16 +259,16 @@ const AssessmentPdfSummaryView = forwardRef<
         }}
       />
 
-      {/* Header */}
+      {/* Header: titles left, YOUR SCORE card top-right (aligned with performance heading) */}
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          gap: 24,
           alignItems: "flex-start",
-          marginBottom: 22,
+          marginBottom: 16,
         }}
       >
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
               width: 88,
@@ -237,54 +300,6 @@ const AssessmentPdfSummaryView = forwardRef<
             Assessment performance
           </h1>
         </div>
-        <HeaderDecoration />
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <span
-          style={{
-            fontSize: 30,
-            fontWeight: 800,
-            lineHeight: 1.15,
-            letterSpacing: "-0.03em",
-          }}
-        >
-          {data.assessment_name}
-        </span>
-        <div style={{ fontSize: 12, fontWeight: 500, color: MUTED, marginTop: 6 }}>
-          ID{" "}
-          {String(data.assessment_id).length > 48
-            ? `${String(data.assessment_id).slice(0, 46)}…`
-            : data.assessment_id}
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          gap: 24,
-          alignItems: "flex-start",
-          marginBottom: 30,
-        }}
-      >
-        <p
-          style={{
-            flex: 1,
-            margin: 0,
-            minWidth: 0,
-            fontSize: 13,
-            lineHeight: 1.65,
-            color: "#334155",
-          }}
-        >
-          This report summarizes outcomes for{" "}
-          <strong style={{ color: INK, fontWeight: 700 }}>&quot;{data.assessment_name}&quot;</strong>
-          . Overall accuracy is{" "}
-          <strong style={{ color: INK, fontWeight: 700 }}>
-            {formatAccuracyReportPercent(stats.accuracy_percent ?? 0)}
-          </strong>{" "}
-         based on attempted items and topic-level performance.
-        </p>
 
         <div
           style={{
@@ -295,6 +310,7 @@ const AssessmentPdfSummaryView = forwardRef<
             background: "#f8fafc",
             padding: "16px 16px 14px",
             boxShadow: "0 4px 14px rgba(15, 23, 42, 0.06)",
+            alignSelf: "flex-start",
           }}
         >
           <div
@@ -399,6 +415,46 @@ const AssessmentPdfSummaryView = forwardRef<
           </div>
         </div>
       </div>
+
+      <div style={{ marginBottom: 18 }}>
+        <span
+          style={{
+            fontSize: 30,
+            fontWeight: 800,
+            lineHeight: 1.15,
+            letterSpacing: "-0.03em",
+          }}
+        >
+          {data.assessment_name}
+        </span>
+        <div style={{ fontSize: 12, fontWeight: 500, color: MUTED, marginTop: 6 }}>
+          ID{" "}
+          {String(data.assessment_id).length > 48
+            ? `${String(data.assessment_id).slice(0, 46)}…`
+            : data.assessment_id}
+        </div>
+      </div>
+
+      <p
+        style={{
+          margin: "0 0 30px",
+          fontSize: 13,
+          lineHeight: 1.65,
+          color: "#334155",
+        }}
+      >
+        This report summarizes outcomes for{" "}
+        <strong style={{ color: INK, fontWeight: 700 }}>&quot;{data.assessment_name}&quot;</strong>
+        . Overall accuracy is{" "}
+        <strong style={{ color: INK, fontWeight: 700 }}>
+          {formatAccuracyReportPercent(stats.accuracy_percent ?? 0)}
+        </strong>{" "}
+        with placement readiness at{" "}
+        <strong style={{ color: INK, fontWeight: 700 }}>
+          {formatPlacementReportPercent(stats.placement_readiness ?? 0)}
+        </strong>
+        , based on attempted items and topic-level performance.
+      </p>
 
       {/* Hero */}
       <div style={{ display: "flex", width: "100%", marginBottom: 34, gap: 0 }}>
@@ -536,63 +592,44 @@ const AssessmentPdfSummaryView = forwardRef<
         </p>
       </div>
 
-      {feedbackPoints.length > 0 && (
-        <div
-          style={{
-            marginBottom: 20,
-            padding: "18px 20px 18px 16px",
-            background: "#eff6ff",
-            borderLeft: `4px solid ${SKY}`,
-            borderRadius: 2,
-          }}
-        >
-          <h2 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 700, color: INK }}>Feedback</h2>
-          <ul
-            style={{
-              margin: 0,
-              paddingLeft: 18,
-              fontSize: 12,
-              lineHeight: 1.6,
-              color: "#334155",
-            }}
-          >
-            {feedbackPoints.map((point: string, i: number) => (
-              <li key={i} style={{ marginBottom: 10 }}>
-                {point}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       <div
         style={{
-          marginBottom: 28,
-          padding: "18px 20px 18px 16px",
-          background: "#fff7ed",
-          borderLeft: "4px solid #fbbf24",
-          borderRadius: 2,
+          marginBottom: 24,
+          padding: "20px 20px 20px 16px",
+          background: "linear-gradient(135deg, #fffbeb 0%, #fff7ed 55%, #ffedd5 100%)",
+          borderLeft: "4px solid #f59e0b",
+          borderRadius: 10,
+          boxShadow: "0 4px 20px rgba(245, 158, 11, 0.08)",
         }}
       >
-        <h2 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 700, color: INK }}>
-          Skills needing attention
-        </h2>
-        {weakSkillLines.length > 0 ? (
-          <ul
+        <div style={{ marginBottom: 16 }}>
+          <h2
             style={{
-              margin: 0,
-              paddingLeft: 18,
-              fontSize: 12,
-              lineHeight: 1.6,
-              color: "#334155",
+              margin: "0 0 4px",
+              fontSize: 15,
+              fontWeight: 800,
+              color: INK,
+              letterSpacing: "-0.02em",
             }}
           >
-            {weakSkillLines.map((line: string, i: number) => (
-              <li key={i} style={{ marginBottom: 10 }}>
-                {line}
-              </li>
+            Skills needing attention
+          </h2>
+          <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
+            Focus your next study blocks on these areas — accuracy reflects this attempt only.
+          </p>
+        </div>
+        {weakSkillRows.length > 0 ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            {weakSkillRows.map((row, i) => (
+              <WeakSkillCard key={`${row.label}-${i}`} row={row} />
             ))}
-          </ul>
+          </div>
         ) : (
           <p style={{ margin: 0, fontSize: 12, color: MUTED }}>
             None flagged for this attempt.
@@ -600,24 +637,68 @@ const AssessmentPdfSummaryView = forwardRef<
         )}
       </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          paddingTop: 18,
-          borderTop: "1px solid #cbd5e1",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 4, background: SKY, borderRadius: 1 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: INK }}>Page 1 of 1</span>
+      {feedbackPoints.length > 0 && (
+        <div
+          style={{
+            marginBottom: 28,
+            padding: "20px 20px 20px 16px",
+            background: "linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)",
+            borderLeft: `4px solid ${SKY}`,
+            borderRadius: 10,
+            boxShadow: "0 4px 20px rgba(2, 132, 199, 0.07)",
+          }}
+        >
+          <h2
+            style={{
+              margin: "0 0 6px",
+              fontSize: 15,
+              fontWeight: 800,
+              color: INK,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Feedback
+          </h2>
+          <p style={{ margin: "0 0 14px", fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
+            Summary guidance based on your results and pacing.
+          </p>
+          <ul
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: "none",
+              fontSize: 12,
+              lineHeight: 1.65,
+              color: "#334155",
+            }}
+          >
+            {feedbackPoints.map((point: string, i: number) => (
+              <li
+                key={i}
+                style={{
+                  marginBottom: i === feedbackPoints.length - 1 ? 0 : 12,
+                  paddingLeft: 14,
+                  position: "relative",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "0.45em",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: SKY,
+                  }}
+                />
+                {point}
+              </li>
+            ))}
+          </ul>
         </div>
-        <span style={{ fontSize: 10, color: "#94a3b8" }}>
-          © Confidential assessment report
-        </span>
-      </div>
+      )}
+
     </div>
   );
 });

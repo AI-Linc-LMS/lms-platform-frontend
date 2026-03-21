@@ -107,18 +107,29 @@ export function normalizeTopSkillDisplayNames(
   return top;
 }
 
+export interface WeakSkillDisplayRow {
+  label: string;
+  accuracyPercent: number | null;
+  correct: number | null;
+  total: number | null;
+}
+
 /**
- * Lines for “skills needing attention” — same string cleanup as top skills, plus
- * accuracy counts when `SkillStats` objects are provided.
+ * Structured weak-skill rows for rich UI (cards, bars); same cleanup rules as PDF strings.
  */
-export function formatWeakSkillsForReport(
+export function getWeakSkillDisplayRows(
   low_skills: SkillStats[] | string[] | undefined,
   limit = 6
-): string[] {
-  const out: string[] = [];
+): WeakSkillDisplayRow[] {
+  const rows: WeakSkillDisplayRow[] = [];
+
+  const pushRow = (row: WeakSkillDisplayRow) => {
+    if (rows.length >= limit || !row.label) return;
+    rows.push(row);
+  };
 
   for (const item of low_skills ?? []) {
-    if (out.length >= limit) break;
+    if (rows.length >= limit) break;
 
     if (typeof item === "string") {
       const trimmed = item.trim();
@@ -128,8 +139,12 @@ export function formatWeakSkillsForReport(
           ? parsed.map((p) => stripSkillArrayDecor(p)).filter(Boolean)
           : [stripSkillArrayDecor(trimmed)];
       for (const lab of labels) {
-        if (!lab || out.length >= limit) continue;
-        out.push(lab);
+        pushRow({
+          label: lab,
+          accuracyPercent: null,
+          correct: null,
+          total: null,
+        });
       }
       continue;
     }
@@ -141,23 +156,36 @@ export function formatWeakSkillsForReport(
     ) {
       const s = item as SkillStats;
       const label = stripSkillArrayDecor(s.skill);
-      if (!label) continue;
       const acc = Number.isFinite(s.accuracy_percent)
         ? Math.round(s.accuracy_percent)
         : null;
-      const hasCounts =
-        Number.isFinite(s.correct) &&
-        Number.isFinite(s.total) &&
-        (s.total as number) > 0;
-      if (acc != null && hasCounts) {
-        out.push(`${label} — ${acc}% (${s.correct}/${s.total} correct)`);
-      } else if (acc != null) {
-        out.push(`${label} — ${acc}% accuracy`);
-      } else {
-        out.push(label);
-      }
+      const correct = Number.isFinite(s.correct) ? s.correct : null;
+      const total = Number.isFinite(s.total) ? s.total : null;
+      pushRow({ label, accuracyPercent: acc, correct, total });
     }
   }
 
-  return out;
+  return rows;
+}
+
+/**
+ * Lines for “skills needing attention” in plain-text / PDF.
+ */
+export function formatWeakSkillsForReport(
+  low_skills: SkillStats[] | string[] | undefined,
+  limit = 6
+): string[] {
+  return getWeakSkillDisplayRows(low_skills, limit).map((r) => {
+    const hasCounts =
+      r.correct != null &&
+      r.total != null &&
+      r.total > 0;
+    if (r.accuracyPercent != null && hasCounts) {
+      return `${r.label} — ${r.accuracyPercent}% (${r.correct}/${r.total} correct)`;
+    }
+    if (r.accuracyPercent != null) {
+      return `${r.label} — ${r.accuracyPercent}% accuracy`;
+    }
+    return r.label;
+  });
 }
