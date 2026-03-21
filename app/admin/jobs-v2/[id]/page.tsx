@@ -11,6 +11,10 @@ import {
   Avatar,
   Chip,
   Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -19,7 +23,14 @@ import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, Users, FileText } from "lucide-react";
+import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, Users, FileText, Heart } from "lucide-react";
+const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
+  active: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
+  inactive: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
+  closed: { bg: "rgba(100, 116, 139, 0.12)", color: "#64748b" },
+  completed: { bg: "rgba(34, 197, 94, 0.08)", color: "#15803d" },
+  on_hold: { bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" },
+};
 
 const formatDate = (d?: string) => {
   if (!d) return "—";
@@ -133,6 +144,15 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
+  const JOB_STATUS_OPTIONS = [
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
+    { value: "closed", label: "Closed" },
+    { value: "completed", label: "Completed" },
+    { value: "on_hold", label: "On Hold" },
+  ] as const;
 
   const loadJob = useCallback(async () => {
     if (!jobId || isNaN(jobId)) return;
@@ -161,6 +181,20 @@ export default function JobDetailPage() {
       router.push("/admin/jobs-v2");
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to delete", "error");
+    }
+  };
+
+  const handleStatusChange = async (status: string) => {
+    if (!job) return;
+    try {
+      setUpdating(true);
+      await adminJobsV2Service.updateJob(job.id, { status: status as JobV2["status"] }, config.clientId);
+      showToast("Status updated", "success");
+      loadJob();
+    } catch (err) {
+      showToast((err as Error)?.message ?? "Failed to update status", "error");
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -287,18 +321,48 @@ export default function JobDetailPage() {
                         variant="outlined"
                       />
                     )}
-                    {(job.status === "active" || job.status === "closed" || job.status === "completed") && (
-                      <Chip
-                        label={job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                        size="small"
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                      <InputLabel sx={{ fontWeight: 600 }}>Job Status</InputLabel>
+                      <Select
+                        value={job.status ?? "active"}
+                        label="Job Status"
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        disabled={updating}
                         sx={{
-                          backgroundColor: job.status === "active" ? "rgba(34,197,94,0.08)" : "rgba(100,116,139,0.08)",
-                          color: job.status === "active" ? "#16a34a" : "#64748b",
-                          fontWeight: 500,
-                          height: 26,
+                          fontWeight: 600,
+                          height: 36,
+                          borderRadius: 2,
+                          minWidth: 140,
+                          backgroundColor: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).bg,
+                          color: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).color,
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(99, 102, 241, 0.3)",
+                            borderWidth: 1.5,
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#6366f1",
+                            borderWidth: 2,
+                          },
                         }}
-                      />
-                    )}
+                      >
+                        {JOB_STATUS_OPTIONS.map((o) => (
+                          <MenuItem key={o.value} value={o.value}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Box
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: (JOB_STATUS_STYLES[o.value] ?? JOB_STATUS_STYLES.active).color,
+                                }}
+                              />
+                              {o.label}
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Box>
                 </Box>
               </Box>
@@ -389,6 +453,11 @@ export default function JobDetailPage() {
           {job.number_of_openings != null && (
             <InfoPill icon={<Users size={18} />} label="Openings" value={String(job.number_of_openings)} />
           )}
+          <InfoPill
+            icon={<Heart size={18} style={{ color: "#6366f1" }} />}
+            label="Favourites"
+            value={String(job.favorites_count ?? 0)}
+          />
           <InfoPill icon={<Calendar size={18} />} label="Created" value={formatDate(job.created_at)} />
           {job.application_deadline && (
             <InfoPill icon={<Clock size={18} />} label="Closing Date" value={formatDate(job.application_deadline)} />
