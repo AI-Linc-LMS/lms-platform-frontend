@@ -145,8 +145,6 @@ export function generateAssessmentResultPdfVector(
       { text: data.assessment_name, bold: true },
       { text: '". Overall accuracy is ', bold: false },
       { text: accDisp, bold: true },
-      { text: " with placement readiness at ", bold: false },
-      { text: prDisp, bold: true },
       {
         text: ", based on attempted items and topic-level performance.",
         bold: false,
