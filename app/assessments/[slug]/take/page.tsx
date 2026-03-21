@@ -266,9 +266,14 @@ export default function TakeAssessmentPage({
           lastTabSwitchCountAtScreenshotRef.current = tabNow;
 
           violationScreenshotEvidenceRef.current.push({
-            screenshot_url: result.url,
+            id: result.id,
             file_id: result.id,
-            captured_at: new Date().toISOString(),
+            url: result.url,
+            screenshot_url: result.url,
+            filename: result.filename,
+            module: result.module,
+            created_at: result.created_at,
+            captured_at: result.created_at,
             total_violation_count_at_capture: countAtFire,
             latest_violation_type: hadTabSwitch
               ? "TAB_SWITCH"
