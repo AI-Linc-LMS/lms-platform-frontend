@@ -9,22 +9,19 @@ export function getPerformanceTier(stats: AssessmentResult["stats"]): {
   const maxM = Math.max(stats.maximum_marks || 1, 1e-6);
   const scorePct = (stats.score / maxM) * 100;
   const acc = stats.accuracy_percent ?? 0;
-  const pr = stats.placement_readiness ?? 0;
 
-  if (acc < 40 || pr < 15 || scorePct < 22) {
+  if (acc < 40 || scorePct < 22) {
     return { label: "Needs Improvement", tone: "danger" };
   }
-  if (acc < 65 || pr < 45 || scorePct < 52) {
-    return { label: "Room to Grow", tone: "warning" };
+  if (acc < 65 || scorePct < 52) {
+    return { label: "Good", tone: "warning" };
   }
   return { label: "Strong Performance", tone: "success" };
 }
 
 export function humanizeAssessmentStatus(status: string): string {
   if (!status?.trim()) return "—";
-  return status
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** e.g. 6.0 / 40 */
@@ -35,7 +32,9 @@ export function formatScoreVersusMax(score: number, max: number): string {
 }
 
 /** Score as % of max marks, one decimal */
-export function formatScoreAttainmentPercent(stats: AssessmentResult["stats"]): string {
+export function formatScoreAttainmentPercent(
+  stats: AssessmentResult["stats"],
+): string {
   const maxM = Math.max(stats.maximum_marks || 1, 1e-6);
   const p = ((stats.score ?? 0) / maxM) * 100;
   return `${(Number.isFinite(p) ? p : 0).toFixed(1)}%`;
