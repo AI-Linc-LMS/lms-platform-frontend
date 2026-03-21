@@ -1,16 +1,14 @@
-import apiClient from "@/lib/services/api";
+import apiClient from "./api";
+import { config } from "../config";
 
-export const FILE_UPLOAD_MODULES = [
-  "assessment_screenshots",
-  "report_issue",
-  "profile_avatar",
-  "job_application",
-  "other",
-] as const;
+export type FileUploadModule =
+  | "assessment_screenshots"
+  | "report_issue"
+  | "profile_avatar"
+  | "job_application"
+  | "other";
 
-export type FileUploadModule = (typeof FILE_UPLOAD_MODULES)[number];
-
-export interface UploadFileResult {
+export interface FileUploadResponse {
   id: number;
   url: string;
   filename: string;
@@ -18,23 +16,50 @@ export interface UploadFileResult {
   created_at: string;
 }
 
+export interface GetUploadedFilesResponse {
+  files: FileUploadResponse[];
+}
+
 /**
- * POST multipart/form-data to the general file upload API.
- * Auth and FormData boundary are handled by apiClient interceptors.
+ * List uploaded files for a client.
+ *
+ * @param clientId - Client ID
+ * @param module - Optional module filter (e.g. report_issue, assessment_screenshots)
+ * @returns List of uploaded files
  */
-export async function uploadFile(
+export const getUploadedFiles = async (
+  clientId: number,
+  module?: FileUploadModule,
+): Promise<GetUploadedFilesResponse> => {
+  const params = module ? { module } : {};
+  const response = await apiClient.get<GetUploadedFilesResponse>(
+    `/api/clients/${clientId}/upload/`,
+    { params },
+  );
+  return response.data;
+};
+
+/**
+ * Upload a file (PDF, PNG, JPEG, GIF, WEBP) to S3.
+ * Files are organized by module in the bucket.
+ *
+ * @param clientId - Client ID
+ * @param file - File to upload
+ * @param module - Module/category (e.g. assessment_screenshots, report_issue)
+ * @returns Upload response with URL to use elsewhere
+ */
+export const uploadFile = async (
   clientId: number,
   file: File,
-  module: FileUploadModule
-): Promise<UploadFileResult> {
+  module: FileUploadModule,
+): Promise<FileUploadResponse> => {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("module", module);
 
-  const response = await apiClient.post<UploadFileResult>(
+  const response = await apiClient.post<FileUploadResponse>(
     `/api/clients/${clientId}/upload/`,
-    formData
+    formData,
   );
-
   return response.data;
-}
+};
