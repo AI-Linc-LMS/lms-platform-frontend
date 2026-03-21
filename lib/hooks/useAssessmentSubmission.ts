@@ -1,11 +1,29 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, type MutableRefObject } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/common/Toast";
 import { assessmentService } from "@/lib/services/assessment.service";
-import { AssessmentMetadata } from "@/lib/services/assessment.service";
+import {
+  AssessmentMetadata,
+  type ViolationScreenshotSample,
+} from "@/lib/services/assessment.service";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
 import { formatAssessmentResponses } from "@/utils/assessment.utils";
+
+const VIOLATION_SCREENSHOT_SUBMIT_MAX = 5;
+
+function pickRandomUpTo<T>(items: T[], max: number): T[] {
+  if (items.length <= max) return [...items];
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const a = copy[i]!;
+    const b = copy[j]!;
+    copy[i] = b;
+    copy[j] = a;
+  }
+  return copy.slice(0, max);
+}
 
 interface UseAssessmentSubmissionOptions {
   assessment: any;
@@ -18,6 +36,7 @@ interface UseAssessmentSubmissionOptions {
   setSubmitting: (value: boolean) => void;
   setShowFullscreenWarning: (value: boolean) => void;
   setShowSubmitDialog?: (value: boolean) => void;
+  violationScreenshotSamplesRef?: MutableRefObject<ViolationScreenshotSample[]>;
 }
 
 export function useAssessmentSubmission({
@@ -31,6 +50,7 @@ export function useAssessmentSubmission({
   setSubmitting,
   setShowFullscreenWarning,
   setShowSubmitDialog,
+  violationScreenshotSamplesRef,
 }: UseAssessmentSubmissionOptions) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -196,6 +216,11 @@ export function useAssessmentSubmission({
         getCodeFromSession
       );
 
+      const violationScreenshotSamples = pickRandomUpTo(
+        violationScreenshotSamplesRef?.current ?? [],
+        VIOLATION_SCREENSHOT_SUBMIT_MAX
+      );
+
       // Prepare metadata for transcript
       const transcriptMetadata = {
         timing: {
@@ -209,6 +234,9 @@ export function useAssessmentSubmission({
           fullscreen_exits: metadata.proctoring.fullscreen_exits,
           total_violation_count: metadata.proctoring.total_violation_count,
           violation_threshold_reached: metadata.proctoring.violation_threshold_reached,
+          ...(violationScreenshotSamples.length > 0
+            ? { violation_screenshot_samples: violationScreenshotSamples }
+            : {}),
         },
         total_questions: totalQuestions,
         fullscreen_exits: fullscreenExits,
@@ -347,6 +375,7 @@ export function useAssessmentSubmission({
     router,
     showToast,
     stopCameraCompletely,
+    violationScreenshotSamplesRef,
   ]);
 
   return { handleFinalSubmit };

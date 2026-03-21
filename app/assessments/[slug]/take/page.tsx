@@ -32,6 +32,10 @@ import { AssessmentCodingLayout } from "@/components/assessment/AssessmentCoding
 import { mergeAssessmentSections } from "@/utils/assessment.utils";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
+import { config } from "@/lib/config";
+import { uploadFile } from "@/lib/services/file-upload.service";
+import type { ViolationScreenshotSample } from "@/lib/services/assessment.service";
+import { captureViolationScreenshotFile } from "@/lib/utils/assessment-violation-screenshot.utils";
 
 // Lazy load dialogs only
 const SubmissionDialog = lazy(() =>
@@ -46,6 +50,8 @@ const FullscreenWarningDialog = lazy(() =>
 );
 
 const MAX_VIOLATIONS = 100;
+const MAX_VIOLATION_SCREENSHOT_EVIDENCE = 5;
+const VIOLATION_SCREENSHOT_DEBOUNCE_MS = 400;
 
 // Memoized question component to prevent unnecessary re-renders
 const MemoizedQuizLayout = memo(AssessmentQuizLayout);
@@ -79,6 +85,18 @@ export default function TakeAssessmentPage({
   const hasCheckedSubmission = useRef(false);
   const hasLoadedResponses = useRef(false);
   const answerChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const violationScreenshotEvidenceRef = useRef<ViolationScreenshotSample[]>(
+    []
+  );
+  const violationScreenshotLastCountRef = useRef(-1);
+  const violationScreenshotDebounceRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const violationScreenshotUploadingRef = useRef(false);
+  const totalViolationCountRef = useRef(0);
+  const tabSwitchCountRef = useRef(0);
+  const latestViolationTypeRef = useRef<string | null>(null);
+  const lastTabSwitchCountAtScreenshotRef = useRef(-1);
 
   // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
@@ -163,6 +181,7 @@ export default function TakeAssessmentPage({
     metadata,
     latestViolation,
     tabSwitchCount,
+    totalViolationCount,
     startProctoring,
     stopProctoring,
     enterFullscreen,
@@ -173,6 +192,107 @@ export default function TakeAssessmentPage({
     onViolationThresholdReached: handleViolationThresholdReached,
     autoStart: false,
   });
+
+  totalViolationCountRef.current = totalViolationCount;
+  tabSwitchCountRef.current = tabSwitchCount;
+  latestViolationTypeRef.current = latestViolation?.type ?? null;
+
+  // Baseline violation count when the assessment session starts (ignore pre-start noise)
+  useEffect(() => {
+    if (!assessmentStarted) {
+      violationScreenshotLastCountRef.current = -1;
+      lastTabSwitchCountAtScreenshotRef.current = -1;
+      return;
+    }
+    if (violationScreenshotLastCountRef.current === -1) {
+      violationScreenshotLastCountRef.current = totalViolationCount;
+      lastTabSwitchCountAtScreenshotRef.current = tabSwitchCount;
+    }
+  }, [assessmentStarted, totalViolationCount, tabSwitchCount]);
+
+  // On proctoring violation increases: debounced full-page screenshot → S3 (assessment_screenshots)
+  useEffect(() => {
+    if (!assessmentStarted || submitting) return;
+    if (violationScreenshotLastCountRef.current < 0) return;
+    if (
+      violationScreenshotEvidenceRef.current.length >=
+      MAX_VIOLATION_SCREENSHOT_EVIDENCE
+    ) {
+      return;
+    }
+    if (totalViolationCount <= violationScreenshotLastCountRef.current) return;
+
+    if (violationScreenshotDebounceRef.current) {
+      clearTimeout(violationScreenshotDebounceRef.current);
+    }
+
+    violationScreenshotDebounceRef.current = setTimeout(() => {
+      violationScreenshotDebounceRef.current = null;
+      const countAtFire = totalViolationCountRef.current;
+      if (countAtFire <= violationScreenshotLastCountRef.current) return;
+      violationScreenshotLastCountRef.current = countAtFire;
+
+      void (async () => {
+        if (violationScreenshotUploadingRef.current) return;
+        if (
+          violationScreenshotEvidenceRef.current.length >=
+          MAX_VIOLATION_SCREENSHOT_EVIDENCE
+        ) {
+          return;
+        }
+
+        violationScreenshotUploadingRef.current = true;
+        try {
+          const file = await captureViolationScreenshotFile();
+          if (!file) return;
+
+          const result = await uploadFile(
+            Number(config.clientId),
+            file,
+            "assessment_screenshots"
+          );
+
+          if (
+            violationScreenshotEvidenceRef.current.length >=
+            MAX_VIOLATION_SCREENSHOT_EVIDENCE
+          ) {
+            return;
+          }
+
+          const tabNow = tabSwitchCountRef.current;
+          const hadTabSwitch =
+            lastTabSwitchCountAtScreenshotRef.current >= 0 &&
+            tabNow > lastTabSwitchCountAtScreenshotRef.current;
+          lastTabSwitchCountAtScreenshotRef.current = tabNow;
+
+          violationScreenshotEvidenceRef.current.push({
+            screenshot_url: result.url,
+            file_id: result.id,
+            captured_at: new Date().toISOString(),
+            total_violation_count_at_capture: countAtFire,
+            latest_violation_type: hadTabSwitch
+              ? "TAB_SWITCH"
+              : latestViolationTypeRef.current,
+            tab_switch_count_at_capture: tabNow,
+          });
+        } catch (err) {
+          console.error(
+            "[assessment] Violation screenshot upload failed:",
+            err
+          );
+        } finally {
+          violationScreenshotUploadingRef.current = false;
+        }
+      })();
+    }, VIOLATION_SCREENSHOT_DEBOUNCE_MS);
+
+    return () => {
+      if (violationScreenshotDebounceRef.current) {
+        clearTimeout(violationScreenshotDebounceRef.current);
+        violationScreenshotDebounceRef.current = null;
+      }
+    };
+  }, [totalViolationCount, assessmentStarted, submitting]);
 
   // Track last violation timestamp per type to avoid duplicate toasts
   const lastViolationToastRef = useRef<Map<string, number>>(new Map());
@@ -485,6 +605,7 @@ export default function TakeAssessmentPage({
     setSubmitting,
     setShowFullscreenWarning,
     setShowSubmitDialog,
+    violationScreenshotSamplesRef: violationScreenshotEvidenceRef,
   });
 
   // Pre-initialize camera IMMEDIATELY as soon as videoRef is available (before assessment starts)

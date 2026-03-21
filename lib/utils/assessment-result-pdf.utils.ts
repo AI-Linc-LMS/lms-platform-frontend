@@ -1,5 +1,9 @@
 import jsPDF from "jspdf";
-import type { AssessmentResult } from "@/lib/services/assessment.service";
+import type {
+  AssessmentResult,
+  CodingProblemResponseItem,
+  QuizResponseItem,
+} from "@/lib/services/assessment.service";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import {
   getWeakSkillDisplayRows,
@@ -43,6 +47,29 @@ function clampPct(v: number): number {
 function capitalizeFirstPdf(s: string): string {
   if (!s || s === "—") return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function stripHtmlForPdf(s: string): string {
+  if (!s) return "";
+  return s
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getQuizOptionsForPdf(options: Record<string, string>) {
+  const keys =
+    Object.keys(options).length > 0
+      ? Object.keys(options).sort()
+      : ["A", "B", "C", "D"];
+  return keys.map((key) => ({
+    id: String(key).toUpperCase(),
+    label: options[key] || "",
+  }));
 }
 
 function drawTopAccentBar(pdf: jsPDF, pageW: number) {
@@ -684,6 +711,256 @@ export function generateAssessmentResultPdfVector(
       FEEDBACK_BG,
       SKY
     );
+  }
+
+  // --- User responses (quiz + coding) from API `user_responses` ---
+  const quizResponses: QuizResponseItem[] =
+    data.user_responses?.quiz_responses ?? [];
+  const codingResponses: CodingProblemResponseItem[] =
+    data.user_responses?.coding_problem_responses ?? [];
+
+  const CODE_LINE_MM = 3.45;
+  const CODE_FONT_PT = 6.5;
+  const MAX_CODE_LINES_PER_PROBLEM = 120;
+
+  if (quizResponses.length > 0) {
+    ensureSpace(22);
+    pdf.setFillColor(248, 250, 252);
+    pdf.setDrawColor(226, 232, 240);
+    pdf.setLineWidth(0.25);
+    pdf.roundedRect(margin, y, contentW, 12, 1, 1, "FD");
+    pdf.setFillColor(SKY.r, SKY.g, SKY.b);
+    pdf.rect(margin, y, 1.4, 12, "F");
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10.5);
+    setInk();
+    pdf.text(`Quiz responses (${quizResponses.length})`, margin + 5, y + 7.5);
+    y += 18;
+
+    for (let qi = 0; qi < quizResponses.length; qi++) {
+      const q = quizResponses[qi]!;
+      const selectedRaw = q.selected_answer;
+      const selectedU = selectedRaw != null ? String(selectedRaw).toUpperCase() : "";
+      const correctU = String(q.correct_option ?? "").toUpperCase();
+      const options = getQuizOptionsForPdf(q.options ?? {});
+
+      const statusLabel = q.is_correct ? "Correct" : "Incorrect";
+      const statusRgb = q.is_correct
+        ? ([5, 150, 105] as const)
+        : ([220, 38, 38] as const);
+
+      const metaParts = [
+        `Q${qi + 1} of ${quizResponses.length}`,
+        statusLabel,
+        q.difficulty_level || null,
+        q.topic ? capitalizeFirstPdf(q.topic) : null,
+      ].filter(Boolean) as string[];
+      const metaLine = metaParts.join(" · ");
+
+      const qText = stripHtmlForPdf(q.question_text || "");
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      const qLines = pdf.splitTextToSize(qText, contentW - 10);
+      const optLinesEstimate = options.length * 6 + 14;
+      const explExtra = q.explanation
+        ? pdf.splitTextToSize(stripHtmlForPdf(q.explanation), contentW - 14)
+            .length *
+            4.3 +
+          18
+        : 0;
+      ensureSpace(14 + qLines.length * 4.2 + optLinesEstimate + explExtra + 10);
+
+      let cy = y + 6;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(statusRgb[0], statusRgb[1], statusRgb[2]);
+      pdf.text(metaLine, margin + 5, cy);
+      cy += 6;
+      setInk();
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.text(qLines, margin + 5, cy);
+      cy += qLines.length * 4.2 + 4;
+
+      for (const opt of options) {
+        const isCorrectOpt = opt.id === correctU;
+        const isSelected = opt.id === selectedU;
+        let tag = "";
+        if (isCorrectOpt && isSelected) tag = " (correct · your answer)";
+        else if (isCorrectOpt) tag = " (correct)";
+        else if (isSelected) tag = " (your answer)";
+        const line = `${opt.id}. ${stripHtmlForPdf(opt.label)}${tag}`;
+        const wrapped = pdf.splitTextToSize(line, contentW - 12);
+        pdf.setFontSize(8);
+        if (isCorrectOpt) {
+          pdf.setTextColor(5, 120, 85);
+        } else if (isSelected) {
+          pdf.setTextColor(185, 28, 28);
+        } else {
+          setInk();
+        }
+        pdf.text(wrapped, margin + 7, cy);
+        cy += wrapped.length * 4 + 1.2;
+      }
+
+      if (!selectedU) {
+        pdf.setFont("helvetica", "italic");
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+        pdf.text("Unattempted", margin + 7, cy);
+        cy += 5;
+        setInk();
+        pdf.setFont("helvetica", "normal");
+      }
+
+      if (q.explanation) {
+        cy += 2;
+        pdf.setFillColor(239, 246, 255);
+        pdf.setDrawColor(SKY.r, SKY.g, SKY.b);
+        const expl = stripHtmlForPdf(q.explanation);
+        const explWrapped = pdf.splitTextToSize(expl, contentW - 14);
+        const explH = 8 + explWrapped.length * 4.1;
+        ensureSpace(explH + 4);
+        pdf.roundedRect(margin + 4, cy - 2, contentW - 8, explH, 1, 1, "FD");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
+        pdf.text("Explanation", margin + 7, cy + 4);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(51, 65, 85);
+        pdf.text(explWrapped, margin + 7, cy + 9);
+        cy += explH + 4;
+      }
+
+      y = cy + 6;
+      setInk();
+    }
+    y += 4;
+  }
+
+  if (codingResponses.length > 0) {
+    ensureSpace(22);
+    pdf.setFillColor(248, 250, 252);
+    pdf.setDrawColor(226, 232, 240);
+    pdf.setLineWidth(0.25);
+    pdf.roundedRect(margin, y, contentW, 12, 1, 1, "FD");
+    pdf.setFillColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
+    pdf.rect(margin, y, 1.4, 12, "F");
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10.5);
+    setInk();
+    pdf.text(
+      `Coding problem responses (${codingResponses.length})`,
+      margin + 5,
+      y + 7.5
+    );
+    y += 18;
+
+    for (let ci = 0; ci < codingResponses.length; ci++) {
+      const c = codingResponses[ci]!;
+      const title = stripHtmlForPdf(c.title || `Problem ${c.problem_id}`);
+      const passed = c.passed_test_cases ?? 0;
+      const totalTc = c.total_test_cases ?? 0;
+      const summary = `${passed}/${totalTc} tests passed${
+        c.all_test_cases_passed ? " · all passed" : ""
+      }`;
+
+      const code = (c.submitted_code ?? "").replace(/\r\n/g, "\n");
+      const codeLines = code ? code.split("\n") : [];
+      let codeLineCount = 0;
+      pdf.setFont("courier", "normal");
+      pdf.setFontSize(CODE_FONT_PT);
+      for (const raw of codeLines) {
+        const wrapped = pdf.splitTextToSize(raw || " ", contentW - 14);
+        codeLineCount += wrapped.length;
+      }
+      pdf.setFont("helvetica", "normal");
+      const titleLines = pdf.splitTextToSize(title, contentW - 10).length;
+      ensureSpace(
+        20 +
+          titleLines * 4.5 +
+          12 +
+          Math.min(codeLineCount, MAX_CODE_LINES_PER_PROBLEM) * CODE_LINE_MM +
+          20
+      );
+
+      let cy = y + 6;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9.5);
+      setInk();
+      const titleWrapped = pdf.splitTextToSize(title, contentW - 10);
+      pdf.text(titleWrapped, margin + 5, cy);
+      cy += titleWrapped.length * 4.8 + 2;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+      pdf.text(`Problem ${ci + 1} of ${codingResponses.length}`, margin + 5, cy);
+      cy += 4.5;
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(
+        c.all_test_cases_passed ? 5 : 180,
+        c.all_test_cases_passed ? 120 : 83,
+        c.all_test_cases_passed ? 85 : 9
+      );
+      pdf.text(summary, margin + 5, cy);
+      cy += 6;
+      if (c.difficulty_level) {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+        pdf.text(`Difficulty: ${c.difficulty_level}`, margin + 5, cy);
+        cy += 5;
+      }
+
+      setInk();
+      pdf.setFillColor(248, 250, 252);
+      pdf.setDrawColor(203, 213, 225);
+      const codeBoxTop = cy;
+      pdf.setFont("courier", "normal");
+      pdf.setFontSize(CODE_FONT_PT);
+      pdf.setTextColor(INK.r, INK.g, INK.b);
+
+      if (!code.trim()) {
+        ensureSpace(CODE_LINE_MM + 4);
+        pdf.setFont("helvetica", "italic");
+        pdf.setFontSize(8);
+        pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+        pdf.text("No code submitted", margin + 6, codeBoxTop + 5);
+        cy = codeBoxTop + CODE_LINE_MM + 8;
+        pdf.setFont("helvetica", "normal");
+      } else {
+        cy += 2;
+        let lineNum = 0;
+        outer: for (const rawLine of codeLines) {
+          const wrapped = pdf.splitTextToSize(rawLine || " ", contentW - 14);
+          for (const wline of wrapped) {
+            if (lineNum >= MAX_CODE_LINES_PER_PROBLEM) {
+              ensureSpace(CODE_LINE_MM);
+              pdf.setFont("helvetica", "italic");
+              pdf.setFontSize(7.5);
+              pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+              pdf.text("… (code truncated for PDF)", margin + 6, cy);
+              cy += CODE_LINE_MM;
+              break outer;
+            }
+            ensureSpace(CODE_LINE_MM);
+            pdf.setFont("courier", "normal");
+            pdf.setFontSize(CODE_FONT_PT);
+            setInk();
+            pdf.text(wline, margin + 6, cy);
+            cy += CODE_LINE_MM;
+            lineNum++;
+          }
+        }
+        pdf.setFont("helvetica", "normal");
+      }
+
+      y = cy + 10;
+      setInk();
+    }
+    y += 4;
   }
 
   const year = new Date().getFullYear();
