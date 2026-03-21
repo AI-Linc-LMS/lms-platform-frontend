@@ -954,7 +954,33 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
-#### 18. Workshop Variables
+#### 18. File Upload
+
+- **Endpoint**: `POST /api/clients/{client_id}/upload/`
+- **Authentication**: Required
+- **Content-Type**: `multipart/form-data`
+- **Request Body** (form fields):
+
+| Field   | Type   | Required | Description                                              |
+|---------|--------|----------|----------------------------------------------------------|
+| `file`  | File   | Yes      | PDF or image (PNG, JPEG, GIF, WEBP). Max 10 MB.          |
+| `module`| String | Yes      | One of: `assessment_screenshots`, `report_issue`, `profile_avatar`, `job_application`, `other` |
+
+- **Response** (201 Created):
+
+```json
+{
+  "id": 1,
+  "url": "string",
+  "filename": "string",
+  "module": "string",
+  "created_at": "datetime"
+}
+```
+
+- **Usage**: Upload files to S3; use returned `url` as `screenshot_url` in Report Issue or elsewhere. See `ai-linc-backend/docs/FILE_UPLOAD_API.md` for full documentation.
+
+#### 19. Workshop Variables
 
 - **Endpoint**: `GET/POST /api/clients/{client_id}/workshop/variables/`
 - **Authentication**: Required
@@ -968,7 +994,7 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
-#### 19. Client Info
+#### 20. Client Info
 
 - **Endpoint**: `GET /api/clients/{client_id}/client-info/`
 - **Authentication**: Required
@@ -985,7 +1011,7 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
-#### 20. AI Agent
+#### 21. AI Agent
 
 - **Endpoint**: `POST /api/clients/{client_id}/ai-agent/`
 - **Authentication**: Required
