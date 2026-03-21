@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,9 +12,11 @@ import {
   Box,
   Typography,
   CircularProgress,
+  IconButton,
 } from "@mui/material";
 import { IconWrapper } from "./IconWrapper";
 import { reportIssue, ReportIssueRequest } from "@/lib/services/client.service";
+import { uploadFile } from "@/lib/services/file-upload.service";
 import { config } from "@/lib/config";
 import { useToast } from "./Toast";
 
@@ -42,7 +44,10 @@ export function ReportIssueDialog({
 }: ReportIssueDialogProps) {
   const [issueType, setIssueType] = useState("");
   const [description, setDescription] = useState("");
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
   const handleSubmit = async () => {
@@ -53,6 +58,15 @@ export function ReportIssueDialog({
 
     try {
       setSubmitting(true);
+      const clientId = Number(config.clientId);
+
+      let screenshotUrl: string | undefined;
+      if (screenshotFile) {
+        setUploadingScreenshot(true);
+        const result = await uploadFile(clientId, screenshotFile, "report_issue");
+        screenshotUrl = result.url;
+        setUploadingScreenshot(false);
+      }
 
       const issueData: ReportIssueRequest = {
         issue_type: issueType,
@@ -61,9 +75,9 @@ export function ReportIssueDialog({
         course_id: courseId,
         content_id: contentId,
         page_url: window.location.href,
+        ...(screenshotUrl && { screenshot_url: screenshotUrl }),
       };
 
-      const clientId = Number(config.clientId);
       await reportIssue(clientId, issueData);
 
       showToast("Your request has been sent. We'll get back to you soon.", "success");
@@ -82,6 +96,8 @@ export function ReportIssueDialog({
     if (!submitting) {
       setIssueType("");
       setDescription("");
+      setScreenshotFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       onClose();
     }
   };
@@ -120,7 +136,7 @@ export function ReportIssueDialog({
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:help-circle" size={24} color="#ffffff" />
+          <IconWrapper icon="mdi:headset" size={24} color="#ffffff" />
         </Box>
         Support and Help
       </DialogTitle>
@@ -169,6 +185,73 @@ export function ReportIssueDialog({
               },
             }}
           />
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) setScreenshotFile(file);
+            }}
+            style={{ display: "none" }}
+          />
+
+          <Box
+            onClick={() =>
+              !submitting && !uploadingScreenshot && fileInputRef.current?.click()
+            }
+            sx={{
+              border: "2px dashed rgba(0,0,0,0.12)",
+              borderRadius: 1.5,
+              p: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 2,
+              backgroundColor: "#f9fafb",
+              cursor: submitting || uploadingScreenshot ? "default" : "pointer",
+              opacity: submitting || uploadingScreenshot ? 0.7 : 1,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                borderColor:
+                  submitting || uploadingScreenshot ? undefined : "#4285f4",
+                backgroundColor:
+                  submitting || uploadingScreenshot
+                    ? undefined
+                    : "rgba(66, 133, 244, 0.04)",
+              },
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <IconWrapper
+                icon="mdi:image-plus"
+                size={24}
+                color={screenshotFile ? "#22c55e" : "#9ca3af"}
+              />
+              <Typography variant="body2" sx={{ color: "#4b5563" }}>
+                {uploadingScreenshot
+                  ? "Uploading screenshot..."
+                  : screenshotFile
+                    ? screenshotFile.name
+                    : "Attach screenshot (optional)"}
+              </Typography>
+            </Box>
+            {screenshotFile && !uploadingScreenshot && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setScreenshotFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                sx={{ color: "#6b7280" }}
+                aria-label="Remove screenshot"
+              >
+                <IconWrapper icon="mdi:close" size={18} />
+              </IconButton>
+            )}
+          </Box>
         </Box>
       </DialogContent>
 

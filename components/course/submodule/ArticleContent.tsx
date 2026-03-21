@@ -122,6 +122,8 @@ interface ArticleContentProps {
   courseId: number;
   onArticleComplete?: (readTimeMinutes: number) => void;
   onMarkHelpful?: () => void | Promise<void>;
+  /** When true, article is already completed (e.g. from progress); hide "Mark as read" and show completed state */
+  isCompleted?: boolean;
 }
 
 export function ArticleContent({ 
@@ -129,6 +131,7 @@ export function ArticleContent({
   courseId,
   onArticleComplete,
   onMarkHelpful,
+  isCompleted = false,
 }: ArticleContentProps) {
   const { t } = useTranslation("common");
   const articleRef = useRef<HTMLDivElement>(null);
@@ -225,7 +228,7 @@ export function ArticleContent({
             fontWeight: 500,
           }}
         />
-        {hasMarkedComplete ? (
+        {(isCompleted || hasMarkedComplete) ? (
           <Chip
             icon={<CheckCircleOutline sx={{ fontSize: 16 }} />}
             label="Completed"

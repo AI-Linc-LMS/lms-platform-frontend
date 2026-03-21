@@ -104,6 +104,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "job_portal",
     },
     {
+      label: "Jobs",
+      labelKey: "nav.jobsV2",
+      path: "/jobs-v2",
+      icon: "mdi:briefcase-search",
+      featureName: "jobs_v2",
+    },
+    {
       label: "Attendance",
       labelKey: "nav.attendance",
       path: "/attendance",
@@ -181,6 +188,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:email-multiple",
       featureName: "admin_emails",
     },
+    {
+      label: "Notifications",
+      labelKey: "nav.notifications",
+      path: "/admin/notifications",
+      icon: "mdi:bell-badge",
+      featureName: "admin_notifications",
+    },
     // {
     //   label: "Payment",
     //   path: "/admin/payment",
@@ -228,6 +242,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/scorecard",
       icon: "mdi:chart-box-outline",
       featureName: "admin_scorecard",
+    },
+    {
+      label: "Jobs",
+      labelKey: "nav.adminJobsV2",
+      path: "/admin/jobs-v2",
+      icon: "mdi:briefcase-search",
+      featureName: "admin_jobs_v2",
     },
     {
       label: "Attendance",

@@ -31,5 +31,3 @@ next-env.d.ts
 /CON
 package-lock.json
 
-# Local services (e.g. faster-whisper-server) — not used; STT uses OpenAI Whisper API
-services/

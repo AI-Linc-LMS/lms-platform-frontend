@@ -42,6 +42,12 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "job_portal",
   },
   {
+    label: "Jobs",
+    path: "/jobs-v2",
+    icon: "mdi:briefcase-search",
+    featureName: "jobs_v2",
+  },
+  {
     label: "Attendance",
     path: "/attendance",
     icon: "mdi:calendar-check",

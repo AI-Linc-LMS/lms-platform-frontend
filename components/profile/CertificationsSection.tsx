@@ -28,11 +28,13 @@ function getCredentialLinkUrl(url: string | undefined): string | null {
 interface CertificationsSectionProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onRemoveSection?: () => void;
 }
 
 export function CertificationsSection({
   profile,
   onSave,
+  onRemoveSection,
 }: CertificationsSectionProps) {
   const { t } = useTranslation();
   const [certifications, setCertifications] = useState<Certification[]>(profile.certifications || []);
@@ -116,7 +118,7 @@ export function CertificationsSection({
     return d.toISOString().split("T")[0];
   };
 
-  const handleDialogSave = () => {
+  const handleDialogSave = async () => {
     const newCertification: Certification = {
       ...formData,
       id: formData.id || Date.now().toString(),
@@ -124,16 +126,37 @@ export function CertificationsSection({
       expiration_date: toISODate(formData.expiration_date || ""),
     };
 
+    let updated: Certification[];
     if (editingIndex !== null) {
-      const updated = [...certifications];
+      updated = [...certifications];
       updated[editingIndex] = newCertification;
-      setCertifications(updated);
     } else {
-      setCertifications([...certifications, newCertification]);
+      updated = [...certifications, newCertification];
     }
-
+    setCertifications(updated);
     setDialogOpen(false);
     setEditingIndex(null);
+
+    if (editingIndex === null && certifications.length === 0) {
+      try {
+        setSaving(true);
+        await onSave({
+          certifications: updated.map((cert) => ({
+            id: cert.id,
+            name: cert.name,
+            issuing_organization: cert.issuing_organization,
+            issue_date: cert.issue_date ?? "",
+            expiration_date: cert.expiration_date || undefined,
+            credential_id: cert.credential_id || undefined,
+            credential_url: cert.credential_url || undefined,
+          })),
+        });
+      } catch {
+        // handled by parent
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   const formatDate = (date: string) => {
@@ -178,6 +201,24 @@ export function CertificationsSection({
           >
             {t("profile.certifications")}
           </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {onRemoveSection && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:close" size={16} />}
+              onClick={onRemoveSection}
+              sx={{
+                textTransform: "none",
+                color: "#6b7280",
+                fontWeight: 500,
+                fontSize: "0.8125rem",
+                "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+              }}
+            >
+              Remove
+            </Button>
+          )}
           {!editing ? (
             <Button
               variant="text"
@@ -254,6 +295,7 @@ export function CertificationsSection({
               </Button>
             </Box>
           )}
+          </Box>
         </Box>
 
         {certifications.length > 0 ? (
@@ -389,10 +431,29 @@ export function CertificationsSection({
                 color: "#9ca3af",
                 mt: 0.5,
                 fontSize: "0.8125rem",
+                display: "block",
               }}
             >
               {t("profile.clickEditToAddCertifications")}
             </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              onClick={handleAddNew}
+              sx={{
+                mt: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "#0a66c2",
+                borderRadius: 2,
+                px: 2.5,
+                py: 1,
+                "&:hover": { backgroundColor: "#004182" },
+              }}
+            >
+              {t("profile.add")} {t("profile.certifications")}
+            </Button>
           </Box>
         )}
       </Paper>

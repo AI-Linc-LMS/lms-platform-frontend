@@ -9,11 +9,13 @@ import { UserProfile, Experience } from "@/lib/services/profile.service";
 interface ExperienceSectionProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onRemoveSection?: () => void;
 }
 
 export function ExperienceSection({
   profile,
   onSave,
+  onRemoveSection,
 }: ExperienceSectionProps) {
   const { t } = useTranslation("common");
   const [experiences, setExperiences] = useState<Experience[]>(profile.experience || []);
@@ -100,7 +102,7 @@ export function ExperienceSection({
     return d.toISOString().split("T")[0];
   };
 
-  const handleDialogSave = () => {
+  const handleDialogSave = async () => {
     const newExperience: Experience = {
       ...formData,
       id: formData.id || Date.now().toString(),
@@ -108,16 +110,38 @@ export function ExperienceSection({
       end_date: formData.end_date ? toISODate(formData.end_date) : undefined,
     };
 
+    let updated: Experience[];
     if (editingIndex !== null) {
-      const updated = [...experiences];
+      updated = [...experiences];
       updated[editingIndex] = newExperience;
-      setExperiences(updated);
     } else {
-      setExperiences([...experiences, newExperience]);
+      updated = [...experiences, newExperience];
     }
-
+    setExperiences(updated);
     setDialogOpen(false);
     setEditingIndex(null);
+
+    if (editingIndex === null && experiences.length === 0) {
+      try {
+        setSaving(true);
+        await onSave({
+          experience: updated.map((exp) => ({
+            id: exp.id,
+            company: exp.company,
+            position: exp.position,
+            current: exp.current,
+            start_date: exp.start_date ?? "",
+            end_date: exp.end_date || undefined,
+            location: exp.location || undefined,
+            description: exp.description || undefined,
+          })),
+        });
+      } catch {
+        // handled by parent
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   const formatDate = (date: string) => {
@@ -162,6 +186,24 @@ export function ExperienceSection({
           >
             {t("profile.experience")}
           </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {onRemoveSection && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:close" size={16} />}
+              onClick={onRemoveSection}
+              sx={{
+                textTransform: "none",
+                color: "#6b7280",
+                fontWeight: 500,
+                fontSize: "0.8125rem",
+                "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+              }}
+            >
+              Remove
+            </Button>
+          )}
           {!editing ? (
             <Button
               variant="text"
@@ -243,6 +285,7 @@ export function ExperienceSection({
               </Button>
             </Box>
           )}
+          </Box>
         </Box>
 
         {experiences.length > 0 ? (
@@ -363,10 +406,29 @@ export function ExperienceSection({
                 color: "#9ca3af",
                 mt: 0.5,
                 fontSize: "0.8125rem",
+                display: "block",
               }}
             >
               {t("profile.clickEditToAddExperience")}
             </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              onClick={handleAddNew}
+              sx={{
+                mt: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "#0a66c2",
+                borderRadius: 2,
+                px: 2.5,
+                py: 1,
+                "&:hover": { backgroundColor: "#004182" },
+              }}
+            >
+              {t("profile.add")} {t("profile.experience")}
+            </Button>
           </Box>
         )}
       </Paper>

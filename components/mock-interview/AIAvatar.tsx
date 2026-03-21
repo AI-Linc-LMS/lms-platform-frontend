@@ -3,6 +3,15 @@
 import { useEffect, useRef, useState, memo } from "react";
 import { Box } from "@mui/material";
 
+const SPEAKING_LOOP_END = 2.2;
+const POST_QUESTION_START = 2.6;
+const POST_QUESTION_END = 6;
+const WAITING_LAST_FRAME = 5.8;
+const TTS_RESUME_DELAY_MS = 120;
+const TTS_SAFETY_TIMEOUT_MS = 45000;
+
+type VideoPhase = "speaking" | "post-question" | "waiting";
+
 interface AIAvatarProps {
   isSpeaking?: boolean;
   question?: string;
@@ -21,65 +30,133 @@ export const AIAvatar = memo(function AIAvatar({
   const [isAnimating, setIsAnimating] = useState(false);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const interviewVideoRef = useRef<HTMLVideoElement | null>(null);
+  const videoPhaseRef = useRef<VideoPhase>("waiting");
 
   useEffect(() => {
+    if (interviewVideoSrc?.toLowerCase().endsWith(".gif")) return;
+    const video = interviewVideoRef.current;
+    if (!interviewVideoSrc || !video) return;
+
+    const seekToLastFrame = () => {
+      const v = interviewVideoRef.current;
+      if (!v || videoPhaseRef.current !== "waiting") return;
+      const end = Number.isFinite(v.duration) ? Math.min(WAITING_LAST_FRAME, v.duration) : WAITING_LAST_FRAME;
+      v.currentTime = end;
+      v.pause();
+    };
+
+    const onTimeUpdate = () => {
+      const phase = videoPhaseRef.current;
+      const t = video.currentTime;
+      const duration = video.duration;
+      const end = Number.isFinite(duration) ? Math.min(POST_QUESTION_END, duration) : POST_QUESTION_END;
+
+      if (phase === "speaking" && t >= SPEAKING_LOOP_END) {
+        video.currentTime = 0;
+      } else if (phase === "post-question" && t >= end) {
+        videoPhaseRef.current = "waiting";
+        seekToLastFrame();
+      }
+    };
+
+    const onEnded = () => {
+      const phase = videoPhaseRef.current;
+      if (phase === "post-question") {
+        videoPhaseRef.current = "waiting";
+        seekToLastFrame();
+      } else if (phase === "waiting") {
+        seekToLastFrame();
+      }
+    };
+
+    video.muted = true;
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("ended", onEnded);
+    return () => {
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("ended", onEnded);
+    };
+  }, [interviewVideoSrc]);
+
+  useEffect(() => {
+    if (interviewVideoSrc?.toLowerCase().endsWith(".gif")) return;
     const video = interviewVideoRef.current;
     if (!interviewVideoSrc || !video) return;
 
     if (isAnimating) {
-      video.loop = true;
-      video.muted = true;
-      video.play().catch(() => {});
-    } else {
+      videoPhaseRef.current = "speaking";
+      video.loop = false;
       video.pause();
-      const seekToLastFrame = () => {
-        if (!isNaN(video.duration) && isFinite(video.duration)) {
-          video.currentTime = video.duration;
-        }
-      };
-      if (video.readyState >= 1) {
-        seekToLastFrame();
-      } else {
-        video.addEventListener("loadedmetadata", seekToLastFrame, { once: true });
-      }
+      video.currentTime = 0;
+      video.play().catch((e: unknown) => {
+        if ((e as { name?: string })?.name === "AbortError") return;
+      });
     }
   }, [interviewVideoSrc, isAnimating]);
 
   useEffect(() => {
-    if (question && isSpeaking) {
-      if (speechSynthesisRef.current) {
-        window.speechSynthesis.cancel();
-      }
+    if (!question || !isSpeaking) return;
 
+    window.speechSynthesis.cancel();
+    let safetyTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const finishSpeaking = () => {
+      if (cancelled) return;
+      if (safetyTimeoutId != null) {
+        clearTimeout(safetyTimeoutId);
+        safetyTimeoutId = null;
+      }
+      if (!interviewVideoSrc?.toLowerCase().endsWith(".gif")) {
+        const video = interviewVideoRef.current;
+        if (video) {
+          videoPhaseRef.current = "post-question";
+          video.pause();
+          video.currentTime = POST_QUESTION_START;
+          video.play().catch((e: unknown) => {
+            if ((e as { name?: string })?.name === "AbortError") return;
+          });
+        }
+      }
+      setIsAnimating(false);
+      onSpeakComplete?.();
+    };
+
+    const startSpeaking = () => {
+      if (cancelled) return;
       const utterance = new SpeechSynthesisUtterance(question);
       utterance.lang = "en-US";
       utterance.rate = 0.9;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
-      utterance.onstart = () => setIsAnimating(true);
-      utterance.onend = () => {
-        setIsAnimating(false);
-        onSpeakComplete?.();
+      utterance.onstart = () => {
+        if (cancelled) return;
+        setIsAnimating(true);
       };
-      utterance.onerror = () => {
-        setIsAnimating(false);
-        onSpeakComplete?.();
-      };
+      utterance.onend = finishSpeaking;
+      utterance.onerror = finishSpeaking;
 
       speechSynthesisRef.current = utterance;
       window.speechSynthesis.speak(utterance);
-    }
+      safetyTimeoutId = setTimeout(finishSpeaking, TTS_SAFETY_TIMEOUT_MS);
+    };
+
+    const id = setTimeout(startSpeaking, TTS_RESUME_DELAY_MS);
 
     return () => {
-      if (speechSynthesisRef.current) {
-        window.speechSynthesis.cancel();
-      }
+      cancelled = true;
+      clearTimeout(id);
+      if (safetyTimeoutId != null) clearTimeout(safetyTimeoutId);
+      window.speechSynthesis.cancel();
+      speechSynthesisRef.current = null;
     };
-  }, [question, isSpeaking, onSpeakComplete]);
+  }, [question, isSpeaking, onSpeakComplete, interviewVideoSrc]);
 
   const isTalking = isAnimating && !isUserSpeaking;
   const isListening = isUserSpeaking && !isAnimating;
+
+  const isGif = interviewVideoSrc?.toLowerCase().endsWith(".gif");
 
   return (
     <Box
@@ -121,30 +198,40 @@ export const AIAvatar = memo(function AIAvatar({
               minHeight: 280,
               overflow: "hidden",
               zIndex: 1,
-              "& video": {
+              "& video, & img": {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                objectPosition: "center center",
-                transform: "scale(1.06)",
+                objectPosition: "center 28%",
+                transform: "none",
                 transformOrigin: "center center",
               },
             }}
           >
-            <video
-              ref={interviewVideoRef}
-              src={interviewVideoSrc}
-              muted
-              playsInline
-              aria-label="AI interviewer video"
-              onLoadedMetadata={(e) => {
-                const v = e.currentTarget;
-                if (!isAnimating && !isNaN(v.duration) && isFinite(v.duration)) {
-                  v.currentTime = v.duration;
-                  v.pause();
-                }
-              }}
-            />
+            {isGif ? (
+              <img
+                src={interviewVideoSrc}
+                alt="AI interviewer"
+                style={{ display: "block" }}
+              />
+            ) : (
+              <video
+                ref={interviewVideoRef}
+                src={interviewVideoSrc}
+                muted
+                playsInline
+                aria-label="AI interviewer video"
+                onLoadedMetadata={(e) => {
+                  const v = e.currentTarget;
+                  if (!isAnimating) {
+                    videoPhaseRef.current = "waiting";
+                    const end = Number.isFinite(v.duration) ? Math.min(WAITING_LAST_FRAME, v.duration) : WAITING_LAST_FRAME;
+                    v.currentTime = end;
+                    v.pause();
+                  }
+                }}
+              />
+            )}
           </Box>
         )}
 

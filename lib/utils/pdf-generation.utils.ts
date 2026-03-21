@@ -14,6 +14,14 @@ interface PdfGenerationOptions {
   backgroundColor?: string;
   quality?: number;
   pixelRatio?: number;
+  /** When false, skip live DOM tweaks before capture (e.g. assessment results — avoids layout shift). Default true. */
+  prepareDom?: boolean;
+  /** When true, embed lossless PNG in the PDF instead of JPEG recompression. Larger files, sharper output. Default false. */
+  usePngInPdf?: boolean;
+  /** When true, scale the full capture to fit one A4 page (no page slicing). */
+  fitToSingleA4?: boolean;
+  /** Margin in mm when fitToSingleA4 is enabled. */
+  a4MarginMm?: number;
 }
 
 interface CssRulesPatch {
@@ -196,6 +204,19 @@ const compressImageToJpeg = (
   });
 };
 
+const getDataUrlImageDimensions = (
+  dataUrl: string
+): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () =>
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error("Failed to load image for dimensions"));
+    img.src = dataUrl;
+    setTimeout(() => reject(new Error("Image dimension load timeout")), 10000);
+  });
+};
+
 /**
  * Generates a PDF from an HTML element.
  * 
@@ -208,6 +229,10 @@ export const generatePdfFromElement = async ({
   backgroundColor = "#f8fafc",
   quality = 0.92,
   pixelRatio = 1.5,
+  prepareDom = true,
+  usePngInPdf = false,
+  fitToSingleA4 = false,
+  a4MarginMm = 8,
 }: PdfGenerationOptions): Promise<void> => {
   const cssPatch = applyCssRulesPatch();
 
@@ -215,8 +240,9 @@ export const generatePdfFromElement = async ({
     // Preload images
     await preloadImages(element);
 
-    // Prepare content for PDF
-    prepareContentForPdf(element);
+    if (prepareDom) {
+      prepareContentForPdf(element);
+    }
 
     // Small delay to ensure all styles are applied
     await new Promise((resolve) => setTimeout(resolve, 200));
@@ -227,8 +253,7 @@ export const generatePdfFromElement = async ({
       pixelRatio,
       backgroundColor,
       cacheBust: true,
-      skipFonts: true,
-      fontEmbedCSS: "",
+      skipFonts: false,
       filter: (node) => {
         // Exclude elements with 'exclude-from-pdf' class from the PDF
         if (node instanceof HTMLElement) {
@@ -238,8 +263,22 @@ export const generatePdfFromElement = async ({
       },
     });
 
-    // Compress image to JPEG
-    const { data: compressedImgData, width: imgWidthPx, height: imgHeightPx } = await compressImageToJpeg(imgData, 0.85);
+    let rasterData: string;
+    let imgWidthPx: number;
+    let imgHeightPx: number;
+    const pdfImageFormat: "PNG" | "JPEG" = usePngInPdf ? "PNG" : "JPEG";
+
+    if (usePngInPdf) {
+      rasterData = imgData;
+      const dims = await getDataUrlImageDimensions(imgData);
+      imgWidthPx = dims.width;
+      imgHeightPx = dims.height;
+    } else {
+      const compressed = await compressImageToJpeg(imgData, 0.85);
+      rasterData = compressed.data;
+      imgWidthPx = compressed.width;
+      imgHeightPx = compressed.height;
+    }
 
     // Create PDF
     const pdf = new jsPDF({
@@ -248,24 +287,100 @@ export const generatePdfFromElement = async ({
       format: "a4",
     });
 
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
+    const imgWidthMm = pdf.internal.pageSize.getWidth();
+    const pageHeightMm = pdf.internal.pageSize.getHeight();
 
-    // Calculate image height in mm
-    const calculatedImgHeight = (imgHeightPx * imgWidth) / imgWidthPx;
-    let heightLeft = calculatedImgHeight;
-    let position = 0;
+    if (fitToSingleA4) {
+      const maxWidth = imgWidthMm - a4MarginMm * 2;
+      const maxHeight = pageHeightMm - a4MarginMm * 2;
+      const srcAspect = imgWidthPx / imgHeightPx;
+      let drawWidth = maxWidth;
+      let drawHeight = drawWidth / srcAspect;
+      if (drawHeight > maxHeight) {
+        drawHeight = maxHeight;
+        drawWidth = drawHeight * srcAspect;
+      }
+      const x = (imgWidthMm - drawWidth) / 2;
+      const y = (pageHeightMm - drawHeight) / 2;
+      if (pdfImageFormat === "JPEG") {
+        pdf.addImage(rasterData, "JPEG", x, y, drawWidth, drawHeight, undefined, "FAST");
+      } else {
+        pdf.addImage(rasterData, "PNG", x, y, drawWidth, drawHeight);
+      }
+    } else {
+      // Slice by page in pixel space to avoid seam artifacts at page boundaries.
+      const sourceImage = new Image();
+      sourceImage.crossOrigin = "anonymous";
+      sourceImage.src = rasterData;
+      await new Promise<void>((resolve, reject) => {
+        sourceImage.onload = () => resolve();
+        sourceImage.onerror = () =>
+          reject(new Error("Failed to load raster image for PDF slicing"));
+        setTimeout(
+          () => reject(new Error("Timed out loading raster image for PDF slicing")),
+          10000
+        );
+      });
 
-    // Add first page
-    pdf.addImage(compressedImgData, "JPEG", 0, position, imgWidth, calculatedImgHeight, undefined, "FAST");
-    heightLeft -= pageHeight;
+      const pageHeightPx = Math.max(
+        1,
+        Math.floor((pageHeightMm * imgWidthPx) / imgWidthMm)
+      );
 
-    // Add additional pages if needed
-    while (heightLeft >= 0) {
-      position = heightLeft - calculatedImgHeight;
-      pdf.addPage();
-      pdf.addImage(compressedImgData, "JPEG", 0, position, imgWidth, calculatedImgHeight, undefined, "FAST");
-      heightLeft -= pageHeight;
+      let offsetY = 0;
+      let pageIndex = 0;
+
+      while (offsetY < imgHeightPx) {
+        const sliceHeightPx = Math.min(pageHeightPx, imgHeightPx - offsetY);
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = imgWidthPx;
+        sliceCanvas.height = sliceHeightPx;
+        const ctx = sliceCanvas.getContext("2d");
+        if (!ctx) {
+          throw new Error("Failed to get canvas context for PDF slicing");
+        }
+
+        ctx.drawImage(
+          sourceImage,
+          0,
+          offsetY,
+          imgWidthPx,
+          sliceHeightPx,
+          0,
+          0,
+          imgWidthPx,
+          sliceHeightPx
+        );
+
+        const pageData =
+          pdfImageFormat === "PNG"
+            ? sliceCanvas.toDataURL("image/png")
+            : sliceCanvas.toDataURL("image/jpeg", quality);
+
+        const sliceHeightMm = (sliceHeightPx * imgWidthMm) / imgWidthPx;
+
+        if (pageIndex > 0) {
+          pdf.addPage();
+        }
+
+        if (pdfImageFormat === "JPEG") {
+          pdf.addImage(
+            pageData,
+            "JPEG",
+            0,
+            0,
+            imgWidthMm,
+            sliceHeightMm,
+            undefined,
+            "FAST"
+          );
+        } else {
+          pdf.addImage(pageData, "PNG", 0, 0, imgWidthMm, sliceHeightMm);
+        }
+
+        offsetY += sliceHeightPx;
+        pageIndex += 1;
+      }
     }
 
     // Save PDF
@@ -303,7 +418,7 @@ export const generateDashboardPdf = async ({
       unit: "mm",
       format: "a4",
     });
-    const pageWidth = 220;
+    const pageWidth = 210;
     const pageHeight = 297;
     const margin = 10;
     const usableWidth = pageWidth - margin * 2;

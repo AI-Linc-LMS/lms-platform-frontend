@@ -8,7 +8,8 @@ import { UserProfile } from "@/lib/services/profile.service";
 
 interface ProfileSummaryProps {
   profile: UserProfile;
-  onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  onSave?: (updatedProfile: Partial<UserProfile>) => Promise<void>;
+  readOnly?: boolean;
 }
 
 const MAX_PREVIEW_LENGTH = 200;
@@ -16,6 +17,7 @@ const MAX_PREVIEW_LENGTH = 200;
 export function ProfileSummary({
   profile,
   onSave,
+  readOnly = false,
 }: ProfileSummaryProps) {
   const { t } = useTranslation("common");
   const [editing, setEditing] = useState(false);
@@ -34,6 +36,7 @@ export function ProfileSummary({
   const displayText = expanded || !shouldTruncate ? bio : `${bio.substring(0, MAX_PREVIEW_LENGTH)}...`;
 
   const handleSave = async () => {
+    if (!onSave) return;
     try {
       setSaving(true);
       const dataToSave = {
@@ -89,66 +92,68 @@ export function ProfileSummary({
         >
           {t("profile.about")}
         </Typography>
-        {!editing ? (
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
-            onClick={() => {
-              setFormData({ bio: profile.bio || "" });
-              setEditing(true);
-            }}
-            sx={{
-              textTransform: "none",
-              color: "#0a66c2",
-              fontWeight: 600,
-              fontSize: "0.9375rem",
-              "&:hover": {
-                backgroundColor: "rgba(10, 102, 194, 0.08)",
-              },
-              transition: "all 0.2s ease",
-            }}
-          >
-            {t("profile.edit")}
-          </Button>
-        ) : (
-          <Box sx={{ display: "flex", gap: 1 }}>
+        {!readOnly && (
+          !editing ? (
             <Button
               variant="text"
               size="small"
-              onClick={handleCancel}
-              disabled={saving}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                color: "#666666",
-                "&:hover": {
-                  backgroundColor: "#f3f2ef",
-                },
+              startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
+              onClick={() => {
+                setFormData({ bio: profile.bio || "" });
+                setEditing(true);
               }}
-            >
-              {t("profile.cancel")}
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleSave}
-              disabled={saving}
               sx={{
                 textTransform: "none",
+                color: "#0a66c2",
                 fontWeight: 600,
-                backgroundColor: "#0a66c2",
-                borderRadius: "24px",
-                px: 2,
+                fontSize: "0.9375rem",
                 "&:hover": {
-                  backgroundColor: "#004182",
+                  backgroundColor: "rgba(10, 102, 194, 0.08)",
                 },
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? t("profile.saving") : t("profile.save")}
+              {t("profile.edit")}
             </Button>
-          </Box>
+          ) : (
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                variant="text"
+                size="small"
+                onClick={handleCancel}
+                disabled={saving}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "#666666",
+                  "&:hover": {
+                    backgroundColor: "#f3f2ef",
+                  },
+                }}
+              >
+                {t("profile.cancel")}
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleSave}
+                disabled={saving}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  backgroundColor: "#0a66c2",
+                  borderRadius: "24px",
+                  px: 2,
+                  "&:hover": {
+                    backgroundColor: "#004182",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {saving ? t("profile.saving") : t("profile.save")}
+              </Button>
+            </Box>
+          )
         )}
       </Box>
 
