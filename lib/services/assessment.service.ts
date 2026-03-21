@@ -187,18 +187,6 @@ export interface ViolationScreenshotSample {
   tab_switch_count_at_capture?: number;
 }
 
-/** `response_sheet.image_proofs` — upload API shape plus proctoring context (final submit). */
-export interface AssessmentImageProof {
-  id: number;
-  url: string;
-  filename: string;
-  module: string;
-  created_at: string;
-  total_violation_count_at_capture: number;
-  latest_violation_type?: string | null;
-  tab_switch_count_at_capture?: number;
-}
-
 export interface AssessmentMetadata {
   proctoring: {
     face_violations: Array<{
@@ -230,8 +218,6 @@ export interface AssessmentMetadata {
     total_violation_count: number;
     violation_threshold_reached: boolean;
     violation_screenshot_samples?: ViolationScreenshotSample[];
-    /** Duplicate of top-level `response_sheet.image_proofs` for consumers reading proctoring only. */
-    image_proofs?: AssessmentImageProof[];
   };
   timing: {
     started_at: string;
@@ -277,8 +263,6 @@ export const assessmentService = {
           metadata: any;
           total_duration_seconds: number;
         };
-
-        image_proofs?: AssessmentImageProof[];
       };
       quizSectionId: Array<Record<string, any>>;
       codingProblemSectionId: Array<Record<string, any>>;
@@ -319,8 +303,6 @@ export const assessmentService = {
           metadata: any;
           total_duration_seconds: number;
         };
-
-        image_proofs?: AssessmentImageProof[];
       };
       quizSectionId: Array<Record<string, any>>;
       codingProblemSectionId: Array<Record<string, any>>;
