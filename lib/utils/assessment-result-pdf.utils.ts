@@ -82,7 +82,7 @@ function drawFootersOnAllPages(
   pageW: number,
   pageH: number,
   margin: number,
-  year: number
+  year: number,
 ) {
   const total = pdf.getNumberOfPages();
   const lineY = pageH - 11;
@@ -104,12 +104,9 @@ function drawFootersOnAllPages(
 
     pdf.setFontSize(7);
     pdf.setTextColor(148, 163, 184);
-    pdf.text(
-      `© Confidential assessment report`,
-      pageW - margin,
-      textY,
-      { align: "right" }
-    );
+    pdf.text(`© Confidential assessment report`, pageW - margin, textY, {
+      align: "right",
+    });
   }
 }
 
@@ -118,7 +115,7 @@ function drawFootersOnAllPages(
  */
 export function generateAssessmentResultPdfVector(
   data: AssessmentResult,
-  fileName: string
+  fileName: string,
 ): void {
   const pdf = new jsPDF({
     unit: "mm",
@@ -153,20 +150,22 @@ export function generateAssessmentResultPdfVector(
 
   const stats = data.stats;
   const totalQ = stats.total_questions || 1;
-  const correct = stats.correct_answers;
-  const incorrect = stats.incorrect_answers;
-  const unattempted = totalQ - stats.attempted_questions;
+  const correct = stats.correct_answers || 0;
+  const incorrect = stats.incorrect_answers || 0;
+  const unattempted = totalQ - (stats?.attempted_questions || 0);
 
-  const topThree = normalizeTopSkillDisplayNames(stats.top_skills, 3);
+  const topThree = normalizeTopSkillDisplayNames(stats.top_skills || [], 3);
 
-  const topicBars = Object.entries(stats.topic_wise_stats ?? {})
+  const topicBars = Object.entries(stats.topic_wise_stats || {})
     .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 4)
-    .map(([name, v]) => ({ name, accuracy: v.accuracy_percent }));
+    .map(([name, v]) => ({ name, accuracy: v.accuracy_percent || 0 }));
 
   const drawFlowingIntro = (x0: number, y0: number, xMax: number): number => {
-    const accDisp = formatAccuracyReportPercent(stats.accuracy_percent ?? 0);
-    const prDisp = formatPlacementReportPercent(stats.placement_readiness ?? 0);
+    const accDisp = formatAccuracyReportPercent(stats?.accuracy_percent ?? 0);
+    const prDisp = formatPlacementReportPercent(
+      stats?.placement_readiness || 0,
+    );
     const segments: { text: string; bold: boolean }[] = [
       { text: 'This report summarizes outcomes for "', bold: false },
       { text: data.assessment_name, bold: true },
@@ -203,7 +202,11 @@ export function generateAssessmentResultPdfVector(
     return yy + lineHeight + 2;
   };
 
-  const drawScoreSummaryPanel = (leftX: number, topY: number, width: number): number => {
+  const drawScoreSummaryPanel = (
+    leftX: number,
+    topY: number,
+    width: number,
+  ): number => {
     const tier = getPerformanceTier(stats);
     const tone = PERFORMANCE_TONE_PDF[tier.tone];
     const pad = 3.5;
@@ -225,7 +228,7 @@ export function generateAssessmentResultPdfVector(
     pdf.text(
       formatScoreVersusMax(stats.score ?? 0, stats.maximum_marks ?? 0),
       leftX + pad,
-      py
+      py,
     );
     py += 7.5;
 
@@ -311,7 +314,11 @@ export function generateAssessmentResultPdfVector(
   pdf.setFontSize(9);
   pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
   const idStr = String(data.assessment_id);
-  pdf.text(idStr.length > 42 ? `${idStr.slice(0, 40)}…` : `ID ${idStr}`, margin, y);
+  pdf.text(
+    idStr.length > 42 ? `${idStr.slice(0, 40)}…` : `ID ${idStr}`,
+    margin,
+    y,
+  );
   y += 7;
   setInk();
 
@@ -344,13 +351,13 @@ export function generateAssessmentResultPdfVector(
   pdf.setFontSize(9);
   pdf.text("Questions attempted", margin + 4, heroY + 9);
   pdf.setFontSize(32);
-  pdf.text(String(stats.attempted_questions), margin + 4, heroY + 26);
+  pdf.text(String(stats?.attempted_questions ?? 0), margin + 4, heroY + 26);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7.8);
   pdf.setTextColor(224, 242, 254);
   const subL = pdf.splitTextToSize(
-    `Out of ${stats.total_questions} total items · ${data.status}`,
-    boxW - 8
+    `Out of ${stats?.total_questions ?? 0} total items · ${data?.status ?? ""}`,
+    boxW - 8,
   );
   pdf.text(subL, margin + 4, heroY + heroH - 2.2 - (subL.length - 1) * 3.3);
 
@@ -370,9 +377,13 @@ export function generateAssessmentResultPdfVector(
   pdf.setTextColor(203, 213, 225);
   const subR = pdf.splitTextToSize(
     "Strongest skills in this attempt (when provided by the assessment).",
-    boxW - 8
+    boxW - 8,
   );
-  pdf.text(subR, margin + boxW + heroGap + 4, heroY + heroH - 2.2 - (subR.length - 1) * 3.3);
+  pdf.text(
+    subR,
+    margin + boxW + heroGap + 4,
+    heroY + heroH - 2.2 - (subR.length - 1) * 3.3,
+  );
 
   y = heroY + heroH + 14;
   setInk();
@@ -386,7 +397,12 @@ export function generateAssessmentResultPdfVector(
 
   const barH = 3.4;
 
-  const drawColBar = (x: number, colTop: number, label: string, value: number): number => {
+  const drawColBar = (
+    x: number,
+    colTop: number,
+    label: string,
+    value: number,
+  ): number => {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.8);
     setInk();
@@ -438,14 +454,19 @@ export function generateAssessmentResultPdfVector(
   c1 = drawColBar(x1, c1, "Incorrect", pct(incorrect, totalQ));
   c1 = drawColBar(x1, c1, "Unattempted", pct(unattempted, totalQ));
 
-  c2 = drawColBar(x2, c2, "Score / max", pct(stats.score, stats.maximum_marks || 1));
+  c2 = drawColBar(
+    x2,
+    c2,
+    "Score / max",
+    pct(stats.score, stats.maximum_marks || 1),
+  );
   c2 = drawColBar(x2, c2, "Accuracy", stats.accuracy_percent);
   c2 = drawColBar(x2, c2, "Placement readiness", stats.placement_readiness);
   c2 = drawColBar(
     x2,
     c2,
     "Percentile",
-    Math.min(100, Number.isFinite(stats.percentile) ? stats.percentile : 0)
+    Math.min(100, Number.isFinite(stats.percentile) ? stats.percentile : 0),
   );
 
   if (topicBars.length > 0) {
@@ -496,14 +517,17 @@ export function generateAssessmentResultPdfVector(
   };
 
   ensureSpace(28);
-  y = drawWideBar("Time used (vs allotted)", Math.min(100, stats.percentage_time_taken));
+  y = drawWideBar(
+    "Time used (vs allotted)",
+    Math.min(100, stats.percentage_time_taken),
+  );
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8.5);
   pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
   pdf.text(
     `${stats.time_taken_minutes} / ${stats.total_time_minutes} minutes`,
     margin,
-    y
+    y,
   );
   y += 12;
   setInk();
@@ -526,9 +550,7 @@ export function generateAssessmentResultPdfVector(
       const acc = row.accuracyPercent ?? 0;
       const hasAcc = row.accuracyPercent != null;
       const hasCounts =
-        row.correct != null &&
-        row.total != null &&
-        (row.total as number) > 0;
+        row.correct != null && row.total != null && (row.total as number) > 0;
 
       const label = capitalizeFirstPdf(row.label);
       const labelMaxW = hasAcc ? innerW - 32 : innerW - 6;
@@ -557,10 +579,12 @@ export function generateAssessmentResultPdfVector(
           5.2,
           1.5,
           1.5,
-          "F"
+          "F",
         );
         pdf.setTextColor(accTone.fg[0], accTone.fg[1], accTone.fg[2]);
-        pdf.text(badgeText, cardX + innerW - 3, cardTop + 5.5, { align: "right" });
+        pdf.text(badgeText, cardX + innerW - 3, cardTop + 5.5, {
+          align: "right",
+        });
       }
 
       const barY = cardTop + 11;
@@ -570,11 +594,7 @@ export function generateAssessmentResultPdfVector(
       if (hasAcc) {
         const barFill = Math.min(100, acc);
         const fillRgb =
-          acc < 25
-            ? [220, 38, 38]
-            : acc < 50
-              ? [234, 88, 12]
-              : [245, 158, 11];
+          acc < 25 ? [220, 38, 38] : acc < 50 ? [234, 88, 12] : [245, 158, 11];
         pdf.setFillColor(fillRgb[0], fillRgb[1], fillRgb[2]);
         pdf.rect(cardX + 3, barY, (barW * barFill) / 100, 2.8, "F");
       }
@@ -586,12 +606,18 @@ export function generateAssessmentResultPdfVector(
         pdf.text(
           `${row.correct}/${row.total} correct · practice priority`,
           cardX + 3,
-          cardTop + 17.5
+          cardTop + 17.5,
         );
       } else if (!hasAcc) {
-        pdf.text("No numeric breakdown in report data.", cardX + 3, cardTop + 17.5);
+        pdf.text(
+          "No numeric breakdown in report data.",
+          cardX + 3,
+          cardTop + 17.5,
+        );
       } else {
-        pdf.text("Practice priority", cardX + innerW - 3, cardTop + 17.5, { align: "right" });
+        pdf.text("Practice priority", cardX + innerW - 3, cardTop + 17.5, {
+          align: "right",
+        });
       }
       setInk();
     };
@@ -620,7 +646,7 @@ export function generateAssessmentResultPdfVector(
     const headerTop = y;
     const subLines = pdf.splitTextToSize(
       "Focus your next study blocks on these areas — accuracy reflects this attempt only.",
-      contentW - 12
+      contentW - 12,
     );
     const headerH = 7 + subLines.length * 3.8 + 5;
     pdf.setFillColor(255, 251, 235);
@@ -651,7 +677,7 @@ export function generateAssessmentResultPdfVector(
     lines: string[],
     mutedFallback: string | undefined,
     bg: { r: number; g: number; b: number },
-    accent: { r: number; g: number; b: number }
+    accent: { r: number; g: number; b: number },
   ) => {
     const useMuted = lines.length === 0 && !!mutedFallback;
     pdf.setFont("helvetica", "normal");
@@ -709,7 +735,7 @@ export function generateAssessmentResultPdfVector(
       feedbackPoints,
       undefined,
       FEEDBACK_BG,
-      SKY
+      SKY,
     );
   }
 
@@ -740,7 +766,8 @@ export function generateAssessmentResultPdfVector(
     for (let qi = 0; qi < quizResponses.length; qi++) {
       const q = quizResponses[qi]!;
       const selectedRaw = q.selected_answer;
-      const selectedU = selectedRaw != null ? String(selectedRaw).toUpperCase() : "";
+      const selectedU =
+        selectedRaw != null ? String(selectedRaw).toUpperCase() : "";
       const correctU = String(q.correct_option ?? "").toUpperCase();
       const options = getQuizOptionsForPdf(q.options ?? {});
 
@@ -853,7 +880,7 @@ export function generateAssessmentResultPdfVector(
     pdf.text(
       `Coding problem responses (${codingResponses.length})`,
       margin + 5,
-      y + 7.5
+      y + 7.5,
     );
     y += 18;
 
@@ -882,7 +909,7 @@ export function generateAssessmentResultPdfVector(
           titleLines * 4.5 +
           12 +
           Math.min(codeLineCount, MAX_CODE_LINES_PER_PROBLEM) * CODE_LINE_MM +
-          20
+          20,
       );
 
       let cy = y + 6;
@@ -896,13 +923,17 @@ export function generateAssessmentResultPdfVector(
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
-      pdf.text(`Problem ${ci + 1} of ${codingResponses.length}`, margin + 5, cy);
+      pdf.text(
+        `Problem ${ci + 1} of ${codingResponses.length}`,
+        margin + 5,
+        cy,
+      );
       cy += 4.5;
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(
         c.all_test_cases_passed ? 5 : 180,
         c.all_test_cases_passed ? 120 : 83,
-        c.all_test_cases_passed ? 85 : 9
+        c.all_test_cases_passed ? 85 : 9,
       );
       pdf.text(summary, margin + 5, cy);
       cy += 6;

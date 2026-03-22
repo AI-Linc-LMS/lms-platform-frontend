@@ -9,16 +9,16 @@ const GENERIC_MESSAGE = /^(stats?\s+fetched|success)/i;
 export function buildAssessmentFeedbackPoints(
   data: AssessmentResult,
 ): string[] {
-  const fromApi = data.feedback_points?.map((s) => s.trim()).filter(Boolean);
+  const fromApi = data?.feedback_points?.map((s) => s.trim()).filter(Boolean);
   if (fromApi && fromApi.length > 0) {
     return fromApi.slice(0, 6);
   }
 
-  const stats = data.stats;
+  const stats = data?.stats || {};
   const points: string[] = [];
   const acc = stats?.accuracy_percent || 0;
   const pr = stats?.placement_readiness || 0;
-  const un = stats?.total_questions - stats?.attempted_questions || 0;
+  const un = (stats?.total_questions || 0) - (stats?.attempted_questions || 0);
   const pctTime = stats?.percentage_time_taken || 0;
 
   if (Number.isFinite(acc)) {
@@ -50,14 +50,14 @@ export function buildAssessmentFeedbackPoints(
   } else if (
     Number.isFinite(pctTime) &&
     pctTime < 40 &&
-    stats.attempted_questions >= stats.total_questions
+    (stats?.attempted_questions || 0) >= (stats?.total_questions || 0)
   ) {
     points.push(
       "You finished with time to spare — use extra minutes to double-check tricky questions next time.",
     );
   }
 
-  const msg = data.message?.trim();
+  const msg = data?.message?.trim();
   if (msg && msg.length > 12 && !GENERIC_MESSAGE.test(msg)) {
     points.unshift(msg);
   }
