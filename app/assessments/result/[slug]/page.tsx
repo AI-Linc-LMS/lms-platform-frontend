@@ -166,7 +166,7 @@ export default function AssessmentResultPage() {
         <ScoreDisplay
           score={stats.score}
           maximumMarks={stats.maximum_marks}
-          accuracy={stats.accuracy_percent}
+          accuracy={stats?.accuracy_percent||0}
           percentile={stats.percentile}
         />
 

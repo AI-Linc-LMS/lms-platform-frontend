@@ -6,9 +6,9 @@ export function getPerformanceTier(stats: AssessmentResult["stats"]): {
   label: string;
   tone: PerformanceTone;
 } {
-  const maxM = Math.max(stats.maximum_marks || 1, 1e-6);
-  const scorePct = (stats.score / maxM) * 100;
-  const acc = stats.accuracy_percent ?? 0;
+  const maxM = Math.max(stats?.maximum_marks || 1, 1e-6);
+  const scorePct = (stats?.score / maxM) * 100;
+  const acc = stats?.accuracy_percent || 0;
 
   if (acc < 40 || scorePct < 22) {
     return { label: "Needs Improvement", tone: "danger" };
@@ -35,8 +35,8 @@ export function formatScoreVersusMax(score: number, max: number): string {
 export function formatScoreAttainmentPercent(
   stats: AssessmentResult["stats"],
 ): string {
-  const maxM = Math.max(stats.maximum_marks || 1, 1e-6);
-  const p = ((stats.score ?? 0) / maxM) * 100;
+  const maxM = Math.max(stats?.maximum_marks || 1, 1e-6);
+  const p = ((stats?.score ?? 0) / maxM) * 100;
   return `${(Number.isFinite(p) ? p : 0).toFixed(1)}%`;
 }
 
