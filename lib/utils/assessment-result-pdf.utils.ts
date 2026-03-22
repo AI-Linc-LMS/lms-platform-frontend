@@ -256,8 +256,8 @@ export function generateAssessmentResultPdfVector(
     };
 
     row("Score attainment", formatScoreAttainmentPercent(stats));
-    row("Accuracy", `${(stats.accuracy_percent ?? 0).toFixed(1)}%`);
-    row("Percentile", formatPercentileReport(stats.percentile));
+    row("Accuracy", `${(stats?.accuracy_percent ?? 0)?.toFixed(1)}%`);
+    row("Percentile", formatPercentileReport(stats?.percentile ?? 0));
 
     py += 0.5;
     const stLabel = humanizeAssessmentStatus(data.status);

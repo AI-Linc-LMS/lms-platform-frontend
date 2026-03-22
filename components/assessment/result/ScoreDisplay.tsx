@@ -4,10 +4,14 @@ import { Box, Typography, Paper } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface ScoreDisplayProps {
-  score: number;
-  maximumMarks: number;
-  accuracy: number;
-  percentile: number;
+  score?: number | null;
+  maximumMarks?: number | null;
+  accuracy?: number | null;
+  percentile?: number | null;
+}
+
+function n(v: unknown, fallback = 0): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
 
 export function ScoreDisplay({
@@ -16,7 +20,11 @@ export function ScoreDisplay({
   accuracy,
   percentile,
 }: ScoreDisplayProps) {
-  const percentage = maximumMarks > 0 ? (score / maximumMarks) * 100 : 0;
+  const safeScore = n(score, 0);
+  const safeMax = n(maximumMarks, 0);
+  const safeAccuracy = n(accuracy, 0);
+  const safePercentile = n(percentile, 0);
+  const percentage = safeMax > 0 ? (safeScore / safeMax) * 100 : 0;
   
   // Determine performance level and colors
   const getPerformanceLevel = () => {
@@ -126,7 +134,7 @@ export function ScoreDisplay({
                   color: "#ffffff",
                 }}
               >
-                {score.toFixed(1)}
+                {safeScore.toFixed(1)}
               </Typography>
               <Typography
                 variant="h5"
@@ -136,7 +144,7 @@ export function ScoreDisplay({
                   fontSize: { xs: "1.25rem", sm: "1.5rem" },
                 }}
               >
-                / {maximumMarks}
+                / {safeMax > 0 ? safeMax : "—"}
               </Typography>
             </Box>
           </Box>
@@ -238,7 +246,7 @@ export function ScoreDisplay({
                 fontSize: "1.25rem",
               }}
             >
-              {accuracy.toFixed(1)}%
+              {safeAccuracy.toFixed(1)}%
             </Typography>
           </Box>
           <Box>
@@ -260,7 +268,7 @@ export function ScoreDisplay({
                 fontSize: "1.25rem",
               }}
             >
-              {percentile.toFixed(1)}%
+              {safePercentile.toFixed(1)}%
             </Typography>
           </Box>
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
