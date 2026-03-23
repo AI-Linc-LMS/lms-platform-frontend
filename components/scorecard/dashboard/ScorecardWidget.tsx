@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Box, Typography, Button, Paper, Grid } from "@mui/material";
+import { Box, Typography, Button, Paper, Grid, Skeleton } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { OverallScoreCard } from "./OverallScoreCard";
@@ -61,16 +61,141 @@ export function ScorecardWidget() {
       <Paper
         elevation={0}
         sx={{
-          p: 3,
-          borderRadius: 2,
+          p: { xs: 2.5, sm: 3.5, md: 4 },
+          borderRadius: 3,
           border: "1px solid rgba(0,0,0,0.08)",
           backgroundColor: "#ffffff",
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
+          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)",
+          mb: 3,
         }}
       >
-        <Typography variant="body2" sx={{ color: "#666666" }}>
-          Loading scorecard...
-        </Typography>
+        {/* Header skeleton */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 4,
+            pb: 3,
+            borderBottom: "2px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Skeleton
+              variant="circular"
+              width={48}
+              height={48}
+              animation="wave"
+              sx={{ flexShrink: 0 }}
+            />
+            <Box sx={{ flex: 1 }}>
+              <Skeleton variant="rounded" width={220} height={32} animation="wave" sx={{ mb: 0.5 }} />
+              <Skeleton variant="rounded" width={280} height={20} animation="wave" />
+            </Box>
+          </Box>
+          <Skeleton
+            variant="rounded"
+            width={120}
+            height={44}
+            animation="wave"
+            sx={{ borderRadius: "24px", display: { xs: "none", sm: "block" } }}
+          />
+        </Box>
+
+        {/* Content grid skeleton */}
+        <Grid container spacing={3}>
+          {/* Overall score card */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "2px solid #0a66c230",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1.5,
+              }}
+            >
+              <Skeleton variant="circular" width={120} height={120} animation="wave" />
+              <Skeleton variant="rounded" width={80} height={28} animation="wave" />
+              <Skeleton variant="rounded" width={100} height={20} animation="wave" />
+            </Box>
+          </Grid>
+
+          {/* Performance trend chart */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "2px solid #0a66c230",
+                height: "100%",
+              }}
+            >
+              <Skeleton variant="rounded" width={120} height={24} animation="wave" sx={{ mb: 2 }} />
+              <Skeleton
+                variant="rounded"
+                height={200}
+                animation="wave"
+                sx={{ borderRadius: 2, width: "100%" }}
+              />
+            </Box>
+          </Grid>
+
+          {/* Top skills chart */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "2px solid #10b98130",
+                height: "100%",
+              }}
+            >
+              <Skeleton variant="rounded" width={160} height={24} animation="wave" sx={{ mb: 2 }} />
+              <Skeleton
+                variant="rounded"
+                height={200}
+                animation="wave"
+                sx={{ borderRadius: 2, width: "100%" }}
+              />
+            </Box>
+          </Grid>
+
+          {/* Quick stats */}
+          <Grid size={{ xs: 12 }}>
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+              {[1, 2, 3].map((i) => (
+                <Skeleton
+                  key={i}
+                  variant="rounded"
+                  height={88}
+                  animation="wave"
+                  sx={{ borderRadius: 2, flex: "1 1 120px", minWidth: 120 }}
+                />
+              ))}
+            </Box>
+          </Grid>
+        </Grid>
+
+        {/* Top skills tags skeleton */}
+        <Box sx={{ mt: 4, pt: 3, borderTop: "2px solid rgba(0,0,0,0.08)" }}>
+          <Skeleton variant="rounded" width={100} height={24} animation="wave" sx={{ mb: 2 }} />
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton
+                key={i}
+                variant="rounded"
+                width={100}
+                height={48}
+                animation="wave"
+                sx={{ borderRadius: 2 }}
+              />
+            ))}
+          </Box>
+        </Box>
       </Paper>
     );
   }

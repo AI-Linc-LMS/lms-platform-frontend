@@ -4,7 +4,10 @@ import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Typography, Card, Avatar, LinearProgress, Tooltip } from "@mui/material";
 import { dashboardService } from "@/lib/services/dashboard.service";
+import { profileService } from "@/lib/services/profile.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
+
+const ADMIN_ROLES = ["admin", "superadmin", "course_manager"];
 
 interface StreakHolder {
   studentName: string;
@@ -68,7 +71,11 @@ export const StreakHolders = () => {
   const loadStreakHolders = async () => {
     try {
       setLoading(true);
-      // Get current month dates
+      const profile = await profileService.getUserProfile();
+      if (!ADMIN_ROLES.includes(profile?.role ?? "")) {
+        setStreakHolders([]);
+        return;
+      }
       const today = new Date();
       const endDate = today.toISOString().split("T")[0]; // YYYY-MM-DD
       const startDate = new Date(today.getFullYear(), today.getMonth(), 1);

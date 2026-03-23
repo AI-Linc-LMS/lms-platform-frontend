@@ -8,15 +8,19 @@ import {
   Select,
   MenuItem,
   FormControl,
+  alpha,
 } from "@mui/material";
 import { HeatmapData } from "@/lib/services/profile.service";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useMemo } from "react";
 
 interface ActivityHeatmapProps {
   heatmapData: HeatmapData;
+  /** Override subtitle, e.g. "Learning activity this year" for admin view */
+  subtitle?: string;
 }
 
-export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activity this year" }: ActivityHeatmapProps) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
@@ -67,28 +71,17 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
 
   const allDates = generateYearDates();
 
-  const weeks: (typeof allDates)[] = [];
-  let currentWeek: typeof allDates = [];
-
-  const formatTooltipContent = (day: (typeof allDates)[0]) => {
-    if (day.count === 0) return `${day.date}: No activities`;
-
-    const activityLabels: Record<string, string> = {
-      Quiz: "Quizzes",
-      Article: "Articles",
-      Assignment: "Assignments",
-      CodingProblem: "Coding Problems",
-      DevCodingProblem: "Dev Coding Problems",
-      VideoTutorial: "Video Tutorials",
-    };
-
-    const activitiesList = Object.entries(day.activities)
-      .filter(([, count]) => count > 0)
-      .map(([key, count]) => `${activityLabels[key]}: ${count}`)
-      .join("\n");
-
-    return `${day.date}\nTotal: ${day.count}\n\n${activitiesList}`;
+  /** Parse YYYY-MM-DD as local date to avoid timezone shifting getDay() */
+  const parseLocal = (dateStr: string) => {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, m - 1, d);
   };
+
+  const stats = useMemo(() => {
+    const totalActivities = allDates.reduce((s, d) => s + d.count, 0);
+    const daysActive = allDates.filter((d) => d.count > 0).length;
+    return { totalActivities, daysActive };
+  }, [allDates]);
 
   const emptyDay = {
     date: "",
@@ -104,46 +97,57 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     },
   };
 
-  const firstDay = new Date(allDates[0].date).getDay();
-  for (let i = 0; i < firstDay; i++) {
+  /** Build weeks: Mon–Sun (ISO), pad start so Jan 1 falls in correct column */
+  const weeks: (typeof allDates)[] = [];
+  let currentWeek: typeof allDates = [];
+  const firstDate = parseLocal(allDates[0].date);
+  const firstWeekday = firstDate.getDay();
+  const isoMondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
+  for (let i = 0; i < isoMondayOffset; i++) {
     currentWeek.push({ ...emptyDay, activities: { ...emptyDay.activities } });
   }
 
-  allDates.forEach((date, index) => {
-    const dayOfWeek = new Date(date.date).getDay();
+  const activityLabels: Record<string, string> = {
+    Quiz: "Quizzes",
+    Article: "Articles",
+    Assignment: "Assignments",
+    CodingProblem: "Coding Problems",
+    DevCodingProblem: "Dev Coding Problems",
+    VideoTutorial: "Video Tutorials",
+  };
 
-    if (dayOfWeek === 0 && currentWeek.length > 0) {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const isCurrentYear = selectedYear === currentYear;
+
+  allDates.forEach((date) => {
+    currentWeek.push(date);
+    if (currentWeek.length === 7) {
       weeks.push(currentWeek);
       currentWeek = [];
     }
-    currentWeek.push(date);
-
-    if (index === allDates.length - 1 && currentWeek.length > 0) {
-      while (currentWeek.length < 7) {
-        currentWeek.push({ ...emptyDay, activities: { ...emptyDay.activities } });
-      }
-      weeks.push(currentWeek);
-    }
   });
+  if (currentWeek.length > 0) {
+    while (currentWeek.length < 7) {
+      currentWeek.push({ ...emptyDay, activities: { ...emptyDay.activities } });
+    }
+    weeks.push(currentWeek);
+  }
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  /** One label per month: place at the week containing the 1st. Compute via day-of-year to avoid duplicates. */
   const monthLabels = useMemo(() => {
     const labels: { month: string; weekIndex: number }[] = [];
-    let lastMonth = -1;
-
-    weeks.forEach((week, weekIndex) => {
-      const firstValidDate = week.find((day) => day.date !== "");
-      if (firstValidDate) {
-        const month = new Date(firstValidDate.date).getMonth();
-        if (month !== lastMonth) {
-          labels.push({ month: months[month], weekIndex });
-          lastMonth = month;
-        }
+    for (let m = 0; m < 12; m++) {
+      const firstOfMonth = new Date(selectedYear, m, 1);
+      const dayOfYear = Math.floor((firstOfMonth.getTime() - new Date(selectedYear, 0, 0).getTime()) / 86400000);
+      const weekIndex = Math.floor((dayOfYear + isoMondayOffset) / 7);
+      if (weekIndex >= 0 && weekIndex < weeks.length) {
+        labels.push({ month: months[m], weekIndex });
       }
-    });
+    }
     return labels;
-  }, [weeks]);
+  }, [weeks.length, selectedYear, isoMondayOffset]);
 
   const getColor = (level: number) => {
     switch (level) {
@@ -162,20 +166,23 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
     }
   };
 
-  const cellSize = 14;
-  const cellGap = 4;
+  const cellSize = 16;
+  const cellGap = 1;
 
   return (
     <Paper
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid",
+        borderColor: "divider",
         borderRadius: 3,
         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
         backgroundColor: "#ffffff",
+        overflow: "hidden",
       }}
     >
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -189,24 +196,27 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box
             sx={{
-              width: 48,
-              height: 48,
-              borderRadius: 2,
-              background: "linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.06) 100%)",
+              width: 56,
+              height: 56,
+              borderRadius: 2.5,
+              background: "linear-gradient(145deg, #34d399 0%, #22c55e 50%, #16a34a 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              boxShadow: "0 4px 16px rgba(34, 197, 94, 0.4), 0 0 0 1px rgba(255,255,255,0.2) inset",
+              position: "relative",
+              overflow: "hidden",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                inset: 0,
+                background: `linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%)`,
+                borderRadius: "inherit",
+                pointerEvents: "none",
+              },
             }}
           >
-            <Box
-              component="span"
-              sx={{
-                fontSize: 24,
-                lineHeight: 1,
-              }}
-            >
-              📊
-            </Box>
+            <IconWrapper icon="mdi:chart-box-outline" size={28} color="#fff" style={{ position: "relative", zIndex: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
           </Box>
           <Box>
             <Typography
@@ -221,7 +231,7 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
               Activity
             </Typography>
             <Typography variant="body2" sx={{ color: "#6b7280", fontSize: "0.875rem", mt: 0.25 }}>
-              Your learning activity this year
+              {subtitle}
             </Typography>
           </Box>
         </Box>
@@ -233,15 +243,16 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
               borderRadius: 2,
               fontWeight: 600,
               fontSize: "0.9375rem",
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
               "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#e5e7eb",
+                borderColor: "divider",
               },
               "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#0a66c2",
+                borderColor: "primary.main",
               },
               "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#0a66c2",
-                borderWidth: "2px",
+                borderColor: "primary.main",
+                borderWidth: 2,
               },
             }}
           >
@@ -254,8 +265,60 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
         </FormControl>
       </Box>
 
-      {/* Heatmap - Full width */}
-      <Box sx={{ overflowX: "auto", pb: 1, width: "100%" }}>
+      {/* Summary stats */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: { xs: 1.5, sm: 2 },
+          flexWrap: "wrap",
+          mb: 2.5,
+          pb: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: 2,
+            bgcolor: (t) => alpha(t.palette.success.main, 0.1),
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <IconWrapper icon="mdi:calendar-check" size={18} color="#16a34a" />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#166534" }}>
+            {stats.daysActive}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#6b7280" }}>
+            days active
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: 2,
+            bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <IconWrapper icon="mdi:layers" size={18} color="#0a66c2" />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#0a66c2" }}>
+            {stats.totalActivities}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#6b7280" }}>
+            activities
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Heatmap - Full width, centered */}
+      <Box sx={{ overflowX: "auto", pb: 1, width: "100%", display: "flex", justifyContent: "center" }}>
         <Box sx={{ display: "flex", gap: 2, minWidth: "fit-content" }}>
           {/* Day labels */}
           <Box
@@ -343,28 +406,63 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
                 >
                   {week.map((day, dayIndex) =>
                     day.level === -1 ? (
-                      <Box key={dayIndex} sx={{ width: cellSize, height: cellSize }} />
+                      <Box key={dayIndex} sx={{ width: cellSize, height: cellSize, display: "flex", alignItems: "center", justifyContent: "center" }} />
                     ) : (
                       <Tooltip
                         key={dayIndex}
                         title={
-                          <Box sx={{ whiteSpace: "pre-line", py: 0.5, px: 0.5 }}>
-                            {formatTooltipContent(day)}
+                          <Box sx={{ py: 0.5, px: 0.5, maxWidth: 220 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1, color: "#fff" }}>
+                              {day.date}
+                            </Typography>
+                            {day.count === 0 ? (
+                              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>No activities</Typography>
+                            ) : (
+                              <>
+                                <Typography variant="caption" sx={{ display: "block", mb: 0.5, fontWeight: 600, color: "#fff" }}>
+                                  {day.count} {day.count === 1 ? "activity" : "activities"}
+                                </Typography>
+                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
+                                  {Object.entries(day.activities)
+                                    .filter(([, c]) => c > 0)
+                                    .map(([key, count]) => (
+                                      <Typography key={key} variant="caption" sx={{ color: "rgba(255,255,255,0.85)" }}>
+                                        {activityLabels[key] ?? key}: {count}
+                                      </Typography>
+                                    ))}
+                                </Box>
+                              </>
+                            )}
                           </Box>
                         }
                         arrow
+                        slotProps={{
+                          tooltip: {
+                            sx: {
+                              bgcolor: "grey.900",
+                              "& .MuiTooltip-arrow": { color: "grey.900" },
+                            },
+                          },
+                        }}
                       >
                         <Box
                           sx={{
                             width: cellSize,
                             height: cellSize,
-                            borderRadius: "3px",
+                            borderRadius: "4px",
                             backgroundColor: getColor(day.level),
                             cursor: "pointer",
-                            transition: "all 0.2s",
+                            transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                            outline: day.date === todayStr && isCurrentYear ? "2px solid #111827" : "none",
+                            outlineOffset: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
                             "&:hover": {
-                              transform: "scale(1.25)",
-                              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                              transform: "scale(1.2)",
+                              boxShadow: "0 3px 10px rgba(0, 0, 0, 0.2)",
+                              zIndex: 1,
                             },
                           }}
                         />
@@ -383,28 +481,39 @@ export function ActivityHeatmap({ heatmapData }: ActivityHeatmapProps) {
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 1.5,
+          justifyContent: "center",
+          gap: 2,
           mt: 2.5,
+          pt: 2,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          flexWrap: "wrap",
         }}
       >
-        <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
-          Less
-        </Typography>
-        {[0, 1, 2, 3, 4].map((level) => (
-          <Box
-            key={level}
-            sx={{
-              width: cellSize,
-              height: cellSize,
-              borderRadius: "3px",
-              backgroundColor: getColor(level),
-            }}
-          />
-        ))}
-        <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
-          More
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, justifyContent: "center" }}>
+          <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
+            Less
+          </Typography>
+          {[0, 1, 2, 3, 4].map((level) => (
+            <Box
+              key={level}
+              sx={{
+                width: cellSize,
+                height: cellSize,
+                borderRadius: "4px",
+                backgroundColor: getColor(level),
+              }}
+            />
+          ))}
+          <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
+            More
+          </Typography>
+        </Box>
+        {isCurrentYear && (
+          <Typography variant="caption" sx={{ color: "#9ca3af", fontSize: "0.75rem" }}>
+            Today highlighted with outline
+          </Typography>
+        )}
       </Box>
     </Paper>
   );

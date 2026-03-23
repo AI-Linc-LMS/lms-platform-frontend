@@ -51,6 +51,9 @@ import {
   type SkillItem,
   type ContentMappingItem,
 } from "@/lib/services/admin/admin-scorecard.service";
+import { profileService } from "@/lib/services/profile.service";
+import { HeatmapData } from "@/lib/services/profile.service";
+import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { ScorecardData } from "@/lib/types/scorecard.types";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
@@ -67,6 +70,7 @@ import { ActionPanelSection } from "@/components/scorecard/detailed/ActionPanelS
 
 const MODULE_OPTIONS = [
   { id: "overview", label: "Student Overview" },
+  { id: "activity_heatmap", label: "Activity Heatmap" },
   { id: "learning_consumption", label: "Learning Consumption" },
   { id: "performance_trends", label: "Performance Trends" },
   { id: "skill_scorecard", label: "Skill Scorecard" },
@@ -273,6 +277,7 @@ export default function AdminScorecardPage() {
   const [assignModalSearch, setAssignModalSearch] = useState("");
   const [contentTab, setContentTab] = useState<"course" | "assessments">("course");
   const [assignModalContentTab, setAssignModalContentTab] = useState<"course" | "assessments">("course");
+  const [heatmapData, setHeatmapData] = useState<HeatmapData | null>(null);
 
   const stats = useMemo(
     () => ({
@@ -497,6 +502,7 @@ export default function AdminScorecardPage() {
   useEffect(() => {
     if (!selectedStudent) {
       setScorecardData(null);
+      setHeatmapData(null);
       return;
     }
     setLoadingScorecard(true);
@@ -508,6 +514,7 @@ export default function AdminScorecardPage() {
         setScorecardData(null);
       })
       .finally(() => setLoadingScorecard(false));
+    profileService.getUserActivityHeatmap(undefined, undefined, selectedStudent.id).then(setHeatmapData).catch(() => setHeatmapData(null));
   }, [selectedStudent, showToast]);
 
   const handleDragEnd = (result: DropResult) => {
@@ -1215,6 +1222,10 @@ export default function AdminScorecardPage() {
                     switch (sectionId) {
                       case "overview":
                         return <StudentOverviewSection key={sectionId} data={scorecardData.overview} readOnly />;
+                      case "activity_heatmap":
+                        return heatmapData ? (
+                          <ActivityHeatmap key={sectionId} heatmapData={heatmapData} subtitle="Learning activity this year" />
+                        ) : null;
                       case "learning_consumption":
                         return <LearningConsumptionSection key={sectionId} data={scorecardData.learningConsumption} />;
                       case "performance_trends":
