@@ -61,6 +61,39 @@ function stripHtmlForPdf(s: string): string {
     .trim();
 }
 
+function decodeHtmlEntitiesForPdf(s: string): string {
+  if (!s) return "";
+  if (typeof document !== "undefined") {
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = s;
+    return textarea.value;
+  }
+  return s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function extractCodeTextForPdf(s: string): string {
+  if (!s) return "";
+  if (typeof DOMParser !== "undefined") {
+    try {
+      const doc = new DOMParser().parseFromString(s, "text/html");
+      const pre = doc.querySelector("pre");
+      const source = pre?.textContent ?? doc.body.textContent ?? "";
+      return decodeHtmlEntitiesForPdf(source).replace(/\r\n/g, "\n").trim();
+    } catch {
+      // Fallback below
+    }
+  }
+  const preMatch = s.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+  const source = preMatch?.[1] ?? s.replace(/<[^>]*>/g, " ");
+  return decodeHtmlEntitiesForPdf(source).replace(/\r\n/g, "\n").trim();
+}
+
 function getQuizOptionsForPdf(options: Record<string, string>) {
   const keys =
     Object.keys(options).length > 0
@@ -886,14 +919,46 @@ export function generateAssessmentResultPdfVector(
 
     for (let ci = 0; ci < codingResponses.length; ci++) {
       const c = codingResponses[ci]!;
+      const codingMeta = c as {
+        problem_statement?: string;
+        input_format?: string;
+        output_format?: string;
+        constraints?: string;
+        sample_input?: string;
+        sample_output?: string;
+      };
       const title = stripHtmlForPdf(c.title || `Problem ${c.problem_id}`);
       const passed = c.passed_test_cases ?? 0;
       const totalTc = c.total_test_cases ?? 0;
       const summary = `${passed}/${totalTc} tests passed${
         c.all_test_cases_passed ? " · all passed" : ""
       }`;
+      const detailRows = [
+        {
+          label: "Problem",
+          value: stripHtmlForPdf(codingMeta.problem_statement ?? ""),
+        },
+        { label: "Input", value: stripHtmlForPdf(codingMeta.input_format ?? "") },
+        {
+          label: "Output",
+          value: stripHtmlForPdf(codingMeta.output_format ?? ""),
+        },
+        {
+          label: "Constraints",
+          value: stripHtmlForPdf(codingMeta.constraints ?? ""),
+        },
+        {
+          label: "Sample input",
+          value: stripHtmlForPdf(codingMeta.sample_input ?? ""),
+        },
+        {
+          label: "Sample output",
+          value: stripHtmlForPdf(codingMeta.sample_output ?? ""),
+        },
+      ].filter((row) => row.value);
 
-      const code = (c.submitted_code ?? "").replace(/\r\n/g, "\n");
+      
+      const code = extractCodeTextForPdf(c.submitted_code ?? "");
       const codeLines = code ? code.split("\n") : [];
       let codeLineCount = 0;
       pdf.setFont("courier", "normal");
@@ -904,9 +969,15 @@ export function generateAssessmentResultPdfVector(
       }
       pdf.setFont("helvetica", "normal");
       const titleLines = pdf.splitTextToSize(title, contentW - 10).length;
+      const detailLineCount = detailRows.reduce((sum, row) => {
+        const wrapped = pdf.splitTextToSize(`${row.label}: ${row.value}`, contentW - 12);
+        return sum + wrapped.length;
+      }, 0);
       ensureSpace(
         20 +
           titleLines * 4.5 +
+          detailLineCount * 4.2 +
+          (detailRows.length > 0 ? 6 : 0) +
           12 +
           Math.min(codeLineCount, MAX_CODE_LINES_PER_PROBLEM) * CODE_LINE_MM +
           20,
@@ -943,6 +1014,21 @@ export function generateAssessmentResultPdfVector(
         pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
         pdf.text(`Difficulty: ${c.difficulty_level}`, margin + 5, cy);
         cy += 5;
+      }
+      if (detailRows.length > 0) {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        setInk();
+        for (const row of detailRows) {
+          const wrapped = pdf.splitTextToSize(
+            `${row.label}: ${row.value}`,
+            contentW - 12,
+          );
+          ensureSpace(wrapped.length * 4.2 + 1.5);
+          pdf.text(wrapped, margin + 5, cy);
+          cy += wrapped.length * 4.2 + 1.5;
+        }
+        cy += 2;
       }
 
       setInk();
