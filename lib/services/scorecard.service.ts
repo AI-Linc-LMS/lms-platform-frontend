@@ -26,7 +26,7 @@ export const scorecardService = {
   getPerformanceTrends: async (granularity: PerformanceTrendsGranularity): Promise<PerformanceTrends> => {
     const clientId = config.clientId;
     const response = await apiClient.get<Record<string, unknown>>(
-      `/api/clients/${clientId}/student/scorecard/performance-trends/`,
+      `/api/scorecard/clients/${clientId}/student/scorecard/performance-trends/`,
       { params: { granularity } }
     );
     return mapPerformanceTrendsFromApi(response.data);
@@ -35,7 +35,9 @@ export const scorecardService = {
   getScorecardData: async () => {
     const clientId = config.clientId;
     try {
-      const response = await apiClient.get<ScorecardApiPayload>(`/api/clients/${clientId}/student/scorecard/`);
+      const response = await apiClient.get<ScorecardApiPayload>(
+        `/api/scorecard/clients/${clientId}/student/scorecard/`
+      );
       const result = scorecardFromApiPayload(response.data);
       return await mergeProfilePicture(result);
     } catch (error) {
@@ -45,7 +47,7 @@ export const scorecardService = {
   },
 
   getScorecardDataForPdf: async (pdfToken: string, clientId: string) => {
-    const url = `${config.apiBaseUrl}/api/clients/${clientId}/student/scorecard/?pdf_token=${encodeURIComponent(pdfToken)}`;
+    const url = `${config.apiBaseUrl}/api/scorecard/clients/${clientId}/student/scorecard/?pdf_token=${encodeURIComponent(pdfToken)}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("Invalid or expired PDF link");
     const data = (await res.json()) as ScorecardApiPayload;
@@ -54,7 +56,7 @@ export const scorecardService = {
 
   exportScorecardPdf: async (): Promise<Blob> => {
     const clientId = config.clientId;
-    const response = await apiClient.get(`/api/clients/${clientId}/student/scorecard/export/pdf/`, {
+    const response = await apiClient.get(`/api/scorecard/clients/${clientId}/student/scorecard/export/pdf/`, {
       responseType: "blob",
     });
     return response.data as Blob;

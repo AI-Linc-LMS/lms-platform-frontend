@@ -50,8 +50,6 @@ export interface ArticleMetrics {
   read: number;
   averageReadingTime: number; // in minutes
   expectedReadingTime: number; // in minutes
-  markedAsHelpful: number;
-  efficiencyPercentage?: number;
 }
 
 export interface PracticeMetrics {

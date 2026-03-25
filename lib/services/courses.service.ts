@@ -373,16 +373,6 @@ export const coursesService = {
     return response.data;
   },
 
-  /** Mark an article as helpful (idempotent). Used for scorecard "articles marked as helpful" count. */
-  markArticleHelpful: async (
-    courseId: number,
-    contentId: number
-  ): Promise<{ message: string }> => {
-    const endpoint = `/activity/clients/${config.clientId}/courses/${courseId}/content/${contentId}/?activity_type=Article&sub_type=mark_helpful`;
-    const response = await apiClient.post(endpoint, {});
-    return response.data;
-  },
-
   // Coding Problem: Run Code
   runCode: async (
     courseId: number,

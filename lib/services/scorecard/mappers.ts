@@ -110,8 +110,6 @@ export function mapLearningConsumptionFromApi(api: Record<string, unknown>): Lea
     read: num(a.read),
     averageReadingTime: num(a.average_reading_time_minutes),
     expectedReadingTime: num(a.expected_reading_time_minutes),
-    markedAsHelpful: num(a.marked_as_helpful),
-    efficiencyPercentage: numOrUndefined(a.efficiency_percentage),
   };
 
   const practice = {
@@ -667,7 +665,6 @@ export function getEmptyLearningConsumption(): LearningConsumption {
       read: 0,
       averageReadingTime: 0,
       expectedReadingTime: 0,
-      markedAsHelpful: 0,
     },
     practice: {
       mcqsAttempted: 0,

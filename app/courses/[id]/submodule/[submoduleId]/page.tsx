@@ -1114,10 +1114,6 @@ export default function SubmoduleDetailPage() {
                     await refreshStreakAfterCompletion();
                   }
                 }}
-                onMarkHelpful={async () => {
-                  if (!selectedContentId) return;
-                  await coursesService.markArticleHelpful(courseId, selectedContentId);
-                }}
               />
             ) : (
               <Box

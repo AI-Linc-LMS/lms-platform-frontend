@@ -1,6 +1,17 @@
 "use client";
 
-import { Box, Typography, Paper, Grid, LinearProgress, Tooltip as MuiTooltip, IconButton } from "@mui/material";
+import type { ReactNode } from "react";
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  LinearProgress,
+  Tooltip as MuiTooltip,
+  IconButton,
+  Chip,
+} from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LearningConsumption } from "@/lib/types/scorecard.types";
@@ -82,21 +93,130 @@ const CONTENT_CARD = {
   },
 };
 
-const MINI_STAT = {
-  p: 1.25,
-  borderRadius: 1.5,
-  width: "100%",
-  height: 64,
-  minHeight: 64,
-  minWidth: 0,
-  boxSizing: "border-box" as const,
-  bgcolor: "action.selected",
-  border: "1px solid",
-  borderColor: "divider",
-  display: "flex",
-  flexDirection: "column" as const,
-  justifyContent: "center",
-};
+function contentTypeMiniStatSx(accent: string, mode: "light" | "dark") {
+  return {
+    p: 1.5,
+    borderRadius: 2,
+    width: "100%",
+    minHeight: 72,
+    minWidth: 0,
+    boxSizing: "border-box" as const,
+    bgcolor: alpha(accent, mode === "dark" ? 0.14 : 0.06),
+    border: "1px solid",
+    borderColor: alpha(accent, mode === "dark" ? 0.3 : 0.2),
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "center",
+    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+  };
+}
+
+interface ContentTypeBreakdownCardProps {
+  accentColor: string;
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  completionPct: number;
+  children: ReactNode;
+}
+
+function ContentTypeBreakdownCard({
+  accentColor,
+  icon,
+  title,
+  subtitle,
+  completionPct,
+  children,
+}: ContentTypeBreakdownCardProps) {
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  return (
+    <Box
+      component={motion.div}
+      variants={staggerItem}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.2 }}
+      sx={{
+        ...CONTENT_CARD,
+        position: "relative",
+        overflow: "hidden",
+        borderTopWidth: 3,
+        borderTopStyle: "solid",
+        borderTopColor: accentColor,
+        bgcolor: alpha(accentColor, mode === "dark" ? 0.1 : 0.025),
+        "&:hover": {
+          boxShadow: 2,
+          borderColor: alpha(accentColor, mode === "dark" ? 0.55 : 0.4),
+        },
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 1.5,
+          mb: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: 1 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 2,
+              bgcolor: accentColor,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: `0 6px 20px ${alpha(accentColor, 0.28)}`,
+            }}
+          >
+            {icon}
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+              {title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              {subtitle}
+            </Typography>
+          </Box>
+        </Box>
+        <Chip
+          label={`${completionPct}%`}
+          size="small"
+          sx={{
+            height: 28,
+            fontWeight: 700,
+            flexShrink: 0,
+            bgcolor: alpha(accentColor, mode === "dark" ? 0.22 : 0.12),
+            color: accentColor,
+            border: "1px solid",
+            borderColor: alpha(accentColor, 0.38),
+            "& .MuiChip-label": { px: 1.25 },
+          }}
+        />
+      </Box>
+      <LinearProgress
+        variant="determinate"
+        value={completionPct}
+        sx={{
+          height: 10,
+          borderRadius: 5,
+          mb: 2,
+          bgcolor: alpha(accentColor, 0.12),
+          "& .MuiLinearProgress-bar": {
+            borderRadius: 5,
+            bgcolor: proficiencyBandColor(completionPct),
+          },
+        }}
+      />
+      {children}
+    </Box>
+  );
+}
 
 /** Custom tooltip for Content Completion Overview bar chart */
 function ChartTooltipContent(props: {
@@ -143,10 +263,13 @@ const KPI_TOOLTIPS: Record<string, string> = {
   assessmentsTaken: "Number of assessments the student has attempted or submitted.",
   assessmentsAvailable:
     "Total number of assessments available to the student (from their enrolled courses or assigned to them).",
-  engagementActions: "Rewatches on videos plus articles marked as helpful.",
+  engagementActions: "Video rewatch events across enrolled courses.",
 };
 
 export function LearningConsumptionSection({ data }: LearningConsumptionSectionProps) {
+  const theme = useTheme();
+  const miniStat = (accent: string) => contentTypeMiniStatSx(accent, theme.palette.mode);
+
   const totalContent =
     data.totalContent ??
     data.videos.totalAssigned +
@@ -194,11 +317,6 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
             (assessTotal > 0 ? (data.practice.assessmentsAttempted / assessTotal) * 100 * 0.2 : 0)
         );
 
-  const readingEfficiency =
-    data.articles.efficiencyPercentage ??
-    (data.articles.averageReadingTime > 0 && data.articles.expectedReadingTime > 0
-      ? Math.round((data.articles.expectedReadingTime / data.articles.averageReadingTime) * 100)
-      : 0);
   const skippedVideosCount = data.videos.skippedCount ?? data.videos.skippedVideos?.length ?? 0;
   const totalAssessmentsPresent = data.practice.totalAssessmentsPresent ?? 0;
   const practiceTotalItems =
@@ -238,7 +356,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
     { value: data.practice.assessmentsAttempted, label: "Assessments Taken", tip: KPI_TOOLTIPS.assessmentsTaken },
     { value: totalAssessmentsPresent, label: "Assessments Available", tip: KPI_TOOLTIPS.assessmentsAvailable },
     {
-      value: data.videos.rewatchCount + data.articles.markedAsHelpful,
+      value: data.videos.rewatchCount,
       label: "Engagement Actions",
       tip: KPI_TOOLTIPS.engagementActions,
     },
@@ -375,329 +493,242 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
         ))}
       </Box>
 
-      {/* Content type cards: Videos, Articles, Practice */}
+      {/* By content type — accent cards + tinted stat tiles */}
       <Box
         component={motion.div}
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        sx={{ mb: 0 }}
+        sx={{
+          mb: 0,
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "divider",
+          p: { xs: 2, sm: 2.5, md: 3 },
+          bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.06 : 0.02),
+        }}
       >
         <Box
           component={motion.div}
           variants={staggerItem}
-          sx={{ mb: 2 }}
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "flex-start", sm: "center" },
+            justifyContent: "space-between",
+            gap: 2,
+            mb: 2.5,
+          }}
         >
-          <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-            By content type
-          </Typography>
-        </Box>
-        <Grid container spacing={3} sx={{ alignItems: "stretch" }}>
-          {/* Videos */}
-          <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
             <Box
-              component={motion.div}
-              variants={staggerItem}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.2 }}
-              sx={CONTENT_CARD}
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                border: "1px solid",
+                borderColor: alpha(theme.palette.primary.main, 0.25),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
             >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 1.5,
-                  bgcolor: "primary.main",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <IconWrapper icon="mdi:play-circle" size={22} color="#ffffff" />
-              </Box>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Videos
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {data.videos.completed} of {data.videos.totalAssigned} completed
-                </Typography>
-              </Box>
+              <IconWrapper icon="mdi:view-grid-outline" size={22} color={theme.palette.primary.main} />
             </Box>
-            <LinearProgress
-              variant="determinate"
-              value={videoCompletion}
-              sx={{
-                height: 8,
-                borderRadius: 1,
-                mb: 2,
-                flexShrink: 0,
-                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: proficiencyBandColor(videoCompletion) },
-              }}
-            />
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <Grid container spacing={1}>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Avg Watch
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {data.videos.averageWatchPercentage}%
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Rewatches
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {data.videos.rewatchCount}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Engagement
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {data.videos.engagementCount != null ? videoEngagement : `${videoEngagement}%`}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Skipped
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} color="error.main">
-                      {skippedVideosCount}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
+            <Box>
+              <Typography variant="h6" fontWeight={700} color="text.primary">
+                By content type
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, maxWidth: 560 }}>
+                Completion and detail metrics for videos, articles, and practice—aligned with the overview chart above.
+              </Typography>
             </Box>
           </Box>
-        </Grid>
+        </Box>
 
-        {/* Articles */}
-        <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex" }}>
-          <Box
-            component={motion.div}
-            variants={staggerItem}
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.2 }}
-            sx={CONTENT_CARD}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 1.5,
-                  bgcolor: "success.main",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <IconWrapper icon="mdi:book-open" size={22} color="#ffffff" />
-              </Box>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Articles
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {data.articles.read} of {data.articles.totalAssigned} read
-                </Typography>
-              </Box>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={articleCompletion}
-              sx={{
-                height: 8,
-                borderRadius: 1,
-                mb: 2,
-                flexShrink: 0,
-                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: proficiencyBandColor(articleCompletion) },
-              }}
-            />
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <Grid container spacing={1}>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Avg Time
+        <Grid container spacing={3} sx={{ alignItems: "stretch" }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex" }}>
+            <ContentTypeBreakdownCard
+              accentColor={theme.palette.primary.main}
+              icon={<IconWrapper icon="mdi:play-circle" size={24} color="#ffffff" />}
+              title="Videos"
+              subtitle={`${data.videos.completed} of ${data.videos.totalAssigned} completed`}
+              completionPct={videoCompletion}
+            >
+              <Box sx={{ flex: 1, minHeight: 0 }}>
+                <Grid container spacing={1.5}>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.primary.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Avg watch
                       </Typography>
-                      <MuiTooltip
-                        title="Average time you actually spent reading each article (from when you opened it until you clicked Mark as read)."
-                        placement="top"
-                        arrow
-                      >
-                        <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                          <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
-                        </IconButton>
-                      </MuiTooltip>
-                    </Box>
-                    <Typography variant="body2" fontWeight={700}>
-                      {data.articles.averageReadingTime}m
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Expected
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {data.videos.averageWatchPercentage}%
                       </Typography>
-                      <MuiTooltip
-                        title="Mean of the estimated reading time (in minutes) across all assigned articles."
-                        placement="top"
-                        arrow
-                      >
-                        <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                          <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
-                        </IconButton>
-                      </MuiTooltip>
                     </Box>
-                    <Typography variant="body2" fontWeight={700}>
-                      {data.articles.expectedReadingTime}m
-                    </Typography>
-                  </Box>
+                  </Grid>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.primary.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Rewatches
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {data.videos.rewatchCount}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.primary.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Engagement
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {data.videos.engagementCount != null ? videoEngagement : `${videoEngagement}%`}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.primary.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Skipped
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700} color="error.main" sx={{ mt: 0.25 }}>
+                        {skippedVideosCount}
+                      </Typography>
+                    </Box>
+                  </Grid>
                 </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Efficiency
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={700}
-                      color={readingEfficiency > 100 ? "success.main" : "warning.main"}
-                    >
-                      {readingEfficiency}%
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Helpful
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} color="success.main">
-                      {data.articles.markedAsHelpful}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
-          </Box>
-        </Grid>
+              </Box>
+            </ContentTypeBreakdownCard>
+          </Grid>
 
-        {/* Practice */}
-        <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex" }}>
-          <Box
-            component={motion.div}
-            variants={staggerItem}
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.2 }}
-            sx={CONTENT_CARD}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 1.5,
-                  bgcolor: "warning.main",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <IconWrapper icon="mdi:clipboard-check" size={22} color="#ffffff" />
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex" }}>
+            <ContentTypeBreakdownCard
+              accentColor={theme.palette.success.main}
+              icon={<IconWrapper icon="mdi:book-open" size={24} color="#ffffff" />}
+              title="Articles"
+              subtitle={`${data.articles.read} of ${data.articles.totalAssigned} read`}
+              completionPct={articleCompletion}
+            >
+              <Box sx={{ flex: 1, minHeight: 0 }}>
+                <Grid container spacing={1.5}>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.success.main)}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                          Avg time
+                        </Typography>
+                        <MuiTooltip
+                          title="Average time you spent reading each article (open through Mark as read)."
+                          placement="top"
+                          arrow
+                        >
+                          <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
+                            <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
+                          </IconButton>
+                        </MuiTooltip>
+                      </Box>
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {data.articles.averageReadingTime}m
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.success.main)}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                          Expected
+                        </Typography>
+                        <MuiTooltip
+                          title="Mean estimated reading time (minutes) across assigned articles."
+                          placement="top"
+                          arrow
+                        >
+                          <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
+                            <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
+                          </IconButton>
+                        </MuiTooltip>
+                      </Box>
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {data.articles.expectedReadingTime}m
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
               </Box>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Practice & Assessments
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {data.practice.mcqsAttempted} of {data.practice.mcqsTotal} MCQs
-                </Typography>
+            </ContentTypeBreakdownCard>
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex" }}>
+            <ContentTypeBreakdownCard
+              accentColor={theme.palette.warning.main}
+              icon={<IconWrapper icon="mdi:clipboard-check" size={24} color="#ffffff" />}
+              title="Practice & assessments"
+              subtitle={`${data.practice.mcqsAttempted} of ${data.practice.mcqsTotal} MCQs`}
+              completionPct={mcqCompletion}
+            >
+              <Box sx={{ flex: 1, minHeight: 0 }}>
+                <Grid container spacing={1.5}>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.warning.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Quizzes in course
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {quizzesInCourseTotal}
+                        <Box component="span" sx={{ fontWeight: 500, color: "text.secondary", ml: 0.75, fontSize: "0.8rem" }}>
+                          {quizzesPending} pending
+                        </Box>
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.warning.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Assessments
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {data.practice.assessmentsAttempted}
+                        <Box component="span" sx={{ color: "error.main", fontWeight: 500, ml: 0.75, fontSize: "0.8rem" }}>
+                          {data.practice.assessmentsMissed} missed
+                        </Box>
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.warning.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Engagement
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        fontWeight={700}
+                        sx={{ mt: 0.25, color: proficiencyBandColor(practiceEngagement) }}
+                      >
+                        {practiceEngagement}%
+                        <Box component="span" sx={{ fontWeight: 500, color: "text.secondary", ml: 0.75, fontSize: "0.8rem" }}>
+                          {practiceDone} / {practiceTotalItems}
+                        </Box>
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={6}>
+                    <Box sx={miniStat(theme.palette.warning.main)}>
+                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        Total items
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
+                        {practiceTotalItems}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
               </Box>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={mcqCompletion}
-              sx={{
-                height: 8,
-                borderRadius: 1,
-                mb: 2,
-                flexShrink: 0,
-                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: proficiencyBandColor(mcqCompletion) },
-              }}
-            />
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <Grid container spacing={1}>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Quizzes in course
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {quizzesInCourseTotal}
-                      <Box component="span" sx={{ fontWeight: 300, ml: 1 }}>
-                        ({quizzesPending} pending)
-                      </Box>
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Assessments
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {data.practice.assessmentsAttempted}
-                      <Box component="span" sx={{ color: "error.main", fontWeight: 300, ml: 1 }}>
-                        ({data.practice.assessmentsMissed} missed)
-                      </Box>
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={6}>
-                  <Box sx={MINI_STAT}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Engagement
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ color: proficiencyBandColor(practiceEngagement) }}>
-                      {practiceEngagement}%
-                      <Box component="span" sx={{ fontWeight: 300, ml: 1 }}>
-                        ({practiceDone} of {practiceTotalItems})
-                      </Box>
-                    </Typography>
-                  </Box>
-                </Grid>
-              <Grid size={6}>
-                <Box sx={MINI_STAT}>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Total Items
-                  </Typography>
-                  <Typography variant="body2" fontWeight={700}>
-                    {practiceTotalItems}
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-            </Box>
-          </Box>
+            </ContentTypeBreakdownCard>
+          </Grid>
         </Grid>
-      </Grid>
       </Box>
     </Paper>
   );

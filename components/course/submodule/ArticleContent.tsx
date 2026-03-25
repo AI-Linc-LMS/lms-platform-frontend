@@ -4,7 +4,7 @@ import { Paper, Typography, Box, Chip, LinearProgress, Button } from "@mui/mater
 import { useTranslation } from "react-i18next";
 import { ContentDetail } from "@/lib/services/courses.service";
 import { useEffect, useRef, useState } from "react";
-import { AccessTime, CheckCircleOutline, ThumbUp, ThumbUpOutlined } from "@mui/icons-material";
+import { AccessTime, CheckCircleOutline } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -119,18 +119,14 @@ const articleBodySx = {
 
 interface ArticleContentProps {
   content: ContentDetail;
-  courseId: number;
   onArticleComplete?: (readTimeMinutes: number) => void;
-  onMarkHelpful?: () => void | Promise<void>;
   /** When true, article is already completed (e.g. from progress); hide "Mark as read" and show completed state */
   isCompleted?: boolean;
 }
 
-export function ArticleContent({ 
-  content, 
-  courseId,
+export function ArticleContent({
+  content,
   onArticleComplete,
-  onMarkHelpful,
   isCompleted = false,
 }: ArticleContentProps) {
   const { t } = useTranslation("common");
@@ -138,8 +134,6 @@ export function ArticleContent({
   const readStartTimeRef = useRef<number>(Date.now());
   const [readProgress, setReadProgress] = useState(0);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
-  const [hasMarkedHelpful, setHasMarkedHelpful] = useState(false);
-  const [markingHelpful, setMarkingHelpful] = useState(false);
   const readingTimeMinutes = content.details?.reading_time_minutes || 
     Math.ceil((content.details?.content?.length || 0) / 1000) || 5; // Estimate: 1000 chars per minute
 
@@ -175,17 +169,6 @@ export function ArticleContent({
     onArticleComplete(readTimeMinutes);
   };
 
-  const handleMarkHelpful = async () => {
-    if (hasMarkedHelpful || !onMarkHelpful || markingHelpful) return;
-    setMarkingHelpful(true);
-    try {
-      await onMarkHelpful();
-      setHasMarkedHelpful(true);
-    } finally {
-      setMarkingHelpful(false);
-    }
-  };
-
   const articleContent = content.details?.content || content.details?.description || "";
   const isMarkdown = articleContent ? looksLikeMarkdown(articleContent) : false;
 
@@ -216,7 +199,7 @@ export function ArticleContent({
         </Box>
       )}
 
-      {/* Reading Time Chip + Mark as read + Helpful */}
+      {/* Reading Time Chip + Mark as read */}
       <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
         <Chip
           icon={<AccessTime sx={{ fontSize: 16 }} />}
@@ -256,38 +239,6 @@ export function ArticleContent({
           >
             {t("courses.markAsRead")}
           </Button>
-        )}
-        {onMarkHelpful != null && (
-          hasMarkedHelpful ? (
-            <Chip
-              icon={<ThumbUp sx={{ fontSize: 16 }} />}
-              label="Marked as helpful"
-              size="small"
-              sx={{
-                backgroundColor: "#dbeafe",
-                color: "#1d4ed8",
-                fontWeight: 500,
-              }}
-            />
-          ) : (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<ThumbUpOutlined />}
-              onClick={handleMarkHelpful}
-              disabled={markingHelpful}
-              sx={{
-                borderColor: "#3b82f6",
-                color: "#2563eb",
-                "&:hover": {
-                  borderColor: "#2563eb",
-                  backgroundColor: "rgba(37, 99, 235, 0.04)",
-                },
-              }}
-            >
-              {markingHelpful ? "…" : "Helpful"}
-            </Button>
-          )
         )}
       </Box>
 
