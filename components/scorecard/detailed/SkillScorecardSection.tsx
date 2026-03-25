@@ -17,7 +17,8 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Skill } from "@/lib/types/scorecard.types";
-
+import { gradeLevelGradient, proficiencyBandColor } from "@/lib/utils/scorecard-visual";
+import { ProgressRingChart, HorizontalMiniBarChart } from "@/components/charts";
 const CARD_STYLE = {
   p: 2.5,
   borderRadius: 2,
@@ -67,17 +68,6 @@ const SKILL_TOOLTIPS = {
     coding: "Average of (passed test cases / total test cases) × 100 for each coding attempt.",
   },
 };
-import { ProgressRingChart } from "../charts/ProgressRingChart";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
 
 interface SkillScorecardSectionProps {
   skills: Skill[];
@@ -87,39 +77,6 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"proficiency" | "name">("proficiency");
   const [breakdownModalSkill, setBreakdownModalSkill] = useState<Skill | null>(null);
-
-  const getGradeColor = (level: string) => {
-    switch (level) {
-      case "Interview-Ready":
-        return "#10b981";
-      case "Advanced":
-        return "#0a66c2";
-      case "Intermediate":
-        return "#f59e0b";
-      default:
-        return "#9ca3af";
-    }
-  };
-
-  const getGradeGradient = (level: string) => {
-    switch (level) {
-      case "Interview-Ready":
-        return "linear-gradient(135deg, #10b981 0%, #059669 100%)";
-      case "Advanced":
-        return "linear-gradient(135deg, #0a66c2 0%, #004182 100%)";
-      case "Intermediate":
-        return "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-      default:
-        return "linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)";
-    }
-  };
-
-  const getProficiencyColor = (score: number) => {
-    if (score >= 80) return "#10b981";
-    if (score >= 60) return "#0a66c2";
-    if (score >= 40) return "#f59e0b";
-    return "#ef4444";
-  };
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
@@ -255,7 +212,7 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
           </Grid>
           <Grid size={{ xs: 6, sm: 3 }}>
             <Box sx={SUMMARY_STAT_CARD}>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: getProficiencyColor(summaryStats.avgProficiency), fontSize: "1.5rem" }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: proficiencyBandColor(summaryStats.avgProficiency), fontSize: "1.5rem" }}>
                 {summaryStats.avgProficiency}%
               </Typography>
               <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.75rem" }}>
@@ -370,7 +327,7 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
       {/* Skill Cards - unified style */}
       <Grid container spacing={2}>
         {filteredAndSortedSkills.map((skill) => {
-          const proficiencyColor = getProficiencyColor(skill.proficiencyScore);
+          const proficiencyColor = proficiencyBandColor(skill.proficiencyScore);
           const breakdownChartData = breakdownData(skill);
           const hasBreakdownItems = breakdownConfig(skill).some((c) => c.items.length > 0);
 
@@ -406,7 +363,7 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
                         label={skill.level}
                         size="small"
                         sx={{
-                          background: getGradeGradient(skill.level),
+                          background: gradeLevelGradient(skill.level),
                           color: "#ffffff",
                           fontWeight: 700,
                           fontSize: "0.75rem",
@@ -527,32 +484,7 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
                   <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.7rem", fontWeight: 600, mb: 1, display: "block" }}>
                     Performance Breakdown
                   </Typography>
-                  <ResponsiveContainer width="100%" height={90}>
-                    <BarChart data={breakdownChartData} layout="vertical" margin={{ top: 5, right: 0, bottom: 5, left: 0 }}>
-                      <XAxis type="number" domain={[0, 100]} hide />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        tick={{ fill: "#666666", fontSize: 11 }}
-                        width={60}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#ffffff",
-                          border: "1px solid rgba(0,0,0,0.08)",
-                          borderRadius: "6px",
-                          padding: "4px 8px",
-                          fontSize: "0.75rem",
-                        }}
-                        formatter={(value: number | undefined) => [value != null ? `${value}%` : "—", "Score"]}
-                      />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                        {breakdownChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <HorizontalMiniBarChart data={breakdownChartData} height={90} />
                   {hasBreakdownItems && (
                     <Button
                       size="small"
@@ -628,8 +560,8 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
                 alignItems: "center",
                 gap: 1.5,
                 p: 2.5,
-                background: `linear-gradient(135deg, ${getProficiencyColor(breakdownModalSkill.proficiencyScore)}18 0%, ${getProficiencyColor(breakdownModalSkill.proficiencyScore)}08 100%)`,
-                borderBottom: `2px solid ${getProficiencyColor(breakdownModalSkill.proficiencyScore)}40`,
+                background: `linear-gradient(135deg, ${proficiencyBandColor(breakdownModalSkill.proficiencyScore)}18 0%, ${proficiencyBandColor(breakdownModalSkill.proficiencyScore)}08 100%)`,
+                borderBottom: `2px solid ${proficiencyBandColor(breakdownModalSkill.proficiencyScore)}40`,
               }}
             >
               <Box
@@ -637,14 +569,14 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  backgroundColor: getProficiencyColor(breakdownModalSkill.proficiencyScore) + "30",
+                  backgroundColor: `${proficiencyBandColor(breakdownModalSkill.proficiencyScore)}30`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
                 }}
               >
-                <IconWrapper icon="mdi:chart-box-outline" size={24} color={getProficiencyColor(breakdownModalSkill.proficiencyScore)} />
+                <IconWrapper icon="mdi:chart-box-outline" size={24} color={proficiencyBandColor(breakdownModalSkill.proficiencyScore)} />
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography component="span" sx={{ fontWeight: 700, fontSize: "1.25rem", color: "#111827", display: "block" }}>
@@ -750,8 +682,8 @@ export function SkillScorecardSection({ skills }: SkillScorecardSectionProps) {
                                       height: 24,
                                       fontSize: "0.75rem",
                                       fontWeight: 700,
-                                      backgroundColor: getProficiencyColor(item.score) + "25",
-                                      color: getProficiencyColor(item.score),
+                                      backgroundColor: `${proficiencyBandColor(item.score ?? 0)}25`,
+                                      color: proficiencyBandColor(item.score ?? 0),
                                       border: "none",
                                       flexShrink: 0,
                                     }}

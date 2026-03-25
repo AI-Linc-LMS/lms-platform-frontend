@@ -2,7 +2,7 @@
 
 import { Box, Typography, Paper } from "@mui/material";
 import { ComparativeInsights } from "@/lib/types/scorecard.types";
-import { ComparisonChart } from "../charts/ComparisonChart";
+import { ComparisonChart } from "@/components/charts";
 
 interface ComparativeInsightsSectionProps {
   data: ComparativeInsights;

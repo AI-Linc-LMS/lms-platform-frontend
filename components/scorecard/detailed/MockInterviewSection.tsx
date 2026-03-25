@@ -3,7 +3,7 @@
 import { Box, Typography, Paper, Grid, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { MockInterviewPerformance } from "@/lib/types/scorecard.types";
-import { SkillRadarChart } from "../charts/SkillRadarChart";
+import { SkillRadarChart } from "@/components/charts";
 
 interface MockInterviewSectionProps {
   data: MockInterviewPerformance;

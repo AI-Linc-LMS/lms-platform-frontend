@@ -4,7 +4,8 @@ import { Box, Typography, Paper, Grid, LinearProgress, Tooltip as MuiTooltip, Ic
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LearningConsumption } from "@/lib/types/scorecard.types";
-import { ProgressRingChart } from "../charts/ProgressRingChart";
+import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
+import { ProgressRingChart } from "@/components/charts";
 import {
   BarChart,
   Bar,
@@ -96,20 +97,6 @@ const MINI_STAT = {
   flexDirection: "column" as const,
   justifyContent: "center",
 };
-
-function getCompletionColor(percentage: number) {
-  if (percentage >= 80) return "#10b981";
-  if (percentage >= 60) return "#0a66c2";
-  if (percentage >= 40) return "#f59e0b";
-  return "#ef4444";
-}
-
-function getEngagementColor(score: number) {
-  if (score >= 80) return "#10b981";
-  if (score >= 60) return "#0a66c2";
-  if (score >= 40) return "#f59e0b";
-  return "#ef4444";
-}
 
 /** Custom tooltip for Content Completion Overview bar chart */
 function ChartTooltipContent(props: {
@@ -245,6 +232,18 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
     },
   ];
 
+  const kpiItems = [
+    { value: totalContentDisplay, label: "Total Content", tip: KPI_TOOLTIPS.totalContent },
+    { value: totalCompleted, label: "Total Completed", tip: KPI_TOOLTIPS.totalCompleted },
+    { value: data.practice.assessmentsAttempted, label: "Assessments Taken", tip: KPI_TOOLTIPS.assessmentsTaken },
+    { value: totalAssessmentsPresent, label: "Assessments Available", tip: KPI_TOOLTIPS.assessmentsAvailable },
+    {
+      value: data.videos.rewatchCount + data.articles.markedAsHelpful,
+      label: "Engagement Actions",
+      tip: KPI_TOOLTIPS.engagementActions,
+    },
+  ];
+
   return (
     <Paper elevation={0} sx={SECTION_PAPER}>
       {/* Header */}
@@ -352,81 +351,28 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
           width: "100%",
         }}
       >
-        <Box component={motion.div} variants={staggerItem} sx={{ ...STAT_CARD, flex: "1 1 0", minWidth: { xs: "100%", sm: 140 } }}>
-              <Typography variant="h4" fontWeight={700} color="text.primary">
-                {totalContentDisplay}
+        {kpiItems.map((kpi, i) => (
+          <Box
+            key={kpi.label}
+            component={motion.div}
+            variants={staggerItem}
+            sx={{ ...STAT_CARD, flex: "1 1 0", minWidth: { xs: "100%", sm: 140 } }}
+          >
+            <Typography variant="h4" fontWeight={700} color="text.primary">
+              {kpi.value}
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.25, mt: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                {kpi.label}
               </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.25, mt: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Total Content
-                </Typography>
-                <MuiTooltip title={KPI_TOOLTIPS.totalContent} placement="top" arrow>
-                  <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                    <IconWrapper icon="mdi:information-outline" size={16} color="currentColor" />
-                  </IconButton>
-                </MuiTooltip>
-              </Box>
+              <MuiTooltip title={kpi.tip} placement="top" arrow>
+                <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
+                  <IconWrapper icon="mdi:information-outline" size={16} color="currentColor" />
+                </IconButton>
+              </MuiTooltip>
             </Box>
-        <Box component={motion.div} variants={staggerItem} sx={{ ...STAT_CARD, flex: "1 1 0", minWidth: { xs: "100%", sm: 140 } }}>
-              <Typography variant="h4" fontWeight={700} color="text.primary">
-                {totalCompleted}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.25, mt: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Total Completed
-                </Typography>
-                <MuiTooltip title={KPI_TOOLTIPS.totalCompleted} placement="top" arrow>
-                  <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                    <IconWrapper icon="mdi:information-outline" size={16} color="currentColor" />
-                  </IconButton>
-                </MuiTooltip>
-              </Box>
-            </Box>
-        <Box component={motion.div} variants={staggerItem} sx={{ ...STAT_CARD, flex: "1 1 0", minWidth: { xs: "100%", sm: 140 } }}>
-              <Typography variant="h4" fontWeight={700} color="text.primary">
-                {data.practice.assessmentsAttempted}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.25, mt: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Assessments Taken
-                </Typography>
-                <MuiTooltip title={KPI_TOOLTIPS.assessmentsTaken} placement="top" arrow>
-                  <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                    <IconWrapper icon="mdi:information-outline" size={16} color="currentColor" />
-                  </IconButton>
-                </MuiTooltip>
-              </Box>
-            </Box>
-        <Box component={motion.div} variants={staggerItem} sx={{ ...STAT_CARD, flex: "1 1 0", minWidth: { xs: "100%", sm: 140 } }}>
-              <Typography variant="h4" fontWeight={700} color="text.primary">
-                {totalAssessmentsPresent}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.25, mt: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Assessments Available
-                </Typography>
-                <MuiTooltip title={KPI_TOOLTIPS.assessmentsAvailable} placement="top" arrow>
-                  <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                    <IconWrapper icon="mdi:information-outline" size={16} color="currentColor" />
-                  </IconButton>
-                </MuiTooltip>
-              </Box>
-            </Box>
-        <Box component={motion.div} variants={staggerItem} sx={{ ...STAT_CARD, flex: "1 1 0", minWidth: { xs: "100%", sm: 140 } }}>
-              <Typography variant="h4" fontWeight={700} color="text.primary">
-                {data.videos.rewatchCount + data.articles.markedAsHelpful}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.25, mt: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Engagement Actions
-                </Typography>
-                <MuiTooltip title={KPI_TOOLTIPS.engagementActions} placement="top" arrow>
-                  <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                    <IconWrapper icon="mdi:information-outline" size={16} color="currentColor" />
-                  </IconButton>
-                </MuiTooltip>
-              </Box>
-            </Box>
+          </Box>
+        ))}
       </Box>
 
       {/* Content type cards: Videos, Articles, Practice */}
@@ -487,7 +433,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                 borderRadius: 1,
                 mb: 2,
                 flexShrink: 0,
-                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: getCompletionColor(videoCompletion) },
+                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: proficiencyBandColor(videoCompletion) },
               }}
             />
             <Box sx={{ flex: 1, minHeight: 0 }}>
@@ -577,7 +523,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                 borderRadius: 1,
                 mb: 2,
                 flexShrink: 0,
-                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: getCompletionColor(articleCompletion) },
+                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: proficiencyBandColor(articleCompletion) },
               }}
             />
             <Box sx={{ flex: 1, minHeight: 0 }}>
@@ -693,7 +639,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                 borderRadius: 1,
                 mb: 2,
                 flexShrink: 0,
-                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: getCompletionColor(mcqCompletion) },
+                "& .MuiLinearProgress-bar": { borderRadius: 1, bgcolor: proficiencyBandColor(mcqCompletion) },
               }}
             />
             <Box sx={{ flex: 1, minHeight: 0 }}>
@@ -729,7 +675,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                     <Typography variant="caption" color="text.secondary" display="block">
                       Engagement
                     </Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ color: getEngagementColor(practiceEngagement) }}>
+                    <Typography variant="body2" fontWeight={700} sx={{ color: proficiencyBandColor(practiceEngagement) }}>
                       {practiceEngagement}%
                       <Box component="span" sx={{ fontWeight: 300, ml: 1 }}>
                         ({practiceDone} of {practiceTotalItems})

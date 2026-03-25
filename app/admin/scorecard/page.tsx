@@ -66,6 +66,8 @@ import { BehavioralMetricsSection } from "@/components/scorecard/detailed/Behavi
 import { ComparativeInsightsSection } from "@/components/scorecard/detailed/ComparativeInsightsSection";
 import { AchievementsSection } from "@/components/scorecard/detailed/AchievementsSection";
 import { ActionPanelSection } from "@/components/scorecard/detailed/ActionPanelSection";
+import { ContentSkillRow } from "@/components/admin/scorecard/ContentSkillRow";
+import { buildAdminScorecardContentTree } from "@/lib/utils/admin-scorecard-content-tree";
 // import { ExportShareSection } from "@/components/scorecard/detailed/ExportShareSection";
 
 const MODULE_OPTIONS = [
@@ -115,130 +117,6 @@ const statCardVariants = {
     transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
-
-function ContentSkillRow({
-  item,
-  skills,
-  contentType,
-  updating,
-  onUpdate,
-  hideLocation,
-}: {
-  item: ContentMappingItem;
-  skills: SkillItem[];
-  contentType: ContentType;
-  updating: boolean;
-  onUpdate: (skillIds: number[]) => void;
-  hideLocation?: boolean;
-}) {
-  const [selectedIds, setSelectedIds] = useState<number[]>(item.skill_ids);
-
-  useEffect(() => {
-    setSelectedIds(item.skill_ids);
-  }, [item.skill_ids]);
-
-  const handleChange = (skillId: number, checked: boolean) => {
-    const next = checked
-      ? [...selectedIds, skillId]
-      : selectedIds.filter((id) => id !== skillId);
-    setSelectedIds(next);
-    onUpdate(next);
-  };
-
-  const skillCount = selectedIds.length;
-
-  const locations = item.locations ?? [];
-  const locationBreadcrumb = hideLocation ? [] : locations
-    .map((loc) => [loc.course_name, loc.module_title, loc.submodule_title].filter(Boolean).join(" › "))
-    .filter(Boolean);
-  const typeIcon = CONTENT_TABS.find((t) => t.id === contentType)?.icon ?? "mdi:file";
-
-  return (
-    <Box
-      component={motion.div}
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
-        transition: "all 0.2s ease",
-        position: "relative",
-        overflow: "hidden",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          bgcolor: skillCount > 0 ? "primary.main" : "transparent",
-          opacity: 0.6,
-        },
-        "&:hover": {
-          borderColor: "primary.main",
-          bgcolor: (t) => alpha(t.palette.primary.main, 0.03),
-          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        },
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1.5, mb: 1.5 }}>
-        <Box sx={{ flex: 1, minWidth: 0, pl: 0.5, display: "flex", alignItems: "flex-start", gap: 0.75 }}>
-          <Box sx={{ flexShrink: 0, color: "text.secondary", mt: 0.25 }}>
-            <IconWrapper icon={typeIcon} size={18} />
-          </Box>
-          <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.4 }} title={item.title}>
-            {item.title.length > 60 ? `${item.title.slice(0, 60)}…` : item.title}
-          </Typography>
-          {locationBreadcrumb.length > 0 && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mt: 0.5, lineHeight: 1.3 }}
-              title={locationBreadcrumb.join("; ")}
-            >
-              {locationBreadcrumb.length === 1
-                ? locationBreadcrumb[0]
-                : `${locationBreadcrumb[0]}${locationBreadcrumb.length > 1 ? ` (+${locationBreadcrumb.length - 1} more)` : ""}`}
-            </Typography>
-          )}
-          </Box>
-        </Box>
-        {skillCount > 0 && (
-          <Chip
-            label={skillCount}
-            size="small"
-            color="primary"
-            sx={{ fontWeight: 600, minWidth: 28, height: 24, flexShrink: 0 }}
-          />
-        )}
-      </Box>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-        {skills.map((s) => (
-          <Chip
-            key={s.id}
-            label={s.name}
-            size="small"
-            color={selectedIds.includes(s.id) ? "primary" : "default"}
-            variant={selectedIds.includes(s.id) ? "filled" : "outlined"}
-            onClick={() => handleChange(s.id, !selectedIds.includes(s.id))}
-            disabled={updating}
-            sx={{
-              cursor: updating ? "default" : "pointer",
-              fontWeight: 500,
-              transition: "all 0.15s",
-              "&:hover": { transform: updating ? "none" : "scale(1.02)" },
-            }}
-          />
-        ))}
-      </Box>
-    </Box>
-  );
-}
 
 export default function AdminScorecardPage() {
   const router = useRouter();
@@ -294,129 +172,15 @@ export default function AdminScorecardPage() {
     return skills.filter((s) => s.name.toLowerCase().includes(q));
   }, [skills, skillSearchQuery]);
 
-  /** Tree: Assessments (flat) + Course → Module → Submodule → Content items */
-  const contentTree = useMemo(() => {
-    if (!contentMapping) return [];
-    const q = contentSearchQuery.toLowerCase().trim();
-    const result: ({ kind: "assessments"; items: { type: ContentType; id: number; item: ContentMappingItem }[] } | { kind: "course"; courseName: string; modules: { moduleTitle: string; submodules: { submoduleTitle: string; items: { type: ContentType; id: number; item: ContentMappingItem }[] }[] }[] })[] = [];
+  const contentTree = useMemo(
+    () => buildAdminScorecardContentTree(contentMapping, contentSearchQuery),
+    [contentMapping, contentSearchQuery]
+  );
 
-    const assessments = (contentMapping.assessments ?? []).filter((item) => !q || item.title.toLowerCase().includes(q));
-    if (assessments.length > 0) {
-      result.push({
-        kind: "assessments",
-        items: assessments.map((item) => ({ type: "assessments" as ContentType, id: item.id, item })),
-      });
-    }
-
-    const courseMap = new Map<string, { modules: Map<string, { submodules: Map<string, { type: ContentType; id: number; item: ContentMappingItem }[]> }> }>();
-    const seen = new Set<string>();
-
-    const add = (type: ContentType, item: ContentMappingItem) => {
-      if (type === "assessments") return;
-      const key = `${type}-${item.id}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      if (q && !item.title.toLowerCase().includes(q)) return;
-      const locs = item.locations?.length ? item.locations : [{ course_name: "Other", module_title: "—", submodule_title: "—" }];
-      const loc = locs[0];
-      const courseName = loc.course_name || "Other";
-      const moduleTitle = loc.module_title || "—";
-      const submoduleTitle = loc.submodule_title || "—";
-
-      if (!courseMap.has(courseName)) {
-        courseMap.set(courseName, { modules: new Map() });
-      }
-      const course = courseMap.get(courseName)!;
-      if (!course.modules.has(moduleTitle)) {
-        course.modules.set(moduleTitle, { submodules: new Map() });
-      }
-      const mod = course.modules.get(moduleTitle)!;
-      if (!mod.submodules.has(submoduleTitle)) {
-        mod.submodules.set(submoduleTitle, []);
-      }
-      mod.submodules.get(submoduleTitle)!.push({ type, id: item.id, item });
-    };
-
-    for (const [type, items] of Object.entries(contentMapping) as [ContentType, ContentMappingItem[]][]) {
-      if (type === "assessments") continue;
-      for (const item of items ?? []) add(type, item);
-    }
-
-    for (const [courseName, course] of Array.from(courseMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-      const modules: { moduleTitle: string; submodules: { submoduleTitle: string; items: { type: ContentType; id: number; item: ContentMappingItem }[] }[] }[] = [];
-      for (const [moduleTitle, mod] of Array.from(course.modules.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-        const submodules: { submoduleTitle: string; items: { type: ContentType; id: number; item: ContentMappingItem }[] }[] = [];
-        for (const [submoduleTitle, items] of Array.from(mod.submodules.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-          if (items.length > 0) submodules.push({ submoduleTitle, items });
-        }
-        if (submodules.length > 0) modules.push({ moduleTitle, submodules });
-      }
-      if (modules.length > 0) result.push({ kind: "course", courseName, modules });
-    }
-    return result;
-  }, [contentMapping, contentSearchQuery]);
-
-  /** Same tree for Assign modal, filtered by assignModalSearch */
-  const assignModalContentTree = useMemo(() => {
-    if (!contentMapping) return [];
-    const q = assignModalSearch.toLowerCase().trim();
-    const result: ({ kind: "assessments"; items: { type: ContentType; id: number; item: ContentMappingItem }[] } | { kind: "course"; courseName: string; modules: { moduleTitle: string; submodules: { submoduleTitle: string; items: { type: ContentType; id: number; item: ContentMappingItem }[] }[] }[] })[] = [];
-
-    const assessments = (contentMapping.assessments ?? []).filter((item) => !q || item.title.toLowerCase().includes(q));
-    if (assessments.length > 0) {
-      result.push({
-        kind: "assessments",
-        items: assessments.map((item) => ({ type: "assessments" as ContentType, id: item.id, item })),
-      });
-    }
-
-    const courseMap = new Map<string, { modules: Map<string, { submodules: Map<string, { type: ContentType; id: number; item: ContentMappingItem }[]> }> }>();
-    const seen = new Set<string>();
-
-    const add = (type: ContentType, item: ContentMappingItem) => {
-      if (type === "assessments") return;
-      const key = `${type}-${item.id}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      if (q && !item.title.toLowerCase().includes(q)) return;
-      const locs = item.locations?.length ? item.locations : [{ course_name: "Other", module_title: "—", submodule_title: "—" }];
-      const loc = locs[0];
-      const courseName = loc.course_name || "Other";
-      const moduleTitle = loc.module_title || "—";
-      const submoduleTitle = loc.submodule_title || "—";
-
-      if (!courseMap.has(courseName)) {
-        courseMap.set(courseName, { modules: new Map() });
-      }
-      const course = courseMap.get(courseName)!;
-      if (!course.modules.has(moduleTitle)) {
-        course.modules.set(moduleTitle, { submodules: new Map() });
-      }
-      const mod = course.modules.get(moduleTitle)!;
-      if (!mod.submodules.has(submoduleTitle)) {
-        mod.submodules.set(submoduleTitle, []);
-      }
-      mod.submodules.get(submoduleTitle)!.push({ type, id: item.id, item });
-    };
-
-    for (const [type, items] of Object.entries(contentMapping) as [ContentType, ContentMappingItem[]][]) {
-      if (type === "assessments") continue;
-      for (const item of items ?? []) add(type, item);
-    }
-
-    for (const [courseName, course] of Array.from(courseMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-      const modules: { moduleTitle: string; submodules: { submoduleTitle: string; items: { type: ContentType; id: number; item: ContentMappingItem }[] }[] }[] = [];
-      for (const [moduleTitle, mod] of Array.from(course.modules.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-        const submodules: { submoduleTitle: string; items: { type: ContentType; id: number; item: ContentMappingItem }[] }[] = [];
-        for (const [submoduleTitle, items] of Array.from(mod.submodules.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-          if (items.length > 0) submodules.push({ submoduleTitle, items });
-        }
-        if (submodules.length > 0) modules.push({ moduleTitle, submodules });
-      }
-      if (modules.length > 0) result.push({ kind: "course", courseName, modules });
-    }
-    return result;
-  }, [contentMapping, assignModalSearch]);
+  const assignModalContentTree = useMemo(
+    () => buildAdminScorecardContentTree(contentMapping, assignModalSearch),
+    [contentMapping, assignModalSearch]
+  );
 
   const loadStudents = useCallback(async () => {
     setLoadingStudents(true);

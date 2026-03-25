@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Typography, Chip } from "@mui/material";
-import { ProgressRingChart } from "../charts/ProgressRingChart";
+import { ProgressRingChart } from "@/components/charts";
 import { PerformanceLevel } from "@/lib/types/scorecard.types";
 
 interface OverallScoreCardProps {

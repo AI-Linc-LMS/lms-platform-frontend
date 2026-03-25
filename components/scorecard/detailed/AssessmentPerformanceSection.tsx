@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Box, Typography, Paper, Grid, LinearProgress, Button } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AssessmentPerformance } from "@/lib/types/scorecard.types";
-import { ProgressRingChart } from "../charts/ProgressRingChart";
+import { ProgressRingChart } from "@/components/charts";
 import {
   BarChart,
   Bar,
@@ -19,6 +19,7 @@ import {
   Legend,
 } from "recharts";
 import { AssessmentResultModal } from "@/components/assessment/result/AssessmentResultModal";
+import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
 
 interface AssessmentPerformanceSectionProps {
   assessments: AssessmentPerformance[];
@@ -38,13 +39,6 @@ export function AssessmentPerformanceSection({
     setResultModalSlug(slug);
     setResultModalName(name);
     setResultModalOpen(true);
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "#10b981";
-    if (score >= 60) return "#0a66c2";
-    if (score >= 40) return "#f59e0b";
-    return "#ef4444";
   };
 
   const getScoreGradient = (score: number) => {
@@ -643,7 +637,7 @@ export function AssessmentPerformanceSection({
       {/* Assessment Cards */}
       <Grid container spacing={3}>
         {assessments.map((assessment) => {
-          const scoreColor = getScoreColor(assessment.score);
+          const scoreColor = proficiencyBandColor(assessment.score);
 
           const difficultyData = [
             {

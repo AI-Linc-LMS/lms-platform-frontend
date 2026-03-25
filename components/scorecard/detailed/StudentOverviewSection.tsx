@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Box, Typography, Paper, Grid, Chip, Divider, Tooltip, Avatar } from "@mui/material";
+import { Box, Typography, Paper, Grid, Chip, Tooltip, Avatar } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { ProgressRingChart } from "../charts/ProgressRingChart";
+import { ProgressRingChart } from "@/components/charts";
 import { formatTimeSpent } from "@/lib/services/scorecard.service";
 import { StudentOverview } from "@/lib/types/scorecard.types";
+import { gradeLevelColor, gradeLevelGradient, statusBadgeColor } from "@/lib/utils/scorecard-visual";
 
 interface StudentOverviewSectionProps {
   data: StudentOverview;
@@ -14,42 +15,9 @@ interface StudentOverviewSectionProps {
 }
 
 export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectionProps) {
-  const getGradeColor = () => {
-    switch (data.overallGrade) {
-      case "Interview-Ready":
-        return "#10b981";
-      case "Advanced":
-        return "#0a66c2";
-      case "Intermediate":
-        return "#f59e0b";
-      default:
-        return "#9ca3af";
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (data.statusBadge) {
-      case "Green":
-        return "#10b981";
-      case "Amber":
-        return "#f59e0b";
-      default:
-        return "#ef4444";
-    }
-  };
-
-  const getGradeGradient = () => {
-    switch (data.overallGrade) {
-      case "Interview-Ready":
-        return "linear-gradient(135deg, #10b981 0%, #059669 100%)";
-      case "Advanced":
-        return "linear-gradient(135deg, #0a66c2 0%, #004182 100%)";
-      case "Intermediate":
-        return "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
-      default:
-        return "linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)";
-    }
-  };
+  const gradeColor = gradeLevelColor(data.overallGrade);
+  const gradeGrad = gradeLevelGradient(data.overallGrade);
+  const statusColor = statusBadgeColor(data.statusBadge);
 
   // Daily performance score from API (composite of today's completion, quiz, assessment, mock interview)
   const dailyScoreLabel =
@@ -103,7 +71,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                background: getGradeGradient(),
+                background: gradeGrad,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -178,8 +146,8 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
             sx={{
               p: 3,
               borderRadius: 3,
-              background: `linear-gradient(135deg, ${getGradeColor()}15 0%, ${getGradeColor()}05 100%)`,
-              border: `2px solid ${getGradeColor()}30`,
+              background: `linear-gradient(135deg, ${gradeColor}15 0%, ${gradeColor}05 100%)`,
+              border: `2px solid ${gradeColor}30`,
               position: "relative",
               overflow: "hidden",
               "&::before": {
@@ -189,7 +157,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 left: 0,
                 right: 0,
                 height: "4px",
-                background: getGradeGradient(),
+                background: gradeGrad,
               },
             }}
           >
@@ -228,7 +196,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     label={data.overallGrade}
                     icon={<IconWrapper icon="mdi:star" size={18} color="#ffffff" />}
                     sx={{
-                      background: getGradeGradient(),
+                      background: gradeGrad,
                       color: "#ffffff",
                       fontWeight: 700,
                       fontSize: "1rem",
@@ -496,13 +464,13 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 borderRadius: 2,
                 minHeight: 150,
                 backgroundColor: "#ffffff",
-                border: `2px solid ${getStatusColor()}40`,
-                background: `linear-gradient(135deg, ${getStatusColor()}15 0%, ${getStatusColor()}05 100%)`,
+                border: `2px solid ${statusColor}40`,
+                background: `linear-gradient(135deg, ${statusColor}15 0%, ${statusColor}05 100%)`,
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  boxShadow: `0 4px 12px ${getStatusColor()}30`,
+                  boxShadow: `0 4px 12px ${statusColor}30`,
                   transform: "translateY(-2px)",
-                  borderColor: `${getStatusColor()}60`,
+                  borderColor: `${statusColor}60`,
                 },
               }}
             >
@@ -512,13 +480,13 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     width: 48,
                     height: 48,
                     borderRadius: "50%",
-                    backgroundColor: `${getStatusColor()}20`,
+                    backgroundColor: `${statusColor}20`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <IconWrapper icon="mdi:flag" size={24} color={getStatusColor()} />
+                  <IconWrapper icon="mdi:flag" size={24} color={statusColor} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <Typography
@@ -536,7 +504,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     <Chip
                       label={data.statusBadge}
                       sx={{
-                        backgroundColor: getStatusColor(),
+                        backgroundColor: statusColor,
                         color: "#ffffff",
                         fontWeight: 700,
                         fontSize: "1rem",

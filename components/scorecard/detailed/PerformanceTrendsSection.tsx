@@ -6,8 +6,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PerformanceTrends } from "@/lib/types/scorecard.types";
 import { scorecardService, PerformanceTrendsGranularity } from "@/lib/services/scorecard.service";
-import { PerformanceLineChart } from "../charts/PerformanceLineChart";
-import { SkillBarChart } from "../charts/SkillBarChart";
+import { SkillBarChart, PerformanceLineChart } from "@/components/charts";
 
 const GRANULARITY_OPTIONS: PerformanceTrendsGranularity[] = ["weekly", "bimonthly", "monthly"];
 
