@@ -56,14 +56,22 @@ export default function ManageStudentsPage() {
   useEffect(() => {
     const loadCourses = async () => {
       try {
-        const coursesData =await adminCoursesService.getCourses();
+        const coursesData = await adminCoursesService.getCourses();
+        const normalizedCourses = Array.isArray(coursesData)
+          ? coursesData
+          : Array.isArray((coursesData as { results?: unknown[] })?.results)
+            ? ((coursesData as { results: unknown[] }).results as unknown[])
+            : [];
         setCourses(
-          coursesData.map((c: any) => ({
-            id: c.id,
-            title: c.title,
-          }))
+          normalizedCourses
+            .map((c) => {
+              const course = c as { id?: number; title?: string };
+              if (typeof course.id !== "number" || !course.title) return null;
+              return { id: course.id, title: course.title };
+            })
+            .filter((c): c is { id: number; title: string } => Boolean(c))
         );
-      } catch (error) {
+      } catch {
         // Silently fail - courses filter is optional
       }
     };
@@ -126,7 +134,7 @@ export default function ManageStudentsPage() {
           )
         );
         const stats = statsResults.flat();
-        let statsMap: Record<number, CourseCompletionStats> = {};
+        const statsMap: Record<number, CourseCompletionStats> = {};
         const studentStatsMap: Record<
           number,
           {
@@ -181,13 +189,21 @@ export default function ManageStudentsPage() {
         });
 
         setCompletionStats(statsMap);
-      } catch (error) {
+      } catch {
       } finally {
         setLoadingStats(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const detail =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { detail?: unknown } } }).response
+          ?.data?.detail === "string"
+          ? (error as { response: { data: { detail: string } } }).response.data.detail
+          : null;
       showToast(
-        error?.response?.data?.detail || t("adminManageStudents.failedToLoadStudents"),
+        detail || t("adminManageStudents.failedToLoadStudents"),
         "error"
       );
       setAllStudents([]);
@@ -228,8 +244,8 @@ export default function ManageStudentsPage() {
 
       // Step 3: Sort (completion_pct and attendance_pct use completionStats)
       const sorted = [...filtered].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number = 0;
+        let bValue: string | number = 0;
 
         switch (sortBy) {
           case "name":
