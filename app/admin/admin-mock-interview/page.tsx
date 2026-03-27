@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Box, Button } from "@mui/material";
+import { Box, Button, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import adminMockInterviewService, {
   type DashboardResponse,
   type ListInterviewsResponse,
@@ -42,6 +43,10 @@ export default function AdminMockInterviewPage() {
   const [tab, setTab] = useState<TabValue>("overview");
   const [days, setDays] = useState(30);
 
+  // Course filter (shared across all tabs)
+  const [courses, setCourses] = useState<Array<{ id: number; title: string }>>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+
   // Dashboard data
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -67,10 +72,39 @@ export default function AdminMockInterviewPage() {
   const [topicsData, setTopicsData] = useState<TopicsResponse | null>(null);
   const [topicsLoading, setTopicsLoading] = useState(false);
 
+  // Load courses for shared filter
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const coursesData = await adminCoursesService.getCourses();
+        const normalizedCourses = Array.isArray(coursesData)
+          ? coursesData
+          : Array.isArray((coursesData as { results?: unknown[] })?.results)
+            ? ((coursesData as { results: unknown[] }).results as unknown[])
+            : [];
+        setCourses(
+          normalizedCourses
+            .map((c) => {
+              const course = c as { id?: number; title?: string };
+              if (typeof course.id !== "number" || !course.title) return null;
+              return { id: course.id, title: course.title };
+            })
+            .filter((c): c is { id: number; title: string } => Boolean(c))
+        );
+      } catch {
+        // Silently fail - course filter is optional
+      }
+    };
+    loadCourses();
+  }, []);
+
   const loadDashboard = useCallback(async () => {
     setDashboardLoading(true);
     try {
-      const data = await adminMockInterviewService.getDashboard(days);
+      const data = await adminMockInterviewService.getDashboard(
+        days,
+        selectedCourseId ? Number(selectedCourseId) : undefined
+      );
       setDashboardData(data);
     } catch (err: unknown) {
       showToast(
@@ -81,7 +115,7 @@ export default function AdminMockInterviewPage() {
     } finally {
       setDashboardLoading(false);
     }
-  }, [days, showToast, t]);
+  }, [days, selectedCourseId, showToast, t]);
 
   const loadInterviews = useCallback(async () => {
     setInterviewsLoading(true);
@@ -92,6 +126,7 @@ export default function AdminMockInterviewPage() {
         sort_by: interviewFilters.sort_by,
         sort_order: interviewFilters.sort_order,
       };
+      if (selectedCourseId) params.course_id = Number(selectedCourseId);
       if (interviewFilters.status) params.status = interviewFilters.status;
       if (interviewFilters.difficulty) params.difficulty = interviewFilters.difficulty;
       if (interviewFilters.topic) params.topic = interviewFilters.topic;
@@ -114,6 +149,7 @@ export default function AdminMockInterviewPage() {
     interviewPage,
     interviewLimit,
     interviewFilters,
+    selectedCourseId,
     showToast,
     t,
   ]);
@@ -127,6 +163,7 @@ export default function AdminMockInterviewPage() {
         sort_order: studentSortOrder,
         page: studentPage,
         limit: studentLimit,
+        course_id: selectedCourseId ? Number(selectedCourseId) : undefined,
       });
       setStudentsData(data);
     } catch (err: unknown) {
@@ -144,6 +181,7 @@ export default function AdminMockInterviewPage() {
     studentSortOrder,
     studentPage,
     studentLimit,
+    selectedCourseId,
     showToast,
     t,
   ]);
@@ -151,7 +189,9 @@ export default function AdminMockInterviewPage() {
   const loadTopics = useCallback(async () => {
     setTopicsLoading(true);
     try {
-      const data = await adminMockInterviewService.getTopics();
+      const data = await adminMockInterviewService.getTopics({
+        course_id: selectedCourseId ? Number(selectedCourseId) : undefined,
+      });
       setTopicsData(data);
     } catch (err: unknown) {
       showToast(
@@ -162,7 +202,7 @@ export default function AdminMockInterviewPage() {
     } finally {
       setTopicsLoading(false);
     }
-  }, [showToast]);
+  }, [selectedCourseId, showToast, t]);
 
   useEffect(() => {
     if (tab === "overview") loadDashboard();
@@ -198,6 +238,7 @@ export default function AdminMockInterviewPage() {
       if (interviewFilters.difficulty) params.difficulty = interviewFilters.difficulty;
       if (interviewFilters.date_from) params.date_from = interviewFilters.date_from;
       if (interviewFilters.date_to) params.date_to = interviewFilters.date_to;
+      if (selectedCourseId) params.course_id = Number(selectedCourseId);
 
       const blob = await adminMockInterviewService.exportCSV(params);
       const url = URL.createObjectURL(blob);
@@ -216,7 +257,7 @@ export default function AdminMockInterviewPage() {
     } finally {
       setExporting(false);
     }
-  }, [interviewFilters, showToast, t]);
+  }, [interviewFilters, selectedCourseId, showToast, t]);
 
   const tabItems: { value: TabValue; label: string; icon: string }[] = [
     { value: "overview", label: t("adminMockInterview.tabOverview"), icon: "mdi:view-dashboard" },
@@ -228,6 +269,7 @@ export default function AdminMockInterviewPage() {
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
+       
         <MockInterviewHeader
           totalInterviews={dashboardData?.overview?.total_interviews}
           activeTab={tab}
@@ -239,51 +281,100 @@ export default function AdminMockInterviewPage() {
           sx={{
             display: "flex",
             flexWrap: "wrap",
-            gap: 1,
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
             mb: 4,
           }}
         >
-          {tabItems.map((item) => {
-            const isActive = tab === item.value;
-            return (
-              <Button
-                key={item.value}
-                variant={isActive ? "contained" : "outlined"}
-                onClick={() => setTab(item.value)}
-                startIcon={
-                  <IconWrapper
-                    icon={item.icon}
-                    size={20}
-                    color={isActive ? "#ffffff" : "#6366f1"}
-                  />
-                }
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "0.9375rem",
-                  px: 2.5,
-                  py: 1.5,
-                  borderRadius: 2,
-                  boxShadow: isActive
-                    ? "0 2px 8px rgba(99, 102, 241, 0.35)"
-                    : "none",
-                  backgroundColor: isActive ? "#6366f1" : "transparent",
-                  borderColor: "#6366f1",
-                  color: isActive ? "#ffffff" : "#6366f1",
-                  "&:hover": {
-                    backgroundColor: isActive ? "#4f46e5" : "#eef2ff",
-                    borderColor: "#4f46e5",
-                    color: isActive ? "#ffffff" : "#4f46e5",
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 1,
+            }}
+          >
+            {tabItems.map((item) => {
+              const isActive = tab === item.value;
+              return (
+                <Button
+                  key={item.value}
+                  variant={isActive ? "contained" : "outlined"}
+                  onClick={() => setTab(item.value)}
+                  startIcon={
+                    <IconWrapper
+                      icon={item.icon}
+                      size={20}
+                      color={isActive ? "#ffffff" : "#6366f1"}
+                    />
+                  }
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "0.9375rem",
+                    px: 2.5,
+                    py: 1.5,
+                    borderRadius: 2,
                     boxShadow: isActive
-                      ? "0 4px 12px rgba(99, 102, 241, 0.4)"
-                      : "0 2px 6px rgba(99, 102, 241, 0.2)",
-                  },
+                      ? "0 2px 8px rgba(99, 102, 241, 0.35)"
+                      : "none",
+                    backgroundColor: isActive ? "#6366f1" : "transparent",
+                    borderColor: "#6366f1",
+                    color: isActive ? "#ffffff" : "#6366f1",
+                    "&:hover": {
+                      backgroundColor: isActive ? "#4f46e5" : "#eef2ff",
+                      borderColor: "#4f46e5",
+                      color: isActive ? "#ffffff" : "#4f46e5",
+                      boxShadow: isActive
+                        ? "0 4px 12px rgba(99, 102, 241, 0.4)"
+                        : "0 2px 6px rgba(99, 102, 241, 0.2)",
+                    },
+                  }}
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              gap: 2,
+              alignItems: "center",
+            }}
+          >
+            <FormControl
+              size="small"
+              sx={{ minWidth: 220 }}
+            >
+              <InputLabel id="mock-interview-course-filter-label">
+                {t("adminManageStudents.filterByCourse")}
+              </InputLabel>
+              <Select
+                labelId="mock-interview-course-filter-label"
+                value={selectedCourseId}
+                label={t("adminManageStudents.filterByCourse")}
+                onChange={(e) => {
+                  setSelectedCourseId(e.target.value);
+                  // Reset pagination when course changes
+                  setInterviewPage(1);
+                  setStudentPage(1);
                 }}
               >
-                {item.label}
-              </Button>
-            );
-          })}
+                <MenuItem value="">
+                  {t("adminManageStudents.allCourses")}
+                </MenuItem>
+                {courses.map((course) => (
+                  <MenuItem key={course.id} value={course.id.toString()}>
+                    {course.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
         </Box>
 
         {tab === "overview" && (

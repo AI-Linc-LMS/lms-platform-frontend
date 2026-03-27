@@ -469,8 +469,13 @@ const adminMockInterviewService = {
   /**
    * Get dashboard overview with KPIs, trends, and top performers
    */
-  getDashboard: async (days?: number): Promise<DashboardResponse> => {
-    const params = days != null ? { days } : {};
+  getDashboard: async (
+    days?: number,
+    courseId?: number
+  ): Promise<DashboardResponse> => {
+    const params: { days?: number; course_id?: number } = {};
+    if (days != null) params.days = days;
+    if (courseId != null) params.course_id = courseId;
     const response = await apiClient.get(`${BASE_URL}/dashboard/`, { params });
     return response.data;
   },
@@ -503,7 +508,7 @@ const adminMockInterviewService = {
    * List all students with mock interview summary statistics
    */
   listStudents: async (
-    params: ListStudentsParams = {}
+    params: ListStudentsParams & { course_id?: number } = {}
   ): Promise<ListStudentsResponse> => {
     const response = await apiClient.get(`${BASE_URL}/students/`, {
       params,
@@ -529,7 +534,7 @@ const adminMockInterviewService = {
    * Get topic-level analytics
    */
   getTopics: async (
-    params: GetTopicsParams = {}
+    params: GetTopicsParams & { course_id?: number } = {}
   ): Promise<TopicsResponse> => {
     const response = await apiClient.get(`${BASE_URL}/topics/`, {
       params,
@@ -540,7 +545,9 @@ const adminMockInterviewService = {
   /**
    * Export mock interview data as CSV
    */
-  exportCSV: async (params: ExportCSVParams = {}): Promise<Blob> => {
+  exportCSV: async (
+    params: ExportCSVParams & { course_id?: number } = {}
+  ): Promise<Blob> => {
     const response = await apiClient.get(`${BASE_URL}/export/`, {
       params,
       responseType: "blob",
