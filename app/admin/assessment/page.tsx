@@ -33,6 +33,7 @@ import {
   isMCQQuestion,
   isCodingQuestion,
 } from "@/lib/services/admin/admin-assessment.service";
+import { useAuth } from "@/lib/auth/auth-context";
 import {
   adminAssessmentEmailJobsService,
   AssessmentEmailJob,
@@ -47,6 +48,7 @@ export default function AssessmentPage() {
   const router = useRouter();
   const theme = useTheme();
   const rtl = theme.direction === "rtl";
+  const { user } = useAuth();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -675,6 +677,13 @@ export default function AssessmentPage() {
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => router.push("/admin/assessment/create")}
+            disabled={
+              !!user &&
+              typeof user.role === "string" &&
+              ["content manager", "content_manager"].includes(
+                user.role.toLowerCase().replace(/\s+/g, " ")
+              )
+            }
             fullWidth={false}
             sx={{
               bgcolor: "#6366f1",

@@ -9,6 +9,9 @@ import {
   InputLabel,
   Paper,
   InputAdornment,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -20,17 +23,17 @@ interface Course {
 
 interface StudentsFiltersProps {
   courses: Course[];
-  selectedCourse: string;
+  selectedCourses: string[];
   status: string;
   searchTerm: string;
-  onCourseChange: (value: string) => void;
+  onCourseChange: (value: string[]) => void;
   onStatusChange: (value: string) => void;
   onSearchChange: (value: string) => void;
 }
 
 export function StudentsFilters({
   courses,
-  selectedCourse,
+  selectedCourses,
   status,
   searchTerm,
   onCourseChange,
@@ -66,14 +69,34 @@ export function StudentsFilters({
           </InputLabel>
           <Select
             labelId="course-filter-label"
-            value={selectedCourse}
-            onChange={(e) => onCourseChange(e.target.value)}
+            multiple
+            value={selectedCourses}
+            onChange={(e) => {
+              const value = e.target.value;
+              onCourseChange(
+                typeof value === "string"
+                  ? value.split(",").filter(Boolean)
+                  : (value as string[])
+              );
+            }}
+            input={<OutlinedInput label={t("adminManageStudents.filterByCourse")} />}
+            renderValue={(selected) => {
+              const selectedIds = selected as string[];
+              if (!selectedIds.length) return t("adminManageStudents.filterByCourse");
+              const titleMap = new Map(courses.map((c) => [String(c.id), c.title]));
+              return selectedIds
+                .map((id) => titleMap.get(id) || id)
+                .join(", ");
+            }}
             label={t("adminManageStudents.filterByCourse")}
           >
-            <MenuItem value="">{t("adminManageStudents.allCourses")}</MenuItem>
             {courses.map((course) => (
               <MenuItem key={course.id} value={course.id.toString()}>
-                {course.title}
+                <Checkbox
+                  size="small"
+                  checked={selectedCourses.includes(course.id.toString())}
+                />
+                <ListItemText primary={course.title} />
               </MenuItem>
             ))}
           </Select>

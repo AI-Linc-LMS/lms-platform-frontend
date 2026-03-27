@@ -10,9 +10,8 @@ import {
   adminStudentService,
   Student,
   CourseCompletionStats,
-  ManageStudentsResponse,
 } from "@/lib/services/admin/admin-student.service";
-import { coursesService } from "@/lib/services/courses.service";
+import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { ManageStudentsHeader } from "../../../components/admin/manage-students/ManageStudentsHeader";
 import { StudentsFilters } from "../../../components/admin/manage-students/StudentsFilters";
 import { StudentsTable } from "../../../components/admin/manage-students/StudentsTable";
@@ -35,11 +34,11 @@ export default function ManageStudentsPage() {
   const [courses, setCourses] = useState<Array<{ id: number; title: string }>>(
     []
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
 
   // Filters
-  const [selectedCourse, setSelectedCourse] = useState<string>("");
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [status, setStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
@@ -57,14 +56,22 @@ export default function ManageStudentsPage() {
   useEffect(() => {
     const loadCourses = async () => {
       try {
-        const coursesData = await coursesService.getCourses();
+        const coursesData = await adminCoursesService.getCourses();
+        const normalizedCourses = Array.isArray(coursesData)
+          ? coursesData
+          : Array.isArray((coursesData as { results?: unknown[] })?.results)
+            ? ((coursesData as { results: unknown[] }).results as unknown[])
+            : [];
         setCourses(
-          coursesData.map((c) => ({
-            id: c.id,
-            title: c.title,
-          }))
+          normalizedCourses
+            .map((c) => {
+              const course = c as { id?: number; title?: string };
+              if (typeof course.id !== "number" || !course.title) return null;
+              return { id: course.id, title: course.title };
+            })
+            .filter((c): c is { id: number; title: string } => Boolean(c))
         );
-      } catch (error) {
+      } catch {
         // Silently fail - courses filter is optional
       }
     };
@@ -74,152 +81,147 @@ export default function ManageStudentsPage() {
   // Load students from API - only when course filter changes or initial load
   // All filtering, sorting, and pagination is done client-side to reduce API calls
   const loadStudents = useCallback(async () => {
+    if (selectedCourses.length === 0) {
+      setAllStudents([]);
+      setCompletionStats({});
+      setLoading(false);
+      setLoadingStats(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const params: {
-        course_id?: number;
-        page: number;
-        limit: number;
-        sort_by: string;
-        sort_order: "asc" | "desc";
-      } = {
-        // Only send course_id to API - all other operations (search, status, sort, pagination) are client-side
-        course_id: selectedCourse ? Number(selectedCourse) : undefined,
-        page: 1,
-        limit: 10000, // Load a large batch for client-side operations (pagination, filtering, sorting)
-        sort_by: "name",
-        sort_order: "asc",
-      };
+      const selectedCourseIds = selectedCourses.map(Number).filter(Number.isFinite);
 
-      const response = await adminStudentService.getManageStudents(params);
+      const studentResponses = await Promise.all(
+        selectedCourseIds.map((courseId) =>
+          adminStudentService.getManageStudents({
+            course_id: courseId,
+            page: 1,
+            limit: 10000,
+            sort_by: "name",
+            sort_order: "asc",
+          })
+        )
+      );
 
-      // Handle response structure: { students: [], pagination: {}, filters_applied: {} }
-      if (!response || !response.students) {
-        setAllStudents([]);
-        return;
-      }
+      const studentMap = new Map<number, Student>();
+      studentResponses.forEach((response) => {
+        (response?.students ?? []).forEach((student) => {
+          const key = student.user_id || student.id;
+          const existing = studentMap.get(key);
+          if (!existing) {
+            studentMap.set(key, student);
+          } else {
+            studentMap.set(key, {
+              ...existing,
+              enrollment_count: Math.max(
+                existing.enrollment_count ?? 0,
+                student.enrollment_count ?? 0
+              ),
+            });
+          }
+        });
+      });
 
-      setAllStudents(response.students);
+      setAllStudents(Array.from(studentMap.values()));
 
       setLoadingStats(true);
       try {
-        const stats = await adminStudentService.getCourseCompletionStats(
-          selectedCourse ? Number(selectedCourse) : undefined
+        const statsResults = await Promise.all(
+          selectedCourseIds.map((courseId) =>
+            adminStudentService.getCourseCompletionStats(courseId)
+          )
         );
-        let statsMap: Record<number, CourseCompletionStats> = {};
+        const stats = statsResults.flat();
+        const statsMap: Record<number, CourseCompletionStats> = {};
+        const studentStatsMap: Record<
+          number,
+          {
+            total_completed: number;
+            total_total: number;
+            total_attended: number;
+            total_attendance_activities: number;
+          }
+        > = {};
 
-        if (selectedCourse) {
-          stats.forEach((stat) => {
-            const studentId = stat.student_id;
-            statsMap[studentId] = stat;
-            allStudents.forEach((student) => {
-              if (student.user_id === studentId || student.id === studentId) {
-                statsMap[student.user_id] = stat;
-                if (student.user_id !== student.id) {
-                  statsMap[student.id] = stat;
-                }
-              }
-            });
-          });
-        } else {
-          const studentStatsMap: Record<
-            number,
-            {
-              total_completed: number;
-              total_total: number;
-              total_attended: number;
-              total_attendance_activities: number;
-              count: number;
-            }
-          > = {};
+        stats.forEach((stat) => {
+          if (!studentStatsMap[stat.student_id]) {
+            studentStatsMap[stat.student_id] = {
+              total_completed: 0,
+              total_total: 0,
+              total_attended: 0,
+              total_attendance_activities: 0,
+            };
+          }
+          studentStatsMap[stat.student_id].total_completed += stat.completed_contents;
+          studentStatsMap[stat.student_id].total_total += stat.total_contents;
+          studentStatsMap[stat.student_id].total_attended += stat.attended_activities;
+          studentStatsMap[stat.student_id].total_attendance_activities +=
+            stat.total_attendance_activities;
+        });
 
-          stats.forEach((stat) => {
-            if (!studentStatsMap[stat.student_id]) {
-              studentStatsMap[stat.student_id] = {
-                total_completed: 0,
-                total_total: 0,
-                total_attended: 0,
-                total_attendance_activities: 0,
-                count: 0,
-              };
-            }
-            studentStatsMap[stat.student_id].total_completed +=
-              stat.completed_contents;
-            studentStatsMap[stat.student_id].total_total += stat.total_contents;
-            studentStatsMap[stat.student_id].total_attended +=
-              stat.attended_activities;
-            studentStatsMap[stat.student_id].total_attendance_activities +=
-              stat.total_attendance_activities;
-            studentStatsMap[stat.student_id].count += 1;
-          });
+        Object.entries(studentStatsMap).forEach(([studentId, aggregated]) => {
+          const completionPercentage =
+            aggregated.total_total > 0
+              ? (aggregated.total_completed / aggregated.total_total) * 100
+              : 0;
+          const attendancePercentage =
+            aggregated.total_attendance_activities > 0
+              ? (aggregated.total_attended /
+                  aggregated.total_attendance_activities) *
+                100
+              : 0;
 
-          statsMap = {};
-          Object.entries(studentStatsMap).forEach(([studentId, aggregated]) => {
-            const completionPercentage =
-              aggregated.total_total > 0
-                ? (aggregated.total_completed / aggregated.total_total) * 100
-                : 0;
-            const attendancePercentage =
-              aggregated.total_attendance_activities > 0
-                ? (aggregated.total_attended /
-                    aggregated.total_attendance_activities) *
-                  100
-                : 0;
-
-            const firstStat = stats.find(
-              (s) => s.student_id === Number(studentId)
-            );
-            if (firstStat) {
-              const mappedStat: CourseCompletionStats = {
-                ...firstStat,
-                completed_contents: aggregated.total_completed,
-                total_contents: aggregated.total_total,
-                completion_percentage: completionPercentage,
-                attended_activities: aggregated.total_attended,
-                total_attendance_activities:
-                  aggregated.total_attendance_activities,
-                attendance_percentage: attendancePercentage,
-              };
-              statsMap[Number(studentId)] = mappedStat;
-              allStudents.forEach((student) => {
-                if (
-                  student.user_id === Number(studentId) ||
-                  student.id === Number(studentId)
-                ) {
-                  statsMap[student.user_id] = mappedStat;
-                  if (student.user_id !== student.id) {
-                    statsMap[student.id] = mappedStat;
-                  }
-                }
-              });
-            }
-          });
-        }
+          const firstStat = stats.find((s) => s.student_id === Number(studentId));
+          if (firstStat) {
+            const mappedStat: CourseCompletionStats = {
+              ...firstStat,
+              completed_contents: aggregated.total_completed,
+              total_contents: aggregated.total_total,
+              completion_percentage: completionPercentage,
+              attended_activities: aggregated.total_attended,
+              total_attendance_activities: aggregated.total_attendance_activities,
+              attendance_percentage: attendancePercentage,
+            };
+            statsMap[Number(studentId)] = mappedStat;
+          }
+        });
 
         setCompletionStats(statsMap);
-      } catch (error) {
+      } catch {
       } finally {
         setLoadingStats(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const detail =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { detail?: unknown } } }).response
+          ?.data?.detail === "string"
+          ? (error as { response: { data: { detail: string } } }).response.data.detail
+          : null;
       showToast(
-        error?.response?.data?.detail || t("adminManageStudents.failedToLoadStudents"),
+        detail || t("adminManageStudents.failedToLoadStudents"),
         "error"
       );
       setAllStudents([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedCourse, showToast, t]);
+  }, [selectedCourses, showToast, t]);
 
   // Load students when course filter changes or on mount
   useEffect(() => {
     loadStudents();
-  }, [selectedCourse]); // Only reload when course changes
+  }, [loadStudents]);
 
   // Client-side filtering, sorting, and pagination
   // This runs entirely in the browser - no API calls for search, status, sort, or pagination changes
-  const hasFilter = Boolean(selectedCourse || status !== "all" || (searchTerm && searchTerm.trim()));
+  const hasFilter = Boolean(
+    selectedCourses.length > 0 || status !== "all" || (searchTerm && searchTerm.trim())
+  );
   const { filteredStudents, paginatedStudents, totalCount, totalPages } =
     useMemo(() => {
       // Step 1: Filter by search term (name or email)
@@ -242,8 +244,8 @@ export default function ManageStudentsPage() {
 
       // Step 3: Sort (completion_pct and attendance_pct use completionStats)
       const sorted = [...filtered].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number = 0;
+        let bValue: string | number = 0;
 
         switch (sortBy) {
           case "name":
@@ -324,8 +326,8 @@ export default function ManageStudentsPage() {
     setPage(1);
   };
 
-  const handleCourseChange = (value: string) => {
-    setSelectedCourse(value);
+  const handleCourseChange = (values: string[]) => {
+    setSelectedCourses(values);
     setPage(1);
     // This will trigger API call via useEffect
   };
@@ -394,7 +396,9 @@ export default function ManageStudentsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `students${selectedCourse ? `-course-${selectedCourse}` : ""}.csv`;
+    link.download = `students${
+      selectedCourses.length > 0 ? `-courses-${selectedCourses.join("-")}` : ""
+    }.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -405,12 +409,12 @@ export default function ManageStudentsPage() {
         <ManageStudentsHeader
           totalCount={totalCount}
           onBulkEnrollClick={() => setBulkEnrollDialogOpen(true)}
-          onDownloadCsv={selectedCourse ? handleDownloadCsv : undefined}
+          onDownloadCsv={selectedCourses.length > 0 ? handleDownloadCsv : undefined}
         />
 
         <StudentsFilters
           courses={courses}
-          selectedCourse={selectedCourse}
+          selectedCourses={selectedCourses}
           status={status}
           searchTerm={searchTerm}
           onCourseChange={handleCourseChange}
@@ -457,7 +461,7 @@ export default function ManageStudentsPage() {
           <StudentsTable
             students={paginatedStudents}
             completionStats={completionStats}
-            selectedCourse={selectedCourse}
+            selectedCourse={selectedCourses[0] ?? ""}
             loading={loading}
             loadingStats={loadingStats}
             sortBy={sortBy}

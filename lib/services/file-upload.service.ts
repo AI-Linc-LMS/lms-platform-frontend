@@ -29,12 +29,12 @@ export interface GetUploadedFilesResponse {
  */
 export const getUploadedFiles = async (
   clientId: number,
-  module?: FileUploadModule
+  module?: FileUploadModule,
 ): Promise<GetUploadedFilesResponse> => {
   const params = module ? { module } : {};
   const response = await apiClient.get<GetUploadedFilesResponse>(
     `/api/clients/${clientId}/upload/`,
-    { params }
+    { params },
   );
   return response.data;
 };
@@ -51,7 +51,7 @@ export const getUploadedFiles = async (
 export const uploadFile = async (
   clientId: number,
   file: File,
-  module: FileUploadModule
+  module: FileUploadModule,
 ): Promise<FileUploadResponse> => {
   const formData = new FormData();
   formData.append("file", file);
@@ -59,7 +59,7 @@ export const uploadFile = async (
 
   const response = await apiClient.post<FileUploadResponse>(
     `/api/clients/${clientId}/upload/`,
-    formData
+    formData,
   );
   return response.data;
 };
