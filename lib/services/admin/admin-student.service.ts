@@ -22,6 +22,8 @@ export interface Student {
   current_streak: number;
   streak_data: boolean[];
   enrollment_count: number;
+  /** Whether the student has saved a resume on their profile */
+  has_saved_resume?: boolean;
   assessment_submissions: number;
   activity_summary: {
     total_activities: number;

@@ -24,13 +24,20 @@ import {
   CourseCompletionStats,
 } from "@/lib/services/admin/admin-student.service";
 
-type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak" | "completion_pct" | "attendance_pct";
+type SortOption =
+  | "name"
+  | "marks"
+  | "last_activity"
+  | "time_spent"
+  | "streak"
+  | "completion_pct"
+  | "attendance_pct"
+  | "saved_resume";
 type SortOrder = "asc" | "desc";
 
 interface StudentsTableProps {
   students: Student[];
   completionStats: Record<number, CourseCompletionStats>;
-  selectedCourse: string;
   loading: boolean;
   loadingStats: boolean;
   sortBy: SortOption;
@@ -60,7 +67,6 @@ const getInitials = (name: string) => {
 export function StudentsTable({
   students,
   completionStats,
-  selectedCourse,
   loading,
   loadingStats,
   sortBy,
@@ -118,7 +124,7 @@ export function StudentsTable({
       >
         <Table
           sx={{
-            minWidth: 800, // Ensure table doesn't get too cramped on mobile
+            minWidth: 920,
           }}
         >
           <TableHead>
@@ -216,6 +222,42 @@ export function StudentsTable({
                 >
                   <IconWrapper icon="mdi:target" size={18} color="#6b7280" />
                 {t("adminManageStudents.mostActive").toUpperCase()}
+                </Box>
+              </TableCell>
+              <TableCell
+                sx={{
+                  fontWeight: 600,
+                  color: "#374151",
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  whiteSpace: "nowrap",
+                  display: { xs: "none", sm: "table-cell" },
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    cursor: "pointer",
+                    "&:hover": { color: "#6366f1" },
+                    transition: "color 0.2s",
+                  }}
+                  onClick={() => onSort("saved_resume")}
+                >
+                  <IconWrapper icon="mdi:file-document-outline" size={18} color="#6b7280" />
+                  <Box
+                    component="span"
+                    sx={{ display: { xs: "none", md: "inline" } }}
+                  >
+                    {t("adminManageStudents.savedResume").toUpperCase()}
+                  </Box>
+                  {getSortIcon("saved_resume", sortBy, sortOrder) && (
+                    <IconWrapper
+                      icon={getSortIcon("saved_resume", sortBy, sortOrder)!}
+                      size={16}
+                      color="inherit"
+                    />
+                  )}
                 </Box>
               </TableCell>
               <TableCell
@@ -494,6 +536,28 @@ export function StudentsTable({
                       >
                         {student.most_active_course || t("adminManageStudents.noActivity")}
                       </Typography>
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 2,
+                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                        display: { xs: "none", sm: "table-cell" },
+                      }}
+                    >
+                      <Chip
+                        label={
+                          student.has_saved_resume
+                            ? t("adminManageStudents.resumeYes")
+                            : t("adminManageStudents.resumeNo")
+                        }
+                        size="small"
+                        sx={{
+                          backgroundColor: student.has_saved_resume ? "#dcfce7" : "#f3f4f6",
+                          color: student.has_saved_resume ? "#166534" : "#6b7280",
+                          fontWeight: 600,
+                          fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                        }}
+                      />
                     </TableCell>
                     <TableCell
                       sx={{

@@ -19,7 +19,15 @@ import { StudentsPagination } from "../../../components/admin/manage-students/St
 import { BulkEnrollmentDialog } from "../../../components/admin/manage-students/BulkEnrollmentDialog";
 import { EnrollmentJobHistory } from "../../../components/admin/manage-students/EnrollmentJobHistory";
 
-type SortOption = "name" | "marks" | "last_activity" | "time_spent" | "streak" | "completion_pct" | "attendance_pct";
+type SortOption =
+  | "name"
+  | "marks"
+  | "last_activity"
+  | "time_spent"
+  | "streak"
+  | "completion_pct"
+  | "attendance_pct"
+  | "saved_resume";
 type SortOrder = "asc" | "desc";
 
 export default function ManageStudentsPage() {
@@ -40,6 +48,8 @@ export default function ManageStudentsPage() {
   // Filters
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [status, setStatus] = useState<string>("all");
+  /** all | yes | no — filter by has_saved_resume */
+  const [resumeFilter, setResumeFilter] = useState<"all" | "yes" | "no">("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Pagination & Sorting
@@ -118,6 +128,9 @@ export default function ManageStudentsPage() {
               enrollment_count: Math.max(
                 existing.enrollment_count ?? 0,
                 student.enrollment_count ?? 0
+              ),
+              has_saved_resume: Boolean(
+                existing.has_saved_resume || student.has_saved_resume
               ),
             });
           }
@@ -220,7 +233,10 @@ export default function ManageStudentsPage() {
   // Client-side filtering, sorting, and pagination
   // This runs entirely in the browser - no API calls for search, status, sort, or pagination changes
   const hasFilter = Boolean(
-    selectedCourses.length > 0 || status !== "all" || (searchTerm && searchTerm.trim())
+    selectedCourses.length > 0 ||
+      status !== "all" ||
+      resumeFilter !== "all" ||
+      (searchTerm && searchTerm.trim())
   );
   const { filteredStudents, paginatedStudents, totalCount, totalPages } =
     useMemo(() => {
@@ -240,6 +256,13 @@ export default function ManageStudentsPage() {
         filtered = filtered.filter((s) => s.is_active);
       } else if (status === "inactive") {
         filtered = filtered.filter((s) => !s.is_active);
+      }
+
+      // Step 2b: Filter by saved resume
+      if (resumeFilter === "yes") {
+        filtered = filtered.filter((s) => s.has_saved_resume === true);
+      } else if (resumeFilter === "no") {
+        filtered = filtered.filter((s) => !s.has_saved_resume);
       }
 
       // Step 3: Sort (completion_pct and attendance_pct use completionStats)
@@ -286,6 +309,10 @@ export default function ManageStudentsPage() {
             bValue = statsB?.attendance_percentage ?? 0;
             break;
           }
+          case "saved_resume":
+            aValue = a.has_saved_resume ? 1 : 0;
+            bValue = b.has_saved_resume ? 1 : 0;
+            break;
           default:
             return 0;
         }
@@ -308,10 +335,21 @@ export default function ManageStudentsPage() {
         totalCount: total,
         totalPages: totalPagesCount,
       };
-    }, [allStudents, completionStats, searchTerm, status, sortBy, sortOrder, page, limit]);
+    }, [
+      allStudents,
+      completionStats,
+      searchTerm,
+      status,
+      resumeFilter,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    ]);
 
   const handleSort = (field: SortOption) => {
-    const isPctColumn = field === "completion_pct" || field === "attendance_pct";
+    const isPctColumn =
+      field === "completion_pct" || field === "attendance_pct" || field === "saved_resume";
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -336,6 +374,11 @@ export default function ManageStudentsPage() {
     setStatus(value);
     setPage(1);
     // Client-side filter, no API call
+  };
+
+  const handleResumeFilterChange = (value: "all" | "yes" | "no") => {
+    setResumeFilter(value);
+    setPage(1);
   };
 
   const handleSearchChange = (value: string) => {
@@ -378,6 +421,7 @@ export default function ManageStudentsPage() {
       t("adminManageStudents.csvHeaderMostActiveCourse"),
       t("adminManageStudents.csvHeaderCompletionPct"),
       t("adminManageStudents.csvHeaderAttendancePct"),
+      t("adminManageStudents.csvHeaderSavedResume"),
     ];
     const rows = filteredStudents.map((student) => {
       const stats = completionStats[student.user_id] ?? completionStats[student.id];
@@ -389,6 +433,9 @@ export default function ManageStudentsPage() {
         escapeCsvValue(student.most_active_course ?? t("adminManageStudents.noActivity")),
         stats ? escapeCsvValue(stats.completion_percentage.toFixed(1)) : t("adminManageStudents.na"),
         stats ? escapeCsvValue(stats.attendance_percentage.toFixed(1)) : t("adminManageStudents.na"),
+        student.has_saved_resume
+          ? t("adminManageStudents.resumeYes")
+          : t("adminManageStudents.resumeNo"),
       ];
     });
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
@@ -416,9 +463,11 @@ export default function ManageStudentsPage() {
           courses={courses}
           selectedCourses={selectedCourses}
           status={status}
+          resumeFilter={resumeFilter}
           searchTerm={searchTerm}
           onCourseChange={handleCourseChange}
           onStatusChange={handleStatusChange}
+          onResumeFilterChange={handleResumeFilterChange}
           onSearchChange={handleSearchChange}
         />
 
@@ -461,7 +510,6 @@ export default function ManageStudentsPage() {
           <StudentsTable
             students={paginatedStudents}
             completionStats={completionStats}
-            selectedCourse={selectedCourses[0] ?? ""}
             loading={loading}
             loadingStats={loadingStats}
             sortBy={sortBy}

@@ -970,6 +970,10 @@
     "mostActive": "الأكثر نشاطاً",
     "completionPct": "نسبة الإكمال %",
     "attendancePct": "نسبة الحضور %",
+    "savedResume": "سيرة محفوظة",
+    "filterSavedResume": "السيرة المحفوظة",
+    "resumeYes": "نعم",
+    "resumeNo": "لا",
     "actions": "إجراءات",
     "noStudentsFound": "لم يتم العثور على طلاب",
     "tryAdjustingFilters": "جرّب تعديل الفلاتر",
@@ -1045,7 +1049,8 @@
     "csvHeaderEnrollmentCount": "عدد التسجيلات",
     "csvHeaderMostActiveCourse": "الدورة الأكثر نشاطاً",
     "csvHeaderCompletionPct": "نسبة الإكمال %",
-    "csvHeaderAttendancePct": "نسبة الحضور %"
+    "csvHeaderAttendancePct": "نسبة الحضور %",
+    "csvHeaderSavedResume": "سيرة محفوظة"
   },
   "adminCourseBuilder": {
     "title": "منشئ الدورات",
