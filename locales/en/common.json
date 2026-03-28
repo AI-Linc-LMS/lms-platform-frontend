@@ -656,8 +656,7 @@
     "atsGoodThings": "What's Working Well",
     "atsScopeForImprovement": "Scope for Improvement",
     "atsWhereDeducted": "Where you lost the most points",
-    "atsWhereDeductedHint": "These areas pulled your overall score down. Focus on improving them first.",
-    "atsSuggestions": "Actionable Suggestions"
+    "atsWhereDeductedHint": "These areas pulled your overall score down. Focus on improving them first."
   },
   "community": {
     "title": "Community",
@@ -1045,6 +1044,10 @@
     "mostActive": "Most Active",
     "completionPct": "Completion %",
     "attendancePct": "Attendance %",
+    "savedResume": "Saved resume",
+    "filterSavedResume": "Saved resume",
+    "resumeYes": "Yes",
+    "resumeNo": "No",
     "actions": "Actions",
     "noStudentsFound": "No students found",
     "tryAdjustingFilters": "Try adjusting your filters",
@@ -1120,7 +1123,8 @@
     "csvHeaderEnrollmentCount": "Enrollment Count",
     "csvHeaderMostActiveCourse": "Most Active Course",
     "csvHeaderCompletionPct": "Completion %",
-    "csvHeaderAttendancePct": "Attendance %"
+    "csvHeaderAttendancePct": "Attendance %",
+    "csvHeaderSavedResume": "Saved resume"
   },
   "adminCourseBuilder": {
     "title": "Course Builder",

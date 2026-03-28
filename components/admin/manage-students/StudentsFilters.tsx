@@ -25,9 +25,11 @@ interface StudentsFiltersProps {
   courses: Course[];
   selectedCourses: string[];
   status: string;
+  resumeFilter: "all" | "yes" | "no";
   searchTerm: string;
   onCourseChange: (value: string[]) => void;
   onStatusChange: (value: string) => void;
+  onResumeFilterChange: (value: "all" | "yes" | "no") => void;
   onSearchChange: (value: string) => void;
 }
 
@@ -35,9 +37,11 @@ export function StudentsFilters({
   courses,
   selectedCourses,
   status,
+  resumeFilter,
   searchTerm,
   onCourseChange,
   onStatusChange,
+  onResumeFilterChange,
   onSearchChange,
 }: StudentsFiltersProps) {
   const { t } = useTranslation("common");
@@ -57,7 +61,8 @@ export function StudentsFilters({
           gridTemplateColumns: {
             xs: "1fr",
             sm: "1fr 1fr",
-            md: "1fr 1fr 1fr",
+            md: "repeat(2, 1fr)",
+            lg: "repeat(4, 1fr)",
           },
           gap: { xs: 1.5, sm: 2 },
         }}
@@ -114,6 +119,25 @@ export function StudentsFilters({
             <MenuItem value="all">{t("adminManageStudents.all")}</MenuItem>
             <MenuItem value="active">{t("adminManageStudents.active")}</MenuItem>
             <MenuItem value="inactive">{t("adminManageStudents.inactive")}</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Saved resume filter */}
+        <FormControl fullWidth>
+          <InputLabel id="resume-filter-label">
+            {t("adminManageStudents.filterSavedResume")}
+          </InputLabel>
+          <Select
+            labelId="resume-filter-label"
+            value={resumeFilter}
+            onChange={(e) =>
+              onResumeFilterChange(e.target.value as "all" | "yes" | "no")
+            }
+            label={t("adminManageStudents.filterSavedResume")}
+          >
+            <MenuItem value="all">{t("adminManageStudents.all")}</MenuItem>
+            <MenuItem value="yes">{t("adminManageStudents.resumeYes")}</MenuItem>
+            <MenuItem value="no">{t("adminManageStudents.resumeNo")}</MenuItem>
           </Select>
         </FormControl>
 
