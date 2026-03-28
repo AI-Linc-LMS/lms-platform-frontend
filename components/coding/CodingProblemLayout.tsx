@@ -11,7 +11,7 @@ import { TestResults } from "./TestResults";
 import { Submissions } from "./Submissions";
 import { CodeEditorPanel } from "./CodeEditorPanel";
 import { CodingProblemComments } from "./CodingProblemComments";
-import { getAvailableLanguages, getLanguageId } from "./utils/languageUtils";
+import { getAllLanguages, getLanguageId } from "./utils/languageUtils";
 
 interface CodingProblemLayoutProps {
   courseId: number;
@@ -36,10 +36,8 @@ export function CodingProblemLayout({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { showToast } = useToast();
 
-  // Get available languages from problem data
-  const availableLanguages = getAvailableLanguages(
-    problemData?.details?.template_code
-  );
+  // All supported languages (same set as LANGUAGE_DISPLAY_NAMES), not limited to template_code keys
+  const availableLanguages = getAllLanguages();
 
   // State
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
