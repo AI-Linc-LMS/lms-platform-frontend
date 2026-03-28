@@ -18,6 +18,8 @@ export const MONACO_LANGUAGE_MAPPING: Record<string, string> = {
   cpp: "cpp",
   javascript: "javascript",
   typescript: "typescript",
+  js: "javascript",
+  ts: "typescript",
   python: "python",
   java: "java",
   c: "c",
@@ -31,11 +33,45 @@ export const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
   "c++": "C++",
   cpp: "C++",
   javascript: "JavaScript",
+  js: "JavaScript",
   typescript: "TypeScript",
+  ts: "TypeScript",
   java: "Java",
   c: "C",
   sql: "SQL",
 };
+
+export type LanguageOption = {
+  value: string;
+  label: string;
+  monacoLanguage: string;
+};
+
+/**
+ * One entry per logical language (no duplicate labels: e.g. javascript+js, cpp+c++, ts+typescript).
+ * Alias keys (js, ts, c++) stay in LANGUAGE_DISPLAY_NAMES for template_code / API compatibility.
+ */
+const ALL_LANGUAGES_CANONICAL_KEYS: string[] = [
+  "python3",
+  "python",
+  "javascript",
+  "typescript",
+  "java",
+  "cpp",
+  "c",
+  "sql",
+];
+
+/** Every language we support in the editor / Judge0, independent of problem template_code */
+export function getAllLanguages(): LanguageOption[] {
+  return ALL_LANGUAGES_CANONICAL_KEYS.filter((k) => k in LANGUAGE_DISPLAY_NAMES)
+    .map((lang) => ({
+      value: lang,
+      label: LANGUAGE_DISPLAY_NAMES[lang] || lang,
+      monacoLanguage: MONACO_LANGUAGE_MAPPING[lang] || lang,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
 
 // Get languages available for a problem based on template_code
 export function getAvailableLanguages(templateCode: Record<string, string> | undefined) {

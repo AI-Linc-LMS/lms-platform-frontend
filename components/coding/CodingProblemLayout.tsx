@@ -11,7 +11,7 @@ import { TestResults } from "./TestResults";
 import { Submissions } from "./Submissions";
 import { CodeEditorPanel } from "./CodeEditorPanel";
 import { CodingProblemComments } from "./CodingProblemComments";
-import { getAvailableLanguages, getLanguageId } from "./utils/languageUtils";
+import { getAllLanguages, getLanguageId } from "./utils/languageUtils";
 
 interface CodingProblemLayoutProps {
   courseId: number;
@@ -36,10 +36,8 @@ export function CodingProblemLayout({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { showToast } = useToast();
 
-  // Get available languages from problem data
-  const availableLanguages = getAvailableLanguages(
-    problemData?.details?.template_code
-  );
+  // Canonical language list (no duplicate labels); not limited to template_code keys
+  const availableLanguages = getAllLanguages();
 
   // State
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
@@ -163,7 +161,7 @@ export function CodingProblemLayout({
     }
   }, [availableLanguages, selectedLanguage]);
 
-  // Initialize code with template_code or from local storage
+  // Initialize code: localStorage, else template for this language only (no starter_code fallback — empty if missing)
   useEffect(() => {
     if (selectedLanguage && problemData) {
       // Try to load from local storage first
@@ -175,11 +173,11 @@ export function CodingProblemLayout({
         return;
       }
 
-      // Load template code
-      if (problemData?.details?.template_code?.[selectedLanguage]) {
-        setCode(problemData.details.template_code[selectedLanguage]);
-      } else if (problemData?.details?.starter_code) {
-        setCode(problemData.details.starter_code);
+      const template = problemData?.details?.template_code?.[selectedLanguage];
+      if (template) {
+        setCode(template);
+      } else {
+        setCode("");
       }
     }
   }, [problemData, selectedLanguage]);
@@ -296,9 +294,10 @@ export function CodingProblemLayout({
       return;
     }
 
-    // Load template code
     if (problemData?.details?.template_code?.[language]) {
       setCode(problemData.details.template_code[language]);
+    } else {
+      setCode("");
     }
   };
 
@@ -461,8 +460,8 @@ export function CodingProblemLayout({
 
     if (problemData?.details?.template_code?.[selectedLanguage]) {
       setCode(problemData.details.template_code[selectedLanguage]);
-    } else if (problemData?.details?.starter_code) {
-      setCode(problemData.details.starter_code);
+    } else {
+      setCode("");
     }
     showToast("Code reset to default", "info");
   };
