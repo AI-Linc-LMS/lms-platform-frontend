@@ -282,6 +282,19 @@
     "answeredOf": "{{answered}} of {{total}} answered",
     "questionOf": "Question {{current}} of {{total}}"
   },
+  "tools": {
+    "calculator": "Scientific calculator",
+    "calculatorSubtitle": "Button-only input · radians",
+    "notepad": "Scratch notepad",
+    "notepadSubtitle": "Saved for this session only",
+    "close": "Close",
+    "scratchHint": "Rough work only. Copy and paste are disabled. Notes are not submitted.",
+    "clipboardLocked": "Clipboard locked",
+    "notepadPlaceholder": "Jot rough work here…",
+    "calculatorError": "Invalid expression",
+    "radiansHint": "Angles use radians (e.g. sin(PI/2) = 1).",
+    "dragHandleHint": "Drag the header to move this panel"
+  },
   "assessments": {
     "title": "Assessments",
     "subtitle": "Test your knowledge and track your progress",
@@ -597,7 +610,6 @@
     "atsMatchToJob": "Match to a job description",
     "atsHideJobDesc": "Hide job description",
     "atsJobDescPlaceholder": "Paste a job description to see how well your resume matches…",
-    "atsSuggestions": "Suggestions to improve",
     "atsAnalyzeWithAI": "Analyze with AI",
     "atsVerifyWithAICta": "This is an estimated score. For the detailed ATS score and job fit, verify with AI.",
     "atsCheckForJobRole": "Check for job role",
