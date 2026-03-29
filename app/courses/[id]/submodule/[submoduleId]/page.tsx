@@ -377,7 +377,8 @@ export default function SubmoduleDetailPage() {
 
   const trackActivity = async (
     contentId: number,
-    activityType: "view" | "start" | "complete"
+    activityType: "view" | "start" | "complete",
+    extra?: { read_time_minutes?: number }
   ) => {
     try {
       if (!submoduleData || !submoduleData.data) {
@@ -392,12 +393,18 @@ export default function SubmoduleDetailPage() {
         return;
       }
 
-      // Use content type as activity_type (e.g., "VideoTutorial", "Quiz")
+      const metadata: { activity_type: string; read_time_minutes?: number } = {
+        activity_type: activityType,
+      };
+      if (extra?.read_time_minutes != null) {
+        metadata.read_time_minutes = extra.read_time_minutes;
+      }
+
       const result = await coursesService.createUserActivity(
         courseId,
         contentId,
         currentItem.content_type,
-        { activity_type: activityType }
+        metadata
       );
 
       return result;
@@ -1067,14 +1074,16 @@ export default function SubmoduleDetailPage() {
                 onSubmitCode={() => {
                   // Submit code
                 }}
-                onArticleComplete={async () => {
+                onArticleComplete={async (readTimeMinutes: number) => {
                   if (!selectedContentId) {
                     return;
                   }
 
                   try {
-                    // Track article completion activity
-                    await trackActivity(selectedContentId, "complete");
+                    // Track article completion with actual read time (for scorecard average)
+                    await trackActivity(selectedContentId, "complete", {
+                      read_time_minutes: readTimeMinutes,
+                    });
                     // Refresh streak data immediately after completion
                     await refreshStreakAfterCompletion();
 

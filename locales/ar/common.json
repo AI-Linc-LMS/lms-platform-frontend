@@ -20,7 +20,8 @@
     "verifyContent": "التحقق من المحتوى",
     "assessmentManagement": "إدارة التقييمات",
     "adminJobsV2": "الوظائف",
-    "adminAttendance": "الحضور"
+    "adminAttendance": "الحضور",
+    "scorecard": "بطاقة الأداء"
   },
   "common": {
     "loading": "جاري التحميل...",
@@ -916,6 +917,7 @@
       "failedToGeneratePdf": "فشل إنشاء PDF",
       "pdfDownloaded": "تم تنزيل PDF بنجاح",
       "allCourses": "جميع الدورات",
+      "daily": "يومي",
       "weekly": "أسبوعي",
       "bimonthly": "كل شهرين",
       "monthly": "شهري",

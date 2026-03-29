@@ -119,20 +119,19 @@ const articleBodySx = {
 
 interface ArticleContentProps {
   content: ContentDetail;
-  courseId: number;
-  onArticleComplete?: () => void;
+  onArticleComplete?: (readTimeMinutes: number) => void;
   /** When true, article is already completed (e.g. from progress); hide "Mark as read" and show completed state */
   isCompleted?: boolean;
 }
 
-export function ArticleContent({ 
-  content, 
-  courseId,
+export function ArticleContent({
+  content,
   onArticleComplete,
   isCompleted = false,
 }: ArticleContentProps) {
   const { t } = useTranslation("common");
   const articleRef = useRef<HTMLDivElement>(null);
+  const readStartTimeRef = useRef<number>(Date.now());
   const [readProgress, setReadProgress] = useState(0);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
   const readingTimeMinutes = content.details?.reading_time_minutes || 
@@ -165,7 +164,9 @@ export function ArticleContent({
     if (hasMarkedComplete || !onArticleComplete) return;
     setHasMarkedComplete(true);
     setReadProgress(100);
-    onArticleComplete();
+    const elapsedMs = Date.now() - readStartTimeRef.current;
+    const readTimeMinutes = Math.max(0.1, Math.round((elapsedMs / 60000) * 10) / 10);
+    onArticleComplete(readTimeMinutes);
   };
 
   const articleContent = content.details?.content || content.details?.description || "";

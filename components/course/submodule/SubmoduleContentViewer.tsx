@@ -32,7 +32,7 @@ interface SubmoduleContentViewerProps {
   onCodeChange?: (value: string | undefined) => void;
   onResetCode?: () => void;
   onSubmitCode?: () => void;
-  onArticleComplete?: () => void;
+  onArticleComplete?: (readTimeMinutes: number) => void;
   onCommentChange?: (value: string) => void;
   onSubmitComment?: () => void;
 }
@@ -161,7 +161,6 @@ export function SubmoduleContentViewer({
       {content.content_type === "Article" && (
         <ArticleContent
           content={content}
-          courseId={courseId}
           onArticleComplete={onArticleComplete}
           isCompleted={currentItem?.status === "complete"}
         />

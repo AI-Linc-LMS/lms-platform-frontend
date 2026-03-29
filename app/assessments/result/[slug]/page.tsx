@@ -10,18 +10,8 @@ import {
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AssessmentResultHeader } from "@/components/assessment/result/AssessmentResultHeader";
-import { ScoreDisplay } from "@/components/assessment/result/ScoreDisplay";
-import { EnhancedStatsBar } from "@/components/assessment/result/EnhancedStatsBar";
-import { TopicWiseBreakdown } from "@/components/assessment/result/TopicWiseBreakdown";
-import { StrengthsWeaknesses } from "@/components/assessment/result/StrengthsWeaknesses";
-import { EnhancedSkillsTags } from "@/components/assessment/result/EnhancedSkillsTags";
-import { OverallFeedback } from "@/components/assessment/result/OverallFeedback";
+import { AssessmentResultContent } from "@/components/assessment/result/AssessmentResultContent";
 import { PsychometricResultView } from "@/components/assessment/result/PsychometricResultView";
-import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
-import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
-import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
-import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { getMockPsychometricData } from "@/lib/mock-data/assessment-mock-data";
 
@@ -92,12 +82,6 @@ export default function AssessmentResultPage() {
 
   const quizResponses = assessmentResult?.user_responses?.quiz_responses || [];
 
-  const codingResponses =
-    assessmentResult?.user_responses?.coding_problem_responses || [];
-
-  const hasQuiz = quizResponses.length > 0;
-  const hasCoding = codingResponses.length > 0;
-
   const handleDownloadResultPdf = () => {
     if (!assessmentResult || pdfExporting) return;
 
@@ -156,69 +140,12 @@ export default function AssessmentResultPage() {
           </Button>
         </Box>
 
-        {/* Header */}
-        <AssessmentResultHeader
-          assessmentTitle={assessmentResult?.assessment_name || ""}
-          status={assessmentResult?.status || ""}
-        />
-
-        {/* Score */}
-        <ScoreDisplay
-          score={stats.score}
-          maximumMarks={stats.maximum_marks}
-          accuracy={stats?.accuracy_percent||0}
-          percentile={stats.percentile}
-        />
-
-        {/* Stats */}
-        <EnhancedStatsBar
-          totalQuestions={stats.total_questions}
-          attemptedQuestions={stats.attempted_questions}
-          correctAnswers={stats.correct_answers}
-          incorrectAnswers={stats.incorrect_answers}
-          timeTakenMinutes={stats.time_taken_minutes}
-          totalTimeMinutes={stats.total_time_minutes}
-        />
-
-        {/* Proctoring */}
-        {assessmentResult?.proctoring?.eye_movement_count &&
-          assessmentResult?.proctoring?.eye_movement_count > 0 && (
-            <EyeMovementViolations
-              violations={
-                assessmentResult?.proctoring?.eye_movement_violations || []
-              }
-              count={assessmentResult?.proctoring?.eye_movement_count || 0}
-            />
+        {/* RESULTS VIEW */}
+        <Box>
+          {assessmentResult && (
+            <AssessmentResultContent assessmentResult={assessmentResult} />
           )}
-
-        {/* Topic breakdown */}
-        {stats.topic_wise_stats &&
-          Object.keys(stats.topic_wise_stats).length > 0 && (
-            <TopicWiseBreakdown topicWiseStats={stats.topic_wise_stats} />
-          )}
-
-        {/* Skills */}
-        {(stats.top_skills?.length > 0 || stats.low_skills?.length > 0) && (
-          <EnhancedSkillsTags
-            strongSkills={stats.top_skills || []}
-            weakSkills={stats.low_skills || []}
-          />
-        )}
-
-        {/* Quiz Section */}
-        {hasQuiz && <QuizResponsesSection quizResponses={quizResponses} />}
-
-        {/* Coding Section */}
-        {hasCoding && (
-          <CodingProblemResponsesSection codingResponses={codingResponses} />
-        )}
-
-        {/* Feedback */}
-        <OverallFeedback
-          feedbackPoints={buildAssessmentFeedbackPoints(
-            assessmentResult as AssessmentResult
-          )}
-        />
+        </Box>
       </Box>
     </MainLayout>
   );

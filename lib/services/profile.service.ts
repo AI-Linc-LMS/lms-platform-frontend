@@ -199,22 +199,24 @@ export const profileService = {
     return response.data;
   },
 
-  // Get user activity heatmap
+  // Get user activity heatmap. For admin viewing a student, pass userProfileId (UserProfile.id).
   getUserActivityHeatmap: async (
     startDate?: string,
-    endDate?: string
-  ): Promise<UserActivityHeatmap> => {
+    endDate?: string,
+    userProfileId?: number
+  ): Promise<HeatmapData> => {
     let url = `/api/clients/${config.clientId}/student/user-activity-heatmap/`;
     const params = new URLSearchParams();
 
     if (startDate) params.append("start_date", startDate);
     if (endDate) params.append("end_date", endDate);
+    if (userProfileId != null) params.append("user_id", String(userProfileId));
 
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
 
-    const response = await apiClient.get<UserActivityHeatmap>(url);
+    const response = await apiClient.get<HeatmapData>(url);
     return response.data;
   },
 
