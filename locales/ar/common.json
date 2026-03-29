@@ -282,6 +282,19 @@
     "answeredOf": "{{answered}} من {{total}} تمت الإجابة عليها",
     "questionOf": "سؤال {{current}} من {{total}}"
   },
+  "tools": {
+    "calculator": "آلة حاسبة علمية",
+    "calculatorSubtitle": "إدخال بالأزرار فقط · الراديان",
+    "notepad": "مفكرة مسودة",
+    "notepadSubtitle": "يُحفظ لهذه الجلسة فقط",
+    "close": "إغلاق",
+    "scratchHint": "للتدوين فقط. النسخ واللصق معطّلان. الملاحظات لا تُرسل.",
+    "clipboardLocked": "الحافظة مقفلة",
+    "notepadPlaceholder": "دوّن مسودتك هنا…",
+    "calculatorError": "تعبير غير صالح",
+    "radiansHint": "الزوايا بالراديان (مثال: sin(PI/2) = 1).",
+    "dragHandleHint": "اسحب الرأس لتحريك اللوحة"
+  },
   "assessments": {
     "title": "التقييمات",
     "subtitle": "اختبر معرفتك وتتبع تقدمك",
