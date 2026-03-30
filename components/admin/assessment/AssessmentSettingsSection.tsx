@@ -45,6 +45,7 @@ interface AssessmentSettingsSectionProps {
   onShowResultChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
   onCollegesChange: (value: string[]) => void;
+  readOnly?: boolean;
 }
 
 export function AssessmentSettingsSection({
@@ -74,6 +75,7 @@ export function AssessmentSettingsSection({
   onShowResultChange,
   onCourseIdsChange,
   onCollegesChange,
+  readOnly = false,
 }: AssessmentSettingsSectionProps) {
   return (
     <Box>
@@ -103,6 +105,7 @@ export function AssessmentSettingsSection({
           fullWidth
           required
           inputProps={{ min: 0 }}
+          disabled={readOnly}
         />
         <Autocomplete
           multiple
@@ -120,7 +123,7 @@ export function AssessmentSettingsSection({
             onCourseIdsChange(newValue.map((c) => c.id));
           }}
           loading={loadingCourses}
-          disabled={loadingCourses}
+          disabled={readOnly || loadingCourses}
           renderOption={(props, option: any) => (
             <li {...props} key={option?.id != null ? option.id : props.id}>
               {option?.title ?? option?.name ?? `Course ${option?.id}`}
@@ -154,6 +157,7 @@ export function AssessmentSettingsSection({
           onChange={(_, newValue) => {
             onCollegesChange(newValue);
           }}
+          disabled={readOnly}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -189,6 +193,7 @@ export function AssessmentSettingsSection({
             helperText="IST timezone"
             InputLabelProps={{ shrink: true }}
             slotProps={{ htmlInput: { step: 60 } }}
+            disabled={readOnly}
           />
           <TextField
             label="End date & time (optional)"
@@ -199,6 +204,7 @@ export function AssessmentSettingsSection({
             helperText="IST timezone"
             InputLabelProps={{ shrink: true }}
             slotProps={{ htmlInput: { step: 60 } }}
+            disabled={readOnly}
           />
         </Box>
         <Box
@@ -210,7 +216,11 @@ export function AssessmentSettingsSection({
         >
           <FormControlLabel
             control={
-              <Switch checked={isPaid} onChange={(e) => onPaidChange(e.target.checked)} />
+              <Switch
+                checked={isPaid}
+                onChange={(e) => onPaidChange(e.target.checked)}
+                disabled={readOnly}
+              />
             }
             label="Paid Assessment"
           />
@@ -232,6 +242,7 @@ export function AssessmentSettingsSection({
                 required
                 inputProps={{ min: 0, step: 0.01 }}
                 helperText="Enter price"
+                disabled={readOnly}
               />
               <FormControl fullWidth required>
                 <InputLabel>Currency</InputLabel>
@@ -239,6 +250,7 @@ export function AssessmentSettingsSection({
                   value={currency}
                   onChange={(e) => onCurrencyChange(e.target.value)}
                   label="Currency"
+                  disabled={readOnly}
                 >
                   <MenuItem value="INR">INR (₹)</MenuItem>
                   <MenuItem value="USD">USD ($)</MenuItem>
@@ -250,13 +262,21 @@ export function AssessmentSettingsSection({
           )}
           <FormControlLabel
             control={
-              <Switch checked={isActive} onChange={(e) => onActiveChange(e.target.checked)} />
+              <Switch
+                checked={isActive}
+                onChange={(e) => onActiveChange(e.target.checked)}
+                disabled={readOnly}
+              />
             }
             label="Active"
           />
           <FormControlLabel
             control={
-              <Switch checked={proctoringEnabled ?? true} onChange={(e) => onProctoringEnabledChange(e.target.checked)} />
+              <Switch
+                checked={proctoringEnabled ?? true}
+                onChange={(e) => onProctoringEnabledChange(e.target.checked)}
+                disabled={readOnly}
+              />
             }
             label="Proctoring Enabled"
           />
@@ -265,6 +285,7 @@ export function AssessmentSettingsSection({
               <Switch
                 checked={sendCommunication}
                 onChange={(e) => onSendCommunicationChange(e.target.checked)}
+                disabled={readOnly}
               />
             }
             label="Send notification email to students"
@@ -277,6 +298,7 @@ export function AssessmentSettingsSection({
               <Switch
                 checked={showResult}
                 onChange={(e) => onShowResultChange(e.target.checked)}
+                disabled={readOnly}
               />
             }
             label="Show results to students"

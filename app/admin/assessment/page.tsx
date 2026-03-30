@@ -34,6 +34,7 @@ import {
   isCodingQuestion,
 } from "@/lib/services/admin/admin-assessment.service";
 import { useAuth } from "@/lib/auth/auth-context";
+import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 import {
   adminAssessmentEmailJobsService,
   AssessmentEmailJob,
@@ -49,6 +50,7 @@ export default function AssessmentPage() {
   const theme = useTheme();
   const rtl = theme.direction === "rtl";
   const { user } = useAuth();
+  const isCourseManager = isCourseManagerRole(user?.role);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -678,11 +680,12 @@ export default function AssessmentPage() {
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => router.push("/admin/assessment/create")}
             disabled={
-              !!user &&
-              typeof user.role === "string" &&
-              ["content manager", "content_manager"].includes(
-                user.role.toLowerCase().replace(/\s+/g, " ")
-              )
+              isCourseManager ||
+              (!!user &&
+                typeof user.role === "string" &&
+                ["content manager", "content_manager"].includes(
+                  user.role.toLowerCase().replace(/\s+/g, " ")
+                ))
             }
             fullWidth={false}
             sx={{
@@ -890,12 +893,21 @@ export default function AssessmentPage() {
             <AssessmentTable
               assessments={paginatedAssessments}
               assessmentEmailJobMap={assessmentEmailJobMap}
-              onEdit={(id) => router.push(`/admin/assessment/${id}/edit`)}
-              onDelete={handleDeleteClick}
-              onTriggerEmailJob={handleOpenEmailTriggerDialog}
+              actionsReadOnly={isCourseManager}
+              onEdit={(id) =>
+                router.push(
+                  isCourseManager
+                    ? `/admin/assessment/${id}/edit?readonly=1`
+                    : `/admin/assessment/${id}/edit`
+                )
+              }
+              onDelete={isCourseManager ? undefined : handleDeleteClick}
+              onTriggerEmailJob={
+                isCourseManager ? undefined : handleOpenEmailTriggerDialog
+              }
               onExportSubmissions={handleExportSubmissions}
               onExportQuestions={handleExportQuestions}
-              onDuplicate={handleDuplicateClick}
+              onDuplicate={isCourseManager ? undefined : handleDuplicateClick}
               exportingSubmissionsId={exportingSubmissionsId}
               exportingQuestionsId={exportingQuestionsId}
               deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}

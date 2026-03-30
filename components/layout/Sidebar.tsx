@@ -28,7 +28,12 @@ import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { Button } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
-import { isAdminOnlyRole, isFullAdminRole } from "@/lib/auth/role-utils";
+import {
+  isAdminOnlyRole,
+  isFullAdminRole,
+  isCourseManagerRole,
+  COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES,
+} from "@/lib/auth/role-utils";
 
 const DRAWER_WIDTH = 240;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -289,21 +294,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Memoize navigation items to prevent unnecessary recalculations
   const navigationItems = useMemo(() => {
     if (loadingClientInfo) return [];
+    let items: NavigationItem[];
     if (filteredFeatureNames.size > 0) {
-      return allNavigationItems.filter((item) => {
+      items = allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
         if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);
       });
+    } else {
+      items = allNavigationItems;
     }
-    return allNavigationItems;
+
+    if (isCourseManagerRole(role) && effectiveAdminMode) {
+      const allow = new Set(COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES);
+      items = items.filter((item) => allow.has(item.featureName));
+    }
+
+    return items;
   }, [
     loadingClientInfo,
     filteredFeatureNames,
     allNavigationItems,
     effectiveAdminMode,
+    role,
   ]);
 
   const handleNavigation = (item: NavigationItem) => {
