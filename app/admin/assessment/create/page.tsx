@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 import {
   Box,
   Typography,
@@ -40,6 +42,15 @@ const steps = ["Assessment Details", "Add Questions", "Review & Create"];
 export default function CreateAssessmentPage() {
   const { showToast } = useToast();
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (isCourseManagerRole(user?.role)) {
+      router.replace("/admin/assessment");
+    }
+  }, [authLoading, user?.role, router]);
+
   const [activeStep, setActiveStep] = useState(0);
   const [creating, setCreating] = useState(false);
 

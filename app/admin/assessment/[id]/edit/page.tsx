@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   Box,
   Typography,
@@ -9,6 +9,7 @@ import {
   Button,
   Tabs,
   Tab,
+  Alert,
   Table,
   TableBody,
   TableCell,
@@ -45,6 +46,8 @@ import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 
 type TabValue = "details" | "questions" | "submissions";
 type QuestionsSubTab = "mcq" | "coding";
@@ -185,6 +188,11 @@ export default function AssessmentEditPage() {
   const { showToast } = useToast();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
+  const hideAdminQuestions = isCourseManagerRole(user?.role);
+  const readOnly =
+    hideAdminQuestions || searchParams.get("readonly") === "1";
   const assessmentId = Number(params.id);
   const [tab, setTab] = useState<TabValue>("details");
   const [loading, setLoading] = useState(true);
@@ -325,16 +333,45 @@ export default function AssessmentEditPage() {
   }, [assessmentId, showToast]);
 
   useEffect(() => {
-    if (!assessmentId) return;
+    if (!assessmentId || authLoading) return;
+    let cancelled = false;
     setLoading(true);
     (async () => {
       await loadAssessment();
+      if (cancelled) return;
       await loadCourses();
-      await Promise.all([loadQuestions(), loadSubmissions()]);
-    })().finally(() => setLoading(false));
-  }, [assessmentId, loadAssessment, loadCourses, loadQuestions, loadSubmissions]);
+      if (cancelled) return;
+      if (hideAdminQuestions) {
+        setQuestionsData(null);
+      } else {
+        await loadQuestions();
+      }
+      if (cancelled) return;
+      await loadSubmissions();
+    })().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    assessmentId,
+    authLoading,
+    hideAdminQuestions,
+    loadAssessment,
+    loadCourses,
+    loadQuestions,
+    loadSubmissions,
+  ]);
+
+  useEffect(() => {
+    if (hideAdminQuestions && tab === "questions") {
+      setTab("details");
+    }
+  }, [hideAdminQuestions, tab]);
 
   const handleSave = async () => {
+    if (readOnly) return;
     if (!assessmentId || !config.clientId || !assessment) return;
     if (!title.trim() || !instructions.trim()) {
       showToast("Title and instructions are required", "error");
@@ -697,7 +734,7 @@ export default function AssessmentEditPage() {
     );
   }
 
-  const displayTitle = assessment.title || "Edit Assessment";
+  const displayTitle = assessment.title || (readOnly ? "View Assessment" : "Edit Assessment");
 
   return (
     <MainLayout>
@@ -715,11 +752,18 @@ export default function AssessmentEditPage() {
             fontWeight: 700,
             color: "#111827",
             fontSize: { xs: "1.5rem", sm: "2rem" },
-            mb: 3,
+            mb: 1,
           }}
         >
           {displayTitle}
         </Typography>
+        {readOnly && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            {hideAdminQuestions
+              ? "You can view assessment details and submissions. Question content is not available for your role."
+              : "You can view this assessment but cannot change settings or content."}
+          </Alert>
+        )}
 
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Tabs
@@ -733,7 +777,9 @@ export default function AssessmentEditPage() {
             }}
           >
             <Tab value="details" label="Details" />
-            <Tab value="questions" label="Questions" />
+            {!hideAdminQuestions && (
+              <Tab value="questions" label="Questions" />
+            )}
             <Tab value="submissions" label="Submissions" />
           </Tabs>
 
@@ -747,6 +793,7 @@ export default function AssessmentEditPage() {
                   onTitleChange={setTitle}
                   onInstructionsChange={setInstructions}
                   onDescriptionChange={setDescription}
+                  readOnly={readOnly}
                 />
                 <Divider />
                 <AssessmentSettingsSection
@@ -776,28 +823,31 @@ export default function AssessmentEditPage() {
                   onProctoringEnabledChange={setProctoringEnabled}
                   onSendCommunicationChange={setSendCommunication}
                   onShowResultChange={setShowResult}
+                  readOnly={readOnly}
                 />
-                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Button
-                    variant="contained"
-                    onClick={handleSave}
-                    disabled={saving}
-                    startIcon={
-                      saving ? (
-                        <CircularProgress size={18} color="inherit" />
-                      ) : (
-                        <IconWrapper icon="mdi:content-save" size={18} />
-                      )
-                    }
-                    sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
-                  >
-                    {saving ? "Saving…" : "Save"}
-                  </Button>
-                </Box>
+                {!readOnly && (
+                  <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                    <Button
+                      variant="contained"
+                      onClick={handleSave}
+                      disabled={saving}
+                      startIcon={
+                        saving ? (
+                          <CircularProgress size={18} color="inherit" />
+                        ) : (
+                          <IconWrapper icon="mdi:content-save" size={18} />
+                        )
+                      }
+                      sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                    >
+                      {saving ? "Saving…" : "Save"}
+                    </Button>
+                  </Box>
+                )}
               </Box>
             )}
 
-            {tab === "questions" && (
+            {!hideAdminQuestions && tab === "questions" && (
               <>
                 {!questionsData?.sections?.length ? (
                   <Box sx={{ py: 6, textAlign: "center" }}>
@@ -889,7 +939,7 @@ export default function AssessmentEditPage() {
                             size="small"
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadMCQQuestions}
-                            disabled={totalQuizQuestions === 0}
+                            disabled={readOnly || totalQuizQuestions === 0}
                             sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
                           >
                             Download MCQ CSV
@@ -996,7 +1046,7 @@ export default function AssessmentEditPage() {
                             size="small"
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadCodingQuestions}
-                            disabled={totalCodingQuestions === 0}
+                            disabled={readOnly || totalCodingQuestions === 0}
                             sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
                           >
                             Download Coding CSV
@@ -1181,7 +1231,10 @@ export default function AssessmentEditPage() {
                     size="small"
                     startIcon={<IconWrapper icon="mdi:download" size={18} />}
                     onClick={handleDownloadSubmissions}
-                    disabled={!submissionsData?.submissions?.length}
+                    disabled={
+                      !submissionsData?.submissions?.length ||
+                      (readOnly && !hideAdminQuestions)
+                    }
                     sx={{
                       bgcolor: "#6366f1",
                       "&:hover": { bgcolor: "#4f46e5" },

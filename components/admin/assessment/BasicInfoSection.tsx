@@ -9,6 +9,7 @@ interface BasicInfoSectionProps {
   onTitleChange: (value: string) => void;
   onInstructionsChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
+  readOnly?: boolean;
 }
 
 export function BasicInfoSection({
@@ -18,6 +19,7 @@ export function BasicInfoSection({
   onTitleChange,
   onInstructionsChange,
   onDescriptionChange,
+  readOnly = false,
 }: BasicInfoSectionProps) {
   return (
     <Box>
@@ -45,6 +47,7 @@ export function BasicInfoSection({
           required
           helperText="Maximum 255 characters"
           inputProps={{ maxLength: 255 }}
+          disabled={readOnly}
         />
         <TextField
           label="Instructions"
@@ -55,6 +58,7 @@ export function BasicInfoSection({
           multiline
           rows={4}
           helperText="Provide clear instructions for students"
+          disabled={readOnly}
         />
         <TextField
           label="Description"
@@ -64,6 +68,7 @@ export function BasicInfoSection({
           multiline
           rows={2}
           helperText="Optional description of the assessment"
+          disabled={readOnly}
         />
       </Box>
     </Box>
