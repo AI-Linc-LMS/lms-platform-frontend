@@ -7,6 +7,8 @@ import { Box, Paper, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isAdminOnlyRole } from "@/lib/auth/role-utils";
 
 interface NavigationItem {
   label: string;
@@ -135,9 +137,10 @@ export const BottomNavigation: React.FC = () => {
   const pathname = usePathname();
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
   const { isAdminMode } = useAdminMode();
+  const { user } = useAuth();
+  const effectiveAdminMode = isAdminOnlyRole(user?.role) || isAdminMode;
 
-  // Combine navigation items based on mode
-  const allNavigationItems = isAdminMode
+  const allNavigationItems = effectiveAdminMode
     ? adminNavigationItems
     : regularNavigationItems;
 
@@ -148,7 +151,7 @@ export const BottomNavigation: React.FC = () => {
 
   // Filter features based on admin mode
   const getFilteredFeatures = () => {
-    if (isAdminMode) {
+    if (effectiveAdminMode) {
       // In admin mode, only show features that start with "admin_"
       return Array.from(enabledFeatureNames).filter((name) =>
         name.startsWith("admin_")
@@ -172,14 +175,19 @@ export const BottomNavigation: React.FC = () => {
     if (filteredFeatureNames.size > 0) {
       return allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
-        if (!isAdminMode && item.featureName === "dashboard") {
+        if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);
       });
     }
     return allNavigationItems;
-  }, [loadingClientInfo, filteredFeatureNames, allNavigationItems, isAdminMode]);
+  }, [
+    loadingClientInfo,
+    filteredFeatureNames,
+    allNavigationItems,
+    effectiveAdminMode,
+  ]);
 
   // Helper function to get the correct path (admin items already have /admin/ prefix)
   const getNavigationPath = (item: NavigationItem): string => {

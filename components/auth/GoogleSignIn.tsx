@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Box, Typography } from "@mui/material";
-import { accountsService } from "@/lib/services/accounts.service";
+import Cookies from "js-cookie";
+import { resolvePostLoginPath } from "@/lib/auth/role-utils";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/common/Toast";
@@ -67,10 +68,13 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       await googleLogin(response.credential);
       showToast(t("auth.loginSuccess"), "success");
       setIsRedirecting(true);
-      const redirectUrl = searchParams.get("redirect") || "/dashboard";
-      // Small delay to show success message, then redirect
+      const role = Cookies.get("user_role") ?? "";
+      const redirectUrl = resolvePostLoginPath(
+        role,
+        searchParams.get("redirect")
+      );
       setTimeout(() => {
-        window.location.href = redirectUrl; // Full page reload
+        window.location.href = redirectUrl;
       }, 500);
     } catch (error: any) {
       const errorMessage =

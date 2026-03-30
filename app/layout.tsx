@@ -12,6 +12,7 @@ import { ClientThemeProvider } from "@/components/providers/ClientThemeProvider"
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
 import { AdminModeProvider } from "@/lib/contexts/AdminModeContext";
+import { AdminModeRoleSync } from "@/components/providers/AdminModeRoleSync";
 import { CameraRouteGuard } from "@/components/providers/CameraRouteGuard";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 import { DirectionSync } from "@/components/providers/DirectionSync";
@@ -85,6 +86,7 @@ export default async function RootLayout({
                     <ThemeModeProvider>
                       <ClientInfoProvider>
                         <AdminModeProvider>
+                          <AdminModeRoleSync />
                           <CameraRouteGuard>
                             <TelemetryProvider>
                               <ToastProvider>{children}</ToastProvider>

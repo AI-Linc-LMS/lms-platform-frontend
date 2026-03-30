@@ -16,6 +16,7 @@ import {
   copyToClipboard,
 } from "@/lib/utils/live-session-errors";
 import { getUniqueAttendanceCount } from "@/lib/utils/attendance-utils";
+import { canAccessAdminArea } from "@/lib/auth/role-utils";
 
 const ADMIN_LIVE_SESSIONS_FEATURE = "admin_live_sessions";
 
@@ -39,10 +40,7 @@ export function useAdminLiveSessions() {
   const [creatingZoomId, setCreatingZoomId] = useState<number | null>(null);
   const [uniqueAttendanceCounts, setUniqueAttendanceCounts] = useState<Record<number, number>>({});
 
-  const isAdminOrInstructor =
-    user?.role === "admin" || user?.role === "instructor";
-  const isSuperAdmin = user?.role === "superadmin";
-  const canAccessAdmin = isAdminOrInstructor || isSuperAdmin;
+  const canAccessAdmin = canAccessAdminArea(user?.role);
 
   const enabledFeatureNames = new Set(
     clientInfo?.features?.map((f) => f.name) ?? []

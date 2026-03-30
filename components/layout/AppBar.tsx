@@ -15,6 +15,10 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
+import {
+  isAdminOnlyRole,
+  isFullAdminRole,
+} from "@/lib/auth/role-utils";
 import { LogOut, User, Menu as MenuIcon } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
@@ -57,11 +61,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const { isAdminMode, toggleAdminMode } = useAdminMode();
   const { showToast } = useToast();
 
-  // Check if user can access admin mode
-  const isAdminOrInstructor =
-    user?.role === "admin" || user?.role === "instructor";
-  const isSuperAdmin = user?.role === "superadmin";
-  const canAccessAdmin = isAdminOrInstructor || isSuperAdmin;
+  const role = user?.role;
+  const canToggleAdminMode = isFullAdminRole(role);
+  const effectiveAdminMode = isAdminOnlyRole(role) || isAdminMode;
   const { i18n, t } = useTranslation("common");
   const rtl = isRtl(i18n.language || "en");
   const {
@@ -291,7 +293,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           {clientInfo?.app_icon_url && (
             <Box
               onClick={() =>
-                router.push(isAdminMode ? "/admin/dashboard" : "/dashboard")
+                router.push(
+                  effectiveAdminMode ? "/admin/dashboard" : "/dashboard"
+                )
               }
               sx={{
                 display: { xs: "flex", md: "none" },
@@ -331,7 +335,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             ml: { xs: "auto", md: "auto" },
           }}
         >
-          {canAccessAdmin && isAdminMode && (
+          {effectiveAdminMode && (
             <>
               {/* Desktop: Icon + Text */}
               <Box
@@ -1012,7 +1016,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
             <Divider />
 
-            {canAccessAdmin && (
+            {canToggleAdminMode && (
               <MenuItem
                 onClick={() => {
                   const newAdminMode = !isAdminMode;
@@ -1036,7 +1040,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </MenuItem>
             )}
 
-            {canAccessAdmin && <Divider />}
+            {canToggleAdminMode && <Divider />}
 
             <MenuItem
               onClick={() => {

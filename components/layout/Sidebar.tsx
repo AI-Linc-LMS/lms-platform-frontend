@@ -28,6 +28,7 @@ import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { Button } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
+import { isAdminOnlyRole, isFullAdminRole } from "@/lib/auth/role-utils";
 
 const DRAWER_WIDTH = 240;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -60,11 +61,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { t, i18n } = useTranslation("common");
   const rtl = isRtl(i18n.language || "en");
 
-  // Check if user can access admin mode
-  const isAdminOrInstructor =
-    user?.role === "admin" || user?.role === "instructor";
-  const isSuperAdmin = user?.role === "superadmin";
-  const canAccessAdmin = isAdminOrInstructor || isSuperAdmin;
+  const role = user?.role;
+  const canToggleAdminMode = isFullAdminRole(role);
+  const limitedAdmin = isAdminOnlyRole(role);
+  /** Limited admins always use admin navigation; full admins follow toggle */
+  const effectiveAdminMode = limitedAdmin || isAdminMode;
 
   // Regular (non-admin) navigation items
   const regularNavigationItems: NavigationItem[] = [
@@ -259,8 +260,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // },
   ];
 
-  // Combine all navigation items based on mode
-  const allNavigationItems = isAdminMode
+  const allNavigationItems = effectiveAdminMode
     ? adminNavigationItems
     : regularNavigationItems;
 
@@ -274,9 +274,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     clientInfo?.features?.map((feature) => feature.name) || []
   );
 
-  // Filter features based on admin mode
   const getFilteredFeatures = () => {
-    if (isAdminMode) {
+    if (effectiveAdminMode) {
       // In admin mode, only show features that start with "admin_"
       return Array.from(enabledFeatureNames).filter((name) =>
         name.startsWith("admin_")
@@ -300,14 +299,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (filteredFeatureNames.size > 0) {
       return allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
-        if (!isAdminMode && item.featureName === "dashboard") {
+        if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);
       });
     }
     return allNavigationItems;
-  }, [loadingClientInfo, filteredFeatureNames, allNavigationItems, isAdminMode]);
+  }, [
+    loadingClientInfo,
+    filteredFeatureNames,
+    allNavigationItems,
+    effectiveAdminMode,
+  ]);
 
   const handleNavigation = (item: NavigationItem) => {
     if (onClose) {
@@ -341,7 +345,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
       >
         <Link
-          href={isAdminMode ? "/admin/dashboard" : "/dashboard"}
+          href={effectiveAdminMode ? "/admin/dashboard" : "/dashboard"}
           prefetch={true}
           style={{ textDecoration: "none", width: "100%", height: "100%" }}
         >
@@ -549,7 +553,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   flexDirection: rtl ? "row-reverse" : "row",
                   alignItems: "center",
                   gap: 1.5,
-                  mb: canAccessAdmin ? 1.5 : 0,
+                  mb: canToggleAdminMode ? 1.5 : 0,
                 }}
               >
                 <Avatar
@@ -589,7 +593,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </Box>
               </Box>
               {/* Admin Mode Toggle Button */}
-              {canAccessAdmin && (
+              {canToggleAdminMode && (
                 <Button
                   onClick={() => {
                     const newAdminMode = !isAdminMode;

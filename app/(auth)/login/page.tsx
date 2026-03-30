@@ -17,7 +17,9 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { Formik, Form, Field } from "formik";
+import Cookies from "js-cookie";
 import { useAuth } from "@/lib/auth/auth-context";
+import { resolvePostLoginPath } from "@/lib/auth/role-utils";
 import { useToast } from "@/components/common/Toast";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { AuthLayout } from "@/components/auth/AuthLayout";
@@ -33,20 +35,19 @@ export default function LoginPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  // Handle redirect if already authenticated
+  // If already signed in, send user to a path allowed for their role (ignore stale ?redirect= for wrong side)
   useEffect(() => {
-    if (isAuthenticated) {
-      const redirect = searchParams.get("redirect") || "/dashboard";
-      router.push(redirect);
-    }
-  }, [isAuthenticated, router, searchParams]);
+    if (!isAuthenticated || !user?.role) return;
+    const path = resolvePostLoginPath(user.role, searchParams.get("redirect"));
+    router.replace(path);
+  }, [isAuthenticated, user?.role, router, searchParams]);
 
   const initialValues: LoginFormValues = {
     email: "",
@@ -61,14 +62,11 @@ export default function LoginPage() {
       showToast(t("auth.loginSuccess"), "success");
       setIsRedirecting(true);
 
-      // Get redirect URL from query params or default to dashboard
-      const redirect = searchParams.get("redirect") || "/dashboard";
+      const role = Cookies.get("user_role") ?? "";
+      const target = resolvePostLoginPath(role, searchParams.get("redirect"));
 
-      // Small delay to show success message, then redirect
       setTimeout(() => {
-        // Use window.location for a full page reload to ensure middleware sees the cookie
-        // This ensures the cookie is properly set before navigation
-        window.location.href = redirect;
+        window.location.href = target;
       }, 500);
     } catch (err: any) {
       const errorMessage =
