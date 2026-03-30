@@ -98,13 +98,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "mock_interview",
     },
     {
-      label: "Job Portal",
-      labelKey: "nav.jobPortal",
-      path: "/jobs",
-      icon: "mdi:briefcase",
-      featureName: "job_portal",
-    },
-    {
       label: "Jobs",
       labelKey: "nav.jobsV2",
       path: "/jobs-v2",
