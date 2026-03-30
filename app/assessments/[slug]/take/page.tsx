@@ -14,6 +14,9 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Typography, Button } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { AssessmentFloatingTools } from "@/components/assessment/tools/AssessmentFloatingTools";
+import { AssessmentToolbarTools } from "@/components/assessment/tools/AssessmentToolbarTools";
 import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
 import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
@@ -65,9 +68,12 @@ export default function TakeAssessmentPage({
   const { slug } = use(params);
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   // State
   const [submitting, setSubmitting] = useState(false);
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [notepadOpen, setNotepadOpen] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [showStartButton, setShowStartButton] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -1242,6 +1248,23 @@ export default function TakeAssessmentPage({
             proctoringVideoRef={assessment?.proctoring_enabled !== false ? videoRef : undefined}
             proctoringStatus={assessment?.proctoring_enabled !== false ? status : undefined}
             faceCount={assessment?.proctoring_enabled !== false ? faceCount : undefined}
+            assessmentToolsSlot={
+              <AssessmentToolbarTools
+                calculatorOpen={calculatorOpen}
+                notepadOpen={notepadOpen}
+                onToggleCalculator={() => setCalculatorOpen((o) => !o)}
+                onToggleNotepad={() => setNotepadOpen((o) => !o)}
+              />
+            }
+          />
+
+          <AssessmentFloatingTools
+            slug={slug}
+            enabled={assessmentStarted && !submitting}
+            calculatorOpen={calculatorOpen}
+            notepadOpen={notepadOpen}
+            onToggleCalculator={() => setCalculatorOpen((o) => !o)}
+            onToggleNotepad={() => setNotepadOpen((o) => !o)}
           />
 
           <AssessmentNavigation

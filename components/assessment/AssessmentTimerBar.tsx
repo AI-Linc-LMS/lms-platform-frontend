@@ -13,6 +13,7 @@ interface AssessmentTimerBarProps {
   proctoringVideoRef?: React.RefObject<HTMLVideoElement | null>;
   proctoringStatus?: "NORMAL" | "WARNING" | "VIOLATION";
   faceCount?: number;
+  assessmentToolsSlot?: React.ReactNode;
 }
 
 export const AssessmentTimerBar = memo(function AssessmentTimerBar({
@@ -24,6 +25,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
   proctoringVideoRef,
   proctoringStatus = "NORMAL",
   faceCount = 0,
+  assessmentToolsSlot,
 }: AssessmentTimerBarProps) {
   const getStatusColor = () => {
     switch (proctoringStatus) {
@@ -58,7 +60,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
       >
         {title}
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2, md: 3 } }}>
         {/* Timer */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:timer-outline" size={24} color="#6b7280" />
@@ -151,7 +153,16 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
         )}
       </Box>
 
-      <Button
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: { xs: 0.75, sm: 1 },
+          flexShrink: 0,
+        }}
+      >
+        {assessmentToolsSlot}
+        <Button
         variant="contained"
         onClick={onSubmit}
         disabled={submitting}
@@ -212,7 +223,8 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
           : isLastQuestion
           ? "Submit Assessment"
           : "Submit Early"}
-      </Button>
+        </Button>
+      </Box>
     </Paper>
   );
 });
