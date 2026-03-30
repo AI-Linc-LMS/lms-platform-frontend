@@ -38,12 +38,6 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "assessment",
   }, 
   {
-    label: "Job Portal",
-    path: "/jobs",
-    icon: "mdi:briefcase",
-    featureName: "job_portal",
-  },
-  {
     label: "Jobs",
     path: "/jobs-v2",
     icon: "mdi:briefcase-search",
