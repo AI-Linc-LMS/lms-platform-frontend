@@ -1,4 +1,15 @@
 import Cookies from "js-cookie";
+import {
+  isCourseManagerRole as isCourseManagerRoleNormalized,
+  normalizeRole,
+} from "./role-utils";
+
+/** Normalize API/cookie role strings (e.g. "Course Manager" → "course_manager"). */
+export function normalizeUserRole(role: string | null | undefined): string {
+  return normalizeRole(role);
+}
+
+export const isCourseManagerRole = isCourseManagerRoleNormalized;
 
 export const authUtils = {
   getAccessToken: (): string | undefined => {

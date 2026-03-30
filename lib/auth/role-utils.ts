@@ -26,6 +26,25 @@ export function isAdminOnlyRole(role: string | undefined | null): boolean {
   );
 }
 
+/** Course manager only — used for tighter nav than other admin-only roles. */
+export function isCourseManagerRole(role: string | undefined | null): boolean {
+  const r = normalizeRole(role);
+  return r === "course_manager" || r === "coursemanager";
+}
+
+/**
+ * Admin sidebar `featureName` values shown to course managers (subset of admin nav).
+ * Client feature flags still apply first; this list further restricts visible links.
+ */
+export const COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
+  "admin_dashboard",
+  "admin_manage_students",
+  "admin_course_builder",
+  "admin_mock_interview",
+  "admin_assessment",
+  "admin_jobs_v2",
+];
+
 /** May see /admin/* navigation (full or limited) */
 export function canAccessAdminArea(role: string | undefined | null): boolean {
   return isFullAdminRole(role) || isAdminOnlyRole(role);
