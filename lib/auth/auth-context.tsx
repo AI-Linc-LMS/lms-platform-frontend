@@ -185,6 +185,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       authUtils.clearTokens();
       clearResumeData();
       clearTimeTrackingSession(); // New login will get a new time-tracking session
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("admin_mode");
+      }
       setUser(null);
     }
   };

@@ -1,6 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useToast } from "@/components/common/Toast";
 
+function isInsideFloatingToolUi(target: EventTarget | null): boolean {
+  if (!target) return false;
+  const el = target instanceof Element ? target : (target as Node).parentElement;
+  return !!el?.closest?.("[data-floating-tool], [data-assessment-tool]");
+}
+
 interface UseAssessmentSecurityOptions {
   enabled: boolean;
   submitting?: boolean; // Disable beforeunload during submission
@@ -106,8 +112,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       return false;
     };
 
-    // Prevent text selection
     const handleSelectStart = (event: Event) => {
+      if (isInsideFloatingToolUi(event.target)) return;
       event.preventDefault();
       return false;
     };
@@ -115,8 +121,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
     document.addEventListener("contextmenu", handleContextMenu);
     document.addEventListener("selectstart", handleSelectStart);
 
-    // Prevent drag and drop
     const handleDragStart = (event: DragEvent) => {
+      if (isInsideFloatingToolUi(event.target)) return;
       event.preventDefault();
       return false;
     };
