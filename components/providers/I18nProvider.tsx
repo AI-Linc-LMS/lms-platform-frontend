@@ -9,7 +9,7 @@ const STORAGE_KEY = "i18nextLng";
 const DEFAULT_AR_CLIENT_ID = 28;
 
 function getInitialLanguage(clientId?: number): "en" | "ar" {
-  return clientId === DEFAULT_AR_CLIENT_ID ? "ar" : "en";
+  return "en";
 }
 
 export function I18nProvider({
@@ -27,7 +27,7 @@ export function I18nProvider({
 
   useEffect(() => {
    if (clientId === DEFAULT_AR_CLIENT_ID) {
-      i18n.changeLanguage("ar");
+      i18n.changeLanguage("en");
     }
     else if (clientId !== DEFAULT_AR_CLIENT_ID) {
       i18n.changeLanguage("en");
