@@ -923,11 +923,11 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           )}
 
           {/* Language selector - only for client id 28 */}
-          {clientInfo?.id === 28 && (
+          {/* {clientInfo?.id === 28 && (
             <Box sx={{ minWidth: 100 }}>
               <LanguageSelect size="small" variant="outlined" />
             </Box>
-          )}
+          )} */}
 
           {/* Notifications */}
           {isAuthenticated && (

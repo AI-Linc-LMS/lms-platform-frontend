@@ -54,7 +54,7 @@ export default async function RootLayout({
     ? `${client.app_icon_url}?v=${client.id}-${Date.now()}`
     : `/favicon.ico?v=${Date.now()}`;
 
-  const defaultLang = client?.id === 28 ? "ar" : "en";
+  const defaultLang = "en";
 
   return (
     <html lang={defaultLang} suppressHydrationWarning>
