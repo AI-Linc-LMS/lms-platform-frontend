@@ -78,7 +78,9 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       }, 500);
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.detail || t("auth.googleSignInFailed");
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        t("auth.googleSignInFailed");
       showToast(errorMessage, "error");
       setIsRedirecting(false);
     }

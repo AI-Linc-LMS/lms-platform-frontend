@@ -11,6 +11,7 @@
     "community": "المجتمع",
     "profile": "الملف الشخصي",
     "manageStudents": "إدارة الطلاب",
+    "pendingInstructors": "المعلمون في انتظار الموافقة",
     "courseBuilder": "منشئ الدورات",
     "aiCourseBuilder": "منشئ الدورات بالذكاء الاصطناعي",
     "emails": "البريد الإلكتروني",
@@ -99,7 +100,9 @@
     "verifyFailed": "فشل التحقق. يرجى المحاولة مرة أخرى.",
     "emailRequired": "البريد الإلكتروني مطلوب",
     "otpResent": "تم إعادة إرسال OTP إلى بريدك",
-    "resendFailed": "فشل إعادة إرسال OTP"
+    "resendFailed": "فشل إعادة إرسال OTP",
+    "signUpAsInstructor": "التسجيل كمعلم",
+    "instructorSignupApprovalNote": "ستحتاج إلى موافقة المسؤول قبل أن تتمكن من تسجيل الدخول."
   },
   "dashboard": {
     "welcomeHello": "مرحباً {{name}}!",
@@ -959,6 +962,21 @@
       "studentActiveDays": "أيام نشاط الطلاب",
       "top20Students": "أفضل 20 طالب"
     }
+  },
+  "adminPendingInstructors": {
+    "title": "المعلمون في انتظار الموافقة",
+    "subtitle": "الموافقة على حسابات المعلمين الذين سجّلوا عبر التسجيل الذاتي.",
+    "email": "البريد الإلكتروني",
+    "fullName": "الاسم الكامل",
+    "phone": "الهاتف",
+    "createdAt": "تاريخ التسجيل",
+    "actions": "إجراءات",
+    "approve": "موافقة",
+    "approving": "جاري الموافقة…",
+    "approved": "تمت الموافقة على المعلم",
+    "empty": "لا يوجد معلمون في انتظار الموافقة.",
+    "loadFailed": "تعذّر تحميل قائمة المعلمين المعلّقة.",
+    "approveFailed": "تعذّرت الموافقة على هذا المعلم."
   },
   "adminManageStudents": {
     "title": "إدارة الطلاب",

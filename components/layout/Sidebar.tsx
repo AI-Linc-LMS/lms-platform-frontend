@@ -32,6 +32,7 @@ import {
   isAdminOnlyRole,
   isFullAdminRole,
   isCourseManagerRole,
+  isClientOrgAdminRole,
   COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES,
 } from "@/lib/auth/role-utils";
 
@@ -44,6 +45,8 @@ interface NavigationItem {
   path: string;
   icon: string;
   featureName: string;
+  /** If true, only org admins (admin / superadmin) see this link. */
+  orgAdminOnly?: boolean;
 }
 
 interface SidebarProps {
@@ -147,6 +150,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/manage-students",
       icon: "mdi:account-group",
       featureName: "admin_manage_students",
+    },
+    {
+      label: "Pending instructors",
+      labelKey: "nav.pendingInstructors",
+      path: "/admin/pending-instructors",
+      icon: "mdi:account-clock",
+      featureName: "admin_manage_students",
+      orgAdminOnly: true,
     },
     {
       label: "Course Builder",
@@ -311,6 +322,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       const allow = new Set(COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES);
       items = items.filter((item) => allow.has(item.featureName));
     }
+
+    items = items.filter(
+      (item) => !item.orgAdminOnly || isClientOrgAdminRole(role)
+    );
 
     return items;
   }, [

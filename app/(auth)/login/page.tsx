@@ -70,7 +70,9 @@ export default function LoginPage() {
       }, 500);
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.detail || t("auth.loginFailed");
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        t("auth.loginFailed");
       showToast(errorMessage, "error");
       setLoading(false);
       setIsRedirecting(false);

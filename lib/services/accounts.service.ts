@@ -14,6 +14,8 @@ export interface SignupData {
   phone: string;
   password: string;
   confirm_password: string;
+  /** Sent on signup; use `"student"` when not registering as instructor. */
+  signup_as?: "student" | "instructor";
 }
 
 export interface AuthResponse {
@@ -85,9 +87,14 @@ export const accountsService = {
 
   // Signup
   signup: async (data: SignupData): Promise<{ detail: string }> => {
+    const { signup_as, ...rest } = data;
+    const payload = {
+      ...rest,
+      signup_as: signup_as ?? "student",
+    };
     const response = await apiClient.post<{ detail: string }>(
       `/accounts/clients/${config.clientId}/user/signup/`,
-      data
+      payload
     );
     return response.data;
   },

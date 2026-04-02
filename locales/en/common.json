@@ -11,6 +11,7 @@
     "community": "Community",
     "profile": "Profile",
     "manageStudents": "Manage Students",
+    "pendingInstructors": "Pending instructors",
     "courseBuilder": "Course Builder",
     "aiCourseBuilder": "AI Course Builder",
     "emails": "Emails",
@@ -99,7 +100,9 @@
     "verifyFailed": "Verification failed. Please try again.",
     "emailRequired": "Email is required",
     "otpResent": "OTP resent to your email",
-    "resendFailed": "Failed to resend OTP"
+    "resendFailed": "Failed to resend OTP",
+    "signUpAsInstructor": "Sign up as an instructor",
+    "instructorSignupApprovalNote": "You will need administrator approval before you can sign in."
   },
   "dashboard": {
     "welcomeHello": "Hello {{name}}!",
@@ -1032,6 +1035,21 @@
       "studentActiveDays": "Student Active Days",
       "top20Students": "Top 20 Students"
     }
+  },
+  "adminPendingInstructors": {
+    "title": "Pending instructors",
+    "subtitle": "Approve instructor accounts that registered with self-signup.",
+    "email": "Email",
+    "fullName": "Full name",
+    "phone": "Phone",
+    "createdAt": "Signed up",
+    "actions": "Actions",
+    "approve": "Approve",
+    "approving": "Approving…",
+    "approved": "Instructor approved",
+    "empty": "No instructors are waiting for approval.",
+    "loadFailed": "Failed to load pending instructors.",
+    "approveFailed": "Could not approve this instructor."
   },
   "adminManageStudents": {
     "title": "Manage Students",

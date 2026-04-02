@@ -11,11 +11,14 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { MuiTelInput } from "mui-tel-input";
 import { accountsService } from "@/lib/services/accounts.service";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useToast } from "@/components/common/Toast";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { AuthLayout } from "@/components/auth/AuthLayout";
@@ -29,15 +32,22 @@ interface SignupFormValues {
   phone: string;
   password: string;
   confirm_password: string;
+  signup_as_instructor: boolean;
 }
 
 export default function SignupPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { showToast } = useToast();
+  const { clientInfo, loading: clientInfoLoading } = useClientInfo();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const allowInstructorSelfSignup = Boolean(
+    clientInfo?.allow_instructor_self_signup
+  );
+  const instructorFlagLoading = clientInfoLoading;
 
   const initialValues: SignupFormValues = {
     first_name: "",
@@ -46,22 +56,31 @@ export default function SignupPage() {
     phone: "",
     password: "",
     confirm_password: "",
+    signup_as_instructor: false,
   };
 
   const onSubmit = async (values: SignupFormValues) => {
     setLoading(true);
 
     try {
-      await accountsService.signup(values);
+      const { signup_as_instructor, ...rest } = values;
+      await accountsService.signup({
+        ...rest,
+        signup_as: signup_as_instructor ? "instructor" : "student",
+      });
       showToast(t("auth.otpSent"), "success");
+      const signupAs = signup_as_instructor ? "instructor" : "student";
       setTimeout(() => {
-        router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+        router.push(
+          `/verify-email?email=${encodeURIComponent(values.email)}&signup_as=${encodeURIComponent(signupAs)}`
+        );
       }, 2000);
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.detail ||
+        err.response?.data?.error ||
         err.response?.data?.email?.[0] ||
-        "Signup failed. Please try again.";
+        t("auth.signupFailed");
       showToast(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -304,6 +323,49 @@ export default function SignupPage() {
                   />
                 )}
               </Field>
+
+              {!instructorFlagLoading && allowInstructorSelfSignup && (
+                <Box sx={{ mb: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={values.signup_as_instructor}
+                        onChange={(e) =>
+                          setFieldValue(
+                            "signup_as_instructor",
+                            e.target.checked
+                          )
+                        }
+                        size="small"
+                        sx={{
+                          color: "primary.main",
+                          "&.Mui-checked": { color: "primary.main" },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: "0.875rem", color: "text.primary" }}
+                      >
+                        {t("auth.signUpAsInstructor")}
+                      </Typography>
+                    }
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      ml: 4,
+                      mt: -1,
+                      color: "text.secondary",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {t("auth.instructorSignupApprovalNote")}
+                  </Typography>
+                </Box>
+              )}
 
               {/* Sign Up Button */}
               <Button

@@ -25,6 +25,9 @@ export default function VerifyEmailPage() {
   const [resending, setResending] = useState(false);
 
   const emailFromQuery = searchParams.get("email") || "";
+  const signupAsParam = searchParams.get("signup_as");
+  const signupAs: "student" | "instructor" =
+    signupAsParam === "instructor" ? "instructor" : "student";
 
   const initialValues: VerifyFormValues = {
     email: emailFromQuery,
@@ -35,12 +38,17 @@ export default function VerifyEmailPage() {
     setLoading(true);
 
     try {
-      await accountsService.verifyEmail(values.email, values.otp);
-      showToast(t("auth.verifySuccess"), "success");
+      const response = await accountsService.verifyEmail(
+        values.email,
+        values.otp
+      );
+      showToast(response.detail || t("auth.verifySuccess"), "success");
       router.push("/login");
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.detail || t("auth.verifyFailed");
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        t("auth.verifyFailed");
       showToast(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -99,8 +107,13 @@ export default function VerifyEmailPage() {
             lineHeight: 1.5,
           }}
         >
-          Enter the 6-digit OTP code sent to your email address to verify your
-          account.
+          {t("auth.verifyDescription")}
+          {signupAs === "instructor" ? (
+            <>
+              {" "}
+              {t("auth.instructorSignupApprovalNote")}
+            </>
+          ) : null}
         </Typography>
 
         {/* Form */}

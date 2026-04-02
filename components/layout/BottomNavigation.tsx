@@ -8,13 +8,16 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { useAuth } from "@/lib/auth/auth-context";
-import { isAdminOnlyRole } from "@/lib/auth/role-utils";
+import { isAdminOnlyRole, isClientOrgAdminRole } from "@/lib/auth/role-utils";
+import { useTranslation } from "react-i18next";
 
 interface NavigationItem {
   label: string;
   path: string;
   icon: string;
   featureName: string;
+  labelKey?: string;
+  orgAdminOnly?: boolean;
 }
 
 // Regular (non-admin) navigation items
@@ -78,6 +81,14 @@ const adminNavigationItems: NavigationItem[] = [
     featureName: "admin_manage_students",
   },
   {
+    label: "Pending instructors",
+    path: "/admin/pending-instructors",
+    icon: "mdi:account-clock",
+    featureName: "admin_manage_students",
+    labelKey: "nav.pendingInstructors",
+    orgAdminOnly: true,
+  },
+  {
     label: "Course",
     path: "/admin/course-builder",
     icon: "mdi:book-edit",
@@ -132,6 +143,7 @@ export const BottomNavigation: React.FC = () => {
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
   const { isAdminMode } = useAdminMode();
   const { user } = useAuth();
+  const { t } = useTranslation("common");
   const effectiveAdminMode = isAdminOnlyRole(user?.role) || isAdminMode;
 
   const allNavigationItems = effectiveAdminMode
@@ -166,21 +178,27 @@ export const BottomNavigation: React.FC = () => {
   // Memoize filtered items to prevent unnecessary recalculations
   const filteredItems = useMemo(() => {
     if (loadingClientInfo) return [];
+    let items: NavigationItem[];
     if (filteredFeatureNames.size > 0) {
-      return allNavigationItems.filter((item) => {
+      items = allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
         if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);
       });
+    } else {
+      items = allNavigationItems;
     }
-    return allNavigationItems;
+    return items.filter(
+      (item) => !item.orgAdminOnly || isClientOrgAdminRole(user?.role)
+    );
   }, [
     loadingClientInfo,
     filteredFeatureNames,
     allNavigationItems,
     effectiveAdminMode,
+    user?.role,
   ]);
 
   // Helper function to get the correct path (admin items already have /admin/ prefix)
@@ -304,7 +322,7 @@ export const BottomNavigation: React.FC = () => {
                   maxWidth: "100%",
                 }}
               >
-                {item.label}
+                {item.labelKey ? t(item.labelKey) : item.label}
               </Typography>
             </Box>
             </Link>

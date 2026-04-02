@@ -32,6 +32,12 @@ export function isCourseManagerRole(role: string | undefined | null): boolean {
   return r === "course_manager" || r === "coursemanager";
 }
 
+/** Organization admin / superadmin only (excludes instructor and course_manager). */
+export function isClientOrgAdminRole(role: string | undefined | null): boolean {
+  const r = normalizeRole(role);
+  return r === "admin" || r === "superadmin";
+}
+
 /**
  * Admin sidebar `featureName` values shown to course managers (subset of admin nav).
  * Client feature flags still apply first; this list further restricts visible links.
