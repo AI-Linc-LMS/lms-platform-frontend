@@ -21,6 +21,9 @@ export interface SignupData {
 export interface AuthResponse {
   access_token: string;
   refresh_token: string;
+  /** When false, client shows pending-activation UI; tokens may still be returned and persisted. */
+  is_profile_active?: boolean;
+  inactive_message?: string;
   user: {
     id?: number;
     email: string;
@@ -33,6 +36,7 @@ export interface AuthResponse {
     profile_picture?: string;
     profile_pic_url?: string;
     phone_number?: string;
+    is_profile_active?: boolean;
   };
 }
 
@@ -45,6 +49,8 @@ export interface UserProfile {
   phone: string;
   profile_picture: string;
   role: string;
+  /** When false, user has tokens but cannot use the app until an admin activates the profile. */
+  is_profile_active?: boolean;
 }
 
 export interface VerifyPasswordResetOtpPayload {
@@ -67,16 +73,14 @@ export const accountsService = {
       credentials
     );
 
-    // Store tokens in cookies
-    Cookies.set("access_token", response.data.access_token, { expires: 7 });
-    Cookies.set("refresh_token", response.data.refresh_token, { expires: 30 });
-
-    // Store role in cookies if available
-    if (response.data.user?.role) {
-      Cookies.set("user_role", response.data.user.role, { expires: 30 });
+    const data = response.data;
+    Cookies.set("access_token", data.access_token, { expires: 7 });
+    Cookies.set("refresh_token", data.refresh_token, { expires: 30 });
+    if (data.user?.role) {
+      Cookies.set("user_role", data.user.role, { expires: 30 });
     }
 
-    return response.data;
+    return data;
   },
 
   // Google Login
@@ -86,15 +90,14 @@ export const accountsService = {
       { token }
     );
 
-    Cookies.set("access_token", response.data.access_token, { expires: 7 });
-    Cookies.set("refresh_token", response.data.refresh_token, { expires: 30 });
-
-    // Store role in cookies if available
-    if (response.data.user?.role) {
-      Cookies.set("user_role", response.data.user.role, { expires: 30 });
+    const data = response.data;
+    Cookies.set("access_token", data.access_token, { expires: 7 });
+    Cookies.set("refresh_token", data.refresh_token, { expires: 30 });
+    if (data.user?.role) {
+      Cookies.set("user_role", data.user.role, { expires: 30 });
     }
 
-    return response.data;
+    return data;
   },
 
   // Signup

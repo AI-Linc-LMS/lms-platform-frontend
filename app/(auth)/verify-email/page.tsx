@@ -109,7 +109,9 @@ export default function VerifyEmailPage() {
           {signupAs === "instructor" ? (
             <>
               {" "}
-              {t("auth.instructorSignupApprovalNote")}
+              <Box component="span" sx={{ display: "block", mt: 1.5 }}>
+                {t("auth.instructorSignupApprovalNote")}
+              </Box>
             </>
           ) : null}
         </Typography>
