@@ -1,8 +1,10 @@
 "use client";
 
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Skeleton } from "@mui/material";
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import Image from "next/image";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -11,7 +13,33 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, slogan }: AuthLayoutProps) {
   const { t } = useTranslation("common");
+  const { clientInfo, loading: clientInfoLoading } = useClientInfo();
   const sloganText = slogan ?? t("auth.slogan");
+
+  const brandName = clientInfo?.name?.trim() || "";
+  const logoUrl =
+    clientInfo?.login_logo_url?.trim() ||
+    clientInfo?.app_logo_url?.trim() ||
+    "";
+
+  /** Same gradient highlight as slogan words “the” / “world” */
+  const brandWordHighlightSx = {
+    position: "relative" as const,
+    display: "inline-block" as const,
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      top: "50%",
+      left: 0,
+      right: 0,
+      height: "40%",
+      background: "linear-gradient(135deg, #f97316 0%, #ec4899 100%)",
+      borderRadius: "20px",
+      opacity: 0.3,
+      zIndex: -1,
+    },
+  };
+
   return (
     <Box
       sx={{
@@ -133,17 +161,116 @@ export function AuthLayout({ children, slogan }: AuthLayoutProps) {
           />
         </Box>
 
-        {/* Slogan */}
+        {/* Brand + slogan */}
         <Box
           sx={{
             position: "relative",
             zIndex: 1,
             px: 6,
             textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
           }}
         >
+          {clientInfoLoading ? (
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: 320,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                gap: 1.5,
+                mx: "auto",
+              }}
+            >
+              <Skeleton variant="rounded" width={200} height={56} sx={{ borderRadius: 1 }} />
+              <Skeleton variant="text" width={280} height={52} />
+            </Box>
+          ) : (
+            (logoUrl || brandName) && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  width: "100%",
+                  gap: 1.5,
+                  maxWidth: 600,
+                  mx: "auto",
+                }}
+              >
+                {logoUrl ? (
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: "100%",
+                      maxWidth: 280,
+                      height: { xs: 56, md: 72 },
+                      mx: "auto",
+                      alignSelf: "center",
+                    }}
+                  >
+                    <Image
+                      src={logoUrl}
+                      alt={brandName || "Logo"}
+                      fill
+                      sizes="280px"
+                      style={{ objectFit: "contain" }}
+                      priority
+                    />
+                  </Box>
+                ) : null}
+                {brandName ? (
+                  <Typography
+                    component="p"
+                    sx={{
+                      fontSize: { md: "2.75rem", lg: "3.25rem" },
+                      fontWeight: 800,
+                      lineHeight: 1.15,
+                      letterSpacing: "-0.02em",
+                      wordSpacing: "normal",
+                      color: "#1e293b",
+                      maxWidth: 720,
+                      width: "100%",
+                      m: 0,
+                      mt: logoUrl ? 0.5 : 0,
+                      mx: "auto",
+                      textAlign: "center",
+                      alignSelf: "center",
+                    }}
+                  >
+                    {brandName
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .map((word, index, words) => (
+                        <Box
+                          key={`${word}-${index}`}
+                          component="span"
+                          sx={{
+                            ...brandWordHighlightSx,
+                            marginRight:
+                              index < words.length - 1 ? "0.35em" : 0,
+                          }}
+                        >
+                          {word}
+                        </Box>
+                      ))}
+                  </Typography>
+                ) : null}
+              </Box>
+            )
+          )}
+
           <Typography
             variant="h2"
+            component="div"
             sx={{
               fontSize: { md: "3rem", lg: "4rem" },
               fontWeight: 700,
