@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 
-export function ClientThemeProvider({ client }: { client: any }) {
+/** Default export so `next/dynamic` can load this module without Turbopack SSR factory issues. */
+export default function ClientThemeProvider({ client }: { client: any }) {
   useEffect(() => {
     if (!client?.theme_settings) return;
     const themeSettings = client.theme_settings;

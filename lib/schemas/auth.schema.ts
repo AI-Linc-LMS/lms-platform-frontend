@@ -50,6 +50,7 @@ export const signupSchema = Yup.object().shape({
   confirm_password: Yup.string()
     .required("Please confirm your password")
     .oneOf([Yup.ref("password")], "Passwords must match"),
+  signup_as_instructor: Yup.boolean().optional(),
 });
 
 // Verify Email Schema

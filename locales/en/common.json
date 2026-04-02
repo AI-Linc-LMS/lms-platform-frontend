@@ -11,6 +11,7 @@
     "community": "Community",
     "profile": "Profile",
     "manageStudents": "Manage Students",
+    "pendingInstructors": "Pending instructors",
     "courseBuilder": "Course Builder",
     "aiCourseBuilder": "AI Course Builder",
     "emails": "Emails",
@@ -118,6 +119,8 @@
     "verifyFailed": "Verification failed. Please try again.",
     "emailRequired": "Email is required",
     "otpResent": "OTP resent to your email",
+    "signUpAsInstructor": "Sign up as an instructor",
+    "instructorSignupApprovalNote": "You will need administrator approval before you can sign in.",
     "passwordResetOtpResent": "A new verification code has been sent.",
     "passwordResetResendHint": "Only the latest code is valid.",
     "resendFailed": "We couldn’t resend the code just now. Please try again in a moment."
@@ -1053,6 +1056,24 @@
       "studentActiveDays": "Student Active Days",
       "top20Students": "Top 20 Students"
     }
+  },
+  "adminPendingInstructors": {
+    "title": "Pending instructors",
+    "subtitle": "Approve instructor accounts that registered with self-signup.",
+    "email": "Email",
+    "fullName": "Full name",
+    "phone": "Phone",
+    "createdAt": "Signed up",
+    "actions": "Actions",
+    "approve": "Approve",
+    "approving": "Approving…",
+    "approved": "Instructor approved",
+    "empty": "No instructors are waiting for approval.",
+    "loadFailed": "Failed to load pending instructors.",
+    "approveFailed": "Could not approve this instructor.",
+    "confirmApproveTitle": "Approve this instructor?",
+    "confirmApproveBody": "Are you sure you want to approve {{name}} ({{email}})? They will be able to sign in after approval.",
+    "confirmApprove": "Yes, approve"
   },
   "adminManageStudents": {
     "title": "Manage Students",
