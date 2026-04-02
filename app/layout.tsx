@@ -17,6 +17,7 @@ import { CameraRouteGuard } from "@/components/providers/CameraRouteGuard";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 import { DirectionSync } from "@/components/providers/DirectionSync";
 import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
+import { ProfileActivationBlocker } from "@/components/auth/ProfileActivationBlocker";
 
 /* ✅ Metadata (SEO) */
 export async function generateMetadata(): Promise<Metadata> {
@@ -89,7 +90,10 @@ export default async function RootLayout({
                           <AdminModeRoleSync />
                           <CameraRouteGuard>
                             <TelemetryProvider>
-                              <ToastProvider>{children}</ToastProvider>
+                              <ToastProvider>
+                                <ProfileActivationBlocker />
+                                {children}
+                              </ToastProvider>
                             </TelemetryProvider>
                           </CameraRouteGuard>
                         </AdminModeProvider>

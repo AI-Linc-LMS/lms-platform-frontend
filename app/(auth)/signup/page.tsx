@@ -14,6 +14,7 @@ import {
   Checkbox,
   FormControlLabel,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { MuiTelInput } from "mui-tel-input";
@@ -355,18 +356,47 @@ export default function SignupPage() {
                       </Typography>
                     }
                   />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      display: "block",
-                      ml: 4,
-                      mt: -1,
-                      color: "text.secondary",
-                      lineHeight: 1.4,
-                    }}
+                  <Box
+                    sx={(theme) => ({
+                      mt: 1,
+                      pl: 1.75,
+                      pr: 1.5,
+                      py: 1.5,
+                      borderRadius: 2,
+                      borderLeft: `3px solid ${theme.palette.primary.main}`,
+                      background: `linear-gradient(90deg, ${alpha(
+                        theme.palette.primary.main,
+                        0.08
+                      )} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+                    })}
                   >
-                    {t("auth.instructorSignupApprovalNote")}
-                  </Typography>
+                    <Typography
+                      variant="caption"
+                      component="p"
+                      sx={{
+                        display: "block",
+                        fontWeight: 700,
+                        fontSize: "0.8125rem",
+                        color: "primary.main",
+                        letterSpacing: "0.02em",
+                        textTransform: "uppercase",
+                        mb: 0.75,
+                      }}
+                    >
+                      {t("auth.instructorSignupApprovalTitle")}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        display: "block",
+                        color: "text.secondary",
+                        fontSize: "0.8125rem",
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      {t("auth.instructorSignupApprovalNote")}
+                    </Typography>
+                  </Box>
                 </Box>
               )}
 

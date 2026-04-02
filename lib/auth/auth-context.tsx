@@ -7,17 +7,60 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { accountsService, UserProfile } from "../services/accounts.service";
+import {
+  accountsService,
+  UserProfile,
+  type AuthResponse,
+} from "../services/accounts.service";
 import { authUtils } from "./auth-utils";
 import { clearResumeData } from "@/components/profile/resume/utils";
 import { clearTimeTrackingSession } from "../services/activity.service";
+
+export type AuthLoginResult =
+  | { profileActive: true }
+  | { profileActive: false; inactiveMessage: string };
+
+function isLoginResponseProfileActive(data: {
+  is_profile_active?: boolean;
+  user?: { is_profile_active?: boolean };
+}): boolean {
+  if (data.is_profile_active === false) return false;
+  if (data.user?.is_profile_active === false) return false;
+  return true;
+}
+
+function mapResponseUserToProfile(u: AuthResponse["user"]): UserProfile {
+  const role = u.role || authUtils.getUserRole() || "";
+  let first = u.first_name || "";
+  let last = u.last_name || "";
+  if (!first && !last && u.full_name?.trim()) {
+    const parts = u.full_name.trim().split(/\s+/);
+    first = parts[0] || "";
+    last = parts.slice(1).join(" ") || "";
+  }
+  return {
+    id: u.id || 0,
+    user_name: u.user_name || u.username || u.email,
+    first_name: first,
+    last_name: last,
+    email: u.email,
+    phone: u.phone_number || "",
+    profile_picture: u.profile_picture || u.profile_pic_url || "",
+    role,
+    is_profile_active: u.is_profile_active,
+  };
+}
 
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  googleLogin: (token: string) => Promise<void>;
+  /** True when user is signed in and user-profile API reports anything other than `is_profile_active: true`. */
+  requiresProfileActivation: boolean;
+  /** Server message from last login when profile was inactive; UI may fall back to i18n default. */
+  profileInactiveMessage: string | null;
+  login: (email: string, password: string) => Promise<AuthLoginResult>;
+  googleLogin: (token: string) => Promise<AuthLoginResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -37,21 +80,22 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Initialize with null to avoid hydration mismatch (cookies not available on server)
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [requiresProfileActivation, setRequiresProfileActivation] =
+    useState(false);
+  const [profileInactiveMessage, setProfileInactiveMessage] = useState<
+    string | null
+  >(null);
 
-  // Set mounted flag on client side only
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Initialize user from cookie on client side only (after mount)
   useEffect(() => {
     if (!isMounted) return;
 
-    // Set initial user from cookie if available (for immediate role-based checks)
     if (authUtils.isAuthenticated()) {
       const roleFromCookie = authUtils.getUserRole();
       if (roleFromCookie) {
@@ -71,25 +115,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loadUser = async () => {
     if (!authUtils.isAuthenticated()) {
+      setRequiresProfileActivation(false);
+      setProfileInactiveMessage(null);
       setLoading(false);
       return;
     }
 
     try {
       const userProfile = await accountsService.getUserProfile();
-      // Ensure role is set from API or fallback to cookie
       if (!userProfile.role) {
         const roleFromCookie = authUtils.getUserRole();
         if (roleFromCookie) {
           userProfile.role = roleFromCookie;
         }
       }
+
+      const active = userProfile.is_profile_active === true;
+      setRequiresProfileActivation(!active);
+      if (active) {
+        setProfileInactiveMessage(null);
+      }
+
       setUser(userProfile);
-    } catch (error) {
-      // If API fails, try to get role from cookie for basic role-based checks
+    } catch {
       const roleFromCookie = authUtils.getUserRole();
       if (roleFromCookie) {
-        // Set minimal user data with role from cookie
         setUser({
           id: 0,
           user_name: "",
@@ -100,9 +150,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           profile_picture: "",
           role: roleFromCookie,
         });
+        setRequiresProfileActivation(false);
       } else {
         authUtils.clearTokens();
         setUser(null);
+        setRequiresProfileActivation(false);
+        setProfileInactiveMessage(null);
       }
     } finally {
       setLoading(false);
@@ -118,77 +171,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     const response = await accountsService.login({ email, password });
-    // Tokens are already stored in cookies by accountsService
-    // Use the user object from response if available, otherwise fetch from API
-    if (response.user) {
-      // Get role from response or fallback to cookie (in case response doesn't have it)
-      const roleFromResponse = response.user.role;
-      const roleFromCookie = authUtils.getUserRole();
-      const userRole = roleFromResponse || roleFromCookie || "";
 
-      // Map the user object to UserProfile format
-      setUser({
-        id: response.user.id || 0,
-        first_name: response.user.first_name || "",
-        last_name: response.user.last_name || "",
-        email: response.user.email || "",
-        phone: response.user.phone_number || "",
-        user_name:
-          response.user.user_name ||
-          response.user.username ||
-          response.user.email,
-        profile_picture: response.user.profile_picture || "",
-        role: userRole,
-      });
+    if (!isLoginResponseProfileActive(response)) {
+      const msg = response.inactive_message?.trim() || null;
+      setRequiresProfileActivation(true);
+      setProfileInactiveMessage(msg);
+      if (response.user) {
+        setUser(mapResponseUserToProfile(response.user));
+      }
       setLoading(false);
-    } else {
-      await loadUser();
+      return {
+        profileActive: false as const,
+        inactiveMessage: response.inactive_message?.trim() ?? "",
+      };
     }
+
+    setProfileInactiveMessage(null);
+    await loadUser();
+    return { profileActive: true as const };
   };
 
   const googleLogin = async (token: string) => {
     const response = await accountsService.googleLogin(token);
-    // Tokens are already stored in cookies by accountsService
-    // Use the user object from response if available, otherwise fetch from API
-    if (response.user) {
-      // Get role from response or fallback to cookie (in case response doesn't have it)
-      const roleFromResponse = response.user.role;
-      const roleFromCookie = authUtils.getUserRole();
-      const userRole = roleFromResponse || roleFromCookie || "";
 
-      // Map the user object to UserProfile format
-      setUser({
-        id: response.user.id || 0,
-        first_name: response.user.first_name || "",
-        last_name: response.user.last_name || "",
-        email: response.user.email || "",
-        phone: response.user.phone_number || "",
-        user_name:
-          response.user.user_name ||
-          response.user.username ||
-          response.user.email,
-        profile_picture: response.user.profile_picture || "",
-        role: userRole,
-      });
+    if (!isLoginResponseProfileActive(response)) {
+      const msg = response.inactive_message?.trim() || null;
+      setRequiresProfileActivation(true);
+      setProfileInactiveMessage(msg);
+      if (response.user) {
+        setUser(mapResponseUserToProfile(response.user));
+      }
       setLoading(false);
-    } else {
-      await loadUser();
+      return {
+        profileActive: false as const,
+        inactiveMessage: response.inactive_message?.trim() ?? "",
+      };
     }
+
+    setProfileInactiveMessage(null);
+    await loadUser();
+    return { profileActive: true as const };
   };
 
   const logout = async () => {
     try {
       await accountsService.logout();
-    } catch (error) {
-      // Logout error
+    } catch {
+      /* ignore */
     } finally {
       authUtils.clearTokens();
       clearResumeData();
-      clearTimeTrackingSession(); // New login will get a new time-tracking session
+      clearTimeTrackingSession();
       if (typeof window !== "undefined") {
         localStorage.removeItem("admin_mode");
       }
       setUser(null);
+      setRequiresProfileActivation(false);
+      setProfileInactiveMessage(null);
     }
   };
 
@@ -196,7 +235,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await loadUser();
   };
 
-  // Only check authentication on client side to avoid hydration mismatch
   const isAuthenticated = isMounted
     ? !!user && authUtils.isAuthenticated()
     : false;
@@ -205,6 +243,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     isAuthenticated,
+    requiresProfileActivation,
+    profileInactiveMessage,
     login,
     googleLogin,
     logout,
