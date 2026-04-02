@@ -22,6 +22,7 @@ import { EyeMovementViolations } from "@/components/assessment/result/EyeMovemen
 import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
 import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
+import { useAuth } from "@/lib/auth/auth-context";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { getMockPsychometricData } from "@/lib/mock-data/assessment-mock-data";
 
@@ -39,6 +40,7 @@ export default function AssessmentResultPage() {
   const [pdfExporting, setPdfExporting] = useState(false);
 
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const forcePsychometric = searchParams?.get("type") === "psychometric";
 
@@ -109,7 +111,25 @@ export default function AssessmentResultPage() {
           .replace(/[^a-z0-9]+/gi, "-")
           .replace(/^-+|-+$/g, "") || "assessment-result";
 
-      generateAssessmentResultPdfVector(assessmentResult, `${base}-result.pdf`);
+      const fromProfile =
+        user &&
+        ([user.first_name, user.last_name].filter(Boolean).join(" ").trim() ||
+          user.user_name ||
+          user.email)
+          ? {
+              name:
+                [user.first_name, user.last_name].filter(Boolean).join(" ").trim() ||
+                user.user_name ||
+                undefined,
+              email: user.email || undefined,
+            }
+          : undefined;
+
+      generateAssessmentResultPdfVector(
+        assessmentResult,
+        `${base}-result.pdf`,
+        fromProfile,
+      );
       showToast("PDF downloaded", "success");
     } catch {
       showToast("Could not generate PDF", "error");
