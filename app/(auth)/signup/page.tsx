@@ -23,6 +23,10 @@ import { useToast } from "@/components/common/Toast";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { signupSchema } from "@/lib/schemas/auth.schema";
+import {
+  getAxiosErrorDetail,
+  getAxiosFieldError,
+} from "@/lib/utils/api-error";
 import { Eye, EyeOff } from "lucide-react";
 
 interface SignupFormValues {
@@ -75,13 +79,12 @@ export default function SignupPage() {
           `/verify-email?email=${encodeURIComponent(values.email)}&signup_as=${encodeURIComponent(signupAs)}`
         );
       }, 2000);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.detail ||
-        err.response?.data?.error ||
-        err.response?.data?.email?.[0] ||
+    } catch (err: unknown) {
+      const message =
+        getAxiosErrorDetail(err, "") ||
+        getAxiosFieldError(err, "email") ||
         t("auth.signupFailed");
-      showToast(errorMessage, "error");
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -377,7 +380,7 @@ export default function SignupPage() {
                   py: 1.25,
                   mb: 2,
                   background:
-                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
+                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                   color: "white",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
@@ -390,7 +393,7 @@ export default function SignupPage() {
                   },
                   "&:disabled": {
                     background:
-                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
+                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                     opacity: 0.6,
                   },
                 }}
