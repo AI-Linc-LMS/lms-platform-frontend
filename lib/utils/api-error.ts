@@ -7,7 +7,8 @@ export type ApiErrorBody = {
 /** DRF `detail` from an Axios error (string or string[]). */
 export function getAxiosErrorDetail(err: unknown, fallback: string): string {
   const raw = (err as { response?: { data?: ApiErrorBody } })?.response?.data
-    ?.detail;
+    ?.detail||(err as { response?: { data?: ApiErrorBody } })?.response?.data
+    ?.error;
   if (Array.isArray(raw)) return raw.join(". ");
   if (typeof raw === "string" && raw.trim()) return raw.trim();
   return fallback;

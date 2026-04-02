@@ -36,19 +36,32 @@ export default function LoginPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, user } = useAuth();
+  const {
+    login,
+    isAuthenticated,
+    user,
+    requiresProfileActivation,
+    loading: authLoading,
+  } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-
-  // If already signed in, send user to a path allowed for their role (ignore stale ?redirect= for wrong side)
+  // Wait for auth bootstrap + loadUser so requiresProfileActivation is correct (avoids racing to dashboard).
   useEffect(() => {
-    if (!isAuthenticated || !user?.role) return;
+    if (authLoading) return;
+    if (!isAuthenticated || !user?.role || requiresProfileActivation) return;
     const path = resolvePostLoginPath(user.role, searchParams.get("redirect"));
     router.replace(path);
-  }, [isAuthenticated, user?.role, router, searchParams]);
+  }, [
+    authLoading,
+    isAuthenticated,
+    user?.role,
+    requiresProfileActivation,
+    router,
+    searchParams,
+  ]);
 
   const initialValues: LoginFormValues = {
     email: "",
@@ -59,7 +72,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(values.email, values.password);
+      const result = await login(values.email, values.password);
+      if (!result.profileActive) {
+        setLoading(false);
+        router.replace("/dashboard");
+        return;
+      }
+
       showToast(t("auth.loginSuccess"), "success");
       setIsRedirecting(true);
 

@@ -62,29 +62,36 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     setIsMounted(true);
   }, []);
 
-  const handleGoogleSignIn = useCallback(async (response: { credential: string }) => {
-    try {
-      // Send the credential (ID token) to the backend
-      // This is called when using One Tap or credential flow
-      await googleLogin(response.credential);
-      showToast(t("auth.loginSuccess"), "success");
-      setIsRedirecting(true);
-      const role = Cookies.get("user_role") ?? "";
-      const redirectUrl = resolvePostLoginPath(
-        role,
-        searchParams.get("redirect")
-      );
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 500);
-    } catch (error: unknown) {
-      showToast(
-        getAxiosErrorDetail(error, t("auth.googleSignInFailed")),
-        "error"
-      );
-      setIsRedirecting(false);
-    }
-  }, [googleLogin, showToast, searchParams, t]);
+  const handleGoogleSignIn = useCallback(
+    async (response: { credential: string }) => {
+      try {
+        const result = await googleLogin(response.credential);
+        if (!result.profileActive) {
+          setIsRedirecting(false);
+          router.replace("/dashboard");
+          return;
+        }
+
+        showToast(t("auth.loginSuccess"), "success");
+        setIsRedirecting(true);
+        const role = Cookies.get("user_role") ?? "";
+        const redirectUrl = resolvePostLoginPath(
+          role,
+          searchParams.get("redirect")
+        );
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 500);
+      } catch (error: unknown) {
+        showToast(
+          getAxiosErrorDetail(error, t("auth.googleSignInFailed")),
+          "error"
+        );
+        setIsRedirecting(false);
+      }
+    },
+    [googleLogin, router, showToast, searchParams, t]
+  );
 
   useEffect(() => {
     if (!isMounted) return;
