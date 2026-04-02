@@ -83,6 +83,11 @@ export function resolvePostLoginPath(
   role: string | undefined | null,
   requestedRedirect: string | null | undefined
 ): string {
+  /** Instructors always land on the student dashboard (not admin default or deep redirects). */
+  if (normalizeRole(role) === "instructor") {
+    return DEFAULT_STUDENT_HOME;
+  }
+
   const raw = (requestedRedirect ?? "").trim();
   let path = raw || DEFAULT_STUDENT_HOME;
 
@@ -92,6 +97,7 @@ export function resolvePostLoginPath(
 
   const pathname = pathnameOnly(path);
   const canAdmin = canAccessAdminArea(role);
+
   const limitedAdmin = isAdminOnlyRole(role);
 
   if (!canAdmin) {

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import "./globals.css";
 import { ThemeModeProvider } from "@/lib/contexts/ThemeContext";
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
@@ -10,12 +9,7 @@ import { EmotionCacheProvider } from "@/lib/emotion-cache";
 import { getClientInfo } from "@/lib/utils/clientInfo";
 import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-
-/** Client-only: applies CSS variables in useEffect; dynamic avoids Turbopack "module factory is not available" on SSR. */
-const ClientThemeProvider = dynamic(
-  () => import("@/components/providers/ClientThemeProvider"),
-  { ssr: false }
-);
+import { ClientThemeProviderGate } from "@/components/providers/ClientThemeProviderGate";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
 import { AdminModeProvider } from "@/lib/contexts/AdminModeContext";
 import { AdminModeRoleSync } from "@/components/providers/AdminModeRoleSync";
@@ -81,7 +75,7 @@ export default async function RootLayout({
       </head>
 
       <body className={`antialiased`} suppressHydrationWarning>
-        <ClientThemeProvider client={client} />
+        <ClientThemeProviderGate client={client} />
         <AuthProvider>
           <ErrorBoundary>
             <I18nProvider clientId={client?.id}>

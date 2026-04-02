@@ -156,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       labelKey: "nav.pendingInstructors",
       path: "/admin/pending-instructors",
       icon: "mdi:account-clock",
-      featureName: "admin_manage_students",
+      featureName: "admin_manage_instructors",
       orgAdminOnly: true,
     },
     {

@@ -65,7 +65,6 @@ export default function LoginPage() {
 
       const role = Cookies.get("user_role") ?? "";
       const target = resolvePostLoginPath(role, searchParams.get("redirect"));
-
       setTimeout(() => {
         window.location.href = target;
       }, 500);

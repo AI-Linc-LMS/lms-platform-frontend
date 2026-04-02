@@ -1070,7 +1070,10 @@
     "approved": "Instructor approved",
     "empty": "No instructors are waiting for approval.",
     "loadFailed": "Failed to load pending instructors.",
-    "approveFailed": "Could not approve this instructor."
+    "approveFailed": "Could not approve this instructor.",
+    "confirmApproveTitle": "Approve this instructor?",
+    "confirmApproveBody": "Are you sure you want to approve {{name}} ({{email}})? They will be able to sign in after approval.",
+    "confirmApprove": "Yes, approve"
   },
   "adminManageStudents": {
     "title": "Manage Students",

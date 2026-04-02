@@ -4,6 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Paper,
   Table,
   TableBody,
@@ -29,6 +33,7 @@ export default function PendingInstructorsPage() {
   const [rows, setRows] = useState<PendingInstructor[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [confirmRow, setConfirmRow] = useState<PendingInstructor | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -54,12 +59,15 @@ export default function PendingInstructorsPage() {
     load();
   }, [load]);
 
-  const handleApprove = async (row: PendingInstructor) => {
+  const handleApproveConfirmed = async () => {
+    const row = confirmRow;
+    if (!row) return;
     try {
       setApprovingId(row.id);
       const res =
         await adminPendingInstructorsService.approvePendingInstructor(row.id);
       showToast(res.detail || t("adminPendingInstructors.approved"), "success");
+      setConfirmRow(null);
       await load();
     } catch (err: unknown) {
       const ax = err as {
@@ -125,7 +133,7 @@ export default function PendingInstructorsPage() {
                         variant="contained"
                         size="small"
                         disabled={approvingId === row.id}
-                        onClick={() => handleApprove(row)}
+                        onClick={() => setConfirmRow(row)}
                         sx={{ textTransform: "none" }}
                       >
                         {approvingId === row.id
@@ -139,6 +147,44 @@ export default function PendingInstructorsPage() {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <Dialog
+          open={Boolean(confirmRow)}
+          onClose={() => {
+            if (approvingId === null) setConfirmRow(null);
+          }}
+          aria-labelledby="approve-instructor-dialog-title"
+        >
+          <DialogTitle id="approve-instructor-dialog-title">
+            {t("adminPendingInstructors.confirmApproveTitle")}
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              {t("adminPendingInstructors.confirmApproveBody", {
+                name: confirmRow?.full_name ?? "",
+                email: confirmRow?.email ?? "",
+              })}
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={() => setConfirmRow(null)}
+              disabled={approvingId !== null}
+              color="inherit"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => void handleApproveConfirmed()}
+              disabled={approvingId !== null}
+            >
+              {approvingId !== null
+                ? t("adminPendingInstructors.approving")
+                : t("adminPendingInstructors.confirmApprove")}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </MainLayout>
   );
