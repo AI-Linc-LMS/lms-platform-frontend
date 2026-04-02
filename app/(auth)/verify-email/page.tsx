@@ -6,10 +6,13 @@ import { useTranslation } from "react-i18next";
 import { TextField, Button, Typography, Box } from "@mui/material";
 import Link from "next/link";
 import { Formik, Form, Field } from "formik";
+import type { FieldInputProps } from "formik";
 import { accountsService } from "@/lib/services/accounts.service";
 import { useToast } from "@/components/common/Toast";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { OtpDigitInput } from "@/components/auth/OtpDigitInput";
 import { verifyEmailSchema } from "@/lib/schemas/auth.schema";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 interface VerifyFormValues {
   email: string;
@@ -38,10 +41,8 @@ export default function VerifyEmailPage() {
       await accountsService.verifyEmail(values.email, values.otp);
       showToast(t("auth.verifySuccess"), "success");
       router.push("/login");
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.detail || t("auth.verifyFailed");
-      showToast(errorMessage, "error");
+    } catch (err: unknown) {
+      showToast(getAxiosErrorDetail(err, t("auth.verifyFailed")), "error");
     } finally {
       setLoading(false);
     }
@@ -57,16 +58,15 @@ export default function VerifyEmailPage() {
     try {
       await accountsService.resendVerificationEmail(email);
       showToast("OTP resent to your email", "success");
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || t("auth.resendFailed");
-      showToast(errorMessage, "error");
+    } catch (err: unknown) {
+      showToast(getAxiosErrorDetail(err, t("auth.resendFailed")), "error");
     } finally {
       setResending(false);
     }
   };
 
   return (
-    <AuthLayout slogan="Changing the  way  the  world  learns">
+    <AuthLayout slogan={t("auth.slogan")}>
       <Box
         sx={{
           width: "100%",
@@ -113,7 +113,7 @@ export default function VerifyEmailPage() {
           {({ values, errors, touched }) => (
             <Form>
               <Field name="email">
-                {({ field }: any) => (
+                {({ field }: { field: FieldInputProps<string> }) => (
                   <TextField
                     {...field}
                     fullWidth
@@ -136,31 +136,7 @@ export default function VerifyEmailPage() {
                 )}
               </Field>
 
-              <Field name="otp">
-                {({ field }: any) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    required
-                    id="otp"
-                    label={t("auth.otpCode")}
-                    placeholder={t("auth.enterOtp")}
-                    size="small"
-                    error={touched.otp && !!errors.otp}
-                    helperText={touched.otp && errors.otp}
-                    sx={{
-                      mb: 2,
-                      "& .MuiFormHelperText-root": {
-                        marginTop: 0.5,
-                        fontSize: "0.75rem",
-                      },
-                    }}
-                    inputProps={{
-                      maxLength: 6,
-                    }}
-                  />
-                )}
-              </Field>
+              <OtpDigitInput name="otp" label={t("auth.otpCode")} />
 
               {/* Verify Button */}
               <Button
@@ -172,7 +148,7 @@ export default function VerifyEmailPage() {
                   py: 1.25,
                   mb: 1.5,
                   background:
-                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
+                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                   color: "white",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
@@ -185,7 +161,7 @@ export default function VerifyEmailPage() {
                   },
                   "&:disabled": {
                     background:
-                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
+                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                     opacity: 0.6,
                   },
                 }}

@@ -45,6 +45,18 @@ export interface UserProfile {
   role: string;
 }
 
+export interface VerifyPasswordResetOtpPayload {
+  email: string;
+  otp: string;
+}
+
+export interface CompletePasswordResetPayload {
+  email: string;
+  reset_token: string;
+  new_password: string;
+  confirm_password: string;
+}
+
 export const accountsService = {
   // Login
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
@@ -115,11 +127,38 @@ export const accountsService = {
     return response.data;
   },
 
-  // Forgot Password
   forgotPassword: async (email: string): Promise<{ detail: string }> => {
     const response = await apiClient.post<{ detail: string }>(
       `/accounts/clients/${config.clientId}/user/forgot-password/`,
       { email }
+    );
+    return response.data;
+  },
+
+  resendPasswordResetOtp: async (email: string): Promise<{ detail: string }> => {
+    const response = await apiClient.post<{ detail: string }>(
+      `/accounts/clients/${config.clientId}/user/resend-password-reset-otp/`,
+      { email }
+    );
+    return response.data;
+  },
+
+  verifyPasswordResetOtp: async (
+    data: VerifyPasswordResetOtpPayload
+  ): Promise<{ reset_token: string }> => {
+    const response = await apiClient.post<{ reset_token: string }>(
+      `/accounts/clients/${config.clientId}/user/verify-password-reset-otp/`,
+      data
+    );
+    return response.data;
+  },
+
+  resetPasswordWithToken: async (
+    data: CompletePasswordResetPayload
+  ): Promise<{ detail: string }> => {
+    const response = await apiClient.post<{ detail: string }>(
+      `/accounts/clients/${config.clientId}/user/reset-password/`,
+      data
     );
     return response.data;
   },
