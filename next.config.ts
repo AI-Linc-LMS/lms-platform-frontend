@@ -1,18 +1,31 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+
+/**
+ * Force browser build: package "node" export pulls jspdf.node.min.js → fflate Worker
+ * which Turbopack cannot bundle ("Can't resolve <dynamic>").
+ * Use a posix-relative path for turbopack (absolute Windows paths are rejected).
+ */
+const jspdfEsRelative = "./node_modules/jspdf/dist/jspdf.es.min.js";
+const jspdfEsAbsolute = path.join(
+  process.cwd(),
+  "node_modules/jspdf/dist/jspdf.es.min.js"
+);
 
 const nextConfig: NextConfig = {
-  // Webpack config (Iconify-safe)
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-      };
-    }
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      jspdf: jspdfEsAbsolute,
+    };
     return config;
   },
 
-  // Turbopack (leave empty unless customizing)
-  turbopack: {},
+  turbopack: {
+    resolveAlias: {
+      jspdf: jspdfEsRelative,
+    },
+  },
 
   // Image optimization
   images: {
