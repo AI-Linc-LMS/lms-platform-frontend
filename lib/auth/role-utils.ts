@@ -32,6 +32,12 @@ export function isCourseManagerRole(role: string | undefined | null): boolean {
   return r === "course_manager" || r === "coursemanager";
 }
 
+/** Organization admin / superadmin only (excludes instructor and course_manager). */
+export function isClientOrgAdminRole(role: string | undefined | null): boolean {
+  const r = normalizeRole(role);
+  return r === "admin" || r === "superadmin";
+}
+
 /**
  * Admin sidebar `featureName` values shown to course managers (subset of admin nav).
  * Client feature flags still apply first; this list further restricts visible links.
@@ -77,6 +83,11 @@ export function resolvePostLoginPath(
   role: string | undefined | null,
   requestedRedirect: string | null | undefined
 ): string {
+  /** Instructors always land on the student dashboard (not admin default or deep redirects). */
+  if (normalizeRole(role) === "instructor") {
+    return DEFAULT_STUDENT_HOME;
+  }
+
   const raw = (requestedRedirect ?? "").trim();
   let path = raw || DEFAULT_STUDENT_HOME;
 
@@ -86,6 +97,7 @@ export function resolvePostLoginPath(
 
   const pathname = pathnameOnly(path);
   const canAdmin = canAccessAdminArea(role);
+
   const limitedAdmin = isAdminOnlyRole(role);
 
   if (!canAdmin) {

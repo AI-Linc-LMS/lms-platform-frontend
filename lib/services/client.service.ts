@@ -103,6 +103,8 @@ export interface ClientInfo {
   login_logo_url?: string | null;
   show_footer?: boolean;
   pwa_manifest?: Record<string, any>;
+  /** When true, signup may offer instructor self-registration (from client-info API). */
+  allow_instructor_self_signup?: boolean;
   [key: string]: any; // Allow other properties from API
 }
 

@@ -14,6 +14,8 @@ export interface SignupData {
   phone: string;
   password: string;
   confirm_password: string;
+  /** Sent on signup; use `"student"` when not registering as instructor. */
+  signup_as?: "student" | "instructor";
 }
 
 export interface AuthResponse {
@@ -43,6 +45,18 @@ export interface UserProfile {
   phone: string;
   profile_picture: string;
   role: string;
+}
+
+export interface VerifyPasswordResetOtpPayload {
+  email: string;
+  otp: string;
+}
+
+export interface CompletePasswordResetPayload {
+  email: string;
+  reset_token: string;
+  new_password: string;
+  confirm_password: string;
 }
 
 export const accountsService = {
@@ -85,9 +99,14 @@ export const accountsService = {
 
   // Signup
   signup: async (data: SignupData): Promise<{ detail: string }> => {
+    const { signup_as, ...rest } = data;
+    const payload = {
+      ...rest,
+      signup_as: signup_as ?? "student",
+    };
     const response = await apiClient.post<{ detail: string }>(
       `/accounts/clients/${config.clientId}/user/signup/`,
-      data
+      payload
     );
     return response.data;
   },
@@ -115,11 +134,38 @@ export const accountsService = {
     return response.data;
   },
 
-  // Forgot Password
   forgotPassword: async (email: string): Promise<{ detail: string }> => {
     const response = await apiClient.post<{ detail: string }>(
       `/accounts/clients/${config.clientId}/user/forgot-password/`,
       { email }
+    );
+    return response.data;
+  },
+
+  resendPasswordResetOtp: async (email: string): Promise<{ detail: string }> => {
+    const response = await apiClient.post<{ detail: string }>(
+      `/accounts/clients/${config.clientId}/user/resend-password-reset-otp/`,
+      { email }
+    );
+    return response.data;
+  },
+
+  verifyPasswordResetOtp: async (
+    data: VerifyPasswordResetOtpPayload
+  ): Promise<{ reset_token: string }> => {
+    const response = await apiClient.post<{ reset_token: string }>(
+      `/accounts/clients/${config.clientId}/user/verify-password-reset-otp/`,
+      data
+    );
+    return response.data;
+  },
+
+  resetPasswordWithToken: async (
+    data: CompletePasswordResetPayload
+  ): Promise<{ detail: string }> => {
+    const response = await apiClient.post<{ detail: string }>(
+      `/accounts/clients/${config.clientId}/user/reset-password/`,
+      data
     );
     return response.data;
   },

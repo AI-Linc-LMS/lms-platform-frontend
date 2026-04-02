@@ -24,6 +24,7 @@ import { useToast } from "@/components/common/Toast";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { loginSchema } from "@/lib/schemas/auth.schema";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { Eye, EyeOff } from "lucide-react";
 
 interface LoginFormValues {
@@ -64,14 +65,11 @@ export default function LoginPage() {
 
       const role = Cookies.get("user_role") ?? "";
       const target = resolvePostLoginPath(role, searchParams.get("redirect"));
-
       setTimeout(() => {
         window.location.href = target;
       }, 500);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.detail || t("auth.loginFailed");
-      showToast(errorMessage, "error");
+    } catch (err: unknown) {
+      showToast(getAxiosErrorDetail(err, t("auth.loginFailed")), "error");
       setLoading(false);
       setIsRedirecting(false);
     }
@@ -270,7 +268,7 @@ export default function LoginPage() {
                   py: 1.25,
                   mb: 2,
                   background:
-                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
+                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                   color: "white",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
@@ -283,7 +281,7 @@ export default function LoginPage() {
                   },
                   "&:disabled": {
                     background:
-                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a6 100%)",
+                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                     opacity: 0.6,
                   },
                 }}

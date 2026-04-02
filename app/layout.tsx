@@ -8,8 +8,8 @@ import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { EmotionCacheProvider } from "@/lib/emotion-cache";
 import { getClientInfo } from "@/lib/utils/clientInfo";
 import { headers } from "next/headers";
-import { ClientThemeProvider } from "@/components/providers/ClientThemeProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ClientThemeProviderGate } from "@/components/providers/ClientThemeProviderGate";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
 import { AdminModeProvider } from "@/lib/contexts/AdminModeContext";
 import { AdminModeRoleSync } from "@/components/providers/AdminModeRoleSync";
@@ -75,7 +75,7 @@ export default async function RootLayout({
       </head>
 
       <body className={`antialiased`} suppressHydrationWarning>
-        <ClientThemeProvider client={client} />
+        <ClientThemeProviderGate client={client} />
         <AuthProvider>
           <ErrorBoundary>
             <I18nProvider clientId={client?.id}>

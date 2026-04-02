@@ -94,6 +94,60 @@ function extractCodeTextForPdf(s: string): string {
   return decodeHtmlEntitiesForPdf(source).replace(/\r\n/g, "\n").trim();
 }
 
+export type AssessmentPdfStudentOverrides = {
+  name?: string;
+  email?: string;
+  username?: string;
+};
+
+/** Collect student identity from result payload (supports several API shapes). */
+function getStudentDetailsForPdf(
+  data: AssessmentResult,
+  overrides?: AssessmentPdfStudentOverrides,
+): {
+  name: string | null;
+  email: string | null;
+  username: string | null;
+} {
+  const u = data.user;
+  const fromUser =
+    (u?.name && String(u.name).trim()) ||
+    [u?.first_name, u?.last_name].filter(Boolean).join(" ").trim() ||
+    null;
+
+  const name =
+    (data.student_name && String(data.student_name).trim()) ||
+    (data.full_name && String(data.full_name).trim()) ||
+    (data.user_name && String(data.user_name).trim()) ||
+    fromUser ||
+    null;
+
+  const email =
+    (data.student_email && String(data.student_email).trim()) ||
+    (data.email && String(data.email).trim()) ||
+    (u?.email && String(u.email).trim()) ||
+    null;
+
+  const rawUsername =
+    (data.user_name && String(data.user_name).trim()) ||
+    (u?.user_name && String(u.user_name).trim()) ||
+    "";
+  const username =
+    rawUsername && rawUsername !== name ? rawUsername : null;
+
+  /** Prefer API payload; use overrides only as fallback (e.g. learner downloading own result). */
+  const finalName = name || overrides?.name?.trim() || null;
+  const finalEmail = email || overrides?.email?.trim() || null;
+  let finalUsername = username || overrides?.username?.trim() || null;
+  if (finalUsername && finalUsername === finalName) finalUsername = null;
+
+  return {
+    name: finalName,
+    email: finalEmail,
+    username: finalUsername,
+  };
+}
+
 function getQuizOptionsForPdf(options: Record<string, string>) {
   const keys =
     Object.keys(options).length > 0
@@ -149,6 +203,7 @@ function drawFootersOnAllPages(
 export function generateAssessmentResultPdfVector(
   data: AssessmentResult,
   fileName: string,
+  studentOverrides?: AssessmentPdfStudentOverrides,
 ): void {
   const pdf = new jsPDF({
     unit: "mm",
@@ -353,7 +408,63 @@ export function generateAssessmentResultPdfVector(
     y,
   );
   y += 7;
-  setInk();
+
+  const student = getStudentDetailsForPdf(data, studentOverrides);
+  if (student.name || student.email || student.username) {
+    const nameLineCount = student.name
+      ? pdf.splitTextToSize(student.name, headerLeftW - 2).length
+      : 0;
+    const emailLineCount = student.email
+      ? pdf.splitTextToSize(`Email: ${student.email}`, headerLeftW - 2).length
+      : 0;
+    const userLineCount = student.username
+      ? pdf.splitTextToSize(
+          `Username: ${student.username}`,
+          headerLeftW - 2,
+        ).length
+      : 0;
+    ensureSpace(
+      6 + nameLineCount * 4.4 + emailLineCount * 4.2 + userLineCount * 4.2 + 8,
+    );
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
+    pdf.text("STUDENT", margin, y);
+    y += 5;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9.5);
+    setInk();
+    if (student.name) {
+      const nameLines = pdf.splitTextToSize(student.name, headerLeftW - 2);
+      pdf.text(nameLines, margin, y);
+      y += nameLines.length * 4.4 + 1;
+    }
+
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+    if (student.email) {
+      const emailLines = pdf.splitTextToSize(
+        `Email: ${student.email}`,
+        headerLeftW - 2,
+      );
+      pdf.text(emailLines, margin, y);
+      y += emailLines.length * 4.2 + 0.5;
+    }
+    if (student.username) {
+      const unLines = pdf.splitTextToSize(
+        `Username: ${student.username}`,
+        headerLeftW - 2,
+      );
+      pdf.text(unLines, margin, y);
+      y += unLines.length * 4.2 + 0.5;
+    }
+    y += 3;
+    setInk();
+  } else {
+    setInk();
+  }
 
   y = Math.max(y, panelBottom) + 8;
 

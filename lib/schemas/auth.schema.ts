@@ -50,6 +50,7 @@ export const signupSchema = Yup.object().shape({
   confirm_password: Yup.string()
     .required("Please confirm your password")
     .oneOf([Yup.ref("password")], "Passwords must match"),
+  signup_as_instructor: Yup.boolean().optional(),
 });
 
 // Verify Email Schema
@@ -67,7 +68,6 @@ export const verifyEmailSchema = Yup.object().shape({
     .matches(/^\d+$/, "OTP must contain only numbers"),
 });
 
-// Forgot Password Schema
 export const forgotPasswordSchema = Yup.object().shape({
   email: Yup.string()
     .required("Email is required")
@@ -76,5 +76,31 @@ export const forgotPasswordSchema = Yup.object().shape({
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       "Please enter a valid email address"
     ),
+});
+
+const resetPasswordFields = {
+  new_password: Yup.string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    ),
+  confirm_password: Yup.string()
+    .required("Please confirm your password")
+    .oneOf([Yup.ref("new_password")], "Passwords must match"),
+};
+
+/** Forgot password step 2: OTP only (email comes from step 1 state). */
+export const forgotPasswordVerifyOtpSchema = Yup.object().shape({
+  otp: Yup.string()
+    .required("OTP is required")
+    .length(6, "OTP must be exactly 6 digits")
+    .matches(/^\d+$/, "OTP must contain only numbers"),
+});
+
+/** Forgot password step 3: new password (POST …/reset-password/ with reset_token) */
+export const resetPasswordNewOnlySchema = Yup.object().shape({
+  ...resetPasswordFields,
 });
 

@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { SignInLoader } from "@/components/common/SignInLoader";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 declare global {
   interface Window {
@@ -76,10 +77,11 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       setTimeout(() => {
         window.location.href = redirectUrl;
       }, 500);
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.detail || t("auth.googleSignInFailed");
-      showToast(errorMessage, "error");
+    } catch (error: unknown) {
+      showToast(
+        getAxiosErrorDetail(error, t("auth.googleSignInFailed")),
+        "error"
+      );
       setIsRedirecting(false);
     }
   }, [googleLogin, showToast, searchParams, t]);

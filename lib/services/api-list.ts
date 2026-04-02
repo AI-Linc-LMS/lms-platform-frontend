@@ -73,6 +73,7 @@ export const getApiEndpoints = (): Record<string, APIEndpoint[]> => {
           phone: "string",
           password: "string",
           confirm_password: "string",
+          signup_as: '"student" | "instructor"',
         },
         responseExample: {
           detail: "OTP sent to your email",

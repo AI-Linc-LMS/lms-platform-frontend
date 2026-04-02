@@ -103,6 +103,20 @@ export interface AssessmentResult {
   assessment_id: string;
   assessment_name: string;
   maximum_marks: number;
+  /** Learner display name when API includes it on the result */
+  student_name?: string;
+  student_email?: string;
+  /** Common alternate keys some APIs use */
+  user_name?: string;
+  email?: string;
+  full_name?: string;
+  user?: {
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+    email?: string;
+    user_name?: string;
+  };
   /** When false, show evaluation-in-progress message instead of full result */
   show_result?: boolean;
   /** Optional server-provided feedback lines for the report */
