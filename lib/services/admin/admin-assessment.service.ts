@@ -703,24 +703,67 @@ export interface SubmissionsExportProctoringData {
 }
 
 /** Submissions export JSON shape (submissions-export API) */
+/** Stats block as returned by submissions-export JSON (mirrors learner result stats). */
+export interface SubmissionsExportStats {
+  total_questions?: number;
+  attempted_questions?: number;
+  correct_answers?: number;
+  score?: number;
+  incorrect_answers?: number;
+  accuracy_percent?: number;
+  placement_readiness?: number;
+  maximum_marks?: number;
+  topic_wise_stats?: Record<
+    string,
+    {
+      total: number;
+      correct: number;
+      incorrect: number;
+      accuracy_percent: number;
+      rating_out_of_5: number;
+    }
+  >;
+  top_skills?: unknown[];
+  low_skills?: unknown[];
+  percentile?: number;
+  time_taken_minutes?: number;
+  total_time_minutes?: number;
+  percentage_time_taken?: number;
+}
+
+export interface SubmissionsExportUserResponses {
+  quiz_responses?: Array<Record<string, unknown>>;
+  coding_problem_responses?: Array<Record<string, unknown>>;
+}
+
 export interface SubmissionsExportSubmission {
+  status?: string;
+  score?: number | null;
   name: string;
   email: string;
   phone?: string;
   started_at?: string;
   submitted_at?: string;
   maximum_marks?: number;
-  overall_score?: number;
-  percentage?: number;
+  overall_score?: number | null;
+  percentage?: number | null;
   total_questions?: number;
   attempted_questions?: number;
+  stats?: SubmissionsExportStats;
+  user_responses?: SubmissionsExportUserResponses;
   section_wise_scores?: Record<string, number>;
   section_wise_max_scores?: Record<string, number>;
   proctoring?: SubmissionsExportProctoringData;
 }
 
 export interface SubmissionsExportResponse {
-  assessment: { id: number; title: string; slug: string; maximum_marks?: number };
+  assessment: {
+    id: number;
+    title: string;
+    slug: string;
+    maximum_marks?: number;
+    show_result?: boolean;
+  };
   submissions: SubmissionsExportSubmission[];
 }
 
