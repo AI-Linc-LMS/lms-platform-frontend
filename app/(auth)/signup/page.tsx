@@ -13,6 +13,7 @@ import {
   InputAdornment,
   Checkbox,
   FormControlLabel,
+  CircularProgress,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import Link from "next/link";
@@ -409,9 +410,14 @@ export default function SignupPage() {
                 fullWidth
                 variant="contained"
                 disabled={loading}
+                aria-busy={loading}
                 sx={{
                   py: 1.25,
                   mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1.25,
                   background:
                     "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                   color: "white",
@@ -428,10 +434,23 @@ export default function SignupPage() {
                     background:
                       "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
                     opacity: 0.6,
+                    color: "white",
                   },
                 }}
               >
-                {loading ? t("auth.creatingAccount") : t("auth.signUp")}
+                {loading ? (
+                  <>
+                    <CircularProgress
+                      size={22}
+                      thickness={4}
+                      sx={{ color: "inherit" }}
+                      aria-hidden
+                    />
+                    <span>{t("auth.creatingAccount")}</span>
+                  </>
+                ) : (
+                  t("auth.signUp")
+                )}
               </Button>
 
               {/* Sign in link */}
