@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogContent,
   Chip,
+  Tooltip,
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -33,6 +34,7 @@ import {
   adminAssessmentService,
   QuestionsExportResponse,
   SubmissionsExportResponse,
+  SubmissionsExportSubmission,
   AssessmentDetail,
   CreateAssessmentPayload,
   isMCQQuestion,
@@ -48,6 +50,11 @@ import { PaginationControls } from "@/components/admin/assessment/PaginationCont
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
+import {
+  mapSubmissionsExportRowToAssessmentResult,
+  safeAssessmentPdfFileName,
+} from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
 type TabValue = "details" | "questions" | "submissions";
 type QuestionsSubTab = "mcq" | "coding";
@@ -107,6 +114,41 @@ function formatSubmissionDate(iso: string | null | undefined): string {
   } catch {
     return "—";
   }
+}
+
+function submissionHasProctoringPayload(
+  p: SubmissionsExportSubmission["proctoring"],
+): boolean {
+  return !!p && typeof p === "object" && Object.keys(p).length > 0;
+}
+
+function formatProctoringSummaryForTable(
+  p: SubmissionsExportSubmission["proctoring"],
+): string {
+  if (!submissionHasProctoringPayload(p)) return "";
+  const parts: string[] = [];
+  if (p!.total_violation_count != null) {
+    parts.push(`Total violations: ${p!.total_violation_count}`);
+  }
+  if (p!.tab_switches_count != null) {
+    parts.push(`Tab switches: ${p!.tab_switches_count}`);
+  }
+  if (p!.face_violations_count != null) {
+    parts.push(`Face: ${p!.face_violations_count}`);
+  }
+  if (p!.fullscreen_exits_count != null) {
+    parts.push(`Fullscreen exits: ${p!.fullscreen_exits_count}`);
+  }
+  if (p!.eye_movement_count != null) {
+    parts.push(`Eye movement: ${p!.eye_movement_count}`);
+  }
+  if (p!.face_validation_failures_count != null) {
+    parts.push(`Face validation: ${p!.face_validation_failures_count}`);
+  }
+  if (p!.multiple_face_detections_count != null) {
+    parts.push(`Multi-face: ${p!.multiple_face_detections_count}`);
+  }
+  return parts.join(" · ");
 }
 
 function formatToDatetimeLocal(dateTimeString: string | null | undefined): string {
@@ -666,6 +708,39 @@ export default function AssessmentEditPage() {
   }, [submissionsData, submissionsPage, submissionsLimit]);
 
   const totalSubmissions = submissionsData?.submissions?.length ?? 0;
+
+  const submissionsIncludeProctoring = useMemo(() => {
+    if (!submissionsData?.submissions?.length) return false;
+    return submissionsData.submissions.some((s) =>
+      submissionHasProctoringPayload(s.proctoring),
+    );
+  }, [submissionsData]);
+
+  const handleDownloadSubmissionPdf = useCallback(
+    (submission: SubmissionsExportSubmission) => {
+      if (!submissionsData) return;
+      try {
+        const result = mapSubmissionsExportRowToAssessmentResult(
+          submissionsData,
+          submission,
+        );
+        const fileName = safeAssessmentPdfFileName(
+          submissionsData.assessment.title ||
+            String(submissionsData.assessment.id),
+          submission.name,
+        );
+        generateAssessmentResultPdfVector(result, fileName);
+        showToast("PDF downloaded", "success");
+      } catch (e: unknown) {
+        const msg =
+          e && typeof e === "object" && "message" in e
+            ? String((e as { message?: string }).message)
+            : "Failed to generate PDF";
+        showToast(msg, "error");
+      }
+    },
+    [submissionsData, showToast],
+  );
 
   useEffect(() => {
     setQuestionsPage(1);
@@ -1280,11 +1355,18 @@ export default function AssessmentEditPage() {
                             <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
                               Attempted
                             </TableCell>
+                           
+                            <TableCell sx={{ fontWeight: 600, py: 1.5, minWidth: 140 }}>
+                              Report
+                            </TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {paginatedSubmissions.map((s, idx) => (
-                            <TableRow key={idx} hover>
+                            <TableRow
+                              key={`${s.email}-${s.submitted_at ?? idx}-${(submissionsPage - 1) * submissionsLimit + idx}`}
+                              hover
+                            >
                               <TableCell sx={{ py: 1.5 }}>{s.name}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>{s.email}</TableCell>
                               <TableCell sx={{ py: 1.5 }}>
@@ -1303,10 +1385,51 @@ export default function AssessmentEditPage() {
                                 {s.overall_score ?? "—"}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
-                                {s.percentage?? "—"}
+                                {s.percentage ?? "—"}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.attempted_questions ?? "—"}
+                              </TableCell>
+                           
+                              <TableCell sx={{ py: 0.5, pr: 1, verticalAlign: "middle" }}>
+                                <Tooltip title={`Download performance report (PDF) for ${s.name}`} placement="top">
+                                  <span>
+                                    <Button
+                                      size="small"
+                                      variant="text"
+                                      aria-label={`Download PDF for ${s.name}`}
+                                      onClick={() => handleDownloadSubmissionPdf(s)}
+                                      disabled={readOnly && !hideAdminQuestions}
+                                      startIcon={
+                                        <IconWrapper
+                                          icon="mdi:file-download-outline"
+                                          size={18}
+                                          color="#e11d48"
+                                        />
+                                      }
+                                      sx={{
+                                        color: "#e11d48",
+                                        textTransform: "none",
+                                        fontWeight: 400,
+                                        fontSize: "0.7125rem",
+                                        px: 0.45,
+                                        minWidth: 0,
+                                        "&:hover": {
+                                          bgcolor: "rgba(225, 29, 72, 0.08)",
+                                          color: "#be123c",
+                                        },
+                                        "& .MuiButton-startIcon": {
+                                          marginRight: "6px",
+                                        },
+                                        "&:disabled .MuiButton-startIcon": {
+                                          opacity: 0.5,
+                                        },
+                                      }}
+                                    >
+                                      Download PDF
+                                    </Button>
+                                  </span>
+                                </Tooltip>
                               </TableCell>
                             </TableRow>
                           ))}

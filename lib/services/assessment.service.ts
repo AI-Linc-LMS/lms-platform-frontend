@@ -106,15 +106,18 @@ export interface AssessmentResult {
   /** Learner display name when API includes it on the result */
   student_name?: string;
   student_email?: string;
+  student_phone?: string;
   /** Common alternate keys some APIs use */
   user_name?: string;
   email?: string;
+  phone?: string;
   full_name?: string;
   user?: {
     first_name?: string;
     last_name?: string;
     name?: string;
     email?: string;
+    phone?: string;
     user_name?: string;
   };
   /** When false, show evaluation-in-progress message instead of full result */
@@ -144,6 +147,13 @@ export interface AssessmentResult {
       duration_seconds?: number;
     }>;
     eye_movement_count?: number;
+    /** Admin submissions export: aggregate counts (no per-event rows). */
+    tab_switches_count?: number;
+    face_violations_count?: number;
+    fullscreen_exits_count?: number;
+    face_validation_failures_count?: number;
+    multiple_face_detections_count?: number;
+    total_violation_count?: number;
   };
   user_responses?: {
     quiz_responses?: QuizResponseItem[];

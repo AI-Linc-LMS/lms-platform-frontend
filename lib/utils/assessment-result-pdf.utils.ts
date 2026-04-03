@@ -34,6 +34,12 @@ const TRACK = { r: 226, g: 232, b: 240 };
 const FOOTER_LINE = { r: 203, g: 213, b: 225 };
 const FEEDBACK_BG = { r: 239, g: 246, b: 255 };
 
+/**
+ * Built-in PDF fonts (no TTF embedding): only "helvetica", "times", "courier".
+ * Use `times` for a classic report look; switch to `"helvetica"` for a neutral sans UI.
+ */
+const PDF_FONT = "helvetica" as const;
+
 function pct(n: number, total: number): number {
   if (!total || !Number.isFinite(n)) return 0;
   return Math.min(100, Math.max(0, Math.round((n / total) * 100)));
@@ -77,6 +83,178 @@ function decodeHtmlEntitiesForPdf(s: string): string {
     .replace(/&#39;/g, "'");
 }
 
+function hasProctoringForPdf(
+  p: AssessmentResult["proctoring"] | undefined,
+): p is NonNullable<AssessmentResult["proctoring"]> {
+  if (!p || typeof p !== "object") return false;
+  if (
+    Array.isArray(p.eye_movement_violations) &&
+    p.eye_movement_violations.length > 0
+  )
+    return true;
+  const counts = [
+    p.tab_switches_count,
+    p.face_violations_count,
+    p.fullscreen_exits_count,
+    p.eye_movement_count,
+    p.face_validation_failures_count,
+    p.multiple_face_detections_count,
+    p.total_violation_count,
+  ];
+  return counts.some((v) => typeof v === "number");
+}
+
+function drawProctoringSummaryPdf(
+  pdf: jsPDF,
+  margin: number,
+  contentW: number,
+  yStart: number,
+  ensureSpace: (mm: number) => void,
+  proctoring: NonNullable<AssessmentResult["proctoring"]>,
+  setInk: () => void,
+): number {
+  const rows: { label: string; value: number }[] = [];
+  const add = (label: string, v: unknown) => {
+    if (typeof v === "number" && Number.isFinite(v)) {
+      rows.push({ label, value: v });
+    }
+  };
+  add("Tab switches", proctoring.tab_switches_count);
+  add("Face violations", proctoring.face_violations_count);
+  add("Fullscreen exits", proctoring.fullscreen_exits_count);
+  add("Eye movement (count)", proctoring.eye_movement_count);
+  add("Face validation failures", proctoring.face_validation_failures_count);
+  add("Multiple face detections", proctoring.multiple_face_detections_count);
+  add("Total violations", proctoring.total_violation_count);
+
+  const eyeEvents = proctoring.eye_movement_violations?.length ?? 0;
+  if (
+    eyeEvents > 0 &&
+    !rows.some((r) => r.label === "Eye movement (count)")
+  ) {
+    rows.push({ label: "Eye movement events (logged)", value: eyeEvents });
+  }
+
+  if (rows.length === 0) return yStart;
+
+  const innerPad = 5;
+  const topPad = 5;
+  const bottomPad = 5;
+  const titleFirstBaselineOffset = 4;
+  const valueColW = 14;
+  const textInnerW = contentW - innerPad * 2;
+  const labelMaxW = Math.max(28, textInnerW - valueColW - 2);
+
+  const titleLineH = 4.6;
+  const subLineH = 3.9;
+  const rowLineH = 4.15;
+  const gapAfterTitle = 3;
+  const gapAfterSubtitle = 4;
+  const dividerGap = 3.5;
+  const gapBetweenRows = 2.8;
+
+  pdf.setFont(PDF_FONT, "bold");
+  pdf.setFontSize(10);
+  const titleLines = pdf.splitTextToSize("Proctoring summary", textInnerW);
+
+  pdf.setFont(PDF_FONT, "normal");
+  pdf.setFontSize(8);
+  const subLines = pdf.splitTextToSize(
+    "Aggregated signals for this attempt (admin report).",
+    textInnerW,
+  );
+
+  pdf.setFont(PDF_FONT, "normal");
+  pdf.setFontSize(8.5);
+  const rowLayouts = rows.map((r) => ({
+    labelLines: pdf.splitTextToSize(r.label, labelMaxW),
+    value: String(r.value),
+  }));
+
+  const headerBlockH =
+    topPad +
+    titleFirstBaselineOffset +
+    titleLines.length * titleLineH +
+    gapAfterTitle +
+    subLines.length * subLineH +
+    gapAfterSubtitle +
+    dividerGap;
+
+  const rowsBlockH =
+    rowLayouts.reduce((sum, rl) => {
+      const lines = Math.max(rl.labelLines.length, 1);
+      return sum + lines * rowLineH + gapBetweenRows;
+    }, 0) - gapBetweenRows;
+
+  const blockH = headerBlockH + rowsBlockH + bottomPad;
+
+  ensureSpace(blockH + 8);
+  const y = yStart;
+
+  pdf.setFillColor(254, 250, 250);
+  pdf.setDrawColor(252, 165, 165);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(margin, y, contentW, blockH, 1.2, 1.2, "FD");
+  pdf.setFillColor(220, 38, 38);
+  pdf.rect(margin, y, 1.5, blockH, "F");
+
+  const valueRightX = margin + contentW - innerPad;
+
+  let baseline = y + topPad + titleFirstBaselineOffset;
+
+  pdf.setFont(PDF_FONT, "bold");
+  pdf.setFontSize(10);
+  setInk();
+  for (const line of titleLines) {
+    pdf.text(line, margin + innerPad, baseline);
+    baseline += titleLineH;
+  }
+
+  baseline += gapAfterTitle;
+  pdf.setFont(PDF_FONT, "normal");
+  pdf.setFontSize(8);
+  pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+  for (const line of subLines) {
+    pdf.text(line, margin + innerPad, baseline);
+    baseline += subLineH;
+  }
+
+  baseline += gapAfterSubtitle;
+
+  pdf.setDrawColor(252, 165, 165);
+  pdf.setLineWidth(0.25);
+  pdf.line(margin + innerPad, baseline, valueRightX, baseline);
+  baseline += dividerGap;
+
+  for (let ri = 0; ri < rowLayouts.length; ri++) {
+    const rl = rowLayouts[ri]!;
+    const rowStart = baseline;
+    pdf.setFont(PDF_FONT, "normal");
+    pdf.setFontSize(8.5);
+    setInk();
+
+    for (let li = 0; li < rl.labelLines.length; li++) {
+      const lineBaseline = rowStart + li * rowLineH;
+      pdf.text(rl.labelLines[li]!, margin + innerPad, lineBaseline);
+      if (li === 0) {
+        pdf.setFont(PDF_FONT, "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
+        pdf.text(rl.value, valueRightX, lineBaseline, { align: "right" });
+        pdf.setFont(PDF_FONT, "normal");
+        pdf.setFontSize(8.5);
+        setInk();
+      }
+    }
+
+    const rowH = Math.max(rl.labelLines.length, 1) * rowLineH;
+    const isLast = ri === rowLayouts.length - 1;
+    baseline = rowStart + rowH + (isLast ? 0 : gapBetweenRows);
+  }
+
+  return y + blockH + 6;
+}
+
 function extractCodeTextForPdf(s: string): string {
   if (!s) return "";
   if (typeof DOMParser !== "undefined") {
@@ -98,6 +276,7 @@ export type AssessmentPdfStudentOverrides = {
   name?: string;
   email?: string;
   username?: string;
+  phone?: string;
 };
 
 /** Collect student identity from result payload (supports several API shapes). */
@@ -107,6 +286,7 @@ function getStudentDetailsForPdf(
 ): {
   name: string | null;
   email: string | null;
+  phone: string | null;
   username: string | null;
 } {
   const u = data.user;
@@ -128,6 +308,13 @@ function getStudentDetailsForPdf(
     (u?.email && String(u.email).trim()) ||
     null;
 
+  const phoneRaw =
+    (data.student_phone && String(data.student_phone).trim()) ||
+    (data.phone && String(data.phone).trim()) ||
+    (u?.phone && String(u.phone).trim()) ||
+    "";
+  const phone = phoneRaw || null;
+
   const rawUsername =
     (data.user_name && String(data.user_name).trim()) ||
     (u?.user_name && String(u.user_name).trim()) ||
@@ -138,12 +325,15 @@ function getStudentDetailsForPdf(
   /** Prefer API payload; use overrides only as fallback (e.g. learner downloading own result). */
   const finalName = name || overrides?.name?.trim() || null;
   const finalEmail = email || overrides?.email?.trim() || null;
+  const overridePhone = overrides?.phone?.trim();
+  const finalPhone = phone || (overridePhone ? overridePhone : null);
   let finalUsername = username || overrides?.username?.trim() || null;
   if (finalUsername && finalUsername === finalName) finalUsername = null;
 
   return {
     name: finalName,
     email: finalEmail,
+    phone: finalPhone,
     username: finalUsername,
   };
 }
@@ -184,7 +374,7 @@ function drawFootersOnAllPages(
     pdf.setFillColor(SKY.r, SKY.g, SKY.b);
     pdf.rect(margin, textY - 3.2, 12, 1.4, "F");
 
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(8);
     pdf.setTextColor(INK.r, INK.g, INK.b);
     pdf.text(`Page ${p} of ${total}`, margin + 14.5, textY);
@@ -272,7 +462,7 @@ export function generateAssessmentResultPdfVector(
     const baseRgb: [number, number, number] = [51, 65, 85];
     const boldRgb: [number, number, number] = [15, 23, 42];
     for (const seg of segments) {
-      pdf.setFont("helvetica", seg.bold ? "bold" : "normal");
+      pdf.setFont(PDF_FONT, seg.bold ? "bold" : "normal");
       const c = seg.bold ? boldRgb : baseRgb;
       pdf.setTextColor(c[0], c[1], c[2]);
       const tokens = seg.text.split(/(\s+)/);
@@ -305,7 +495,7 @@ export function generateAssessmentResultPdfVector(
     pdf.roundedRect(leftX, topY, width, panelH, 1.5, 1.5, "FD");
 
     let py = topY + pad + 4;
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(7.5);
     pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
     pdf.text("YOUR SCORE", leftX + pad, py);
@@ -320,7 +510,7 @@ export function generateAssessmentResultPdfVector(
     );
     py += 7.5;
 
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(8);
     const pillText = tier.label;
     pdf.setTextColor(tone.text[0], tone.text[1], tone.text[2]);
@@ -333,11 +523,11 @@ export function generateAssessmentResultPdfVector(
     py += 8;
 
     const row = (label: string, value: string) => {
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
       pdf.text(label, leftX + pad, py);
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont(PDF_FONT, "bold");
       pdf.setTextColor(INK.r, INK.g, INK.b);
       pdf.text(value, leftX + width - pad, py, { align: "right" });
       py += 4.9;
@@ -351,11 +541,11 @@ export function generateAssessmentResultPdfVector(
     const stLabel = humanizeAssessmentStatus(data.status);
     const stKind = getSubmissionBadgeKind(data.status);
     const stCol = SUBMISSION_BADGE_PDF[stKind];
-    pdf.setFont("helvetica", "normal");
+    pdf.setFont(PDF_FONT, "normal");
     pdf.setFontSize(7.5);
     pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
     pdf.text("Status", leftX + pad, py);
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(7.5);
     const stw = pdf.getTextWidth(stLabel);
     const sw = stw + 5;
@@ -382,7 +572,7 @@ export function generateAssessmentResultPdfVector(
   const panelTop = y - 1;
   const panelBottom = drawScoreSummaryPanel(panelX, panelTop, panelW);
 
-  pdf.setFont("helvetica", "bold");
+  pdf.setFont(PDF_FONT, "bold");
   pdf.setFontSize(8);
   pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
   pdf.text("PERFORMANCE REPORT", margin, y);
@@ -393,12 +583,12 @@ export function generateAssessmentResultPdfVector(
   y += 9;
 
   pdf.setFontSize(20);
-  pdf.setFont("helvetica", "bold");
+  pdf.setFont(PDF_FONT, "bold");
   const titleLines = pdf.splitTextToSize(data.assessment_name, headerLeftW - 2);
   pdf.text(titleLines, margin, y);
   y += titleLines.length * 7 + 3;
 
-  pdf.setFont("helvetica", "normal");
+  pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(9);
   pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
   const idStr = String(data.assessment_id);
@@ -410,12 +600,15 @@ export function generateAssessmentResultPdfVector(
   y += 7;
 
   const student = getStudentDetailsForPdf(data, studentOverrides);
-  if (student.name || student.email || student.username) {
+  if (student.name || student.email || student.phone || student.username) {
     const nameLineCount = student.name
       ? pdf.splitTextToSize(student.name, headerLeftW - 2).length
       : 0;
     const emailLineCount = student.email
       ? pdf.splitTextToSize(`Email: ${student.email}`, headerLeftW - 2).length
+      : 0;
+    const phoneLineCount = student.phone
+      ? pdf.splitTextToSize(`Phone: ${student.phone}`, headerLeftW - 2).length
       : 0;
     const userLineCount = student.username
       ? pdf.splitTextToSize(
@@ -424,16 +617,21 @@ export function generateAssessmentResultPdfVector(
         ).length
       : 0;
     ensureSpace(
-      6 + nameLineCount * 4.4 + emailLineCount * 4.2 + userLineCount * 4.2 + 8,
+      6 +
+        nameLineCount * 4.4 +
+        emailLineCount * 4.2 +
+        phoneLineCount * 4.2 +
+        userLineCount * 4.2 +
+        8,
     );
 
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(8);
     pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
     pdf.text("STUDENT", margin, y);
     y += 5;
 
-    pdf.setFont("helvetica", "normal");
+    pdf.setFont(PDF_FONT, "normal");
     pdf.setFontSize(9.5);
     setInk();
     if (student.name) {
@@ -451,6 +649,14 @@ export function generateAssessmentResultPdfVector(
       );
       pdf.text(emailLines, margin, y);
       y += emailLines.length * 4.2 + 0.5;
+    }
+    if (student.phone) {
+      const phoneLines = pdf.splitTextToSize(
+        `Phone: ${student.phone}`,
+        headerLeftW - 2,
+      );
+      pdf.text(phoneLines, margin, y);
+      y += phoneLines.length * 4.2 + 0.5;
     }
     if (student.username) {
       const unLines = pdf.splitTextToSize(
@@ -491,12 +697,12 @@ export function generateAssessmentResultPdfVector(
   pdf.rect(margin + boxW + heroGap, heroY + heroH - 5, boxW, 5, "F");
 
   pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
+  pdf.setFont(PDF_FONT, "bold");
   pdf.setFontSize(9);
   pdf.text("Questions attempted", margin + 4, heroY + 9);
   pdf.setFontSize(32);
   pdf.text(String(stats?.attempted_questions ?? 0), margin + 4, heroY + 26);
-  pdf.setFont("helvetica", "normal");
+  pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(7.8);
   pdf.setTextColor(224, 242, 254);
   const subL = pdf.splitTextToSize(
@@ -505,7 +711,7 @@ export function generateAssessmentResultPdfVector(
   );
   pdf.text(subL, margin + 4, heroY + heroH - 2.2 - (subL.length - 1) * 3.3);
 
-  pdf.setFont("helvetica", "bold");
+  pdf.setFont(PDF_FONT, "bold");
   pdf.setFontSize(9);
   pdf.setTextColor(255, 255, 255);
   pdf.text("Top three focus areas", margin + boxW + heroGap + 4, heroY + 9);
@@ -516,7 +722,7 @@ export function generateAssessmentResultPdfVector(
     pdf.text(lines, margin + boxW + heroGap + 4, hy);
     hy += lines.length * 4.6 + 1;
   }
-  pdf.setFont("helvetica", "normal");
+  pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(7.8);
   pdf.setTextColor(203, 213, 225);
   const subR = pdf.splitTextToSize(
@@ -547,7 +753,7 @@ export function generateAssessmentResultPdfVector(
     label: string,
     value: number,
   ): number => {
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(7.8);
     setInk();
     const v = clampPct(value);
@@ -577,7 +783,7 @@ export function generateAssessmentResultPdfVector(
   };
 
   ensureSpace(92);
-  pdf.setFont("helvetica", "bold");
+  pdf.setFont(PDF_FONT, "bold");
   pdf.setFontSize(8.5);
   setInk();
   pdf.text("Answer breakdown", x1, y);
@@ -618,7 +824,7 @@ export function generateAssessmentResultPdfVector(
       c3 = drawColBar(x3, c3, t.name, t.accuracy);
     }
   } else {
-    pdf.setFont("helvetica", "normal");
+    pdf.setFont(PDF_FONT, "normal");
     pdf.setFontSize(8);
     pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
     pdf.text("No topic breakdown.", x3, c3 + 4);
@@ -631,7 +837,7 @@ export function generateAssessmentResultPdfVector(
   // --- Time (full width) ---
   const drawWideBar = (label: string, value: number): number => {
     const v = clampPct(value);
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(8.5);
     setInk();
     pdf.text("Time usage", margin, y);
@@ -665,7 +871,7 @@ export function generateAssessmentResultPdfVector(
     "Time used (vs allotted)",
     Math.min(100, stats.percentage_time_taken),
   );
-  pdf.setFont("helvetica", "normal");
+  pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(8.5);
   pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
   pdf.text(
@@ -698,14 +904,14 @@ export function generateAssessmentResultPdfVector(
 
       const label = capitalizeFirstPdf(row.label);
       const labelMaxW = hasAcc ? innerW - 32 : innerW - 6;
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(9);
       setInk();
       const nameLines = pdf.splitTextToSize(label, labelMaxW);
       pdf.text(nameLines, cardX + 3, cardTop + 5);
 
       if (hasAcc) {
-        pdf.setFont("helvetica", "bold");
+        pdf.setFont(PDF_FONT, "bold");
         pdf.setFontSize(8);
         const badgeText = `${acc}%`;
         const accTone =
@@ -743,7 +949,7 @@ export function generateAssessmentResultPdfVector(
         pdf.rect(cardX + 3, barY, (barW * barFill) / 100, 2.8, "F");
       }
 
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(7.5);
       pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
       if (hasCounts) {
@@ -773,11 +979,11 @@ export function generateAssessmentResultPdfVector(
       pdf.rect(margin, y, contentW, h, "F");
       pdf.setFillColor(245, 158, 11);
       pdf.rect(margin, y, 1.5, h, "F");
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(10.5);
       setInk();
       pdf.text("Skills needing attention", margin + 5, y + 6);
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8.5);
       pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
       pdf.text("None flagged for this attempt.", margin + 5, y + 12);
@@ -797,11 +1003,11 @@ export function generateAssessmentResultPdfVector(
     pdf.rect(margin, headerTop, contentW, headerH, "F");
     pdf.setFillColor(245, 158, 11);
     pdf.rect(margin, headerTop, 1.5, headerH, "F");
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(10.5);
     setInk();
     pdf.text("Skills needing attention", margin + 5, headerTop + 6);
-    pdf.setFont("helvetica", "normal");
+    pdf.setFont(PDF_FONT, "normal");
     pdf.setFontSize(8);
     pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
     pdf.text(subLines, margin + 5, headerTop + 11);
@@ -824,7 +1030,7 @@ export function generateAssessmentResultPdfVector(
     accent: { r: number; g: number; b: number },
   ) => {
     const useMuted = lines.length === 0 && !!mutedFallback;
-    pdf.setFont("helvetica", "normal");
+    pdf.setFont(PDF_FONT, "normal");
     pdf.setFontSize(9);
 
     let innerH = 15;
@@ -847,12 +1053,12 @@ export function generateAssessmentResultPdfVector(
     pdf.rect(margin, blockTop, 1.4, innerH, "F");
 
     let ty = blockTop + 7;
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(10);
     setInk();
     pdf.text(title, margin + 5, ty);
     ty += 8;
-    pdf.setFont("helvetica", "normal");
+    pdf.setFont(PDF_FONT, "normal");
     pdf.setFontSize(9);
 
     if (useMuted) {
@@ -901,7 +1107,7 @@ export function generateAssessmentResultPdfVector(
     pdf.roundedRect(margin, y, contentW, 12, 1, 1, "FD");
     pdf.setFillColor(SKY.r, SKY.g, SKY.b);
     pdf.rect(margin, y, 1.4, 12, "F");
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(10.5);
     setInk();
     pdf.text(`Quiz responses (${quizResponses.length})`, margin + 5, y + 7.5);
@@ -929,7 +1135,7 @@ export function generateAssessmentResultPdfVector(
       const metaLine = metaParts.join(" · ");
 
       const qText = stripHtmlForPdf(q.question_text || "");
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8);
       const qLines = pdf.splitTextToSize(qText, contentW - 10);
       const optLinesEstimate = options.length * 6 + 14;
@@ -942,13 +1148,13 @@ export function generateAssessmentResultPdfVector(
       ensureSpace(14 + qLines.length * 4.2 + optLinesEstimate + explExtra + 10);
 
       let cy = y + 6;
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(8.5);
       pdf.setTextColor(statusRgb[0], statusRgb[1], statusRgb[2]);
       pdf.text(metaLine, margin + 5, cy);
       cy += 6;
       setInk();
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(9);
       pdf.text(qLines, margin + 5, cy);
       cy += qLines.length * 4.2 + 4;
@@ -975,13 +1181,13 @@ export function generateAssessmentResultPdfVector(
       }
 
       if (!selectedU) {
-        pdf.setFont("helvetica", "italic");
+        pdf.setFont(PDF_FONT, "italic");
         pdf.setFontSize(7.5);
         pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
         pdf.text("Unattempted", margin + 7, cy);
         cy += 5;
         setInk();
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont(PDF_FONT, "normal");
       }
 
       if (q.explanation) {
@@ -993,11 +1199,11 @@ export function generateAssessmentResultPdfVector(
         const explH = 8 + explWrapped.length * 4.1;
         ensureSpace(explH + 4);
         pdf.roundedRect(margin + 4, cy - 2, contentW - 8, explH, 1, 1, "FD");
-        pdf.setFont("helvetica", "bold");
+        pdf.setFont(PDF_FONT, "bold");
         pdf.setFontSize(7.5);
         pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
         pdf.text("Explanation", margin + 7, cy + 4);
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont(PDF_FONT, "normal");
         pdf.setFontSize(8);
         pdf.setTextColor(51, 65, 85);
         pdf.text(explWrapped, margin + 7, cy + 9);
@@ -1018,7 +1224,7 @@ export function generateAssessmentResultPdfVector(
     pdf.roundedRect(margin, y, contentW, 12, 1, 1, "FD");
     pdf.setFillColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
     pdf.rect(margin, y, 1.4, 12, "F");
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(10.5);
     setInk();
     pdf.text(
@@ -1078,7 +1284,7 @@ export function generateAssessmentResultPdfVector(
         const wrapped = pdf.splitTextToSize(raw || " ", contentW - 14);
         codeLineCount += wrapped.length;
       }
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont(PDF_FONT, "normal");
       const titleLines = pdf.splitTextToSize(title, contentW - 10).length;
       const detailLineCount = detailRows.reduce((sum, row) => {
         const wrapped = pdf.splitTextToSize(`${row.label}: ${row.value}`, contentW - 12);
@@ -1095,14 +1301,14 @@ export function generateAssessmentResultPdfVector(
       );
 
       let cy = y + 6;
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(9.5);
       setInk();
       const titleWrapped = pdf.splitTextToSize(title, contentW - 10);
       pdf.text(titleWrapped, margin + 5, cy);
       cy += titleWrapped.length * 4.8 + 2;
 
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
       pdf.text(
@@ -1111,7 +1317,7 @@ export function generateAssessmentResultPdfVector(
         cy,
       );
       cy += 4.5;
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont(PDF_FONT, "bold");
       pdf.setTextColor(
         c.all_test_cases_passed ? 5 : 180,
         c.all_test_cases_passed ? 120 : 83,
@@ -1120,14 +1326,14 @@ export function generateAssessmentResultPdfVector(
       pdf.text(summary, margin + 5, cy);
       cy += 6;
       if (c.difficulty_level) {
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont(PDF_FONT, "normal");
         pdf.setFontSize(7.5);
         pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
         pdf.text(`Difficulty: ${c.difficulty_level}`, margin + 5, cy);
         cy += 5;
       }
       if (detailRows.length > 0) {
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont(PDF_FONT, "normal");
         pdf.setFontSize(8);
         setInk();
         for (const row of detailRows) {
@@ -1152,12 +1358,12 @@ export function generateAssessmentResultPdfVector(
 
       if (!code.trim()) {
         ensureSpace(CODE_LINE_MM + 4);
-        pdf.setFont("helvetica", "italic");
+        pdf.setFont(PDF_FONT, "italic");
         pdf.setFontSize(8);
         pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
         pdf.text("No code submitted", margin + 6, codeBoxTop + 5);
         cy = codeBoxTop + CODE_LINE_MM + 8;
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont(PDF_FONT, "normal");
       } else {
         cy += 2;
         let lineNum = 0;
@@ -1166,7 +1372,7 @@ export function generateAssessmentResultPdfVector(
           for (const wline of wrapped) {
             if (lineNum >= MAX_CODE_LINES_PER_PROBLEM) {
               ensureSpace(CODE_LINE_MM);
-              pdf.setFont("helvetica", "italic");
+              pdf.setFont(PDF_FONT, "italic");
               pdf.setFontSize(7.5);
               pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
               pdf.text("… (code truncated for PDF)", margin + 6, cy);
@@ -1182,13 +1388,25 @@ export function generateAssessmentResultPdfVector(
             lineNum++;
           }
         }
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont(PDF_FONT, "normal");
       }
 
       y = cy + 10;
       setInk();
     }
     y += 4;
+  }
+
+  if (hasProctoringForPdf(data.proctoring)) {
+    y = drawProctoringSummaryPdf(
+      pdf,
+      margin,
+      contentW,
+      y,
+      ensureSpace,
+      data.proctoring,
+      setInk,
+    );
   }
 
   const year = new Date().getFullYear();
