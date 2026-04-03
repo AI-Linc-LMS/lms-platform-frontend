@@ -356,6 +356,7 @@ export default function SignupPage() {
                       </Typography>
                     }
                   />
+                  {values.signup_as_instructor && (
                   <Box
                     sx={(theme) => ({
                       mt: 1,
@@ -397,10 +398,12 @@ export default function SignupPage() {
                       {t("auth.instructorSignupApprovalNote")}
                     </Typography>
                   </Box>
+                  )}
                 </Box>
               )}
 
               {/* Sign Up Button */}
+              
               <Button
                 type="submit"
                 fullWidth
@@ -418,7 +421,7 @@ export default function SignupPage() {
                   boxShadow: "none",
                   "&:hover": {
                     background:
-                      "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)",
+                      "linear-gradient(135deg, #255c79 0%, #1e4a63 100%)",
                     boxShadow: "0 4px 12px rgba(37, 92, 121, 0.4)",
                   },
                   "&:disabled": {
