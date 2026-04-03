@@ -124,7 +124,7 @@
     "otpResent": "OTP resent to your email",
     "signUpAsInstructor": "Sign up as an instructor",
     "instructorSignupApprovalTitle": "Your account gets a quick admin check",
-    "instructorSignupApprovalNote": "You’re signing up as an instructor—nice. After you verify your email, one of your organization’s admins will review and approve your profile. That usually happens soon. Until then you won’t be able to sign in; once they green-light you, you’re all set.",
+    "instructorSignupApprovalNote": "Kindly verify your email address and await administrative approval. You will be able to sign in once your account has been approved.",
     "passwordResetOtpResent": "A new verification code has been sent.",
     "passwordResetResendHint": "Only the latest code is valid.",
     "resendFailed": "We couldn’t resend the code just now. Please try again in a moment."
