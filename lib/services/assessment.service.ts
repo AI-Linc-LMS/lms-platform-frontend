@@ -158,6 +158,7 @@ export interface AssessmentResult {
   user_responses?: {
     quiz_responses?: QuizResponseItem[];
     coding_problem_responses?: CodingProblemResponseItem[];
+    subjective_responses?: SubjectiveResponseItem[];
   };
 }
 
@@ -172,6 +173,18 @@ export interface QuizResponseItem {
   difficulty_level?: "Easy" | "Medium" | "Hard";
   topic?: string | null;
   skills?: string | null;
+}
+
+export interface SubjectiveResponseItem {
+  question_id: number;
+  section_id: number;
+  section_title: string;
+  question_text: string;
+  question_type?: string;
+  max_marks: number;
+  your_answer: string;
+  /** Present when an instructor or grader has awarded marks */
+  awarded_marks?: number | null;
 }
 
 export interface CodingProblemResponseItem {
@@ -290,6 +303,7 @@ export const assessmentService = {
       };
       quizSectionId: Array<Record<string, any>>;
       codingProblemSectionId: Array<Record<string, any>>;
+      subjectiveQuestionSectionId?: Array<Record<string, any>>;
     },
   ): Promise<SubmissionResponse> => {
     const response = await apiClient.put<SubmissionResponse>(
@@ -330,6 +344,7 @@ export const assessmentService = {
       };
       quizSectionId: Array<Record<string, any>>;
       codingProblemSectionId: Array<Record<string, any>>;
+      subjectiveQuestionSectionId?: Array<Record<string, any>>;
     },
   ): Promise<FinalSubmissionResponse> => {
     const response = await apiClient.put<FinalSubmissionResponse>(

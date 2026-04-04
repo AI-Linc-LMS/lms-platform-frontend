@@ -3,6 +3,7 @@ import type {
   AssessmentResult,
   CodingProblemResponseItem,
   QuizResponseItem,
+  SubjectiveResponseItem,
 } from "@/lib/services/assessment.service";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import {
@@ -1094,6 +1095,8 @@ export function generateAssessmentResultPdfVector(
     data.user_responses?.quiz_responses ?? [];
   const codingResponses: CodingProblemResponseItem[] =
     data.user_responses?.coding_problem_responses ?? [];
+  const subjectiveResponses: SubjectiveResponseItem[] =
+    data.user_responses?.subjective_responses ?? [];
 
   const CODE_LINE_MM = 3.45;
   const CODE_FONT_PT = 6.5;
@@ -1393,6 +1396,84 @@ export function generateAssessmentResultPdfVector(
 
       y = cy + 10;
       setInk();
+    }
+    y += 4;
+  }
+
+  const INDIGO_BAR = { r: 99, g: 102, b: 241 };
+
+  if (subjectiveResponses.length > 0) {
+    ensureSpace(22);
+    pdf.setFillColor(248, 250, 252);
+    pdf.setDrawColor(226, 232, 240);
+    pdf.setLineWidth(0.25);
+    pdf.roundedRect(margin, y, contentW, 12, 1, 1, "FD");
+    pdf.setFillColor(INDIGO_BAR.r, INDIGO_BAR.g, INDIGO_BAR.b);
+    pdf.rect(margin, y, 1.4, 12, "F");
+    pdf.setFont(PDF_FONT, "bold");
+    pdf.setFontSize(10.5);
+    setInk();
+    pdf.text(
+      `Written responses (${subjectiveResponses.length})`,
+      margin + 5,
+      y + 7.5,
+    );
+    y += 18;
+
+    for (let si = 0; si < subjectiveResponses.length; si++) {
+      const s = subjectiveResponses[si]!;
+      const qText = stripHtmlForPdf(s.question_text || "");
+      const ans = (s.your_answer || "").trim();
+      const graded =
+        s.awarded_marks != null && Number.isFinite(Number(s.awarded_marks));
+      const scoreLine = graded
+        ? `Score: ${s.awarded_marks} / ${s.max_marks}`
+        : "Awaiting evaluation";
+      const metaParts = [
+        `Q${si + 1} of ${subjectiveResponses.length}`,
+        stripHtmlForPdf(s.section_title || "") || null,
+        `Max ${s.max_marks} marks`,
+        scoreLine,
+      ].filter(Boolean) as string[];
+      const metaLine = metaParts.join(" · ");
+
+      pdf.setFont(PDF_FONT, "normal");
+      pdf.setFontSize(8);
+      const qLines = pdf.splitTextToSize(qText, contentW - 10);
+      const ansBody = ans || "No response submitted.";
+      const ansLines = pdf.splitTextToSize(ansBody, contentW - 14);
+      ensureSpace(12 + qLines.length * 4.2 + 10 + ansLines.length * 4.1 + 14);
+
+      let cy = y + 6;
+      pdf.setFont(PDF_FONT, "bold");
+      pdf.setFontSize(8);
+      pdf.setTextColor(INDIGO_BAR.r, INDIGO_BAR.g, INDIGO_BAR.b);
+      pdf.text(metaLine, margin + 5, cy);
+      cy += 6;
+      setInk();
+      pdf.setFont(PDF_FONT, "normal");
+      pdf.setFontSize(9);
+      pdf.text(qLines, margin + 5, cy);
+      cy += qLines.length * 4.2 + 4;
+
+      pdf.setFont(PDF_FONT, "bold");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+      pdf.text("Your answer", margin + 5, cy);
+      cy += 5;
+      pdf.setFont(PDF_FONT, "normal");
+      pdf.setFontSize(8.5);
+      setInk();
+      if (!ans) {
+        pdf.setFont(PDF_FONT, "italic");
+        pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+      }
+      pdf.text(ansLines, margin + 5, cy);
+      cy += ansLines.length * 4.1 + 8;
+      pdf.setFont(PDF_FONT, "normal");
+      setInk();
+
+      y = cy;
     }
     y += 4;
   }
