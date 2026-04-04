@@ -19,23 +19,57 @@ interface QuizQuestionListProps {
   questions: QuizQuestion[];
   currentQuestionId: string | number;
   onQuestionClick?: (questionId: string | number) => void;
+  /** Sidebar header (default: Quiz Questions List) */
+  listTitle?: string;
+  /** Optional one-line hint under the title (e.g. subjective navigation) */
+  listSubtitle?: string;
+  /** Visual accent for current row / icons */
+  variant?: "quiz" | "subjective";
 }
+
+/** Colors from app/globals.css */
+const VARIANT_STYLES = {
+  quiz: {
+    currentBg: "var(--surface-indigo-light)",
+    currentHover: "var(--surface-blue-light)",
+    accent: "var(--accent-indigo)",
+    answered: "var(--success-500)",
+    muted: "var(--font-secondary)",
+    currentText: "var(--accent-indigo-dark)",
+  },
+  subjective: {
+    currentBg: "var(--assessment-subjective-surface-active)",
+    currentHover: "var(--assessment-subjective-surface-hover)",
+    accent: "var(--assessment-subjective-accent)",
+    answered: "var(--assessment-subjective-answered)",
+    muted: "var(--assessment-subjective-muted)",
+    currentText: "var(--assessment-subjective-fg-strong)",
+  },
+} as const;
 
 const QuizQuestionListComponent = memo(function QuizQuestionList({
   questions,
   currentQuestionId,
   onQuestionClick,
+  listTitle = "Quiz Questions List",
+  listSubtitle,
+  variant = "quiz",
 }: QuizQuestionListProps) {
+  const c = VARIANT_STYLES[variant];
   const [expanded, setExpanded] = useState(true);
 
   return (
     <Paper
       elevation={0}
       sx={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         overflow: "hidden",
+        boxShadow:
+          variant === "subjective"
+            ? "0 1px 3px 0 var(--assessment-subjective-shadow)"
+            : "none",
       }}
     >
       {/* Header */}
@@ -44,29 +78,57 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
         sx={{
           p: 2,
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "space-between",
+          gap: 1,
           cursor: "pointer",
-          borderBottom: expanded ? "1px solid #e5e7eb" : "none",
+          borderBottom: expanded ? "1px solid var(--border-default)" : "none",
+          backgroundColor:
+            variant === "subjective"
+              ? "var(--assessment-subjective-header-strip-bg)"
+              : "transparent",
           "&:hover": {
-            backgroundColor: "#f9fafb",
+            backgroundColor:
+              variant === "subjective"
+                ? "var(--assessment-subjective-surface-hover)"
+                : "var(--surface)",
           },
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 600,
-            color: "#1a1f2e",
-            fontSize: "1rem",
-          }}
-        >
-          Quiz Questions List
-        </Typography>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 600,
+              color: "var(--font-primary-dark)",
+              fontSize: "1rem",
+              lineHeight: 1.3,
+            }}
+          >
+            {listTitle}
+          </Typography>
+          {listSubtitle ? (
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                mt: 0.5,
+                color:
+                  variant === "subjective"
+                    ? "var(--assessment-subjective-muted)"
+                    : "var(--font-secondary)",
+                fontSize: "0.75rem",
+                lineHeight: 1.4,
+              }}
+            >
+              {listSubtitle}
+            </Typography>
+          ) : null}
+        </Box>
         <IconWrapper
           icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"}
           size={20}
-          color="#6b7280"
+          color="var(--font-secondary)"
         />
       </Box>
 
@@ -81,14 +143,14 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
               width: "6px",
             },
             "&::-webkit-scrollbar-track": {
-              background: "#f1f1f1",
+              background: "var(--surface)",
             },
             "&::-webkit-scrollbar-thumb": {
-              background: "#d1d5db",
+              background: "var(--border-light)",
               borderRadius: "3px",
             },
             "&::-webkit-scrollbar-thumb:hover": {
-              background: "#9ca3af",
+              background: "var(--font-tertiary)",
             },
           }}
         >
@@ -101,7 +163,10 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                 key={question.id}
                 disablePadding
                 sx={{
-                  borderBottom: index < questions.length - 1 ? "1px solid #e5e7eb" : "none",
+                  borderBottom:
+                    index < questions.length - 1
+                      ? "1px solid var(--border-default)"
+                      : "none",
                 }}
               >
                 <ListItemButton
@@ -109,10 +174,10 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                   sx={{
                     py: 1.5,
                     px: 2,
-                    backgroundColor: isCurrent ? "#eff6ff" : "transparent",
-                    borderLeft: isCurrent ? "3px solid #6366f1" : "3px solid transparent",
+                    backgroundColor: isCurrent ? c.currentBg : "transparent",
+                    borderLeft: isCurrent ? `3px solid ${c.accent}` : "3px solid transparent",
                     "&:hover": {
-                      backgroundColor: isCurrent ? "#dbeafe" : "#f9fafb",
+                      backgroundColor: isCurrent ? c.currentHover : "#f9fafb",
                     },
                     transition: "all 0.2s ease-in-out",
                   }}
@@ -130,13 +195,13 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                           <IconWrapper
                             icon="mdi:check-circle"
                             size={20}
-                            color={isCurrent ? "#6366f1" : "#10b981"}
+                            color={isCurrent ? c.accent : c.answered}
                           />
                         ) : (
                           <IconWrapper
                             icon="mdi:circle-outline"
                             size={20}
-                            color={isCurrent ? "#6366f1" : "#d1d5db"}
+                            color={isCurrent ? c.accent : "var(--border-light)"}
                           />
                         )}
                         {hasHtml(question.question) ? (
@@ -144,7 +209,7 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                             component="span"
                             sx={{
                               fontWeight: isCurrent ? 700 : 500,
-                              color: isCurrent ? "#1e40af" : "#6b7280",
+                              color: isCurrent ? c.currentText : c.muted,
                               fontSize: "0.875rem",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -163,8 +228,8 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                             sx={{
                               fontWeight: isCurrent ? 700 : 500,
                               color: isCurrent
-                                ? "#1e40af"
-                                : "#6b7280",
+                                ? c.currentText
+                                : c.muted,
                               fontSize: "0.875rem",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -182,7 +247,7 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
                               width: 6,
                               height: 6,
                               borderRadius: "50%",
-                              backgroundColor: "#6366f1",
+                              backgroundColor: c.accent,
                               ml: 0.5,
                             }}
                           />
@@ -201,7 +266,10 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
 }, (prevProps, nextProps) => {
   // If current question changed, we MUST re-render (navigation)
   if (prevProps.currentQuestionId !== nextProps.currentQuestionId) return false;
-  
+  if (prevProps.listTitle !== nextProps.listTitle) return false;
+  if (prevProps.listSubtitle !== nextProps.listSubtitle) return false;
+  if (prevProps.variant !== nextProps.variant) return false;
+
   // If questions array length changed, re-render
   if (prevProps.questions.length !== nextProps.questions.length) return false;
   

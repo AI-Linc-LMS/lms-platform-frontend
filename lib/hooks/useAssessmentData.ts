@@ -28,6 +28,19 @@ interface CodingSection {
   coding_problems: Array<any>;
 }
 
+interface SubjectiveSection {
+  id: number;
+  title: string;
+  description: string;
+  order: number;
+  subjective_questions: Array<{
+    id: number;
+    question_text: string;
+    max_marks?: number;
+    question_type?: string;
+  }>;
+}
+
 interface AssessmentResponse {
   id: number;
   title: string;
@@ -37,6 +50,7 @@ interface AssessmentResponse {
   duration_minutes: number;
   quizSection?: QuizSection[];
   codingProblemSection?: CodingSection[];
+  subjectiveQuestionSection?: SubjectiveSection[];
   remaining_time: number;
   status: string;
   responseSheet: Record<string, any>;

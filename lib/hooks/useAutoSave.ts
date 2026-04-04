@@ -67,11 +67,8 @@ export function useAutoSave({
           }
           return null;
         };
-        const { quizSectionId, codingProblemSectionId } = formatAssessmentResponses(
-          responses,
-          sections,
-          getCodeFromSession
-        );
+        const { quizSectionId, codingProblemSectionId, subjectiveQuestionSectionId } =
+          formatAssessmentResponses(responses, sections, getCodeFromSession);
 
         // Calculate total duration
         const totalDurationSeconds =
@@ -104,6 +101,7 @@ export function useAutoSave({
           },
           quizSectionId,
           codingProblemSectionId,
+          subjectiveQuestionSectionId,
         };
 
         // Save responses

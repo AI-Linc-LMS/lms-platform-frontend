@@ -21,6 +21,7 @@ import { PsychometricResultView } from "@/components/assessment/result/Psychomet
 import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
 import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
 import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
+import { SubjectiveResponsesSection } from "@/components/assessment/result/SubjectiveResponsesSection";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import { useAuth } from "@/lib/auth/auth-context";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
@@ -97,8 +98,12 @@ export default function AssessmentResultPage() {
   const codingResponses =
     assessmentResult?.user_responses?.coding_problem_responses || [];
 
+  const subjectiveResponses =
+    assessmentResult?.user_responses?.subjective_responses || [];
+
   const hasQuiz = quizResponses.length > 0;
   const hasCoding = codingResponses.length > 0;
+  const hasSubjective = subjectiveResponses.length > 0;
 
   const handleDownloadResultPdf = () => {
     if (!assessmentResult || pdfExporting) return;
@@ -231,6 +236,11 @@ export default function AssessmentResultPage() {
         {/* Coding Section */}
         {hasCoding && (
           <CodingProblemResponsesSection codingResponses={codingResponses} />
+        )}
+
+        {/* Written (subjective) Section */}
+        {hasSubjective && (
+          <SubjectiveResponsesSection subjectiveResponses={subjectiveResponses} />
         )}
 
         {/* Feedback */}

@@ -210,11 +210,8 @@ export function useAssessmentSubmission({
         }
         return null;
       };
-      const { quizSectionId, codingProblemSectionId } = formatAssessmentResponses(
-        currentResponses,
-        sections,
-        getCodeFromSession
-      );
+      const { quizSectionId, codingProblemSectionId, subjectiveQuestionSectionId } =
+        formatAssessmentResponses(currentResponses, sections, getCodeFromSession);
 
       const violationScreenshotSamples = pickRandomUpTo(
         violationScreenshotSamplesRef?.current ?? [],
@@ -257,6 +254,7 @@ export function useAssessmentSubmission({
         },
         quizSectionId,
         codingProblemSectionId,
+        subjectiveQuestionSectionId,
       };
 
       // Submit assessment - THIS IS THE CRITICAL STEP
