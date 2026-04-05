@@ -19,6 +19,7 @@ import { AssessmentFloatingTools } from "@/components/assessment/tools/Assessmen
 import { AssessmentToolbarTools } from "@/components/assessment/tools/AssessmentToolbarTools";
 import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
+import { useLiveProctoringPublisher } from "@/lib/hooks/useLiveProctoringPublisher";
 import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
 import { useAssessmentTimer } from "@/lib/hooks/useAssessmentTimer";
 import { useAssessmentNavigation } from "@/lib/hooks/useAssessmentNavigation";
@@ -204,6 +205,12 @@ export default function TakeAssessmentPage({
     maxViolations: MAX_VIOLATIONS,
     onViolationThresholdReached: handleViolationThresholdReached,
     autoStart: false,
+  });
+
+  const { status: liveStreamStatus } = useLiveProctoringPublisher({
+    assessmentId: assessment?.id ?? 0,
+    enabled: Boolean(assessment?.id) && assessment?.proctoring_enabled !== false,
+    active: assessmentStarted && !submitting && assessment?.status !== "submitted",
   });
 
   totalViolationCountRef.current = totalViolationCount;
@@ -1407,6 +1414,9 @@ export default function TakeAssessmentPage({
             proctoringVideoRef={assessment?.proctoring_enabled !== false ? videoRef : undefined}
             proctoringStatus={assessment?.proctoring_enabled !== false ? status : undefined}
             faceCount={assessment?.proctoring_enabled !== false ? faceCount : undefined}
+            liveStreamStatus={
+              assessment?.proctoring_enabled !== false ? liveStreamStatus : undefined
+            }
             assessmentToolsSlot={
               <AssessmentToolbarTools
                 calculatorOpen={calculatorOpen}

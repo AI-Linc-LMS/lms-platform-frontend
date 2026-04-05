@@ -21,7 +21,6 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
-  Button,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -29,6 +28,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Assessment } from "@/lib/services/admin/admin-assessment.service";
+import { isProctoredAssessmentInLiveWindow } from "@/lib/utils/assessment-live-window.utils";
 
 export interface AssessmentEmailJobInfo {
   task_id: string;
@@ -208,6 +208,25 @@ export function AssessmentTable({
                           fontSize: "0.7rem",
                           height: 22,
                           fontWeight: 600,
+                        }}
+                      />
+                    )}
+                    {isProctoredAssessmentInLiveWindow(assessment) && (
+                      <Chip
+                        component={Link}
+                        href={`/admin/assessment/${assessment.id}/live-monitor`}
+                        onClick={(e) => e.stopPropagation()}
+                        icon={<IconWrapper icon="mdi:video-account" size={14} />}
+                        label="Live"
+                        size="small"
+                        clickable
+                        sx={{
+                          bgcolor: "#fce7f3",
+                          color: "#9d174d",
+                          fontSize: "0.7rem",
+                          height: 22,
+                          fontWeight: 600,
+                          textDecoration: "none",
                         }}
                       />
                     )}
@@ -429,6 +448,18 @@ export function AssessmentTable({
                         <IconWrapper icon="mdi:eye-outline" size={18} color="#6366f1" />
                       </ListItemIcon>
                       <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
+                    </MenuItem>
+                  )}
+                  {isProctoredAssessmentInLiveWindow(assessment) && (
+                    <MenuItem
+                      component={Link}
+                      href={`/admin/assessment/${assessment.id}/live-monitor`}
+                      onClick={() => handleMenuClose(assessment.id)}
+                    >
+                      <ListItemIcon>
+                        <IconWrapper icon="mdi:video-account" size={18} color="#db2777" />
+                      </ListItemIcon>
+                      <ListItemText>Live monitor</ListItemText>
                     </MenuItem>
                   )}
                   {!actionsReadOnly && onTriggerEmailJob && (() => {
@@ -804,6 +835,26 @@ export function AssessmentTable({
                           }}
                         />
                       )}
+                      {isProctoredAssessmentInLiveWindow(assessment) && (
+                        <Chip
+                          component={Link}
+                          href={`/admin/assessment/${assessment.id}/live-monitor`}
+                          onClick={(e) => e.stopPropagation()}
+                          icon={<IconWrapper icon="mdi:video-account" size={14} />}
+                          label="Live"
+                          size="small"
+                          clickable
+                          sx={{
+                            bgcolor: "#fce7f3",
+                            color: "#9d174d",
+                            fontSize: "0.7rem",
+                            height: 24,
+                            fontWeight: 600,
+                            border: "1px solid #fbcfe8",
+                            textDecoration: "none",
+                          }}
+                        />
+                      )}
                     </Stack>
 
                     {/* Time Information */}
@@ -1072,6 +1123,18 @@ export function AssessmentTable({
                             <IconWrapper icon="mdi:eye-outline" size={18} color="#6366f1" />
                           </ListItemIcon>
                           <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
+                        </MenuItem>
+                      )}
+                      {isProctoredAssessmentInLiveWindow(assessment) && (
+                        <MenuItem
+                          component={Link}
+                          href={`/admin/assessment/${assessment.id}/live-monitor`}
+                          onClick={() => handleMenuClose(assessment.id)}
+                        >
+                          <ListItemIcon>
+                            <IconWrapper icon="mdi:video-account" size={18} color="#db2777" />
+                          </ListItemIcon>
+                          <ListItemText>Live monitor</ListItemText>
                         </MenuItem>
                       )}
                       {!actionsReadOnly && onTriggerEmailJob && (() => {
