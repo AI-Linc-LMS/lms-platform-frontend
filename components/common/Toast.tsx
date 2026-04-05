@@ -49,7 +49,11 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         onClose={handleClose}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Alert onClose={handleClose} severity={severity} sx={{ width: "100%" }}>
+        <Alert
+          onClose={handleClose}
+          severity={severity}
+          sx={{ width: "100%", whiteSpace: "pre-line" }}
+        >
           {message}
         </Alert>
       </Snackbar>

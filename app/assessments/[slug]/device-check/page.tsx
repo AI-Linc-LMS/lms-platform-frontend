@@ -404,8 +404,8 @@ export default function DeviceCheckPage({
       }
     }
 
-    // Stop face detection before navigating (it will restart in the assessment page)
-    stopFaceDetection();
+    // Stop face detection only — keep camera/mic tracks live for the take page (same MediaStream as __assessmentStream)
+    stopFaceDetection({ preserveMediaStream: true });
 
     // Navigate to take assessment page immediately
     router.push(`/assessments/${slug}/take`);
