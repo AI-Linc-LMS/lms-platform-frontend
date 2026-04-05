@@ -103,15 +103,62 @@ export function convertCodingSectionsToSections(
 }
 
 /**
- * Merge and sort quiz and coding sections
+ * Normalize saved subjective answers: plain string, { answer }, or graded objects from server.
+ */
+export function normalizeSubjectiveAnswer(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "object" && raw !== null && "answer" in raw) {
+    const a = (raw as { answer: unknown }).answer;
+    return typeof a === "string" ? a : "";
+  }
+  return "";
+}
+
+/**
+ * Convert subjectiveQuestionSection to sections array
+ */
+export function convertSubjectiveSectionsToSections(
+  subjectiveSections: Array<{
+    id: number;
+    title: string;
+    description: string;
+    order: number;
+    subjective_questions: Array<{
+      id: number;
+      question_text: string;
+      max_marks?: number;
+      question_type?: string;
+    }>;
+  }>
+) {
+  return subjectiveSections.map((section) => ({
+    id: section.id,
+    title: section.title,
+    description: section.description,
+    order: section.order,
+    section_type: "subjective",
+    questions: (section.subjective_questions || []).map((q) => ({
+      id: q.id,
+      question_text: q.question_text,
+      max_marks: q.max_marks,
+      question_type: q.question_type,
+    })),
+  }));
+}
+
+/**
+ * Merge and sort quiz, coding, and subjective sections
  */
 export function mergeAssessmentSections(
   quizSections: Array<any> = [],
-  codingSections: Array<any> = []
+  codingSections: Array<any> = [],
+  subjectiveSections: Array<any> = []
 ) {
   const allSections = [
     ...convertQuizSectionsToSections(quizSections),
     ...convertCodingSectionsToSections(codingSections),
+    ...convertSubjectiveSectionsToSections(subjectiveSections),
   ];
 
   // Sort by order
@@ -131,9 +178,11 @@ export function formatAssessmentResponses(
 ): {
   quizSectionId: Array<Record<string, any>>;
   codingProblemSectionId: Array<Record<string, any>>;
+  subjectiveQuestionSectionId: Array<Record<string, any>>;
 } {
   const quizSectionId: Array<Record<string, any>> = [];
   const codingProblemSectionId: Array<Record<string, any>> = [];
+  const subjectiveQuestionSectionId: Array<Record<string, any>> = [];
 
   sections.forEach((section: any) => {
     const sectionType = section.section_type || "quiz";
@@ -191,6 +240,9 @@ export function formatAssessmentResponses(
             best_code: "",
           };
         }
+      } else if (sectionType === "subjective") {
+        const text = normalizeSubjectiveAnswer(questionResponse);
+        sectionResponseData[String(questionId)] = text;
       } else {
         // For quiz: include ALL questions, even if not attempted (for post-assessment analysis)
         // Send null or empty string if not attempted
@@ -215,11 +267,17 @@ export function formatAssessmentResponses(
         [String(section.id)]: sectionResponseData,
       };
       codingProblemSectionId.push(sectionEntry);
+    } else if (sectionType === "subjective" && sectionQuestions.length > 0) {
+      const sectionEntry = {
+        [String(section.id)]: sectionResponseData,
+      };
+      subjectiveQuestionSectionId.push(sectionEntry);
     }
   });
 
   return {
     quizSectionId,
     codingProblemSectionId,
+    subjectiveQuestionSectionId,
   };
 }

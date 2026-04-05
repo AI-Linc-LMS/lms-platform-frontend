@@ -95,6 +95,38 @@
   --chart-problems: #ffd93d;
   --chart-quiz: #6c5ce7;
   --chart-subjective: #a8e6cf;
+  /* Student assessment — subjective section (take flow: tabs, sidebar, layout) */
+  --assessment-subjective-accent: var(--accent-teal);
+  --assessment-subjective-accent-hover: var(--primary-400);
+  --assessment-subjective-on-accent: var(--font-light);
+  --assessment-subjective-surface: var(--secondary-50);
+  --assessment-subjective-surface-active: var(--primary-50);
+  --assessment-subjective-surface-hover: var(--primary-100);
+  --assessment-subjective-fg: var(--primary-600);
+  --assessment-subjective-fg-strong: var(--primary-800);
+  --assessment-subjective-muted: var(--font-secondary);
+  --assessment-subjective-answered: var(--success-500);
+  --assessment-subjective-chip-bg: var(--surface-green-light);
+  --assessment-subjective-chip-fg: var(--ats-success-muted);
+  --assessment-subjective-outline-border: var(--primary-200);
+  --assessment-subjective-outline-fg: var(--primary-800);
+  --assessment-subjective-disabled-border: var(--border-light);
+  --assessment-subjective-disabled-fg: var(--font-tertiary);
+  --assessment-subjective-btn-hover-bg: color-mix(in srgb, var(--accent-teal) 10%, transparent);
+  --assessment-subjective-shadow: color-mix(in srgb, var(--accent-teal) 18%, transparent);
+  --assessment-subjective-shadow-lg: color-mix(in srgb, var(--accent-teal) 26%, transparent);
+  --assessment-subjective-count: var(--accent-teal);
+  /* Subjective answer editor panel (nested surface inside card) */
+  --assessment-subjective-answer-panel-bg: color-mix(
+    in srgb,
+    var(--assessment-subjective-surface) 92%,
+    var(--card-bg)
+  );
+  --assessment-subjective-header-strip-bg: color-mix(
+    in srgb,
+    var(--assessment-subjective-surface-active) 88%,
+    var(--card-bg)
+  );
   --chart-development: #ff8b94;
   --font-family-primary: 'Satoshi', 'Satoshi Variable', sans-serif;
 

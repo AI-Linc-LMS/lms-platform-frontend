@@ -50,8 +50,8 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
         zIndex: 1200,
         px: { xs: 2, md: 3 },
         py: 1.5,
-        borderBottom: "1px solid #e5e7eb",
-        backgroundColor: "#ffffff",
+        borderBottom: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -71,7 +71,7 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
         <Typography
           variant="body2"
           sx={{
-            color: "#374151",
+            color: "var(--font-muted)",
             fontSize: "0.875rem",
             fontWeight: 600,
             whiteSpace: "nowrap",
@@ -97,7 +97,7 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
               background: "transparent",
             },
             "&::-webkit-scrollbar-thumb": {
-              background: "#d1d5db",
+              background: "var(--border-light)",
               borderRadius: "2px",
             },
           }}
@@ -107,6 +107,54 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
             const isActive = index === currentSectionIndex;
             const sectionType = section.section_type || "quiz";
             const isCoding = sectionType === "coding";
+            const isSubjective = sectionType === "subjective";
+
+            const activeBorder = isCoding
+              ? "var(--accent-blue-light)"
+              : isSubjective
+                ? "var(--assessment-subjective-accent)"
+                : "var(--accent-purple)";
+            const activeBg = isCoding
+              ? "var(--surface-blue-light)"
+              : isSubjective
+                ? "var(--assessment-subjective-surface-active)"
+                : "var(--surface-indigo-light)";
+            const activeBgHover = isCoding
+              ? "var(--primary-50)"
+              : isSubjective
+                ? "var(--assessment-subjective-surface-hover)"
+                : "var(--primary-50)";
+            const activeText = isCoding
+              ? "var(--accent-blue-light)"
+              : isSubjective
+                ? "var(--assessment-subjective-fg)"
+                : "var(--accent-purple)";
+            const activeShadow = isCoding
+              ? "0 2px 6px 0 color-mix(in srgb, var(--accent-blue-light) 18%, transparent)"
+              : isSubjective
+                ? "0 2px 6px 0 var(--assessment-subjective-shadow)"
+                : "0 2px 6px 0 color-mix(in srgb, var(--accent-purple) 18%, transparent)";
+            const activeShadowHover = isCoding
+              ? "0 3px 8px 0 color-mix(in srgb, var(--accent-blue-light) 26%, transparent)"
+              : isSubjective
+                ? "0 3px 8px 0 var(--assessment-subjective-shadow-lg)"
+                : "0 3px 8px 0 color-mix(in srgb, var(--accent-purple) 26%, transparent)";
+            const borderHover = isCoding
+              ? "var(--accent-blue-light)"
+              : isSubjective
+                ? "var(--assessment-subjective-accent-hover)"
+                : "var(--accent-purple)";
+            const iconName = isCoding
+              ? "mdi:code-braces"
+              : isSubjective
+                ? "mdi:text-box-outline"
+                : "mdi:clipboard-text";
+            const defaultTitle =
+              sectionType === "coding"
+                ? "Coding"
+                : sectionType === "subjective"
+                  ? "Subjective"
+                  : "Quiz";
 
             return (
               <Box
@@ -118,66 +166,53 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
                   gap: 0.75,
                   px: { xs: 1.5, md: 2 },
                   py: { xs: 0.75, md: 1 },
-                  backgroundColor: isActive
-                    ? isCoding
-                      ? "#eff6ff"
-                      : "#f5f3ff"
-                    : "#ffffff",
+                  backgroundColor: isActive ? activeBg : "var(--card-bg)",
                   border: `2px solid ${
-                    isActive ? (isCoding ? "#3b82f6" : "#a855f7") : "#e5e7eb"
+                    isActive ? activeBorder : "var(--border-default)"
                   }`,
                   borderRadius: 1.5,
                   cursor: onSectionChange ? "pointer" : "default",
                   transition: "all 0.15s ease-out",
                   boxShadow: isActive
-                    ? `0 2px 6px 0 ${
-                        isCoding ? "rgba(59, 130, 246, 0.15)" : "rgba(168, 85, 247, 0.15)"
-                      }`
-                    : "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                    ? activeShadow
+                    : "0 1px 2px 0 var(--surface-subtle)",
                   whiteSpace: "nowrap",
                   "&:hover": onSectionChange
                     ? {
-                        borderColor: isCoding ? "#2563eb" : "#9333ea",
-                        backgroundColor: isActive
-                          ? isCoding
-                            ? "#dbeafe"
-                            : "#ede9fe"
-                          : "#f9fafb",
+                        borderColor: borderHover,
+                        backgroundColor: isActive ? activeBgHover : "var(--surface)",
                         transform: "translateY(-1px)",
-                        boxShadow: `0 3px 8px 0 ${
-                          isCoding ? "rgba(59, 130, 246, 0.2)" : "rgba(168, 85, 247, 0.2)"
-                        }`,
+                        boxShadow: activeShadowHover,
                       }
                     : {},
                 }}
               >
                 <IconWrapper
-                  icon={isCoding ? "mdi:code-braces" : "mdi:clipboard-text"}
+                  icon={iconName}
                   size={14}
-                  color={
-                    isActive ? (isCoding ? "#2563eb" : "#9333ea") : "#6b7280"
-                  }
+                  color={isActive ? activeText : "var(--font-secondary)"}
                 />
         <Typography
           variant="caption"
           sx={{
-            color: isActive
-              ? isCoding
-                ? "#2563eb"
-                : "#9333ea"
-              : "#6b7280",
+            color: isActive ? activeText : "var(--font-secondary)",
             fontSize: { xs: "0.7rem", md: "0.75rem" },
             fontWeight: isActive ? 700 : 600,
             whiteSpace: "nowrap",
           }}
         >
-          {section.title ||
-            `${sectionType === "coding" ? "Coding" : "Quiz"}`}
+          {section.title || defaultTitle}
         </Typography>
         <Typography
           variant="caption"
           sx={{
-            color: isActive ? (isCoding ? "#3b82f6" : "#a855f7") : "#9ca3af",
+            color: isActive
+              ? isCoding
+                ? "var(--accent-blue-light)"
+                : isSubjective
+                  ? "var(--assessment-subjective-count)"
+                  : "var(--accent-purple)"
+              : "var(--font-tertiary)",
             fontSize: { xs: "0.65rem", md: "0.7rem" },
             fontWeight: isActive ? 600 : 500,
           }}
@@ -197,14 +232,14 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
             gap: 0.5,
             px: 1,
             py: 0.5,
-            backgroundColor: "#f3f4f6",
+            backgroundColor: "var(--neutral-100)",
             borderRadius: 0.75,
           }}
         >
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.7rem",
               fontWeight: 600,
             }}
@@ -223,8 +258,8 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           disabled={currentQuestionIndex === 0 && currentSectionIndex === 0}
           startIcon={<IconWrapper icon="mdi:chevron-left" size={18} />}
           sx={{
-            borderColor: "#6366f1",
-            color: "#6366f1",
+            borderColor: "var(--accent-indigo)",
+            color: "var(--accent-indigo)",
             borderRadius: 1.5,
             px: 2.5,
             py: 1,
@@ -233,13 +268,13 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
             textTransform: "none",
             transition: "all 0.2s ease-in-out",
             "&:hover": {
-              borderColor: "#4f46e5",
-              backgroundColor: "#eff6ff",
+              borderColor: "var(--accent-indigo-dark)",
+              backgroundColor: "var(--surface-indigo-light)",
               transform: "translateX(-2px)",
             },
             "&:disabled": {
-              borderColor: "#e5e7eb",
-              color: "#9ca3af",
+              borderColor: "var(--border-default)",
+              color: "var(--font-tertiary)",
               transform: "none",
             },
           }}
@@ -252,24 +287,26 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           disabled={isLastQuestion}
           endIcon={<IconWrapper icon="mdi:chevron-right" size={18} />}
           sx={{
-            backgroundColor: "#6366f1",
-            color: "#ffffff",
+            backgroundColor: "var(--accent-indigo)",
+            color: "var(--font-light)",
             borderRadius: 1.5,
             px: 3,
             py: 1,
             fontSize: "0.875rem",
             fontWeight: 600,
             textTransform: "none",
-            boxShadow: "0 2px 8px 0 rgba(99, 102, 241, 0.3)",
+            boxShadow:
+              "0 2px 8px 0 color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
             transition: "all 0.2s ease-in-out",
             "&:hover": {
-              backgroundColor: "#4f46e5",
-              boxShadow: "0 4px 12px 0 rgba(99, 102, 241, 0.4)",
+              backgroundColor: "var(--accent-indigo-dark)",
+              boxShadow:
+                "0 4px 12px 0 color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
               transform: "translateX(2px)",
             },
             "&:disabled": {
-              backgroundColor: "#e5e7eb",
-              color: "#9ca3af",
+              backgroundColor: "var(--border-default)",
+              color: "var(--font-tertiary)",
               boxShadow: "none",
               transform: "none",
             },

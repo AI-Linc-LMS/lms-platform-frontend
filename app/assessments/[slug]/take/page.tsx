@@ -32,7 +32,11 @@ import { AssessmentNavigation } from "@/components/assessment/AssessmentNavigati
 import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
 import { AssessmentQuizLayout } from "@/components/assessment/AssessmentQuizLayout";
 import { AssessmentCodingLayout } from "@/components/assessment/AssessmentCodingLayout";
-import { mergeAssessmentSections } from "@/utils/assessment.utils";
+import { AssessmentSubjectiveLayout } from "@/components/assessment/AssessmentSubjectiveLayout";
+import {
+  mergeAssessmentSections,
+  normalizeSubjectiveAnswer,
+} from "@/utils/assessment.utils";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
 import { config } from "@/lib/config";
@@ -59,6 +63,7 @@ const VIOLATION_SCREENSHOT_DEBOUNCE_MS = 400;
 // Memoized question component to prevent unnecessary re-renders
 const MemoizedQuizLayout = memo(AssessmentQuizLayout);
 const MemoizedCodingLayout = memo(AssessmentCodingLayout);
+const MemoizedSubjectiveLayout = memo(AssessmentSubjectiveLayout);
 
 export default function TakeAssessmentPage({
   params,
@@ -157,13 +162,15 @@ export default function TakeAssessmentPage({
     if (!assessment) return [];
     const merged = mergeAssessmentSections(
       assessment.quizSection || [],
-      assessment.codingProblemSection || []
+      assessment.codingProblemSection || [],
+      assessment.subjectiveQuestionSection || []
     );
     // Debug: Log sections to help diagnose issues
     if (merged.length === 0) {
       console.warn("No sections found in assessment:", {
         quizSection: assessment.quizSection,
         codingProblemSection: assessment.codingProblemSection,
+        subjectiveQuestionSection: assessment.subjectiveQuestionSection,
         assessment: assessment
       });
     }
@@ -526,10 +533,46 @@ export default function TakeAssessmentPage({
               });
             }
 
-            // Only update if we found saved responses - use startTransition for non-blocking update
+            if (responseSheet.subjectiveQuestionSectionId && Array.isArray(responseSheet.subjectiveQuestionSectionId)) {
+              if (!loadedResponses["subjective"]) {
+                loadedResponses["subjective"] = {};
+              }
+
+              responseSheet.subjectiveQuestionSectionId.forEach((sectionData: any) => {
+                Object.keys(sectionData).forEach((sectionIdKey) => {
+                  const questionResponses = sectionData[sectionIdKey];
+                  Object.keys(questionResponses).forEach((questionIdKey) => {
+                    const response = questionResponses[questionIdKey];
+                    const questionId = Number(questionIdKey);
+                    if (response !== undefined) {
+                      const text = normalizeSubjectiveAnswer(response);
+                      loadedResponses["subjective"][questionId] = text;
+                      loadedResponses["subjective"][String(questionId)] = text;
+                    }
+                  });
+                });
+              });
+            }
+
+            // Merge into existing section buckets so a partial response_sheet never wipes other section types
             if (Object.keys(loadedResponses).length > 0) {
               startTransition(() => {
-                setResponses(loadedResponses);
+                setResponses((prev) => {
+                  const next = { ...prev };
+                  if (loadedResponses.quiz) {
+                    next.quiz = { ...(prev.quiz || {}), ...loadedResponses.quiz };
+                  }
+                  if (loadedResponses.coding) {
+                    next.coding = { ...(prev.coding || {}), ...loadedResponses.coding };
+                  }
+                  if (loadedResponses.subjective) {
+                    next.subjective = {
+                      ...(prev.subjective || {}),
+                      ...loadedResponses.subjective,
+                    };
+                  }
+                  return next;
+                });
               });
             }
           } catch (error) {
@@ -881,53 +924,73 @@ export default function TakeAssessmentPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Answer change handler - debounced to prevent excessive updates
+
+  const applyAnswerToResponses = useCallback(
+    (
+      prev: Record<string, Record<string, any>>,
+      sectionType: string,
+      questionId: string | number,
+      answer: any
+    ) => {
+      if (answer === null || answer === undefined) {
+        const newSectionResponses = { ...prev[sectionType] };
+        delete newSectionResponses[questionId];
+        if (prev[sectionType]?.[questionId] !== undefined) {
+          return {
+            ...prev,
+            [sectionType]: newSectionResponses,
+          };
+        }
+        return prev;
+      }
+
+      const currentAnswer = prev[sectionType]?.[questionId];
+      if (
+        currentAnswer === answer ||
+        (typeof answer === "object" &&
+          typeof currentAnswer === "object" &&
+          JSON.stringify(currentAnswer) === JSON.stringify(answer))
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [sectionType]: {
+          ...prev[sectionType],
+          [questionId]: answer,
+        },
+      };
+    },
+    []
+  );
+
+  // Debounce quiz/coding only. Subjective uses a controlled TextField — delayed setState
+  // would reset the input on every keystroke before the timeout fires.
   const handleAnswerChange = useCallback(
     (sectionType: string, questionId: string | number, answer: any) => {
-      // Clear existing debounce
+      if (sectionType === "subjective") {
+        if (answerChangeDebounceRef.current) {
+          clearTimeout(answerChangeDebounceRef.current);
+          answerChangeDebounceRef.current = null;
+        }
+        setResponses((prev) =>
+          applyAnswerToResponses(prev, sectionType, questionId, answer)
+        );
+        return;
+      }
+
       if (answerChangeDebounceRef.current) {
         clearTimeout(answerChangeDebounceRef.current);
       }
 
-      // Debounce for 100ms to batch rapid changes
       answerChangeDebounceRef.current = setTimeout(() => {
-        setResponses((prev) => {
-          // If answer is null/undefined, remove it from responses (clear answer)
-          if (answer === null || answer === undefined) {
-            const newSectionResponses = { ...prev[sectionType] };
-            delete newSectionResponses[questionId];
-            // Only update if the answer actually existed
-            if (prev[sectionType]?.[questionId] !== undefined) {
-              return {
-                ...prev,
-                [sectionType]: newSectionResponses,
-              };
-            }
-            return prev;
-          }
-
-          // Quick check to avoid unnecessary state updates
-          const currentAnswer = prev[sectionType]?.[questionId];
-          if (
-            currentAnswer === answer ||
-            (typeof answer === "object" &&
-              typeof currentAnswer === "object" &&
-              JSON.stringify(currentAnswer) === JSON.stringify(answer))
-          ) {
-            return prev;
-          }
-
-          return {
-            ...prev,
-            [sectionType]: {
-              ...prev[sectionType],
-              [questionId]: answer,
-            },
-          };
-        });
+        setResponses((prev) =>
+          applyAnswerToResponses(prev, sectionType, questionId, answer)
+        );
       }, 100);
     },
-    []
+    [applyAnswerToResponses]
   );
 
   // Dialog handlers
@@ -961,6 +1024,21 @@ export default function TakeAssessmentPage({
   const quizQuestions = useMemo(() => {
     if (!currentSection || sectionType !== "quiz") return [];
     return currentSection.questions || [];
+  }, [currentSection, sectionType]);
+
+  const subjectiveQuestions = useMemo((): Array<{
+    id: number;
+    question_text: string;
+    max_marks?: number;
+    question_type?: string;
+  }> => {
+    if (!currentSection || sectionType !== "subjective") return [];
+    return (currentSection.questions || []) as Array<{
+      id: number;
+      question_text: string;
+      max_marks?: number;
+      question_type?: string;
+    }>;
   }, [currentSection, sectionType]);
 
   // Optimized mappedQuizQuestions - cache with ref to prevent recalculation on navigation
@@ -998,6 +1076,46 @@ export default function TakeAssessmentPage({
     mappedQuizQuestionsRef.current = mapped;
     return mapped;
   }, [quizQuestions, responses, sectionType]);
+
+  const mappedSubjectiveQuestionsRef = useRef<any[]>([]);
+  const lastMappedSubjectiveHashRef = useRef<string>("");
+
+  const mappedSubjectiveQuestions = useMemo(() => {
+    if (!subjectiveQuestions.length) {
+      mappedSubjectiveQuestionsRef.current = [];
+      return [];
+    }
+    const sectionResponses = responses[sectionType] || {};
+    const relevantResponses = subjectiveQuestions.map((q: any) => {
+      const raw = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
+      const text =
+        typeof raw === "string" ? raw : normalizeSubjectiveAnswer(raw);
+      return {
+        id: q.id,
+        answered: text.trim().length > 0,
+      };
+    });
+    const hash = JSON.stringify(relevantResponses);
+    if (
+      hash === lastMappedSubjectiveHashRef.current &&
+      mappedSubjectiveQuestionsRef.current.length > 0
+    ) {
+      return mappedSubjectiveQuestionsRef.current;
+    }
+    lastMappedSubjectiveHashRef.current = hash;
+    const mapped = subjectiveQuestions.map((q: any) => {
+      const raw = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
+      const text =
+        typeof raw === "string" ? raw : normalizeSubjectiveAnswer(raw);
+      return {
+        id: q.id,
+        question: q.question_text,
+        answered: text.trim().length > 0,
+      };
+    });
+    mappedSubjectiveQuestionsRef.current = mapped;
+    return mapped;
+  }, [subjectiveQuestions, responses, sectionType]);
 
   // Optimized section status - use ref to prevent recalculation on every navigation
   const sectionStatusRef = useRef<any[]>([]);
@@ -1045,6 +1163,14 @@ export default function TakeAssessmentPage({
             if (isSubmitted || hasRun || hasCode) {
               answered++;
             }
+          }
+        } else if (sectionType === "subjective") {
+          const text =
+            typeof response === "string"
+              ? response
+              : normalizeSubjectiveAnswer(response);
+          if (text.trim().length > 0) {
+            answered++;
           }
         }
       });
@@ -1113,6 +1239,11 @@ export default function TakeAssessmentPage({
     [quizQuestions, currentQuestionIndex]
   );
 
+  const currentSubjectiveQuestion = useMemo(() => {
+    if (!subjectiveQuestions.length) return null;
+    return subjectiveQuestions[currentQuestionIndex] || null;
+  }, [subjectiveQuestions, currentQuestionIndex]);
+
   const currentAnswer = useMemo(() => {
     if (!currentQuizQuestion) return undefined;
     return responses[sectionType]?.[currentQuizQuestion.id];
@@ -1128,6 +1259,15 @@ export default function TakeAssessmentPage({
     if (!currentCodingQuestion) return null;
     return responses["coding"]?.[currentCodingQuestion.id] || null;
   }, [currentCodingQuestion, responses]);
+
+  const currentSubjectiveAnswer = useMemo(() => {
+    if (!currentSubjectiveQuestion) return "";
+    const raw =
+      responses["subjective"]?.[currentSubjectiveQuestion.id] ??
+      responses["subjective"]?.[String(currentSubjectiveQuestion.id)];
+    if (typeof raw === "string") return raw;
+    return normalizeSubjectiveAnswer(raw);
+  }, [currentSubjectiveQuestion, responses]);
 
   // Get coding questions for navigation - optimized
   const codingQuestions = useMemo(() => {
@@ -1160,6 +1300,25 @@ export default function TakeAssessmentPage({
       }
     },
     [codingQuestions, currentQuestionIndex]
+  );
+
+  const handleSubjectiveQuestionClick = useCallback(
+    (questionId: string | number) => {
+      const index = subjectiveQuestions.findIndex((q: any) => q.id === questionId);
+      if (index !== -1 && index !== currentQuestionIndex) {
+        const updateQuestion = () => {
+          startTransition(() => {
+            setCurrentQuestionIndex(index);
+          });
+        };
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(updateQuestion, { timeout: 30 });
+        } else {
+          setTimeout(updateQuestion, 0);
+        }
+      }
+    },
+    [subjectiveQuestions, currentQuestionIndex]
   );
 
   // Early return
@@ -1371,6 +1530,32 @@ export default function TakeAssessmentPage({
                   />
                 )}
 
+                {sectionType === "subjective" && currentSubjectiveQuestion && (
+                  <MemoizedSubjectiveLayout
+                    key={`subjective-${currentSubjectiveQuestion.id}-${currentQuestionIndex}`}
+                    currentQuestionIndex={currentQuestionIndex}
+                    currentQuestion={{
+                      id: currentSubjectiveQuestion.id,
+                      question_text: currentSubjectiveQuestion.question_text,
+                      max_marks: currentSubjectiveQuestion.max_marks,
+                      question_type: currentSubjectiveQuestion.question_type,
+                    }}
+                    answerText={currentSubjectiveAnswer}
+                    questions={mappedSubjectiveQuestions}
+                    totalQuestions={subjectiveQuestions.length}
+                    onAnswerChange={(text) =>
+                      handleAnswerChange(
+                        "subjective",
+                        currentSubjectiveQuestion.id,
+                        text
+                      )
+                    }
+                    onNextQuestion={navigation.handleNext}
+                    onPreviousQuestion={navigation.handlePrevious}
+                    onQuestionClick={handleSubjectiveQuestionClick}
+                  />
+                )}
+
                 {/* Show message if section exists but has no questions */}
                 {sectionType === "quiz" && !currentQuizQuestion && (
                   <Box
@@ -1408,6 +1593,26 @@ export default function TakeAssessmentPage({
                     </Typography>
                     <Typography variant="body2" sx={{ color: "#9ca3af" }}>
                       This section does not contain any coding problems.
+                    </Typography>
+                  </Box>
+                )}
+
+                {sectionType === "subjective" && !currentSubjectiveQuestion && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "400px",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                      No subjective questions in this section
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                      This section does not contain any subjective questions.
                     </Typography>
                   </Box>
                 )}
