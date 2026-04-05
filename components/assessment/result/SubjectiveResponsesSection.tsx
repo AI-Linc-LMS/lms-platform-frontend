@@ -17,6 +17,11 @@ function formatQuestionTypeLabel(type: string) {
   return type.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
+function getSubjectiveAnswerText(q: SubjectiveResponseItem): string {
+  const raw = q.your_answer ?? q.answer ?? "";
+  return typeof raw === "string" ? raw : String(raw ?? "");
+}
+
 export function SubjectiveResponsesSection({
   subjectiveResponses,
 }: SubjectiveResponsesSectionProps) {
@@ -28,7 +33,11 @@ export function SubjectiveResponsesSection({
 
   if (!q) return null;
 
-  const answered = Boolean(q.your_answer?.trim());
+  const answerText = getSubjectiveAnswerText(q);
+  const answered = Boolean(answerText.trim());
+  const feedbackText =
+    typeof q.feedback === "string" ? q.feedback.trim() : "";
+  const hasFeedback = feedbackText.length > 0;
   const graded =
     q.awarded_marks != null && Number.isFinite(Number(q.awarded_marks));
 
@@ -253,7 +262,7 @@ export function SubjectiveResponsesSection({
                   wordBreak: "break-word",
                 }}
               >
-                {q.your_answer}
+                {answerText}
               </Typography>
             ) : (
               <Typography variant="body2" sx={{ color: "#9ca3af", fontStyle: "italic" }}>
@@ -261,6 +270,46 @@ export function SubjectiveResponsesSection({
               </Typography>
             )}
           </Paper>
+
+          {hasFeedback ? (
+            <Box sx={{ mt: 2 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  color: "#0d9488",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.06,
+                  display: "block",
+                  mb: 1,
+                }}
+              >
+                Feedback
+              </Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid #ccfbf1",
+                  backgroundColor: "#f0fdfa",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    m: 0,
+                    color: "#134e4a",
+                    lineHeight: 1.65,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {feedbackText}
+                </Typography>
+              </Paper>
+            </Box>
+          ) : null}
         </Box>
       </Box>
     </Paper>

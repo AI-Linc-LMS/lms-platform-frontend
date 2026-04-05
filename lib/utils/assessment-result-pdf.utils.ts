@@ -34,6 +34,14 @@ const INK = { r: 15, g: 23, b: 42 };
 const TRACK = { r: 226, g: 232, b: 240 };
 const FOOTER_LINE = { r: 203, g: 213, b: 225 };
 const FEEDBACK_BG = { r: 239, g: 246, b: 255 };
+/** Written / subjective response cards in PDF export */
+const WRITTEN_CARD_BG = { r: 250, g: 250, b: 250 };
+const WRITTEN_CARD_STROKE = { r: 229, g: 231, b: 235 };
+const WRITTEN_ANSWER_FILL = { r: 255, g: 255, b: 255 };
+const WRITTEN_ANSWER_STROKE = { r: 229, g: 231, b: 235 };
+const WRITTEN_FEEDBACK_FILL = { r: 240, g: 253, b: 250 };
+const WRITTEN_FEEDBACK_STROKE = { r: 153, g: 246, b: 228 };
+const WRITTEN_FEEDBACK_INK = { r: 19, g: 78, b: 74 };
 
 /**
  * Built-in PDF fonts (no TTF embedding): only "helvetica", "times", "courier".
@@ -68,20 +76,241 @@ function stripHtmlForPdf(s: string): string {
     .trim();
 }
 
+/**
+ * jsPDF word-wrap uses `String.split(" ")` (ASCII space only). Unicode spaces, ZWSP,
+ * and control chars break wrapping and can trigger huge PDF word-spacing (looks like
+ * spaces between every letter). Strip/normalize before measuring or drawing.
+ */
+const PDF_UNICODE_SPACE_SEPARATORS =
+  /[\u00A0\u1680\u180E\u2000-\u200A\u202F\u205F\u3000]/g;
+const PDF_ZW_AND_FORMAT_MARKS =
+  /[\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
+const PDF_CONTROLS_EXCEPT_NEWLINE =
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g;
+
+function sanitizeForJsPdfText(s: string): string {
+  if (!s) return "";
+  let t = s
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\u2028/g, "\n")
+    .replace(/\u2029/g, "\n\n");
+  t = t.replace(PDF_ZW_AND_FORMAT_MARKS, "");
+  t = t
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(PDF_UNICODE_SPACE_SEPARATORS, " ")
+        .replace(PDF_CONTROLS_EXCEPT_NEWLINE, "")
+        .replace(/\t/g, " ")
+        .replace(/ +/g, " ")
+        .trim(),
+    )
+    .join("\n");
+  return t.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** Use splitTextToSize + getTextDimensions(lines) so height matches `text(lines, …)` output */
+function measurePdfWrappedHeightMm(
+  pdf: InstanceType<typeof jsPDF>,
+  text: string,
+  maxWidthMm: number,
+  fontSize: number,
+  fontStyle: "normal" | "bold" | "italic",
+): number {
+  pdf.setFont(PDF_FONT, fontStyle);
+  pdf.setFontSize(fontSize);
+  const payload = text.trim().length > 0 ? text : " ";
+  const lines = pdf.splitTextToSize(payload, maxWidthMm);
+  const dim = pdf.getTextDimensions(lines);
+  return dim.h;
+}
+
+function decodeNumericHtmlEntitiesForPdf(s: string): string {
+  if (!s) return "";
+  return s
+    .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex) => {
+      const cp = parseInt(hex, 16);
+      if (!Number.isFinite(cp)) return "";
+      try {
+        return String.fromCodePoint(cp);
+      } catch {
+        return "";
+      }
+    })
+    .replace(/&#(\d+);/g, (_, dec) => {
+      const cp = parseInt(dec, 10);
+      if (!Number.isFinite(cp) || cp < 0) return "";
+      try {
+        return String.fromCodePoint(cp);
+      } catch {
+        return "";
+      }
+    });
+}
+
 function decodeHtmlEntitiesForPdf(s: string): string {
   if (!s) return "";
+  let t: string;
   if (typeof document !== "undefined") {
     const textarea = document.createElement("textarea");
     textarea.innerHTML = s;
-    return textarea.value;
+    t = textarea.value;
+  } else {
+    t = s
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
   }
-  return s
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+  return decodeNumericHtmlEntitiesForPdf(t);
+}
+
+/**
+ * Built-in PDF fonts (Helvetica) use limited encodings; Greek letters and many math
+ * symbols render as wrong Latin glyphs (e.g. τ→Ä, ω→É). Replace with ASCII names.
+ */
+function buildPdfSymbolReplacementMap(): Map<number, string> {
+  const m = new Map<number, string>();
+  const pairs: [string, string][] = [
+    ["α", "alpha"],
+    ["β", "beta"],
+    ["γ", "gamma"],
+    ["δ", "delta"],
+    ["ε", "epsilon"],
+    ["ζ", "zeta"],
+    ["η", "eta"],
+    ["θ", "theta"],
+    ["ι", "iota"],
+    ["κ", "kappa"],
+    ["λ", "lambda"],
+    ["μ", "mu"],
+    ["ν", "nu"],
+    ["ξ", "xi"],
+    ["ο", "omicron"],
+    ["π", "pi"],
+    ["ρ", "rho"],
+    ["σ", "sigma"],
+    ["ς", "sigma"],
+    ["τ", "tau"],
+    ["υ", "upsilon"],
+    ["φ", "phi"],
+    ["χ", "chi"],
+    ["ψ", "psi"],
+    ["ω", "omega"],
+    ["Α", "Alpha"],
+    ["Β", "Beta"],
+    ["Γ", "Gamma"],
+    ["Δ", "Delta"],
+    ["Ε", "Epsilon"],
+    ["Ζ", "Zeta"],
+    ["Η", "Eta"],
+    ["Θ", "Theta"],
+    ["Ι", "Iota"],
+    ["Κ", "Kappa"],
+    ["Λ", "Lambda"],
+    ["Μ", "Mu"],
+    ["Ν", "Nu"],
+    ["Ξ", "Xi"],
+    ["Ο", "Omicron"],
+    ["Π", "Pi"],
+    ["Ρ", "Rho"],
+    ["Σ", "Sigma"],
+    ["Τ", "Tau"],
+    ["Υ", "Upsilon"],
+    ["Φ", "Phi"],
+    ["Χ", "Chi"],
+    ["Ψ", "Psi"],
+    ["Ω", "Omega"],
+    ["∞", "infinity"],
+    ["≈", "~"],
+    ["≠", "!="],
+    ["≤", "<="],
+    ["≥", ">="],
+    ["±", "+/-"],
+    ["×", "x"],
+    ["·", "."],
+    ["−", "-"],
+    ["–", "-"],
+    ["—", "-"],
+    ["…", "..."],
+    ["′", "'"],
+    ["″", '"'],
+    ["\u2212", "-"],
+  ];
+  for (const [sym, rep] of pairs) {
+    const cp = sym.codePointAt(0);
+    if (cp !== undefined) m.set(cp, rep);
+  }
+  const sub0 = "₀".codePointAt(0)!;
+  for (let d = 0; d <= 9; d++) {
+    m.set(sub0 + d, String(d));
+  }
+  const supDigits = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+  for (let d = 0; d <= 9; d++) {
+    const cp = supDigits[d]!.codePointAt(0);
+    if (cp !== undefined) m.set(cp, String(d));
+  }
+  return m;
+}
+
+const PDF_SYMBOL_REPLACEMENT_MAP = buildPdfSymbolReplacementMap();
+
+function transliterateSymbolsForStandardPdfFont(s: string): string {
+  let out = "";
+  for (const ch of s) {
+    const cp = ch.codePointAt(0);
+    if (cp === undefined) continue;
+    const rep = PDF_SYMBOL_REPLACEMENT_MAP.get(cp);
+    out += rep !== undefined ? rep : ch;
+  }
+  return out;
+}
+
+/** Single-line HTML strip + symbols safe for built-in PDF fonts (quiz / coding blocks) */
+function stripHtmlAndPdfSafeChars(s: string): string {
+  return sanitizeForJsPdfText(
+    transliterateSymbolsForStandardPdfFont(stripHtmlForPdf(s)),
+  );
+}
+
+/** Decode entities, turn simple HTML into newlines, normalize spaces per line */
+function htmlToPlainTextForPdf(s: string): string {
+  if (!s) return "";
+  let t = s
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*p\s*>/gi, "\n")
+    .replace(/<\/\s*div\s*>/gi, "\n")
+    .replace(/<\/\s*tr\s*>/gi, "\n")
+    .replace(/<\/\s*li\s*>/gi, "\n")
+    .replace(/<[^>]*>/g, " ");
+  t = t
+    .replace(/\u00a0/g, " ")
+    .replace(/\u2028/g, "\n")
+    .replace(/\u2029/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
+  t = t
+    .split("\n")
+    .map((line) => line.replace(/[ \t\f\v]+/g, " ").trim())
+    .join("\n");
+  return t.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** Questions / prompts that may contain HTML and Greek letters */
+function formatAssessmentRichTextForPdf(s: string): string {
+  const decoded = decodeHtmlEntitiesForPdf(s);
+  const plain = htmlToPlainTextForPdf(decoded);
+  return sanitizeForJsPdfText(transliterateSymbolsForStandardPdfFont(plain));
+}
+
+/** Answers / feedback: entities + transliteration; preserve line breaks if any */
+function formatAssessmentPlainTextForPdf(s: string): string {
+  const decoded = decodeHtmlEntitiesForPdf(s);
+  const plain = htmlToPlainTextForPdf(decoded);
+  return sanitizeForJsPdfText(transliterateSymbolsForStandardPdfFont(plain));
 }
 
 function hasProctoringForPdf(
@@ -1137,13 +1366,13 @@ export function generateAssessmentResultPdfVector(
       ].filter(Boolean) as string[];
       const metaLine = metaParts.join(" · ");
 
-      const qText = stripHtmlForPdf(q.question_text || "");
+      const qText = stripHtmlAndPdfSafeChars(q.question_text || "");
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8);
       const qLines = pdf.splitTextToSize(qText, contentW - 10);
       const optLinesEstimate = options.length * 6 + 14;
       const explExtra = q.explanation
-        ? pdf.splitTextToSize(stripHtmlForPdf(q.explanation), contentW - 14)
+        ? pdf.splitTextToSize(stripHtmlAndPdfSafeChars(q.explanation), contentW - 14)
             .length *
             4.3 +
           18
@@ -1169,7 +1398,7 @@ export function generateAssessmentResultPdfVector(
         if (isCorrectOpt && isSelected) tag = " (correct · your answer)";
         else if (isCorrectOpt) tag = " (correct)";
         else if (isSelected) tag = " (your answer)";
-        const line = `${opt.id}. ${stripHtmlForPdf(opt.label)}${tag}`;
+        const line = `${opt.id}. ${stripHtmlAndPdfSafeChars(opt.label)}${tag}`;
         const wrapped = pdf.splitTextToSize(line, contentW - 12);
         pdf.setFontSize(8);
         if (isCorrectOpt) {
@@ -1197,7 +1426,7 @@ export function generateAssessmentResultPdfVector(
         cy += 2;
         pdf.setFillColor(239, 246, 255);
         pdf.setDrawColor(SKY.r, SKY.g, SKY.b);
-        const expl = stripHtmlForPdf(q.explanation);
+        const expl = stripHtmlAndPdfSafeChars(q.explanation);
         const explWrapped = pdf.splitTextToSize(expl, contentW - 14);
         const explH = 8 + explWrapped.length * 4.1;
         ensureSpace(explH + 4);
@@ -1247,7 +1476,7 @@ export function generateAssessmentResultPdfVector(
         sample_input?: string;
         sample_output?: string;
       };
-      const title = stripHtmlForPdf(c.title || `Problem ${c.problem_id}`);
+      const title = stripHtmlAndPdfSafeChars(c.title || `Problem ${c.problem_id}`);
       const passed = c.passed_test_cases ?? 0;
       const totalTc = c.total_test_cases ?? 0;
       const summary = `${passed}/${totalTc} tests passed${
@@ -1256,24 +1485,24 @@ export function generateAssessmentResultPdfVector(
       const detailRows = [
         {
           label: "Problem",
-          value: stripHtmlForPdf(codingMeta.problem_statement ?? ""),
+          value: stripHtmlAndPdfSafeChars(codingMeta.problem_statement ?? ""),
         },
-        { label: "Input", value: stripHtmlForPdf(codingMeta.input_format ?? "") },
+        { label: "Input", value: stripHtmlAndPdfSafeChars(codingMeta.input_format ?? "") },
         {
           label: "Output",
-          value: stripHtmlForPdf(codingMeta.output_format ?? ""),
+          value: stripHtmlAndPdfSafeChars(codingMeta.output_format ?? ""),
         },
         {
           label: "Constraints",
-          value: stripHtmlForPdf(codingMeta.constraints ?? ""),
+          value: stripHtmlAndPdfSafeChars(codingMeta.constraints ?? ""),
         },
         {
           label: "Sample input",
-          value: stripHtmlForPdf(codingMeta.sample_input ?? ""),
+          value: stripHtmlAndPdfSafeChars(codingMeta.sample_input ?? ""),
         },
         {
           label: "Sample output",
-          value: stripHtmlForPdf(codingMeta.sample_output ?? ""),
+          value: stripHtmlAndPdfSafeChars(codingMeta.sample_output ?? ""),
         },
       ].filter((row) => row.value);
 
@@ -1420,60 +1649,250 @@ export function generateAssessmentResultPdfVector(
     );
     y += 18;
 
+    /** Padding from card edge to text (mm); must match x = margin + cardPadX */
+    const writtenCardPadX = 6;
+    /** −1 mm: avoids rare float/glyph overflow past the card edge */
+    const writtenCardTextW = Math.max(24, contentW - 2 * writtenCardPadX - 1);
+    const writtenBoxInset = 5;
+    const writtenInnerBoxPadX = 3;
+    const writtenBoxTextW = Math.max(
+      24,
+      contentW - 2 * writtenBoxInset - 2 * writtenInnerBoxPadX - 1,
+    );
+    const writtenMetaTailPad = 2.5;
+    const writtenQuestionTailPad = 4;
+    const writtenBoxTopPad = 6.5;
+    const writtenBoxBottomPad = 6.5;
+    /** Extra vertical slack so descenders / last line never clip the rounded rect */
+    const writtenMeasureSlack = 1.25;
+
     for (let si = 0; si < subjectiveResponses.length; si++) {
       const s = subjectiveResponses[si]!;
-      const qText = stripHtmlForPdf(s.question_text || "");
-      const ans = (s.your_answer || "").trim();
+      const qText = formatAssessmentRichTextForPdf(s.question_text || "");
+      const ans = formatAssessmentPlainTextForPdf(
+        (s.your_answer ?? s.answer ?? "").trim(),
+      );
       const graded =
         s.awarded_marks != null && Number.isFinite(Number(s.awarded_marks));
       const scoreLine = graded
         ? `Score: ${s.awarded_marks} / ${s.max_marks}`
         : "Awaiting evaluation";
+      const typeLabel = s.question_type
+        ? capitalizeFirstPdf(
+            formatAssessmentPlainTextForPdf(
+              s.question_type.replace(/_/g, " "),
+            ),
+          )
+        : null;
       const metaParts = [
         `Q${si + 1} of ${subjectiveResponses.length}`,
-        stripHtmlForPdf(s.section_title || "") || null,
+        formatAssessmentPlainTextForPdf(s.section_title || "") || null,
+        typeLabel,
         `Max ${s.max_marks} marks`,
         scoreLine,
       ].filter(Boolean) as string[];
       const metaLine = metaParts.join(" · ");
 
-      pdf.setFont(PDF_FONT, "normal");
-      pdf.setFontSize(8);
-      const qLines = pdf.splitTextToSize(qText, contentW - 10);
-      const ansBody = ans || "No response submitted.";
-      const ansLines = pdf.splitTextToSize(ansBody, contentW - 14);
-      ensureSpace(12 + qLines.length * 4.2 + 10 + ansLines.length * 4.1 + 14);
+      const ansBody = ans ? ans : "No response submitted.";
+      const feedbackRaw =
+        typeof s.feedback === "string"
+          ? formatAssessmentPlainTextForPdf(s.feedback.trim())
+          : "";
 
-      let cy = y + 6;
+      const ansFontStyle: "normal" | "italic" = ans ? "normal" : "italic";
+
+      const metaBlockH =
+        measurePdfWrappedHeightMm(pdf, metaLine, writtenCardTextW, 8, "bold") +
+        writtenMetaTailPad +
+        writtenMeasureSlack;
+      const qBlockH =
+        measurePdfWrappedHeightMm(
+          pdf,
+          qText || " ",
+          writtenCardTextW,
+          9,
+          "normal",
+        ) +
+        writtenQuestionTailPad +
+        writtenMeasureSlack;
+      const ansTextH =
+        measurePdfWrappedHeightMm(
+          pdf,
+          ansBody,
+          writtenBoxTextW,
+          8.5,
+          ansFontStyle,
+        ) + writtenMeasureSlack;
+      const ansBoxH =
+        writtenBoxTopPad + ansTextH + writtenBoxBottomPad;
+
+      let feedbackBoxH = 0;
+      if (feedbackRaw) {
+        const fbTextH =
+          measurePdfWrappedHeightMm(
+            pdf,
+            feedbackRaw,
+            writtenBoxTextW,
+            8.5,
+            "normal",
+          ) + writtenMeasureSlack;
+        feedbackBoxH =
+          writtenBoxTopPad + fbTextH + writtenBoxBottomPad;
+      }
+      const feedbackLabelAndGap = feedbackRaw ? 4 + 5 : 0;
+
+      const cardH =
+        6 +
+        metaBlockH +
+        qBlockH +
+        3 +
+        5 +
+        ansBoxH +
+        feedbackLabelAndGap +
+        feedbackBoxH +
+        8;
+
+      ensureSpace(cardH + 6);
+
+      const cardTop = y;
+      pdf.setLineWidth(0.35);
+      pdf.setFillColor(
+        WRITTEN_CARD_BG.r,
+        WRITTEN_CARD_BG.g,
+        WRITTEN_CARD_BG.b,
+      );
+      pdf.setDrawColor(
+        WRITTEN_CARD_STROKE.r,
+        WRITTEN_CARD_STROKE.g,
+        WRITTEN_CARD_STROKE.b,
+      );
+      pdf.roundedRect(margin, cardTop, contentW, cardH, 1.6, 1.6, "FD");
+      pdf.setFillColor(INDIGO_BAR.r, INDIGO_BAR.g, INDIGO_BAR.b);
+      pdf.rect(margin, cardTop, 1.45, cardH, "F");
+      pdf.setLineWidth(0.25);
+
+      const textX = margin + writtenCardPadX;
+      let cy = cardTop + 6;
       pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(8);
       pdf.setTextColor(INDIGO_BAR.r, INDIGO_BAR.g, INDIGO_BAR.b);
-      pdf.text(metaLine, margin + 5, cy);
-      cy += 6;
-      setInk();
+      {
+        const metaPayload = metaLine.trim().length > 0 ? metaLine : " ";
+        const metaLines = pdf.splitTextToSize(metaPayload, writtenCardTextW);
+        pdf.text(metaLines, textX, cy, { align: "left" });
+      }
+      cy += metaBlockH;
+
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(9);
-      pdf.text(qLines, margin + 5, cy);
-      cy += qLines.length * 4.2 + 4;
+      setInk();
+      {
+        const rawQ = qText || " ";
+        const qPayload = rawQ.trim().length > 0 ? rawQ : " ";
+        const qLinesDraw = pdf.splitTextToSize(qPayload, writtenCardTextW);
+        pdf.text(qLinesDraw, textX, cy, { align: "left" });
+      }
+      cy += qBlockH;
 
+      cy += 3;
       pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(7.5);
-      pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
-      pdf.text("Your answer", margin + 5, cy);
+      pdf.setTextColor(INDIGO_BAR.r, INDIGO_BAR.g, INDIGO_BAR.b);
+      pdf.text("YOUR ANSWER", textX, cy);
       cy += 5;
+
+      const ansBoxTop = cy;
+      pdf.setFillColor(
+        WRITTEN_ANSWER_FILL.r,
+        WRITTEN_ANSWER_FILL.g,
+        WRITTEN_ANSWER_FILL.b,
+      );
+      pdf.setDrawColor(
+        WRITTEN_ANSWER_STROKE.r,
+        WRITTEN_ANSWER_STROKE.g,
+        WRITTEN_ANSWER_STROKE.b,
+      );
+      pdf.setLineWidth(0.25);
+      pdf.roundedRect(
+        margin + writtenBoxInset,
+        ansBoxTop,
+        contentW - 2 * writtenBoxInset,
+        ansBoxH,
+        1,
+        1,
+        "FD",
+      );
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8.5);
-      setInk();
       if (!ans) {
         pdf.setFont(PDF_FONT, "italic");
         pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+      } else {
+        setInk();
       }
-      pdf.text(ansLines, margin + 5, cy);
-      cy += ansLines.length * 4.1 + 8;
+      const innerTextX = margin + writtenBoxInset + writtenInnerBoxPadX;
+      const ansTextY = ansBoxTop + writtenBoxTopPad;
+      {
+        const ap = ansBody.trim().length > 0 ? ansBody : " ";
+        const ansLinesDraw = pdf.splitTextToSize(ap, writtenBoxTextW);
+        pdf.text(ansLinesDraw, innerTextX, ansTextY, { align: "left" });
+      }
       pdf.setFont(PDF_FONT, "normal");
       setInk();
+      cy = ansBoxTop + ansBoxH;
 
-      y = cy;
+      if (feedbackRaw) {
+        cy += 4;
+        pdf.setFont(PDF_FONT, "bold");
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(
+          WRITTEN_FEEDBACK_INK.r,
+          WRITTEN_FEEDBACK_INK.g,
+          WRITTEN_FEEDBACK_INK.b,
+        );
+        pdf.text("FEEDBACK", textX, cy);
+        cy += 5;
+
+        const fbBoxTop = cy;
+        pdf.setFillColor(
+          WRITTEN_FEEDBACK_FILL.r,
+          WRITTEN_FEEDBACK_FILL.g,
+          WRITTEN_FEEDBACK_FILL.b,
+        );
+        pdf.setDrawColor(
+          WRITTEN_FEEDBACK_STROKE.r,
+          WRITTEN_FEEDBACK_STROKE.g,
+          WRITTEN_FEEDBACK_STROKE.b,
+        );
+        pdf.setLineWidth(0.25);
+        pdf.roundedRect(
+          margin + writtenBoxInset,
+          fbBoxTop,
+          contentW - 2 * writtenBoxInset,
+          feedbackBoxH,
+          1,
+          1,
+          "FD",
+        );
+        pdf.setFont(PDF_FONT, "normal");
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(
+          WRITTEN_FEEDBACK_INK.r,
+          WRITTEN_FEEDBACK_INK.g,
+          WRITTEN_FEEDBACK_INK.b,
+        );
+        {
+          const fp = feedbackRaw.trim().length > 0 ? feedbackRaw : " ";
+          const fbLinesDraw = pdf.splitTextToSize(fp, writtenBoxTextW);
+          pdf.text(fbLinesDraw, innerTextX, fbBoxTop + writtenBoxTopPad, {
+            align: "left",
+          });
+        }
+        setInk();
+        cy = fbBoxTop + feedbackBoxH;
+      }
+
+      y = cardTop + cardH + 5;
     }
     y += 4;
   }
