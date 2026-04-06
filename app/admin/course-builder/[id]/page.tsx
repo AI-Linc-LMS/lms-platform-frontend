@@ -22,12 +22,16 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminCourseBuilderService } from "@/lib/services/admin/admin-course-builder.service";
 import { ModuleList } from "@/components/admin/course-builder/ModuleList";
 import { ConfirmDeleteDialog } from "@/components/admin/course-builder/ConfirmDeleteDialog";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 
 export default function CourseViewPage() {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuth();
+  const isCourseManager = isCourseManagerRole(user?.role);
   const courseId = Number(params.id);
 
   const [loading, setLoading] = useState(true);
@@ -223,48 +227,50 @@ export default function CourseViewPage() {
               )}
             </Box>
           </Box>
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Tooltip title={isPublished ? t("adminCourseBuilder.unpublishCourseTooltip") : t("adminCourseBuilder.publishCourseTooltip")}>
+          {!isCourseManager ? (
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              <Tooltip title={isPublished ? t("adminCourseBuilder.unpublishCourseTooltip") : t("adminCourseBuilder.publishCourseTooltip")}>
+                <Button
+                  variant="outlined"
+                  onClick={handleTogglePublish}
+                  disabled={publishing}
+                  startIcon={
+                    publishing ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <IconWrapper icon={isPublished ? "mdi:publish-off" : "mdi:publish"} size={18} />
+                    )
+                  }
+                  sx={{
+                    borderColor: isPublished ? "#d97706" : "#059669",
+                    color: isPublished ? "#d97706" : "#059669",
+                    "&:hover": {
+                      borderColor: isPublished ? "#b45309" : "#047857",
+                      bgcolor: isPublished ? "#fffbeb" : "#ecfdf5",
+                    },
+                  }}
+                >
+                  {isPublished ? t("adminCourseBuilder.unpublish") : t("adminCourseBuilder.publish")}
+                </Button>
+              </Tooltip>
               <Button
                 variant="outlined"
-                onClick={handleTogglePublish}
-                disabled={publishing}
-                startIcon={
-                  publishing ? (
-                    <CircularProgress size={16} color="inherit" />
-                  ) : (
-                    <IconWrapper icon={isPublished ? "mdi:publish-off" : "mdi:publish"} size={18} />
-                  )
-                }
-                sx={{
-                  borderColor: isPublished ? "#d97706" : "#059669",
-                  color: isPublished ? "#d97706" : "#059669",
-                  "&:hover": {
-                    borderColor: isPublished ? "#b45309" : "#047857",
-                    bgcolor: isPublished ? "#fffbeb" : "#ecfdf5",
-                  },
-                }}
+                color="error"
+                startIcon={<IconWrapper icon="mdi:delete" size={18} />}
+                onClick={() => setDeleteDialogOpen(true)}
               >
-                {isPublished ? t("adminCourseBuilder.unpublish") : t("adminCourseBuilder.publish")}
+                {t("adminCourseBuilder.deleteCourse")}
               </Button>
-            </Tooltip>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<IconWrapper icon="mdi:delete" size={18} />}
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              {t("adminCourseBuilder.deleteCourse")}
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<IconWrapper icon="mdi:pencil" size={18} />}
-              onClick={() => router.push(`/admin/course-builder/${courseId}/edit`)}
-              sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
-            >
-              {t("adminCourseBuilder.editCourse")}
-            </Button>
-          </Box>
+              <Button
+                variant="contained"
+                startIcon={<IconWrapper icon="mdi:pencil" size={18} />}
+                onClick={() => router.push(`/admin/course-builder/${courseId}/edit`)}
+                sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+              >
+                {t("adminCourseBuilder.editCourse")}
+              </Button>
+            </Box>
+          ) : null}
         </Box>
 
         {/* Course Information Card */}
@@ -389,6 +395,7 @@ export default function CourseViewPage() {
               courseId={courseId}
               modules={modules}
               onModulesChanged={loadModules}
+              readOnly={isCourseManager}
             />
           )}
         </Paper>

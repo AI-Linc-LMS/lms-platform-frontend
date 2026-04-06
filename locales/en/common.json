@@ -1259,6 +1259,7 @@
     "enrolled": "enrolled",
     "draft": "Draft",
     "manage": "Manage",
+    "viewCourse": "View course",
     "deleting": "Deleting...",
     "delete": "Delete",
     "failedToLoadCourseDetails": "Failed to load course details",

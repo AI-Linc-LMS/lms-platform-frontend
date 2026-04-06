@@ -8,12 +8,15 @@ interface CourseSearchBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onCreateClick: () => void;
+  /** When false, hides "Add new course" (e.g. course manager view-only) */
+  showCreateButton?: boolean;
 }
 
 export function CourseSearchBar({
   searchQuery,
   onSearchChange,
   onCreateClick,
+  showCreateButton = true,
 }: CourseSearchBarProps) {
   const { t } = useTranslation("common");
   return (
@@ -52,18 +55,20 @@ export function CourseSearchBar({
           ),
         }}
       />
-      <Button
-        variant="contained"
-        startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-        onClick={onCreateClick}
-        sx={{
-          bgcolor: "#6366f1",
-          "&:hover": { bgcolor: "#4f46e5" },
-          whiteSpace: "nowrap",
-        }}
-      >
-        {t("adminCourseBuilder.addNewCourse")}
-      </Button>
+      {showCreateButton ? (
+        <Button
+          variant="contained"
+          startIcon={<IconWrapper icon="mdi:plus" size={20} />}
+          onClick={onCreateClick}
+          sx={{
+            bgcolor: "#6366f1",
+            "&:hover": { bgcolor: "#4f46e5" },
+            whiteSpace: "nowrap",
+          }}
+        >
+          {t("adminCourseBuilder.addNewCourse")}
+        </Button>
+      ) : null}
     </Box>
   );
 }

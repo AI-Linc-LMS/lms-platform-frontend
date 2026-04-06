@@ -58,6 +58,11 @@ interface UseAssessmentProctoringOptions {
   autoStart?: boolean;
   /** When false, trackpad swipe detection is disabled (no warnings, no blocking). Default true. */
   trackpadSwipeDetection?: boolean;
+  /**
+   * When false, tab/window visibility listeners are off (no tab-switch violations).
+   * Default true. Prefer enabling only during an active proctored session.
+   */
+  tabSwitchDetectionEnabled?: boolean;
 }
 
 interface UseAssessmentProctoringReturn {
@@ -81,8 +86,11 @@ interface UseAssessmentProctoringReturn {
   startProctoring: () => Promise<void>;
   stopProctoring: () => void;
   enterFullscreen: () => Promise<void>;
+  exitFullscreen: () => Promise<void>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   clearViolations: () => void;
+  /** Last error from starting face/camera proctoring (e.g. permission denied). */
+  proctoringError: string | null;
 }
 
 const DEFAULT_MAX_VIOLATIONS = 10;
@@ -103,6 +111,7 @@ export function useAssessmentProctoring(
     onViolationThresholdReached,
     autoStart = false,
     trackpadSwipeDetection = true,
+    tabSwitchDetectionEnabled = true,
   } = options;
 
   const startedAtRef = useRef<string>(new Date().toISOString());
@@ -142,8 +151,10 @@ export function useAssessmentProctoring(
     stopProctoring: stopFaceProctoring,
     videoRef,
     clearViolations: clearFaceViolations,
+    error: proctoringError,
   } = useProctoring({
     autoStart: false, // We'll control this manually
+    includeAudio: true,
     detectionInterval: 800,
     violationCooldown: 2500,
     minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
@@ -158,6 +169,7 @@ export function useAssessmentProctoring(
   const {
     isFullscreen,
     enterFullscreen,
+    exitFullscreen,
     violations: fullscreenViolations,
     clearViolations: clearFullscreenViolations,
   } = useFullscreenMonitor();
@@ -168,7 +180,7 @@ export function useAssessmentProctoring(
     tabSwitchCount,
     violations: tabSwitchViolations,
     clearViolations: clearTabSwitchViolations,
-  } = useTabSwitchDetector();
+  } = useTabSwitchDetector({ enabled: tabSwitchDetectionEnabled });
 
   // Trackpad swipe detection (horizontal swipes only; mouse wheel unaffected). Can be turned off via trackpadSwipeDetection.
   const {
@@ -284,14 +296,10 @@ export function useAssessmentProctoring(
     // but not in deps to avoid infinite loops. We track changes via their lengths.
   ]);
 
-  // Start proctoring (face detection + fullscreen)
+  // Start proctoring (camera + face detection only). Fullscreen is entered separately by the page.
   const startProctoring = useCallback(async () => {
-    // Try to enter fullscreen (optional - enterFullscreen won't throw, it just logs warnings)
-    await enterFullscreen();
-
-    // Start face detection (this is required)
     await startFaceProctoring();
-  }, [enterFullscreen, startFaceProctoring]);
+  }, [startFaceProctoring]);
 
   // Stop proctoring
   const stopProctoring = useCallback(() => {
@@ -379,7 +387,9 @@ export function useAssessmentProctoring(
     startProctoring,
     stopProctoring: stopProctoringWithMetadata,
     enterFullscreen,
+    exitFullscreen,
     videoRef,
     clearViolations,
+    proctoringError,
   };
 }

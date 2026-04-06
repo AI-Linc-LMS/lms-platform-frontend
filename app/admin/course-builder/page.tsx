@@ -31,11 +31,15 @@ import { CourseSearchBar } from "@/components/admin/course-builder/CourseSearchB
 import { CourseStatisticsCards } from "@/components/admin/course-builder/CourseStatisticsCards";
 import { SearchResultsInfo } from "@/components/admin/course-builder/SearchResultsInfo";
 import { EmptyState } from "@/components/admin/course-builder/EmptyState";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 
 export default function CourseBuilderPage() {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const router = useRouter();
+  const { user } = useAuth();
+  const isCourseManager = isCourseManagerRole(user?.role);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -212,6 +216,7 @@ export default function CourseBuilderPage() {
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onCreateClick={() => setIsModalOpen(true)}
+              showCreateButton={!isCourseManager}
             />
           </Box>
 
@@ -240,7 +245,9 @@ export default function CourseBuilderPage() {
           ) : filteredCourses.length === 0 ? (
             <EmptyState
               type="no-courses"
-              onCreateClick={() => setIsModalOpen(true)}
+              onCreateClick={
+                isCourseManager ? undefined : () => setIsModalOpen(true)
+              }
             />
           ) : (
             <Box
@@ -259,8 +266,11 @@ export default function CourseBuilderPage() {
                   key={course.id}
                   course={course}
                   onEditClick={() => handleEditCourse(course.id)}
-                  onDuplicate={() => handleDuplicateClick(course)}
+                  onDuplicate={
+                    isCourseManager ? undefined : () => handleDuplicateClick(course)
+                  }
                   onUpdate={loadCourses}
+                  readOnly={isCourseManager}
                 />
               ))}
             </Box>

@@ -12,8 +12,10 @@ import {
   startTransition,
   memo,
 } from "react";
+import type { RefObject } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, Paper } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { AssessmentFloatingTools } from "@/components/assessment/tools/AssessmentFloatingTools";
 import { AssessmentToolbarTools } from "@/components/assessment/tools/AssessmentToolbarTools";
@@ -55,10 +57,47 @@ const FullscreenWarningDialog = lazy(() =>
     default: m.FullscreenWarningDialog,
   }))
 );
+const FullscreenExitConfirmDialog = lazy(() =>
+  import("@/components/assessment/FullscreenExitConfirmDialog").then((m) => ({
+    default: m.FullscreenExitConfirmDialog,
+  }))
+);
 
 const MAX_VIOLATIONS = 100;
 const MAX_VIOLATION_SCREENSHOT_EVIDENCE = 5;
 const VIOLATION_SCREENSHOT_DEBOUNCE_MS = 400;
+
+function getAssessmentWindowStream(): MediaStream | null {
+  if (typeof window === "undefined") return null;
+  const s = (window as unknown as { __assessmentStream?: unknown })
+    .__assessmentStream;
+  return s instanceof MediaStream ? s : null;
+}
+
+/** Resolves when the mounted proctoring video has a stream with live video + audio (or global stream does). */
+async function waitForLiveCameraAndMicOnVideo(
+  videoRef: RefObject<HTMLVideoElement | null>,
+  timeoutMs: number
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const el = videoRef.current;
+    const stream =
+      (el?.srcObject instanceof MediaStream ? el.srcObject : null) ??
+      getAssessmentWindowStream();
+    if (stream) {
+      const vOk = stream
+        .getVideoTracks()
+        .some((t) => t.readyState === "live");
+      const aOk = stream
+        .getAudioTracks()
+        .some((t) => t.readyState === "live");
+      if (vOk && aOk) return true;
+    }
+    await new Promise((r) => setTimeout(r, 80));
+  }
+  return false;
+}
 
 // Memoized question component to prevent unnecessary re-renders
 const MemoizedQuizLayout = memo(AssessmentQuizLayout);
@@ -84,6 +123,9 @@ export default function TakeAssessmentPage({
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showFullscreenExitConfirm, setShowFullscreenExitConfirm] =
+    useState(false);
+  const [mediaInterrupted, setMediaInterrupted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [responses, setResponses] = useState<
     Record<string, Record<string, any>>
@@ -108,6 +150,8 @@ export default function TakeAssessmentPage({
   const tabSwitchCountRef = useRef(0);
   const latestViolationTypeRef = useRef<string | null>(null);
   const lastTabSwitchCountAtScreenshotRef = useRef(-1);
+  const handleFinalSubmitRef = useRef<() => void>(() => {});
+  const mediaGraceUntilRef = useRef(0);
 
   // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
@@ -204,6 +248,8 @@ export default function TakeAssessmentPage({
     maxViolations: MAX_VIOLATIONS,
     onViolationThresholdReached: handleViolationThresholdReached,
     autoStart: false,
+    tabSwitchDetectionEnabled:
+      assessmentStarted && assessment?.proctoring_enabled !== false,
   });
 
   totalViolationCountRef.current = totalViolationCount;
@@ -454,6 +500,36 @@ export default function TakeAssessmentPage({
     }
   }, [assessment, slug, router, showToast]);
 
+  // Proctored attempts: if no usable stream, try to acquire one. Only redirect as last resort.
+  useEffect(() => {
+    if (!assessment || loading) return;
+    if (assessment.status === "submitted") return;
+    if (assessment.proctoring_enabled === false) return;
+
+    const stream = getAssessmentWindowStream();
+    const hasLiveVideo =
+      stream?.getVideoTracks().some((t) => t.readyState === "live") ?? false;
+    const hasLiveAudio =
+      stream?.getAudioTracks().some((t) => t.readyState === "live") ?? false;
+
+    if (hasLiveVideo && hasLiveAudio) return;
+
+    // Attempt to get a fresh stream before falling back to device-check
+    navigator.mediaDevices
+      .getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+        audio: { echoCancellation: true, noiseSuppression: true },
+      })
+      .then((freshStream) => {
+        if (typeof window !== "undefined") {
+          (window as any).__assessmentStream = freshStream;
+        }
+      })
+      .catch(() => {
+        router.replace(`/assessments/${slug}/device-check`);
+      });
+  }, [assessment, loading, slug, router]);
+
   // Load saved responses from responseSheet - ASYNC and DEFERRED to prevent freeze
   useEffect(() => {
     if (assessment && sections.length > 0 && !hasLoadedResponses.current) {
@@ -636,15 +712,24 @@ export default function TakeAssessmentPage({
     }
   }, [submitting, stopProctoring]);
 
-  // Fullscreen handler
+  const openFullscreenExitPrompt = useCallback(() => {
+    setShowFullscreenExitConfirm(true);
+  }, []);
+
+  // Prompt submit vs continue when user leaves fullscreen (must run before submission hook)
   const {
     showFullscreenWarning,
     setShowFullscreenWarning,
     handleReEnterFullscreen,
+    isDocumentFullscreen,
   } = useFullscreenHandler({
     enabled: assessmentStarted,
     submitting,
     enterFullscreen,
+    promptOnFullscreenExit: true,
+    onLeftFullscreen: openFullscreenExitPrompt,
+    onEscapePressed: openFullscreenExitPrompt,
+    suppressEscapeInterceptor: showFullscreenExitConfirm,
   });
 
   // Submission handler
@@ -662,89 +747,155 @@ export default function TakeAssessmentPage({
     violationScreenshotSamplesRef: violationScreenshotEvidenceRef,
   });
 
-  // Pre-initialize camera IMMEDIATELY as soon as videoRef is available (before assessment starts)
-  // IMPORTANT: Reuse stream from device-check page to prevent camera from turning off
+  useEffect(() => {
+    handleFinalSubmitRef.current = () => {
+      void handleFinalSubmit();
+    };
+  }, [handleFinalSubmit]);
+
+  // Detect camera/mic loss during the exam (proctored only)
   useEffect(() => {
     if (
-      assessment &&
-      !loading &&
-      assessment.status !== "submitted" &&
-      !assessmentStarted &&
-      assessment.proctoring_enabled !== false
+      !assessmentStarted ||
+      submitting ||
+      assessment?.proctoring_enabled === false
     ) {
-      // Check if we have an existing stream from device-check page
-      const existingStream = typeof window !== "undefined" 
-        ? (window as any).__assessmentStream 
-        : null;
-      
-      // If stream exists, attach it to video element immediately to keep camera on
-      if (existingStream && videoRef.current && !videoRef.current.srcObject) {
-        try {
-          videoRef.current.srcObject = existingStream;
-          videoRef.current.autoplay = true;
-          videoRef.current.playsInline = true;
-          videoRef.current.muted = true;
-          videoRef.current.play().catch(() => {
-            // Silently fail - will be handled by proctoring service
-          });
-        } catch (error) {
-          // Silently fail
-        }
-      }
-
-      // Start camera immediately - don't wait for assessment to start
-      // This makes camera preview appear instantly when assessment begins
-      // Proctoring service will reuse existing stream if available
-      const startCameraEarly = async () => {
-        try {
-          // Start proctoring immediately (non-blocking)
-          // Proctoring service will detect and reuse the existing stream
-          startProctoring().catch(() => {
-            // Silently fail - will retry when assessment starts
-          });
-        } catch (error) {
-          // Silently fail
-        }
-      };
-      
-      // Start immediately - no delay
-      startCameraEarly();
+      setMediaInterrupted(false);
+      return;
     }
-  }, [videoRef.current, assessment, loading, assessmentStarted, startProctoring]);
+    mediaGraceUntilRef.current = Date.now() + 10000;
 
-  // Start assessment - prioritize camera, defer heavy operations
+    const id = window.setInterval(() => {
+      if (Date.now() < mediaGraceUntilRef.current) return;
+      const stream = videoRef.current?.srcObject as MediaStream | null;
+      const vOk =
+        stream?.getVideoTracks().some((t) => t.readyState === "live") ?? false;
+      const aOk =
+        stream?.getAudioTracks().some((t) => t.readyState === "live") ?? false;
+      setMediaInterrupted(!stream || !vOk || !aOk);
+    }, 3000);
+
+    return () => clearInterval(id);
+  }, [
+    assessmentStarted,
+    submitting,
+    assessment?.proctoring_enabled,
+    videoRef,
+  ]);
+
+  // Preload proctoring model so it's ready when assessment starts (does NOT start camera)
+  // Camera is started in handleStartAssessment by attaching __assessmentStream from device-check.
+
+  const handleFullscreenExitCancel = useCallback(async () => {
+    setShowFullscreenExitConfirm(false);
+    if (isDocumentFullscreen()) {
+      return;
+    }
+    try {
+      await enterFullscreen();
+      await new Promise((r) => setTimeout(r, 150));
+      if (!isDocumentFullscreen()) {
+        setShowFullscreenWarning(true);
+      }
+    } catch {
+      setShowFullscreenWarning(true);
+    }
+  }, [enterFullscreen, isDocumentFullscreen, setShowFullscreenWarning]);
+
+  const handleFullscreenExitSubmit = useCallback(() => {
+    setShowFullscreenExitConfirm(false);
+    handleFinalSubmitRef.current();
+  }, []);
+
+  const handleRetryProctoringMedia = useCallback(() => {
+    setMediaInterrupted(false);
+    mediaGraceUntilRef.current = Date.now() + 10000;
+    startProctoring().catch(() => {
+      showToast(
+        "Could not restore camera or microphone. Please use device check again.",
+        "error"
+      );
+      router.replace(`/assessments/${slug}/device-check`);
+    });
+  }, [startProctoring, showToast, router, slug]);
+
+  // Start assessment - require live camera + mic before timer (proctored)
   const handleStartAssessment = useCallback(async () => {
     if (isInitializingRef.current) return;
     isInitializingRef.current = true;
     setShowStartButton(false);
 
-    try {
-      // Start timer first (non-blocking)
-      setAssessmentStarted(true);
-      timer.start();
+    const failProctoredStart = (toastMessage: string) => {
+      flushSync(() => setAssessmentStarted(false));
+      isInitializingRef.current = false;
+      showToast(toastMessage, "error");
+      router.replace(`/assessments/${slug}/device-check`);
+    };
 
-      // Camera should already be started by pre-initialization
-      // Just ensure video is playing if camera is already active
+    try {
       if (assessment?.proctoring_enabled !== false) {
-        // If camera isn't already active, start it now
-        if (!isProctoringActive) {
-          startProctoring().catch(() => {
-            showToast(
-              "Camera initialization failed. Please ensure camera permissions are granted.",
-              "error"
-            );
-          });
-        } else if (videoRef.current) {
-          // Camera is already active, just ensure video is playing
-          if (videoRef.current.srcObject) {
-            videoRef.current.play().catch(() => {
-              // Silently fail - will retry
+        // Try to use the stream from device-check; if missing/incomplete, request fresh
+        let stream = getAssessmentWindowStream();
+        const hasLiveVideo =
+          stream?.getVideoTracks().some((t) => t.readyState === "live") ??
+          false;
+        const hasLiveAudio =
+          stream?.getAudioTracks().some((t) => t.readyState === "live") ??
+          false;
+
+        if (!stream || !hasLiveVideo || !hasLiveAudio) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+              audio: { echoCancellation: true, noiseSuppression: true },
             });
+            if (typeof window !== "undefined") {
+              (window as any).__assessmentStream = stream;
+            }
+          } catch {
+            failProctoredStart(
+              "Camera and microphone are required.\nPlease allow access and complete device check."
+            );
+            return;
           }
         }
+
+        // Mount UI so <video ref={videoRef}> in timer bar is available
+        flushSync(() => setAssessmentStarted(true));
+
+        // Attach the live stream to the video element immediately
+        await new Promise<void>((resolve) => {
+          const tryAttach = () => {
+            const el = videoRef.current;
+            if (el) {
+              if (el.srcObject !== stream) {
+                el.srcObject = stream;
+                el.autoplay = true;
+                el.playsInline = true;
+                el.muted = true;
+                el.play().catch(() => {});
+              }
+              resolve();
+            } else {
+              requestAnimationFrame(tryAttach);
+            }
+          };
+          tryAttach();
+        });
+
+        // Start face detection in the background — do NOT await.
+        startProctoring().catch(() => {
+          showToast(
+            "Face detection could not start, but your camera is active.",
+            "warning"
+          );
+        });
+      } else {
+        setAssessmentStarted(true);
       }
 
-      // Defer fullscreen to allow camera to start
+      timer.start();
+
       setTimeout(() => {
         enterFullscreen()
           .then(() => {
@@ -777,6 +928,8 @@ export default function TakeAssessmentPage({
     setShowFullscreenWarning,
     assessment,
     videoRef,
+    router,
+    slug,
   ]);
 
   // Time up handler
@@ -1398,6 +1551,69 @@ export default function TakeAssessmentPage({
     >
       {assessmentStarted && (
         <>
+          {mediaInterrupted &&
+            !submitting &&
+            assessment?.proctoring_enabled !== false && (
+              <Box
+                sx={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 1999,
+                  bgcolor: "rgba(15, 23, 42, 0.78)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  p: 2,
+                }}
+              >
+                <Paper
+                  elevation={4}
+                  sx={{
+                    maxWidth: 440,
+                    p: 3,
+                    textAlign: "center",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                    Camera or microphone unavailable
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 2, lineHeight: 1.6 }}
+                  >
+                    Your session requires an active camera and microphone.
+                    Restore permissions or reconnect your devices to continue.
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 1.5,
+                      justifyContent: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={handleRetryProctoringMedia}
+                      sx={{ textTransform: "none", fontWeight: 600 }}
+                    >
+                      Retry
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() =>
+                        router.push(`/assessments/${slug}/device-check`)
+                      }
+                      sx={{ textTransform: "none", fontWeight: 600 }}
+                    >
+                      Back to device check
+                    </Button>
+                  </Box>
+                </Paper>
+              </Box>
+            )}
+
           <AssessmentTimerBar
             title={assessment.title}
             formattedTime={timer.formattedTime}
@@ -1655,6 +1871,14 @@ export default function TakeAssessmentPage({
               <FullscreenWarningDialog
                 open={showFullscreenWarning}
                 onReEnterFullscreen={handleReEnterFullscreen}
+              />
+            )}
+
+            {showFullscreenExitConfirm && !submitting && (
+              <FullscreenExitConfirmDialog
+                open={showFullscreenExitConfirm}
+                onCancel={handleFullscreenExitCancel}
+                onSubmit={handleFullscreenExitSubmit}
               />
             )}
           </Suspense>
