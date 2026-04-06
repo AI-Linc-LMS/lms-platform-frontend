@@ -178,13 +178,18 @@ export interface QuizResponseItem {
 export interface SubjectiveResponseItem {
   question_id: number;
   section_id: number;
-  section_title: string;
+  section_title?: string;
   question_text: string;
   question_type?: string;
   max_marks: number;
-  your_answer: string;
+  /** Learner text from API (common key on result payloads) */
+  answer?: string | null;
+  /** Legacy / alternate key for the learner response */
+  your_answer?: string | null;
   /** Present when an instructor or grader has awarded marks */
   awarded_marks?: number | null;
+  feedback?: string | null;
+  full_marks?: boolean;
 }
 
 export interface CodingProblemResponseItem {

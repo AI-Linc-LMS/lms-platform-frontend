@@ -42,6 +42,7 @@ interface ContentItem {
 interface ContentListProps {
   courseId: number;
   submoduleId: number;
+  readOnly?: boolean;
 }
 
 const CONTENT_TYPE_CONFIG: Record<
@@ -74,7 +75,11 @@ const emptyForm: ContentData = {
   duration_in_minutes: 0,
 };
 
-export function ContentList({ courseId, submoduleId }: ContentListProps) {
+export function ContentList({
+  courseId,
+  submoduleId,
+  readOnly = false,
+}: ContentListProps) {
   const { showToast } = useToast();
 
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -248,28 +253,32 @@ export function ContentList({ courseId, submoduleId }: ContentListProps) {
                     )}
                   </Box>
                 </Box>
-                <Box sx={{ display: "flex", gap: 0.25, flexShrink: 0 }}>
-                  <IconButton size="small" onClick={() => openEdit(item)} sx={{ color: "#6366f1", p: 0.5 }}>
-                    <IconWrapper icon="mdi:pencil" size={14} />
-                  </IconButton>
-                  <IconButton size="small" onClick={() => setDeleteTarget(item)} sx={{ color: "#ef4444", p: 0.5 }}>
-                    <IconWrapper icon="mdi:delete" size={14} />
-                  </IconButton>
-                </Box>
+                {!readOnly ? (
+                  <Box sx={{ display: "flex", gap: 0.25, flexShrink: 0 }}>
+                    <IconButton size="small" onClick={() => openEdit(item)} sx={{ color: "#6366f1", p: 0.5 }}>
+                      <IconWrapper icon="mdi:pencil" size={14} />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => setDeleteTarget(item)} sx={{ color: "#ef4444", p: 0.5 }}>
+                      <IconWrapper icon="mdi:delete" size={14} />
+                    </IconButton>
+                  </Box>
+                ) : null}
               </Box>
             );
           })}
         </Box>
       )}
 
-      <Button
-        size="small"
-        startIcon={<IconWrapper icon="mdi:plus" size={14} />}
-        onClick={openAdd}
-        sx={{ mt: 0.75, color: "#6366f1", textTransform: "none", fontWeight: 600, fontSize: "0.75rem" }}
-      >
-        Add Content
-      </Button>
+      {!readOnly ? (
+        <Button
+          size="small"
+          startIcon={<IconWrapper icon="mdi:plus" size={14} />}
+          onClick={openAdd}
+          sx={{ mt: 0.75, color: "#6366f1", textTransform: "none", fontWeight: 600, fontSize: "0.75rem" }}
+        >
+          Add Content
+        </Button>
+      ) : null}
 
       {/* Add / Edit Content Dialog */}
       <Dialog open={dialogOpen} onClose={saving ? undefined : closeDialog} maxWidth="sm" fullWidth>

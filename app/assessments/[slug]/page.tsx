@@ -369,7 +369,11 @@ export default function AssessmentDetailPage({
                     }}
                   >
                     <li>Do not switch browser tabs or minimize the window</li>
-                    <li>Do not exit fullscreen mode</li>
+                    <li>
+                      Do not exit fullscreen mode during the exam — if you do,
+                      you will be prompted to either submit or return to
+                      fullscreen to continue
+                    </li>
                     <li>Keep your face visible to the camera at all times</li>
                     <li>Do not use any unauthorized aids or assistance</li>
                     <li>Do not communicate with anyone during the exam</li>

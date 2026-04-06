@@ -186,6 +186,26 @@ export class ProctoringService {
         // Ignore errors when checking for existing streams
       }
 
+      const wantsAudio =
+        constraints.audio !== false && Boolean(constraints.audio);
+      if (existingStream && wantsAudio) {
+        const hasLiveAudio = existingStream
+          .getAudioTracks()
+          .some((t) => t.readyState === "live");
+        if (!hasLiveAudio) {
+          try {
+            existingStream.getTracks().forEach((t) => t.stop());
+          } catch {
+            /* ignore */
+          }
+          existingStream = null;
+          if (typeof window !== "undefined") {
+            delete (window as any).__assessmentStream;
+            delete (window as any).__assessmentVideoStream;
+          }
+        }
+      }
+
       // Get camera access - reuse existing stream if available
       try {
         if (existingStream) {
@@ -196,42 +216,45 @@ export class ProctoringService {
           this.stream = await navigator.mediaDevices.getUserMedia(constraints);
         }
       } catch (mediaError: any) {
+        const mediaLabel = wantsAudio ? "Camera and microphone" : "Camera";
         // Provide more specific error messages
         if (
           mediaError.name === "NotAllowedError" ||
           mediaError.name === "PermissionDeniedError"
         ) {
           throw new Error(
-            "Camera permission denied. Please allow camera access and try again."
+            `${mediaLabel} permission denied. Please allow access in your browser and try again.`
           );
         } else if (
           mediaError.name === "NotFoundError" ||
           mediaError.name === "DevicesNotFoundError"
         ) {
           throw new Error(
-            "No camera found. Please connect a camera and try again."
+            wantsAudio
+              ? "No camera or microphone found. Please connect both and try again."
+              : "No camera found. Please connect a camera and try again."
           );
         } else if (
           mediaError.name === "NotReadableError" ||
           mediaError.name === "TrackStartError"
         ) {
           throw new Error(
-            "Camera is already in use by another application. Please close other apps using the camera."
+            `${mediaLabel} is already in use by another application. Close other apps using your devices and try again.`
           );
         } else if (
           mediaError.name === "OverconstrainedError" ||
           mediaError.name === "ConstraintNotSatisfiedError"
         ) {
           throw new Error(
-            "Camera constraints could not be satisfied. Please try a different camera."
+            `${mediaLabel} constraints could not be satisfied. Try a different device or browser.`
           );
         } else if (mediaError.name === "SecurityError") {
           throw new Error(
-            "Camera access blocked due to security restrictions. Please use HTTPS."
+            "Media access blocked due to security restrictions. Please use HTTPS."
           );
         } else {
           throw new Error(
-            `Camera access failed: ${mediaError.message || "Unknown error"}`
+            `${mediaLabel} access failed: ${mediaError.message || "Unknown error"}`
           );
         }
       }
@@ -240,108 +263,69 @@ export class ProctoringService {
 
       this.videoElement = videoElement;
 
-      // Ensure video element is set up for playback BEFORE setting stream
-      this.videoElement.autoplay = true;
-      this.videoElement.playsInline = true;
-      this.videoElement.muted = true;
+      // If the video element already has this stream and is playing, skip setup
+      const alreadyPlaying =
+        this.videoElement.srcObject === this.stream &&
+        this.videoElement.videoWidth > 0 &&
+        this.videoElement.readyState >= 2;
 
-      // Set the stream
-      this.videoElement.srcObject = this.stream;
-
-      // Verify the stream is actually set
-      if (this.videoElement.srcObject !== this.stream) {
-        // Try to fix it
+      if (!alreadyPlaying) {
+        this.videoElement.autoplay = true;
+        this.videoElement.playsInline = true;
+        this.videoElement.muted = true;
         this.videoElement.srcObject = this.stream;
-      }
 
-      // Wait for video to load metadata and have valid dimensions (reduced timeout)
-      await new Promise<void>((resolve, reject) => {
-        if (!this.videoElement) {
-          reject(new Error("Video element not available"));
-          return;
-        }
-
-        let resolved = false;
-        let timeout: ReturnType<typeof setTimeout> | null = null;
-
-        // Listen for loadedmetadata event
-        const onLoadedMetadata = async () => {
-          if (this.videoElement) {
-            try {
-              await this.videoElement.play();
-            } catch (err) {
-              // Ignore play errors - video might still work
-            }
+        // Wait for video to have valid dimensions (fast path if stream already attached)
+        await new Promise<void>((resolve) => {
+          if (!this.videoElement) {
+            resolve();
+            return;
           }
-          checkVideoReady();
-        };
 
-        // Listen for loadeddata event
-        const onLoadedData = () => {
-          checkVideoReady();
-        };
-
-        // Listen for playing event (video is actually playing)
-        const onPlaying = () => {
-          checkVideoReady();
-        };
-
-        const cleanup = () => {
-          if (this.videoElement) {
-            this.videoElement.removeEventListener(
-              "loadedmetadata",
-              onLoadedMetadata
-            );
-            this.videoElement.removeEventListener("loadeddata", onLoadedData);
-            this.videoElement.removeEventListener("playing", onPlaying);
-          }
-          if (timeout) {
-            clearTimeout(timeout);
-            timeout = null;
-          }
-        };
-
-        const checkVideoReady = () => {
+          // Immediate check
           if (
-            !resolved &&
-            this.videoElement &&
             this.videoElement.videoWidth > 0 &&
             this.videoElement.videoHeight > 0 &&
-            this.videoElement.readyState >= 2 // HAVE_CURRENT_DATA
+            this.videoElement.readyState >= 2
           ) {
-            resolved = true;
-            cleanup();
             resolve();
-            return true;
+            return;
           }
-          return false;
-        };
 
-        // Check immediately
-        if (checkVideoReady()) {
-          return;
-        }
+          let done = false;
+          let timeout: ReturnType<typeof setTimeout> | null = null;
 
-        this.videoElement.addEventListener("loadedmetadata", onLoadedMetadata);
-        this.videoElement.addEventListener("loadeddata", onLoadedData);
-        this.videoElement.addEventListener("playing", onPlaying);
-
-        timeout = setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            // Resolve anyway - detection will retry when video is ready
+          const finish = () => {
+            if (done) return;
+            done = true;
+            if (timeout) clearTimeout(timeout);
+            if (this.videoElement) {
+              this.videoElement.removeEventListener("loadeddata", onReady);
+              this.videoElement.removeEventListener("playing", onReady);
+            }
             resolve();
-          }
-        }, 1000); // Reduced to 1 second for faster startup
+          };
 
-        // If metadata is already loaded, try to play immediately
-        if (this.videoElement.readyState >= 1) {
+          const onReady = () => {
+            if (
+              this.videoElement &&
+              this.videoElement.videoWidth > 0 &&
+              this.videoElement.readyState >= 2
+            ) {
+              finish();
+            }
+          };
+
+          this.videoElement.addEventListener("loadeddata", onReady);
+          this.videoElement.addEventListener("playing", onReady);
+
+          // Try play immediately
           this.videoElement.play().catch(() => {});
-          // Check immediately for dimensions
-          checkVideoReady();
-        }
-      });
+          onReady();
+
+          timeout = setTimeout(finish, 500);
+        });
+      }
 
       // Start detection loop
       this.isRunning = true;
@@ -359,15 +343,32 @@ export class ProctoringService {
   }
 
   /**
-   * Stop proctoring and release camera
+   * Stop proctoring and release camera.
+   * @param options.preserveMediaStream — Stop face detection only; keep tracks live (e.g. handoff to assessment take page).
    */
-  stopProctoring(): void {
+  stopProctoring(options?: { preserveMediaStream?: boolean }): void {
     this.isRunning = false;
 
     // Clear detection interval
     if (this.detectionInterval) {
       clearInterval(this.detectionInterval);
       this.detectionInterval = null;
+    }
+
+    if (options?.preserveMediaStream) {
+      // Detach from the device-check video but do not stop tracks — stream stays live on window.__assessmentStream
+      if (this.videoElement) {
+        this.videoElement.srcObject = null;
+        this.videoElement = null;
+      }
+      this.stream = null;
+      this.currentStatus = "NORMAL";
+      this.currentFaceCount = 0;
+      this.faceCountBuffer = [];
+      this.lastViolationTime.clear();
+      this.violationHistory = [];
+      this.currentLatestViolation = null;
+      return;
     }
 
     // Stop camera stream

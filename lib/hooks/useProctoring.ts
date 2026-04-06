@@ -11,6 +11,8 @@ import {
 interface UseProctoringOptions extends Partial<ProctoringConfig> {
   autoStart?: boolean;
   videoConstraints?: MediaStreamConstraints["video"];
+  /** When true, request microphone with video (required for proctored assessments). */
+  includeAudio?: boolean;
 }
 
 interface UseProctoringReturn {
@@ -23,7 +25,7 @@ interface UseProctoringReturn {
   error: string | null;
 
   startProctoring: () => Promise<void>;
-  stopProctoring: () => void;
+  stopProctoring: (options?: { preserveMediaStream?: boolean }) => void;
   takeSnapshot: () => Promise<string | null>;
   clearViolations: () => void;
   getStatistics: ReturnType<typeof getProctoringService>["getStatistics"];
@@ -34,7 +36,8 @@ interface UseProctoringReturn {
 export function useProctoring(
   options: UseProctoringOptions = {}
 ): UseProctoringReturn {
-  const { autoStart = false, videoConstraints, ...config } = options;
+  const { autoStart = false, videoConstraints, includeAudio = false, ...config } =
+    options;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const serviceRef = useRef(getProctoringService());
@@ -136,7 +139,9 @@ export function useProctoring(
           height: 480,
           facingMode: "user",
         },
-        audio: false,
+        audio: includeAudio
+          ? { echoCancellation: true, noiseSuppression: true }
+          : false,
       });
 
       setIsActive(true);
@@ -147,16 +152,19 @@ export function useProctoring(
     } finally {
       setIsInitializing(false);
     }
-  }, [videoConstraints]);
+  }, [videoConstraints, includeAudio]);
 
-  const stopProctoring = useCallback(() => {
-    serviceRef.current.stopProctoring();
-    setIsActive(false);
-    setFaceState({ count: 0, updatedAt: Date.now() });
-    setStatus("NORMAL");
-    setLatestViolation(null);
-    setError(null);
-  }, []);
+  const stopProctoring = useCallback(
+    (options?: { preserveMediaStream?: boolean }) => {
+      serviceRef.current.stopProctoring(options);
+      setIsActive(false);
+      setFaceState({ count: 0, updatedAt: Date.now() });
+      setStatus("NORMAL");
+      setLatestViolation(null);
+      setError(null);
+    },
+    []
+  );
 
   const takeSnapshot = useCallback(() => {
     return serviceRef.current.takeSnapshot();

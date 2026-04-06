@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Box, Collapse, IconButton, Paper, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -10,8 +10,14 @@ import {
   adminStudentService,
   Student,
   CourseCompletionStats,
+  ManageStudentsResponse,
 } from "@/lib/services/admin/admin-student.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import { useAuth } from "@/lib/auth/auth-context";
+import {
+  isClientOrgAdminRole,
+  isCourseManagerRole,
+} from "@/lib/auth/role-utils";
 import { ManageStudentsHeader } from "../../../components/admin/manage-students/ManageStudentsHeader";
 import { StudentsFilters } from "../../../components/admin/manage-students/StudentsFilters";
 import { StudentsTable } from "../../../components/admin/manage-students/StudentsTable";
@@ -30,9 +36,32 @@ type SortOption =
   | "saved_resume";
 type SortOrder = "asc" | "desc";
 
+function apiErrorMessage(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const data = (error as { response?: { data?: { detail?: unknown; error?: unknown } } })
+    .response?.data;
+  if (!data) return null;
+  if (typeof data.detail === "string") return data.detail;
+  if (typeof data.error === "string") return data.error;
+  return null;
+}
+
+function statsMapFromCompletionRows(
+  rows: CourseCompletionStats[]
+): Record<number, CourseCompletionStats> {
+  const statsMap: Record<number, CourseCompletionStats> = {};
+  for (const row of rows) {
+    statsMap[row.student_id] = row;
+  }
+  return statsMap;
+}
+
 export default function ManageStudentsPage() {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
+  const { user } = useAuth();
+  const showOrgAdminEnrollmentTools = isClientOrgAdminRole(user?.role);
+  const courseManagerUser = isCourseManagerRole(user?.role);
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -61,6 +90,7 @@ export default function ManageStudentsPage() {
   // Bulk Enrollment
   const [bulkEnrollDialogOpen, setBulkEnrollDialogOpen] = useState(false);
   const [showJobHistory, setShowJobHistory] = useState(false);
+  const loadStudentsSeqRef = useRef(0);
 
   // Load courses for filter
   useEffect(() => {
@@ -91,11 +121,59 @@ export default function ManageStudentsPage() {
   // Load students from API - only when course filter changes or initial load
   // All filtering, sorting, and pagination is done client-side to reduce API calls
   const loadStudents = useCallback(async () => {
+    const seq = ++loadStudentsSeqRef.current;
+    const courseManager = courseManagerUser;
+
+    // Course managers: empty course filter = load all students the API allows (scoped server-side).
+    // Admins: keep original behavior — require at least one selected course before loading.
     if (selectedCourses.length === 0) {
-      setAllStudents([]);
-      setCompletionStats({});
-      setLoading(false);
-      setLoadingStats(false);
+      if (!courseManager) {
+        setAllStudents([]);
+        setCompletionStats({});
+        setLoading(false);
+        setLoadingStats(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const response = await adminStudentService.getManageStudents({
+          page: 1,
+          limit: 10000,
+          sort_by: "name",
+          sort_order: "asc",
+        });
+        if (seq !== loadStudentsSeqRef.current) return;
+        setAllStudents(response?.students ?? []);
+
+        setLoadingStats(true);
+        try {
+          const statsRows = await adminStudentService.getCourseCompletionStats();
+          if (seq !== loadStudentsSeqRef.current) return;
+          setCompletionStats(
+            statsMapFromCompletionRows(Array.isArray(statsRows) ? statsRows : [])
+          );
+        } catch {
+          if (seq === loadStudentsSeqRef.current) {
+            setCompletionStats({});
+          }
+        } finally {
+          if (seq === loadStudentsSeqRef.current) {
+            setLoadingStats(false);
+          }
+        }
+      } catch (error: unknown) {
+        if (seq !== loadStudentsSeqRef.current) return;
+        showToast(
+          apiErrorMessage(error) || t("adminManageStudents.failedToLoadStudents"),
+          "error"
+        );
+        setAllStudents([]);
+        setCompletionStats({});
+      } finally {
+        if (seq === loadStudentsSeqRef.current) {
+          setLoading(false);
+        }
+      }
       return;
     }
 
@@ -103,50 +181,34 @@ export default function ManageStudentsPage() {
       setLoading(true);
       const selectedCourseIds = selectedCourses.map(Number).filter(Number.isFinite);
 
-      const studentResponses = await Promise.all(
-        selectedCourseIds.map((courseId) =>
-          adminStudentService.getManageStudents({
-            course_id: courseId,
-            page: 1,
-            limit: 10000,
-            sort_by: "name",
-            sort_order: "asc",
-          })
-        )
-      );
-
-      const studentMap = new Map<number, Student>();
-      studentResponses.forEach((response) => {
-        (response?.students ?? []).forEach((student) => {
-          const key = student.user_id || student.id;
-          const existing = studentMap.get(key);
-          if (!existing) {
-            studentMap.set(key, student);
-          } else {
-            studentMap.set(key, {
-              ...existing,
-              enrollment_count: Math.max(
-                existing.enrollment_count ?? 0,
-                student.enrollment_count ?? 0
-              ),
-              has_saved_resume: Boolean(
-                existing.has_saved_resume || student.has_saved_resume
-              ),
-            });
-          }
+      const mergeStudentResponsesIntoMap = (
+        responses: Array<{ students?: Student[] } | undefined>
+      ) => {
+        const studentMap = new Map<number, Student>();
+        responses.forEach((response) => {
+          (response?.students ?? []).forEach((student) => {
+            const key = student.user_id || student.id;
+            const existing = studentMap.get(key);
+            if (!existing) {
+              studentMap.set(key, student);
+            } else {
+              studentMap.set(key, {
+                ...existing,
+                enrollment_count: Math.max(
+                  existing.enrollment_count ?? 0,
+                  student.enrollment_count ?? 0
+                ),
+                has_saved_resume: Boolean(
+                  existing.has_saved_resume || student.has_saved_resume
+                ),
+              });
+            }
+          });
         });
-      });
+        return studentMap;
+      };
 
-      setAllStudents(Array.from(studentMap.values()));
-
-      setLoadingStats(true);
-      try {
-        const statsResults = await Promise.all(
-          selectedCourseIds.map((courseId) =>
-            adminStudentService.getCourseCompletionStats(courseId)
-          )
-        );
-        const stats = statsResults.flat();
+      const aggregateStatsFromRows = (stats: CourseCompletionStats[]) => {
         const statsMap: Record<number, CourseCompletionStats> = {};
         const studentStatsMap: Record<
           number,
@@ -202,28 +264,116 @@ export default function ManageStudentsPage() {
         });
 
         setCompletionStats(statsMap);
-      } catch {
-      } finally {
-        setLoadingStats(false);
+      };
+
+      if (courseManager) {
+        const studentSettled = await Promise.allSettled(
+          selectedCourseIds.map((courseId) =>
+            adminStudentService.getManageStudents({
+              course_id: courseId,
+              page: 1,
+              limit: 10000,
+              sort_by: "name",
+              sort_order: "asc",
+            })
+          )
+        );
+
+        if (seq !== loadStudentsSeqRef.current) return;
+
+        const studentFailures = studentSettled.filter(
+          (r): r is PromiseRejectedResult => r.status === "rejected"
+        );
+        const allStudentRequestsFailed =
+          studentSettled.length > 0 &&
+          studentFailures.length === studentSettled.length;
+
+        if (allStudentRequestsFailed) {
+          const detail = apiErrorMessage(studentFailures[0].reason);
+          showToast(
+            detail || t("adminManageStudents.failedToLoadStudents"),
+            "error"
+          );
+          setAllStudents([]);
+          setCompletionStats({});
+        } else {
+          const fulfilledResponses = studentSettled
+            .filter(
+              (r): r is PromiseFulfilledResult<ManageStudentsResponse> =>
+                r.status === "fulfilled"
+            )
+            .map((r) => r.value);
+          setAllStudents(
+            Array.from(mergeStudentResponsesIntoMap(fulfilledResponses).values())
+          );
+
+          setLoadingStats(true);
+          try {
+            const statsSettled = await Promise.allSettled(
+              selectedCourseIds.map((courseId) =>
+                adminStudentService.getCourseCompletionStats(courseId)
+              )
+            );
+            if (seq !== loadStudentsSeqRef.current) return;
+            const stats = statsSettled.flatMap((r) =>
+              r.status === "fulfilled" ? r.value : []
+            );
+            aggregateStatsFromRows(stats);
+          } catch {
+          } finally {
+            if (seq === loadStudentsSeqRef.current) {
+              setLoadingStats(false);
+            }
+          }
+        }
+      } else {
+        const studentResponses = await Promise.all(
+          selectedCourseIds.map((courseId) =>
+            adminStudentService.getManageStudents({
+              course_id: courseId,
+              page: 1,
+              limit: 10000,
+              sort_by: "name",
+              sort_order: "asc",
+            })
+          )
+        );
+
+        if (seq !== loadStudentsSeqRef.current) return;
+
+        setAllStudents(
+          Array.from(mergeStudentResponsesIntoMap(studentResponses).values())
+        );
+
+        setLoadingStats(true);
+        try {
+          const statsResults = await Promise.all(
+            selectedCourseIds.map((courseId) =>
+              adminStudentService.getCourseCompletionStats(courseId)
+            )
+          );
+          if (seq !== loadStudentsSeqRef.current) return;
+          aggregateStatsFromRows(statsResults.flat());
+        } catch {
+        } finally {
+          if (seq === loadStudentsSeqRef.current) {
+            setLoadingStats(false);
+          }
+        }
       }
     } catch (error: unknown) {
-      const detail =
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error &&
-        typeof (error as { response?: { data?: { detail?: unknown } } }).response
-          ?.data?.detail === "string"
-          ? (error as { response: { data: { detail: string } } }).response.data.detail
-          : null;
+      if (seq !== loadStudentsSeqRef.current) return;
       showToast(
-        detail || t("adminManageStudents.failedToLoadStudents"),
+        apiErrorMessage(error) || t("adminManageStudents.failedToLoadStudents"),
         "error"
       );
       setAllStudents([]);
     } finally {
-      setLoading(false);
+      if (seq === loadStudentsSeqRef.current) {
+        setLoading(false);
+      }
     }
-  }, [selectedCourses, showToast, t]);
+  }, [selectedCourses, showToast, t, courseManagerUser]);
 
   // Load students when course filter changes or on mount
   useEffect(() => {
@@ -455,13 +605,23 @@ export default function ManageStudentsPage() {
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         <ManageStudentsHeader
           totalCount={totalCount}
-          onBulkEnrollClick={() => setBulkEnrollDialogOpen(true)}
-          onDownloadCsv={selectedCourses.length > 0 ? handleDownloadCsv : undefined}
+          onBulkEnrollClick={
+            showOrgAdminEnrollmentTools
+              ? () => setBulkEnrollDialogOpen(true)
+              : undefined
+          }
+          onDownloadCsv={
+            allStudents.length > 0 &&
+            (courseManagerUser || selectedCourses.length > 0)
+              ? handleDownloadCsv
+              : undefined
+          }
         />
 
         <StudentsFilters
           courses={courses}
           selectedCourses={selectedCourses}
+          emptySelectionMeansAllCourses={courseManagerUser}
           status={status}
           resumeFilter={resumeFilter}
           searchTerm={searchTerm}
@@ -471,40 +631,42 @@ export default function ManageStudentsPage() {
           onSearchChange={handleSearchChange}
         />
 
-        <Box sx={{ mb: 4 }}>
-          <Paper
-            sx={{
-              p: 2,
-              mb: 2,
-              cursor: "pointer",
-              "&:hover": {
-                backgroundColor: "#f9fafb",
-              },
-            }}
-            onClick={() => setShowJobHistory(!showJobHistory)}
-          >
-            <Box
+        {showOrgAdminEnrollmentTools ? (
+          <Box sx={{ mb: 4 }}>
+            <Paper
               sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                p: 2,
+                mb: 2,
+                cursor: "pointer",
+                "&:hover": {
+                  backgroundColor: "#f9fafb",
+                },
               }}
+              onClick={() => setShowJobHistory(!showJobHistory)}
             >
-              <Typography variant="h6" fontWeight={600}>
-                {t("adminManageStudents.enrollmentJobHistory")}
-              </Typography>
-              <IconButton size="small">
-                <IconWrapper
-                  icon={showJobHistory ? "mdi:chevron-up" : "mdi:chevron-down"}
-                  size={20}
-                />
-              </IconButton>
-            </Box>
-          </Paper>
-          <Collapse in={showJobHistory}>
-            <EnrollmentJobHistory />
-          </Collapse>
-        </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Typography variant="h6" fontWeight={600}>
+                  {t("adminManageStudents.enrollmentJobHistory")}
+                </Typography>
+                <IconButton size="small">
+                  <IconWrapper
+                    icon={showJobHistory ? "mdi:chevron-up" : "mdi:chevron-down"}
+                    size={20}
+                  />
+                </IconButton>
+              </Box>
+            </Paper>
+            <Collapse in={showJobHistory}>
+              <EnrollmentJobHistory />
+            </Collapse>
+          </Box>
+        ) : null}
 
         <Box>
           <StudentsTable

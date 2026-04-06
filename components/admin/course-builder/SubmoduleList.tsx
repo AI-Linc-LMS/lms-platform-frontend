@@ -43,6 +43,7 @@ interface SubmoduleListProps {
   moduleId: number;
   submodules: Submodule[];
   onSubmodulesChanged: () => void;
+  readOnly?: boolean;
 }
 
 const emptyForm: SubmoduleData = { title: "", description: "", order: 1 };
@@ -60,6 +61,7 @@ export function SubmoduleList({
   moduleId,
   submodules,
   onSubmodulesChanged,
+  readOnly = false,
 }: SubmoduleListProps) {
   const { showToast } = useToast();
 
@@ -245,27 +247,33 @@ export function SubmoduleList({
                       </Typography>
                     )}
                   </Box>
-                  <Box
-                    sx={{ display: "flex", gap: 0.5, ml: 1, flexShrink: 0 }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <IconButton size="small" onClick={() => openEdit(sub)} sx={{ color: "#6366f1" }}>
-                      <IconWrapper icon="mdi:pencil" size={16} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => setDeleteTarget(sub)}
-                      sx={{ color: "#ef4444" }}
+                  {!readOnly ? (
+                    <Box
+                      sx={{ display: "flex", gap: 0.5, ml: 1, flexShrink: 0 }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <IconWrapper icon="mdi:delete" size={16} />
-                    </IconButton>
-                  </Box>
+                      <IconButton size="small" onClick={() => openEdit(sub)} sx={{ color: "#6366f1" }}>
+                        <IconWrapper icon="mdi:pencil" size={16} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => setDeleteTarget(sub)}
+                        sx={{ color: "#ef4444" }}
+                      >
+                        <IconWrapper icon="mdi:delete" size={16} />
+                      </IconButton>
+                    </Box>
+                  ) : null}
                 </Box>
 
                 {/* Expanded Content */}
                 <Collapse in={isExpanded}>
                   <Box sx={{ px: 2, pb: 1.5, borderTop: "1px solid #f3f4f6" }}>
-                    <ContentList courseId={courseId} submoduleId={sub.id} />
+                    <ContentList
+                      courseId={courseId}
+                      submoduleId={sub.id}
+                      readOnly={readOnly}
+                    />
                   </Box>
                 </Collapse>
               </Box>
@@ -274,14 +282,16 @@ export function SubmoduleList({
         </Box>
       )}
 
-      <Button
-        size="small"
-        startIcon={<IconWrapper icon="mdi:plus" size={16} />}
-        onClick={openAdd}
-        sx={{ mt: 1, color: "#6366f1", textTransform: "none", fontWeight: 600 }}
-      >
-        Add Submodule
-      </Button>
+      {!readOnly ? (
+        <Button
+          size="small"
+          startIcon={<IconWrapper icon="mdi:plus" size={16} />}
+          onClick={openAdd}
+          sx={{ mt: 1, color: "#6366f1", textTransform: "none", fontWeight: 600 }}
+        >
+          Add Submodule
+        </Button>
+      ) : null}
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onClose={saving ? undefined : closeDialog} maxWidth="sm" fullWidth>
