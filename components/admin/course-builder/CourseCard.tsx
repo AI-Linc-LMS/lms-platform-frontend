@@ -55,9 +55,17 @@ interface CourseCardProps {
   onEditClick: () => void;
   onDuplicate?: () => void;
   onUpdate?: () => void;
+  /** View-only: no inline edit, publish, or duplicate (course manager) */
+  readOnly?: boolean;
 }
 
-export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: CourseCardProps) {
+export function CourseCard({
+  course,
+  onEditClick: _onEditClick,
+  onDuplicate,
+  onUpdate,
+  readOnly = false,
+}: CourseCardProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -229,7 +237,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
             )}
           </Box>
           <Box sx={{ display: "flex", gap: 0.5, ml: 1 }} onClick={(e) => e.stopPropagation()}>
-            {editing ? (
+            {readOnly ? null : editing ? (
               <>
                 <IconButton
                   size="small"
@@ -603,7 +611,7 @@ export function CourseCard({ course, onEditClick, onDuplicate, onUpdate }: Cours
                 fontSize: "0.8rem",
               }}
             >
-              {t("adminCourseBuilder.manage")}
+              {readOnly ? t("adminCourseBuilder.viewCourse") : t("adminCourseBuilder.manage")}
             </Button>
           </Box>
         </Box>

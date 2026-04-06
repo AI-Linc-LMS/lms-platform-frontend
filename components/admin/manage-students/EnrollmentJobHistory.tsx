@@ -20,6 +20,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 import {
   adminStudentEnrollmentService,
   StudentEnrollmentJob,
@@ -34,28 +36,36 @@ interface EnrollmentJobHistoryProps {
 export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
+  const { user, loading: authLoading } = useAuth();
   const [jobs, setJobs] = useState<StudentEnrollmentJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  // Load jobs function - can be called from multiple places
+  // Backend allows enrollment jobs list only for admin/superadmin — skip for course_manager etc.
   const loadJobs = useCallback(async () => {
+    if (!isClientOrgAdminRole(user?.role)) {
+      setJobs([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const jobsData = await adminStudentEnrollmentService.listAllJobs();
       setJobs(jobsData);
-    } catch (error: any) {
-      showToast(error.message || t("adminManageStudents.failedToLoadJobHistory"), "error");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : String(error ?? "");
+      showToast(message || t("adminManageStudents.failedToLoadJobHistory"), "error");
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, showToast, user?.role]);
 
-  // Load jobs on mount only - using loadJobs ref to avoid dependency issues
   useEffect(() => {
+    if (authLoading) return;
     loadJobs();
-  }, [loadJobs]); // Include loadJobs since it's memoized with useCallback
+  }, [authLoading, loadJobs]);
 
   const getStatusColor = (status: JobStatus): "default" | "primary" | "success" | "error" => {
     switch (status) {

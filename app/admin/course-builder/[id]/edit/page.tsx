@@ -29,12 +29,15 @@ import {
   adminCourseBuilderService,
   CourseData,
 } from "@/lib/services/admin/admin-course-builder.service";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 
 export default function CourseEditPage() {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const router = useRouter();
   const params = useParams();
+  const { user, loading: authLoading } = useAuth();
   const courseId = Number(params.id);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,12 +51,6 @@ export default function CourseEditPage() {
     rating: 0,
     tags: [] as string[],
   });
-
-  useEffect(() => {
-    if (courseId) {
-      loadCourse();
-    }
-  }, [courseId]);
 
   const loadCourse = async () => {
     try {
@@ -75,6 +72,18 @@ export default function CourseEditPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (authLoading || !courseId) return;
+    if (isCourseManagerRole(user?.role)) {
+      router.replace(`/admin/course-builder/${courseId}`);
+    }
+  }, [authLoading, user?.role, courseId, router]);
+
+  useEffect(() => {
+    if (authLoading || !courseId || isCourseManagerRole(user?.role)) return;
+    void loadCourse();
+  }, [authLoading, courseId, user?.role]);
 
   const goToViewPage = () => router.push(`/admin/course-builder/${courseId}`);
 

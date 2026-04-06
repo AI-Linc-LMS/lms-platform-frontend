@@ -31,12 +31,15 @@ import { StudentActiveDaysChart } from "@/components/admin/dashboard/StudentActi
 import { StudentRankingCard } from "@/components/admin/dashboard/StudentRankingCard";
 import { useToast } from "@/components/common/Toast";
 import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isCourseManagerRole } from "@/lib/auth/role-utils";
 
 type TimePeriod = "weekly" | "bimonthly" | "monthly";
 
 function AdminDashboardPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("weekly");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
@@ -57,6 +60,7 @@ function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const dashboardPdfRef = useRef<HTMLDivElement>(null);
+  const attendanceLoadSeqRef = useRef(0);
 
   // Calculate window size based on time period
   const windowSize = useMemo(() => {
@@ -137,9 +141,11 @@ function AdminDashboardPage() {
     }
   }, [dateRange.start, dateRange.end, selectedCourse]);
 
-  // Load attendance analytics
+  // Load attendance analytics — course managers: silent fail on optional charts (avoids false toasts). Admins: show errors.
   const loadAttendanceData = useCallback(async () => {
     if (!dateRange.start || !dateRange.end) return;
+    const seq = ++attendanceLoadSeqRef.current;
+    const courseManager = isCourseManagerRole(user?.role);
     try {
       const courseId =
         selectedCourse !== "all" ? Number(selectedCourse) : undefined;
@@ -148,14 +154,20 @@ function AdminDashboardPage() {
         start_date: dateRange.start,
         end_date: dateRange.end,
       });
+      if (seq !== attendanceLoadSeqRef.current) return;
       setAttendanceData(data);
-    } catch (error: any) {
-      showToast(
-        error?.response?.data?.detail || t("admin.dashboard.failedToLoadAttendance"),
-        "error"
-      );
+    } catch (error: unknown) {
+      if (seq !== attendanceLoadSeqRef.current) return;
+      setAttendanceData(null);
+      if (!courseManager) {
+        const err = error as { response?: { data?: { detail?: string } } };
+        showToast(
+          err?.response?.data?.detail || t("admin.dashboard.failedToLoadAttendance"),
+          "error"
+        );
+      }
     }
-  }, [dateRange.start, dateRange.end, selectedCourse, showToast, t]);
+  }, [dateRange.start, dateRange.end, selectedCourse, showToast, t, user?.role]);
 
   // Load core data immediately (doesn't require date range)
   useEffect(() => {
