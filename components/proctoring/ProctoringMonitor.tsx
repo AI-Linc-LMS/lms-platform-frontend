@@ -167,7 +167,7 @@ export function ProctoringMonitor({
                 variant="outlined"
                 color="error"
                 startIcon={<IconWrapper icon="mdi:stop" />}
-                onClick={stopProctoring}
+                onClick={() => stopProctoring()}
                 sx={{ textTransform: "none" }}
               >
                 Stop
