@@ -43,11 +43,17 @@ interface ModuleListProps {
   courseId: number;
   modules: Module[];
   onModulesChanged: () => void;
+  readOnly?: boolean;
 }
 
 const emptyForm: ModuleData = { title: "", weekno: 1, description: "" };
 
-export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListProps) {
+export function ModuleList({
+  courseId,
+  modules,
+  onModulesChanged,
+  readOnly = false,
+}: ModuleListProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
 
@@ -225,56 +231,58 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
                 </Box>
 
                 {/* Edit & Delete - prevent expand on click */}
-                <Box
-                  component="span"
-                  sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Tooltip title={t("adminCourseBuilder.editModuleTooltip")}>
-                    <IconButton
-                      component="span"
-                      size="small"
-                      onClick={() => openEdit(mod)}
-                      sx={{
-                        color: "#6366f1",
-                        bgcolor: "#eef2ff",
-                        "&:hover": { bgcolor: "#e0e7ff" },
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openEdit(mod);
-                        }
-                      }}
-                    >
-                      <IconWrapper icon="mdi:pencil" size={18} />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={t("adminCourseBuilder.deleteModuleTooltip")}>
-                    <IconButton
-                      component="span"
-                      size="small"
-                      onClick={() => setDeleteTarget(mod)}
-                      sx={{
-                        color: "#ef4444",
-                        bgcolor: "#fef2f2",
-                        "&:hover": { bgcolor: "#fee2e2" },
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setDeleteTarget(mod);
-                        }
-                      }}
-                    >
-                      <IconWrapper icon="mdi:delete" size={18} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
+                {!readOnly ? (
+                  <Box
+                    component="span"
+                    sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Tooltip title={t("adminCourseBuilder.editModuleTooltip")}>
+                      <IconButton
+                        component="span"
+                        size="small"
+                        onClick={() => openEdit(mod)}
+                        sx={{
+                          color: "#6366f1",
+                          bgcolor: "#eef2ff",
+                          "&:hover": { bgcolor: "#e0e7ff" },
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openEdit(mod);
+                          }
+                        }}
+                      >
+                        <IconWrapper icon="mdi:pencil" size={18} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={t("adminCourseBuilder.deleteModuleTooltip")}>
+                      <IconButton
+                        component="span"
+                        size="small"
+                        onClick={() => setDeleteTarget(mod)}
+                        sx={{
+                          color: "#ef4444",
+                          bgcolor: "#fef2f2",
+                          "&:hover": { bgcolor: "#fee2e2" },
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setDeleteTarget(mod);
+                          }
+                        }}
+                      >
+                        <IconWrapper icon="mdi:delete" size={18} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                ) : null}
               </AccordionSummary>
               <AccordionDetails sx={{ px: 2, pb: 2, pt: 0, borderTop: "1px solid #f3f4f6" }}>
                 {loadingSubs[mod.id] ? (
@@ -285,6 +293,7 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
                     moduleId={mod.id}
                     submodules={submoduleMap[mod.id] || []}
                     onSubmodulesChanged={() => loadSubmodules(mod.id)}
+                    readOnly={readOnly}
                   />
                 )}
               </AccordionDetails>
@@ -293,21 +302,23 @@ export function ModuleList({ courseId, modules, onModulesChanged }: ModuleListPr
         </Box>
       )}
 
-      <Button
-        variant="outlined"
-        startIcon={<IconWrapper icon="mdi:plus" size={18} />}
-        onClick={openAdd}
-        sx={{
-          mt: 2,
-          textTransform: "none",
-          fontWeight: 600,
-          borderColor: "#6366f1",
-          color: "#6366f1",
-          "&:hover": { borderColor: "#4f46e5", bgcolor: "#eef2ff" },
-        }}
-      >
-        {t("adminCourseBuilder.addModule")}
-      </Button>
+      {!readOnly ? (
+        <Button
+          variant="outlined"
+          startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+          onClick={openAdd}
+          sx={{
+            mt: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            borderColor: "#6366f1",
+            color: "#6366f1",
+            "&:hover": { borderColor: "#4f46e5", bgcolor: "#eef2ff" },
+          }}
+        >
+          {t("adminCourseBuilder.addModule")}
+        </Button>
+      ) : null}
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onClose={saving ? undefined : closeDialog} maxWidth="sm" fullWidth>

@@ -24,6 +24,8 @@ interface Course {
 interface StudentsFiltersProps {
   courses: Course[];
   selectedCourses: string[];
+  /** When true, empty multi-select shows "All courses" (course managers auto-load all scoped students). */
+  emptySelectionMeansAllCourses?: boolean;
   status: string;
   resumeFilter: "all" | "yes" | "no";
   searchTerm: string;
@@ -36,6 +38,7 @@ interface StudentsFiltersProps {
 export function StudentsFilters({
   courses,
   selectedCourses,
+  emptySelectionMeansAllCourses = false,
   status,
   resumeFilter,
   searchTerm,
@@ -87,7 +90,11 @@ export function StudentsFilters({
             input={<OutlinedInput label={t("adminManageStudents.filterByCourse")} />}
             renderValue={(selected) => {
               const selectedIds = selected as string[];
-              if (!selectedIds.length) return t("adminManageStudents.filterByCourse");
+              if (!selectedIds.length) {
+                return emptySelectionMeansAllCourses
+                  ? t("adminManageStudents.allCourses")
+                  : t("adminManageStudents.filterByCourse");
+              }
               const titleMap = new Map(courses.map((c) => [String(c.id), c.title]));
               return selectedIds
                 .map((id) => titleMap.get(id) || id)
