@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth/auth-context";
 import { ToastProvider } from "@/components/common/Toast";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { EmotionCacheProvider } from "@/lib/emotion-cache";
+import { config } from "@/lib/config";
 import { getClientInfo } from "@/lib/utils/clientInfo";
 import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -81,7 +82,13 @@ export default async function RootLayout({
           <ErrorBoundary>
             <I18nProvider clientId={client?.id}>
               <EmotionCacheProvider>
-                <ThemeProvider>
+                <ThemeProvider
+                  initialClientId={
+                    typeof client?.id === "number"
+                      ? client.id
+                      : Number(config.clientId)
+                  }
+                >
                   <DirectionSync />
                   <ReduxProvider>
                     <ThemeModeProvider>

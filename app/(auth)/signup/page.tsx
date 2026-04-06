@@ -419,7 +419,7 @@ export default function SignupPage() {
                   justifyContent: "center",
                   gap: 1.25,
                   background:
-                    "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
+                    "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
                   color: "white",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
@@ -427,12 +427,13 @@ export default function SignupPage() {
                   boxShadow: "none",
                   "&:hover": {
                     background:
-                      "linear-gradient(135deg, #255c79 0%, #1e4a63 100%)",
-                    boxShadow: "0 4px 12px rgba(37, 92, 121, 0.4)",
+                      "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%)",
+                    boxShadow:
+                      "0 4px 12px color-mix(in srgb, var(--primary-500) 40%, transparent)",
                   },
                   "&:disabled": {
                     background:
-                      "linear-gradient(135deg, #2a8cb0 0%,#1e4a63 100%)",
+                      "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
                     opacity: 0.6,
                     color: "white",
                   },

@@ -1,12 +1,38 @@
 "use client";
 
 import { useEffect } from "react";
+import { config } from "@/lib/config";
+import {
+  CLIENT_28_EXTRA_CSS_VARS,
+  isClient28Theme,
+  mergeClient28ThemeSettings,
+} from "@/lib/theme/client28-theme";
+
+function resolveClientId(client: { id?: number } | null | undefined): number {
+  const fromApi = client?.id;
+  if (typeof fromApi === "number" && Number.isFinite(fromApi)) return fromApi;
+  const fromEnv = Number(config.clientId);
+  return Number.isFinite(fromEnv) ? fromEnv : NaN;
+}
 
 /** Default export so `next/dynamic` can load this module without Turbopack SSR factory issues. */
 export default function ClientThemeProvider({ client }: { client: any }) {
   useEffect(() => {
-    if (!client?.theme_settings) return;
-    const themeSettings = client.theme_settings;
+    const resolvedId = resolveClientId(client);
+    const api = client?.theme_settings;
+    const apiIsEmpty =
+      !api || (typeof api === "object" && Object.keys(api).length === 0);
+
+    let themeSettings: Record<string, string> | null = null;
+    if (isClient28Theme(resolvedId)) {
+      themeSettings = mergeClient28ThemeSettings(
+        apiIsEmpty ? undefined : api
+      );
+    } else if (!apiIsEmpty) {
+      themeSettings = api;
+    }
+
+    if (!themeSettings) return;
 
     document.body.style.setProperty("--primary-50", themeSettings.primary50);
     document.body.style.setProperty("--primary-100", themeSettings.primary100);
@@ -121,6 +147,12 @@ export default function ClientThemeProvider({ client }: { client: any }) {
     document.body.style.setProperty("--font-dark", themeSettings.fontDark);
     document.body.style.setProperty("--background", "#ffffff");
     document.body.style.setProperty("--foreground", "#171717");
+
+    if (isClient28Theme(resolvedId)) {
+      for (const [cssVar, value] of Object.entries(CLIENT_28_EXTRA_CSS_VARS)) {
+        document.body.style.setProperty(cssVar, value);
+      }
+    }
   }, [client]);
 
   return null;
