@@ -58,6 +58,11 @@ interface UseAssessmentProctoringOptions {
   autoStart?: boolean;
   /** When false, trackpad swipe detection is disabled (no warnings, no blocking). Default true. */
   trackpadSwipeDetection?: boolean;
+  /**
+   * When false, tab/window visibility listeners are off (no tab-switch violations).
+   * Default true. Prefer enabling only during an active proctored session.
+   */
+  tabSwitchDetectionEnabled?: boolean;
 }
 
 interface UseAssessmentProctoringReturn {
@@ -106,6 +111,7 @@ export function useAssessmentProctoring(
     onViolationThresholdReached,
     autoStart = false,
     trackpadSwipeDetection = true,
+    tabSwitchDetectionEnabled = true,
   } = options;
 
   const startedAtRef = useRef<string>(new Date().toISOString());
@@ -174,7 +180,7 @@ export function useAssessmentProctoring(
     tabSwitchCount,
     violations: tabSwitchViolations,
     clearViolations: clearTabSwitchViolations,
-  } = useTabSwitchDetector();
+  } = useTabSwitchDetector({ enabled: tabSwitchDetectionEnabled });
 
   // Trackpad swipe detection (horizontal swipes only; mouse wheel unaffected). Can be turned off via trackpadSwipeDetection.
   const {

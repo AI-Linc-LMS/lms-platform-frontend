@@ -248,6 +248,8 @@ export default function TakeAssessmentPage({
     maxViolations: MAX_VIOLATIONS,
     onViolationThresholdReached: handleViolationThresholdReached,
     autoStart: false,
+    tabSwitchDetectionEnabled:
+      assessmentStarted && assessment?.proctoring_enabled !== false,
   });
 
   totalViolationCountRef.current = totalViolationCount;
