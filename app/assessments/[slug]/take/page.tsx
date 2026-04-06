@@ -726,6 +726,8 @@ export default function TakeAssessmentPage({
     enterFullscreen,
     promptOnFullscreenExit: true,
     onLeftFullscreen: openFullscreenExitPrompt,
+    onEscapePressed: openFullscreenExitPrompt,
+    suppressEscapeInterceptor: showFullscreenExitConfirm,
   });
 
   // Submission handler
@@ -784,6 +786,9 @@ export default function TakeAssessmentPage({
 
   const handleFullscreenExitCancel = useCallback(async () => {
     setShowFullscreenExitConfirm(false);
+    if (isDocumentFullscreen()) {
+      return;
+    }
     try {
       await enterFullscreen();
       await new Promise((r) => setTimeout(r, 150));

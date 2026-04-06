@@ -25,6 +25,11 @@ export function FullscreenExitConfirmDialog({
   onCancel,
   onSubmit,
 }: FullscreenExitConfirmDialogProps) {
+  const container =
+    typeof document !== "undefined"
+      ? () => document.fullscreenElement ?? document.body
+      : undefined;
+
   return (
     <Dialog
       open={open}
@@ -36,6 +41,7 @@ export function FullscreenExitConfirmDialog({
       disableEscapeKeyDown={false}
       maxWidth="sm"
       fullWidth
+      container={container}
       sx={{ zIndex: 14000 }}
       slotProps={{
         backdrop: {
@@ -51,21 +57,25 @@ export function FullscreenExitConfirmDialog({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:alert" size={24} color="#b45309" />
           <Typography variant="h6" fontWeight={600}>
-            You have exited fullscreen
+            Leave fullscreen?
           </Typography>
         </Box>
       </DialogTitle>
       <DialogContent>
         <Alert severity="warning" sx={{ mb: 2 }}>
           <Typography variant="body2" fontWeight={600}>
-            Leaving fullscreen during a proctored assessment is not allowed.
-            Choose what to do next:
+            You pressed Escape or left fullscreen. Choose what to do next:
           </Typography>
         </Alert>
         <Typography variant="body2" color="text.secondary">
-          <strong>Continue test</strong> returns you to fullscreen and you carry
-          on with the assessment. <strong>Submit assessment</strong> hands in
-          all your answers now.
+          <strong>Continue test</strong> keeps you in the assessment (or returns
+          to fullscreen if your browser already left it).{" "}
+          <strong>Submit assessment</strong> hands in all your answers now.
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
+          In Firefox and Safari, Escape usually leaves fullscreen first (browser
+          rule), then this dialog appears. In Chrome, Edge, Brave, and Opera it
+          can appear without leaving fullscreen when the browser allows it.
         </Typography>
       </DialogContent>
       <DialogActions sx={{ flexWrap: "wrap", gap: 1, px: 3, pb: 2 }}>
