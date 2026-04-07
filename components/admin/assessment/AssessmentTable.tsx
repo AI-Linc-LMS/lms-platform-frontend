@@ -21,7 +21,6 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
-  Button,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -29,6 +28,8 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Assessment } from "@/lib/services/admin/admin-assessment.service";
+import { isProctoredAssessmentInLiveWindow } from "@/lib/utils/assessment-live-window.utils";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
 export interface AssessmentEmailJobInfo {
   task_id: string;
@@ -75,6 +76,8 @@ export function AssessmentTable({
   actionsReadOnly = false,
 }: AssessmentTableProps) {
   const { t } = useTranslation("common");
+  const { clientInfo } = useClientInfo();
+  const liveProctoringEnabled = clientInfo?.live_proctoring_enabled === true;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [anchorEl, setAnchorEl] = useState<{ [key: number]: HTMLElement | null }>({});
@@ -211,6 +214,26 @@ export function AssessmentTable({
                         }}
                       />
                     )}
+                    {liveProctoringEnabled &&
+                      isProctoredAssessmentInLiveWindow(assessment) && (
+                      <Chip
+                        component={Link}
+                        href={`/admin/assessment/${assessment.id}/live-monitor`}
+                        onClick={(e) => e.stopPropagation()}
+                        icon={<IconWrapper icon="mdi:video-account" size={14} />}
+                        label="Live"
+                        size="small"
+                        clickable
+                        sx={{
+                          bgcolor: "#fce7f3",
+                          color: "#9d174d",
+                          fontSize: "0.7rem",
+                          height: 22,
+                          fontWeight: 600,
+                          textDecoration: "none",
+                        }}
+                      />
+                      )}
                     <Chip
                       label={assessment.is_active ? "Active" : "Inactive"}
                       size="small"
@@ -431,6 +454,19 @@ export function AssessmentTable({
                       <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
                     </MenuItem>
                   )}
+                  {liveProctoringEnabled &&
+                    isProctoredAssessmentInLiveWindow(assessment) && (
+                    <MenuItem
+                      component={Link}
+                      href={`/admin/assessment/${assessment.id}/live-monitor`}
+                      onClick={() => handleMenuClose(assessment.id)}
+                    >
+                      <ListItemIcon>
+                        <IconWrapper icon="mdi:video-account" size={18} color="#db2777" />
+                      </ListItemIcon>
+                      <ListItemText>Live monitor</ListItemText>
+                    </MenuItem>
+                  )}
                   {!actionsReadOnly && onTriggerEmailJob && (() => {
                     const job = assessmentEmailJobMap[assessment.id];
                     const isTriggering = triggeringEmailJobId === assessment.id;
@@ -521,53 +557,49 @@ export function AssessmentTable({
                       {exportingSubmissionsId === assessment.id ? "Exporting..." : "Download Submissions"}
                     </ListItemText>
                   </MenuItem>
-                  {!actionsReadOnly && (
-                    <>
-                      {onDuplicate && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            onDuplicate(assessment);
-                          }}
-                          disabled={duplicatingId === assessment.id}
-                        >
-                          <ListItemIcon>
-                            {duplicatingId === assessment.id ? (
-                              <CircularProgress size={18} />
-                            ) : (
-                              <IconWrapper icon="mdi:content-copy" size={18} color="#7c3aed" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText>
-                            {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
-                          </ListItemText>
-                        </MenuItem>
-                      )}
-                      {onDelete && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            onDelete(assessment);
-                          }}
-                          disabled={deletingId === assessment.id}
-                          sx={{
-                            color: "#dc2626",
-                            "&:hover": { bgcolor: "#fee2e2" },
-                          }}
-                        >
-                          <ListItemIcon>
-                            {deletingId === assessment.id ? (
-                              <CircularProgress size={18} />
-                            ) : (
-                              <IconWrapper icon="mdi:delete-outline" size={18} color="#dc2626" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText>
-                            {deletingId === assessment.id ? "Deleting..." : "Delete"}
-                          </ListItemText>
-                        </MenuItem>
-                      )}
-                    </>
+                  {!actionsReadOnly && onDuplicate && (
+                    <MenuItem
+                      onClick={() => {
+                        handleMenuClose(assessment.id);
+                        onDuplicate(assessment);
+                      }}
+                      disabled={duplicatingId === assessment.id}
+                    >
+                      <ListItemIcon>
+                        {duplicatingId === assessment.id ? (
+                          <CircularProgress size={18} />
+                        ) : (
+                          <IconWrapper icon="mdi:content-copy" size={18} color="#7c3aed" />
+                        )}
+                      </ListItemIcon>
+                      <ListItemText>
+                        {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
+                      </ListItemText>
+                    </MenuItem>
+                  )}
+                  {!actionsReadOnly && onDelete && (
+                    <MenuItem
+                      onClick={() => {
+                        handleMenuClose(assessment.id);
+                        onDelete(assessment);
+                      }}
+                      disabled={deletingId === assessment.id}
+                      sx={{
+                        color: "#dc2626",
+                        "&:hover": { bgcolor: "#fee2e2" },
+                      }}
+                    >
+                      <ListItemIcon>
+                        {deletingId === assessment.id ? (
+                          <CircularProgress size={18} />
+                        ) : (
+                          <IconWrapper icon="mdi:delete-outline" size={18} color="#dc2626" />
+                        )}
+                      </ListItemIcon>
+                      <ListItemText>
+                        {deletingId === assessment.id ? "Deleting..." : "Delete"}
+                      </ListItemText>
+                    </MenuItem>
                   )}
                 </Menu>
               </Box>
@@ -804,6 +836,27 @@ export function AssessmentTable({
                           }}
                         />
                       )}
+                      {liveProctoringEnabled &&
+                        isProctoredAssessmentInLiveWindow(assessment) && (
+                        <Chip
+                          component={Link}
+                          href={`/admin/assessment/${assessment.id}/live-monitor`}
+                          onClick={(e) => e.stopPropagation()}
+                          icon={<IconWrapper icon="mdi:video-account" size={14} />}
+                          label="Live"
+                          size="small"
+                          clickable
+                          sx={{
+                            bgcolor: "#fce7f3",
+                            color: "#9d174d",
+                            fontSize: "0.7rem",
+                            height: 24,
+                            fontWeight: 600,
+                            border: "1px solid #fbcfe8",
+                            textDecoration: "none",
+                          }}
+                        />
+                        )}
                     </Stack>
 
                     {/* Time Information */}
@@ -1074,6 +1127,19 @@ export function AssessmentTable({
                           <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
                         </MenuItem>
                       )}
+                      {liveProctoringEnabled &&
+                        isProctoredAssessmentInLiveWindow(assessment) && (
+                        <MenuItem
+                          component={Link}
+                          href={`/admin/assessment/${assessment.id}/live-monitor`}
+                          onClick={() => handleMenuClose(assessment.id)}
+                        >
+                          <ListItemIcon>
+                            <IconWrapper icon="mdi:video-account" size={18} color="#db2777" />
+                          </ListItemIcon>
+                          <ListItemText>Live monitor</ListItemText>
+                        </MenuItem>
+                      )}
                       {!actionsReadOnly && onTriggerEmailJob && (() => {
                         const job = assessmentEmailJobMap[assessment.id];
                         const isTriggering = triggeringEmailJobId === assessment.id;
@@ -1164,53 +1230,49 @@ export function AssessmentTable({
                           {exportingSubmissionsId === assessment.id ? "Exporting..." : "Download Submissions"}
                         </ListItemText>
                       </MenuItem>
-                      {!actionsReadOnly && (
-                        <>
-                          {onDuplicate && (
-                            <MenuItem
-                              onClick={() => {
-                                handleMenuClose(assessment.id);
-                                onDuplicate(assessment);
-                              }}
-                              disabled={duplicatingId === assessment.id}
-                            >
-                              <ListItemIcon>
-                                {duplicatingId === assessment.id ? (
-                                  <CircularProgress size={18} />
-                                ) : (
-                                  <IconWrapper icon="mdi:content-copy" size={18} color="#7c3aed" />
-                                )}
-                              </ListItemIcon>
-                              <ListItemText>
-                                {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
-                              </ListItemText>
-                            </MenuItem>
-                          )}
-                          {onDelete && (
-                            <MenuItem
-                              onClick={() => {
-                                handleMenuClose(assessment.id);
-                                onDelete(assessment);
-                              }}
-                              disabled={deletingId === assessment.id}
-                              sx={{
-                                color: "#dc2626",
-                                "&:hover": { bgcolor: "#fee2e2" },
-                              }}
-                            >
-                              <ListItemIcon>
-                                {deletingId === assessment.id ? (
-                                  <CircularProgress size={18} />
-                                ) : (
-                                  <IconWrapper icon="mdi:delete-outline" size={18} color="#dc2626" />
-                                )}
-                              </ListItemIcon>
-                              <ListItemText>
-                                {deletingId === assessment.id ? "Deleting..." : "Delete"}
-                              </ListItemText>
-                            </MenuItem>
-                          )}
-                        </>
+                      {!actionsReadOnly && onDuplicate && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            onDuplicate(assessment);
+                          }}
+                          disabled={duplicatingId === assessment.id}
+                        >
+                          <ListItemIcon>
+                            {duplicatingId === assessment.id ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                              <IconWrapper icon="mdi:content-copy" size={18} color="#7c3aed" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText>
+                            {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
+                          </ListItemText>
+                        </MenuItem>
+                      )}
+                      {!actionsReadOnly && onDelete && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            onDelete(assessment);
+                          }}
+                          disabled={deletingId === assessment.id}
+                          sx={{
+                            color: "#dc2626",
+                            "&:hover": { bgcolor: "#fee2e2" },
+                          }}
+                        >
+                          <ListItemIcon>
+                            {deletingId === assessment.id ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                              <IconWrapper icon="mdi:delete-outline" size={18} color="#dc2626" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText>
+                            {deletingId === assessment.id ? "Deleting..." : "Delete"}
+                          </ListItemText>
+                        </MenuItem>
                       )}
                     </Menu>
                   </Box>

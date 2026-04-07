@@ -2,6 +2,8 @@ export const config = {
   apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",
   clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "1",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+  /** Fallback WebSocket URL when token API does not return `livekit_url` */
+  livekitUrl: process.env.NEXT_PUBLIC_LIVEKIT_URL || "",
   /** OpenTelemetry: service name for traces */
   otelServiceName:
     process.env.OTEL_SERVICE_NAME ||

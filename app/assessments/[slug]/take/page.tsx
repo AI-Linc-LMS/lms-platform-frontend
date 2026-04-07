@@ -21,6 +21,7 @@ import { AssessmentFloatingTools } from "@/components/assessment/tools/Assessmen
 import { AssessmentToolbarTools } from "@/components/assessment/tools/AssessmentToolbarTools";
 import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
+import { useLiveProctoringPublisher } from "@/lib/hooks/useLiveProctoringPublisher";
 import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
 import { useAssessmentTimer } from "@/lib/hooks/useAssessmentTimer";
 import { useAssessmentNavigation } from "@/lib/hooks/useAssessmentNavigation";
@@ -29,6 +30,7 @@ import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { useAssessmentSubmission } from "@/lib/hooks/useAssessmentSubmission";
 import { useFullscreenHandler } from "@/lib/hooks/useFullscreenHandler";
 import { useAssessmentSecurity } from "@/lib/hooks/useAssessmentSecurity";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { AssessmentTimerBar } from "@/components/assessment/AssessmentTimerBar";
 import { AssessmentNavigation } from "@/components/assessment/AssessmentNavigation";
 import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
@@ -250,6 +252,17 @@ export default function TakeAssessmentPage({
     autoStart: false,
     tabSwitchDetectionEnabled:
       assessmentStarted && assessment?.proctoring_enabled !== false,
+  });
+  const { clientInfo } = useClientInfo();
+  const liveProctoringEnabled = clientInfo?.live_proctoring_enabled === true;
+
+  const { status: liveStreamStatus } = useLiveProctoringPublisher({
+    assessmentId: assessment?.id ?? 0,
+    enabled:
+      liveProctoringEnabled &&
+      Boolean(assessment?.id) &&
+      assessment?.proctoring_enabled !== false,
+    active: assessmentStarted && !submitting && assessment?.status !== "submitted",
   });
 
   totalViolationCountRef.current = totalViolationCount;
@@ -1623,6 +1636,9 @@ export default function TakeAssessmentPage({
             proctoringVideoRef={assessment?.proctoring_enabled !== false ? videoRef : undefined}
             proctoringStatus={assessment?.proctoring_enabled !== false ? status : undefined}
             faceCount={assessment?.proctoring_enabled !== false ? faceCount : undefined}
+            liveStreamStatus={
+              assessment?.proctoring_enabled !== false ? liveStreamStatus : undefined
+            }
             assessmentToolsSlot={
               <AssessmentToolbarTools
                 calculatorOpen={calculatorOpen}

@@ -1,8 +1,9 @@
 "use client";
 
-import { Box, Paper, Typography, Button } from "@mui/material";
+import { Box, Paper, Typography, Button, Chip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
+import type { LiveStreamStatus } from "@/lib/hooks/useLiveProctoringPublisher";
 
 interface AssessmentTimerBarProps {
   title: string;
@@ -14,6 +15,8 @@ interface AssessmentTimerBarProps {
   proctoringStatus?: "NORMAL" | "WARNING" | "VIOLATION";
   faceCount?: number;
   assessmentToolsSlot?: React.ReactNode;
+  /** LiveKit SFU publish status for admin live proctoring */
+  liveStreamStatus?: LiveStreamStatus;
 }
 
 export const AssessmentTimerBar = memo(function AssessmentTimerBar({
@@ -26,6 +29,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
   proctoringStatus = "NORMAL",
   faceCount = 0,
   assessmentToolsSlot,
+  liveStreamStatus,
 }: AssessmentTimerBarProps) {
   const getStatusColor = () => {
     switch (proctoringStatus) {
@@ -60,7 +64,42 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
       >
         {title}
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2, md: 3 } }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2, md: 3 } }}>
+        {liveStreamStatus && liveStreamStatus !== "idle" && (
+          <Chip
+            size="small"
+            label={
+              liveStreamStatus === "connected"
+                ? "LIVE"
+                : liveStreamStatus === "connecting"
+                  ? "LIVE…"
+                  : liveStreamStatus === "reconnecting"
+                    ? "LIVE (reconnect)"
+                    : "LIVE (error)"
+            }
+            sx={{
+              fontWeight: 700,
+              fontSize: "0.65rem",
+              height: 22,
+              bgcolor:
+                liveStreamStatus === "connected"
+                  ? "#dcfce7"
+                  : liveStreamStatus === "error"
+                    ? "#fee2e2"
+                    : "#fef3c7",
+              color:
+                liveStreamStatus === "connected"
+                  ? "#166534"
+                  : liveStreamStatus === "error"
+                    ? "#991b1b"
+                    : "#92400e",
+              border:
+                liveStreamStatus === "connected"
+                  ? "1px solid #86efac"
+                  : "1px solid #fcd34d",
+            }}
+          />
+        )}
         {/* Timer */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:timer-outline" size={24} color="#6b7280" />
