@@ -31,6 +31,7 @@ interface LiveMonitorToolbarProps {
   audioMuted?: boolean;
   onRefreshParticipants?: () => void;
   refreshing?: boolean;
+  autoRefreshInSeconds?: number;
 }
 
 export function LiveMonitorToolbar({
@@ -49,6 +50,7 @@ export function LiveMonitorToolbar({
   audioMuted = false,
   onRefreshParticipants,
   refreshing,
+  autoRefreshInSeconds,
 }: LiveMonitorToolbarProps) {
   return (
     <Box
@@ -119,6 +121,11 @@ export function LiveMonitorToolbar({
         <Typography variant="body2" sx={{ color: "#64748b" }}>
           {filteredCount} / {totalCount} students
         </Typography>
+        {typeof autoRefreshInSeconds === "number" && (
+          <Typography variant="caption" sx={{ color: "#64748b" }}>
+            Auto refresh in {autoRefreshInSeconds}s
+          </Typography>
+        )}
         {onRefreshParticipants && (
           <Tooltip title="Refresh participant list (API)">
             <span>

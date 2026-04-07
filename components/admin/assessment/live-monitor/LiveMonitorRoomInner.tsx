@@ -33,6 +33,7 @@ export function LiveMonitorRoomInner({
   assessmentTitle,
   roomName,
 }: LiveMonitorRoomInnerProps) {
+  const AUTO_REFRESH_SECONDS = 120;
   const { showToast } = useToast();
   const remote = useRemoteParticipants();
   const [search, setSearch] = useState("");
@@ -42,6 +43,7 @@ export function LiveMonitorRoomInner({
   const [focusAudioOn, setFocusAudioOn] = useState(false);
   const [audioMuted, setAudioMuted] = useState(true);
   const [apiRefreshing, setApiRefreshing] = useState(false);
+  const [secondsToRefresh, setSecondsToRefresh] = useState(AUTO_REFRESH_SECONDS);
 
   const students = useMemo(
     () => remote.filter((p) => p.identity?.startsWith("student-")),
@@ -103,6 +105,7 @@ export function LiveMonitorRoomInner({
   const handleRefreshApi = useCallback(async () => {
     try {
       setApiRefreshing(true);
+      setSecondsToRefresh(AUTO_REFRESH_SECONDS);
       const data = await livekitService.getLiveParticipants(assessmentId);
       showToast(
         `API: ${data.participant_count} participant(s) in room`,
@@ -119,9 +122,16 @@ export function LiveMonitorRoomInner({
   }, [assessmentId, showToast]);
 
   useEffect(() => {
+    const countdown = window.setInterval(() => {
+      setSecondsToRefresh((prev) => (prev <= 1 ? AUTO_REFRESH_SECONDS : prev - 1));
+    }, 1000);
+    return () => window.clearInterval(countdown);
+  }, []);
+
+  useEffect(() => {
     const timer = window.setInterval(() => {
       void handleRefreshApi();
-    }, 5 * 60 * 1000);
+    }, AUTO_REFRESH_SECONDS * 1000);
     return () => window.clearInterval(timer);
   }, [handleRefreshApi]);
 
@@ -144,6 +154,7 @@ export function LiveMonitorRoomInner({
           audioMuted={audioMuted}
           onRefreshParticipants={handleRefreshApi}
           refreshing={apiRefreshing}
+          autoRefreshInSeconds={secondsToRefresh}
         />
         <StudentFocusView
           identity={focusIdentity}
@@ -179,6 +190,7 @@ export function LiveMonitorRoomInner({
         audioMuted={audioMuted}
         onRefreshParticipants={handleRefreshApi}
         refreshing={apiRefreshing}
+        autoRefreshInSeconds={secondsToRefresh}
       />
       <LiveMonitorGrid
         participants={paginated}
