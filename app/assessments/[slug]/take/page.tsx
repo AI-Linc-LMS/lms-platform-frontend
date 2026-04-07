@@ -30,6 +30,7 @@ import { useAutoSave } from "@/lib/hooks/useAutoSave";
 import { useAssessmentSubmission } from "@/lib/hooks/useAssessmentSubmission";
 import { useFullscreenHandler } from "@/lib/hooks/useFullscreenHandler";
 import { useAssessmentSecurity } from "@/lib/hooks/useAssessmentSecurity";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { AssessmentTimerBar } from "@/components/assessment/AssessmentTimerBar";
 import { AssessmentNavigation } from "@/components/assessment/AssessmentNavigation";
 import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
@@ -252,10 +253,15 @@ export default function TakeAssessmentPage({
     tabSwitchDetectionEnabled:
       assessmentStarted && assessment?.proctoring_enabled !== false,
   });
+  const { clientInfo } = useClientInfo();
+  const liveProctoringEnabled = clientInfo?.live_proctoring_enabled === true;
 
   const { status: liveStreamStatus } = useLiveProctoringPublisher({
     assessmentId: assessment?.id ?? 0,
-    enabled: Boolean(assessment?.id) && assessment?.proctoring_enabled !== false,
+    enabled:
+      liveProctoringEnabled &&
+      Boolean(assessment?.id) &&
+      assessment?.proctoring_enabled !== false,
     active: assessmentStarted && !submitting && assessment?.status !== "submitted",
   });
 

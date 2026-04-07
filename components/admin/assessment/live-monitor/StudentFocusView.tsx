@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Paper, Typography, Button, IconButton } from "@mui/material";
+import { Box, Paper, Typography, Button, IconButton, Chip } from "@mui/material";
 import {
   useRemoteParticipant,
   useParticipantTracks,
@@ -68,19 +68,30 @@ export function StudentFocusView({
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Chip
+            size="small"
+            color={audioEnabled ? "success" : "default"}
+            icon={
+              <IconWrapper
+                icon={audioEnabled ? "mdi:volume-high" : "mdi:volume-off"}
+                size={14}
+              />
+            }
+            label={audioEnabled ? "Audio monitoring on" : "Audio muted"}
+          />
           <Button
             size="small"
             variant={audioEnabled ? "contained" : "outlined"}
-            color={audioEnabled ? "primary" : "inherit"}
+            color={audioEnabled ? "warning" : "primary"}
             onClick={onToggleAudio}
             startIcon={
               <IconWrapper
-                icon={audioEnabled ? "mdi:volume-high" : "mdi:volume-off"}
+                icon={audioEnabled ? "mdi:volume-mute" : "mdi:volume-high"}
                 size={18}
               />
             }
           >
-            {audioEnabled ? "Audio on" : "Audio off"}
+            {audioEnabled ? "Mute audio" : "Turn on audio"}
           </Button>
           <IconButton onClick={onBack} aria-label="Back to grid">
             <IconWrapper icon="mdi:close" size={22} />

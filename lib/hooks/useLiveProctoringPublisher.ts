@@ -71,6 +71,7 @@ export function useLiveProctoringPublisher(
           assessment_id: assessmentId,
           role: "publisher",
         });
+        console.log("creds", creds);
         const serverUrl =
           (creds.livekit_url && creds.livekit_url.trim()) ||
           livekitService.getLivekitUrl();
@@ -101,10 +102,10 @@ export function useLiveProctoringPublisher(
         room = r;
 
         r.on(RoomEvent.Reconnecting, () => {
-          if (!cancelled) setStatus("reconnecting");
+          if (!cancelled) setPhase("reconnecting");
         });
         r.on(RoomEvent.Reconnected, () => {
-          if (!cancelled) setStatus("connected");
+          if (!cancelled) setPhase("connected");
         });
 
         await r.connect(serverUrl, creds.token);

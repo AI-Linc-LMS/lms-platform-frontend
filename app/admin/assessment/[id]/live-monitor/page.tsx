@@ -13,6 +13,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { config } from "@/lib/config";
 import { livekitService } from "@/lib/services/livekit.service";
 import { adminAssessmentService } from "@/lib/services/admin/admin-assessment.service";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
   LiveMonitorRoomInner,
   LiveMonitorConnecting,
@@ -53,6 +54,7 @@ function ConnectionGate({
 export default function AssessmentLiveMonitorPage() {
   const params = useParams();
   const router = useRouter();
+  const { clientInfo, loading: loadingClientInfo } = useClientInfo();
   const idParam = params?.id;
   const assessmentId = Number(
     Array.isArray(idParam) ? idParam[0] : idParam
@@ -64,8 +66,15 @@ export default function AssessmentLiveMonitorPage() {
   const [title, setTitle] = useState<string>("Assessment");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const liveProctoringEnabled = clientInfo?.live_proctoring_enabled === true;
 
   const load = useCallback(async () => {
+    if (loadingClientInfo) return;
+    if (!liveProctoringEnabled) {
+      setLoadError("Live proctoring is not enabled for this client.");
+      setLoading(false);
+      return;
+    }
     if (!assessmentId || Number.isNaN(assessmentId)) {
       setLoadError("Invalid assessment");
       setLoading(false);
@@ -105,7 +114,7 @@ export default function AssessmentLiveMonitorPage() {
     } finally {
       setLoading(false);
     }
-  }, [assessmentId]);
+  }, [assessmentId, liveProctoringEnabled, loadingClientInfo]);
 
   useEffect(() => {
     void load();
@@ -136,7 +145,7 @@ export default function AssessmentLiveMonitorPage() {
           Live monitor
         </Typography>
 
-        {loading && (
+        {(loading || loadingClientInfo) && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 6 }}>
             <CircularProgress size={32} />
             <Typography color="text.secondary">Loading…</Typography>

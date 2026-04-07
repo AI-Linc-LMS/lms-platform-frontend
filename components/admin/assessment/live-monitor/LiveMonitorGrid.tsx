@@ -1,9 +1,10 @@
 "use client";
 
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { ParticipantLoop } from "@livekit/components-react";
 import type { RemoteParticipant } from "livekit-client";
 import { StudentVideoTile } from "./StudentVideoTile";
+import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface LiveMonitorGridProps {
   participants: RemoteParticipant[];
@@ -20,14 +21,25 @@ export function LiveMonitorGrid({
     return (
       <Box
         sx={{
-          py: 8,
+          py: 10,
+          px: 3,
           textAlign: "center",
           color: "#64748b",
-          border: "1px dashed #cbd5e1",
-          borderRadius: 2,
+          border: "1px dashed #d1d5db",
+          borderRadius: 3,
+          background:
+            "linear-gradient(180deg, rgba(248,250,252,0.8) 0%, rgba(255,255,255,0.95) 100%)",
         }}
       >
-        No students connected to this room yet.
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
+          <IconWrapper icon="mdi:account-clock-outline" size={28} color="#94a3b8" />
+        </Box>
+        <Typography sx={{ fontWeight: 700, color: "#334155", mb: 0.5 }}>
+          No students connected yet
+        </Typography>
+        <Typography variant="body2" sx={{ color: "#64748b" }}>
+          Waiting for participants to join this live room.
+        </Typography>
       </Box>
     );
   }
@@ -42,7 +54,7 @@ export function LiveMonitorGrid({
           md: "repeat(3, 1fr)",
           lg: "repeat(4, 1fr)",
         },
-        gap: 2,
+        gap: { xs: 1.5, md: 2 },
       }}
     >
       <ParticipantLoop participants={participants}>

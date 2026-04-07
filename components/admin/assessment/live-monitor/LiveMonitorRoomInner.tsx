@@ -40,6 +40,7 @@ export function LiveMonitorRoomInner({
   const [page, setPage] = useState(1);
   const [focusIdentity, setFocusIdentity] = useState<string | null>(null);
   const [focusAudioOn, setFocusAudioOn] = useState(false);
+  const [audioMuted, setAudioMuted] = useState(true);
   const [apiRefreshing, setApiRefreshing] = useState(false);
 
   const students = useMemo(
@@ -81,16 +82,22 @@ export function LiveMonitorRoomInner({
   const handleSelect = useCallback((identity: string) => {
     setFocusIdentity(identity);
     setFocusAudioOn(false);
+    setAudioMuted(true);
   }, []);
 
   const handleBack = useCallback(() => {
     setFocusIdentity(null);
     setFocusAudioOn(false);
+    setAudioMuted(true);
   }, []);
 
   const handleMuteAll = useCallback(() => {
-    setFocusAudioOn(false);
-    showToast("Audio muted for focus view", "info");
+    setAudioMuted((prev) => {
+      const next = !prev;
+      setFocusAudioOn(!next);
+      showToast(next ? "Audio muted for focus view" : "Audio enabled", "info");
+      return next;
+    });
   }, [showToast]);
 
   const handleRefreshApi = useCallback(async () => {
@@ -111,6 +118,13 @@ export function LiveMonitorRoomInner({
     }
   }, [assessmentId, showToast]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void handleRefreshApi();
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [handleRefreshApi]);
+
   if (focusIdentity) {
     return (
       <Box>
@@ -127,13 +141,20 @@ export function LiveMonitorRoomInner({
           totalCount={students.length}
           onPageChange={setPage}
           onMuteAllAudio={handleMuteAll}
+          audioMuted={audioMuted}
           onRefreshParticipants={handleRefreshApi}
           refreshing={apiRefreshing}
         />
         <StudentFocusView
           identity={focusIdentity}
           audioEnabled={focusAudioOn}
-          onToggleAudio={() => setFocusAudioOn((o) => !o)}
+          onToggleAudio={() =>
+            setFocusAudioOn((o) => {
+              const next = !o;
+              setAudioMuted(!next);
+              return next;
+            })
+          }
           onBack={handleBack}
         />
       </Box>
@@ -155,6 +176,7 @@ export function LiveMonitorRoomInner({
         totalCount={students.length}
         onPageChange={setPage}
         onMuteAllAudio={handleMuteAll}
+        audioMuted={audioMuted}
         onRefreshParticipants={handleRefreshApi}
         refreshing={apiRefreshing}
       />

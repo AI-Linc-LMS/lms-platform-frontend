@@ -28,6 +28,7 @@ interface LiveMonitorToolbarProps {
   totalCount: number;
   onPageChange: (page: number) => void;
   onMuteAllAudio: () => void;
+  audioMuted?: boolean;
   onRefreshParticipants?: () => void;
   refreshing?: boolean;
 }
@@ -45,6 +46,7 @@ export function LiveMonitorToolbar({
   totalCount,
   onPageChange,
   onMuteAllAudio,
+  audioMuted = false,
   onRefreshParticipants,
   refreshing,
 }: LiveMonitorToolbarProps) {
@@ -137,12 +139,17 @@ export function LiveMonitorToolbar({
         )}
         <Button
           size="small"
-          variant="outlined"
-          color="inherit"
+          variant={audioMuted ? "contained" : "outlined"}
+          color={audioMuted ? "warning" : "inherit"}
           onClick={onMuteAllAudio}
-          startIcon={<IconWrapper icon="mdi:volume-mute" size={18} />}
+          startIcon={
+            <IconWrapper
+              icon={audioMuted ? "mdi:volume-high" : "mdi:volume-mute"}
+              size={18}
+            />
+          }
         >
-          Mute all audio
+          {audioMuted ? "Unmute audio" : "Mute all audio"}
         </Button>
       </Box>
 
