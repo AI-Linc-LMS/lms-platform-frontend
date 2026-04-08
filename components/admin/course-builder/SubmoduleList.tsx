@@ -35,7 +35,7 @@ interface Submodule {
   article_count?: number;
   coding_problem_count?: number;
   assignment_count?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface SubmoduleListProps {
@@ -91,6 +91,11 @@ export function SubmoduleList({
     setDialogOpen(true);
   };
 
+    const openSubmoduleEditor = (sub: Submodule) => {
+    setExpandedId(sub.id);
+    openEdit(sub);
+  };
+
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingId(null);
@@ -111,15 +116,26 @@ export function SubmoduleList({
           editingId,
           formData
         );
+        setExpandedId(editingId);
         showToast("Submodule updated", "success");
       } else {
-        await adminCourseBuilderService.createCourseSubmodule(courseId, moduleId, formData);
+        const created = await adminCourseBuilderService.createCourseSubmodule(
+          courseId,
+          moduleId,
+          formData
+        );
+        if (created?.id) {
+          setExpandedId(Number(created.id));
+        }
         showToast("Submodule created", "success");
       }
       closeDialog();
       onSubmodulesChanged();
-    } catch (error: any) {
-      showToast(error?.message || "Failed to save submodule", "error");
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : "Failed to save submodule",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -134,8 +150,11 @@ export function SubmoduleList({
       setDeleteTarget(null);
       if (expandedId === deleteTarget.id) setExpandedId(null);
       onSubmodulesChanged();
-    } catch (error: any) {
-      showToast(error?.message || "Failed to delete submodule", "error");
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : "Failed to delete submodule",
+        "error"
+      );
     } finally {
       setDeleting(false);
     }
@@ -213,7 +232,7 @@ export function SubmoduleList({
                     {total > 0 && (
                       <Box sx={{ display: "flex", gap: 0.75, mt: 0.5, ml: 3.5, flexWrap: "wrap" }}>
                         {STAT_BADGES.map((badge) => {
-                          const count = (sub as any)[badge.key] || 0;
+                          const count = Number(sub[badge.key] ?? 0);
                           if (count === 0) return null;
                           return (
                             <Tooltip key={badge.key} title={badge.label}>
@@ -252,9 +271,15 @@ export function SubmoduleList({
                       sx={{ display: "flex", gap: 0.5, ml: 1, flexShrink: 0 }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <IconButton size="small" onClick={() => openEdit(sub)} sx={{ color: "#6366f1" }}>
-                        <IconWrapper icon="mdi:pencil" size={16} />
-                      </IconButton>
+                      <Tooltip title="Edit submodule (title, description, order)">
+                        <IconButton
+                          size="small"
+                          onClick={() => openSubmoduleEditor(sub)}
+                          sx={{ color: "#4f46e5" }}
+                        >
+                          <IconWrapper icon="mdi:pencil" size={16} />
+                        </IconButton>
+                      </Tooltip>
                       <IconButton
                         size="small"
                         onClick={() => setDeleteTarget(sub)}

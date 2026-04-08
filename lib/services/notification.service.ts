@@ -92,15 +92,9 @@ export const getUnreadCount = async (
     const response = await apiClient.get<{ unread_count: number }>(
       `/notification/api/clients/${clientId}/notifications/unread-count/`
     );
-    return response.data.unread_count;
-  } catch (err) {
-    const error = err as AxiosError<ApiErrorPayload>;
-    const message =
-      (error.response?.data?.error as string) ||
-      (error.response?.data?.message as string) ||
-      (error.response?.data?.detail as string) ||
-      "Failed to fetch unread count";
-    throw new Error(message);
+    return response.data.unread_count ?? 0;
+  } catch {
+    return 0;
   }
 };
 
