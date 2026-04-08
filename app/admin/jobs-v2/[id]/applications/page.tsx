@@ -31,7 +31,6 @@ import {
   DialogActions,
   IconButton,
   InputAdornment,
-  Tooltip,
   CircularProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -104,16 +103,6 @@ const OFFERED_OPTIONS = [
   { value: "offer accepted", label: "Offer Accepted" },
   { value: "offer rejected", label: "Offer Rejected" },
 ] as const;
-
-type PipelineField =
-  | "drive"
-  | "internal_shortlisting"
-  | "shortlisted_by_hr"
-  | "round_1"
-  | "round_2"
-  | "round_3"
-  | "round_4"
-  | "offered";
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   applying: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
