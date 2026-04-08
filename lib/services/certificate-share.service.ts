@@ -7,6 +7,7 @@ export interface CertificatePostData {
 }
 
 const CERTIFICATE_IMAGE_EXTENSIONS = [".jpeg", ".jpg", ".png"] as const;
+const certificateImageCheckCache = new Map<string, boolean>();
 
 /** Build hashtags from course name + client name + standard tags */
 export function getHashtags(courseTitle: string, clientName: string): string {
@@ -99,6 +100,10 @@ export async function checkCertificateImageInPublicImages(
 ): Promise<boolean> {
   const trimmed = courseTitle?.trim();
   if (!trimmed) return false;
+  const cacheKey = trimmed.toLowerCase();
+  if (certificateImageCheckCache.has(cacheKey)) {
+    return certificateImageCheckCache.get(cacheKey) ?? false;
+  }
 
   const normalized = normalizeCourseNameToPath(trimmed);
 
@@ -108,14 +113,21 @@ export async function checkCertificateImageInPublicImages(
   };
 
   for (const ext of CERTIFICATE_IMAGE_EXTENSIONS) {
-    if (await tryUrl(normalized, ext)) return true;
+    if (await tryUrl(normalized, ext)) {
+      certificateImageCheckCache.set(cacheKey, true);
+      return true;
+    }
   }
 
   const encodedTitle = encodeURIComponent(trimmed);
   for (const ext of CERTIFICATE_IMAGE_EXTENSIONS) {
-    if (await tryUrl(encodedTitle, ext)) return true;
+    if (await tryUrl(encodedTitle, ext)) {
+      certificateImageCheckCache.set(cacheKey, true);
+      return true;
+    }
   }
 
+  certificateImageCheckCache.set(cacheKey, false);
   return false;
 }
 

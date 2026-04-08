@@ -11,6 +11,7 @@ export interface CourseData {
   rating?: number; // Course rating 0-5
   is_pro?: boolean;
   is_free?: boolean;
+  enrollment_enabled?: boolean;
   tags?: string | string[]; // Tags as comma-separated string or array
   [key: string]: string | number | boolean | string[] | undefined;
 }
@@ -31,20 +32,119 @@ export interface SubmoduleData {
 
 export interface ContentData {
   title: string;
-  content_type: ContentIdType;
-  contentId: number;
+  content_type: BackendContentType;
+  content_id?: number;
+  video_content?: number | null;
+  article_content?: number | null;
+  quiz_content?: number | null;
+  assignment_content?: number | null;
+  coding_problem_content?: number | null;
   order: number;
   duration_in_minutes: number;
+  marks?: number;
 }
 
 export type ContentIdType = "video" | "article" | "quiz" | "assignment" | "coding_problem";
+export type BackendContentType =
+  | "VideoTutorial"
+  | "Article"
+  | "Quiz"
+  | "Assignment"
+  | "CodingProblem";
+
+export interface VideoTutorialPayload {
+  title: string;
+  difficulty_level?: string;
+  video_url: string;
+  description?: string;
+  transcript?: string;
+}
+
+export interface ArticlePayload {
+  title: string;
+  difficulty_level?: string;
+  content: string;
+}
+
+export interface AssignmentPayload {
+  title: string;
+  difficulty_level?: string;
+  question: string;
+}
+
+export interface CodingProblemPayload {
+  title: string;
+  difficulty_level?: string;
+  problem_statement: string;
+  input_format?: string;
+  output_format?: string;
+  sample_input?: string;
+  sample_output?: string;
+  constraints?: string;
+  test_cases?: unknown[];
+  solution?: Record<string, unknown>;
+  template_code?: Record<string, unknown>;
+  time_limit?: number;
+  memory_limit?: number;
+  tags?: string;
+}
+
+export interface MCQPayload {
+  question_text: string;
+  difficulty_level?: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: "A" | "B" | "C" | "D";
+  explanation?: string;
+  topic?: string;
+  skills?: string;
+}
+
+export interface QuizPayload {
+  title: string;
+  instructions?: string;
+  durating_in_minutes?: number;
+  difficulty_level?: string;
+  mcqs?: number[];
+}
+
+export const contentTypeMap: Record<ContentIdType, BackendContentType> = {
+  video: "VideoTutorial",
+  article: "Article",
+  quiz: "Quiz",
+  assignment: "Assignment",
+  coding_problem: "CodingProblem",
+};
+
+export const backendToUiContentType = (
+  value?: string | null
+): ContentIdType => {
+  switch ((value ?? "").toLowerCase()) {
+    case "videotutorial":
+    case "video":
+      return "video";
+    case "quiz":
+      return "quiz";
+    case "assignment":
+      return "assignment";
+    case "codingproblem":
+    case "coding_problem":
+    case "coding":
+      return "coding_problem";
+    case "article":
+    default:
+      return "article";
+  }
+};
 
 // Error handling type
 interface ApiErrorPayload {
   detail?: string;
   error?: string;
   message?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const adminCourseBuilderService = {
@@ -449,6 +549,138 @@ export const adminCourseBuilderService = {
           "Failed to update submodule content"
       );
     }
+  },
+
+  createArticle: async (payload: ArticlePayload) => {
+    const res = await apiClient.post(
+      `/admin-dashboard/api/clients/${config.clientId}/articles/`,
+      payload
+    );
+    return res.data;
+  },
+
+  getArticle: async (articleId: number) => {
+    const res = await apiClient.get(
+      `/admin-dashboard/api/clients/${config.clientId}/articles/${articleId}/`
+    );
+    return res.data;
+  },
+
+  updateArticle: async (articleId: number, payload: Partial<ArticlePayload>) => {
+    const res = await apiClient.patch(
+      `/admin-dashboard/api/clients/${config.clientId}/articles/${articleId}/`,
+      payload
+    );
+    return res.data;
+  },
+
+  createVideoTutorial: async (payload: VideoTutorialPayload) => {
+    const res = await apiClient.post(
+      `/admin-dashboard/api/clients/${config.clientId}/video-tutorials/`,
+      payload
+    );
+    return res.data;
+  },
+
+  getVideoTutorial: async (videoId: number) => {
+    const res = await apiClient.get(
+      `/admin-dashboard/api/clients/${config.clientId}/video-tutorials/${videoId}/`
+    );
+    return res.data;
+  },
+
+  updateVideoTutorial: async (
+    videoId: number,
+    payload: Partial<VideoTutorialPayload>
+  ) => {
+    const res = await apiClient.patch(
+      `/admin-dashboard/api/clients/${config.clientId}/video-tutorials/${videoId}/`,
+      payload
+    );
+    return res.data;
+  },
+
+  createAssignment: async (payload: AssignmentPayload) => {
+    const res = await apiClient.post(
+      `/admin-dashboard/api/clients/${config.clientId}/assignments/`,
+      payload
+    );
+    return res.data;
+  },
+
+  getAssignment: async (assignmentId: number) => {
+    const res = await apiClient.get(
+      `/admin-dashboard/api/clients/${config.clientId}/assignments/${assignmentId}/`
+    );
+    return res.data;
+  },
+
+  updateAssignment: async (
+    assignmentId: number,
+    payload: Partial<AssignmentPayload>
+  ) => {
+    const res = await apiClient.patch(
+      `/admin-dashboard/api/clients/${config.clientId}/assignments/${assignmentId}/`,
+      payload
+    );
+    return res.data;
+  },
+
+  createCodingProblem: async (payload: CodingProblemPayload) => {
+    const res = await apiClient.post(
+      `/admin-dashboard/api/clients/${config.clientId}/coding-problems/`,
+      payload
+    );
+    return res.data;
+  },
+
+  getCodingProblem: async (problemId: number) => {
+    const res = await apiClient.get(
+      `/admin-dashboard/api/clients/${config.clientId}/coding-problems/${problemId}/`
+    );
+    return res.data;
+  },
+
+  updateCodingProblem: async (
+    problemId: number,
+    payload: Partial<CodingProblemPayload>
+  ) => {
+    const res = await apiClient.patch(
+      `/admin-dashboard/api/clients/${config.clientId}/coding-problems/${problemId}/`,
+      payload
+    );
+    return res.data;
+  },
+
+  createMCQ: async (payload: MCQPayload) => {
+    const res = await apiClient.post(
+      `/admin-dashboard/api/clients/${config.clientId}/mcqs/`,
+      payload
+    );
+    return res.data;
+  },
+
+  createQuiz: async (payload: QuizPayload) => {
+    const res = await apiClient.post(
+      `/admin-dashboard/api/clients/${config.clientId}/quizzes/`,
+      payload
+    );
+    return res.data;
+  },
+
+  getQuiz: async (quizId: number) => {
+    const res = await apiClient.get(
+      `/admin-dashboard/api/clients/${config.clientId}/quizzes/${quizId}/`
+    );
+    return res.data;
+  },
+
+  updateQuiz: async (quizId: number, payload: Partial<QuizPayload>) => {
+    const res = await apiClient.patch(
+      `/admin-dashboard/api/clients/${config.clientId}/quizzes/${quizId}/`,
+      payload
+    );
+    return res.data;
   },
 };
 
