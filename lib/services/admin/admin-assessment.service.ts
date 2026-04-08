@@ -124,6 +124,7 @@ export interface CreateAssessmentPayload {
   currency?: string;
   is_active?: boolean;
   proctoring_enabled?: boolean;
+  live_streaming?: boolean;
   /** Whether to send notification email to students */
   send_communication?: boolean;
   /** Whether to show results to students after submission (default true) */
@@ -167,6 +168,7 @@ export interface Assessment {
   price: string | number | null;
   is_active: boolean;
   proctoring_enabled?: boolean;
+  live_streaming?: boolean;
   start_time?: string | null;
   end_time?: string | null;
   created_at: string;
@@ -182,6 +184,7 @@ export interface AssessmentDetail extends Assessment {
   start_time?: string | null;
   end_time?: string | null;
   proctoring_enabled?: boolean;
+  live_streaming?: boolean;
   course_ids?: number[];
   currency?: string;
   quiz_sections?: Array<{

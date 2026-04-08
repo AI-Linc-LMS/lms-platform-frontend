@@ -27,6 +27,8 @@ interface AssessmentSettingsSectionProps {
   currency: string;
   isActive: boolean;
   proctoringEnabled: boolean;
+  liveStreaming: boolean;
+  showLiveStreamingToggle?: boolean;
   sendCommunication: boolean;
   showResult: boolean;
   courseIds: number[];
@@ -41,6 +43,7 @@ interface AssessmentSettingsSectionProps {
   onCurrencyChange: (value: string) => void;
   onActiveChange: (value: boolean) => void;
   onProctoringEnabledChange: (value: boolean) => void;
+  onLiveStreamingChange: (value: boolean) => void;
   onSendCommunicationChange: (value: boolean) => void;
   onShowResultChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
@@ -57,6 +60,8 @@ export function AssessmentSettingsSection({
   currency,
   isActive,
   proctoringEnabled,
+  liveStreaming,
+  showLiveStreamingToggle = false,
   sendCommunication,
   showResult,
   courseIds,
@@ -71,6 +76,7 @@ export function AssessmentSettingsSection({
   onCurrencyChange,
   onActiveChange,
   onProctoringEnabledChange,
+  onLiveStreamingChange,
   onSendCommunicationChange,
   onShowResultChange,
   onCourseIdsChange,
@@ -280,6 +286,18 @@ export function AssessmentSettingsSection({
             }
             label="Proctoring Enabled"
           />
+          {showLiveStreamingToggle && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={liveStreaming}
+                  onChange={(e) => onLiveStreamingChange(e.target.checked)}
+                  disabled={readOnly}
+                />
+              }
+              label="Live Streaming"
+            />
+          )}
           <FormControlLabel
             control={
               <Switch
