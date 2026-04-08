@@ -80,7 +80,7 @@ function AdminDashboardPage() {
   useEffect(() => {
     const today = new Date();
     const endDate = new Date(today);
-    let startDate = new Date(today);
+    const startDate = new Date(today);
 
     switch (timePeriod) {
       case "weekly":
@@ -105,7 +105,7 @@ function AdminDashboardPage() {
     try {
       const data = await adminCoursesService.getCourses();
       setCourses(Array.isArray(data) ? data : []);
-    } catch (error) {}
+    } catch {}
   }, []);
 
   // Load core dashboard data
@@ -136,7 +136,7 @@ function AdminDashboardPage() {
         end_date: dateRange.end,
       });
       setStudentActivity(Array.isArray(data) ? data : []);
-    } catch (error: any) {
+    } catch {
       // Don't show error toast as core data is primary
     }
   }, [dateRange.start, dateRange.end, selectedCourse]);
