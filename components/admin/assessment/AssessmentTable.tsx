@@ -134,6 +134,11 @@ export function AssessmentTable({
     return { display, full };
   };
 
+  const canAccessLiveMonitor = (assessment: Assessment): boolean =>
+    liveProctoringEnabled &&
+    assessment.live_streaming === true &&
+    isProctoredAssessmentInLiveWindow(assessment);
+
   // Mobile Card View
   if (isMobile) {
     return (
@@ -214,8 +219,7 @@ export function AssessmentTable({
                         }}
                       />
                     )}
-                    {liveProctoringEnabled &&
-                      isProctoredAssessmentInLiveWindow(assessment) && (
+                    {canAccessLiveMonitor(assessment) && (
                       <Chip
                         component={Link}
                         href={`/admin/assessment/${assessment.id}/live-monitor`}
@@ -233,7 +237,7 @@ export function AssessmentTable({
                           textDecoration: "none",
                         }}
                       />
-                      )}
+                    )}
                     <Chip
                       label={assessment.is_active ? "Active" : "Inactive"}
                       size="small"
@@ -454,8 +458,7 @@ export function AssessmentTable({
                       <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
                     </MenuItem>
                   )}
-                  {liveProctoringEnabled &&
-                    isProctoredAssessmentInLiveWindow(assessment) && (
+                  {canAccessLiveMonitor(assessment) && (
                     <MenuItem
                       component={Link}
                       href={`/admin/assessment/${assessment.id}/live-monitor`}
@@ -836,8 +839,7 @@ export function AssessmentTable({
                           }}
                         />
                       )}
-                      {liveProctoringEnabled &&
-                        isProctoredAssessmentInLiveWindow(assessment) && (
+                      {canAccessLiveMonitor(assessment) && (
                         <Chip
                           component={Link}
                           href={`/admin/assessment/${assessment.id}/live-monitor`}
@@ -856,7 +858,7 @@ export function AssessmentTable({
                             textDecoration: "none",
                           }}
                         />
-                        )}
+                      )}
                     </Stack>
 
                     {/* Time Information */}
@@ -1127,8 +1129,7 @@ export function AssessmentTable({
                           <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
                         </MenuItem>
                       )}
-                      {liveProctoringEnabled &&
-                        isProctoredAssessmentInLiveWindow(assessment) && (
+                      {canAccessLiveMonitor(assessment) && (
                         <MenuItem
                           component={Link}
                           href={`/admin/assessment/${assessment.id}/live-monitor`}

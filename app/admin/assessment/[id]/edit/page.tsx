@@ -50,6 +50,7 @@ import { PaginationControls } from "@/components/admin/assessment/PaginationCont
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import {
   mapSubmissionsExportRowToAssessmentResult,
@@ -232,6 +233,9 @@ export default function AssessmentEditPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const { clientInfo } = useClientInfo();
+  const canConfigureLiveStreaming =
+    clientInfo?.live_proctoring_enabled === true;
   const hideAdminQuestions = isCourseManagerRole(user?.role);
   const readOnly =
     hideAdminQuestions || searchParams.get("readonly") === "1";
@@ -261,6 +265,7 @@ export default function AssessmentEditPage() {
   const [courseIds, setCourseIds] = useState<number[]>([]);
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
+  const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
 
@@ -312,6 +317,7 @@ export default function AssessmentEditPage() {
       setCourseIds(loadedCourseIds);
       setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
+      setLiveStreaming((data as any).live_streaming ?? false);
       setSendCommunication((data as any).send_communication ?? false);
       setShowResult((data as any).show_result ?? true);
     } catch (e: any) {
@@ -441,6 +447,7 @@ export default function AssessmentEditPage() {
         currency: isPaid ? currency : undefined,
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
+        live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
         show_result: showResult,
         course_ids: courseIds,
@@ -884,6 +891,8 @@ export default function AssessmentEditPage() {
                   loadingCourses={loadingCourses}
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}
+                  liveStreaming={liveStreaming}
+                  showLiveStreamingToggle={canConfigureLiveStreaming}
                   sendCommunication={sendCommunication}
                   showResult={showResult}
                   onDurationChange={setDurationMinutes}
@@ -896,6 +905,7 @@ export default function AssessmentEditPage() {
                   onCourseIdsChange={setCourseIds}
                   onCollegesChange={setColleges}
                   onProctoringEnabledChange={setProctoringEnabled}
+                  onLiveStreamingChange={setLiveStreaming}
                   onSendCommunicationChange={setSendCommunication}
                   onShowResultChange={setShowResult}
                   readOnly={readOnly}
