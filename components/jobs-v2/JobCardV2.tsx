@@ -12,7 +12,7 @@ import {
   Avatar,
   Tooltip,
 } from "@mui/material";
-import { JobV2 } from "@/lib/services/jobs-v2.service";
+import { JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 import { jobsV2Service } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
@@ -24,6 +24,7 @@ import {
   Briefcase,
   ChevronRight,
   Banknote,
+  GraduationCap,
 } from "lucide-react";
 
 interface JobCardV2Props {
@@ -79,6 +80,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
 
   const tags = job.tags ?? [];
   const skillsDisplay = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])].slice(0, 5);
+  const passoutYear = formatJobPassoutYear(job.applicable_passout_year);
 
   return (
     <Paper
@@ -209,6 +211,17 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
                 </Typography>
               </Box>
             )}
+            {passoutYear && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <GraduationCap size={14} style={{ color: "#6b7280" }} />
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "0.875rem", color: "text.secondary" }}
+                >
+                  Passout {passoutYear}
+                </Typography>
+              </Box>
+            )}
             {job.salary && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <Banknote size={14} style={{ color: "#6b7280" }} />
@@ -321,6 +334,10 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
 };
 
 export const JobCardV2 = memo(JobCardV2Component, (prevProps, nextProps) => {
-  return prevProps.job.id === nextProps.job.id;
+  return (
+    prevProps.job.id === nextProps.job.id &&
+    prevProps.job.is_favourited === nextProps.job.is_favourited &&
+    prevProps.job.applicable_passout_year === nextProps.job.applicable_passout_year
+  );
 });
 JobCardV2.displayName = "JobCardV2";

@@ -36,7 +36,7 @@ export interface JobCreateUpdatePayload {
   status?: "active" | "inactive" | "closed" | "completed" | "on_hold";
   application_deadline?: string | null;
   number_of_openings?: number | null;
-  applicable_passout_year?: string | null;
+  applicable_passout_year?: string | number | null;
   min_10th_percentage?: number | null;
   min_12th_percentage?: number | null;
   min_graduation_percentage?: number | null;

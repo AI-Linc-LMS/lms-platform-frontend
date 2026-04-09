@@ -28,7 +28,7 @@ export interface JobV2 {
   application_deadline?: string;
   jd_file_url?: string;
   number_of_openings?: number | null;
-  applicable_passout_year?: string | null;
+  applicable_passout_year?: string | number | null;
   min_10th_percentage?: number | null;
   min_12th_percentage?: number | null;
   min_graduation_percentage?: number | null;
@@ -51,6 +51,15 @@ export interface JobV2 {
     options?: string[];
   }>;
   question_ids?: number[];
+}
+
+/** Normalizes API `applicable_passout_year` for UI (string or number from JSON). */
+export function formatJobPassoutYear(
+  value: JobV2["applicable_passout_year"]
+): string | null {
+  if (value == null) return null;
+  const s = String(value).trim();
+  return s.length > 0 ? s : null;
 }
 
 export interface JobV2Filters {
