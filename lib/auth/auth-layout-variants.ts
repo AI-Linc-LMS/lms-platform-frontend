@@ -15,15 +15,10 @@ export function resolveAuthLayoutVariant(): AuthLayoutVariantId {
 }
 
 export const authLayoutClient28Tokens = {
-  logoMaxWidthPx: 520,
-  logoHeightMdPx: 132,
-  /** Smaller than default landing slogan (3rem / 4rem) */
-  sloganFontSizeMd: "0.875rem",
-  sloganFontSizeLg: "0.9375rem",
+  logoMaxWidthPx: 780,
+  logoHeightMdPx: 204,
+  sloganFontSizeMd: "1.3125rem",
+  sloganFontSizeLg: "1.5rem",
   /** Latin hover effect (large, bottom panel) */
   hoverBrandText: "INUN",
-  /** Arabic transliteration for INUN (phonetic) */
-  hoverBrandArabic: "إينون",
-  /** Learning management system in Arabic */
-  hoverLmsArabic: "نظام إدارة التعلم",
 } as const;
