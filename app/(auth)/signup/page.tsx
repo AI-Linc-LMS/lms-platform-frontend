@@ -11,8 +11,7 @@ import {
   Divider,
   IconButton,
   InputAdornment,
-  Checkbox,
-  FormControlLabel,
+  Switch,
   CircularProgress,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -29,7 +28,7 @@ import {
   getAxiosErrorDetail,
   getAxiosFieldError,
 } from "@/lib/utils/api-error";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, GraduationCap } from "lucide-react";
 
 interface SignupFormValues {
   first_name: string;
@@ -331,74 +330,174 @@ export default function SignupPage() {
 
               {!instructorFlagLoading && allowInstructorSelfSignup && (
                 <Box sx={{ mb: 2 }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={values.signup_as_instructor}
-                        onChange={(e) =>
-                          setFieldValue(
-                            "signup_as_instructor",
-                            e.target.checked
-                          )
-                        }
-                        size="small"
-                        sx={{
-                          color: "primary.main",
-                          "&.Mui-checked": { color: "primary.main" },
-                        }}
-                      />
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() =>
+                      setFieldValue(
+                        "signup_as_instructor",
+                        !values.signup_as_instructor
+                      )
                     }
-                    label={
+                    aria-pressed={values.signup_as_instructor}
+                    sx={(theme) => {
+                      const on = values.signup_as_instructor;
+                      return {
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        p: 1.75,
+                        borderRadius: 2,
+                        border: "2px solid",
+                        borderColor: on
+                          ? theme.palette.primary.main
+                          : alpha(theme.palette.primary.main, 0.35),
+                        textAlign: "left",
+                        cursor: "pointer",
+                        font: "inherit",
+                        background: on
+                          ? `linear-gradient(135deg, ${alpha(
+                              theme.palette.primary.main,
+                              0.16
+                            )} 0%, ${alpha(theme.palette.primary.main, 0.07)} 50%, ${alpha(
+                              theme.palette.primary.main,
+                              0.04
+                            )} 100%)`
+                          : `linear-gradient(135deg, ${alpha(
+                              theme.palette.primary.main,
+                              0.1
+                            )} 0%, ${alpha(theme.palette.primary.main, 0.035)} 100%)`,
+                        boxShadow: on
+                          ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}, 0 8px 24px ${alpha(
+                              theme.palette.primary.main,
+                              0.18
+                            )}`
+                          : `0 2px 12px ${alpha(theme.palette.primary.main, 0.08)}`,
+                        transition:
+                          "border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease",
+                        "&:hover": {
+                          borderColor: theme.palette.primary.main,
+                          boxShadow: `0 0 0 3px ${alpha(
+                            theme.palette.primary.main,
+                            0.12
+                          )}, 0 10px 28px ${alpha(
+                            theme.palette.primary.main,
+                            0.14
+                          )}`,
+                        },
+                        "&:focus-visible": {
+                          outline: `2px solid ${theme.palette.primary.main}`,
+                          outlineOffset: 2,
+                        },
+                      };
+                    }}
+                  >
+                    <Box
+                      sx={(theme) => ({
+                        flexShrink: 0,
+                        width: 44,
+                        height: 44,
+                        borderRadius: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: values.signup_as_instructor
+                          ? alpha(theme.palette.primary.main, 0.22)
+                          : alpha(theme.palette.primary.main, 0.12),
+                        color: "primary.main",
+                        transition: "background-color 0.2s ease",
+                      })}
+                    >
+                      <GraduationCap
+                        size={24}
+                        strokeWidth={2.25}
+                        aria-hidden
+                      />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
-                        variant="body2"
-                        sx={{ fontSize: "0.875rem", color: "text.primary" }}
+                        component="span"
+                        sx={{
+                          display: "block",
+                          fontWeight: 700,
+                          fontSize: "0.9375rem",
+                          color: "text.primary",
+                          lineHeight: 1.35,
+                        }}
                       >
                         {t("auth.signUpAsInstructor")}
                       </Typography>
-                    }
-                  />
-                  {values.signup_as_instructor && (
-                  <Box
-                    sx={(theme) => ({
-                      mt: 1,
-                      pl: 1.75,
-                      pr: 1.5,
-                      py: 1.5,
-                      borderRadius: 2,
-                      borderLeft: `3px solid ${theme.palette.primary.main}`,
-                      background: `linear-gradient(90deg, ${alpha(
-                        theme.palette.primary.main,
-                        0.08
-                      )} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
-                    })}
-                  >
-                    <Typography
-                      variant="caption"
-                      component="p"
-                      sx={{
-                        display: "block",
-                        fontWeight: 700,
-                        fontSize: "0.8125rem",
-                        color: "primary.main",
-                        letterSpacing: "0.02em",
-                        textTransform: "uppercase",
-                        mb: 0.75,
+                    </Box>
+                    <Switch
+                      checked={values.signup_as_instructor}
+                      onChange={(e) =>
+                        setFieldValue(
+                          "signup_as_instructor",
+                          e.target.checked
+                        )
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      inputProps={{
+                        "aria-label": t("auth.signUpAsInstructor"),
                       }}
-                    >
-                      {t("auth.instructorSignupApprovalTitle")}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        display: "block",
-                        color: "text.secondary",
-                        fontSize: "0.8125rem",
-                        lineHeight: 1.55,
-                      }}
-                    >
-                      {t("auth.instructorSignupApprovalNote")}
-                    </Typography>
+                      sx={(theme) => ({
+                        flexShrink: 0,
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: theme.palette.primary.main,
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                          {
+                            backgroundColor: alpha(
+                              theme.palette.primary.main,
+                              0.55
+                            ),
+                          },
+                      })}
+                    />
                   </Box>
+                  {values.signup_as_instructor && (
+                    <Box
+                      sx={(theme) => ({
+                        mt: 1.25,
+                        pl: 1.75,
+                        pr: 1.5,
+                        py: 1.5,
+                        borderRadius: 2,
+                        borderLeft: `3px solid ${theme.palette.primary.main}`,
+                        background: `linear-gradient(90deg, ${alpha(
+                          theme.palette.primary.main,
+                          0.1
+                        )} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+                      })}
+                    >
+                      <Typography
+                        variant="caption"
+                        component="p"
+                        sx={{
+                          display: "block",
+                          fontWeight: 700,
+                          fontSize: "0.8125rem",
+                          color: "primary.main",
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                          mb: 0.75,
+                        }}
+                      >
+                        {t("auth.instructorSignupApprovalTitle")}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          display: "block",
+                          color: "text.secondary",
+                          fontSize: "0.8125rem",
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        {t("auth.instructorSignupApprovalNote")}
+                      </Typography>
+                    </Box>
                   )}
                 </Box>
               )}
