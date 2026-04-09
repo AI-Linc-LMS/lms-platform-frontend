@@ -28,6 +28,7 @@ import type {
 } from "@/lib/services/admin/admin-jobs-v2.service";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
+import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { CreateJobIllustration } from "@/components/jobs-v2/illustrations";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ApplicationQuestionsModal } from "./ApplicationQuestionsModal";
@@ -391,7 +392,9 @@ export function JobCreateEditPage({
           ? formData.application_deadline.trim()
           : null,
         number_of_openings: parseNumberOfOpeningsInput(formData.number_of_openings),
-        applicable_passout_year: formData.applicable_passout_year?.trim() || null,
+        applicable_passout_year: formatJobPassoutYear(
+          formData.applicable_passout_year
+        ),
         min_10th_percentage: formData.min_10th_percentage ?? null,
         min_12th_percentage: formData.min_12th_percentage ?? null,
         min_graduation_percentage: formData.min_graduation_percentage ?? null,
