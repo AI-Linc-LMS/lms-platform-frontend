@@ -121,7 +121,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
       const count = await notificationService.getUnreadCount(clientId);
       setUnreadCount(count);
     } catch {
-      setUnreadCount(0);
+      // Silently ignore - user may not have notifications
     }
   }, [isAuthenticated, clientId]);
 

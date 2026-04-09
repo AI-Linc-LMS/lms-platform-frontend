@@ -7,9 +7,6 @@ import { useEffect, useRef, useState } from "react";
 import { AccessTime, CheckCircleOutline } from "@mui/icons-material";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import {
-  extractArticleBodyAndAttachments,
-} from "@/lib/utils/articleAttachments";
 
 /** Heuristic: content that looks like markdown (headers, code fences, etc.) vs HTML */
 function looksLikeMarkdown(text: string): boolean {
@@ -128,9 +125,9 @@ interface ArticleContentProps {
   isCompleted?: boolean;
 }
 
-export function ArticleContent({
-  content,
-  courseId: _courseId,
+export function ArticleContent({ 
+  content, 
+  courseId,
   onArticleComplete,
   isCompleted = false,
 }: ArticleContentProps) {
@@ -138,15 +135,8 @@ export function ArticleContent({
   const articleRef = useRef<HTMLDivElement>(null);
   const [readProgress, setReadProgress] = useState(0);
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
-
-  const rawArticle =
-    content.details?.content || content.details?.description || "";
-  const { body: articleContent } = extractArticleBodyAndAttachments(rawArticle);
-  const isMarkdown = articleContent ? looksLikeMarkdown(articleContent) : false;
-  const readingTimeMinutes =
-    content.details?.reading_time_minutes ||
-    Math.ceil((articleContent?.length || 0) / 1000) ||
-    5;
+  const readingTimeMinutes = content.details?.reading_time_minutes || 
+    Math.ceil((content.details?.content?.length || 0) / 1000) || 5; // Estimate: 1000 chars per minute
 
   // Track scroll progress only (for progress bar). Do not auto-mark as complete.
   useEffect(() => {
@@ -169,7 +159,7 @@ export function ArticleContent({
     handleScroll();
     articleElement.addEventListener("scroll", handleScroll);
     return () => articleElement.removeEventListener("scroll", handleScroll);
-  }, [articleContent]);
+  }, []);
 
   const handleMarkAsRead = () => {
     if (hasMarkedComplete || !onArticleComplete) return;
@@ -177,6 +167,9 @@ export function ArticleContent({
     setReadProgress(100);
     onArticleComplete();
   };
+
+  const articleContent = content.details?.content || content.details?.description || "";
+  const isMarkdown = articleContent ? looksLikeMarkdown(articleContent) : false;
 
   return (
     <Box sx={{ mb: 3 }}>

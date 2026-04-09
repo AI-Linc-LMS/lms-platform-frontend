@@ -46,16 +46,9 @@ export function QuizResults({
 }: QuizResultsProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const useMarks = totalMarks != null && totalMarks > 0 && obtainedMarks != null;
-  const questionPercentage =
-    totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-  const marksPercentage =
-    useMarks && totalMarks
-      ? Math.round((obtainedMarks! / totalMarks) * 100)
-      : questionPercentage;
-  const percentage =
-    correctAnswers === totalQuestions
-      ? 100
-      : Math.max(0, Math.min(100, questionPercentage || marksPercentage));
+  const percentage = useMarks
+    ? Math.round((obtainedMarks / totalMarks) * 100)
+    : Math.round((correctAnswers / totalQuestions) * 100);
   const getScoreColor = () => {
     if (percentage >= 80) return "#10b981";
     if (percentage >= 60) return "#f59e0b";
