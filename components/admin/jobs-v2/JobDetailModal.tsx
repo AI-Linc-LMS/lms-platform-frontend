@@ -13,10 +13,11 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink } from "lucide-react";
+import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, GraduationCap } from "lucide-react";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { JobDetailIllustration } from "@/components/jobs-v2/illustrations";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
+import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 
 interface JobDetailModalProps {
   open: boolean;
@@ -142,6 +143,7 @@ export function JobDetailModal({
   ].filter(Boolean);
   const courses = job.courses ?? [];
   const collegeMappings = job.college_mappings ?? [];
+  const passoutYearDisplay = formatJobPassoutYear(job.applicable_passout_year);
 
   return (
     <Dialog
@@ -273,6 +275,13 @@ export function JobDetailModal({
           )}
           {job.salary && (
             <InfoPill icon={<Tag size={18} />} label="Salary" value={job.salary} />
+          )}
+          {passoutYearDisplay && (
+            <InfoPill
+              icon={<GraduationCap size={18} />}
+              label="Passout year"
+              value={passoutYearDisplay}
+            />
           )}
           <InfoPill icon={<Calendar size={18} />} label="Created" value={formatDate(job.created_at)} />
           {job.application_deadline && (
