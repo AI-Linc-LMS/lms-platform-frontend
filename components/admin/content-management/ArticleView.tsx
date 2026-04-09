@@ -2,13 +2,15 @@
 
 import { Box, Paper, Typography } from "@mui/material";
 import { ContentDetails } from "@/lib/services/admin/admin-content-management.service";
+import { extractArticleBodyAndAttachments } from "@/lib/utils/articleAttachments";
 
 interface ArticleViewProps {
   content: ContentDetails;
 }
 
 export function ArticleView({ content }: ArticleViewProps) {
-  const articleContent = content.content_details?.content || "";
+  const raw = content.content_details?.content || "";
+  const { body: articleContent } = extractArticleBodyAndAttachments(raw);
   const difficultyLevel = content.content_details?.difficulty_level || "";
 
   return (
