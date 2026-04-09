@@ -19,7 +19,6 @@ import {
   Link as MuiLink,
   Autocomplete,
   Chip,
-  Rating,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -48,7 +47,6 @@ export default function CourseEditPage() {
     difficulty_level: "",
     slug: "",
     is_free: true,
-    rating: 0,
     tags: [] as string[],
   });
 
@@ -63,7 +61,6 @@ export default function CourseEditPage() {
         difficulty_level: data.difficulty_level || "",
         slug: data.slug || "",
         is_free: data.is_free ?? true,
-        rating: data.rating ?? 0,
         tags: Array.isArray(data.tags) ? data.tags : [],
       });
     } catch (error: any) {
@@ -99,7 +96,6 @@ export default function CourseEditPage() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         is_free: formData.is_free,
-        rating: formData.rating,
         tags: formData.tags,
         ...(formData.difficulty_level && { difficulty_level: formData.difficulty_level }),
         ...(slugChanged && { slug: effectiveSlug }),
@@ -257,18 +253,7 @@ export default function CourseEditPage() {
                 sx={{ alignItems: "flex-start", ml: 0 }}
               />
 
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Rating</Typography>
-                <Rating
-                  value={formData.rating}
-                  onChange={(_, newValue) => setFormData({ ...formData, rating: newValue || 0 })}
-                  precision={0.5}
-                  max={5}
-                />
-                <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mt: 0.25 }}>
-                  {formData.rating > 0 ? `${formData.rating.toFixed(1)} / 5.0` : "No rating set"}
-                </Typography>
-              </Box>
+              <Box />
             </Box>
 
             {/* Tags Section */}

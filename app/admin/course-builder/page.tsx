@@ -95,6 +95,8 @@ export default function CourseBuilderPage() {
           .replace(/\s+/g, "-")
           .replace(/[^a-z0-9-]/g, ""),
         ...(formData.level && { difficulty_level: formData.level }),
+        is_free: true,
+        enrollment_enabled: true,
       };
 
       await adminCourseBuilderService.createCourse(courseData);
