@@ -326,7 +326,7 @@ export function AssessmentAnalyticsCharts({ data }: Props) {
               <YAxis tick={{ fontSize: 11, fill: C.slate }} allowDecimals={false} />
               <Tooltip
                 contentStyle={tooltipSx}
-                formatter={(v: number) => [v, "Submissions"]}
+                formatter={(v) => [v ?? 0, "Submissions"]}
                 labelFormatter={(_label, payload) => {
                   const row = payload?.[0]?.payload as { date?: string } | undefined;
                   return row?.date ? String(row.date) : "";
@@ -369,7 +369,7 @@ export function AssessmentAnalyticsCharts({ data }: Props) {
               />
               <Tooltip
                 contentStyle={tooltipSx}
-                formatter={(value: number) => [`${value}%`, "Avg %"]}
+                formatter={(value) => [`${value ?? 0}%`, "Avg %"]}
                 labelFormatter={(_, payload) => {
                   const row = payload?.[0]?.payload as { fullName?: string } | undefined;
                   return row?.fullName ?? "";
