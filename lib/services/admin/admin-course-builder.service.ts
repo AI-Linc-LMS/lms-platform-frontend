@@ -660,6 +660,21 @@ export const adminCourseBuilderService = {
     return res.data;
   },
 
+  getMCQ: async (mcqId: number) => {
+    const res = await apiClient.get(
+      `/admin-dashboard/api/clients/${config.clientId}/mcqs/${mcqId}/`
+    );
+    return res.data;
+  },
+
+  updateMCQ: async (mcqId: number, payload: Partial<MCQPayload>) => {
+    const res = await apiClient.patch(
+      `/admin-dashboard/api/clients/${config.clientId}/mcqs/${mcqId}/`,
+      payload
+    );
+    return res.data;
+  },
+
   createQuiz: async (payload: QuizPayload) => {
     const res = await apiClient.post(
       `/admin-dashboard/api/clients/${config.clientId}/quizzes/`,

@@ -109,6 +109,8 @@ interface ContentFormState {
 }
 
 interface MCQDraft {
+  /** Set when loaded from API (edit existing quiz) so we update instead of duplicate. */
+  id?: number;
   question_text: string;
   option_a: string;
   option_b: string;
@@ -116,6 +118,25 @@ interface MCQDraft {
   option_d: string;
   correct_option: "A" | "B" | "C" | "D";
   explanation: string;
+}
+
+function isMcqDraftComplete(d: MCQDraft): boolean {
+  return !!(
+    d.question_text.trim() &&
+    d.option_a.trim() &&
+    d.option_b.trim() &&
+    d.option_c.trim() &&
+    d.option_d.trim()
+  );
+}
+
+/** Listed MCQs plus a filled-but-not-yet-added draft (included on save). */
+function buildQuizMcqsForSave(form: ContentFormState, draft: MCQDraft): MCQDraft[] {
+  const list = [...form.quiz_mcqs];
+  if (isMcqDraftComplete(draft)) {
+    list.push({ ...draft });
+  }
+  return list;
 }
 
 interface CodingDraft {
@@ -307,12 +328,44 @@ export function ContentList({
         }));
       } else if (uiType === "quiz") {
         const quiz = await adminCourseBuilderService.getQuiz(linkedId);
+        const rawMcqs: unknown[] = Array.isArray(quiz.mcqs) ? quiz.mcqs : [];
+        const loaded: MCQDraft[] = [];
+        for (const entry of rawMcqs) {
+          const id =
+            typeof entry === "number"
+              ? entry
+              : Number((entry as { id?: number })?.id);
+          if (!Number.isFinite(id)) continue;
+          try {
+            const m = await adminCourseBuilderService.getMCQ(id);
+            const co = String(m.correct_option ?? "A").toUpperCase().charAt(0);
+            const correct =
+              co === "B" || co === "C" || co === "D" ? co : "A";
+            loaded.push({
+              id: m.id,
+              question_text: m.question_text ?? "",
+              option_a: m.option_a ?? "",
+              option_b: m.option_b ?? "",
+              option_c: m.option_c ?? "",
+              option_d: m.option_d ?? "",
+              correct_option: correct as MCQDraft["correct_option"],
+              explanation: typeof m.explanation === "string" ? m.explanation : "",
+            });
+          } catch {
+            /* skip broken mcq ref */
+          }
+        }
         setFormData((prev) => ({
           ...prev,
           title: quiz.title ?? prev.title,
           difficulty_level: quiz.difficulty_level ?? prev.difficulty_level,
           quiz_instructions: quiz.instructions ?? "",
           quiz_duration: Number(quiz.durating_in_minutes) || prev.quiz_duration,
+          quiz_mcqs: loaded,
+          marks:
+            loaded.length > 0
+              ? loaded.length * 4
+              : Number(item.marks) || prev.marks,
         }));
       }
     } catch (error: unknown) {
@@ -364,7 +417,11 @@ export function ContentList({
     marks: overrides?.marks ?? (Number(formData.marks) || 10),
   });
 
-  const createOrUpdateLinkedContent = async (existing?: ContentItem) => {
+  const createOrUpdateLinkedContent = async (
+    existing?: ContentItem,
+    /** Required for quiz: non-empty list from buildQuizMcqsForSave */
+    quizMcqsForSave?: MCQDraft[]
+  ) => {
     const type = formData.content_type;
     const backendType = contentTypeMap[type];
     const linkedId = existing ? resolveLinkedId(existing) : null;
@@ -439,9 +496,15 @@ export function ContentList({
       return { backendType, linkedId: Number(data.id) };
     }
 
-    const createdMcqIds: number[] = [];
-    for (const mcq of formData.quiz_mcqs) {
-      const mcqData = await adminCourseBuilderService.createMCQ({
+    const list = quizMcqsForSave ?? [];
+    if (list.length === 0) {
+      throw new Error(
+        'Add at least one MCQ: click "Add MCQ to Quiz", or fill the draft and save (draft will be included automatically).'
+      );
+    }
+    const mcqIds: number[] = [];
+    for (const mcq of list) {
+      const payload = {
         question_text: mcq.question_text.trim(),
         difficulty_level: formData.difficulty_level,
         option_a: mcq.option_a.trim(),
@@ -450,15 +513,21 @@ export function ContentList({
         option_d: mcq.option_d.trim(),
         correct_option: mcq.correct_option,
         explanation: mcq.explanation.trim(),
-      });
-      createdMcqIds.push(Number(mcqData.id));
+      };
+      if (mcq.id) {
+        await adminCourseBuilderService.updateMCQ(mcq.id, payload);
+        mcqIds.push(mcq.id);
+      } else {
+        const mcqData = await adminCourseBuilderService.createMCQ(payload);
+        mcqIds.push(Number(mcqData.id));
+      }
     }
     const quizPayload = {
       title: formData.title.trim(),
       difficulty_level: formData.difficulty_level,
       instructions: formData.quiz_instructions.trim(),
       durating_in_minutes: Number(formData.quiz_duration) || 30,
-      ...(createdMcqIds.length > 0 ? { mcqs: createdMcqIds } : {}),
+      mcqs: mcqIds,
     };
     const quiz = linkedId
       ? await adminCourseBuilderService.updateQuiz(linkedId, quizPayload)
@@ -518,8 +587,29 @@ export function ContentList({
         return;
       }
 
-      const { backendType, linkedId } = await createOrUpdateLinkedContent(existing);
-      const linkPayload = buildLinkPayload(backendType, linkedId);
+      const quizList =
+        formData.content_type === "quiz"
+          ? buildQuizMcqsForSave(formData, mcqDraft)
+          : undefined;
+      if (formData.content_type === "quiz" && (!quizList || quizList.length === 0)) {
+        showToast(
+          'Add at least one question: click "Add MCQ to Quiz", or complete the draft below and save (it will be added automatically).',
+          "error"
+        );
+        return;
+      }
+
+      const { backendType, linkedId } = await createOrUpdateLinkedContent(
+        existing,
+        formData.content_type === "quiz" ? quizList : undefined
+      );
+      const linkPayload = buildLinkPayload(
+        backendType,
+        linkedId,
+        formData.content_type === "quiz" && quizList && quizList.length > 0
+          ? { marks: quizList.length * 4 }
+          : undefined
+      );
 
       if (editingId !== null) {
         await adminCourseBuilderService.updateSubmoduleContent(
@@ -593,10 +683,14 @@ export function ContentList({
       showToast("Fill question and all options before adding MCQ", "error");
       return;
     }
-    setFormData((prev) => ({
-      ...prev,
-      quiz_mcqs: [...prev.quiz_mcqs, { ...mcqDraft }],
-    }));
+    setFormData((prev) => {
+      const next = [...prev.quiz_mcqs, { ...mcqDraft }];
+      return {
+        ...prev,
+        quiz_mcqs: next,
+        marks: next.length * 4,
+      };
+    });
     setMcqDraft(emptyMcq());
   };
 
@@ -1132,7 +1226,7 @@ export function ContentList({
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
                   {formData.quiz_mcqs.map((mcq, index) => (
                     <Box
-                      key={`${mcq.question_text}-${index}`}
+                      key={mcq.id ?? `new-${index}-${mcq.question_text.slice(0, 20)}`}
                       sx={{
                         border: "1px solid #e5e7eb",
                         borderRadius: 1,
@@ -1149,10 +1243,15 @@ export function ContentList({
                       <IconButton
                         size="small"
                         onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            quiz_mcqs: prev.quiz_mcqs.filter((_, i) => i !== index),
-                          }))
+                          setFormData((prev) => {
+                            const next = prev.quiz_mcqs.filter((_, i) => i !== index);
+                            return {
+                              ...prev,
+                              quiz_mcqs: next,
+                              marks:
+                                next.length > 0 ? next.length * 4 : prev.marks,
+                            };
+                          })
                         }
                       >
                         <IconWrapper icon="mdi:delete" size={14} />

@@ -25,7 +25,6 @@ interface CodeEditorPanelProps {
   availableLanguages: LanguageOption[];
   running: boolean;
   submitting: boolean;
-  canSubmit: boolean;
   onCodeChange: (value: string) => void;
   onLanguageChange: (language: string) => void;
   onReset: () => void;
@@ -39,7 +38,6 @@ export function CodeEditorPanel({
   availableLanguages,
   running,
   submitting,
-  canSubmit,
   onCodeChange,
   onLanguageChange,
   onReset,
@@ -127,7 +125,7 @@ export function CodeEditorPanel({
           variant="contained"
           size="small"
           onClick={onSubmit}
-          disabled={running || submitting || !canSubmit}
+          disabled={running || submitting || !code.trim()}
           startIcon={
             submitting ? (
               <CircularProgress size={16} />
@@ -136,10 +134,10 @@ export function CodeEditorPanel({
             )
           }
           sx={{
-            backgroundColor: canSubmit ? "#10b981" : "#9ca3af",
+            backgroundColor: "#10b981",
             fontSize: { xs: "0.75rem", md: "0.8rem", lg: "0.875rem" },
             "&:hover": {
-              backgroundColor: canSubmit ? "#059669" : "#9ca3af",
+              backgroundColor: "#059669",
             },
             "&:disabled": {
               backgroundColor: "#d1d5db",
@@ -147,11 +145,7 @@ export function CodeEditorPanel({
             },
           }}
         >
-          {submitting
-            ? "Submitting..."
-            : canSubmit
-            ? "Submit"
-            : "Run Tests First"}
+          {submitting ? "Submitting..." : "Submit"}
         </Button>
       </Box>
 
