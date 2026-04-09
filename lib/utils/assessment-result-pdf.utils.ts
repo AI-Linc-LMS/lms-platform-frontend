@@ -340,6 +340,7 @@ function drawProctoringSummaryPdf(
   contentW: number,
   yStart: number,
   ensureSpace: (mm: number) => void,
+  fitEntireBlock: (mm: number) => void,
   proctoring: NonNullable<AssessmentResult["proctoring"]>,
   setInk: () => void,
 ): number {
@@ -418,6 +419,7 @@ function drawProctoringSummaryPdf(
 
   const blockH = headerBlockH + rowsBlockH + bottomPad;
 
+  fitEntireBlock(blockH + 8);
   ensureSpace(blockH + 8);
   const y = yStart;
 
@@ -652,6 +654,13 @@ export function generateAssessmentResultPdfVector(
     if (y + mm > contentBottom) newPage();
   };
 
+  /** Start this block on a fresh page if the remainder of the page cannot hold it (avoids mid-section cuts). */
+  const fitEntireBlock = (blockHeightMm: number) => {
+    if (blockHeightMm > 0 && y + blockHeightMm > contentBottom) {
+      newPage();
+    }
+  };
+
   const setInk = () => {
     pdf.setTextColor(INK.r, INK.g, INK.b);
   };
@@ -794,6 +803,7 @@ export function generateAssessmentResultPdfVector(
   const headerLeftW = contentW - panelW - headerGap;
   const panelX = margin + headerLeftW + headerGap;
 
+  fitEntireBlock(78);
   ensureSpace(72);
   pdf.setFillColor(SKY.r, SKY.g, SKY.b);
   pdf.rect(margin, y, 22, 1.4, "F");
@@ -904,6 +914,7 @@ export function generateAssessmentResultPdfVector(
 
   y = Math.max(y, panelBottom) + 8;
 
+  fitEntireBlock(36);
   ensureSpace(28);
   const introEndY = drawFlowingIntro(margin, y, margin + contentW);
   y = introEndY + 10;
@@ -913,6 +924,7 @@ export function generateAssessmentResultPdfVector(
   const heroH = 46;
   const heroGap = 3.5;
   const boxW = (contentW - heroGap) / 2;
+  fitEntireBlock(heroH + 18);
   ensureSpace(heroH + 12);
 
   const heroY = y;
@@ -982,6 +994,7 @@ export function generateAssessmentResultPdfVector(
     colTop: number,
     label: string,
     value: number,
+    onBarMidY?: (midY: number) => void,
   ): number => {
     pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(7.8);
@@ -1009,9 +1022,21 @@ export function generateAssessmentResultPdfVector(
     if (v > 2) {
       pdf.rect(x + (colW * v) / 100 - capW, barY, capW, barH, "F");
     }
+    const midY = barY + barH / 2;
+    onBarMidY?.(midY);
     return barY + barH + 5;
   };
 
+  const metricsHeaderH = 10;
+  const barRowApproxMm = 15;
+  const col1H = metricsHeaderH + 3 * barRowApproxMm;
+  const col2H = metricsHeaderH + 4 * barRowApproxMm;
+  const col3H =
+    metricsHeaderH +
+    Math.max(barRowApproxMm, topicBars.length * barRowApproxMm);
+  const metricsBlockH = Math.max(col1H, col2H, col3H) + 6;
+  const timeBlockApproxH = 40;
+  fitEntireBlock(metricsBlockH + timeBlockApproxH);
   ensureSpace(92);
   pdf.setFont(PDF_FONT, "bold");
   pdf.setFontSize(8.5);
@@ -1034,24 +1059,36 @@ export function generateAssessmentResultPdfVector(
   c1 = drawColBar(x1, c1, "Incorrect", pct(incorrect, totalQ));
   c1 = drawColBar(x1, c1, "Unattempted", pct(unattempted, totalQ));
 
+  const scoreTrendPts: { x: number; y: number }[] = [];
+  const scoreColCenterX = x2 + colW / 2;
   c2 = drawColBar(
     x2,
     c2,
     "Score / max",
     pct(stats.score, stats.maximum_marks || 1),
+    (midY) => scoreTrendPts.push({ x: scoreColCenterX, y: midY }),
   );
-  c2 = drawColBar(x2, c2, "Accuracy", stats.accuracy_percent);
-  c2 = drawColBar(x2, c2, "Placement readiness", stats.placement_readiness);
+  c2 = drawColBar(x2, c2, "Accuracy", stats.accuracy_percent, (midY) =>
+    scoreTrendPts.push({ x: scoreColCenterX, y: midY }),
+  );
+  c2 = drawColBar(x2, c2, "Placement readiness", stats.placement_readiness, (midY) =>
+    scoreTrendPts.push({ x: scoreColCenterX, y: midY }),
+  );
   c2 = drawColBar(
     x2,
     c2,
     "Percentile",
     Math.min(100, Number.isFinite(stats.percentile) ? stats.percentile : 0),
+    (midY) => scoreTrendPts.push({ x: scoreColCenterX, y: midY }),
   );
 
+  const topicTrendPts: { x: number; y: number }[] = [];
+  const topicColCenterX = x3 + colW / 2;
   if (topicBars.length > 0) {
     for (const t of topicBars) {
-      c3 = drawColBar(x3, c3, t.name, t.accuracy);
+      c3 = drawColBar(x3, c3, t.name, t.accuracy, (midY) => {
+        topicTrendPts.push({ x: topicColCenterX, y: midY });
+      });
     }
   } else {
     pdf.setFont(PDF_FONT, "normal");
@@ -1063,6 +1100,29 @@ export function generateAssessmentResultPdfVector(
 
   y = Math.max(c1, c2, c3) + 12;
   setInk();
+
+  const drawMetricTrend = (
+    pts: { x: number; y: number }[],
+    lineRgb: { r: number; g: number; b: number },
+    dotRgb: { r: number; g: number; b: number },
+  ) => {
+    if (pts.length < 2) return;
+    pdf.setDrawColor(lineRgb.r, lineRgb.g, lineRgb.b);
+    pdf.setLineWidth(0.42);
+    for (let ti = 0; ti < pts.length - 1; ti++) {
+      const a = pts[ti]!;
+      const b = pts[ti + 1]!;
+      pdf.line(a.x, a.y, b.x, b.y);
+    }
+    pdf.setFillColor(dotRgb.r, dotRgb.g, dotRgb.b);
+    for (const p of pts) {
+      pdf.circle(p.x, p.y, 0.85, "F");
+    }
+    setInk();
+  };
+
+  drawMetricTrend(scoreTrendPts, { r: 99, g: 102, b: 241 }, { r: 79, g: 70, b: 229 });
+  drawMetricTrend(topicTrendPts, SKY_DEEP, SKY);
 
   // --- Time (full width) ---
   const drawWideBar = (label: string, value: number): number => {
@@ -1096,6 +1156,7 @@ export function generateAssessmentResultPdfVector(
     return barY + barH + 0.5 + 6;
   };
 
+  fitEntireBlock(36);
   ensureSpace(28);
   y = drawWideBar(
     "Time used (vs allotted)",
@@ -1203,6 +1264,7 @@ export function generateAssessmentResultPdfVector(
     };
 
     if (weakSkillRows.length === 0) {
+      fitEntireBlock(28);
       ensureSpace(22);
       const h = 18;
       pdf.setFillColor(255, 251, 235);
@@ -1222,13 +1284,16 @@ export function generateAssessmentResultPdfVector(
       return;
     }
 
-    ensureSpace(24);
-    const headerTop = y;
     const subLines = pdf.splitTextToSize(
-      "Focus your next study blocks on these areas — accuracy reflects this attempt only.",
+      "Focus your next study blocks on these areas - accuracy reflects this attempt only.",
       contentW - 12,
     );
     const headerH = 7 + subLines.length * 3.8 + 5;
+    fitEntireBlock(
+      headerH + weakSkillRows.length * (cardH + cardGap) + 12,
+    );
+    ensureSpace(24);
+    const headerTop = y;
     pdf.setFillColor(255, 251, 235);
     pdf.rect(margin, headerTop, contentW, headerH, "F");
     pdf.setFillColor(245, 158, 11);
@@ -1274,6 +1339,7 @@ export function generateAssessmentResultPdfVector(
     }
     innerH += 9;
 
+    fitEntireBlock(innerH);
     ensureSpace(innerH);
 
     const blockTop = y;
@@ -1332,6 +1398,7 @@ export function generateAssessmentResultPdfVector(
   const MAX_CODE_LINES_PER_PROBLEM = 120;
 
   if (quizResponses.length > 0) {
+    fitEntireBlock(26);
     ensureSpace(22);
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(226, 232, 240);
@@ -1377,6 +1444,13 @@ export function generateAssessmentResultPdfVector(
             4.3 +
           18
         : 0;
+      const qBlockMm =
+        14 +
+        qLines.length * 4.2 +
+        optLinesEstimate +
+        explExtra +
+        14;
+      fitEntireBlock(Math.min(150, Math.max(52, qBlockMm)));
       ensureSpace(14 + qLines.length * 4.2 + optLinesEstimate + explExtra + 10);
 
       let cy = y + 6;
@@ -1449,6 +1523,7 @@ export function generateAssessmentResultPdfVector(
   }
 
   if (codingResponses.length > 0) {
+    fitEntireBlock(26);
     ensureSpace(22);
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(226, 232, 240);
@@ -1522,6 +1597,15 @@ export function generateAssessmentResultPdfVector(
         const wrapped = pdf.splitTextToSize(`${row.label}: ${row.value}`, contentW - 12);
         return sum + wrapped.length;
       }, 0);
+      const codingBlockMm =
+        20 +
+        titleLines * 4.5 +
+        detailLineCount * 4.2 +
+        (detailRows.length > 0 ? 6 : 0) +
+        12 +
+        Math.min(codeLineCount, MAX_CODE_LINES_PER_PROBLEM) * CODE_LINE_MM +
+        22;
+      fitEntireBlock(Math.min(200, Math.max(60, codingBlockMm)));
       ensureSpace(
         20 +
           titleLines * 4.5 +
@@ -1632,6 +1716,7 @@ export function generateAssessmentResultPdfVector(
   const INDIGO_BAR = { r: 99, g: 102, b: 241 };
 
   if (subjectiveResponses.length > 0) {
+    fitEntireBlock(26);
     ensureSpace(22);
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(226, 232, 240);
@@ -1752,6 +1837,7 @@ export function generateAssessmentResultPdfVector(
         feedbackBoxH +
         8;
 
+      fitEntireBlock(cardH + 8);
       ensureSpace(cardH + 6);
 
       const cardTop = y;
@@ -1904,6 +1990,7 @@ export function generateAssessmentResultPdfVector(
       contentW,
       y,
       ensureSpace,
+      fitEntireBlock,
       data.proctoring,
       setInk,
     );
