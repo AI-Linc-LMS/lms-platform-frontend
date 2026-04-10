@@ -2,16 +2,9 @@
 
 import { Box, Typography, Skeleton } from "@mui/material";
 import Image from "next/image";
-import { Noto_Sans_Arabic } from "next/font/google";
 import { TextHoverEffect } from "@/components/ui/text-hover-effect";
 import { authLayoutClient28Tokens } from "@/lib/auth/auth-layout-variants";
 import { brandWordHighlightSx } from "./authBrandStyles";
-
-const notoArabic = Noto_Sans_Arabic({
-  subsets: ["arabic"],
-  weight: ["600", "700"],
-  display: "swap",
-});
 
 interface AuthRightPanelClient28Props {
   clientInfoLoading: boolean;
@@ -26,8 +19,6 @@ export function AuthRightPanelClient28({
   logoUrl,
   brandName,
 }: AuthRightPanelClient28Props) {
-  const arabicFont = `${notoArabic.style.fontFamily}, "Noto Sans Arabic", sans-serif`;
-
   return (
     <Box
       sx={{
@@ -38,89 +29,26 @@ export function AuthRightPanelClient28({
         position: "relative",
         overflow: "hidden",
         height: "100vh",
-        background:
-          "linear-gradient(165deg, #0f172a 0%, #134e4a 42%, #0f172a 100%)",
+        backgroundColor: "#0f172a",
       }}
     >
       <Box
+        aria-hidden
         sx={{
           position: "absolute",
           inset: 0,
           zIndex: 0,
-          pointerEvents: "none",
-        }}
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "8%",
-            right: "12%",
-            width: 320,
-            height: 320,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(45,212,191,0.18) 0%, transparent 70%)",
-            filter: "blur(40px)",
-          }}
-        />
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: "5%",
-            left: "8%",
-            width: 380,
-            height: 380,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(94,234,212,0.12) 0%, transparent 72%)",
-            filter: "blur(50px)",
-          }}
-        />
-      </Box>
-
-      {/* Top: Arabic INUN + Arabic LMS hover effects */}
-      <Box
-        className={notoArabic.className}
-        sx={{
-          position: "relative",
-          zIndex: 2,
-          flexShrink: 0,
           width: "100%",
-          maxWidth: 720,
-          px: 3,
-          pt: 3,
-          pb: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 2,
+          height: "100%",
+          backgroundColor: "#0f172a",
+          backgroundImage: "url(/images/inun-landing.jpg)",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
-      >
-        <Box sx={{ width: "100%", height: 118, maxWidth: 560 }}>
-          <TextHoverEffect
-            text={authLayoutClient28Tokens.hoverBrandArabic}
-            duration={0.3}
-            fontSize={56}
-            viewBox="0 0 520 120"
-            fontFamily={arabicFont}
-            direction="rtl"
-            colorMode="onDark"
-            className="w-full h-full"
-          />
-        </Box>
-        <Box sx={{ width: "100%", height: 100, maxWidth: 680 }}>
-          <TextHoverEffect
-            text={authLayoutClient28Tokens.hoverLmsArabic}
-            duration={0.35}
-            fontSize={38}
-            viewBox="0 0 960 130"
-            fontFamily={arabicFont}
-            direction="rtl"
-            colorMode="onDark"
-            className="w-full h-full"
-          />
-        </Box>
-      </Box>
+      />
 
-      {/* Center: logo, title, slogan — slightly above vertical center */}
+      {/* Center: logo, title, slogan — nudged below midline for balance with bottom INUN */}
       <Box
         sx={{
           position: "relative",
@@ -131,12 +59,13 @@ export function AuthRightPanelClient28({
           alignItems: "center",
           justifyContent: "center",
           width: "100%",
-          maxWidth: 560,
+          maxWidth: 840,
           px: 4,
+          pt: { md: 2 },
           gap: 2,
           textAlign: "center",
           minHeight: 0,
-          transform: "translateY(clamp(-72px, -7vh, -32px))",
+          transform: "translateY(clamp(28px, 4vh, 72px))",
         }}
       >
         {clientInfoLoading ? (
@@ -184,8 +113,13 @@ export function AuthRightPanelClient28({
                     position: "relative",
                     width: "100%",
                     maxWidth: authLayoutClient28Tokens.logoMaxWidthPx,
-                    height: { xs: 72, md: authLayoutClient28Tokens.logoHeightMdPx },
+                    height: { xs: 104, md: authLayoutClient28Tokens.logoHeightMdPx },
                     mx: "auto",
+                    filter: [
+                      "drop-shadow(0 2px 4px rgba(0,0,0,0.35))",
+                      "drop-shadow(0 5px 14px rgba(0,0,0,0.25))",
+                      "drop-shadow(0 0 2px rgba(15,23,42,0.45))",
+                    ].join(" "),
                   }}
                 >
                   <Image
@@ -208,6 +142,8 @@ export function AuthRightPanelClient28({
                     lineHeight: 1.12,
                     letterSpacing: "-0.02em",
                     color: "#f8fafc",
+                    textShadow:
+                      "0 2px 20px rgba(0,0,0,0.75), 0 1px 6px rgba(0,0,0,0.9), 0 0 1px rgba(15,23,42,1)",
                   }}
                 >
                   {brandName
@@ -241,10 +177,12 @@ export function AuthRightPanelClient28({
             },
             fontWeight: 700,
             lineHeight: 1.45,
-            color: "#e2e8f0",
+            color: "#0a0a0a",
             position: "relative",
             zIndex: 2,
-            maxWidth: 440,
+            maxWidth: 520,
+            textShadow:
+              "0 0 10px rgba(255,255,255,0.92), 0 0 3px rgba(255,255,255,1), 0 2px 6px rgba(255,255,255,0.75)",
           }}
         >
           {sloganText.split(" ").map((word, index) => {

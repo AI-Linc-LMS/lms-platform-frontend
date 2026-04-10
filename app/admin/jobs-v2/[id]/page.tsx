@@ -21,9 +21,10 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
+import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, Users, FileText, Heart } from "lucide-react";
+import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, Users, FileText, Heart, GraduationCap } from "lucide-react";
 const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   active: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
   inactive: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
@@ -99,10 +100,13 @@ const InfoPill = ({
   icon,
   label,
   value,
+  multiline = false,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  /** Full-width row with wrapped text (e.g. long addresses). */
+  multiline?: boolean;
 }) => (
   <Box
     sx={{
@@ -114,9 +118,10 @@ const InfoPill = ({
       borderRadius: 2,
       backgroundColor: "#fff",
       border: "1px solid",
-      borderColor: "rgba(0,0,0,0.06)",
-      flex: "1 1 160px",
-      minWidth: 0,
+      borderColor: multiline ? "rgba(99, 102, 241, 0.18)" : "rgba(0,0,0,0.06)",
+      flex: multiline ? "1 1 100%" : "1 1 160px",
+      minWidth: multiline ? "100%" : 0,
+      maxWidth: multiline ? "100%" : undefined,
       transition: "all 0.2s ease",
       "&:hover": {
         borderColor: "rgba(99, 102, 241, 0.2)",
@@ -125,11 +130,41 @@ const InfoPill = ({
     }}
   >
     <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>{icon}</Box>
-    <Box sx={{ minWidth: 0 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block", lineHeight: 1.3, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.7rem" }}>
+    <Box sx={{ minWidth: 0, flex: multiline ? 1 : undefined }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{
+          display: "block",
+          lineHeight: 1.3,
+          fontWeight: 500,
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          fontSize: "0.7rem",
+        }}
+      >
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#0f172a", mt: 0.25 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          fontWeight: 600,
+          color: "#0f172a",
+          mt: 0.25,
+          ...(multiline
+            ? {
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+                lineHeight: 1.55,
+              }
+            : {
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }),
+        }}
+      >
         {value}
       </Typography>
     </Box>
@@ -222,6 +257,7 @@ export default function JobDetailPage() {
   const skills = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])].filter(Boolean);
   const courses = job.courses ?? [];
   const collegeMappings = job.college_mappings ?? [];
+  const passoutYearDisplay = formatJobPassoutYear(job.applicable_passout_year);
 
   return (
     <MainLayout>
@@ -243,7 +279,20 @@ export default function JobDetailPage() {
             Jobs
           </Button>
           <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 400 }}>/</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#0f172a", maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              color: "#0f172a",
+              flex: 1,
+              minWidth: 0,
+              lineHeight: 1.35,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {job.job_title}
           </Typography>
         </Box>
@@ -439,16 +488,24 @@ export default function JobDetailPage() {
           </Box>
         </Paper>
 
-        {/* Quick info pills */}
+        {/* Quick info: location on its own full-width row so long addresses are readable */}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mb: 3 }}>
           {job.location && (
-            <InfoPill icon={<MapPin size={18} />} label="Location" value={job.location} />
+            <InfoPill
+              multiline
+              icon={<MapPin size={18} />}
+              label="Location"
+              value={job.location}
+            />
           )}
           {job.years_of_experience && (
             <InfoPill icon={<Briefcase size={18} />} label="Experience" value={job.years_of_experience} />
           )}
           {job.salary && (
             <InfoPill icon={<Tag size={18} />} label="Salary" value={job.salary} />
+          )}
+          {passoutYearDisplay && (
+            <InfoPill icon={<GraduationCap size={18} />} label="Passout year" value={passoutYearDisplay} />
           )}
           {job.number_of_openings != null && (
             <InfoPill icon={<Users size={18} />} label="Openings" value={String(job.number_of_openings)} />
@@ -614,6 +671,11 @@ export default function JobDetailPage() {
               {job.education && (
                 <SectionCard title="Education" icon="mdi:school-outline">
                   <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>{job.education}</Typography>
+                </SectionCard>
+              )}
+              {passoutYearDisplay && (
+                <SectionCard title="Applicable passout year" icon="mdi:calendar-outline">
+                  <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
                 </SectionCard>
               )}
               {job.role_category && (

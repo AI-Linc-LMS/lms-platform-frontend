@@ -28,6 +28,7 @@ import type {
 } from "@/lib/services/admin/admin-jobs-v2.service";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
+import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { CreateJobIllustration } from "@/components/jobs-v2/illustrations";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ApplicationQuestionsModal } from "./ApplicationQuestionsModal";
@@ -87,6 +88,20 @@ const emptyPayload: JobCreateUpdatePayload = {
   course_ids: [],
   question_ids: [],
 };
+
+/** Positive integer or null — coerces API values; never keeps a string in state. */
+function parseNumberOfOpeningsInput(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") {
+    if (!Number.isFinite(v) || !Number.isInteger(v) || v < 1) return null;
+    return v;
+  }
+  const digits = String(v).replace(/\D/g, "");
+  if (!digits) return null;
+  const n = parseInt(digits, 10);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return n;
+}
 
 const STEPS = [
   "Basic Info",
@@ -213,7 +228,7 @@ export function JobCreateEditPage({
           : "";
       const init = initialData as {
         status?: "active" | "inactive" | "closed" | "completed";
-        number_of_openings?: number | null;
+        number_of_openings?: number | string | null;
         applicable_passout_year?: string | null;
         min_10th_percentage?: number | null;
         min_12th_percentage?: number | null;
@@ -243,7 +258,7 @@ export function JobCreateEditPage({
         is_published: initialData.is_published ?? false,
         status: init.status ?? "active",
         application_deadline: formattedDeadline,
-        number_of_openings: init.number_of_openings ?? null,
+        number_of_openings: parseNumberOfOpeningsInput(init.number_of_openings),
         applicable_passout_year: init.applicable_passout_year ?? null,
         min_10th_percentage: init.min_10th_percentage ?? null,
         min_12th_percentage: init.min_12th_percentage ?? null,
@@ -356,11 +371,18 @@ export function JobCreateEditPage({
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!formData.job_title.trim() || !formData.company_name.trim()) return;
+    if (
+      !formData.job_title.trim() ||
+      !formData.company_name.trim() ||
+      !formData.company_logo?.trim()
+    ) {
+      return;
+    }
     try {
       setSubmitting(true);
       const payload: JobCreateUpdatePayload | Partial<JobCreateUpdatePayload> = {
         ...formData,
+        company_logo: formData.company_logo.trim(),
         mandatory_skills: formData.key_skills ?? [],
         course_ids: formData.course_ids ?? [],
         question_ids: formData.question_ids ?? [],
@@ -369,8 +391,10 @@ export function JobCreateEditPage({
         application_deadline: formData.application_deadline?.trim()
           ? formData.application_deadline.trim()
           : null,
-        number_of_openings: formData.number_of_openings ?? null,
-        applicable_passout_year: formData.applicable_passout_year?.trim() || null,
+        number_of_openings: parseNumberOfOpeningsInput(formData.number_of_openings),
+        applicable_passout_year: formatJobPassoutYear(
+          formData.applicable_passout_year
+        ),
         min_10th_percentage: formData.min_10th_percentage ?? null,
         min_12th_percentage: formData.min_12th_percentage ?? null,
         min_graduation_percentage: formData.min_graduation_percentage ?? null,
@@ -384,7 +408,10 @@ export function JobCreateEditPage({
     }
   }, [formData, jdFile, onSubmit, onCancel]);
 
-  const canProceedStep0 = formData.job_title.trim() && formData.company_name.trim();
+  const canProceedStep0 =
+    Boolean(formData.job_title.trim()) &&
+    Boolean(formData.company_name.trim()) &&
+    Boolean(formData.company_logo?.trim());
   const isLastStep = activeStep === STEPS.length - 1;
 
   const renderStepContent = () => {
@@ -452,9 +479,11 @@ export function JobCreateEditPage({
                 label="Company Logo URL"
                 value={formData.company_logo}
                 onChange={(e) => handleChange("company_logo", e.target.value)}
+                required
                 fullWidth
                 size="small"
                 placeholder="https://example.com/logo.png"
+                helperText="Required — public image URL shown on job cards and detail pages"
                 sx={inputSx}
               />
               <TextField
@@ -474,18 +503,30 @@ export function JobCreateEditPage({
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
                 <TextField
                   label="Number of Openings"
-                  type="number"
-                  value={formData.number_of_openings ?? ""}
-                  onChange={(e) =>
-                    handleChange(
-                      "number_of_openings",
-                      e.target.value === "" ? null : Number(e.target.value)
-                    )
+                  type="text"
+                  value={
+                    formData.number_of_openings == null
+                      ? ""
+                      : String(formData.number_of_openings)
                   }
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    if (digits === "") {
+                      handleChange("number_of_openings", null);
+                      return;
+                    }
+                    const n = parseInt(digits, 10);
+                    handleChange("number_of_openings", n >= 1 ? n : null);
+                  }}
                   fullWidth
                   size="small"
                   placeholder="e.g. 5"
-                  inputProps={{ min: 1 }}
+                  helperText="Whole number only (minimum 1)"
+                  inputProps={{
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                    autoComplete: "off",
+                  }}
                   sx={inputSx}
                 />
                 <TextField
@@ -1486,7 +1527,12 @@ export function JobCreateEditPage({
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={submitting || !formData.job_title.trim() || !formData.company_name.trim()}
+                disabled={
+                  submitting ||
+                  !formData.job_title.trim() ||
+                  !formData.company_name.trim() ||
+                  !formData.company_logo?.trim()
+                }
                 startIcon={<IconWrapper icon="mdi:content-save" size={18} />}
                 sx={{
                   textTransform: "none",

@@ -22,7 +22,7 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
           py: { xs: 4, md: 0 },
           overflow: "auto",
           background:
-            "linear-gradient(180deg, #f8fffc 0%, #ecfdf5 35%, #f1f5f9 100%)",
+            "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%)",
         }}
       >
         <Box

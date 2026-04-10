@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { ArrowLeft, ExternalLink, MapPin, Briefcase, Calendar, Heart, Banknote, FileText, Building2, Users, GraduationCap } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { jobsV2Service, JobV2 } from "@/lib/services/jobs-v2.service";
+import { jobsV2Service, JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
@@ -213,6 +213,8 @@ export default function JobDetailPage() {
     ...(job.key_skills ?? []),
   ].filter(Boolean);
 
+  const passoutYearDisplay = formatJobPassoutYear(job.applicable_passout_year);
+
   return (
     <MainLayout>
       <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
@@ -357,6 +359,12 @@ export default function JobDetailPage() {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                         <Briefcase size={16} />
                         <Typography variant="body2">{job.years_of_experience}</Typography>
+                      </Box>
+                    )}
+                    {passoutYearDisplay && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <GraduationCap size={16} />
+                        <Typography variant="body2">Passout {passoutYearDisplay}</Typography>
                       </Box>
                     )}
                     {job.salary && (
@@ -752,6 +760,28 @@ export default function JobDetailPage() {
                     </Box>
                   </Box>
                 )}
+                {passoutYearDisplay && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <GraduationCap size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>
+                        Applicable passout year
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
+                    </Box>
+                  </Box>
+                )}
                 {job.ug_requirements && (
                   <Box
                     sx={{
@@ -838,7 +868,7 @@ export default function JobDetailPage() {
                     </Box>
                   </Box>
                 )}
-                {!job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !job.ug_requirements && !job.pg_requirements && !job.application_deadline && (job.number_of_openings == null || job.number_of_openings === 0) && (
+                {!job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !passoutYearDisplay && !job.ug_requirements && !job.pg_requirements && !job.application_deadline && (job.number_of_openings == null || job.number_of_openings === 0) && (
                   <Box sx={{ py: 2, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">No additional details</Typography>
                   </Box>
