@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Box, Paper, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useTenantShellTheme } from "@/lib/theme/useTenantShellTheme";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isAdminOnlyRole, isClientOrgAdminRole } from "@/lib/auth/role-utils";
@@ -141,6 +142,7 @@ const adminNavigationItems: NavigationItem[] = [
 export const BottomNavigation: React.FC = () => {
   const pathname = usePathname();
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
+  const shell = useTenantShellTheme();
   const { isAdminMode } = useAdminMode();
   const { user } = useAuth();
   const { t } = useTranslation("common");
@@ -220,10 +222,11 @@ export const BottomNavigation: React.FC = () => {
         zIndex: 1000,
         display: { xs: "flex", md: "none" },
         borderTop: "1px solid",
-        borderColor: "rgba(255, 255, 255, 0.1)",
+        borderColor: shell.navBorder,
         borderRadius: 0,
         boxShadow: "none",
-        backgroundColor: "#1a1f2e", // Dark theme like sidebar
+        backgroundColor: shell.shellBg,
+        color: shell.nav,
       }}
     >
       <Box
@@ -274,8 +277,8 @@ export const BottomNavigation: React.FC = () => {
                         ? "translateY(-2px) scale(1.1)"
                         : "translateY(-1px) scale(1.05)",
                       filter: isActive
-                        ? "drop-shadow(0 3px 6px rgba(99, 102, 241, 0.6)) drop-shadow(0 2px 4px rgba(99, 102, 241, 0.5))"
-                        : "drop-shadow(0 2px 4px rgba(255, 255, 255, 0.2))",
+                        ? shell.dropBottomHover
+                        : `drop-shadow(0 2px 4px ${shell.navIconHoverDim})`,
                     },
                   },
                 }}
@@ -287,11 +290,11 @@ export const BottomNavigation: React.FC = () => {
                   justifyContent: "center",
                   position: "relative",
                   mb: 0.25,
-                  color: isActive ? "#a5b4fc" : "rgba(255, 255, 255, 0.7)",
+                  color: isActive ? shell.p300 : shell.navMuted,
                   "& svg": {
                     transition: "all 0.2s ease",
                     filter: isActive
-                      ? "drop-shadow(0 2px 4px rgba(99, 102, 241, 0.5)) drop-shadow(0 1px 3px rgba(99, 102, 241, 0.4))"
+                      ? shell.dropBottomIcon
                       : "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))",
                     transform: isActive
                       ? "translateY(-1px) scale(1.05)"
@@ -312,7 +315,7 @@ export const BottomNavigation: React.FC = () => {
                 sx={{
                   fontSize: "0.7rem",
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? "#a5b4fc" : "rgba(255, 255, 255, 0.7)",
+                  color: isActive ? shell.p300 : shell.navMuted,
                   textAlign: "center",
                   lineHeight: 1.2,
                   mt: 0.25,

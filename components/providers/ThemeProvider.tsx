@@ -7,35 +7,64 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { createTheme } from "@mui/material/styles";
 import { theme as baseTheme } from "@/lib/theme";
 import { isRtl } from "@/lib/i18n";
-import { client28MuiPrimary, isClient28Theme } from "@/lib/theme/client28-theme";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import type { ClientInfo } from "@/lib/services/client.service";
+import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
-  /** From server `getClientInfo` so MUI matches CSS vars before client fetch completes. */
-  initialClientId?: number;
+  /** From server `getClientInfo` until context hydrates. */
+  initialClient?: ClientInfo | null;
 }
 
 export function ThemeProvider({
   children,
-  initialClientId,
+  initialClient,
 }: ThemeProviderProps) {
   const { i18n } = useTranslation();
+  const { clientInfo } = useClientInfo();
   const lng = i18n.language || "en";
   const direction = isRtl(lng) ? "rtl" : "ltr";
 
+  const source = clientInfo ?? initialClient ?? null;
+  const t = normalizeThemeSettings(source?.theme_settings);
+
   const theme = useMemo(() => {
-    const palette = isClient28Theme(initialClientId)
-      ? {
-          ...baseTheme.palette,
-          primary: { ...baseTheme.palette.primary, ...client28MuiPrimary },
-        }
-      : baseTheme.palette;
+    const primary = {
+      main:
+        t.muiPrimaryMain ||
+        t.primary500 ||
+        baseTheme.palette.primary.main,
+      light:
+        t.muiPrimaryLight ||
+        t.primary400 ||
+        baseTheme.palette.primary.light,
+      dark:
+        t.muiPrimaryDark ||
+        t.primary600 ||
+        baseTheme.palette.primary.dark,
+      contrastText:
+        t.muiPrimaryContrastText || baseTheme.palette.primary.contrastText,
+    };
+    const fontFamily =
+      t.fontFamilySans ||
+      (typeof baseTheme.typography?.fontFamily === "string"
+        ? baseTheme.typography.fontFamily
+        : undefined);
+
     return createTheme({
       ...baseTheme,
       direction,
-      palette,
+      palette: {
+        ...baseTheme.palette,
+        primary: { ...baseTheme.palette.primary, ...primary },
+      },
+      typography: {
+        ...baseTheme.typography,
+        ...(fontFamily ? { fontFamily } : {}),
+      },
     });
-  }, [direction, initialClientId]);
+  }, [direction, t]);
 
   return (
     <MuiThemeProvider theme={theme}>

@@ -2,15 +2,16 @@
 
 import { Box } from "@mui/material";
 import { ReactNode } from "react";
-import type { AuthLayoutVariantId } from "@/lib/auth/auth-layout-variants";
+
+export type AuthLeftPanelVariant = "plain" | "glass";
 
 interface AuthLeftPanelProps {
-  variant: AuthLayoutVariantId;
+  variant: AuthLeftPanelVariant;
   children: ReactNode;
 }
 
 export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
-  if (variant === "client28") {
+  if (variant === "glass") {
     return (
       <Box
         sx={{

@@ -2,6 +2,13 @@
 
 import { Box, Typography, Skeleton } from "@mui/material";
 import Image from "next/image";
+import type { LoginHeroBrandingUi } from "@/lib/theme/authHeroBranding";
+import {
+  brandNameTypographySx,
+  logoContainerSx,
+  logoImageSizes,
+  sloganTypographySx,
+} from "@/lib/theme/authHeroBranding";
 import { brandWordHighlightSx } from "./authBrandStyles";
 
 interface AuthRightPanelDefaultProps {
@@ -9,6 +16,9 @@ interface AuthRightPanelDefaultProps {
   sloganText: string;
   logoUrl: string;
   brandName: string;
+  loginImgUrl?: string | null;
+  heroBranding?: LoginHeroBrandingUi;
+  useCustomSlogan?: boolean;
 }
 
 export function AuthRightPanelDefault({
@@ -16,7 +26,144 @@ export function AuthRightPanelDefault({
   sloganText,
   logoUrl,
   brandName,
+  loginImgUrl,
+  heroBranding = {},
+  useCustomSlogan = false,
 }: AuthRightPanelDefaultProps) {
+  const hero = Boolean(loginImgUrl?.trim());
+
+  if (hero) {
+    const src = loginImgUrl!.trim();
+    return (
+      <Box
+        sx={{
+          flex: { xs: 0, md: "0 0 50%" },
+          display: { xs: "none", md: "flex" },
+          flexDirection: "column",
+          alignItems: "center",
+          position: "relative",
+          overflow: "hidden",
+          height: "100vh",
+          backgroundColor: "#f1f5f9",
+        }}
+      >
+        <Box
+          aria-hidden
+          sx={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "#f1f5f9",
+          }}
+        >
+          <Image
+            src={src}
+            alt=""
+            fill
+            priority
+            sizes="50vw"
+            style={{ objectFit: "cover", objectPosition: "center" }}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            position: "relative",
+            zIndex: 2,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            maxWidth: 840,
+            px: 4,
+            pt: { md: 2 },
+            gap: 2,
+            textAlign: "center",
+            minHeight: 0,
+            transform: "translateY(clamp(28px, 4vh, 72px))",
+          }}
+        >
+          {clientInfoLoading ? (
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
+              <Skeleton
+                variant="rounded"
+                sx={{
+                  bgcolor: "rgba(15,23,42,0.08)",
+                  width: 320,
+                  height: 120,
+                  borderRadius: 2,
+                }}
+              />
+              <Skeleton
+                variant="text"
+                sx={{ bgcolor: "rgba(15,23,42,0.08)", width: "85%", height: 48 }}
+              />
+              <Skeleton
+                variant="text"
+                sx={{ bgcolor: "rgba(15,23,42,0.06)", width: "70%", height: 22 }}
+              />
+            </Box>
+          ) : (
+            (logoUrl || brandName) && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                  width: "100%",
+                }}
+              >
+                {logoUrl ? (
+                  <Box sx={logoContainerSx(true, heroBranding)}>
+                    <Image
+                      src={logoUrl}
+                      alt={brandName || "Logo"}
+                      fill
+                      sizes={logoImageSizes(true, heroBranding)}
+                      style={{ objectFit: "contain" }}
+                      priority
+                    />
+                  </Box>
+                ) : null}
+                {brandName ? (
+                  <Typography
+                    component="p"
+                    sx={brandNameTypographySx(true, heroBranding)}
+                  >
+                    {brandName}
+                  </Typography>
+                ) : null}
+              </Box>
+            )
+          )}
+
+          <Typography
+            variant="h2"
+            component="div"
+            sx={sloganTypographySx(true, heroBranding)}
+          >
+            {sloganText.split(" ").map((word, index) => (
+              <span key={index}>{word} </span>
+            ))}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -151,21 +298,12 @@ export function AuthRightPanelDefault({
               }}
             >
               {logoUrl ? (
-                <Box
-                  sx={{
-                    position: "relative",
-                    width: "100%",
-                    maxWidth: 280,
-                    height: { xs: 56, md: 72 },
-                    mx: "auto",
-                    alignSelf: "center",
-                  }}
-                >
+                <Box sx={logoContainerSx(false, heroBranding)}>
                   <Image
                     src={logoUrl}
                     alt={brandName || "Logo"}
                     fill
-                    sizes="280px"
+                    sizes={logoImageSizes(false, heroBranding)}
                     style={{ objectFit: "contain" }}
                     priority
                   />
@@ -175,19 +313,8 @@ export function AuthRightPanelDefault({
                 <Typography
                   component="p"
                   sx={{
-                    fontSize: { md: "2.75rem", lg: "3.25rem" },
-                    fontWeight: 800,
-                    lineHeight: 1.15,
-                    letterSpacing: "-0.02em",
-                    wordSpacing: "normal",
-                    color: "#1e293b",
-                    maxWidth: 720,
-                    width: "100%",
-                    m: 0,
+                    ...brandNameTypographySx(false, heroBranding),
                     mt: logoUrl ? 0.5 : 0,
-                    mx: "auto",
-                    textAlign: "center",
-                    alignSelf: "center",
                   }}
                 >
                   {brandName
@@ -214,45 +341,42 @@ export function AuthRightPanelDefault({
         <Typography
           variant="h2"
           component="div"
-          sx={{
-            fontSize: { md: "3rem", lg: "4rem" },
-            fontWeight: 700,
-            lineHeight: 1.2,
-            color: "#1e293b",
-            position: "relative",
-            zIndex: 2,
-          }}
+          sx={sloganTypographySx(false, heroBranding)}
         >
-          {sloganText.split(" ").map((word, index) => {
-            if (word === "the" || word === "world") {
-              return (
-                <Box
-                  key={index}
-                  component="span"
-                  sx={{
-                    position: "relative",
-                    display: "inline-block",
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      top: "50%",
-                      left: 0,
-                      right: 0,
-                      height: "40%",
-                      background:
-                        "linear-gradient(135deg, #f97316 0%, #ec4899 100%)",
-                      borderRadius: "20px",
-                      opacity: 0.3,
-                      zIndex: -1,
-                    },
-                  }}
-                >
-                  {word}{" "}
-                </Box>
-              );
-            }
-            return <span key={index}>{word} </span>;
-          })}
+          {useCustomSlogan
+            ? sloganText.split(" ").map((word, index) => (
+                <span key={index}>{word} </span>
+              ))
+            : sloganText.split(" ").map((word, index) => {
+                if (word === "the" || word === "world") {
+                  return (
+                    <Box
+                      key={index}
+                      component="span"
+                      sx={{
+                        position: "relative",
+                        display: "inline-block",
+                        "&::after": {
+                          content: '""',
+                          position: "absolute",
+                          top: "50%",
+                          left: 0,
+                          right: 0,
+                          height: "40%",
+                          background:
+                            "linear-gradient(135deg, #f97316 0%, #ec4899 100%)",
+                          borderRadius: "20px",
+                          opacity: 0.3,
+                          zIndex: -1,
+                        },
+                      }}
+                    >
+                      {word}{" "}
+                    </Box>
+                  );
+                }
+                return <span key={index}>{word} </span>;
+              })}
         </Typography>
       </Box>
     </Box>

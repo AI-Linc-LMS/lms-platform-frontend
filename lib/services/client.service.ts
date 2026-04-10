@@ -113,7 +113,10 @@ export interface ClientInfo {
 export const initApp = async (clientId: number): Promise<ClientInfo> => {
   try {
     const response = await apiClient.get<ClientInfo>(
-      `/api/clients/${clientId}/client-info/`
+      `/api/clients/${clientId}/client-info/`,
+      {
+        params: { _t: Date.now() },
+      }
     );
     return response.data;
   } catch (error: any) {

@@ -13,7 +13,7 @@ export const getClientInfo = cache(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/clients/${process.env.NEXT_PUBLIC_CLIENT_ID}/client-info/`,
         {
           next: {
-            revalidate: 86400, // 24 hours
+            revalidate: 120,
           },
         }
       );

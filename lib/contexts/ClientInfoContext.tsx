@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { initApp, type ClientInfo } from "@/lib/services/client.service";
 import { config } from "@/lib/config";
 
@@ -8,36 +14,54 @@ interface ClientInfoContextType {
   clientInfo: ClientInfo | null;
   loading: boolean;
   error: Error | null;
+  refreshClientInfo: () => Promise<void>;
 }
 
 const ClientInfoContext = createContext<ClientInfoContextType | undefined>(
   undefined
 );
 
-export function ClientInfoProvider({ children }: { children: React.ReactNode }) {
-  const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
+export function ClientInfoProvider({
+  children,
+  initialClient,
+}: {
+  children: React.ReactNode;
+  /** SSR client-info for first paint (theme, etc.) until `initApp` completes. */
+  initialClient?: ClientInfo | null;
+}) {
+  const [clientInfo, setClientInfo] = useState<ClientInfo | null>(
+    initialClient ?? null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const refreshClientInfo = useCallback(async () => {
+    const clientId = Number(config.clientId);
+    const info = await initApp(clientId);
+    setClientInfo(info);
+  }, []);
 
   useEffect(() => {
     const fetchClientInfo = async () => {
       try {
         setLoading(true);
-        const clientId = Number(config.clientId);
-        const info = await initApp(clientId);
-        setClientInfo(info);
+        await refreshClientInfo();
       } catch (err) {
-        setError(err instanceof Error ? err : new Error("Failed to load client info"));
+        setError(
+          err instanceof Error ? err : new Error("Failed to load client info")
+        );
       } finally {
         setLoading(false);
       }
     };
 
     fetchClientInfo();
-  }, []); // Only run once on mount
+  }, [refreshClientInfo]);
 
   return (
-    <ClientInfoContext.Provider value={{ clientInfo, loading, error }}>
+    <ClientInfoContext.Provider
+      value={{ clientInfo, loading, error, refreshClientInfo }}
+    >
       {children}
     </ClientInfoContext.Provider>
   );
@@ -58,4 +82,3 @@ export function useHideLeaderboardView(): boolean {
     clientInfo?.features?.some((f) => f.name === "no_leaderboard_view")
   );
 }
-
