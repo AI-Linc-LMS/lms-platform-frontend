@@ -103,6 +103,7 @@ export function QuizView({ content }: QuizViewProps) {
         showCorrectAnswer={true}
         correctAnswerId={correctAnswerId}
         explanation={explanation}
+        isSubmodule={true}
       />
     </Box>
   );
