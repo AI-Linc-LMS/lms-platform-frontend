@@ -6,12 +6,12 @@ import { AuthProvider } from "@/lib/auth/auth-context";
 import { ToastProvider } from "@/components/common/Toast";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { EmotionCacheProvider } from "@/lib/emotion-cache";
-import { config } from "@/lib/config";
 import { getClientInfo } from "@/lib/utils/clientInfo";
 import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { ClientThemeProviderGate } from "@/components/providers/ClientThemeProviderGate";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
+import { ClientThemeSync } from "@/components/providers/ClientThemeSync";
+import { ClientFontLink } from "@/components/providers/ClientFontLink";
 import { AdminModeProvider } from "@/lib/contexts/AdminModeContext";
 import { AdminModeRoleSync } from "@/components/providers/AdminModeRoleSync";
 import { CameraRouteGuard } from "@/components/providers/CameraRouteGuard";
@@ -64,7 +64,6 @@ export default async function RootLayout({
         <link rel="icon" href={favicon} />
         <link rel="shortcut icon" href={favicon} />
         <link rel="apple-touch-icon" href={favicon} />
-        {/* Preconnect to Fontshare for faster font loading */}
         <link
           rel="preconnect"
           href="https://api.fontshare.com"
@@ -77,22 +76,17 @@ export default async function RootLayout({
       </head>
 
       <body className={`antialiased`} suppressHydrationWarning>
-        <ClientThemeProviderGate client={client} />
         <AuthProvider>
           <ErrorBoundary>
             <I18nProvider clientId={client?.id}>
               <EmotionCacheProvider>
-                <ThemeProvider
-                  initialClientId={
-                    typeof client?.id === "number"
-                      ? client.id
-                      : Number(config.clientId)
-                  }
-                >
-                  <DirectionSync />
-                  <ReduxProvider>
-                    <ThemeModeProvider>
-                      <ClientInfoProvider>
+                <ClientInfoProvider initialClient={client}>
+                  <ClientThemeSync initialClient={client} />
+                  <ClientFontLink initialClient={client} />
+                  <ThemeProvider initialClient={client}>
+                    <DirectionSync />
+                    <ReduxProvider>
+                      <ThemeModeProvider>
                         <AdminModeProvider>
                           <AdminModeRoleSync />
                           <CameraRouteGuard>
@@ -104,10 +98,10 @@ export default async function RootLayout({
                             </TelemetryProvider>
                           </CameraRouteGuard>
                         </AdminModeProvider>
-                      </ClientInfoProvider>
-                    </ThemeModeProvider>
-                  </ReduxProvider>
-                </ThemeProvider>
+                      </ThemeModeProvider>
+                    </ReduxProvider>
+                  </ThemeProvider>
+                </ClientInfoProvider>
               </EmotionCacheProvider>
             </I18nProvider>
           </ErrorBoundary>

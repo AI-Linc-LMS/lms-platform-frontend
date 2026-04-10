@@ -35,6 +35,10 @@ import {
   isClientOrgAdminRole,
   COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES,
 } from "@/lib/auth/role-utils";
+import { useTenantShellTheme } from "@/lib/theme/useTenantShellTheme";
+import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
+import { buildSidebarLogoBrandingUi } from "@/lib/theme/authHeroBranding";
+import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
 
 const DRAWER_WIDTH = 240;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -65,6 +69,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
+  const shell = useTenantShellTheme();
+
+  const themeFlat = useMemo(
+    () => normalizeThemeSettings(clientInfo?.theme_settings),
+    [clientInfo?.theme_settings]
+  );
+  const sidebarLogoSizing = useMemo(
+    () => buildSidebarLogoBrandingUi(themeFlat),
+    [themeFlat]
+  );
+  const sidebarLogoUrl = resolveClientLogoUrl(clientInfo);
+  const sidebarLogoBoxSx = useMemo(() => {
+    return {
+      position: "relative" as const,
+      width: "100%",
+      maxWidth: sidebarLogoSizing.logoMaxWidthPx,
+      height: sidebarLogoSizing.logoHeightPx,
+      mx: "auto" as const,
+      flexShrink: 0,
+    };
+  }, [sidebarLogoSizing.logoMaxWidthPx, sidebarLogoSizing.logoHeightPx]);
   const { isAdminMode, toggleAdminMode } = useAdminMode();
   const { t, i18n } = useTranslation("common");
   const rtl = isRtl(i18n.language || "en");
@@ -157,6 +182,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/pending-instructors",
       icon: "mdi:account-clock",
       featureName: "admin_manage_instructors",
+      orgAdminOnly: true,
+    },
+    {
+      label: "Branding & theme",
+      labelKey: "nav.branding",
+      path: "/admin/branding",
+      icon: "mdi:palette-outline",
+      featureName: "admin_dashboard",
       orgAdminOnly: true,
     },
     {
@@ -350,67 +383,71 @@ export const Sidebar: React.FC<SidebarProps> = ({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#1a1f2e", // Always dark for hybrid design
-        borderInlineEnd: "1px solid rgba(255, 255, 255, 0.1)",
+        backgroundColor: shell.shellBg,
+        borderInlineEnd: `1px solid ${shell.navBorder}`,
         overflow: "hidden",
       }}
     >
       {/* Logo Section */}
       <Box
-        sx={{
-          p: 2,
-          height: 70,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderBottom: "1px solid",
-          borderColor: "rgba(255, 255, 255, 0.1)",
+        sx={(theme) => {
+          const padY = parseFloat(String(theme.spacing(2))) || 16;
+          return {
+            p: 2,
+            minHeight: Math.max(70, sidebarLogoSizing.logoHeightPx + padY * 2),
+            height: "auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderBottom: "1px solid",
+            borderColor: shell.navBorder,
+          };
         }}
       >
         <Link
           href={effectiveAdminMode ? "/admin/dashboard" : "/dashboard"}
           prefetch={true}
-          style={{ textDecoration: "none", width: "100%", height: "100%" }}
-        >
-          <Box
-            sx={{
-            background:
-              "linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%)",
-            borderRadius: 2,
+          style={{
+            textDecoration: "none",
             width: "100%",
-            height: "100%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            px: 1.5,
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            boxShadow:
-              "0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-            transition: "all 0.3s ease",
-            cursor: "pointer",
-            "&:hover": {
-              background:
-                "linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%)",
-              boxShadow:
-                "0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-            },
           }}
         >
-          {clientInfo?.app_logo_url ? (
-            <Image
-              src={clientInfo.app_logo_url}
-              alt={clientInfo?.app_name || "Logo"}
-              width={200}
-              height={50}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-              }}
-              priority
-            />
+          <Box
+            sx={{
+              background: `linear-gradient(135deg, ${shell.logoGradStart} 0%, ${shell.logoGradEnd} 100%)`,
+              borderRadius: 2,
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              px: 1.5,
+              py: 0.5,
+              border: `1px solid ${shell.logoBorder}`,
+              boxShadow: `0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 ${shell.logoInset}`,
+              transition: "all 0.3s ease",
+              cursor: "pointer",
+              "&:hover": {
+                background: `linear-gradient(135deg, ${shell.logoGradHoverStart} 0%, ${shell.logoGradHoverEnd} 100%)`,
+                boxShadow: `0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 ${shell.logoInsetHover}`,
+              },
+            }}
+          >
+          {sidebarLogoUrl ? (
+            <Box sx={sidebarLogoBoxSx}>
+              <Image
+                src={sidebarLogoUrl}
+                alt={clientInfo?.app_name || "Logo"}
+                fill
+                style={{ objectFit: "contain" }}
+                sizes={`${sidebarLogoSizing.logoMaxWidthPx}px`}
+                priority
+              />
+            </Box>
           ) : (
-            <IconWrapper icon="mdi:school" size={32} color="#6366f1" />
+            <IconWrapper icon="mdi:school" size={32} color={shell.p400} />
           )}
         </Box>
         </Link>
@@ -452,14 +489,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       variant="circular"
                       width={18}
                       height={18}
-                      sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }}
+                      sx={{
+                        bgcolor: shell.skeletonBg,
+                      }}
                     />
                     {!collapsed && (
                       <Skeleton
                         variant="text"
                         width="60%"
                         height={20}
-                        sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }}
+                        sx={{
+                          bgcolor: shell.skeletonBg,
+                        }}
                       />
                     )}
                   </Box>
@@ -485,9 +526,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       sx={{
                         borderRadius: 1.5,
                         backgroundColor: isActive
-                          ? "rgba(99, 102, 241, 0.2)"
+                          ? shell.activeBg
                           : "transparent",
-                        color: isActive ? "#a5b4fc" : "rgba(255, 255, 255, 0.7)",
+                        color: isActive ? shell.p300 : shell.navMuted,
                         py: 1,
                         px: collapsed ? 1.25 : 1.5,
                         justifyContent: collapsed ? "center" : rtl ? "flex-end" : "flex-start",
@@ -503,19 +544,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               transform: "translateY(-50%)",
                               width: 3,
                               height: "50%",
-                              backgroundColor: "#6366f1",
+                              backgroundColor: shell.p500,
                               borderRadius: rtl ? "3px 0 0 3px" : "0 3px 3px 0",
                             }
                           : {},
                         "&:hover": {
                           backgroundColor: isActive
-                            ? "rgba(99, 102, 241, 0.3)"
-                            : "rgba(255, 255, 255, 0.05)",
-                          color: isActive ? "#a5b4fc" : "#ffffff",
+                            ? shell.activeBgHover
+                            : shell.navHoverBg,
+                          color: isActive ? shell.p300 : shell.nav,
                           "& .MuiListItemIcon-root svg": {
                             transform: "translateY(-2px) scale(1.1)",
-                            filter:
-                              "drop-shadow(0 3px 6px rgba(99, 102, 241, 0.5)) drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))",
+                            filter: shell.dropHover,
                           },
                         },
                       }}
@@ -529,7 +569,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         ...(rtl && !collapsed && { marginRight: 0, marginLeft: 1 }),
                         "& svg": {
                           filter: isActive
-                            ? "drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4)) drop-shadow(0 1px 2px rgba(99, 102, 241, 0.3))"
+                            ? shell.dropIconActive
                             : "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))",
                           transform: isActive
                             ? "translateY(-1px) scale(1.05)"
@@ -564,7 +604,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <Box
           sx={{
             borderTop: "1px solid",
-            borderColor: "rgba(255, 255, 255, 0.1)",
+            borderColor: shell.navBorder,
             mt: "auto",
           }}
         >
@@ -585,7 +625,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     width: 36,
                     height: 36,
                     border: "2px solid",
-                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    borderColor: shell.navBorderMid,
                   }}
                 >
                   {getUserInitials(user)}
@@ -595,7 +635,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     variant="body2"
                     sx={{
                       fontWeight: 600,
-                      color: "#ffffff",
+                      color: shell.nav,
                       fontSize: "1rem",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -607,7 +647,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "rgba(255, 255, 255, 0.6)",
+                      color: shell.navCaption,
                       fontSize: "0.9rem",
                     }}
                   >
@@ -636,19 +676,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     fontSize: "0.875rem",
                     py: 0.75,
                     backgroundColor: isAdminMode
-                      ? "rgba(99, 102, 241, 0.2)"
+                      ? shell.activeBg
                       : "transparent",
                     borderColor: isAdminMode
-                      ? "#6366f1"
-                      : "rgba(255, 255, 255, 0.2)",
-                    color: isAdminMode ? "#a5b4fc" : "rgba(255, 255, 255, 0.7)",
+                      ? shell.p500
+                      : shell.navBorderMid,
+                    color: isAdminMode ? shell.p300 : shell.navMuted,
                     "&:hover": {
                       backgroundColor: isAdminMode
-                        ? "rgba(99, 102, 241, 0.3)"
-                        : "rgba(255, 255, 255, 0.05)",
+                        ? shell.activeBgHover
+                        : shell.navHoverBg,
                       borderColor: isAdminMode
-                        ? "#6366f1"
-                        : "rgba(255, 255, 255, 0.3)",
+                        ? shell.p500
+                        : shell.navBorderHover,
                     },
                   }}
                   startIcon={
@@ -682,6 +722,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           "& .MuiDrawer-paper": {
             width: currentWidth,
             boxSizing: "border-box",
+            backgroundColor: shell.shellBg,
+            color: shell.nav,
             ...(rtl
               ? {
                   borderLeft: "1px solid",
@@ -693,7 +735,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   left: 0,
                   right: "auto",
                 }),
-            borderColor: "rgba(255, 255, 255, 0.1)",
+            borderColor: shell.navBorder,
             position: "fixed",
             height: "100vh",
             top: 0,
@@ -719,7 +761,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           "& .MuiDrawer-paper": {
             width: DRAWER_WIDTH,
             boxSizing: "border-box",
-            ...(rtl ? { borderInlineStart: "1px solid rgba(255,255,255,0.1)" } : { borderInlineEnd: "none" }),
+            backgroundColor: shell.shellBg,
+            color: shell.nav,
+            ...(rtl
+              ? {
+                  borderInlineStart: `1px solid ${shell.navBorder}`,
+                }
+              : { borderInlineEnd: "none" }),
           },
         }}
       >
