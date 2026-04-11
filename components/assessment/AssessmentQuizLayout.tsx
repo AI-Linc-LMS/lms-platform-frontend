@@ -89,7 +89,7 @@ export const AssessmentQuizLayout = memo(
         {/* Left Sidebar - Question List */}
         <Box
           sx={{
-            width: { xs: "100%", md: "320px" },
+            width: { xs: "100%", md: "min(360px, 34vw)" },
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",

@@ -41,6 +41,10 @@ import {
   mergeAssessmentSections,
   normalizeSubjectiveAnswer,
 } from "@/utils/assessment.utils";
+import {
+  getResponseForQuestion,
+  isAssessmentQuestionCompleted,
+} from "@/lib/utils/assessmentQuestionCompletion";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
 import { config } from "@/lib/config";
@@ -1310,34 +1314,13 @@ export default function TakeAssessmentPage({
       let answered = 0;
       sectionQuestions.forEach((question: any) => {
         const questionId = question.id;
-        const response = sectionResponses[questionId] ?? sectionResponses[String(questionId)];
-        
-        // For quiz: check if answer is selected
-        if (sectionType === "quiz") {
-          if (response !== undefined && response !== null && response !== "") {
-            answered++;
-          }
-        } 
-        // For coding: count as attempted if user has code, has run tests, or submitted
-        // (so "visited/attempted" matches what the student did, not only full pass)
-        else if (sectionType === "coding") {
-          if (response && typeof response === "object") {
-            const isSubmitted = response.submitted === true;
-            const totalCount = response.total_tc ?? response.total_test_cases ?? 0;
-            const hasCode = typeof response.code === "string" && response.code.trim().length > 0;
-            const hasRun = totalCount > 0;
-            if (isSubmitted || hasRun || hasCode) {
-              answered++;
-            }
-          }
-        } else if (sectionType === "subjective") {
-          const text =
-            typeof response === "string"
-              ? response
-              : normalizeSubjectiveAnswer(response);
-          if (text.trim().length > 0) {
-            answered++;
-          }
+        const response = getResponseForQuestion(
+          responses as Record<string, Record<string, unknown>>,
+          sectionType,
+          questionId,
+        );
+        if (isAssessmentQuestionCompleted(sectionType, response)) {
+          answered++;
         }
       });
       
@@ -1874,7 +1857,8 @@ export default function TakeAssessmentPage({
             {showSubmitDialog && (
               <SubmissionDialog
                 open={showSubmitDialog}
-                sections={sectionStatus}
+                sections={sections}
+                responses={responses}
                 totalQuestions={navigation.totalQuestions}
                 totalAnswered={totalAnswered}
                 onClose={handleCloseSubmitDialog}
