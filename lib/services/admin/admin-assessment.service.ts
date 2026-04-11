@@ -807,7 +807,23 @@ export interface AssessmentAnalyticsAssessmentMeta {
   duration_minutes: number;
   show_result: boolean;
   proctoring_enabled: boolean;
+  /** Optional: when API provides cohort context */
+  batch_name?: string | null;
+  course_year?: string | null;
+  department?: string | null;
 }
+
+/** Merged from loaded assessment on admin UI + PDF (API may add meta fields later). */
+export type AssessmentAnalyticsReportContext = {
+  course_titles?: string[];
+  colleges?: string[];
+  /** e.g. batch name / cohort label if you store it on the assessment */
+  batch_label?: string;
+  /** What the assessment covers (typically description) */
+  assessment_focus?: string;
+  /** Quiz section titles from assessment structure */
+  section_titles?: string[];
+};
 
 export interface AssessmentAnalyticsSummary {
   total_submissions: number;
@@ -862,6 +878,16 @@ export interface AssessmentAnalyticsSectionAverage {
   submissions_count: number;
 }
 
+/** Section-level marks on a submission or top-performer row. */
+export interface AssessmentAnalyticsSectionScoreDetail {
+  section_title: string;
+  score: number;
+  max_score: number;
+  percentage: number;
+  questions_attempted?: number;
+  questions_correct?: number;
+}
+
 export interface AssessmentAnalyticsTopPerformer {
   rank: number;
   user_profile_id: number;
@@ -871,6 +897,7 @@ export interface AssessmentAnalyticsTopPerformer {
   percentage: number;
   time_taken_minutes: number;
   submitted_at: string;
+  section_scores?: AssessmentAnalyticsSectionScoreDetail[];
 }
 
 export interface AssessmentAnalyticsStudentRow {
@@ -886,6 +913,74 @@ export interface AssessmentAnalyticsStudentRow {
   attempted_questions?: number | null;
   started_at: string | null;
   submitted_at: string | null;
+  section_scores?: AssessmentAnalyticsSectionScoreDetail[];
+}
+
+/** MCQ row from `question_level_results.mcq`. */
+export interface AssessmentAnalyticsQuestionLevelMcq {
+  question_id: number;
+  quiz_section_id?: number;
+  section_title?: string;
+  quiz_id?: number;
+  topic?: string | null;
+  difficulty_level?: string | null;
+  correct_count: number;
+  incorrect_count: number;
+  skipped_count: number;
+  appeared_count: number;
+}
+
+/** Coding row from `question_level_results.coding`. */
+export interface AssessmentAnalyticsQuestionLevelCoding {
+  problem_id: number;
+  coding_section_id?: number;
+  section_title?: string;
+  difficulty_level?: string | null;
+  title: string;
+  full_pass_count: number;
+  partial_count: number;
+  failed_count: number;
+  skipped_count: number;
+  appeared_count: number;
+}
+
+/** Subjective row from `question_level_results.subjective`. */
+export interface AssessmentAnalyticsQuestionLevelSubjective {
+  question_id: number;
+  subjective_section_id?: number;
+  section_title?: string;
+  max_marks: number;
+  full_marks_count: number;
+  partial_count: number;
+  skipped_count: number;
+  appeared_count: number;
+}
+
+/** Item-level aggregates (analytics API). */
+export interface AssessmentAnalyticsQuestionLevelResults {
+  completed_submissions_used: number;
+  mcq?: AssessmentAnalyticsQuestionLevelMcq[];
+  coding?: AssessmentAnalyticsQuestionLevelCoding[];
+  subjective?: AssessmentAnalyticsQuestionLevelSubjective[];
+}
+
+/** When backend sends flat item-level aggregates (legacy / alternate shape). */
+export interface AssessmentAnalyticsQuestionItemSummary {
+  question_label: string;
+  incorrect_count: number;
+  skipped_count: number;
+}
+
+/** When backend sends a flat list of per-learner section marks (legacy / alternate shape). */
+export interface AssessmentAnalyticsStudentSectionScore {
+  user_profile_id: number;
+  name: string;
+  section_title: string;
+  score: number | null;
+  max_score: number | null;
+  percentage: number | null;
+  questions_attempted?: number;
+  questions_correct?: number;
 }
 
 export interface AssessmentAnalyticsResponse {
@@ -900,6 +995,9 @@ export interface AssessmentAnalyticsResponse {
   section_averages: AssessmentAnalyticsSectionAverage[];
   top_performers: AssessmentAnalyticsTopPerformer[];
   students: AssessmentAnalyticsStudentRow[];
+  question_level_results?: AssessmentAnalyticsQuestionLevelResults;
+  question_item_summary?: AssessmentAnalyticsQuestionItemSummary[];
+  student_section_scores?: AssessmentAnalyticsStudentSectionScore[];
 }
 
 export function clampAssessmentAnalyticsTopPerformers(n: unknown): number {

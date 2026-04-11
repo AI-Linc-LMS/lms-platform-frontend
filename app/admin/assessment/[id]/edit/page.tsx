@@ -44,6 +44,7 @@ import {
   isCodingQuestion,
   QuestionsExportMCQQuestion,
   QuestionsExportCodingQuestion,
+  type AssessmentAnalyticsReportContext,
   type AssessmentAnalyticsResponse,
   clampAssessmentAnalyticsTopPerformers,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -234,9 +235,13 @@ function formatToDatetimeLocal(dateTimeString: string | null | undefined): strin
   }
 }
 
-function safeAnalyticsPdfFileName(slug: string, id: number): string {
-  const slugPart = (slug || "assessment").replace(/[^a-zA-Z0-9._-]+/g, "-");
-  return `${slugPart}-${id}-analytics-report.pdf`;
+function safeAnalyticsPdfFileName(assessmentTitle: string, id: number): string {
+  const titlePart = (assessmentTitle || "assessment")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+  return `${titlePart || "assessment"}-${id}-analytics-report.pdf`;
 }
 
 function formatDateForDisplay(dateTimeString: string | null | undefined): string {
@@ -358,6 +363,30 @@ export default function AssessmentEditPage() {
   useEffect(() => {
     analyticsTopNAppliedRef.current = analyticsTopNApplied;
   }, [analyticsTopNApplied]);
+
+  const analyticsReportContext = useMemo(():
+    | AssessmentAnalyticsReportContext
+    | undefined => {
+    if (!assessment) return undefined;
+    const courseTitles =
+      assessment.courses
+        ?.map((c) => {
+          const t = c.title ?? (c as { name?: string }).name;
+          return typeof t === "string" && t.trim() ? t.trim() : "";
+        })
+        .filter(Boolean) ?? [];
+    const focus = (assessment.description || assessment.instructions || "").trim();
+    const sectionTitles =
+      assessment.quiz_sections?.map((s) => s.title).filter(Boolean) ?? [];
+    return {
+      course_titles: courseTitles.length ? courseTitles : undefined,
+      colleges: assessment.colleges?.some((x) => String(x).trim())
+        ? (assessment.colleges ?? []).map((c) => String(c).trim()).filter(Boolean)
+        : undefined,
+      assessment_focus: focus || undefined,
+      section_titles: sectionTitles.length ? sectionTitles : undefined,
+    };
+  }, [assessment]);
 
   const loadAssessment = useCallback(async () => {
     if (!assessmentId || !config.clientId) return;
@@ -874,14 +903,15 @@ export default function AssessmentEditPage() {
   const handleDownloadAnalyticsPdf = () => {
     if (!analyticsData) return;
     try {
-      const slug =
-        analyticsData.assessment.slug ||
-        String(analyticsData.assessment.id);
       const fileName = safeAnalyticsPdfFileName(
-        slug,
+        analyticsData.assessment.title || String(analyticsData.assessment.id),
         analyticsData.assessment.id,
       );
-      generateAssessmentAnalyticsPdfVector(analyticsData, fileName);
+      generateAssessmentAnalyticsPdfVector(
+        analyticsData,
+        fileName,
+        analyticsReportContext,
+      );
       showToast("Analytics PDF downloaded (print-ready vector report)", "success");
     } catch (e: unknown) {
       const msg =
@@ -1781,13 +1811,17 @@ export default function AssessmentEditPage() {
                       color="text.secondary"
                       sx={{ display: "block", mb: 2 }}
                     >
-                      Analytics report · Assessment ID {analyticsData.assessment.id}{" "}
-                      · {analyticsData.assessment.slug} · Generated{" "}
+                      Analytics report · Internal assessment ID{" "}
+                      {analyticsData.assessment.id} · Catalog slug{" "}
+                      {analyticsData.assessment.slug} · Generated{" "}
                       {new Date().toLocaleString()}
                     </Typography>
 
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                    <AssessmentAnalyticsCharts data={analyticsData} />
+                    <AssessmentAnalyticsCharts
+                      data={analyticsData}
+                      reportContext={analyticsReportContext}
+                    />
 
                     {(analyticsData.section_averages ?? []).length > 0 && (
                       <Paper
