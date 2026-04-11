@@ -5,6 +5,7 @@ import { memo, useCallback, useMemo } from "react";
 import { JobFilters, Job } from "@/lib/services/jobs.service";
 import { JobSearchBar } from "./JobSearchBar";
 import { JobSearchIllustration } from "@/components/jobs-v2/illustrations";
+import { POSTED_WITHIN_OPTIONS } from "@/lib/jobs/jobs-v2-browse-page";
 
 const JOB_TYPE_OPTIONS = [
   { value: "", label: "All Types" },
@@ -57,6 +58,13 @@ const MobileJobFiltersComponent = ({
   const handleLocationChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onFilterChange("location", String(e.target.value || ""));
+    },
+    [onFilterChange]
+  );
+
+  const handleDatePostedChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onFilterChange("posted_within", String(e.target.value || ""));
     },
     [onFilterChange]
   );
@@ -171,6 +179,25 @@ const MobileJobFiltersComponent = ({
           {locationOptions.map((location) => (
             <MenuItem key={location} value={location}>
               {location}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          fullWidth
+          size="small"
+          label="Date posted"
+          value={filters.posted_within || ""}
+          onChange={handleDatePostedChange}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1.5,
+            },
+          }}
+        >
+          {POSTED_WITHIN_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value || "any"} value={opt.value}>
+              {opt.label}
             </MenuItem>
           ))}
         </TextField>

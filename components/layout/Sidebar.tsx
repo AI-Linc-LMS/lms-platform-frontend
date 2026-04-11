@@ -28,6 +28,7 @@ import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { Button } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
+import { setJobsV2SkipListRestoreOnce } from "@/lib/jobs/jobs-v2-browse-page";
 import {
   isAdminOnlyRole,
   isFullAdminRole,
@@ -370,6 +371,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ]);
 
   const handleNavigation = (item: NavigationItem) => {
+    if (item.featureName === "jobs_v2") {
+      setJobsV2SkipListRestoreOnce();
+    }
     if (onClose) {
       onClose();
     }
