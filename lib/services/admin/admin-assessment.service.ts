@@ -124,6 +124,7 @@ export interface CreateAssessmentPayload {
   currency?: string;
   is_active?: boolean;
   proctoring_enabled?: boolean;
+  live_streaming?: boolean;
   /** Whether to send notification email to students */
   send_communication?: boolean;
   /** Whether to show results to students after submission (default true) */
@@ -167,6 +168,7 @@ export interface Assessment {
   price: string | number | null;
   is_active: boolean;
   proctoring_enabled?: boolean;
+  live_streaming?: boolean;
   start_time?: string | null;
   end_time?: string | null;
   created_at: string;
@@ -182,6 +184,7 @@ export interface AssessmentDetail extends Assessment {
   start_time?: string | null;
   end_time?: string | null;
   proctoring_enabled?: boolean;
+  live_streaming?: boolean;
   course_ids?: number[];
   currency?: string;
   quiz_sections?: Array<{
@@ -795,6 +798,145 @@ export const getSubmissionsExportJson = async (
   return response.data;
 };
 
+/** GET .../assessments/{id}/analytics/?top_performers=N (default 10, max 100) */
+export interface AssessmentAnalyticsAssessmentMeta {
+  id: number;
+  title: string;
+  slug: string;
+  maximum_marks: number;
+  duration_minutes: number;
+  show_result: boolean;
+  proctoring_enabled: boolean;
+}
+
+export interface AssessmentAnalyticsSummary {
+  total_submissions: number;
+  completed_submissions: number;
+  completed_with_score: number;
+  in_progress_submissions: number;
+  average_score: number;
+  median_score: number;
+  highest_score: number;
+  lowest_score: number;
+  average_percentage: number;
+  median_percentage: number;
+  average_time_taken_minutes: number;
+  median_time_taken_minutes: number;
+  pass_count: number;
+  pass_rate_percent: number;
+  pass_threshold_percentage: number;
+  maximum_marks: number;
+  duration_minutes: number;
+}
+
+export interface AssessmentAnalyticsStatusBreakdown {
+  in_progress: number;
+  submitted: number;
+  finalized: number;
+}
+
+export interface AssessmentAnalyticsScoreBucket {
+  label: string;
+  min_percent: number;
+  max_percent: number;
+  count: number;
+}
+
+export interface AssessmentAnalyticsTimeBucket {
+  label: string;
+  count: number;
+  min_minutes: number;
+  max_minutes?: number;
+}
+
+export interface AssessmentAnalyticsTimelineDay {
+  date: string;
+  count: number;
+}
+
+export interface AssessmentAnalyticsSectionAverage {
+  section_title: string;
+  average_score: number;
+  max_score: number;
+  average_percentage: number;
+  submissions_count: number;
+}
+
+export interface AssessmentAnalyticsTopPerformer {
+  rank: number;
+  user_profile_id: number;
+  name: string;
+  email: string;
+  score: number;
+  percentage: number;
+  time_taken_minutes: number;
+  submitted_at: string;
+}
+
+export interface AssessmentAnalyticsStudentRow {
+  submission_id: number;
+  user_profile_id: number;
+  name: string;
+  email: string;
+  status: string;
+  score: number | null;
+  percentage: number | null;
+  time_taken_minutes: number | null;
+  total_questions?: number | null;
+  attempted_questions?: number | null;
+  started_at: string | null;
+  submitted_at: string | null;
+}
+
+export interface AssessmentAnalyticsResponse {
+  assessment: AssessmentAnalyticsAssessmentMeta;
+  summary: AssessmentAnalyticsSummary;
+  status_breakdown: AssessmentAnalyticsStatusBreakdown;
+  charts: {
+    score_distribution_percent: AssessmentAnalyticsScoreBucket[];
+    time_taken_minutes: AssessmentAnalyticsTimeBucket[];
+    submissions_timeline: AssessmentAnalyticsTimelineDay[];
+  };
+  section_averages: AssessmentAnalyticsSectionAverage[];
+  top_performers: AssessmentAnalyticsTopPerformer[];
+  students: AssessmentAnalyticsStudentRow[];
+}
+
+export function clampAssessmentAnalyticsTopPerformers(n: unknown): number {
+  const x = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(x)) return 10;
+  return Math.min(100, Math.max(1, Math.round(x)));
+}
+
+/**
+ * Assessment analytics (admin / superadmin / course_manager with access).
+ * GET /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/analytics/
+ */
+export const getAssessmentAnalytics = async (
+  clientId: string | number,
+  assessmentId: number,
+  options?: { top_performers?: number }
+): Promise<AssessmentAnalyticsResponse> => {
+  const top = clampAssessmentAnalyticsTopPerformers(
+    options?.top_performers ?? 10
+  );
+  try {
+    const response = await apiClient.get<AssessmentAnalyticsResponse>(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/analytics/`,
+      { params: { top_performers: top } }
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to load assessment analytics";
+    throw new Error(message);
+  }
+};
+
 export const adminAssessmentService = {
   getAssessments,
   getAssessmentById,
@@ -806,6 +948,7 @@ export const adminAssessmentService = {
   getQuestionsExport,
   getQuestionsExportJson,
   getSubmissionsExportJson,
+  getAssessmentAnalytics,
   getMCQs,
   generateMCQsWithAI,
   getCodingProblems,

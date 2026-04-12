@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,20 +12,41 @@ import {
   Alert,
   Checkbox,
   FormControlLabel,
-  Divider,
+  LinearProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Chip,
+  Stack,
+  ButtonGroup,
+  alpha,
+  useTheme,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import {
+  formatChecklistQuestionLabel,
+  getResponseForQuestion,
+  isAssessmentQuestionCompleted,
+} from "@/lib/utils/assessmentQuestionCompletion";
 
-interface SectionStatus {
-  sectionName: string;
-  sectionType: string;
-  answered: number;
-  total: number;
-}
+export type SubmissionDialogSection = {
+  id?: number;
+  title?: string;
+  order?: number;
+  section_type?: string;
+  questions?: Array<Record<string, unknown> & { id: number | string }>;
+};
 
 interface SubmissionDialogProps {
   open: boolean;
-  sections: SectionStatus[];
+  sections: SubmissionDialogSection[];
+  responses: Record<string, Record<string, unknown>>;
   totalQuestions: number;
   totalAnswered: number;
   onClose: () => void;
@@ -33,130 +54,418 @@ interface SubmissionDialogProps {
   submitting?: boolean;
 }
 
+function sectionKey(section: SubmissionDialogSection, index: number): string {
+  if (section.id != null) return `s-${section.id}`;
+  return `s-idx-${section.order ?? index}`;
+}
+
+function sectionTypeLabel(
+  t: (k: string) => string,
+  sectionType: string | undefined,
+): string {
+  const st = sectionType || "quiz";
+  if (st === "coding") return t("assessments.submitChecklist.typeCoding");
+  if (st === "subjective") return t("assessments.submitChecklist.typeSubjective");
+  return t("assessments.submitChecklist.typeQuiz");
+}
+
 export function SubmissionDialog({
   open,
   sections,
+  responses,
   totalQuestions,
   totalAnswered,
   onClose,
   onConfirm,
   submitting = false,
 }: SubmissionDialogProps) {
-  const [confirmed, setConfirmed] = React.useState(false);
+  const { t } = useTranslation("common");
+  const theme = useTheme();
+  const [confirmed, setConfirmed] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  React.useEffect(() => {
+  const sortedSections = useMemo(
+    () =>
+      [...(sections || [])].sort(
+        (a, b) => (a.order ?? 0) - (b.order ?? 0),
+      ),
+    [sections],
+  );
+
+  const checklist = useMemo(() => {
+    return sortedSections.map((section, sIdx) => {
+      const sectionType = section.section_type || "quiz";
+      const questions = section.questions || [];
+      const rows = questions.map((q, qIdx) => {
+        const response = getResponseForQuestion(responses, sectionType, q.id);
+        const completed = isAssessmentQuestionCompleted(sectionType, response);
+        return {
+          id: q.id,
+          label: formatChecklistQuestionLabel(sectionType, q, qIdx),
+          completed,
+        };
+      });
+      const answered = rows.filter((r) => r.completed).length;
+      return {
+        key: sectionKey(section, sIdx),
+        title: section.title || sectionTypeLabel(t, sectionType),
+        sectionType,
+        rows,
+        answered,
+        total: rows.length,
+      };
+    });
+  }, [sortedSections, responses, t]);
+
+  useEffect(() => {
     if (!open) {
       setConfirmed(false);
+      setExpanded(new Set());
+      return;
     }
-  }, [open]);
+    setConfirmed(false);
+    setExpanded(
+      new Set(
+        sortedSections.map((section, i) => sectionKey(section, i)),
+      ),
+    );
+  }, [open, sortedSections]);
 
-  const unansweredCount = totalQuestions - totalAnswered;
-  const allAnswered = unansweredCount === 0;
+  const expandAll = useCallback(() => {
+    setExpanded(new Set(checklist.map((c) => c.key)));
+  }, [checklist]);
+
+  const collapseAll = useCallback(() => {
+    setExpanded(new Set());
+  }, []);
+
+  const unansweredCount = Math.max(0, totalQuestions - totalAnswered);
+  const allAnswered = totalQuestions > 0 && unansweredCount === 0;
+  const progress =
+    totalQuestions > 0
+      ? Math.min(100, Math.round((totalAnswered / totalQuestions) * 100))
+      : 0;
+
+  const doneColor = theme.palette.success.main;
+  const pendingColor = theme.palette.warning.main;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="mdi:file-check" size={24} />
-          <Typography variant="h6" fontWeight={600}>
-            Submit Assessment
-          </Typography>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {/* Completion Status */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body1" fontWeight={600} gutterBottom>
-            Review Your Submission
-          </Typography>
+    <Dialog
+      open={open}
+      onClose={submitting ? undefined : onClose}
+      maxWidth="md"
+      fullWidth
+      scroll="paper"
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+          border: `1px solid ${theme.palette.divider}`,
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1 }}>
+        <Stack direction="row" spacing={1.5} alignItems="flex-start">
           <Box
             sx={{
-              mt: 2,
-              p: 2,
-              backgroundColor: allAnswered ? "#d1fae5" : "#fef3c7",
-              borderRadius: 1,
-              border: `1px solid ${allAnswered ? "#10b981" : "#f59e0b"}`,
+              width: 44,
+              height: 44,
+              borderRadius: 1.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: alpha(theme.palette.primary.main, 0.12),
+              color: "primary.main",
+              flexShrink: 0,
             }}
           >
-            <Typography variant="body2" fontWeight={600} gutterBottom>
-              Questions Visited: {totalAnswered} / {totalQuestions}
+            <IconWrapper icon="mdi:clipboard-text-outline" size={26} />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h6" fontWeight={700} component="div">
+              {t("assessments.submitChecklist.title")}
             </Typography>
-            {allAnswered ? (
-              <Typography variant="body2" sx={{ mt: 1, color: "#065f46", fontWeight: 500 }}>
-                All questions attempted. You can submit your assessment.
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {t("assessments.submitChecklist.subtitle")}
+            </Typography>
+          </Box>
+        </Stack>
+      </DialogTitle>
+
+      <DialogContent
+        dividers
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          px: 0,
+          py: 0,
+          minHeight: 0,
+          maxHeight: "min(78vh, 640px)",
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            px: { xs: 2, sm: 3 },
+            pt: 2,
+            pb: 1,
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              mb: 2,
+              borderRadius: 2,
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+            }}
+          >
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              spacing={2}
+              sx={{ mb: 1 }}
+            >
+              <Typography variant="subtitle2" fontWeight={700}>
+                {t("assessments.submitChecklist.summaryTitle")}
               </Typography>
-            ) : (
-              <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
-                You have {unansweredCount} unanswered question
-                {unansweredCount !== 1 ? "s" : ""}. Are you sure you want to
-                submit?
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                {t("assessments.submitChecklist.summaryLine", {
+                  answered: totalAnswered,
+                  total: totalQuestions,
+                })}
+              </Typography>
+            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              sx={{
+                height: 8,
+                borderRadius: 99,
+                bgcolor: alpha(theme.palette.primary.main, 0.12),
+                "& .MuiLinearProgress-bar": { borderRadius: 99 },
+              }}
+            />
+          </Box>
+
+          {allAnswered ? (
+            <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
+              {t("assessments.submitChecklist.allCompleteHint")}
+            </Alert>
+          ) : (
+            <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+              {t("assessments.submitChecklist.pendingHint", {
+                count: unansweredCount,
+              })}
+            </Alert>
+          )}
+
+          <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1.5 }}>
+            <ButtonGroup size="small" variant="outlined">
+              <Button onClick={expandAll}>
+                {t("assessments.submitChecklist.expandAll")}
+              </Button>
+              <Button onClick={collapseAll}>
+                {t("assessments.submitChecklist.collapseAll")}
+              </Button>
+            </ButtonGroup>
+          </Stack>
+
+          <Stack spacing={1} sx={{ pb: 2 }}>
+            {checklist.length === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                {t("assessments.submitChecklist.noSections")}
               </Typography>
             )}
-          </Box>
+            {checklist.map((block) => {
+              const isExpanded = expanded.has(block.key);
+              const sectionComplete =
+                block.total === 0 || block.answered === block.total;
+              return (
+                <Accordion
+                  key={block.key}
+                  expanded={isExpanded}
+                  onChange={(_, isExpandedNext) => {
+                    setExpanded((prev) => {
+                      const next = new Set(prev);
+                      if (isExpandedNext) next.add(block.key);
+                      else next.delete(block.key);
+                      return next;
+                    });
+                  }}
+                  disableGutters
+                  elevation={0}
+                  sx={{
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: "12px !important",
+                    overflow: "hidden",
+                    "&:before": { display: "none" },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                      px: 2,
+                      minHeight: 56,
+                      bgcolor: sectionComplete
+                        ? alpha(doneColor, 0.06)
+                        : alpha(pendingColor, 0.06),
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      spacing={1.5}
+                      sx={{ width: "100%", pr: 1 }}
+                    >
+                      <IconWrapper
+                        icon={
+                          sectionComplete
+                            ? "mdi:check-decagram"
+                            : "mdi:alert-decagram-outline"
+                        }
+                        size={22}
+                        style={{
+                          color: sectionComplete ? doneColor : pendingColor,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="subtitle2" fontWeight={700} noWrap>
+                          {block.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {t("assessments.submitChecklist.sectionMeta", {
+                            answered: block.answered,
+                            total: block.total,
+                          })}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        size="small"
+                        label={sectionTypeLabel(t, block.sectionType)}
+                        sx={{ fontWeight: 600, flexShrink: 0 }}
+                      />
+                    </Stack>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ px: 0, pt: 0, pb: 1 }}>
+                    <List dense disablePadding>
+                      {block.rows.map((row, idx) => (
+                        <ListItem
+                          key={`${block.key}-q-${row.id}`}
+                          sx={{
+                            px: 2,
+                            py: 0.75,
+                            borderTop: `1px solid ${theme.palette.divider}`,
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <IconWrapper
+                              icon={
+                                row.completed
+                                  ? "mdi:check-circle"
+                                  : "mdi:circle-outline"
+                              }
+                              size={22}
+                              style={{
+                                color: row.completed
+                                  ? doneColor
+                                  : theme.palette.text.disabled,
+                              }}
+                            />
+                          </ListItemIcon>
+                          <ListItemText
+                            primaryTypographyProps={{ component: "div" }}
+                            secondaryTypographyProps={{ component: "div" }}
+                            primary={
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <Chip
+                                  label={t("assessments.submitChecklist.questionNumber", {
+                                    n: idx + 1,
+                                  })}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ height: 22, fontWeight: 600 }}
+                                />
+                                <Typography variant="body2" component="span">
+                                  {row.label}
+                                </Typography>
+                              </Stack>
+                            }
+                            secondary={
+                              <Chip
+                                size="small"
+                                sx={{
+                                  mt: 0.75,
+                                  height: 22,
+                                  fontWeight: 600,
+                                  bgcolor: row.completed
+                                    ? alpha(doneColor, 0.12)
+                                    : alpha(pendingColor, 0.12),
+                                  color: row.completed ? doneColor : pendingColor,
+                                }}
+                                label={
+                                  row.completed
+                                    ? t("assessments.submitChecklist.statusDone")
+                                    : t("assessments.submitChecklist.statusTodo")
+                                }
+                              />
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </AccordionDetails>
+                </Accordion>
+              );
+            })}
+          </Stack>
         </Box>
 
-        {/* Section Breakdown */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body2" fontWeight={600} gutterBottom>
-            Section Breakdown:
-          </Typography>
-          {sections.map((section, index) => (
-            <Box
-              key={index}
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                py: 1,
-                borderBottom:
-                  index < sections.length - 1 ? "1px solid #e5e7eb" : "none",
-              }}
-            >
-              <Typography variant="body2">{section.sectionName}</Typography>
-              <Typography variant="body2" fontWeight={600}>
-                {section.answered} / {section.total}
+        <Box
+          sx={{
+            flexShrink: 0,
+            px: { xs: 2, sm: 3 },
+            py: 1.5,
+            borderTop: `1px solid ${theme.palette.divider}`,
+            bgcolor: theme.palette.background.paper,
+            boxShadow: `0 -6px 16px ${alpha(theme.palette.common.black, 0.06)}`,
+          }}
+        >
+          <FormControlLabel
+            sx={{ alignItems: "flex-start", ml: 0, mr: 0 }}
+            control={
+              <Checkbox
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                sx={{ pt: 0.25 }}
+              />
+            }
+            label={
+              <Typography variant="body2" color="text.secondary">
+                {t("assessments.submitChecklist.confirmCheckbox")}
               </Typography>
-            </Box>
-          ))}
+            }
+          />
         </Box>
-
-        {/* Violation Count */}
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Confirmation Checkbox */}
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={confirmed}
-              onChange={(e) => setConfirmed(e.target.checked)}
-            />
-          }
-          label={
-            <Typography variant="body2">
-              I confirm that I want to submit my assessment. I understand that I
-              cannot change my answers after submission.
-            </Typography>
-          }
-        />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
-          Cancel
+
+      <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+        <Button onClick={onClose} disabled={submitting} color="inherit">
+          {t("assessments.submitChecklist.cancel")}
         </Button>
         <Button
           onClick={onConfirm}
           variant="contained"
           disabled={!confirmed || submitting}
-          startIcon={<IconWrapper icon="mdi:check-circle" />}
-          sx={{
-            backgroundColor: "#374151",
-            "&:hover": {
-              backgroundColor: "#1f2937",
-            },
-          }}
+          startIcon={<IconWrapper icon="mdi:send-check" />}
         >
-          {submitting ? "Submitting..." : "Confirm Submit"}
+          {submitting
+            ? t("assessments.submitChecklist.submitting")
+            : t("assessments.submitChecklist.confirmSubmit")}
         </Button>
       </DialogActions>
     </Dialog>

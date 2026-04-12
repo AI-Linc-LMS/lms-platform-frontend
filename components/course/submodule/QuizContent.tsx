@@ -173,17 +173,21 @@ export function QuizContent({
 
       if (mcqs && Array.isArray(mcqs) && mcqs.length > 0) {
         const questions: QuizQuestion[] = mcqs.map((q: any, index: number) => {
-          // Map options to A, B, C, D format
-          const options = (q.options || []).map(
-            (opt: string, optIndex: number) => {
-              const optionLetter = String.fromCharCode(65 + optIndex); // A, B, C, D
-              return {
-                id: optionLetter,
-                label: opt,
-                value: optionLetter,
-              };
-            }
-          );
+          // LMS API: options: string[]. Legacy / admin shapes: option_a..d
+          const rawOpts: string[] =
+            Array.isArray(q.options) && q.options.length > 0
+              ? q.options
+              : [q.option_a, q.option_b, q.option_c, q.option_d].filter(
+                  (x: unknown) => typeof x === "string" && String(x).trim() !== ""
+                );
+          const options = rawOpts.map((opt: string, optIndex: number) => {
+            const optionLetter = String.fromCharCode(65 + optIndex);
+            return {
+              id: optionLetter,
+              label: opt,
+              value: optionLetter,
+            };
+          });
 
           return {
             id: q.id || index,

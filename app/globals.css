@@ -30,6 +30,10 @@
   --secondary-600: #1a3a4f;
   --secondary-700: #264d64;
 
+  /* Sidebar / mobile bottom nav — overridden by applyDocumentTheme from tenant secondary + primary */
+  --shell-sidebar-bg: var(--secondary-500);
+  --shell-primary-rgb: 37 92 121;
+
   /* Accent Colors */
   --accent-yellow: #facc15;
   --accent-blue: #3875f9;

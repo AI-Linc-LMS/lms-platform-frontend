@@ -105,13 +105,18 @@ export interface ClientInfo {
   pwa_manifest?: Record<string, any>;
   /** When true, signup may offer instructor self-registration (from client-info API). */
   allow_instructor_self_signup?: boolean;
+  /** Enables admin live proctoring/monitoring features in UI. */
+  live_proctoring_enabled?: boolean;
   [key: string]: any; // Allow other properties from API
 }
 
 export const initApp = async (clientId: number): Promise<ClientInfo> => {
   try {
     const response = await apiClient.get<ClientInfo>(
-      `/api/clients/${clientId}/client-info/`
+      `/api/clients/${clientId}/client-info/`,
+      {
+        params: { _t: Date.now() },
+      }
     );
     return response.data;
   } catch (error: any) {

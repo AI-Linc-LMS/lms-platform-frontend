@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
   Box,
   Typography,
@@ -43,6 +44,9 @@ export default function CreateAssessmentPage() {
   const { showToast } = useToast();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { clientInfo } = useClientInfo();
+  const canConfigureLiveStreaming =
+    clientInfo?.live_proctoring_enabled === true;
 
   useEffect(() => {
     if (authLoading) return;
@@ -68,6 +72,7 @@ export default function CreateAssessmentPage() {
   const [courseIds, setCourseIds] = useState<number[]>([]);
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
+  const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
 
@@ -640,6 +645,7 @@ export default function CreateAssessmentPage() {
         currency: isPaid ? currency : undefined,
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
+        live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
         show_result: showResult,
       };
@@ -785,6 +791,8 @@ export default function CreateAssessmentPage() {
               loadingCourses={loadingCourses}
               colleges={colleges}
               proctoringEnabled={proctoringEnabled}
+              liveStreaming={liveStreaming}
+              showLiveStreamingToggle={canConfigureLiveStreaming}
               sendCommunication={sendCommunication}
               showResult={showResult}
               onDurationChange={setDurationMinutes}
@@ -797,6 +805,7 @@ export default function CreateAssessmentPage() {
               onCourseIdsChange={setCourseIds}
               onCollegesChange={setColleges}
               onProctoringEnabledChange={setProctoringEnabled}
+              onLiveStreamingChange={setLiveStreaming}
               onSendCommunicationChange={setSendCommunication}
               onShowResultChange={setShowResult}
             />

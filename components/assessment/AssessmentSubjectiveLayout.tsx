@@ -12,6 +12,7 @@ import {
   ButtonBase,
 } from "@mui/material";
 import { memo, useMemo, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { QuizQuestionList } from "@/components/quiz";
 import { QuestionTitle } from "@/components/quiz/QuestionTitle";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -84,6 +85,7 @@ export const AssessmentSubjectiveLayout = memo(
     onPreviousQuestion,
     onQuestionClick,
   }: AssessmentSubjectiveLayoutProps) {
+    const { t } = useTranslation("common");
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
     const isFirstQuestion = currentQuestionIndex === 0;
 
@@ -128,7 +130,7 @@ export const AssessmentSubjectiveLayout = memo(
       >
         <Box
           sx={{
-            width: { xs: "100%", md: "320px" },
+            width: { xs: "100%", md: "min(360px, 34vw)" },
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
@@ -140,8 +142,8 @@ export const AssessmentSubjectiveLayout = memo(
             questions={questions}
             currentQuestionId={currentQuestion.id}
             onQuestionClick={onQuestionClick}
-            listTitle="Written responses"
-            listSubtitle="Select a question to edit your answer. Your work is saved automatically."
+            listTitle={t("quiz.writtenListTitle")}
+            listSubtitle={t("quiz.writtenListSubtitle")}
             variant="subjective"
           />
         </Box>

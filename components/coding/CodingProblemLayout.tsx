@@ -49,8 +49,6 @@ export function CodingProblemLayout({
   const [testResults, setTestResults] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-  // Allow submission even when 0 or partial test cases have passed
-  const [canSubmit, setCanSubmit] = useState(true);
   const [runningCustomInput, setRunningCustomInput] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [completionStats, setCompletionStats] = useState<any>(null);
@@ -345,17 +343,16 @@ export function CodingProblemLayout({
         );
 
       if (allPassed || result.all_passed || result.status === "Accepted") {
-        setCanSubmit(true);
-        showToast("All test cases passed! You can now submit.", "success");
+        showToast("All sample tests passed.", "success");
       } else if (hasError) {
         const errorType = result.status || "Error";
         showToast(
-          `${errorType}: Please fix the errors and try again.`,
-          "error"
+          `${errorType}: Fix issues if you can, or submit anyway for grading.`,
+          "warning"
         );
       } else {
         showToast(
-          "Some test cases failed. Fix your code and try again.",
+          "Some sample tests failed. You can still submit for full grading.",
           "warning"
         );
       }
@@ -370,7 +367,7 @@ export function CodingProblemLayout({
     }
   };
 
-  // Handle Submit Code
+  // Handle Submit Code — always records attempt (backend); marks 0..full from judge
   const handleSubmitCode = async () => {
     if (!code.trim()) {
       showToast("Please write some code first", "error");
@@ -392,54 +389,59 @@ export function CodingProblemLayout({
         setActiveTab(2);
       }
 
-      // Check if all tests passed (handle both array and object responses)
-      let testCases: any[] = [];
-      let hasError = false;
+      const totalFromProblem = Array.isArray(problemData?.details?.test_cases)
+        ? problemData.details.test_cases.length
+        : 0;
+      const totalTc =
+        typeof result.total_test_cases === "number"
+          ? result.total_test_cases
+          : totalFromProblem;
+      const passedCount =
+        typeof result.passed === "number" ? result.passed : 0;
+      const obtained =
+        typeof result.obtained_marks === "number"
+          ? result.obtained_marks
+          : passedCount * 4;
+      const maxScore =
+        typeof result.maximum_marks === "number"
+          ? result.maximum_marks
+          : marks ?? (totalTc > 0 ? totalTc * 4 : obtained);
 
-      if (Array.isArray(result)) {
-        testCases = result;
-      } else if (result.results && Array.isArray(result.results)) {
-        testCases = result.results;
-      } else if (result.total_test_cases) {
-        testCases = result.total_test_cases;
-      } else if (result.stderr || result.compile_output) {
-        // Single error object
-        hasError = true;
-        testCases = [result];
-      }
+      const time = parseFloat(result.time || result.execution_time || "0");
+      const memory = parseInt(
+        String(result.memory || result.memory_used || "0"),
+        10
+      );
 
-      const allPassed = result.passed === result.total_test_cases;
-      if (allPassed || result.all_passed || result.status === "Accepted") {
-        // Extract time and memory from result
-        const time = parseFloat(result.time || result.execution_time || "0");
-        const memory = parseInt(result.memory || result.memory_used || "0");
+      const isCompileOrRuntimeError =
+        result.status === "error" ||
+        !!(result.stderr || result.compile_output || result.message);
 
-        // Show completion dialog with stats
-        setCompletionStats({
-          passed: result.passed,
-          total_test_cases: result.total_test_cases,
-          timeUsed: time > 0 ? `${time.toFixed(3)}s` : undefined,
-          memoryUsed:
-            memory > 0 ? `${(memory / 1024).toFixed(2)} MB` : undefined,
-          score: obtainedMarks || marks,
-          maxScore: marks,
-        });
-        setShowCompletionDialog(true);
-
-        // Load submissions in background
-        loadSubmissions();
-      } else if (hasError) {
-        const errorType = result.status || "Error";
+      if (isCompileOrRuntimeError) {
         showToast(
-          `${errorType}: Submission failed. Please fix the errors.`,
-          "error"
+          "Submitted. Score reflects this attempt (0 if the code did not run on hidden tests). Use Run to debug.",
+          "info"
         );
+      } else if (result.status === "Accepted") {
+        showToast("All tests passed.", "success");
       } else {
         showToast(
-          "Some test cases failed. Please review and try again.",
-          "warning"
+          `Submitted. Score: ${obtained} / ${maxScore}`,
+          "info"
         );
       }
+
+      setCompletionStats({
+        passed: passedCount,
+        total_test_cases: totalTc,
+        timeUsed: time > 0 ? `${time.toFixed(3)}s` : undefined,
+        memoryUsed:
+          memory > 0 ? `${(memory / 1024).toFixed(2)} MB` : undefined,
+        score: obtained,
+        maxScore,
+      });
+      setShowCompletionDialog(true);
+      void loadSubmissions();
     } catch (error: any) {
       showToast(
         error.response?.data?.message || "Failed to submit code",
@@ -606,7 +608,6 @@ export function CodingProblemLayout({
                 availableLanguages={availableLanguages}
                 running={running}
                 submitting={submitting}
-                canSubmit={canSubmit}
                 onCodeChange={(newCode) => {
                   // Update immediately for responsive UI
                   setCode(newCode);
@@ -817,7 +818,6 @@ export function CodingProblemLayout({
               availableLanguages={availableLanguages}
               running={running}
               submitting={submitting}
-              canSubmit={canSubmit}
               onCodeChange={(newCode) => {
                 // Update immediately for responsive UI
                 setCode(newCode);

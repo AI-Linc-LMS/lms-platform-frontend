@@ -1,13 +1,21 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
-import { resolveAuthLayoutVariant } from "@/lib/auth/auth-layout-variants";
+import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
+import {
+  buildLoginHeroBrandingUi,
+  getLoginHeroSloganOverride,
+  type LoginHeroBrandingUi,
+} from "@/lib/theme/authHeroBranding";
 import { AuthLayoutShell } from "./layout/AuthLayoutShell";
-import { AuthLeftPanel } from "./layout/AuthLeftPanel";
+import {
+  AuthLeftPanel,
+  type AuthLeftPanelVariant,
+} from "./layout/AuthLeftPanel";
 import { AuthRightPanelDefault } from "./layout/AuthRightPanelDefault";
-import { AuthRightPanelClient28 } from "./layout/AuthRightPanelClient28";
+import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -17,32 +25,41 @@ interface AuthLayoutProps {
 export function AuthLayout({ children, slogan }: AuthLayoutProps) {
   const { t } = useTranslation("common");
   const { clientInfo, loading: clientInfoLoading } = useClientInfo();
-  const sloganText = slogan ?? t("auth.slogan");
-  const variant = resolveAuthLayoutVariant();
+
+  const themeFlat = useMemo(
+    () => normalizeThemeSettings(clientInfo?.theme_settings),
+    [clientInfo?.theme_settings]
+  );
+
+  const heroBranding: LoginHeroBrandingUi = useMemo(
+    () => buildLoginHeroBrandingUi(themeFlat),
+    [themeFlat]
+  );
+
+  const sloganOverride = getLoginHeroSloganOverride(themeFlat);
+  const sloganText = sloganOverride || slogan?.trim() || t("auth.slogan");
+  const useCustomSlogan = Boolean(sloganOverride);
+
+  const loginImgUrl = clientInfo?.login_img_url?.trim() ?? "";
+  const leftVariant: AuthLeftPanelVariant = loginImgUrl ? "glass" : "plain";
 
   const brandName = clientInfo?.name?.trim() || "";
-  const logoUrl =
-    clientInfo?.login_logo_url?.trim() ||
-    clientInfo?.app_logo_url?.trim() ||
-    "";
+  const logoUrl = resolveClientLogoUrl(clientInfo);
 
   const rightPanelProps = {
     clientInfoLoading,
     sloganText,
     logoUrl,
     brandName,
+    loginImgUrl: loginImgUrl || null,
+    heroBranding,
+    useCustomSlogan,
   };
 
   return (
     <AuthLayoutShell
-      left={<AuthLeftPanel variant={variant}>{children}</AuthLeftPanel>}
-      right={
-        variant === "client28" ? (
-          <AuthRightPanelClient28 {...rightPanelProps} />
-        ) : (
-          <AuthRightPanelDefault {...rightPanelProps} />
-        )
-      }
+      left={<AuthLeftPanel variant={leftVariant}>{children}</AuthLeftPanel>}
+      right={<AuthRightPanelDefault {...rightPanelProps} />}
     />
   );
 }
