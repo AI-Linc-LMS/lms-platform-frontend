@@ -410,7 +410,7 @@ export function generateAssessmentAnalyticsPdfVector(
   setInk();
 
   const s = data.summary;
-  const passThresholdPct = Number(s.pass_threshold_percentage ?? 40);
+  const passThresholdPct = Number(s.pass_threshold_percentage ?? 70);
   const passThresholdLabel = Number.isFinite(passThresholdPct)
     ? String(passThresholdPct)
     : "40";
