@@ -942,7 +942,7 @@ export default function AssessmentEditPage() {
     if (!analyticsData) return;
     try {
       const slug =
-        analyticsData.assessment.slug ||
+        analyticsData.assessment.title ||
         String(analyticsData.assessment.id);
       const fileName = safeAnalyticsPdfFileName(
         slug,
