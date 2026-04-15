@@ -59,6 +59,7 @@ import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { generateAssessmentAnalyticsPdfVector } from "@/lib/utils/assessment-analytics-pdf.utils";
 import { AssessmentAnalyticsCharts } from "@/components/admin/assessment/AssessmentAnalyticsCharts";
+import JSZip from "jszip";
 import {
   mapSubmissionsExportRowToAssessmentResult,
   safeAssessmentPdfFileName,
@@ -239,6 +240,11 @@ function safeAnalyticsPdfFileName(slug: string, id: number): string {
   return `${slugPart}-${id}-analytics-report.pdf`;
 }
 
+function safeZipFileName(slug: string, id: number): string {
+  const slugPart = (slug || "assessment").replace(/[^a-zA-Z0-9._-]+/g, "-");
+  return `${slugPart}-${id}-student-reports.zip`;
+}
+
 function formatDateForDisplay(dateTimeString: string | null | undefined): string {
   if (!dateTimeString?.trim()) return "";
   try {
@@ -331,6 +337,8 @@ export default function AssessmentEditPage() {
   const [codingQuestionsLimit, setCodingQuestionsLimit] = useState(10);
   const [submissionsPage, setSubmissionsPage] = useState(1);
   const [submissionsLimit, setSubmissionsLimit] = useState(10);
+  const [downloadingAllSubmissionPdfs, setDownloadingAllSubmissionPdfs] =
+    useState(false);
   const [previewMCQ, setPreviewMCQ] = useState<{
     section: { section_title: string };
     question: QuestionsExportMCQQuestion;
@@ -856,6 +864,65 @@ export default function AssessmentEditPage() {
     },
     [submissionsData, showToast],
   );
+
+  const handleDownloadAllSubmissionPdfsZip = useCallback(async () => {
+    if (!submissionsData?.submissions?.length) return;
+    setDownloadingAllSubmissionPdfs(true);
+    try {
+      const zip = new JSZip();
+      const usedFileNames = new Set<string>();
+
+      for (const submission of submissionsData.submissions) {
+        const result = mapSubmissionsExportRowToAssessmentResult(
+          submissionsData,
+          submission,
+        );
+        const baseFileName = safeAssessmentPdfFileName(
+          submissionsData.assessment.title ||
+            String(submissionsData.assessment.id),
+          submission.name,
+        );
+        let fileName = baseFileName;
+        let duplicateCount = 2;
+        while (usedFileNames.has(fileName)) {
+          fileName = baseFileName.replace(
+            /\.pdf$/i,
+            `-${duplicateCount}.pdf`,
+          );
+          duplicateCount += 1;
+        }
+        usedFileNames.add(fileName);
+        const pdfBlob = generateAssessmentResultPdfVector(
+          result,
+          fileName,
+          undefined,
+          { download: false },
+        );
+        zip.file(fileName, pdfBlob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const zipFileName = safeZipFileName(
+        submissionsData.assessment.title || String(submissionsData.assessment.id),
+        submissionsData.assessment.id,
+      );
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = zipFileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("All student PDF reports downloaded as ZIP", "success");
+    } catch (e: unknown) {
+      const msg =
+        e && typeof e === "object" && "message" in e
+          ? String((e as { message?: string }).message)
+          : "Failed to generate ZIP of student reports";
+      showToast(msg, "error");
+    } finally {
+      setDownloadingAllSubmissionPdfs(false);
+    }
+  }, [submissionsData, showToast]);
 
   const handleAnalyticsApplyTopPerformers = () => {
     const parsed = Number.parseInt(analyticsTopNDraft.trim(), 10);
@@ -1491,22 +1558,50 @@ export default function AssessmentEditPage() {
                   <Typography variant="body2" color="text.secondary">
                     Export submissions · View and download table
                   </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<IconWrapper icon="mdi:download" size={18} />}
-                    onClick={handleDownloadSubmissions}
-                    disabled={
-                      !submissionsData?.submissions?.length ||
-                      (readOnly && !hideAdminQuestions)
-                    }
-                    sx={{
-                      bgcolor: "#6366f1",
-                      "&:hover": { bgcolor: "#4f46e5" },
-                    }}
-                  >
-                    Download table
-                  </Button>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                      onClick={handleDownloadSubmissions}
+                      disabled={
+                        !submissionsData?.submissions?.length ||
+                        (readOnly && !hideAdminQuestions)
+                      }
+                      sx={{
+                        bgcolor: "#6366f1",
+                        "&:hover": { bgcolor: "#4f46e5" },
+                      }}
+                    >
+                      Download table
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={
+                        downloadingAllSubmissionPdfs ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <IconWrapper icon="mdi:folder-zip-outline" size={18} />
+                        )
+                      }
+                      onClick={() => void handleDownloadAllSubmissionPdfsZip()}
+                      disabled={
+                        downloadingAllSubmissionPdfs ||
+                        !submissionsData?.submissions?.length ||
+                        (readOnly && !hideAdminQuestions)
+                      }
+                      sx={{
+                        bgcolor: "#e11d48",
+                        "&:hover": { bgcolor: "#be123c" },
+                        textTransform: "none",
+                      }}
+                    >
+                      {downloadingAllSubmissionPdfs
+                        ? "Preparing ZIP..."
+                        : "Download all PDFs (ZIP)"}
+                    </Button>
+                  </Box>
                 </Box>
                 {!submissionsData?.submissions?.length ? (
                   <Typography color="text.secondary">
