@@ -81,6 +81,8 @@ export interface UserProfile {
   bio: string | null;
   social_links: Record<string, string>;
   date_of_birth: string | null;
+  gender?: string | null;
+  country?: string | null;
   role?: string | null;
   headline?: string | null;
   cover_photo_url?: string | null;

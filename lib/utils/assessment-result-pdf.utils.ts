@@ -626,7 +626,8 @@ export function generateAssessmentResultPdfVector(
   data: AssessmentResult,
   fileName: string,
   studentOverrides?: AssessmentPdfStudentOverrides,
-): void {
+  options?: { download?: boolean },
+): Blob {
   const pdf = new jsPDF({
     unit: "mm",
     format: "a4",
@@ -1999,5 +2000,9 @@ export function generateAssessmentResultPdfVector(
   const year = new Date().getFullYear();
   drawFootersOnAllPages(pdf, pageW, pageH, margin, year);
 
-  pdf.save(fileName);
+  const pdfBlob = pdf.output("blob");
+  if (options?.download !== false) {
+    pdf.save(fileName);
+  }
+  return pdfBlob;
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
+import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormControl } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { UserProfile } from "@/lib/services/profile.service";
 
@@ -10,6 +10,14 @@ interface PersonalInformationCardProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
 }
+
+const GENDER_LABEL_KEYS: Record<string, string> = {
+  male: "profile.genderMale",
+  female: "profile.genderFemale",
+  non_binary: "profile.genderNonBinary",
+  prefer_not_to_say: "profile.genderPreferNotToSay",
+  other: "profile.genderOther",
+};
 
 export function PersonalInformationCard({
   profile,
@@ -21,6 +29,8 @@ export function PersonalInformationCard({
     last_name: profile.last_name || "",
     phone_number: profile.phone_number || "",
     date_of_birth: profile.date_of_birth || "",
+    gender: profile.gender || "",
+    country: profile.country || "",
     github: profile.social_links?.github || "",
     linkedin: profile.social_links?.linkedin || "",
     college_name: profile.college_name || "",
@@ -38,6 +48,8 @@ export function PersonalInformationCard({
     last_name: profile.last_name || "",
     phone_number: profile.phone_number || "",
     date_of_birth: profile.date_of_birth || "",
+    gender: profile.gender || "",
+    country: profile.country || "",
     github: profile.social_links?.github || "",
     linkedin: profile.social_links?.linkedin || "",
     college_name: profile.college_name || "",
@@ -77,6 +89,8 @@ export function PersonalInformationCard({
         last_name: formData.last_name,
         phone_number: formData.phone_number,
         date_of_birth: formData.date_of_birth || null,
+        gender: formData.gender.trim() ? formData.gender : null,
+        country: formData.country.trim() ? formData.country : null,
         social_links: {
           linkedin: formData.linkedin || "",
           github: formData.github || "",
@@ -103,6 +117,8 @@ export function PersonalInformationCard({
       last_name: profile.last_name || "",
       phone_number: profile.phone_number || "",
       date_of_birth: profile.date_of_birth || "",
+      gender: profile.gender || "",
+      country: profile.country || "",
       github: profile.social_links?.github || "",
       linkedin: profile.social_links?.linkedin || "",
       college_name: profile.college_name || "",
@@ -475,7 +491,139 @@ export function PersonalInformationCard({
           </Box>
         </Box>
 
-        {/* Row 3: GitHub & LinkedIn */}
+        {/* Row 3: Gender & Country */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2,
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 1.5,
+              border: "1px solid rgba(0,0,0,0.08)",
+              backgroundColor: profile.gender ? "#ffffff" : "#f9fafb",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                borderColor: "rgba(0,0,0,0.12)",
+                backgroundColor: "#f3f2ef",
+              },
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
+              <IconWrapper icon="mdi:gender-male-female" size={16} color="#0a66c2" />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#666666",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {t("profile.gender")}
+              </Typography>
+            </Box>
+            {editing ? (
+              <FormControl fullWidth size="small">
+                <Select
+                  value={formData.gender}
+                  onChange={handleSelectChange("gender")}
+                  displayEmpty
+                  sx={{
+                    borderRadius: 1.5,
+                    fontSize: "0.9375rem",
+                  }}
+                >
+                  <MenuItem value="">{t("profile.genderNotSpecified")}</MenuItem>
+                  <MenuItem value="male">{t("profile.genderMale")}</MenuItem>
+                  <MenuItem value="female">{t("profile.genderFemale")}</MenuItem>
+                  <MenuItem value="non_binary">{t("profile.genderNonBinary")}</MenuItem>
+                  <MenuItem value="prefer_not_to_say">{t("profile.genderPreferNotToSay")}</MenuItem>
+                  <MenuItem value="other">{t("profile.genderOther")}</MenuItem>
+                </Select>
+              </FormControl>
+            ) : (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: profile.gender ? "#000000" : "#9ca3af",
+                  fontWeight: profile.gender ? 500 : 400,
+                  fontSize: "0.9375rem",
+                  fontStyle: profile.gender ? "normal" : "italic",
+                }}
+              >
+                {profile.gender
+                  ? GENDER_LABEL_KEYS[profile.gender]
+                    ? t(GENDER_LABEL_KEYS[profile.gender])
+                    : profile.gender
+                  : t("profile.notProvided")}
+              </Typography>
+            )}
+          </Box>
+
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 1.5,
+              border: "1px solid rgba(0,0,0,0.08)",
+              backgroundColor: profile.country ? "#ffffff" : "#f9fafb",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                borderColor: "rgba(0,0,0,0.12)",
+                backgroundColor: "#f3f2ef",
+              },
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
+              <IconWrapper icon="mdi:earth" size={16} color="#0a66c2" />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#666666",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {t("profile.country")}
+              </Typography>
+            </Box>
+            {editing ? (
+              <TextField
+                value={formData.country}
+                onChange={handleChange("country")}
+                fullWidth
+                size="small"
+                placeholder={t("profile.countryPlaceholder")}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 1.5,
+                    fontSize: "0.9375rem",
+                  },
+                }}
+              />
+            ) : (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: profile.country ? "#000000" : "#9ca3af",
+                  fontWeight: profile.country ? 500 : 400,
+                  fontSize: "0.9375rem",
+                  fontStyle: profile.country ? "normal" : "italic",
+                }}
+              >
+                {profile.country || t("profile.notProvided")}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+
+        {/* Row 4: GitHub & LinkedIn */}
         <Box
           sx={{
             display: "grid",
@@ -678,7 +826,7 @@ export function PersonalInformationCard({
           </Box>
         </Box>
 
-        {/* Row 4: College Name & Degree Type */}
+        {/* Row 5: College Name & Degree Type */}
         <Box
           sx={{
             display: "grid",
@@ -807,7 +955,7 @@ export function PersonalInformationCard({
           </Box>
         </Box>
 
-        {/* Row 5: Branch & Graduation Year */}
+        {/* Row 6: Branch & Graduation Year */}
         <Box
           sx={{
             display: "grid",
@@ -932,7 +1080,7 @@ export function PersonalInformationCard({
           </Box>
         </Box>
 
-        {/* Row 6: City & State */}
+        {/* Row 7: City & State */}
         <Box
           sx={{
             display: "grid",

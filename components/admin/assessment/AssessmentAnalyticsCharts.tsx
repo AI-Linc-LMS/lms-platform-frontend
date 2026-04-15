@@ -47,7 +47,7 @@ type Props = {
 
 export function AssessmentAnalyticsCharts({ data }: Props) {
   const summary = data.summary;
-  const threshold = summary.pass_threshold_percentage ?? 40;
+  const threshold = summary.pass_threshold_percentage ?? 70;
   const completedWithScore = summary.completed_with_score ?? 0;
   const passCount = summary.pass_count ?? 0;
   const passRate = summary.pass_rate_percent;
