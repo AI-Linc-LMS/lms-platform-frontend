@@ -201,16 +201,18 @@ export const profileService = {
     return response.data;
   },
 
-  // Get user activity heatmap
+  // Get user activity heatmap (optional userId = UserProfile.id for admin viewing another student)
   getUserActivityHeatmap: async (
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    userId?: number
   ): Promise<UserActivityHeatmap> => {
     let url = `/api/clients/${config.clientId}/student/user-activity-heatmap/`;
     const params = new URLSearchParams();
 
     if (startDate) params.append("start_date", startDate);
     if (endDate) params.append("end_date", endDate);
+    if (userId != null) params.append("user_id", String(userId));
 
     if (params.toString()) {
       url += `?${params.toString()}`;

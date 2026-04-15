@@ -48,6 +48,7 @@ export const COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
   "admin_course_builder",
   "admin_mock_interview",
   "admin_assessment",
+  "admin_scorecard",
   "admin_jobs_v2",
 ];
 
