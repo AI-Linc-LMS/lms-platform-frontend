@@ -290,9 +290,9 @@ export function generateAssessmentAnalyticsPdfVector(
     drawSectionTitle(
       title,
       palette === "score"
-        ? "Counts scaled to the largest bucket; bar colors match the on-screen score histogram."
+        ? "Counts scaled to the largest bucket"
         : palette === "time"
-          ? "Counts scaled to the largest bucket; bar color matches the on-screen time chart."
+          ? "Counts scaled to the largest bucket"
           : "Counts scaled to the largest bucket in this assessment.",
     );
     if (rows.length === 0) {
@@ -382,23 +382,32 @@ export function generateAssessmentAnalyticsPdfVector(
     const xAxisCaptionH = dashLayout ? 5.5 : 0;
     const labelH = dashLayout ? 10 : 10;
     const footPad = dashLayout ? 4 : 3;
-    const yAxisLabelH = dashLayout ? 4.5 : 0;
+    /** Y-axis title strip (kept separate from value labels to avoid overlap). */
+    const yAxisTitleBand = dashLayout ? 4.8 : 0;
+    /** Empty band above plot so bar counts never sit on “Number of students”. */
+    const valueLabelBand = dashLayout ? 5.8 : 0;
     const n = rows.length;
     const chartLeft = margin + yAxisW;
     const chartW = contentW - yAxisW;
     const slotW = chartW / Math.max(n, 1);
     const barW = Math.min(dashLayout ? 10 : 8, slotW * 0.42);
     ensureSpace(
-      yAxisLabelH + chartInnerH + labelH + footPad + xAxisCaptionH + 10,
+      yAxisTitleBand +
+        valueLabelBand +
+        chartInnerH +
+        labelH +
+        footPad +
+        xAxisCaptionH +
+        10,
     );
-    const chartTop = y + yAxisLabelH;
+    const chartTop = y + yAxisTitleBand + valueLabelBand;
     const baseY = chartTop + chartInnerH;
 
     if (dashLayout) {
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(6.5);
       setMuted();
-      pdf.text("Number of students", chartLeft + chartW / 2, y + 3, {
+      pdf.text("Number of students", chartLeft + chartW / 2, y + yAxisTitleBand - 0.6, {
         align: "center",
       });
     }
@@ -467,7 +476,10 @@ export function generateAssessmentAnalyticsPdfVector(
       pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(7);
       pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
-      pdf.text(String(row.value), cx, chartTop - 0.3, { align: "center" });
+      const countBaseline = dashLayout
+        ? chartTop - 1.35
+        : chartTop - 0.3;
+      pdf.text(String(row.value), cx, countBaseline, { align: "center" });
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(dashLayout ? 6 : 5.8);
       setMuted();
@@ -587,7 +599,7 @@ export function generateAssessmentAnalyticsPdfVector(
 
   drawSectionTitle(
     "Status breakdown",
-    "Pie and proportional bar (vector) — same counts as the analytics API.",
+    "Pie and proportional bar (vector)",
   );
   const ip = sb.in_progress ?? 0;
   const submitted = sb.submitted ?? 0;
@@ -705,58 +717,6 @@ export function generateAssessmentAnalyticsPdfVector(
 
   drawSectionSeparator(7);
 
-  const timeline = data.charts?.submissions_timeline ?? [];
-  if (timeline.length > 0) {
-    drawSectionTitle(
-      "Submissions over time",
-      "Daily submission counts (most recent periods); bars use the same indigo tone as the on-screen line chart.",
-    );
-    const maxT = Math.max(1, ...timeline.map((d) => d.count));
-    const show = timeline.slice(-18);
-    const tw = contentW / show.length;
-    const chartH = 22;
-    ensureSpace(chartH + 16);
-    const baseY = y + chartH;
-    pdf.setDrawColor(TRACK.r, TRACK.g, TRACK.b);
-    pdf.setLineWidth(0.2);
-    pdf.line(margin, baseY, margin + contentW, baseY);
-    for (let i = 0; i < show.length; i++) {
-      const d = show[i]!;
-      const h = (chartH - 2) * (d.count / maxT);
-      const x = margin + i * tw + tw * 0.12;
-      const bw = tw * 0.76;
-      pdf.setFillColor(
-        CHART_TIMELINE_RGB[0],
-        CHART_TIMELINE_RGB[1],
-        CHART_TIMELINE_RGB[2],
-      );
-      pdf.rect(x, baseY - h, bw, h, "F");
-    }
-    pdf.setFont(PDF_FONT, "normal");
-    pdf.setFontSize(6);
-    setMuted();
-    for (let i = 0; i < show.length; i++) {
-      const d = show[i]!;
-      let short = d.date;
-      try {
-        const dt = new Date(`${d.date}T12:00:00`);
-        if (!isNaN(dt.getTime())) {
-          short = dt.toLocaleDateString(undefined, {
-            month: "numeric",
-            day: "numeric",
-          });
-        }
-      } catch {
-        /* keep */
-      }
-      const x = margin + i * tw + tw / 2;
-      pdf.text(truncatePdfCell(short, 8), x, baseY + 3.5, {
-        align: "center",
-      });
-    }
-    y = baseY + 10;
-    setInk();
-  }
 
   drawSectionSeparator(7);
 
