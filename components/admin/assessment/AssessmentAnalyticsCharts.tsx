@@ -18,6 +18,7 @@ import {
   Stack,
   Divider,
   CircularProgress,
+  LinearProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
@@ -40,6 +41,13 @@ import {
   LabelList,
 } from "recharts";
 import type { AssessmentAnalyticsResponse } from "@/lib/services/admin/admin-assessment.service";
+import {
+  maxSectionAvgPct,
+  sectionPerformanceStatus,
+  sectionPerformanceStatusLabel,
+  sectionRowAccent,
+  SECTION_STATUS_MUI,
+} from "@/lib/utils/assessment-section-performance.utils";
 
 const C = {
   sky: "#0284c7",
@@ -110,6 +118,16 @@ const tableHeadCellSx = {
   borderColor: "divider",
   py: 1.35,
   whiteSpace: "nowrap" as const,
+};
+
+/** Section-wise performance table header (matches reference card). */
+const sectionWiseHeadCellSx = {
+  ...tableHeadCellSx,
+  bgcolor: "transparent",
+  color: "#475569",
+  borderBottom: "1px solid",
+  borderColor: "divider",
+  letterSpacing: "0.04em",
 };
 
 const tablePaperSx = {
@@ -622,18 +640,14 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
     ].filter((x) => x.value > 0);
   }, [data.status_breakdown]);
 
-  const sectionBarData = useMemo(
-    () =>
-      (data.section_averages ?? []).map((s) => ({
-        name:
-          s.section_title.length > 28
-            ? `${s.section_title.slice(0, 26)}…`
-            : s.section_title,
-        fullName: s.section_title,
-        avgPct: Number(s.average_percentage?.toFixed(1)) || 0,
-        avgScore: Number(s.average_score?.toFixed(1)) || 0,
-      })),
+  const sectionAverages = useMemo(
+    () => data.section_averages ?? [],
     [data.section_averages],
+  );
+
+  const maxSectionPct = useMemo(
+    () => maxSectionAvgPct(sectionAverages),
+    [sectionAverages],
   );
 
   const topPerformers = data.top_performers ?? [];
@@ -648,6 +662,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
   const codingPg = usePagedSlice(codingQuestions, 10);
   const mcqPg = usePagedSlice(mcqQuestions, 10);
   const subjectivePg = usePagedSlice(subjectiveQuestions, 10);
+  const sectionAveragesPg = usePagedSlice(sectionAverages, 10);
 
   const emptyMsg = (
     <Box
@@ -1043,44 +1058,144 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
         )}
       </ChartReportCard>
 
-      {sectionBarData.length > 0 && (
-        <ChartReportCard
-          title="Average score in each part of the test"
-          description="Percentages are out of 100% of the points available in that section. Hover a bar for the full section name."
-        >
-          <ResponsiveContainer width="100%" height={Math.max(220, sectionBarData.length * 44)}>
-            <BarChart
-              data={sectionBarData}
-              layout="vertical"
-              margin={{ left: 8, right: 28, top: 8, bottom: 8 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: C.slate }} unit="%" />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={140}
-                tick={{ fontSize: 11, fill: C.slate }}
-              />
-              <Tooltip
-                contentStyle={tooltipSx}
-                formatter={(value) => [`${value ?? 0}%`, "Average score"]}
-                labelFormatter={(_, payload) => {
-                  const row = payload?.[0]?.payload as { fullName?: string } | undefined;
-                  return row?.fullName ?? "";
-                }}
-              />
-              <Bar dataKey="avgPct" name="Average %" fill={C.sky} radius={[0, 8, 8, 0]} barSize={22}>
-                <LabelList
-                  dataKey="avgPct"
-                  position="right"
-                  formatter={(v) => `${Number(v)}%`}
-                  style={barCountLabelStyle}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartReportCard>
+      {sectionAverages.length > 0 && (
+        <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
+          <SectionTableTitle
+            title="Section-wise performance"
+            count={sectionAverages.length}
+            countChipMode="number"
+            subtitle="How each part of the test is doing on average: max points, mean score, mean %, a quick bar, and a simple status vs the rest of the sections."
+          />
+          <TableContainer>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "#faf8f5" }}>
+                  <TableCell sx={sectionWiseHeadCellSx}>Section</TableCell>
+                  <TableCell sx={sectionWiseHeadCellSx} align="center">
+                    Max
+                  </TableCell>
+                  <TableCell sx={sectionWiseHeadCellSx} align="center">
+                    Avg score
+                  </TableCell>
+                  <TableCell sx={sectionWiseHeadCellSx} align="center">
+                    Avg %
+                  </TableCell>
+                  <TableCell sx={{ ...sectionWiseHeadCellSx, minWidth: 140 }}>
+                    Performance bar
+                  </TableCell>
+                  <TableCell sx={sectionWiseHeadCellSx} align="right">
+                    Status
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sectionAveragesPg.slice.map((s, i) => {
+                  const globalIndex =
+                    (sectionAveragesPg.page - 1) * sectionAveragesPg.pageSize + i;
+                  const accent = sectionRowAccent(globalIndex);
+                  const pct = s.average_percentage ?? 0;
+                  const statusKind = sectionPerformanceStatus(
+                    s.average_percentage,
+                    maxSectionPct,
+                  );
+                  const statusSx = SECTION_STATUS_MUI[statusKind];
+                  return (
+                    <TableRow
+                      key={`${globalIndex}-${s.section_title}`}
+                      sx={[
+                        tableBodyRowSx,
+                        {
+                          "&:nth-of-type(even)": { bgcolor: "action.hover" },
+                          "& td": {
+                            borderColor: "divider",
+                            borderBottomWidth: 1,
+                            borderBottomStyle: "solid",
+                          },
+                        },
+                      ]}
+                    >
+                      <TableCell sx={{ py: 1.35, verticalAlign: "middle", maxWidth: 280 }}>
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-block",
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 999,
+                            bgcolor: accent.light,
+                            color: accent.text,
+                            fontWeight: 700,
+                            fontSize: "0.8125rem",
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {s.section_title}
+                        </Box>
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+                      >
+                        {s.max_score != null ? s.max_score.toFixed(0) : "—"}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+                      >
+                        {s.average_score != null ? s.average_score.toFixed(1) : "—"}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+                      >
+                        {s.average_percentage != null ? `${s.average_percentage.toFixed(1)}%` : "—"}
+                      </TableCell>
+                      <TableCell sx={{ py: 1.35, verticalAlign: "middle", minWidth: 140 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(100, Math.max(0, pct))}
+                          sx={{
+                            height: 10,
+                            borderRadius: 999,
+                            bgcolor: alpha("#64748b", 0.14),
+                            maxWidth: 200,
+                            "& .MuiLinearProgress-bar": {
+                              borderRadius: 999,
+                              bgcolor: accent.solid,
+                            },
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="right" sx={{ py: 1.35, verticalAlign: "middle" }}>
+                        <Chip
+                          size="small"
+                          label={sectionPerformanceStatusLabel(statusKind)}
+                          sx={{
+                            height: 26,
+                            fontWeight: 700,
+                            fontSize: "0.72rem",
+                            bgcolor: statusSx.bgcolor,
+                            color: statusSx.color,
+                            borderRadius: 999,
+                            "& .MuiChip-label": { px: 1.25 },
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePaginationBar
+            page={sectionAveragesPg.page}
+            pageCount={sectionAveragesPg.pageCount}
+            total={sectionAveragesPg.total}
+            pageSize={sectionAveragesPg.pageSize}
+            onPageChange={sectionAveragesPg.setPage}
+            onPageSizeChange={sectionAveragesPg.changePageSize}
+          />
+        </Paper>
       )}
 
       {topPerformers.length > 0 && (
