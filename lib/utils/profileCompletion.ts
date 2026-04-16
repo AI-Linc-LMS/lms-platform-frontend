@@ -17,6 +17,8 @@ const REQUIRED_FIELDS = [
 
 const OPTIONAL_FIELDS = [
   "date_of_birth",
+  "gender",
+  "country",
   "college_name",
   "degree_type",
   "branch",
@@ -48,6 +50,8 @@ const FIELD_LABELS: Record<string, string> = {
   phone_number: "Phone Number",
   bio: "Bio",
   date_of_birth: "Date of Birth",
+  gender: "Gender",
+  country: "Country",
   college_name: "College/University Name",
   degree_type: "Degree Type",
   branch: "Branch/Major",

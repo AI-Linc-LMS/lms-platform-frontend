@@ -10,6 +10,17 @@ const TRACK = { r: 226, g: 232, b: 240 };
 const FOOTER_LINE = { r: 203, g: 213, b: 225 };
 const PDF_FONT = "helvetica" as const;
 
+/** 24h clock with seconds — used for Submitted column and report header. */
+const PDF_DATETIME_LOCALE_OPTS: Intl.DateTimeFormatOptions = {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+};
+
 function truncatePdfCell(s: string, maxLen: number): string {
   const t = String(s ?? "")
     .replace(/\r|\n/g, " ")
@@ -31,14 +42,8 @@ function formatShortDate(iso: string | null | undefined): string {
   if (!iso?.trim()) return "—";
   try {
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return truncatePdfCell(iso, 18);
-    return d.toLocaleString(undefined, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (isNaN(d.getTime())) return truncatePdfCell(iso, 28);
+    return d.toLocaleString(undefined, PDF_DATETIME_LOCALE_OPTS);
   } catch {
     return "—";
   }
@@ -155,6 +160,15 @@ export function generateAssessmentAnalyticsPdfVector(
     pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
   };
 
+  /** Light rule + vertical gap between major blocks (static PDF — not an interactive drawer). */
+  const drawSectionSeparator = (mm = 6) => {
+    ensureSpace(mm + 4);
+    pdf.setDrawColor(FOOTER_LINE.r, FOOTER_LINE.g, FOOTER_LINE.b);
+    pdf.setLineWidth(0.2);
+    pdf.line(margin + 4, y, pageW - margin - 4, y);
+    y += mm;
+  };
+
   const drawSectionTitle = (title: string, subtitle?: string) => {
     ensureSpace(subtitle ? 16 : 11);
     pdf.setFont(PDF_FONT, "bold");
@@ -205,7 +219,7 @@ export function generateAssessmentAnalyticsPdfVector(
       setInk();
       pdf.text(pairs[i]!.value, x0, valueBaseline);
     }
-    y = top + rowH + 5;
+    y = top + rowH + 8;
     setInk();
   };
 
@@ -258,7 +272,7 @@ export function generateAssessmentAnalyticsPdfVector(
       setInk();
       y += barH + gap;
     }
-    y += 4;
+    y += 8;
   };
 
   const drawVerticalBarChart = (
@@ -316,59 +330,7 @@ export function generateAssessmentAnalyticsPdfVector(
       const short = truncatePdfCell(row.label, 11);
       pdf.text(short, cx, baseY + 3.8, { align: "center" });
     }
-    y = baseY + labelH + footPad;
-    setInk();
-  };
-
-  const drawSectionPercentColumns = (
-    rows: { label: string; percent: number }[],
-  ) => {
-    if (rows.length === 0) return;
-    drawSectionTitle(
-      "Section average % (columns)",
-      "Bar height is average percentage (0–100) per section.",
-    );
-    const chartInnerH = 26;
-    const labelH = 9;
-    const footPad = 3;
-    const n = rows.length;
-    const slotW = contentW / Math.max(n, 1);
-    const barW = Math.min(7.5, slotW * 0.4);
-    ensureSpace(chartInnerH + labelH + footPad + 8);
-    const baseY = y + chartInnerH;
-    pdf.setDrawColor(TRACK.r, TRACK.g, TRACK.b);
-    pdf.setLineWidth(0.2);
-    pdf.line(margin, baseY, margin + contentW, baseY);
-
-    for (let i = 0; i < n; i++) {
-      const row = rows[i]!;
-      const pct = Math.min(100, Math.max(0, row.percent));
-      const cx = margin + slotW * i + slotW / 2;
-      const fillH = (chartInnerH - 1) * (pct / 100);
-      pdf.setFillColor(TRACK.r, TRACK.g, TRACK.b);
-      pdf.rect(cx - barW / 2, y + 1, barW, chartInnerH - 1, "F");
-      if (fillH > 0) {
-        const fillRgb =
-          pct >= 70
-            ? ([5, 150, 105] as const)
-            : pct >= 40
-              ? ([217, 119, 6] as const)
-              : ([220, 38, 38] as const);
-        pdf.setFillColor(fillRgb[0], fillRgb[1], fillRgb[2]);
-        pdf.rect(cx - barW / 2, baseY - fillH, barW, fillH, "F");
-      }
-      pdf.setFont(PDF_FONT, "bold");
-      pdf.setFontSize(7);
-      setInk();
-      pdf.text(`${pct.toFixed(0)}%`, cx, y - 0.5, { align: "center" });
-      pdf.setFont(PDF_FONT, "normal");
-      pdf.setFontSize(5.8);
-      setMuted();
-      pdf.text(truncatePdfCell(row.label, 10), cx, baseY + 3.6, {
-        align: "center",
-      });
-    }
-    y = baseY + labelH + footPad;
+    y = baseY + labelH + footPad + 6;
     setInk();
   };
 
@@ -405,7 +367,11 @@ export function generateAssessmentAnalyticsPdfVector(
     y,
   );
   y += 5;
-  pdf.text(`Generated ${new Date().toLocaleString()}`, margin, y);
+  pdf.text(
+    `Generated ${new Date().toLocaleString(undefined, PDF_DATETIME_LOCALE_OPTS)}`,
+    margin,
+    y,
+  );
   y += 12;
   setInk();
 
@@ -548,7 +514,8 @@ export function generateAssessmentAnalyticsPdfVector(
     setInk();
   }
 
-  y = blockTop + blockH + 6;
+  y = blockTop + blockH + 10;
+  drawSectionSeparator(7);
 
   const scoreBuckets = (data.charts?.score_distribution_percent ?? []).map(
     (b) => ({ label: b.label, value: b.count }),
@@ -582,6 +549,8 @@ export function generateAssessmentAnalyticsPdfVector(
       "No time-bucket data.",
     );
   }
+
+  drawSectionSeparator(7);
 
   const timeline = data.charts?.submissions_timeline ?? [];
   if (timeline.length > 0) {
@@ -628,20 +597,19 @@ export function generateAssessmentAnalyticsPdfVector(
         align: "center",
       });
     }
-    y = baseY + 8;
+    y = baseY + 10;
     setInk();
   }
 
-  // --- Section averages table ---
+  drawSectionSeparator(7);
+
+  // --- Section averages (table only — bar chart omitted to avoid duplicate with UI) ---
   const sections = data.section_averages ?? [];
   if (sections.length > 0) {
-    drawSectionPercentColumns(
-      sections.map((sec) => ({
-        label: sec.section_title,
-        percent: sec.average_percentage ?? 0,
-      })),
+    drawSectionTitle(
+      `Section averages (${sections.length})`,
+      "Average score, max, average %, and submission count per section.",
     );
-    drawSectionTitle(`Section averages (${sections.length})`, "Table detail.");
     const col = {
       sec: 52,
       avg: 22,
@@ -704,21 +672,26 @@ export function generateAssessmentAnalyticsPdfVector(
       });
       y += 5.2;
     }
-    y += 6;
+    y += 10;
   }
+
+  drawSectionSeparator(7);
 
   // --- Top performers ---
   const top = data.top_performers ?? [];
   if (top.length > 0) {
-    drawSectionTitle(`Top performers (${top.length})`);
+    drawSectionTitle(
+      `Top performers (${top.length})`,
+      "Submitted column: date and 24-hour time with seconds (from API timestamp).",
+    );
     const cw = {
       r: 10,
-      name: 40,
-      email: 44,
-      sc: 16,
-      pct: 14,
-      tm: 14,
-      dt: 40,
+      name: 36,
+      email: 40,
+      sc: 14,
+      pct: 12,
+      tm: 12,
+      dt: 52,
     };
     const drawTpHead = () => {
       ensureSpace(8);
@@ -738,7 +711,7 @@ export function generateAssessmentAnalyticsPdfVector(
       x += cw.sc;
       pdf.text("%", x, y + 4, { align: "right" });
       x += cw.pct;
-      pdf.text("Min", x, y + 4, { align: "right" });
+      pdf.text("Mins", x, y + 4, { align: "right" });
       x += cw.tm;
       pdf.text("Submitted", x, y + 4);
       y += 9;
@@ -776,15 +749,20 @@ export function generateAssessmentAnalyticsPdfVector(
         { align: "right" },
       );
       x += cw.tm;
-      pdf.text(truncatePdfCell(formatShortDate(row.submitted_at), 16), x, y);
+      pdf.text(truncatePdfCell(formatShortDate(row.submitted_at), 30), x, y);
       y += 5;
     }
-    y += 6;
+    y += 10;
   }
+
+  drawSectionSeparator(7);
 
   // --- All submissions ---
   const students = data.students ?? [];
-  drawSectionTitle(`All submissions (${students.length})`);
+  drawSectionTitle(
+    `All submissions (${students.length})`,
+    "Submitted column: date and 24-hour time with seconds (from API timestamp).",
+  );
   if (students.length === 0) {
     ensureSpace(8);
     pdf.setFont(PDF_FONT, "italic");
@@ -795,13 +773,13 @@ export function generateAssessmentAnalyticsPdfVector(
     setInk();
   } else {
     const c = {
-      name: 36,
-      em: 50,
-      st: 26,
-      sc: 14,
-      pc: 12,
-      tm: 14,
-      sub: 26,
+      name: 32,
+      em: 44,
+      st: 22,
+      sc: 12,
+      pc: 10,
+      tm: 12,
+      sub: 44,
     };
     const drawSubHead = () => {
       ensureSpace(8);
@@ -821,7 +799,7 @@ export function generateAssessmentAnalyticsPdfVector(
       x += c.sc;
       pdf.text("%", x, y + 4, { align: "right" });
       x += c.pc;
-      pdf.text("Min", x, y + 4, { align: "right" });
+      pdf.text("Mins", x, y + 4, { align: "right" });
       x += c.tm;
       pdf.text("Submitted", x, y + 4);
       y += 9;
@@ -864,10 +842,118 @@ export function generateAssessmentAnalyticsPdfVector(
         { align: "right" },
       );
       x += c.tm;
-      pdf.text(truncatePdfCell(formatShortDate(row.submitted_at), 14), x, y);
+      pdf.text(truncatePdfCell(formatShortDate(row.submitted_at), 26), x, y);
       y += 4.8;
     }
-    y += 4;
+    y += 10;
+  }
+
+  drawSectionSeparator(7);
+
+  // --- Question-level results (coding / MCQ / subjective) ---
+  const ql = data.question_level_results;
+  const codingRows = ql?.coding ?? [];
+  if (codingRows.length > 0) {
+    const nUsed = ql?.completed_submissions_used;
+    drawSectionTitle(
+      `Coding question outcomes (${codingRows.length})`,
+      typeof nUsed === "number"
+        ? `Aggregates from ${nUsed} completed submission(s) with response sheets.`
+        : "Per-problem pass / partial / fail counts.",
+    );
+    const cw = {
+      title: 78,
+      diff: 18,
+      ap: 14,
+      fp: 14,
+      pr: 14,
+      fl: 14,
+      sk: 14,
+    };
+    const drawCodingHead = () => {
+      ensureSpace(8);
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, y - 1, contentW, 7, "F");
+      pdf.setFont(PDF_FONT, "bold");
+      pdf.setFontSize(6.5);
+      setInk();
+      let x = margin + 1.5;
+      pdf.text("Problem", x, y + 4);
+      x += cw.title;
+      pdf.text("Diff", x, y + 4);
+      x += cw.diff;
+      pdf.text("App", x, y + 4, { align: "right" });
+      x += cw.ap;
+      pdf.text("Pass", x, y + 4, { align: "right" });
+      x += cw.fp;
+      pdf.text("Part", x, y + 4, { align: "right" });
+      x += cw.pr;
+      pdf.text("Fail", x, y + 4, { align: "right" });
+      x += cw.fl;
+      pdf.text("Skip", x, y + 4, { align: "right" });
+      y += 9;
+    };
+    drawCodingHead();
+    pdf.setFont(PDF_FONT, "normal");
+    pdf.setFontSize(6.5);
+    for (const q of codingRows) {
+      if (y + 6 > contentBottom) {
+        newPage();
+        drawCodingHead();
+        pdf.setFont(PDF_FONT, "normal");
+        pdf.setFontSize(6.5);
+      }
+      let x = margin + 1.5;
+      pdf.text(truncatePdfCell(q.title ?? "", 52), x, y);
+      x += cw.title;
+      pdf.text(truncatePdfCell(String(q.difficulty_level ?? "—"), 8), x, y);
+      x += cw.diff;
+      pdf.text(String(q.appeared_count ?? 0), x, y, { align: "right" });
+      x += cw.ap;
+      pdf.text(String(q.full_pass_count ?? 0), x, y, { align: "right" });
+      x += cw.fp;
+      pdf.text(String(q.partial_count ?? 0), x, y, { align: "right" });
+      x += cw.pr;
+      pdf.text(String(q.failed_count ?? 0), x, y, { align: "right" });
+      x += cw.fl;
+      pdf.text(String(q.skipped_count ?? 0), x, y, { align: "right" });
+      y += 4.5;
+    }
+    y += 8;
+  }
+
+  const mcqRows = ql?.mcq ?? [];
+  if (mcqRows.length > 0) {
+    drawSectionSeparator(7);
+    drawSectionTitle(`MCQ question rows (${mcqRows.length})`, "Raw fields per API row.");
+    pdf.setFont(PDF_FONT, "normal");
+    pdf.setFontSize(6.5);
+    for (const row of mcqRows) {
+      if (y + 8 > contentBottom) {
+        newPage();
+      }
+      const line = truncatePdfCell(JSON.stringify(row), 118);
+      pdf.text(line, margin, y);
+      y += 3.8;
+    }
+    y += 8;
+  }
+
+  const subjRows = ql?.subjective ?? [];
+  if (subjRows.length > 0) {
+    drawSectionSeparator(7);
+    drawSectionTitle(`Subjective question rows (${subjRows.length})`, "Raw fields per API row.");
+    pdf.setFont(PDF_FONT, "normal");
+    pdf.setFontSize(6.5);
+    for (const row of subjRows) {
+      if (y + 8 > contentBottom) {
+        newPage();
+      }
+      const line = truncatePdfCell(JSON.stringify(row), 118);
+      pdf.text(line, margin, y);
+      y += 3.8;
+    }
+    y += 8;
   }
 
   const year = new Date().getFullYear();
