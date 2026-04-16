@@ -830,9 +830,9 @@ export interface AssessmentAnalyticsSummary {
 }
 
 export interface AssessmentAnalyticsStatusBreakdown {
-  in_progress: number;
-  submitted: number;
-  finalized: number;
+  in_progress?: number;
+  submitted?: number;
+  finalized?: number;
 }
 
 export interface AssessmentAnalyticsScoreBucket {
@@ -862,6 +862,15 @@ export interface AssessmentAnalyticsSectionAverage {
   submissions_count: number;
 }
 
+export interface AssessmentAnalyticsSectionScore {
+  section_title: string;
+  score: number;
+  max_score: number;
+  percentage: number;
+  questions_attempted?: number;
+  questions_correct?: number;
+}
+
 export interface AssessmentAnalyticsTopPerformer {
   rank: number;
   user_profile_id: number;
@@ -871,6 +880,7 @@ export interface AssessmentAnalyticsTopPerformer {
   percentage: number;
   time_taken_minutes: number;
   submitted_at: string;
+  section_scores?: AssessmentAnalyticsSectionScore[];
 }
 
 export interface AssessmentAnalyticsStudentRow {
@@ -886,6 +896,28 @@ export interface AssessmentAnalyticsStudentRow {
   attempted_questions?: number | null;
   started_at: string | null;
   submitted_at: string | null;
+  section_scores?: AssessmentAnalyticsSectionScore[];
+}
+
+/** Per-question aggregates from analytics API */
+export interface AssessmentAnalyticsCodingQuestionRow {
+  problem_id: number;
+  coding_section_id?: number;
+  section_title?: string;
+  difficulty_level?: string;
+  title: string;
+  full_pass_count: number;
+  partial_count: number;
+  failed_count: number;
+  skipped_count: number;
+  appeared_count: number;
+}
+
+export interface AssessmentAnalyticsQuestionLevelResults {
+  mcq?: Record<string, unknown>[];
+  coding?: AssessmentAnalyticsCodingQuestionRow[];
+  subjective?: Record<string, unknown>[];
+  completed_submissions_used?: number;
 }
 
 export interface AssessmentAnalyticsResponse {
@@ -898,6 +930,7 @@ export interface AssessmentAnalyticsResponse {
     submissions_timeline: AssessmentAnalyticsTimelineDay[];
   };
   section_averages: AssessmentAnalyticsSectionAverage[];
+  question_level_results?: AssessmentAnalyticsQuestionLevelResults;
   top_performers: AssessmentAnalyticsTopPerformer[];
   students: AssessmentAnalyticsStudentRow[];
 }
