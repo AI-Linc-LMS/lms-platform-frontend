@@ -850,111 +850,111 @@ export function generateAssessmentAnalyticsPdfVector(
 
   drawSectionSeparator(7);
 
-  // --- Question-level results (coding / MCQ / subjective) ---
-  const ql = data.question_level_results;
-  const codingRows = ql?.coding ?? [];
-  if (codingRows.length > 0) {
-    const nUsed = ql?.completed_submissions_used;
-    drawSectionTitle(
-      `Coding question outcomes (${codingRows.length})`,
-      typeof nUsed === "number"
-        ? `Aggregates from ${nUsed} completed submission(s) with response sheets.`
-        : "Per-problem pass / partial / fail counts.",
-    );
-    const cw = {
-      title: 78,
-      diff: 18,
-      ap: 14,
-      fp: 14,
-      pr: 14,
-      fl: 14,
-      sk: 14,
-    };
-    const drawCodingHead = () => {
-      ensureSpace(8);
-      pdf.setFillColor(249, 250, 251);
-      pdf.rect(margin, y - 1, contentW, 7, "F");
-      pdf.setFont(PDF_FONT, "bold");
-      pdf.setFontSize(6.5);
-      setInk();
-      let x = margin + 1.5;
-      pdf.text("Problem", x, y + 4);
-      x += cw.title;
-      pdf.text("Diff", x, y + 4);
-      x += cw.diff;
-      pdf.text("App", x, y + 4, { align: "right" });
-      x += cw.ap;
-      pdf.text("Pass", x, y + 4, { align: "right" });
-      x += cw.fp;
-      pdf.text("Part", x, y + 4, { align: "right" });
-      x += cw.pr;
-      pdf.text("Fail", x, y + 4, { align: "right" });
-      x += cw.fl;
-      pdf.text("Skip", x, y + 4, { align: "right" });
-      y += 9;
-    };
-    drawCodingHead();
-    pdf.setFont(PDF_FONT, "normal");
-    pdf.setFontSize(6.5);
-    for (const q of codingRows) {
-      if (y + 6 > contentBottom) {
-        newPage();
-        drawCodingHead();
-        pdf.setFont(PDF_FONT, "normal");
-        pdf.setFontSize(6.5);
-      }
-      let x = margin + 1.5;
-      pdf.text(truncatePdfCell(q.title ?? "", 52), x, y);
-      x += cw.title;
-      pdf.text(truncatePdfCell(String(q.difficulty_level ?? "—"), 8), x, y);
-      x += cw.diff;
-      pdf.text(String(q.appeared_count ?? 0), x, y, { align: "right" });
-      x += cw.ap;
-      pdf.text(String(q.full_pass_count ?? 0), x, y, { align: "right" });
-      x += cw.fp;
-      pdf.text(String(q.partial_count ?? 0), x, y, { align: "right" });
-      x += cw.pr;
-      pdf.text(String(q.failed_count ?? 0), x, y, { align: "right" });
-      x += cw.fl;
-      pdf.text(String(q.skipped_count ?? 0), x, y, { align: "right" });
-      y += 4.5;
-    }
-    y += 8;
-  }
+  // // --- Question-level results (coding / MCQ / subjective) ---
+  // const ql = data.question_level_results;
+  // const codingRows = ql?.coding ?? [];
+  // if (codingRows.length > 0) {
+  //   const nUsed = ql?.completed_submissions_used;
+  //   drawSectionTitle(
+  //     `Coding question outcomes (${codingRows.length})`,
+  //     typeof nUsed === "number"
+  //       ? `Aggregates from ${nUsed} completed submission(s) with response sheets.`
+  //       : "Per-problem pass / partial / fail counts.",
+  //   );
+  //   const cw = {
+  //     title: 78,
+  //     diff: 18,
+  //     ap: 14,
+  //     fp: 14,
+  //     pr: 14,
+  //     fl: 14,
+  //     sk: 14,
+  //   };
+  //   const drawCodingHead = () => {
+  //     ensureSpace(8);
+  //     pdf.setFillColor(249, 250, 251);
+  //     pdf.rect(margin, y - 1, contentW, 7, "F");
+  //     pdf.setFont(PDF_FONT, "bold");
+  //     pdf.setFontSize(6.5);
+  //     setInk();
+  //     let x = margin + 1.5;
+  //     pdf.text("Problem", x, y + 4);
+  //     x += cw.title;
+  //     pdf.text("Diff", x, y + 4);
+  //     x += cw.diff;
+  //     pdf.text("App", x, y + 4, { align: "right" });
+  //     x += cw.ap;
+  //     pdf.text("Pass", x, y + 4, { align: "right" });
+  //     x += cw.fp;
+  //     pdf.text("Part", x, y + 4, { align: "right" });
+  //     x += cw.pr;
+  //     pdf.text("Fail", x, y + 4, { align: "right" });
+  //     x += cw.fl;
+  //     pdf.text("Skip", x, y + 4, { align: "right" });
+  //     y += 9;
+  //   };
+  //   drawCodingHead();
+  //   pdf.setFont(PDF_FONT, "normal");
+  //   pdf.setFontSize(6.5);
+  //   for (const q of codingRows) {
+  //     if (y + 6 > contentBottom) {
+  //       newPage();
+  //       drawCodingHead();
+  //       pdf.setFont(PDF_FONT, "normal");
+  //       pdf.setFontSize(6.5);
+  //     }
+  //     let x = margin + 1.5;
+  //     pdf.text(truncatePdfCell(q.title ?? "", 52), x, y);
+  //     x += cw.title;
+  //     pdf.text(truncatePdfCell(String(q.difficulty_level ?? "—"), 8), x, y);
+  //     x += cw.diff;
+  //     pdf.text(String(q.appeared_count ?? 0), x, y, { align: "right" });
+  //     x += cw.ap;
+  //     pdf.text(String(q.full_pass_count ?? 0), x, y, { align: "right" });
+  //     x += cw.fp;
+  //     pdf.text(String(q.partial_count ?? 0), x, y, { align: "right" });
+  //     x += cw.pr;
+  //     pdf.text(String(q.failed_count ?? 0), x, y, { align: "right" });
+  //     x += cw.fl;
+  //     pdf.text(String(q.skipped_count ?? 0), x, y, { align: "right" });
+  //     y += 4.5;
+  //   }
+  //   y += 8;
+  // }
 
-  const mcqRows = ql?.mcq ?? [];
-  if (mcqRows.length > 0) {
-    drawSectionSeparator(7);
-    drawSectionTitle(`MCQ question rows (${mcqRows.length})`, "Raw fields per API row.");
-    pdf.setFont(PDF_FONT, "normal");
-    pdf.setFontSize(6.5);
-    for (const row of mcqRows) {
-      if (y + 8 > contentBottom) {
-        newPage();
-      }
-      const line = truncatePdfCell(JSON.stringify(row), 118);
-      pdf.text(line, margin, y);
-      y += 3.8;
-    }
-    y += 8;
-  }
+  // const mcqRows = ql?.mcq ?? [];
+  // if (mcqRows.length > 0) {
+  //   drawSectionSeparator(7);
+  //   drawSectionTitle(`MCQ question rows (${mcqRows.length})`, "Raw fields per API row.");
+  //   pdf.setFont(PDF_FONT, "normal");
+  //   pdf.setFontSize(6.5);
+  //   for (const row of mcqRows) {
+  //     if (y + 8 > contentBottom) {
+  //       newPage();
+  //     }
+  //     const line = truncatePdfCell(JSON.stringify(row), 118);
+  //     pdf.text(line, margin, y);
+  //     y += 3.8;
+  //   }
+  //   y += 8;
+  // }
 
-  const subjRows = ql?.subjective ?? [];
-  if (subjRows.length > 0) {
-    drawSectionSeparator(7);
-    drawSectionTitle(`Subjective question rows (${subjRows.length})`, "Raw fields per API row.");
-    pdf.setFont(PDF_FONT, "normal");
-    pdf.setFontSize(6.5);
-    for (const row of subjRows) {
-      if (y + 8 > contentBottom) {
-        newPage();
-      }
-      const line = truncatePdfCell(JSON.stringify(row), 118);
-      pdf.text(line, margin, y);
-      y += 3.8;
-    }
-    y += 8;
-  }
+  // const subjRows = ql?.subjective ?? [];
+  // if (subjRows.length > 0) {
+  //   drawSectionSeparator(7);
+  //   drawSectionTitle(`Subjective question rows (${subjRows.length})`, "Raw fields per API row.");
+  //   pdf.setFont(PDF_FONT, "normal");
+  //   pdf.setFontSize(6.5);
+  //   for (const row of subjRows) {
+  //     if (y + 8 > contentBottom) {
+  //       newPage();
+  //     }
+  //     const line = truncatePdfCell(JSON.stringify(row), 118);
+  //     pdf.text(line, margin, y);
+  //     y += 3.8;
+  //   }
+  //   y += 8;
+  // }
 
   const year = new Date().getFullYear();
   drawFootersOnAllPages(pdf, pageW, pageH, margin, year);
