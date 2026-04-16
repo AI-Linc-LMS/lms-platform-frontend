@@ -1214,7 +1214,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
         </Paper>
       )}
 
-      {codingQuestions.length > 0 && (
+      {/* {codingQuestions.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
           <SectionTableTitle
             title="Coding exercises — how students did"
@@ -1292,9 +1292,9 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             onPageSizeChange={codingPg.changePageSize}
           />
         </Paper>
-      )}
+      )} */}
 
-      {mcqQuestions.length > 0 && (
+      {/* {mcqQuestions.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
           <SectionTableTitle
             title="Multiple choice — details per question"
@@ -1357,7 +1357,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             onPageSizeChange={mcqPg.changePageSize}
           />
         </Paper>
-      )}
+      )} */}
 
       {subjectiveQuestions.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
