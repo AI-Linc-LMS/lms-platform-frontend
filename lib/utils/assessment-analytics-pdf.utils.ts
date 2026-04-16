@@ -1,5 +1,12 @@
 import jsPDF from "jspdf";
 import type { AssessmentAnalyticsResponse } from "@/lib/services/admin/admin-assessment.service";
+import {
+  maxSectionAvgPct,
+  sectionPerformanceStatus,
+  sectionPerformanceStatusLabel,
+  sectionRowAccent,
+  SECTION_STATUS_PDF_RGB,
+} from "@/lib/utils/assessment-section-performance.utils";
 
 /** Match assessment result PDF chrome */
 const SKY = { r: 2, g: 132, b: 199 };
@@ -9,6 +16,43 @@ const INK = { r: 15, g: 23, b: 42 };
 const TRACK = { r: 226, g: 232, b: 240 };
 const FOOTER_LINE = { r: 203, g: 213, b: 225 };
 const PDF_FONT = "helvetica" as const;
+
+/** Align chart fills with `AssessmentAnalyticsCharts.tsx` (Recharts). */
+function hexToRgb(hex: string): readonly [number, number, number] {
+  const h = hex.replace(/^#/, "");
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
+  if (full.length !== 6) return [2, 132, 199];
+  const n = Number.parseInt(full, 16);
+  if (!Number.isFinite(n)) return [2, 132, 199];
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
+}
+
+/** Same order as `SCORE_BUCKET_COLORS` in analytics charts UI. */
+const CHART_SCORE_BAND_RGB = (
+  ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#10b981"] as const
+).map((x) => hexToRgb(x));
+
+const CHART_TIME_RGB = hexToRgb("#7c3aed");
+const CHART_TIMELINE_RGB = hexToRgb("#6366f1");
+
+type AnalyticsBarPalette = "score" | "time" | "sky";
+
+function rgbDarker(
+  rgb: readonly [number, number, number],
+  factor = 0.82,
+): readonly [number, number, number] {
+  return [
+    Math.round(rgb[0] * factor),
+    Math.round(rgb[1] * factor),
+    Math.round(rgb[2] * factor),
+  ] as const;
+}
 
 /** 24h clock with seconds — used for Submitted column and report header. */
 const PDF_DATETIME_LOCALE_OPTS: Intl.DateTimeFormatOptions = {
@@ -223,12 +267,34 @@ export function generateAssessmentAnalyticsPdfVector(
     setInk();
   };
 
+  const barRgbForPalette = (
+    palette: AnalyticsBarPalette,
+    rowIndex: number,
+  ): readonly [number, number, number] => {
+    if (palette === "score") {
+      const c = CHART_SCORE_BAND_RGB[rowIndex % CHART_SCORE_BAND_RGB.length]!;
+      return [c[0], c[1], c[2]];
+    }
+    if (palette === "time") {
+      return [CHART_TIME_RGB[0], CHART_TIME_RGB[1], CHART_TIME_RGB[2]];
+    }
+    return [SKY.r, SKY.g, SKY.b];
+  };
+
   const drawHorizontalBarBlock = (
     title: string,
     rows: { label: string; value: number }[],
     emptyHint: string,
+    palette: AnalyticsBarPalette = "sky",
   ) => {
-    drawSectionTitle(title, "Counts scaled to the largest bucket in this assessment.");
+    drawSectionTitle(
+      title,
+      palette === "score"
+        ? "Counts scaled to the largest bucket; bar colors match the on-screen score histogram."
+        : palette === "time"
+          ? "Counts scaled to the largest bucket; bar color matches the on-screen time chart."
+          : "Counts scaled to the largest bucket in this assessment.",
+    );
     if (rows.length === 0) {
       ensureSpace(10);
       pdf.setFont(PDF_FONT, "italic");
@@ -246,7 +312,8 @@ export function generateAssessmentAnalyticsPdfVector(
     const barH = 3.8;
     const gap = 3.2;
 
-    for (const r of rows) {
+    for (let ri = 0; ri < rows.length; ri++) {
+      const r = rows[ri]!;
       ensureSpace(barH + gap + 6);
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(7.5);
@@ -257,17 +324,19 @@ export function generateAssessmentAnalyticsPdfVector(
       pdf.setFillColor(TRACK.r, TRACK.g, TRACK.b);
       pdf.rect(barLeft, y, barW, barH, "F");
       if (frac > 0) {
-        pdf.setFillColor(SKY.r, SKY.g, SKY.b);
+        const fill = barRgbForPalette(palette, ri);
+        pdf.setFillColor(fill[0], fill[1], fill[2]);
         pdf.rect(barLeft, y, Math.max(0.4, barW * frac), barH, "F");
-        pdf.setFillColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
-        const cap = Math.min(1.6, barW * frac);
+        const capRgb = rgbDarker(fill, 0.78);
+        pdf.setFillColor(capRgb[0], capRgb[1], capRgb[2]);
+        const capW = Math.min(1.6, barW * frac);
         if (frac > 0.02) {
-          pdf.rect(barLeft + barW * frac - cap, y, cap, barH, "F");
+          pdf.rect(barLeft + barW * frac - capW, y, capW, barH, "F");
         }
       }
       pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(7.5);
-      pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
+      pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
       pdf.text(String(r.value), margin + contentW, y + 2.6, { align: "right" });
       setInk();
       y += barH + gap;
@@ -275,15 +344,27 @@ export function generateAssessmentAnalyticsPdfVector(
     y += 8;
   };
 
+  type VerticalBarChartOpts = {
+    /** When set, replaces the default palette-based subtitle (matches dashboard copy). */
+    subtitleOverride?: string;
+    /** Dashboard-style Y axis, horizontal grid, and X-axis caption (score chart only). */
+    scoreDashboardLayout?: boolean;
+  };
+
   const drawVerticalBarChart = (
     title: string,
     rows: { label: string; value: number }[],
     emptyHint: string,
+    palette: AnalyticsBarPalette = "sky",
+    opts?: VerticalBarChartOpts,
   ) => {
-    drawSectionTitle(
-      title,
-      "Column height = count; scale is relative to the largest band.",
-    );
+    const defaultSubtitle =
+      palette === "score"
+        ? "Column height = count; colors match the on-screen score chart."
+        : palette === "time"
+          ? "Column height = count; color matches the on-screen time chart."
+          : "Column height = count; scale is relative to the largest band.";
+    drawSectionTitle(title, opts?.subtitleOverride ?? defaultSubtitle);
     if (rows.length === 0) {
       ensureSpace(10);
       pdf.setFont(PDF_FONT, "italic");
@@ -295,42 +376,119 @@ export function generateAssessmentAnalyticsPdfVector(
       return;
     }
     const maxV = Math.max(1, ...rows.map((r) => r.value));
-    const chartInnerH = 30;
-    const labelH = 10;
-    const footPad = 3;
+    const dashLayout = Boolean(opts?.scoreDashboardLayout && palette === "score");
+    const chartInnerH = dashLayout ? 34 : 30;
+    const yAxisW = dashLayout ? 9 : 0;
+    const xAxisCaptionH = dashLayout ? 5.5 : 0;
+    const labelH = dashLayout ? 10 : 10;
+    const footPad = dashLayout ? 4 : 3;
+    const yAxisLabelH = dashLayout ? 4.5 : 0;
     const n = rows.length;
-    const slotW = contentW / Math.max(n, 1);
-    const barW = Math.min(8, slotW * 0.42);
-    ensureSpace(chartInnerH + labelH + footPad + 8);
-    const baseY = y + chartInnerH;
+    const chartLeft = margin + yAxisW;
+    const chartW = contentW - yAxisW;
+    const slotW = chartW / Math.max(n, 1);
+    const barW = Math.min(dashLayout ? 10 : 8, slotW * 0.42);
+    ensureSpace(
+      yAxisLabelH + chartInnerH + labelH + footPad + xAxisCaptionH + 10,
+    );
+    const chartTop = y + yAxisLabelH;
+    const baseY = chartTop + chartInnerH;
+
+    if (dashLayout) {
+      pdf.setFont(PDF_FONT, "normal");
+      pdf.setFontSize(6.5);
+      setMuted();
+      pdf.text("Number of students", chartLeft + chartW / 2, y + 3, {
+        align: "center",
+      });
+    }
+
+    if (dashLayout) {
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(0.15);
+      for (let g = 1; g <= 4; g++) {
+        const gy = baseY - ((chartInnerH - 1) * g) / 5;
+        pdf.line(chartLeft, gy, chartLeft + chartW, gy);
+      }
+    }
+
     pdf.setDrawColor(TRACK.r, TRACK.g, TRACK.b);
     pdf.setLineWidth(0.2);
-    pdf.line(margin, baseY, margin + contentW, baseY);
+    pdf.line(chartLeft, baseY, chartLeft + chartW, baseY);
+    if (dashLayout) {
+      pdf.line(chartLeft, chartTop + 1, chartLeft, baseY);
+    }
+
+    if (dashLayout) {
+      pdf.setFont(PDF_FONT, "normal");
+      pdf.setFontSize(6);
+      setMuted();
+      const fracs = [0, 0.25, 0.5, 0.75, 1] as const;
+      for (const frac of fracs) {
+        const val = Math.round(maxV * frac);
+        const ty = baseY - (chartInnerH - 1) * frac;
+        const labelY = frac === 0 ? baseY + 1.4 : ty + 0.9;
+        pdf.text(String(val), chartLeft - 0.8, labelY, { align: "right" });
+      }
+    }
+
+    const singleToneBar = palette === "score";
 
     for (let i = 0; i < n; i++) {
       const row = rows[i]!;
-      const cx = margin + slotW * i + slotW / 2;
+      const cx = chartLeft + slotW * i + slotW / 2;
       const fillH = (chartInnerH - 1) * (row.value / maxV);
       pdf.setFillColor(TRACK.r, TRACK.g, TRACK.b);
-      pdf.rect(cx - barW / 2, y + 1, barW, chartInnerH - 1, "F");
+      pdf.rect(cx - barW / 2, chartTop + 1, barW, chartInnerH - 1, "F");
       if (fillH > 0) {
-        pdf.setFillColor(SKY.r, SKY.g, SKY.b);
-        pdf.rect(cx - barW / 2, baseY - fillH, barW, fillH, "F");
-        pdf.setFillColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
-        const cap = Math.min(1.4, fillH);
-        pdf.rect(cx - barW / 2, baseY - fillH, barW, cap, "F");
+        const fill = barRgbForPalette(palette, i);
+        pdf.setFillColor(fill[0], fill[1], fill[2]);
+        if (singleToneBar && fillH > 2.6) {
+          const r = Math.min(1.35, barW / 3, fillH / 4);
+          pdf.roundedRect(
+            cx - barW / 2,
+            baseY - fillH,
+            barW,
+            fillH,
+            r,
+            r,
+            "F",
+          );
+        } else {
+          pdf.rect(cx - barW / 2, baseY - fillH, barW, fillH, "F");
+        }
+        if (!singleToneBar) {
+          const capRgb = rgbDarker(fill, 0.78);
+          pdf.setFillColor(capRgb[0], capRgb[1], capRgb[2]);
+          const cap = Math.min(1.4, fillH);
+          pdf.rect(cx - barW / 2, baseY - fillH, barW, cap, "F");
+        }
       }
       pdf.setFont(PDF_FONT, "bold");
       pdf.setFontSize(7);
-      setInk();
-      pdf.text(String(row.value), cx, y - 0.5, { align: "center" });
+      pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
+      pdf.text(String(row.value), cx, chartTop - 0.3, { align: "center" });
       pdf.setFont(PDF_FONT, "normal");
-      pdf.setFontSize(5.8);
+      pdf.setFontSize(dashLayout ? 6 : 5.8);
       setMuted();
-      const short = truncatePdfCell(row.label, 11);
+      const labMax = dashLayout ? 14 : 11;
+      const short = truncatePdfCell(row.label, labMax);
       pdf.text(short, cx, baseY + 3.8, { align: "center" });
     }
-    y = baseY + labelH + footPad + 6;
+
+    if (dashLayout) {
+      pdf.setFont(PDF_FONT, "normal");
+      pdf.setFontSize(6.5);
+      setMuted();
+      pdf.text(
+        "Score range (share of total points)",
+        chartLeft + chartW / 2,
+        baseY + 9.2,
+        { align: "center" },
+      );
+    }
+
+    y = baseY + labelH + footPad + xAxisCaptionH + 4;
     setInk();
   };
 
@@ -520,33 +678,28 @@ export function generateAssessmentAnalyticsPdfVector(
   const scoreBuckets = (data.charts?.score_distribution_percent ?? []).map(
     (b) => ({ label: b.label, value: b.count }),
   );
-  drawHorizontalBarBlock(
-    "Score distribution (% bands)",
+  drawVerticalBarChart(
+    "How scores are spread out",
     scoreBuckets,
     "No score distribution data.",
+    "score",
+    {
+      subtitleOverride:
+        "Each bar is a score range. The number on top is how many students landed in that range.",
+      scoreDashboardLayout: true,
+    },
   );
-  if (scoreBuckets.length > 0) {
-    drawVerticalBarChart(
-      "Score distribution (column chart)",
-      scoreBuckets,
-      "No score distribution data.",
-    );
-  }
 
   const timeBuckets = (data.charts?.time_taken_minutes ?? []).map((b) => ({
     label: b.label,
     value: b.count,
   }));
-  drawHorizontalBarBlock(
-    "Time taken (minutes)",
-    timeBuckets,
-    "No time-bucket data.",
-  );
   if (timeBuckets.length > 0) {
     drawVerticalBarChart(
       "Time taken (column chart)",
       timeBuckets,
       "No time-bucket data.",
+      "time",
     );
   }
 
@@ -556,7 +709,7 @@ export function generateAssessmentAnalyticsPdfVector(
   if (timeline.length > 0) {
     drawSectionTitle(
       "Submissions over time",
-      "Daily submission counts (most recent periods).",
+      "Daily submission counts (most recent periods); bars use the same indigo tone as the on-screen line chart.",
     );
     const maxT = Math.max(1, ...timeline.map((d) => d.count));
     const show = timeline.slice(-18);
@@ -572,7 +725,11 @@ export function generateAssessmentAnalyticsPdfVector(
       const h = (chartH - 2) * (d.count / maxT);
       const x = margin + i * tw + tw * 0.12;
       const bw = tw * 0.76;
-      pdf.setFillColor(SKY.r, SKY.g, SKY.b);
+      pdf.setFillColor(
+        CHART_TIMELINE_RGB[0],
+        CHART_TIMELINE_RGB[1],
+        CHART_TIMELINE_RGB[2],
+      );
       pdf.rect(x, baseY - h, bw, h, "F");
     }
     pdf.setFont(PDF_FONT, "normal");
@@ -603,76 +760,147 @@ export function generateAssessmentAnalyticsPdfVector(
 
   drawSectionSeparator(7);
 
-  // --- Section averages (table only — bar chart omitted to avoid duplicate with UI) ---
+  // --- Section-wise performance (matches on-screen card: pills, bar, status) ---
   const sections = data.section_averages ?? [];
   if (sections.length > 0) {
+    const maxPct = maxSectionAvgPct(sections);
     drawSectionTitle(
-      `Section averages (${sections.length})`,
-      "Average score, max, average %, and submission count per section.",
+      `Section-wise performance (${sections.length})`,
+      "Row colors cycle by section; status compares each section’s average % to the set (strongest = highest when the cohort is above 40%).",
     );
-    const col = {
-      sec: 52,
-      avg: 22,
-      max: 18,
-      pct: 22,
-      n: 16,
+    const HEAD = [250, 248, 245] as const;
+    /** Content column starts (mm from page left): section, max, avg score, avg %, bar, status */
+    const c = {
+      secL: margin,
+      secW: 46,
+      maxL: margin + 46,
+      maxW: 14,
+      avgL: margin + 60,
+      avgW: 20,
+      pctL: margin + 80,
+      pctW: 18,
+      barL: margin + 98,
+      barW: 52,
+      stL: margin + 150,
+      stW: 28,
     };
-    const drawTableHeader = () => {
-      ensureSpace(8);
-      pdf.setFillColor(249, 250, 251);
-      pdf.rect(margin, y - 1, contentW, 7, "F");
+    const rowH = 7.8;
+    const drawSectionWiseHead = () => {
+      ensureSpace(9);
+      pdf.setFillColor(HEAD[0], HEAD[1], HEAD[2]);
+      pdf.rect(margin, y - 1, contentW, 7.2, "F");
       pdf.setFont(PDF_FONT, "bold");
-      pdf.setFontSize(7.5);
+      pdf.setFontSize(7);
       setInk();
-      let x = margin + 2;
-      pdf.text("Section", x, y + 4);
-      x += col.sec;
-      pdf.text("Avg", x, y + 4, { align: "right" });
-      x += col.avg;
-      pdf.text("Max", x, y + 4, { align: "right" });
-      x += col.max;
-      pdf.text("Avg %", x, y + 4, { align: "right" });
-      x += col.pct;
-      pdf.text("n", x, y + 4, { align: "right" });
-      y += 9;
+      pdf.text("Section", c.secL + 1.5, y + 4.2);
+      pdf.text("Max", c.maxL + c.maxW / 2, y + 4.2, { align: "center" });
+      pdf.text("Avg score", c.avgL + c.avgW / 2, y + 4.2, { align: "center" });
+      pdf.text("Avg %", c.pctL + c.pctW / 2, y + 4.2, { align: "center" });
+      pdf.text("Performance bar", c.barL + c.barW / 2, y + 4.2, {
+        align: "center",
+      });
+      pdf.text("Status", c.stL + c.stW - 1, y + 4.2, { align: "right" });
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(0.2);
+      pdf.line(margin, y + 6.5, margin + contentW, y + 6.5);
+      y += 8.5;
     };
-    drawTableHeader();
+    drawSectionWiseHead();
     pdf.setFont(PDF_FONT, "normal");
-    pdf.setFontSize(8);
-    for (const sec of sections) {
-      ensureSpace(6);
-      let x = margin + 2;
-      pdf.text(truncatePdfCell(sec.section_title, 30), x, y);
-      x += col.sec;
+    pdf.setFontSize(7);
+    for (let i = 0; i < sections.length; i++) {
+      const sec = sections[i]!;
+      if (y + rowH > contentBottom) {
+        newPage();
+        drawSectionWiseHead();
+        pdf.setFont(PDF_FONT, "normal");
+        pdf.setFontSize(7);
+      }
+      const accent = sectionRowAccent(i);
+      const pctRaw = sec.average_percentage ?? 0;
+      const pct = Math.min(100, Math.max(0, pctRaw));
+      const kind = sectionPerformanceStatus(sec.average_percentage, maxPct);
+      const statusLabel = sectionPerformanceStatusLabel(kind);
+      const stRgb = SECTION_STATUS_PDF_RGB[kind];
+
+      const title = truncatePdfCell(sec.section_title, 24);
+      pdf.setFont(PDF_FONT, "bold");
+      pdf.setFontSize(7);
+      const tw = pdf.getTextWidth(title);
+      const pillW = Math.min(c.secW - 2, tw + 3.2);
+      const pillH = 4.8;
+      const pillY = y - 2.8;
+      pdf.setFillColor(
+        accent.lightRgb[0],
+        accent.lightRgb[1],
+        accent.lightRgb[2],
+      );
+      pdf.roundedRect(c.secL + 1, pillY, pillW, pillH, 1.1, 1.1, "F");
+      pdf.setTextColor(accent.textRgb[0], accent.textRgb[1], accent.textRgb[2]);
+      pdf.text(title, c.secL + 2.2, y + 0.9);
+
+      setInk();
+      pdf.setFont(PDF_FONT, "normal");
+      pdf.setFontSize(7.5);
+      pdf.text(
+        sec.max_score != null ? String(Math.round(sec.max_score)) : "—",
+        c.maxL + c.maxW / 2,
+        y + 0.6,
+        { align: "center" },
+      );
       pdf.text(
         sec.average_score != null ? sec.average_score.toFixed(1) : "—",
-        x,
-        y,
-        { align: "right" },
+        c.avgL + c.avgW / 2,
+        y + 0.6,
+        { align: "center" },
       );
-      x += col.avg;
-      pdf.text(
-        sec.max_score != null ? sec.max_score.toFixed(1) : "—",
-        x,
-        y,
-        { align: "right" },
-      );
-      x += col.max;
       pdf.text(
         sec.average_percentage != null
           ? `${sec.average_percentage.toFixed(1)}%`
           : "—",
-        x,
-        y,
-        { align: "right" },
+        c.pctL + c.pctW / 2,
+        y + 0.6,
+        { align: "center" },
       );
-      x += col.pct;
-      pdf.text(String(sec.submissions_count ?? "—"), x, y, {
-        align: "right",
-      });
-      y += 5.2;
+
+      const barH = 2.9;
+      const barY = y - 1.2;
+      pdf.setFillColor(TRACK.r, TRACK.g, TRACK.b);
+      pdf.roundedRect(c.barL, barY, c.barW, barH, 1, 1, "F");
+      const fillW = Math.max(0.5, (c.barW - 0.4) * (pct / 100));
+      if (pct > 0) {
+        pdf.setFillColor(
+          accent.solidRgb[0],
+          accent.solidRgb[1],
+          accent.solidRgb[2],
+        );
+        pdf.roundedRect(c.barL + 0.2, barY + 0.15, fillW, barH - 0.3, 0.8, 0.8, "F");
+      }
+
+      pdf.setFont(PDF_FONT, "bold");
+      pdf.setFontSize(6.2);
+      const stw = pdf.getTextWidth(statusLabel) + 3;
+      const stPillW = Math.min(c.stW - 1, stw);
+      pdf.setFillColor(stRgb.bg[0], stRgb.bg[1], stRgb.bg[2]);
+      pdf.roundedRect(
+        c.stL + c.stW - stPillW - 0.5,
+        pillY,
+        stPillW,
+        pillH,
+        1.1,
+        1.1,
+        "F",
+      );
+      pdf.setTextColor(stRgb.fg[0], stRgb.fg[1], stRgb.fg[2]);
+      pdf.text(statusLabel, c.stL + c.stW - 1.2, y + 0.9, { align: "right" });
+
+      setInk();
+      pdf.setDrawColor(241, 245, 249);
+      pdf.setLineWidth(0.15);
+      pdf.line(margin, y + rowH - 1.2, margin + contentW, y + rowH - 1.2);
+      y += rowH;
     }
-    y += 10;
+    y += 6;
   }
 
   drawSectionSeparator(7);
