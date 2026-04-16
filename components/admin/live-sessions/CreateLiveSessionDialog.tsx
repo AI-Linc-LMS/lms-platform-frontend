@@ -27,6 +27,15 @@ import {
   copyToClipboard,
 } from "@/lib/utils/live-session-errors";
 
+function isValidHttpUrl(s: string): boolean {
+  try {
+    const u = new URL(s.trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 interface CreateLiveSessionDialogProps {
   open: boolean;
   onClose: () => void;
@@ -40,11 +49,14 @@ export function CreateLiveSessionDialog({
 }: CreateLiveSessionDialogProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const [sessionType, setSessionType] = useState<"zoom" | "meet">("zoom");
   const [step, setStep] = useState<"form" | "create-zoom" | "success">("form");
   const [topicName, setTopicName] = useState("");
   const [description, setDescription] = useState("");
   const [classDatetime, setClassDatetime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
+  const [closesAt, setClosesAt] = useState("");
+  const [meetLink, setMeetLink] = useState("");
   const [instructorId, setInstructorId] = useState<string>("");
   const [creating, setCreating] = useState(false);
   const [creatingZoom, setCreatingZoom] = useState(false);
@@ -87,6 +99,22 @@ export function CreateLiveSessionDialog({
     return num;
   };
 
+  const resetFormState = () => {
+    setSessionType("zoom");
+    setStep("form");
+    setCreatedSession(null);
+    setZoomStartUrl(null);
+    setZoomPassword(null);
+    setTopicName("");
+    setDescription("");
+    setClassDatetime("");
+    setDurationMinutes(60);
+    setClosesAt("");
+    setMeetLink("");
+    setInstructorId("");
+    setCourseId(null);
+  };
+
   const handleCreateSession = async () => {
     const trimmedTopic = topicName.trim();
     if (!trimmedTopic) {
@@ -115,8 +143,49 @@ export function CreateLiveSessionDialog({
     if (duration !== durationMinutes) {
       setDurationMinutes(duration);
     }
+
+    if (sessionType === "meet") {
+      const link = meetLink.trim();
+      if (!link) {
+        showToast(t("adminLiveSessions.pleaseEnterMeetLink"), "error");
+        return;
+      }
+      if (!isValidHttpUrl(link)) {
+        showToast(t("adminLiveSessions.invalidMeetLink"), "error");
+        return;
+      }
+    }
+
     try {
       setCreating(true);
+      if (sessionType === "meet") {
+        const link = meetLink.trim();
+        let closesIso: string | undefined;
+        if (closesAt.trim()) {
+          const cd = new Date(closesAt);
+          if (Number.isNaN(cd.getTime())) {
+            showToast(t("adminLiveSessions.invalidCloseDateTime"), "error");
+            return;
+          }
+          closesIso = cd.toISOString();
+        }
+        const session = await liveClassService.createSession({
+          topic_name: trimmedTopic,
+          description: description.trim() || undefined,
+          class_datetime: classDatetime,
+          duration_minutes: duration,
+          instructor_id: getValidInstructorId(),
+          course: courseId ?? undefined,
+          join_link: link,
+          is_google_meet: true,
+          closes_at: closesIso ?? null,
+        });
+        setCreatedSession(session);
+        setStep("success");
+        showToast(t("adminLiveSessions.meetSessionCreatedToast"), "success");
+        return;
+      }
+
       const session = await liveClassService.createSession({
         topic_name: trimmedTopic,
         description: description.trim() || undefined,
@@ -183,16 +252,7 @@ export function CreateLiveSessionDialog({
   };
 
   const handleDone = () => {
-    setStep("form");
-    setCreatedSession(null);
-    setZoomStartUrl(null);
-    setZoomPassword(null);
-    setTopicName("");
-    setDescription("");
-    setClassDatetime("");
-    setDurationMinutes(60);
-    setInstructorId("");
-    setCourseId(null);
+    resetFormState();
     onSuccess();
     onClose();
   };
@@ -202,16 +262,12 @@ export function CreateLiveSessionDialog({
       handleDone();
       return;
     }
-    setStep("form");
-    setCreatedSession(null);
-    setTopicName("");
-    setDescription("");
-    setClassDatetime("");
-    setDurationMinutes(60);
-    setInstructorId("");
-    setCourseId(null);
+    resetFormState();
     onClose();
   };
+
+  const isMeetSuccess = Boolean(createdSession?.is_google_meet && createdSession?.join_link);
+  const meetLinkForSuccess = createdSession?.join_link?.trim() ?? "";
 
   return (
     <Dialog
@@ -237,7 +293,9 @@ export function CreateLiveSessionDialog({
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             {step === "form" && t("adminLiveSessions.createDialogTitle")}
             {step === "create-zoom" && t("adminLiveSessions.createZoomMeetingTitle")}
-            {step === "success" && t("adminLiveSessions.zoomSessionCreatedTitle")}
+            {step === "success" && (isMeetSuccess
+              ? t("adminLiveSessions.meetSessionCreatedTitle")
+              : t("adminLiveSessions.zoomSessionCreatedTitle"))}
           </Typography>
           <IconButton onClick={handleClose} size="small" aria-label={t("adminLiveSessions.closeDialog")}>
             <IconWrapper icon="mdi:close" size={20} />
@@ -254,6 +312,17 @@ export function CreateLiveSessionDialog({
               mt: 1,
             }}
           >
+            <TextField
+              select
+              label={t("adminLiveSessions.sessionType")}
+              value={sessionType}
+              onChange={(e) => setSessionType(e.target.value as "zoom" | "meet")}
+              fullWidth
+              size="small"
+            >
+              <MenuItem value="zoom">{t("adminLiveSessions.sessionTypeZoom")}</MenuItem>
+              <MenuItem value="meet">{t("adminLiveSessions.sessionTypeMeet")}</MenuItem>
+            </TextField>
             <TextField
               label={t("adminLiveSessions.topicName")}
               value={topicName}
@@ -300,6 +369,35 @@ export function CreateLiveSessionDialog({
               error={durationMinutes < 1 || durationMinutes > 480}
               helperText={durationMinutes > 480 ? t("adminLiveSessions.maxDurationHelper") : undefined}
             />
+            {sessionType === "meet" && (
+              <>
+                <TextField
+                  label={t("adminLiveSessions.meetLink")}
+                  value={meetLink}
+                  onChange={(e) => setMeetLink(e.target.value)}
+                  placeholder="https://meet.google.com/..."
+                  fullWidth
+                  required
+                  size="small"
+                  error={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink)}
+                  helperText={
+                    meetLink.trim().length > 0 && !isValidHttpUrl(meetLink)
+                      ? t("adminLiveSessions.invalidMeetLink")
+                      : t("adminLiveSessions.meetLinkHelper")
+                  }
+                />
+                <TextField
+                  label={t("adminLiveSessions.closeDateAndTimeOptional")}
+                  type="datetime-local"
+                  value={closesAt}
+                  onChange={(e) => setClosesAt(e.target.value)}
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  helperText={t("adminLiveSessions.closeDateHelper")}
+                />
+              </>
+            )}
             <TextField
               label={t("adminLiveSessions.instructorIdOptional")}
               value={instructorId}
@@ -368,10 +466,40 @@ export function CreateLiveSessionDialog({
             }}
           >
             <Typography variant="body1" sx={{ color: "#6b7280" }}>
-              {t("adminLiveSessions.zoomReadyPrompt")}
+              {isMeetSuccess
+                ? t("adminLiveSessions.meetReadyPrompt")
+                : t("adminLiveSessions.zoomReadyPrompt")}
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-              {zoomStartUrl && (
+              {isMeetSuccess && meetLinkForSuccess && (
+                <>
+                  <Button
+                    variant="contained"
+                    onClick={() => window.open(meetLinkForSuccess, "_blank")}
+                    startIcon={<IconWrapper icon="mdi:video" size={20} />}
+                    sx={{
+                      bgcolor: "#0f9d58",
+                      "&:hover": { bgcolor: "#0c7c45" },
+                    }}
+                  >
+                    {t("adminLiveSessions.openGoogleMeet")}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() =>
+                      copyToClipboard(
+                        meetLinkForSuccess,
+                        showToast,
+                        t("adminLiveSessions.meetLinkCopied")
+                      )
+                    }
+                  >
+                    {t("liveSessions.copy")}
+                  </Button>
+                </>
+              )}
+              {!isMeetSuccess && zoomStartUrl && (
                 <Button
                   variant="contained"
                   onClick={() => window.open(zoomStartUrl!, "_blank")}
@@ -384,7 +512,7 @@ export function CreateLiveSessionDialog({
                   {t("adminLiveSessions.startMeeting")}
                 </Button>
               )}
-              {zoomPassword && (
+              {!isMeetSuccess && zoomPassword && (
                 <Typography
                   variant="body2"
                   sx={{ color: "#6b7280", display: "flex", alignItems: "center", gap: 1 }}
@@ -415,13 +543,14 @@ export function CreateLiveSessionDialog({
               topicName.trim().length < 2 ||
               !classDatetime.trim() ||
               (() => {
-                const t = new Date(classDatetime).getTime();
+                const t0 = new Date(classDatetime).getTime();
                 const now = Date.now();
-                return Number.isNaN(t) || t < now - 60 * 1000;
+                return Number.isNaN(t0) || t0 < now - 60 * 1000;
               })() ||
               durationMinutes < 1 ||
               durationMinutes > 480 ||
-              (instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1))
+              (instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1)) ||
+              (sessionType === "meet" && (!meetLink.trim() || !isValidHttpUrl(meetLink)))
             }
             sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
           >
