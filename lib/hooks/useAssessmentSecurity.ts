@@ -33,8 +33,37 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       return event.returnValue;
     };
 
-    // Prevent keyboard shortcuts for refresh
+    const captureOpts: AddEventListenerOptions = { capture: true, passive: false };
+
+    // Prevent keyboard shortcuts for refresh and system-style combos (where the browser allows)
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.metaKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.ctrlKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (
+        event.key === "Meta" ||
+        event.code === "MetaLeft" ||
+        event.code === "MetaRight" ||
+        event.code === "OSLeft" ||
+        event.code === "OSRight"
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
       // Prevent F5, Ctrl+R, Ctrl+Shift+R
       if (
         event.key === "F5" ||
@@ -52,6 +81,16 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         return false;
       }
 
+      // Close tab / window shortcuts
+      if (event.ctrlKey && (event.key === "w" || event.key === "W")) {
+        event.preventDefault();
+        return false;
+      }
+      if (event.ctrlKey && event.shiftKey && (event.key === "t" || event.key === "T")) {
+        event.preventDefault();
+        return false;
+      }
+
       // Prevent Ctrl+S (save page)
       if (event.ctrlKey && event.key === "s") {
         event.preventDefault();
@@ -64,8 +103,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         return false;
       }
 
-      // Prevent F12 (dev tools)
-      if (event.key === "F12") {
+      // Prevent F11 / F12 (fullscreen / devtools)
+      if (event.key === "F11" || event.key === "F12") {
         event.preventDefault();
         return false;
       }
@@ -133,7 +172,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       // Always try to remove, even if it wasn't added
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.onbeforeunload = null; // Also clear the property
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown, captureOpts);
       window.removeEventListener("popstate", handlePopState);
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("selectstart", handleSelectStart);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, use, useCallback } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -20,6 +20,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { assessmentService } from "@/lib/services/assessment.service";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { CheckCircle, XCircle, Video, Mic, AlertCircle } from "lucide-react";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 interface DeviceStatus {
   camera: boolean;
@@ -46,6 +48,18 @@ export default function DeviceCheckPage({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
+
+    // ✅ INTERNET STATE
+    const [networkSpeed, setNetworkSpeed] = useState<number | null>(null);
+    const [networkStatus, setNetworkStatus] = useState<
+      "good" | "moderate" | "poor" | "testing" | null
+    >(null);
+
+  const [mobileAssessmentGate, setMobileAssessmentGate] = useState<
+    "pending" | "blocked" | "ok"
+  >("pending");
+
+  // ✅ FACE VALIDATION STATE
   const [faceValidationPassed, setFaceValidationPassed] = useState(false);
   const [faceValidationMessage, setFaceValidationMessage] = useState<string>("");
 
@@ -98,6 +112,12 @@ export default function DeviceCheckPage({
     },
   });
 
+  useLayoutEffect(() => {
+    setMobileAssessmentGate(
+      isMobileOrTabletForAssessment() ? "blocked" : "ok"
+    );
+  }, []);
+
   // Update face validation status when faceCount or faceStatus changes
   useEffect(() => {
     if (faceCount === 1 && faceStatus === "NORMAL" && !latestViolation) {
@@ -117,6 +137,36 @@ export default function DeviceCheckPage({
       }
     }
   }, [faceCount, faceStatus, latestViolation]);
+
+  // ✅ INTERNET SPEED TEST
+  const testInternetSpeed = useCallback(async () => {
+    setNetworkStatus("testing");
+
+    try {
+      const startTime = performance.now();
+
+      const response = await fetch(
+        "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+        { cache: "no-store" }
+      );
+
+      const blob = await response.blob();
+      const endTime = performance.now();
+
+      const duration = (endTime - startTime) / 1000;
+      const bitsLoaded = blob.size * 8;
+      const speedMbps = bitsLoaded / duration / (1024 * 1024);
+
+      setNetworkSpeed(speedMbps);
+
+      if (speedMbps > 5) setNetworkStatus("good");
+      else if (speedMbps > 1.5) setNetworkStatus("moderate");
+      else setNetworkStatus("poor");
+    } catch {
+      setNetworkStatus("poor");
+    }
+  }, []);
+
 
   // Test devices
   const testDevices = useCallback(async () => {
@@ -236,6 +286,9 @@ export default function DeviceCheckPage({
           // Fail silently or handle appropriately
         }
       }
+
+       testInternetSpeed();
+
 
       setLoading(false);
     } catch (error: any) {
@@ -418,6 +471,27 @@ export default function DeviceCheckPage({
     faceValidationPassed;
 
   // Don't show loading screen - render immediately for better UX
+
+  if (mobileAssessmentGate === "blocked") {
+    return <AssessmentDesktopOnlyFullPage slug={slug} />;
+  }
+  if (mobileAssessmentGate === "pending") {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 360,
+            py: 8,
+          }}
+        >
+          <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+        </Box>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -744,6 +818,62 @@ export default function DeviceCheckPage({
                     : "Microphone is ready"}
                 </Typography>
               </Box>
+            )}
+          </Paper>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid #e5e7eb",
+              backgroundColor:
+                networkStatus === "good"
+                  ? "#f0fdf4"
+                  : networkStatus === "moderate"
+                  ? "#fefce8"
+                  : networkStatus === "poor"
+                  ? "#fef2f2"
+                  : "#f9fafb",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              {networkStatus === "good" ? (
+                <CheckCircle size={32} color="#10b981" />
+              ) : networkStatus === "moderate" ? (
+                <AlertCircle size={32} color="#f59e0b" />
+              ) : networkStatus === "poor" ? (
+                <XCircle size={32} color="#ef4444" />
+              ) : (
+                <CircularProgress size={32} />
+              )}
+
+              <Box>
+                <Typography variant="h6">Internet</Typography>
+                <Typography variant="body2">
+                  {networkStatus === "testing"
+                    ? "Checking connection..."
+                    : networkSpeed
+                    ? `${networkSpeed.toFixed(2)} Mbps`
+                    : "Connection check required"}
+                </Typography>
+              </Box>
+            </Box>
+
+            {networkStatus === "poor" && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                Poor internet connection. Please switch network.
+              </Alert>
+            )}
+            {networkStatus === "moderate" && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Connection may cause interruptions.
+              </Alert>
+            )}
+            {networkStatus === "good" && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                Internet connection is stable.
+              </Alert>
             )}
           </Paper>
         </Box>

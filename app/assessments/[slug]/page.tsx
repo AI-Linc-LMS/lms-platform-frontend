@@ -24,6 +24,8 @@ import {
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 export default function AssessmentDetailPage({
   params,
@@ -37,6 +39,7 @@ export default function AssessmentDetailPage({
   const [scholarshipStatus, setScholarshipStatus] =
     useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -69,6 +72,10 @@ export default function AssessmentDetailPage({
   };
 
   const handleStart = () => {
+    if (isMobileOrTabletForAssessment()) {
+      setDesktopOnlyOpen(true);
+      return;
+    }
     // Skip device-check if proctoring is disabled
     if (assessment && assessment.proctoring_enabled === false) {
       router.push(`/assessments/${slug}/take`);
@@ -107,6 +114,10 @@ export default function AssessmentDetailPage({
 
   return (
     <MainLayout>
+      <AssessmentDesktopOnlyDialog
+        open={desktopOnlyOpen}
+        onClose={() => setDesktopOnlyOpen(false)}
+      />
       <Box
         sx={{
           width: "100%",

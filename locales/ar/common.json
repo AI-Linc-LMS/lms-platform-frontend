@@ -496,6 +496,12 @@
     "startsInHoursMinutes": "يبدأ خلال {{hours}} ساعة، {{minutes}} دقيقة",
     "startsInMinutesSeconds": "يبدأ خلال {{minutes}} دقيقة، {{seconds}} ثانية",
     "startsInSeconds": "يبدأ خلال {{seconds}} ثانية",
+    "desktopOnly": {
+      "title": "استخدم جهاز كمبيوتر لهذا التقييم",
+      "description": "بدء التقييم وأداؤه مدعومان فقط على متصفح حاسوب محمول أو مكتبي. يرجى الانتقال إلى حاسوب مع اتصال مستقر ثم المحاولة مرة أخرى.",
+      "gotIt": "حسناً",
+      "backToOverview": "العودة إلى نظرة عامة على التقييم"
+    },
     "deviceCheck": {
       "title": "فحص الجهاز",
       "noFaceDetected": "لم يتم اكتشاف وجه. يرجى وضع نفسك أمام الكاميرا.",

@@ -496,6 +496,12 @@
     "startsInHoursMinutes": "Starts in {{hours}} hour(s), {{minutes}} minute(s)",
     "startsInMinutesSeconds": "Starts in {{minutes}} minute(s), {{seconds}} second(s)",
     "startsInSeconds": "Starts in {{seconds}} second(s)",
+    "desktopOnly": {
+      "title": "Use a computer for this assessment",
+      "description": "Starting and taking assessments is only supported on a laptop or desktop browser. Please switch to a computer with a stable connection, then try again.",
+      "gotIt": "Got it",
+      "backToOverview": "Back to assessment overview"
+    },
     "deviceCheck": {
       "title": "Device check",
       "noFaceDetected": "No face detected. Please position yourself in front of the camera.",

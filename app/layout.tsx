@@ -19,6 +19,7 @@ import { I18nProvider } from "@/components/providers/I18nProvider";
 import { DirectionSync } from "@/components/providers/DirectionSync";
 import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
 import { ProfileActivationBlocker } from "@/components/auth/ProfileActivationBlocker";
+import { config } from "@/lib/config";
 
 /* ✅ Metadata (SEO) */
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,6 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
     : `/favicon.ico?v=${Date.now()}`;
 
   return {
+    ...(config.appUrl ? { metadataBase: new URL(`${config.appUrl}/`) } : {}),
     title: {
       default: client?.name ?? "LMS Platform",
       template: "%s",

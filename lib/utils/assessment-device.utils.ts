@@ -35,6 +35,39 @@ export function assessLaptopClassDevice(): LaptopHeuristicResult {
   return { ok: reasons.length === 0, reasons };
 }
 
+/**
+ * True when the learner should not start or take an assessment on this device
+ * (phones, tablets, iPadOS “desktop” Safari, coarse-pointer small screens, etc.).
+ * Client-only: returns false during SSR.
+ */
+export function isMobileOrTabletForAssessment(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return false;
+  }
+
+  const nav = navigator as Navigator & {
+    userAgentData?: { mobile?: boolean };
+  };
+  if (nav.userAgentData?.mobile === true) {
+    return true;
+  }
+
+  if (!assessLaptopClassDevice().ok) {
+    return true;
+  }
+
+  // iPadOS 13+ Safari often reports as MacIntel with touch points
+  if (
+    typeof navigator.platform === "string" &&
+    navigator.platform === "MacIntel" &&
+    (navigator.maxTouchPoints ?? 0) > 1
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 export type NetworkProbeResult = {
   ok: boolean;
   latencyMs: number | null;

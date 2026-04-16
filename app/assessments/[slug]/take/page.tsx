@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useState,
   useCallback,
   useRef,
@@ -51,6 +52,8 @@ import { config } from "@/lib/config";
 import { uploadFile } from "@/lib/services/file-upload.service";
 import type { ViolationScreenshotSample } from "@/lib/services/assessment.service";
 import { captureViolationScreenshotFile } from "@/lib/utils/assessment-violation-screenshot.utils";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 // Lazy load dialogs only
 const SubmissionDialog = lazy(() =>
@@ -136,6 +139,9 @@ export default function TakeAssessmentPage({
   const [responses, setResponses] = useState<
     Record<string, Record<string, any>>
   >({});
+  const [mobileAssessmentGate, setMobileAssessmentGate] = useState<
+    "pending" | "blocked" | "ok"
+  >("pending");
 
   // Refs
   const timeUpCallbackRef = useRef<(() => void) | null>(null);
@@ -161,6 +167,12 @@ export default function TakeAssessmentPage({
 
   // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
+
+  useLayoutEffect(() => {
+    setMobileAssessmentGate(
+      isMobileOrTabletForAssessment() ? "blocked" : "ok"
+    );
+  }, []);
 
   // Preload proctoring model in background (non-blocking)
   useEffect(() => {
@@ -504,7 +516,6 @@ export default function TakeAssessmentPage({
 
   // Security measures - disable beforeunload during submission
   useAssessmentSecurity({ enabled: assessmentStarted, submitting });
-  useKeyboardShortcuts({ enabled: assessmentStarted });
 
   // Check if already submitted
   useEffect(() => {
@@ -747,6 +758,14 @@ export default function TakeAssessmentPage({
     onLeftFullscreen: openFullscreenExitPrompt,
     onEscapePressed: openFullscreenExitPrompt,
     suppressEscapeInterceptor: showFullscreenExitConfirm,
+  });
+
+  useKeyboardShortcuts({
+    enabled: assessmentStarted && !submitting,
+    suspend:
+      showSubmitDialog ||
+      showFullscreenWarning ||
+      showFullscreenExitConfirm,
   });
 
   // Submission handler
@@ -1471,6 +1490,13 @@ export default function TakeAssessmentPage({
   );
 
   // Early return
+  if (mobileAssessmentGate === "blocked") {
+    return <AssessmentDesktopOnlyFullPage slug={slug} />;
+  }
+  if (mobileAssessmentGate === "pending") {
+    return null;
+  }
+
   if (!assessment) {
     return null;
   }
