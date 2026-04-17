@@ -1,6 +1,11 @@
 import apiClient from "./api";
 import { config } from "../config";
 import { AxiosError } from "axios";
+import {
+  getExternalJobById,
+  isLikelyExternalJsonSyntheticId,
+} from "../jobs/external-json-jobs-store";
+import { fetchAndMapExternalJsonJobs } from "../jobs/external-job-json-feed";
 
 export interface JobV2 {
   id: number;
@@ -149,11 +154,22 @@ export const jobsV2Service = {
   },
 
   getJobById: async (id: number): Promise<JobV2 | null> => {
+    const fromStore = getExternalJobById(id);
+    if (fromStore) return fromStore;
+
+    if (isLikelyExternalJsonSyntheticId(id)) {
+      await fetchAndMapExternalJsonJobs().catch(() => undefined);
+      return getExternalJobById(id) ?? null;
+    }
+
     try {
       const response = await apiClient.get<JobV2>(`/jobs-v2/api/jobs/${id}/`);
       return response.data;
     } catch (err) {
       const error = err as AxiosError<ApiErrorPayload>;
+      if (error.response?.status === 404) {
+        return null;
+      }
       const message =
         error.response?.data?.error ||
         error.response?.data?.message ||
