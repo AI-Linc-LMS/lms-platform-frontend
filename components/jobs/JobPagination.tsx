@@ -8,10 +8,6 @@ interface JobPaginationProps {
   pageSize: number;
   page: number;
   onPageChange: (event: React.ChangeEvent<unknown>, value: number) => void;
-  /** Pages shown on each side of the current page (default 1). Higher = fewer ellipses. */
-  siblingCount?: number;
-  /** First/last page buttons cluster size at boundaries (default 2). */
-  boundaryCount?: number;
 }
 
 const JobPaginationComponent = ({
@@ -19,19 +15,17 @@ const JobPaginationComponent = ({
   pageSize,
   page,
   onPageChange,
-  siblingCount = 1,
-  boundaryCount = 2,
 }: JobPaginationProps) => {
   const { totalPages, startItem, endItem, shouldShow } = useMemo(() => {
     const shouldShow = totalCount > pageSize;
     if (!shouldShow) {
       return { totalPages: 0, startItem: 0, endItem: 0, shouldShow: false };
     }
-
+    
     const totalPages = Math.ceil(totalCount / pageSize);
     const startItem = (page - 1) * pageSize + 1;
     const endItem = Math.min(page * pageSize, totalCount || 0);
-
+    
     return { totalPages, startItem, endItem, shouldShow: true };
   }, [totalCount, pageSize, page]);
 
@@ -59,8 +53,7 @@ const JobPaginationComponent = ({
         size="small"
         showFirstButton
         showLastButton
-        siblingCount={siblingCount}
-        boundaryCount={boundaryCount}
+        siblingCount={0}
         sx={{
           '& .MuiPaginationItem-root': {
             fontSize: { xs: '0.75rem', sm: '0.875rem' },
@@ -89,9 +82,8 @@ export const JobPagination = memo<JobPaginationProps>(JobPaginationComponent, (p
   return (
     prevProps.totalCount === nextProps.totalCount &&
     prevProps.pageSize === nextProps.pageSize &&
-    prevProps.page === nextProps.page &&
-    prevProps.siblingCount === nextProps.siblingCount &&
-    prevProps.boundaryCount === nextProps.boundaryCount
+    prevProps.page === nextProps.page
   );
 });
 JobPagination.displayName = "JobPagination";
+

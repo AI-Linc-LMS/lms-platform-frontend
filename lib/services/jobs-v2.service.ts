@@ -51,11 +51,6 @@ export interface JobV2 {
     options?: string[];
   }>;
   question_ids?: number[];
-  /** Set only for client-merged static JSON feed listings (not from API). Legacy value `april11` may appear in old data. */
-  listing_source?: "api" | "external_json" | "april11";
-  /** Optional AI-generated copy (enriched JSON or on-demand API). */
-  ai_summary?: string;
-  ai_highlights?: string[];
 }
 
 /** Normalizes API `applicable_passout_year` for UI (string or number from JSON). */

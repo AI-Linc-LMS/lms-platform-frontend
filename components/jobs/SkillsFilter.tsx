@@ -9,10 +9,9 @@ import {
   Button,
   Paper,
 } from "@mui/material";
-import { useState, useMemo, memo } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { Job } from "@/lib/services/jobs.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { isSkillFilterLabelRelevant } from "@/lib/jobs/jobs-v2-browse-page";
 
 interface SkillsFilterProps {
   jobs: Job[];
@@ -27,17 +26,27 @@ const SkillsFilterComponent = ({
   onSkillsChange,
   onClearAll,
 }: SkillsFilterProps) => {
+  const [availableSkills, setAvailableSkills] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const jobsKeyRef = useRef<string>("");
 
-  const availableSkills = useMemo(() => {
-    if (jobs.length === 0) return [];
+  useEffect(() => {
+    if (jobs.length === 0) {
+      setAvailableSkills([]);
+      return;
+    }
+
+    const jobsKey = `${jobs.length}-${jobs.map((j) => j.id).join(",")}`;
+    if (jobsKeyRef.current === jobsKey) return;
+    jobsKeyRef.current = jobsKey;
+
     const skillMap = new Map<string, string>();
     for (const job of jobs) {
       const tags = job.tags ?? [];
       for (const tag of tags) {
         if (tag && typeof tag === "string") {
           const trimmed = tag.trim();
-          if (trimmed && isSkillFilterLabelRelevant(trimmed)) {
+          if (trimmed) {
             const normalized = trimmed.toLowerCase();
             if (!skillMap.has(normalized)) {
               skillMap.set(normalized, trimmed);
@@ -51,9 +60,10 @@ const SkillsFilterComponent = ({
         }
       }
     }
+
     const uniqueSkills = Array.from(skillMap.values());
     uniqueSkills.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    return uniqueSkills;
+    setAvailableSkills(uniqueSkills);
   }, [jobs]);
 
   const filteredSkills = useMemo(() => {
@@ -86,7 +96,7 @@ const SkillsFilterComponent = ({
             variant="subtitle2"
             sx={{ fontWeight: 600, fontSize: "0.875rem", color: "#0f172a" }}
           >
-            Skills
+            Skills & Tags
           </Typography>
           {availableSkills.length > 0 && (
             <Typography

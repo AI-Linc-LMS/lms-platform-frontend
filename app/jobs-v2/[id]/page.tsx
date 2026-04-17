@@ -1,80 +1,42 @@
 "use client";
 
-import { Suspense, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
-import { useParams, usePathname, useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   Box,
   Typography,
   Button,
   Paper,
+  Avatar,
   Chip,
   IconButton,
   Tooltip,
-  LinearProgress,
 } from "@mui/material";
-import { CompanyLogoAvatar } from "@/components/jobs-v2/CompanyLogoAvatar";
 import { ArrowLeft, ExternalLink, MapPin, Briefcase, Calendar, Heart, Banknote, FileText, Building2, Users, GraduationCap } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { jobsV2Service, JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
-import {
-  getExternalJobById,
-  isExternalJsonFeedJob,
-  isLikelyExternalJsonSyntheticId,
-  isExternalJsonJobSuppressedOnStudentBoard,
-  isExternalJsonJobFavorite,
-  toggleExternalJsonJobFavorite,
-} from "@/lib/jobs/external-json-jobs-store";
-import { fetchAndMapExternalJsonJobs } from "@/lib/jobs/external-job-json-feed";
 import { useToast } from "@/components/common/Toast";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { JobSearchIllustration, JobDetailIllustration } from "@/components/jobs-v2/illustrations";
-import { JobDescriptionWithLeadins } from "@/components/jobs-v2/JobDescriptionWithLeadins";
-import { formatDistanceToNow, formatDate } from "@/lib/utils/date-utils";
-import {
-  jobsV2ApplyHref,
-  jobsV2ListHref,
-  resolveJobsV2ListPageParam,
-} from "@/lib/jobs/jobs-v2-browse-page";
+import { formatDistanceToNow } from "@/lib/utils/date-utils";
 
-function getPostedLabel(d?: string, options?: { calendar?: boolean }) {
+const getPostedLabel = (d?: string) => {
   if (!d) return "—";
   try {
     const date = new Date(d);
     if (Number.isNaN(date.getTime())) return "—";
-    if (options?.calendar) return formatDate(d);
     return formatDistanceToNow(date);
   } catch {
     return "—";
   }
-}
+};
 
-function JobDetailPageInner() {
-  const router = useRouter();
+export default function JobDetailPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const [listPageParam, setListPageParam] = useState<string | null>(null);
-  useLayoutEffect(() => {
-    setListPageParam(resolveJobsV2ListPageParam(searchParams));
-  }, [searchParams, pathname]);
-  const jobsListHref = useMemo(() => jobsV2ListHref(listPageParam), [listPageParam]);
   const { showToast } = useToast();
   const { isAdminMode } = useAdminMode();
-
-  const blockIfSuppressedExternalJsonJob = useCallback(
-    (j: JobV2 | null): JobV2 | null => {
-      if (!j || !isExternalJsonFeedJob(j)) return j;
-      if (isExternalJsonJobSuppressedOnStudentBoard(j) && !isAdminMode) {
-        showToast("This listing is not available on the job board.", "info");
-        router.replace("/jobs-v2");
-        return null;
-      }
-      return j;
-    },
-    [isAdminMode, router, showToast]
-  );
   const id = Number(params?.id);
   const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,52 +44,20 @@ function JobDetailPageInner() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [showConfirmAppliedDialog, setShowConfirmAppliedDialog] = useState(false);
   const [pendingApplicationId, setPendingApplicationId] = useState<number | null>(null);
+
   const fetchJob = useCallback(async () => {
-    if (!id || Number.isNaN(id)) return;
+    if (!id || isNaN(id)) return;
     try {
       setLoading(true);
-      if (isLikelyExternalJsonSyntheticId(id)) {
-        let local = getExternalJobById(id);
-        if (!local) {
-          await fetchAndMapExternalJsonJobs().catch(() => {});
-          local = getExternalJobById(id);
-        }
-        if (local) {
-          const next = blockIfSuppressedExternalJsonJob({
-            ...local,
-            is_favourited: isExternalJsonJobFavorite(local.id),
-          });
-          setJob(next);
-        } else {
-          setJob(null);
-          showToast("Job not found", "error");
-        }
-        return;
-      }
-      try {
-        const data = await jobsV2Service.getJobById(id);
-        setJob(data);
-      } catch {
-        await fetchAndMapExternalJsonJobs().catch(() => {});
-        const fallback = getExternalJobById(id);
-        if (fallback) {
-          const next = blockIfSuppressedExternalJsonJob({
-            ...fallback,
-            is_favourited: isExternalJsonJobFavorite(fallback.id),
-          });
-          setJob(next);
-        } else {
-          setJob(null);
-          showToast("Failed to load job", "error");
-        }
-      }
+      const data = await jobsV2Service.getJobById(id);
+      setJob(data);
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to load job", "error");
       setJob(null);
     } finally {
       setLoading(false);
     }
-  }, [id, showToast, blockIfSuppressedExternalJsonJob]);
+  }, [id, showToast]);
 
   useEffect(() => {
     fetchJob();
@@ -138,13 +68,6 @@ function JobDetailPageInner() {
     if (job.apply_link) {
       if (job.eligible_to_apply === false) {
         showToast("You are not eligible to apply for this job based on college targeting.", "error");
-        return;
-      }
-      if (isExternalJsonFeedJob(job)) {
-        setApplying(true);
-        window.open(job.apply_link, "_blank", "noopener,noreferrer");
-        showToast("Opening apply page in a new tab.", "info");
-        setApplying(false);
         return;
       }
       try {
@@ -194,17 +117,6 @@ function JobDetailPageInner() {
 
   const handleFavorite = useCallback(async () => {
     if (!job || favoriteLoading) return;
-    if (isExternalJsonFeedJob(job)) {
-      setFavoriteLoading(true);
-      const favorited = toggleExternalJsonJobFavorite(job.id);
-      setJob((j) => (j ? { ...j, is_favourited: favorited } : j));
-      showToast(
-        favorited ? "Saved to favourites" : "Removed from favourites",
-        "info"
-      );
-      setFavoriteLoading(false);
-      return;
-    }
     setFavoriteLoading(true);
     const prev = job.is_favourited ?? false;
     setJob((j) => (j ? { ...j, is_favourited: !prev } : j));
@@ -229,7 +141,7 @@ function JobDetailPageInner() {
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
             <Button
               component={Link}
-              href={jobsListHref}
+              href="/jobs-v2"
               startIcon={<ArrowLeft size={18} />}
                 sx={{
                   mb: 2,
@@ -265,7 +177,7 @@ function JobDetailPageInner() {
                 </Typography>
                 <Button
                   component={Link}
-                  href={jobsListHref}
+                  href="/jobs-v2"
                   startIcon={<ArrowLeft size={18} />}
                   sx={{
                     textTransform: "none",
@@ -282,8 +194,6 @@ function JobDetailPageInner() {
       </MainLayout>
     );
   }
-
-  const applyHref = jobsV2ApplyHref(job.id, listPageParam);
 
   const canApply = job.status === "active" && job.eligible_to_apply !== false;
   const hasExternalLink = Boolean(job.apply_link?.trim());
@@ -304,12 +214,6 @@ function JobDetailPageInner() {
   ].filter(Boolean);
 
   const passoutYearDisplay = formatJobPassoutYear(job.applicable_passout_year);
-
-  const overviewSummary = job.ai_summary?.trim() ?? "";
-  const overviewHighlights = (job.ai_highlights ?? []).filter(Boolean);
-  const showOverview = Boolean(
-    overviewSummary || overviewHighlights.length > 0
-  );
 
   return (
     <MainLayout>
@@ -343,7 +247,7 @@ function JobDetailPageInner() {
           <Box sx={{ maxWidth: 1100, mx: "auto", width: "100%", position: "relative", zIndex: 1 }}>
             <Button
               component={Link}
-              href={jobsListHref}
+              href="/jobs-v2"
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 mb: 2,
@@ -377,18 +281,35 @@ function JobDetailPageInner() {
                 >
                   <JobDetailIllustration width={100} height={84} primaryColor="#6366f1" />
                 </Box>
-                <CompanyLogoAvatar
-                  logoUrl={job.company_logo}
-                  companyName={job.company_name}
+                <Box
                   sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     flexShrink: 0,
                     width: { xs: 72, md: 88 },
                     height: { xs: 72, md: 88 },
                     borderRadius: 2,
-                    fontSize: "1.75rem",
-                    p: 1,
+                    backgroundColor: "#fff",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    overflow: "hidden",
                   }}
-                />
+                >
+                  <Avatar
+                    src={job.company_logo}
+                    alt={job.company_name}
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor: "#6366f1",
+                      color: "#fff",
+                      fontSize: "1.75rem",
+                    }}
+                  >
+                    {job.company_name?.[0]?.toUpperCase() || "C"}
+                  </Avatar>
+                </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: "#0f172a", letterSpacing: "-0.02em" }}>
                     {job.job_title}
@@ -455,12 +376,7 @@ function JobDetailPageInner() {
                     {job.created_at && (
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                         <Calendar size={16} />
-                        <Typography variant="body2">
-                          Posted{" "}
-                          {getPostedLabel(job.created_at, {
-                            calendar: isExternalJsonFeedJob(job),
-                          })}
-                        </Typography>
+                        <Typography variant="body2">Posted {getPostedLabel(job.created_at)}</Typography>
                       </Box>
                     )}
                   </Box>
@@ -516,7 +432,7 @@ function JobDetailPageInner() {
                         : undefined,
                     }}
                   >
-                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply"}
+                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
                   </Button>
                 ) : hasApplied || !canApply ? (
                   <Button
@@ -543,7 +459,7 @@ function JobDetailPageInner() {
                 ) : (
                   <Button
                     component={Link}
-                    href={applyHref}
+                    href={`/jobs-v2/${job.id}/apply`}
                     variant="contained"
                     startIcon={<ExternalLink size={18} />}
                     sx={{
@@ -579,70 +495,6 @@ function JobDetailPageInner() {
           >
             {/* Left panel - main content */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {showOverview && (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    overflow: "hidden",
-                    borderRadius: 2.5,
-                    border: "1px solid",
-                    borderColor: "rgba(99, 102, 241, 0.25)",
-                    backgroundColor: "#fff",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      px: 2.5,
-                      py: 2,
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                      background:
-                        "linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, transparent 100%)",
-                    }}
-                  >
-                    <Typography
-                      variant="h6"
-                      sx={{ fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}
-                    >
-                      Overview
-                    </Typography>
-                  </Box>
-                  <Box sx={{ px: 2.5, py: 2.5, display: "flex", flexDirection: "column", gap: 2 }}>
-                    {overviewSummary ? (
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          lineHeight: 1.75,
-                          color: "#334155",
-                          fontSize: "0.9375rem",
-                        }}
-                      >
-                        {overviewSummary}
-                      </Typography>
-                    ) : null}
-                    {overviewHighlights.length > 0 ? (
-                      <Box
-                        component="ul"
-                        sx={{
-                          m: 0,
-                          pl: 2.25,
-                          color: "#334155",
-                          fontSize: "0.9375rem",
-                          "& li": { mb: 0.75 },
-                        }}
-                      >
-                        {overviewHighlights.map((line, idx) => (
-                          <Typography key={idx} component="li" variant="body2" sx={{ lineHeight: 1.6 }}>
-                            {line}
-                          </Typography>
-                        ))}
-                      </Box>
-                    ) : null}
-                  </Box>
-                </Paper>
-              )}
-
               {/* Job Description section - combined JD file + text */}
               <Paper
                 elevation={0}
@@ -666,17 +518,27 @@ function JobDetailPageInner() {
                   }}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
-                    {showOverview ? "Full description" : "Job Description"}
+                    Job Description
                   </Typography>
                 </Box>
 
                 {/* Text description */}
                 {job.job_description && (
                   <Box sx={{ px: 2.5, py: 2.5 }}>
-                    <JobDescriptionWithLeadins
-                      text={job.job_description}
-                      highlightLeadins={isExternalJsonFeedJob(job)}
-                    />
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.8,
+                        color: "#334155",
+                        fontSize: "0.9375rem",
+                        "& p": { mb: 1.5 },
+                        "& ul, & ol": { pl: 2.5, mb: 1.5 },
+                        "& li": { mb: 0.5 },
+                      }}
+                    >
+                      {job.job_description}
+                    </Typography>
                   </Box>
                 )}
 
@@ -1044,7 +906,7 @@ function JobDetailPageInner() {
                     "&:hover": { borderColor: "#4f46e5", backgroundColor: "rgba(99, 102, 241, 0.08)" },
                   }}
                 >
-                  Apply
+                  Apply on External Link
                 </Button>
               </Paper>
             )}
@@ -1150,7 +1012,7 @@ function JobDetailPageInner() {
                   : undefined,
               }}
             >
-              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply"}
+              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
             </Button>
           ) : hasApplied || !canApply ? (
             <Button
@@ -1174,7 +1036,7 @@ function JobDetailPageInner() {
           ) : (
             <Button
               component={Link}
-              href={applyHref}
+              href={`/jobs-v2/${job.id}/apply`}
               variant="contained"
               fullWidth
               startIcon={<ExternalLink size={18} />}
@@ -1208,21 +1070,5 @@ function JobDetailPageInner() {
         />
       </Box>
     </MainLayout>
-  );
-}
-
-export default function JobDetailPage() {
-  return (
-    <Suspense
-      fallback={
-        <MainLayout>
-          <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-            <LinearProgress sx={{ width: "50%", maxWidth: 400 }} />
-          </Box>
-        </MainLayout>
-      }
-    >
-      <JobDetailPageInner />
-    </Suspense>
   );
 }

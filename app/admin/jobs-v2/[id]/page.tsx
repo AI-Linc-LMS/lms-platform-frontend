@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import {
   Box,
@@ -15,9 +15,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
-  Tooltip,
-  LinearProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -27,12 +24,6 @@ import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { fetchAndMapExternalJsonJobs } from "@/lib/jobs/external-job-json-feed";
-import {
-  getExternalJobById,
-  isExternalJsonFeedJob,
-  isLikelyExternalJsonSyntheticId,
-} from "@/lib/jobs/external-json-jobs-store";
 import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, Users, FileText, Heart, GraduationCap } from "lucide-react";
 const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   active: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
@@ -180,24 +171,11 @@ const InfoPill = ({
   </Box>
 );
 
-function AdminJobDetailPageInner() {
+export default function JobDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const jobId = Number(params?.id);
-
-  const adminJobsListHref = useMemo(() => {
-    const p = new URLSearchParams();
-    const page = searchParams.get("page");
-    if (page) p.set("page", page);
-    const pageSize = searchParams.get("page_size");
-    if (pageSize) p.set("page_size", pageSize);
-    const tab = searchParams.get("tab");
-    if (tab) p.set("tab", tab);
-    const qs = p.toString();
-    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
-  }, [searchParams]);
   const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -215,33 +193,15 @@ function AdminJobDetailPageInner() {
     if (!jobId || isNaN(jobId)) return;
     try {
       setLoading(true);
-      if (isLikelyExternalJsonSyntheticId(jobId)) {
-        await fetchAndMapExternalJsonJobs().catch(() => {});
-        const local = getExternalJobById(jobId);
-        if (local) {
-          setJob(local);
-          return;
-        }
-        showToast("That feed listing was not found.", "error");
-        router.push(adminJobsListHref);
-        return;
-      }
       const data = await adminJobsV2Service.getJob(jobId, config.clientId);
       setJob(data);
     } catch (err) {
-      await fetchAndMapExternalJsonJobs().catch(() => {});
-      const fallback = getExternalJobById(jobId);
-      if (fallback) {
-        setJob(fallback);
-        showToast("Showing student feed listing. Import as a platform job to manage it on the server.", "info");
-        return;
-      }
       showToast((err as Error)?.message ?? "Failed to load job", "error");
-      router.push(adminJobsListHref);
+      router.push("/admin/jobs-v2");
     } finally {
       setLoading(false);
     }
-  }, [jobId, showToast, router, adminJobsListHref]);
+  }, [jobId, showToast, router]);
 
   useEffect(() => {
     loadJob();
@@ -249,16 +209,11 @@ function AdminJobDetailPageInner() {
 
   const handleDelete = async () => {
     if (!job) return;
-    if (isExternalJsonFeedJob(job)) {
-      showToast("Student feed listings are not stored on the server.", "info");
-      setDeleteConfirm(false);
-      return;
-    }
     try {
       await adminJobsV2Service.deleteJob(job.id, config.clientId);
       showToast("Job deleted successfully", "success");
       setDeleteConfirm(false);
-      router.push(adminJobsListHref);
+      router.push("/admin/jobs-v2");
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to delete", "error");
     }
@@ -266,10 +221,6 @@ function AdminJobDetailPageInner() {
 
   const handleStatusChange = async (status: string) => {
     if (!job) return;
-    if (isExternalJsonFeedJob(job)) {
-      showToast("Import this listing as a platform job to change status.", "info");
-      return;
-    }
     try {
       setUpdating(true);
       await adminJobsV2Service.updateJob(job.id, { status: status as JobV2["status"] }, config.clientId);
@@ -307,7 +258,6 @@ function AdminJobDetailPageInner() {
   const courses = job.courses ?? [];
   const collegeMappings = job.college_mappings ?? [];
   const passoutYearDisplay = formatJobPassoutYear(job.applicable_passout_year);
-  const isFeedOnly = isExternalJsonFeedJob(job);
 
   return (
     <MainLayout>
@@ -316,7 +266,7 @@ function AdminJobDetailPageInner() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3, flexWrap: "wrap" }}>
           <Button
             component={Link}
-            href={adminJobsListHref}
+            href="/admin/jobs-v2"
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
             sx={{
               textTransform: "none",
@@ -346,13 +296,6 @@ function AdminJobDetailPageInner() {
             {job.job_title}
           </Typography>
         </Box>
-
-        {isFeedOnly && (
-          <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
-            This job comes from the same student job feed (JSON) as /jobs-v2. It is not stored on the platform until you
-            import it. Use <strong>Import as platform job</strong> to edit fields and receive applications through AiLinc.
-          </Alert>
-        )}
 
         {/* Hero header */}
         <Paper
@@ -403,29 +346,16 @@ function AdminJobDetailPageInner() {
                       size="small"
                       sx={{ backgroundColor: "rgba(99, 102, 241, 0.12)", color: "#6366f1", fontWeight: 600, height: 26 }}
                     />
-                    {isFeedOnly ? (
-                      <Chip
-                        label="Student feed"
-                        size="small"
-                        sx={{
-                          backgroundColor: "rgba(14,165,233,0.14)",
-                          color: "#0284c7",
-                          fontWeight: 600,
-                          height: 26,
-                        }}
-                      />
-                    ) : (
-                      <Chip
-                        label={job.is_published ? "Published" : "Draft"}
-                        size="small"
-                        sx={{
-                          backgroundColor: job.is_published ? "rgba(34,197,94,0.12)" : "rgba(100,116,139,0.12)",
-                          color: job.is_published ? "#16a34a" : "#64748b",
-                          fontWeight: 600,
-                          height: 26,
-                        }}
-                      />
-                    )}
+                    <Chip
+                      label={job.is_published ? "Published" : "Draft"}
+                      size="small"
+                      sx={{
+                        backgroundColor: job.is_published ? "rgba(34,197,94,0.12)" : "rgba(100,116,139,0.12)",
+                        color: job.is_published ? "#16a34a" : "#64748b",
+                        fontWeight: 600,
+                        height: 26,
+                      }}
+                    />
                     {job.employment_type && (
                       <Chip
                         label={job.employment_type}
@@ -446,7 +376,7 @@ function AdminJobDetailPageInner() {
                         value={job.status ?? "active"}
                         label="Job Status"
                         onChange={(e) => handleStatusChange(e.target.value)}
-                        disabled={updating || isFeedOnly}
+                        disabled={updating}
                         sx={{
                           fontWeight: 600,
                           height: 36,
@@ -506,36 +436,26 @@ function AdminJobDetailPageInner() {
                     View JD
                   </Button>
                 )}
-                {isFeedOnly ? (
-                  <Tooltip title="Applications are only tracked for platform jobs." arrow>
-                    <span>
-                      <Button variant="contained" disabled startIcon={<Users size={18} />} sx={{ textTransform: "none", fontWeight: 600, px: 2.5, borderRadius: 2 }}>
-                        Applications
-                      </Button>
-                    </span>
-                  </Tooltip>
-                ) : (
-                  <Button
-                    component={Link}
-                    href={`/admin/jobs-v2/${job.id}/applications`}
-                    variant="contained"
-                    startIcon={<Users size={18} />}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      backgroundColor: "#6366f1",
-                      px: 2.5,
-                      borderRadius: 2,
-                      boxShadow: "0 2px 8px rgba(99, 102, 241, 0.35)",
-                      "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
-                    }}
-                  >
-                    Applications
-                  </Button>
-                )}
                 <Button
                   component={Link}
-                  href={isFeedOnly ? `/admin/jobs-v2/new?seedId=${job.id}` : `/admin/jobs-v2/${job.id}/edit`}
+                  href={`/admin/jobs-v2/${job.id}/applications`}
+                  variant="contained"
+                  startIcon={<Users size={18} />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    backgroundColor: "#6366f1",
+                    px: 2.5,
+                    borderRadius: 2,
+                    boxShadow: "0 2px 8px rgba(99, 102, 241, 0.35)",
+                    "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
+                  }}
+                >
+                  Applications
+                </Button>
+                <Button
+                  component={Link}
+                  href={`/admin/jobs-v2/${job.id}/edit`}
                   variant="outlined"
                   startIcon={<IconWrapper icon="mdi:pencil" size={18} />}
                   sx={{
@@ -547,32 +467,22 @@ function AdminJobDetailPageInner() {
                     "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.06)" },
                   }}
                 >
-                  {isFeedOnly ? "Import as platform job" : "Edit"}
+                  Edit
                 </Button>
-                {isFeedOnly ? (
-                  <Tooltip title="This listing only exists in the student feed JSON." arrow>
-                    <span>
-                      <Button variant="outlined" color="error" disabled startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />} sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}>
-                        Delete
-                      </Button>
-                    </span>
-                  </Tooltip>
-                ) : (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => setDeleteConfirm(true)}
-                    startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.04)" },
-                    }}
-                  >
-                    Delete
-                  </Button>
-                )}
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => setDeleteConfirm(true)}
+                  startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.04)" },
+                  }}
+                >
+                  Delete
+                </Button>
               </Box>
             </Box>
           </Box>
@@ -833,21 +743,5 @@ function AdminJobDetailPageInner() {
         onCancel={() => setDeleteConfirm(false)}
       />
     </MainLayout>
-  );
-}
-
-export default function JobDetailPage() {
-  return (
-    <Suspense
-      fallback={
-        <MainLayout>
-          <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-            <LinearProgress sx={{ width: "50%", maxWidth: 400 }} />
-          </Box>
-        </MainLayout>
-      }
-    >
-      <AdminJobDetailPageInner />
-    </Suspense>
   );
 }

@@ -24,7 +24,6 @@ import {
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
-import { isLikelyExternalJsonSyntheticId } from "@/lib/jobs/external-json-jobs-store";
 
 export default function EditJobPage() {
   const router = useRouter();
@@ -35,15 +34,8 @@ export default function EditJobPage() {
   const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (jobId && !Number.isNaN(jobId) && isLikelyExternalJsonSyntheticId(jobId)) {
-      router.replace(`/admin/jobs-v2/new?seedId=${jobId}`);
-    }
-  }, [jobId, router]);
-
   const loadJob = useCallback(async () => {
-    if (!jobId || Number.isNaN(jobId)) return;
-    if (isLikelyExternalJsonSyntheticId(jobId)) return;
+    if (!jobId) return;
     try {
       const data = await adminJobsV2Service.getJob(jobId, config.clientId);
       setJob(data);
@@ -64,12 +56,9 @@ export default function EditJobPage() {
   }, []);
 
   useEffect(() => {
-    if (jobId && !Number.isNaN(jobId) && isLikelyExternalJsonSyntheticId(jobId)) {
-      return;
-    }
     setLoading(true);
     Promise.all([loadJob(), loadCourses()]).finally(() => setLoading(false));
-  }, [loadJob, loadCourses, jobId]);
+  }, [loadJob, loadCourses]);
 
   const handleSubmit = useCallback(
     async (
@@ -94,16 +83,6 @@ export default function EditJobPage() {
   const handleCancel = useCallback(() => {
     router.push("/admin/jobs-v2");
   }, [router]);
-
-  if (jobId && !Number.isNaN(jobId) && isLikelyExternalJsonSyntheticId(jobId)) {
-    return (
-      <MainLayout>
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 360 }}>
-          <CircularProgress sx={{ color: "#6366f1" }} />
-        </Box>
-      </MainLayout>
-    );
-  }
 
   if (loading) {
     return (

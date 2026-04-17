@@ -26,8 +26,6 @@ export interface JobFilters {
   experience?: string;
   search?: string;
   skills?: string[];
-  /** Client-side jobs list: "" | 24h | 7d | 30d (LinkedIn-style freshness). */
-  posted_within?: string;
   page?: number;
   page_size?: number;
 }

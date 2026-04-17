@@ -9,19 +9,11 @@ import {
   Box,
   IconButton,
   Chip,
+  Avatar,
   Tooltip,
 } from "@mui/material";
-import { CompanyLogoAvatar } from "@/components/jobs-v2/CompanyLogoAvatar";
-import {
-  JobV2,
-  formatJobPassoutYear,
-} from "@/lib/services/jobs-v2.service";
-import {
-  isExternalJsonFeedJob,
-  toggleExternalJsonJobFavorite,
-} from "@/lib/jobs/external-json-jobs-store";
-import { markJobsV2OpenedDetailFromList } from "@/lib/jobs/jobs-v2-browse-page";
-import { formatDistanceToNow, formatDate } from "@/lib/utils/date-utils";
+import { JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
+import { formatDistanceToNow } from "@/lib/utils/date-utils";
 import { jobsV2Service } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
@@ -37,12 +29,10 @@ import {
 
 interface JobCardV2Props {
   job: JobV2;
-  /** Current jobs list page (preserved on detail → back). */
-  listPage?: number;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
 }
 
-const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Props) => {
+const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
   const { showToast } = useToast();
   const { isAdminMode } = useAdminMode();
   const [isFavorite, setIsFavorite] = useState(job.is_favourited ?? false);
@@ -57,18 +47,6 @@ const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Pr
       e.preventDefault();
       e.stopPropagation();
       if (favoriteLoading) return;
-      if (isExternalJsonFeedJob(job)) {
-        setFavoriteLoading(true);
-        const favorited = toggleExternalJsonJobFavorite(job.id);
-        setIsFavorite(favorited);
-        onFavoriteChange?.(job.id, favorited);
-        showToast(
-          favorited ? "Saved to favourites" : "Removed from favourites",
-          "info"
-        );
-        setFavoriteLoading(false);
-        return;
-      }
       setFavoriteLoading(true);
       const nextState = !isFavorite;
       setIsFavorite(nextState);
@@ -86,7 +64,7 @@ const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Pr
         setFavoriteLoading(false);
       }
     },
-    [job, isFavorite, favoriteLoading, onFavoriteChange, showToast]
+    [job.id, isFavorite, favoriteLoading, onFavoriteChange, showToast]
   );
 
   const getPostedLabel = (dateStr?: string) => {
@@ -94,20 +72,15 @@ const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Pr
     try {
       const d = new Date(dateStr);
       if (Number.isNaN(d.getTime())) return "Recently";
-      if (isExternalJsonFeedJob(job)) return formatDate(dateStr);
       return formatDistanceToNow(d);
     } catch {
       return "Recently";
     }
   };
 
-  const tags = isExternalJsonFeedJob(job) ? [] : (job.tags ?? []);
+  const tags = job.tags ?? [];
   const skillsDisplay = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])].slice(0, 5);
   const passoutYear = formatJobPassoutYear(job.applicable_passout_year);
-  const detailHref = `/jobs-v2/${job.id}?page=${Math.max(1, listPage)}`;
-  const markOpenedFromList = () => {
-    markJobsV2OpenedDetailFromList(Math.max(1, listPage));
-  };
 
   return (
     <Paper
@@ -130,17 +103,24 @@ const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Pr
       }}
     >
       <Box sx={{ display: "flex", gap: { xs: 1.5, md: 2 }, width: "100%" }}>
-        <CompanyLogoAvatar
-          logoUrl={job.company_logo}
-          companyName={job.company_name}
+        <Avatar
+          src={job.company_logo}
+          alt={job.company_name}
           sx={{
             width: { xs: 48, md: 56 },
             height: { xs: 48, md: 56 },
             borderRadius: 1.5,
+            border: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "#6366f1",
+            color: "#ffffff",
             fontSize: { xs: "1rem", md: "1.25rem" },
+            fontWeight: 600,
             flexShrink: 0,
           }}
-        />
+        >
+          {job.company_name?.[0]?.toUpperCase() || "C"}
+        </Avatar>
 
         <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <Box
@@ -153,9 +133,6 @@ const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Pr
           >
             <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
               <Typography
-                component={Link}
-                href={detailHref}
-                onClick={markOpenedFromList}
                 variant="h6"
                 sx={{
                   fontWeight: 600,
@@ -168,8 +145,6 @@ const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Pr
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
-                  textDecoration: "none",
-                  "&:hover": { color: "#4f46e5" },
                 }}
               >
                 {job.job_title || "Job Title"}
@@ -328,8 +303,7 @@ const JobCardV2Component = ({ job, listPage = 1, onFavoriteChange }: JobCardV2Pr
           >
             <Button
               component={Link}
-              href={detailHref}
-              onClick={markOpenedFromList}
+              href={`/jobs-v2/${job.id}`}
               variant="contained"
               endIcon={<ChevronRight size={16} />}
               sx={{
@@ -363,9 +337,7 @@ export const JobCardV2 = memo(JobCardV2Component, (prevProps, nextProps) => {
   return (
     prevProps.job.id === nextProps.job.id &&
     prevProps.job.is_favourited === nextProps.job.is_favourited &&
-    prevProps.job.applicable_passout_year === nextProps.job.applicable_passout_year &&
-    prevProps.job.listing_source === nextProps.job.listing_source &&
-    prevProps.listPage === nextProps.listPage
+    prevProps.job.applicable_passout_year === nextProps.job.applicable_passout_year
   );
 });
 JobCardV2.displayName = "JobCardV2";

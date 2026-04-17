@@ -1,36 +1,23 @@
 "use client";
 
-import { Suspense, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Box, Button, Typography, Skeleton, LinearProgress } from "@mui/material";
+import { Box, Button, Typography, Skeleton } from "@mui/material";
 import { ArrowLeft } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { jobsV2Service } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
 import { ApplyJobPage } from "@/components/jobs-v2/ApplyJobPage";
 import { JobDetailIllustration } from "@/components/jobs-v2/illustrations";
-import {
-  jobsV2JobDetailHref,
-  jobsV2ListHref,
-  resolveJobsV2ListPageParam,
-} from "@/lib/jobs/jobs-v2-browse-page";
 
-function ApplyJobRouteInner() {
+export default function ApplyJobRoutePage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
   const { showToast } = useToast();
   const id = Number(params?.id);
   const [job, setJob] = useState<Awaited<ReturnType<typeof jobsV2Service.getJobById>> | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const [listPageParam, setListPageParam] = useState<string | null>(null);
-  useLayoutEffect(() => {
-    setListPageParam(resolveJobsV2ListPageParam(searchParams));
-  }, [searchParams, pathname]);
-  const jobsListHref = useMemo(() => jobsV2ListHref(listPageParam), [listPageParam]);
 
   const fetchJob = useCallback(async () => {
     if (!id || isNaN(id)) return;
@@ -59,18 +46,18 @@ function ApplyJobRouteInner() {
       if (!job) return;
       await jobsV2Service.applyForJob(job.id, payload);
       showToast("Application submitted successfully", "success");
-      router.push(jobsV2JobDetailHref(job.id, listPageParam));
+      router.push(`/jobs-v2/${job.id}`);
     },
-    [job, router, showToast, listPageParam]
+    [job, router, showToast]
   );
 
   const handleCancel = useCallback(() => {
     if (job) {
-      router.push(jobsV2JobDetailHref(job.id, listPageParam));
+      router.push(`/jobs-v2/${job.id}`);
     } else {
-      router.push(jobsListHref);
+      router.push("/jobs-v2");
     }
-  }, [job, router, jobsListHref, listPageParam]);
+  }, [job, router]);
 
   if (loading || !job) {
     return (
@@ -79,7 +66,7 @@ function ApplyJobRouteInner() {
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
             <Button
               component={Link}
-              href={jobsListHref}
+              href="/jobs-v2"
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 mb: 2,
@@ -108,7 +95,7 @@ function ApplyJobRouteInner() {
                 </Typography>
                 <Button
                   component={Link}
-                  href={jobsListHref}
+                  href="/jobs-v2"
                   startIcon={<ArrowLeft size={18} />}
                   sx={{
                     textTransform: "none",
@@ -126,8 +113,6 @@ function ApplyJobRouteInner() {
     );
   }
 
-  const backToJobHref = jobsV2JobDetailHref(job.id, listPageParam);
-
   if (job.has_applied) {
     return (
       <MainLayout>
@@ -141,7 +126,7 @@ function ApplyJobRouteInner() {
             </Typography>
             <Button
               component={Link}
-              href={backToJobHref}
+              href={`/jobs-v2/${job.id}`}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
@@ -163,10 +148,10 @@ function ApplyJobRouteInner() {
         <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              Apply
+              Apply externally
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-              Complete your application on the employer&apos;s website.
+              This job requires you to apply through an external link.
             </Typography>
             <Button
               component="a"
@@ -180,12 +165,12 @@ function ApplyJobRouteInner() {
                 "&:hover": { backgroundColor: "#4f46e5" },
               }}
             >
-              Apply
+              Open Application Link
             </Button>
             <Box sx={{ mt: 2 }}>
               <Button
                 component={Link}
-                href={backToJobHref}
+                href={`/jobs-v2/${job.id}`}
                 startIcon={<ArrowLeft size={18} />}
                 sx={{ textTransform: "none", color: "#64748b" }}
               >
@@ -219,7 +204,7 @@ function ApplyJobRouteInner() {
             </Typography>
             <Button
               component={Link}
-              href={backToJobHref}
+              href={`/jobs-v2/${job.id}`}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
@@ -248,7 +233,7 @@ function ApplyJobRouteInner() {
             </Typography>
             <Button
               component={Link}
-              href={backToJobHref}
+              href={`/jobs-v2/${job.id}`}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
@@ -270,7 +255,7 @@ function ApplyJobRouteInner() {
         <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
           <Button
             component={Link}
-            href={backToJobHref}
+            href={`/jobs-v2/${job.id}`}
             startIcon={<ArrowLeft size={18} />}
             sx={{
               mb: 2,
@@ -294,21 +279,5 @@ function ApplyJobRouteInner() {
         </Box>
       </Box>
     </MainLayout>
-  );
-}
-
-export default function ApplyJobRoutePage() {
-  return (
-    <Suspense
-      fallback={
-        <MainLayout>
-          <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-            <LinearProgress sx={{ width: "50%", maxWidth: 400 }} />
-          </Box>
-        </MainLayout>
-      }
-    >
-      <ApplyJobRouteInner />
-    </Suspense>
   );
 }

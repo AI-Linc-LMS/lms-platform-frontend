@@ -13,30 +13,6 @@ const jspdfEsAbsolute = path.join(
 );
 
 const nextConfig: NextConfig = {
-  /**
-   * Static external job JSON (`public/jobs/external-jobs-feed*.json`).
-   * When `.enriched.json` is missing, rewrite that URL to the base feed so fetches do not 404.
-   * Legacy `/jobs/april11add*.json` URLs rewrite to the new filenames for old bookmarks and CDNs.
-   */
-  async rewrites() {
-    return {
-      afterFiles: [
-        {
-          source: "/jobs/external-jobs-feed.enriched.json",
-          destination: "/jobs/external-jobs-feed.json",
-        },
-        {
-          source: "/jobs/april11add.enriched.json",
-          destination: "/jobs/external-jobs-feed.enriched.json",
-        },
-        {
-          source: "/jobs/april11add.json",
-          destination: "/jobs/external-jobs-feed.json",
-        },
-      ],
-    };
-  },
-
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
