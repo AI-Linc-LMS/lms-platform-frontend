@@ -81,7 +81,14 @@ export function LiveSessionDetailDrawer({
 
   // Poll Zoom status when drawer is open and meeting is live
   useEffect(() => {
-    if (!open || liveClassId == null || activity?.meeting_status !== "live") return;
+    if (
+      !open ||
+      liveClassId == null ||
+      activity?.meeting_status !== "live" ||
+      activity?.is_google_meet
+    ) {
+      return;
+    }
     const interval = setInterval(async () => {
       try {
         const status = await adminLiveActivitiesService.getZoomStatus(liveClassId);
@@ -91,7 +98,7 @@ export function LiveSessionDetailDrawer({
       } catch (_) {}
     }, 45000);
     return () => clearInterval(interval);
-  }, [open, liveClassId, activity?.meeting_status]);
+  }, [open, liveClassId, activity?.meeting_status, activity?.is_google_meet]);
 
   const refreshDetail = async () => {
     if (liveClassId == null) return;
@@ -222,36 +229,62 @@ export function LiveSessionDetailDrawer({
 
           <Chip
             label={
-              activity.meeting_status === "live"
-                ? t("liveSessions.live")
-                : activity.meeting_status === "ended"
-                  ? t("adminLiveSessions.ended")
-                  : activity.meeting_status === "expired"
-                    ? t("liveSessions.expired")
-                    : "—"
+              activity.meeting_status === "scheduled"
+                ? t("liveSessions.scheduled")
+                : activity.meeting_status === "live"
+                  ? t("liveSessions.live")
+                  : activity.meeting_status === "ended"
+                    ? t("adminLiveSessions.ended")
+                    : activity.meeting_status === "expired"
+                      ? t("liveSessions.expired")
+                      : "—"
             }
             size="small"
             sx={{
               mb: 2,
               bgcolor:
-                activity.meeting_status === "live"
-                  ? "#d1fae5"
-                  : activity.meeting_status === "ended"
-                    ? "#9ca3af"
-                    : "#fed7aa",
+                activity.meeting_status === "scheduled"
+                  ? "#dbeafe"
+                  : activity.meeting_status === "live"
+                    ? "#d1fae5"
+                    : activity.meeting_status === "ended"
+                      ? "#9ca3af"
+                      : "#fed7aa",
               color:
-                activity.meeting_status === "live"
-                  ? "#065f46"
-                  : activity.meeting_status === "expired"
-                    ? "#9a3412"
-                    : "#1f2937",
+                activity.meeting_status === "scheduled"
+                  ? "#1e40af"
+                  : activity.meeting_status === "live"
+                    ? "#065f46"
+                    : activity.meeting_status === "expired"
+                      ? "#9a3412"
+                      : "#1f2937",
               fontWeight: 600,
               fontSize: "0.75rem",
             }}
           />
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
-            {activity.meeting_status === "live" && activity.zoom_start_url && (
+            {(activity.meeting_status === "scheduled" ||
+              activity.meeting_status === "live") &&
+              activity.is_google_meet &&
+              activity.join_link?.trim() && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<IconWrapper icon="mdi:video" size={18} />}
+                  onClick={() => window.open(activity.join_link!.trim(), "_blank")}
+                  sx={{
+                    bgcolor: "#0f9d58",
+                    "&:hover": { bgcolor: "#0c7c45" },
+                    textTransform: "none",
+                  }}
+                >
+                  {t("adminLiveSessions.openGoogleMeet")}
+                </Button>
+              )}
+            {(activity.meeting_status === "scheduled" ||
+              activity.meeting_status === "live") &&
+              activity.zoom_start_url && (
               <Button
                 variant="contained"
                 size="small"
@@ -318,7 +351,9 @@ export function LiveSessionDetailDrawer({
           </Box>
 
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
-            {activity.meeting_status === "live" && !webhookConfigured && (
+            {activity.meeting_status === "live" &&
+              !webhookConfigured &&
+              !activity.is_google_meet && (
               <>
                 <Button
                   variant="outlined"
@@ -366,22 +401,24 @@ export function LiveSessionDetailDrawer({
                 </Dialog>
               </>
             )}
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={syncingRecording}
-              onClick={handleSyncRecording}
-              startIcon={
-                syncingRecording ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:cloud-download" size={16} />
-                )
-              }
-              sx={{ textTransform: "none" }}
-            >
-              {t("adminLiveSessions.syncRecording")}
-            </Button>
+            {!activity.is_google_meet && (
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={syncingRecording}
+                onClick={handleSyncRecording}
+                startIcon={
+                  syncingRecording ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <IconWrapper icon="mdi:cloud-download" size={16} />
+                  )
+                }
+                sx={{ textTransform: "none" }}
+              >
+                {t("adminLiveSessions.syncRecording")}
+              </Button>
+            )}
           </Box>
 
           {activity.is_zoom && (
