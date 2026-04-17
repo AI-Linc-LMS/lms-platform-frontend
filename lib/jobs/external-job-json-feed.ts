@@ -10,7 +10,12 @@
  */
 
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
+import { config } from "../config";
 import { replaceExternalJsonFeedJobs } from "./external-json-jobs-store";
+import { fetchAndMapJobScraperJobs } from "./job-scraper-feed";
+import { syntheticIdFromApplyLink } from "./synthetic-job-id";
+
+export { syntheticIdFromApplyLink } from "./synthetic-job-id";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. Record type
@@ -391,13 +396,6 @@ function inferCompanyLogoUrl(applyLink: string): string | undefined {
 
 const NOT_SPECIFIED = /^not\s*specified$/i;
 
-export function syntheticIdFromApplyLink(applyLink: string): number {
-  let h = 2166136261 >>> 0;
-  const s = applyLink.trim();
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return -(1_000_000_000 + (Math.abs(h) % 900_000_000));
-}
-
 export function normalizeApplyLinkUrl(record: ExternalJobJsonRecord): string | null {
   const raw = (record.direct_apply_url || record.job_url || "").trim();
   if (!raw) return null;
@@ -543,13 +541,24 @@ export function mapExternalJsonRecordsToJobV2List(records: ExternalJobJsonRecord
 // 5. Fetch + hydrate
 // ═══════════════════════════════════════════════════════════════════════════
 
+export type FetchExternalJsonJobsOptions = {
+  search?: string;
+  location?: string;
+};
+
 /**
- * Previously loaded jobs from static `public/jobs/*.json`. That feed is removed;
- * external listings will be supplied by the API. Until then, the store stays empty.
- * Use `mapExternalJsonRecordsToJobV2List` when wiring API responses that match
- * {@link ExternalJobJsonRecord}.
+ * Loads merged “external” listings: job-scraper service when
+ * `NEXT_PUBLIC_JOB_SCRAPER_API_URL` is set; otherwise clears the store.
  */
-export async function fetchAndMapExternalJsonJobs(): Promise<JobV2[]> {
-  replaceExternalJsonFeedJobs([]);
-  return [];
+export async function fetchAndMapExternalJsonJobs(
+  opts?: FetchExternalJsonJobsOptions
+): Promise<JobV2[]> {
+  if (!config.jobScraperApiUrl?.trim()) {
+    replaceExternalJsonFeedJobs([]);
+    return [];
+  }
+  return fetchAndMapJobScraperJobs({
+    search: opts?.search,
+    location: opts?.location,
+  });
 }

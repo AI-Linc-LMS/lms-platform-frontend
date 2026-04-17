@@ -15,6 +15,11 @@ import type { Job, JobFilters } from "@/lib/services/jobs.service";
 import { jobsV2Service, JobV2, JobV2Filters } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
+import { fetchAndMapExternalJsonJobs } from "@/lib/jobs/external-job-json-feed";
+import {
+  mergeApiJobsWithExternalJson,
+  syncExternalJsonJobFavoriteFlags,
+} from "@/lib/jobs/external-json-jobs-store";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -112,11 +117,22 @@ export default function JobsV2Page() {
         employment_type: filters.employment_type || undefined,
         search: filters.search?.trim() || undefined,
       };
-      const res = await jobsV2Service.getJobs(apiFilters);
-      setAllJobs(res.results);
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load jobs", "error");
-      setAllJobs([]);
+      let apiResults: JobV2[] = [];
+      try {
+        const res = await jobsV2Service.getJobs(apiFilters);
+        apiResults = res.results;
+      } catch (err) {
+        showToast((err as Error)?.message ?? "Failed to load jobs", "error");
+      }
+      const externalJsonJobs = await fetchAndMapExternalJsonJobs({
+        search: filters.search?.trim(),
+        location: filters.location?.trim(),
+      }).catch((): JobV2[] => []);
+      setAllJobs(
+        syncExternalJsonJobFavoriteFlags(
+          mergeApiJobsWithExternalJson(apiResults, externalJsonJobs)
+        )
+      );
     } finally {
       setLoading(false);
     }
