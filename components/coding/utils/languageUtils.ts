@@ -63,6 +63,7 @@ const ALL_LANGUAGES_CANONICAL_KEYS: string[] = [
   "cpp",
   "c",
   "sql",
+  "c#",
 ];
 
 /** Every language we support in the editor / Judge0, independent of problem template_code */
