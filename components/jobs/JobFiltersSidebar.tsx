@@ -12,6 +12,7 @@ import { memo, useCallback, useMemo } from "react";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { JobFilters, Job } from "@/lib/services/jobs.service";
 import { SkillsFilter } from "./SkillsFilter";
+import { POSTED_WITHIN_OPTIONS } from "@/lib/jobs/jobs-v2-browse-page";
 
 interface JobFiltersSidebarProps {
   filters: JobFilters;
@@ -70,6 +71,13 @@ const JobFiltersSidebarComponent = ({
   const handleLocationChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onFilterChange("location", String(e.target.value || ""));
+    },
+    [onFilterChange]
+  );
+
+  const handleDatePostedChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onFilterChange("posted_within", String(e.target.value || ""));
     },
     [onFilterChange]
   );
@@ -212,6 +220,33 @@ const JobFiltersSidebarComponent = ({
           {locationOptions.map((location) => (
             <MenuItem key={location} value={location}>
               {location}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{ mb: 1.5, fontWeight: 600, fontSize: "0.875rem" }}
+        >
+          Date posted
+        </Typography>
+        <TextField
+          fullWidth
+          select
+          size="small"
+          value={filters.posted_within || ""}
+          onChange={handleDatePostedChange}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1.5,
+            },
+          }}
+        >
+          {POSTED_WITHIN_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value || "any"} value={opt.value}>
+              {opt.label}
             </MenuItem>
           ))}
         </TextField>

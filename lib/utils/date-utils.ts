@@ -4,13 +4,23 @@
 export function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
+  if (Number.isNaN(date.getTime())) return "—";
   const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
+
+  // Future dates (e.g. scrape timezone vs local) must not show "Just now"
+  if (diffSec < 0) {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+  if (diffSec < 60) return "Just now";
+
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return "Just now";
   if (diffMin < 60) return `${diffMin}m ago`;
   if (diffHour < 24) return `${diffHour}h ago`;
   if (diffDay === 1) return "Yesterday";

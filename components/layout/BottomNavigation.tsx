@@ -11,6 +11,7 @@ import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isAdminOnlyRole, isClientOrgAdminRole } from "@/lib/auth/role-utils";
 import { useTranslation } from "react-i18next";
+import { setJobsV2SkipListRestoreOnce } from "@/lib/jobs/jobs-v2-browse-page";
 
 interface NavigationItem {
   label: string;
@@ -208,8 +209,10 @@ export const BottomNavigation: React.FC = () => {
     return item.path;
   };
 
-  const handleNavigation = () => {
-    // Navigation handled by Link component
+  const handleNavigation = (item: NavigationItem) => {
+    if (item.featureName === "jobs_v2") {
+      setJobsV2SkipListRestoreOnce();
+    }
   };
 
   return (
@@ -252,7 +255,7 @@ export const BottomNavigation: React.FC = () => {
               href={navigationPath}
               prefetch={true}
               style={{ textDecoration: "none", color: "inherit", flex: 1 }}
-              onClick={handleNavigation}
+              onClick={() => handleNavigation(item)}
             >
               <Box
                 sx={{
