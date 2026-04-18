@@ -95,7 +95,7 @@ export default function ProfilePage() {
 
       try {
         const heatmap = await profileService.getUserActivityHeatmap();
-        setHeatmapData(heatmap as any);
+        setHeatmapData(heatmap.heatmap_data ?? {});
       } catch {
         // Continue even if heatmap fails
       }
