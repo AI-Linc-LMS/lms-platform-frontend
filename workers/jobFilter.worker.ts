@@ -1,13 +1,22 @@
 // IMPORTANT: this file runs in a Web Worker (no React, no hooks)
 
+import { jobPostedWithin, locationMatchesFilter } from "../lib/jobs/job-filters-shared";
+
 self.onmessage = (event) => {
   const { jobs, filters, searchQuery } = event.data;
 
   let result = jobs;
 
   if (filters?.location) {
-    const loc = filters.location.toLowerCase();
-    result = result.filter((j: any) => j._location === loc);
+    result = result.filter((j: any) =>
+      locationMatchesFilter(j._location, filters.location)
+    );
+  }
+
+  if (filters?.posted_within) {
+    result = result.filter((j: any) =>
+      jobPostedWithin(j._postedAtIso, filters.posted_within)
+    );
   }
 
   if (filters?.job_type) {

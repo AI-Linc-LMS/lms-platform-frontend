@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Box, Button, Typography, Skeleton } from "@mui/material";
 import { ArrowLeft } from "lucide-react";
@@ -14,8 +14,25 @@ import { JobDetailIllustration } from "@/components/jobs-v2/illustrations";
 export default function ApplyJobRoutePage() {
   const params = useParams();
   const router = useRouter();
+  const routeSearchParams = useSearchParams();
   const { showToast } = useToast();
   const id = Number(params?.id);
+
+  const jobsListQueryString = useMemo(() => {
+    const p = new URLSearchParams();
+    const pg = routeSearchParams.get("page");
+    if (pg) p.set("page", pg);
+    const ps = routeSearchParams.get("page_size");
+    if (ps) p.set("page_size", ps);
+    return p.toString();
+  }, [routeSearchParams]);
+
+  const jobsListHref = jobsListQueryString ? `/jobs-v2?${jobsListQueryString}` : "/jobs-v2";
+  const jobDetailHref = useMemo(
+    () =>
+      jobsListQueryString ? `/jobs-v2/${id}?${jobsListQueryString}` : `/jobs-v2/${id}`,
+    [id, jobsListQueryString]
+  );
   const [job, setJob] = useState<Awaited<ReturnType<typeof jobsV2Service.getJobById>> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,18 +63,26 @@ export default function ApplyJobRoutePage() {
       if (!job) return;
       await jobsV2Service.applyForJob(job.id, payload);
       showToast("Application submitted successfully", "success");
-      router.push(`/jobs-v2/${job.id}`);
+      router.push(
+        jobsListQueryString
+          ? `/jobs-v2/${job.id}?${jobsListQueryString}`
+          : `/jobs-v2/${job.id}`
+      );
     },
-    [job, router, showToast]
+    [job, router, showToast, jobsListQueryString]
   );
 
   const handleCancel = useCallback(() => {
     if (job) {
-      router.push(`/jobs-v2/${job.id}`);
+      router.push(
+        jobsListQueryString
+          ? `/jobs-v2/${job.id}?${jobsListQueryString}`
+          : `/jobs-v2/${job.id}`
+      );
     } else {
-      router.push("/jobs-v2");
+      router.push(jobsListHref);
     }
-  }, [job, router]);
+  }, [job, router, jobsListHref, jobsListQueryString]);
 
   if (loading || !job) {
     return (
@@ -66,7 +91,7 @@ export default function ApplyJobRoutePage() {
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
             <Button
               component={Link}
-              href="/jobs-v2"
+              href={jobsListHref}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 mb: 2,
@@ -95,7 +120,7 @@ export default function ApplyJobRoutePage() {
                 </Typography>
                 <Button
                   component={Link}
-                  href="/jobs-v2"
+                  href={jobsListHref}
                   startIcon={<ArrowLeft size={18} />}
                   sx={{
                     textTransform: "none",
@@ -126,7 +151,7 @@ export default function ApplyJobRoutePage() {
             </Typography>
             <Button
               component={Link}
-              href={`/jobs-v2/${job.id}`}
+              href={jobDetailHref}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
@@ -170,7 +195,7 @@ export default function ApplyJobRoutePage() {
             <Box sx={{ mt: 2 }}>
               <Button
                 component={Link}
-                href={`/jobs-v2/${job.id}`}
+                href={jobDetailHref}
                 startIcon={<ArrowLeft size={18} />}
                 sx={{ textTransform: "none", color: "#64748b" }}
               >
@@ -204,7 +229,7 @@ export default function ApplyJobRoutePage() {
             </Typography>
             <Button
               component={Link}
-              href={`/jobs-v2/${job.id}`}
+              href={jobDetailHref}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
@@ -233,7 +258,7 @@ export default function ApplyJobRoutePage() {
             </Typography>
             <Button
               component={Link}
-              href={`/jobs-v2/${job.id}`}
+              href={jobDetailHref}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
@@ -255,7 +280,7 @@ export default function ApplyJobRoutePage() {
         <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
           <Button
             component={Link}
-            href={`/jobs-v2/${job.id}`}
+            href={jobDetailHref}
             startIcon={<ArrowLeft size={18} />}
             sx={{
               mb: 2,

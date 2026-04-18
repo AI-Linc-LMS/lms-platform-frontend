@@ -47,6 +47,15 @@ export function replaceExternalJsonFeedJobs(jobs: JobV2[]): void {
   }
 }
 
+/** Upsert feed/scraper jobs without clearing other external rows (used for paged loads). */
+export function mergeExternalJsonFeedJobs(jobs: JobV2[]): void {
+  for (const j of jobs) {
+    if (!isExternalSource(j.listing_source)) continue;
+    byId.set(j.id, j);
+    if (j.apply_link) byApplyLink.set(j.apply_link.toLowerCase(), j);
+  }
+}
+
 export function getExternalJobById(id: number): JobV2 | undefined {
   return byId.get(id);
 }
@@ -137,12 +146,20 @@ export function syncExternalJsonJobFavoriteFlags<
 }
 
 // ---------------------------------------------------------------------------
-// Student feed: external JSON jobs are opt-in (platform API jobs always shown)
+// Student feed: external_json / april11 are opt-in (allowlist). job_scraper is
+// opt-out (blocklist, empty = all visible until admin removes from /jobs-v2).
 // ---------------------------------------------------------------------------
 
 /** Apply-link keys the admin has allowed on /jobs-v2. Empty = no feed listings on the student board. */
 export const STUDENT_FEED_EXTERNAL_ALLOWED_STORAGE_KEY =
   "ailinc_student_feed_external_allowed_apply_keys_v1";
+
+/**
+ * Apply-link keys for `job_scraper` rows the admin has removed from /jobs-v2.
+ * Default empty = all scraper listings visible until explicitly blocked.
+ */
+export const STUDENT_FEED_SCRAPER_BLOCKED_STORAGE_KEY =
+  "ailinc_student_feed_scraper_blocked_apply_keys_v1";
 
 /** @deprecated Legacy opt-out set; no longer read after migration to allowlist. */
 export const STUDENT_FEED_SUPPRESSION_STORAGE_KEY =
@@ -179,9 +196,36 @@ function writeExternalAllowedOnStudentFeedKeys(keys: Set<string>): void {
   window.dispatchEvent(new CustomEvent(STUDENT_FEED_EXTERNAL_VISIBILITY_EVENT));
 }
 
+function readScraperBlockedOnStudentFeedKeys(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(STUDENT_FEED_SCRAPER_BLOCKED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw) as unknown;
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(
+      arr.filter((x): x is string => typeof x === "string" && x.length > 0)
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function writeScraperBlockedOnStudentFeedKeys(keys: Set<string>): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    STUDENT_FEED_SCRAPER_BLOCKED_STORAGE_KEY,
+    JSON.stringify([...keys])
+  );
+  window.dispatchEvent(new CustomEvent(STUDENT_FEED_EXTERNAL_VISIBILITY_EVENT));
+}
+
 /** True when a feed listing is shown on the student job board (admin has opted it in). */
 export function isExternalJsonJobAllowedOnStudentBoard(job: JobV2): boolean {
-  if (job.listing_source === JOB_SCRAPER_LISTING) return true;
+  if (job.listing_source === JOB_SCRAPER_LISTING) {
+    const k = studentFeedApplyKey(job);
+    return k ? !readScraperBlockedOnStudentFeedKeys().has(k) : false;
+  }
   if (!isExternalJsonFeedJob(job)) return true;
   const k = studentFeedApplyKey(job);
   return k ? readExternalAllowedOnStudentFeedKeys().has(k) : false;
@@ -195,40 +239,68 @@ export function isExternalJsonJobSuppressedOnStudentBoard(job: JobV2): boolean {
 
 /** Remove listings from the student board (revoke opt-in). */
 export function suppressExternalJsonJobsOnStudentBoard(jobs: JobV2[]): void {
-  const s = readExternalAllowedOnStudentFeedKeys();
+  const externalAllowed = readExternalAllowedOnStudentFeedKeys();
+  const scraperBlocked = readScraperBlockedOnStudentFeedKeys();
+  let externalChanged = false;
+  let scraperChanged = false;
   for (const j of jobs) {
-    if (
-      j.listing_source !== EXTERNAL_JSON_LISTING &&
-      j.listing_source !== LEGACY_LISTING
-    ) {
-      continue;
-    }
     const k = studentFeedApplyKey(j);
-    if (k) s.delete(k);
+    if (!k) continue;
+    if (j.listing_source === JOB_SCRAPER_LISTING) {
+      if (!scraperBlocked.has(k)) {
+        scraperBlocked.add(k);
+        scraperChanged = true;
+      }
+    } else if (
+      j.listing_source === EXTERNAL_JSON_LISTING ||
+      j.listing_source === LEGACY_LISTING
+    ) {
+      if (externalAllowed.has(k)) {
+        externalAllowed.delete(k);
+        externalChanged = true;
+      }
+    }
   }
-  writeExternalAllowedOnStudentFeedKeys(s);
+  if (externalChanged) writeExternalAllowedOnStudentFeedKeys(externalAllowed);
+  if (scraperChanged) writeScraperBlockedOnStudentFeedKeys(scraperBlocked);
 }
 
 /** Add listings to the student board (admin opt-in). */
 export function unsuppressExternalJsonJobsOnStudentBoard(jobs: JobV2[]): void {
-  const s = readExternalAllowedOnStudentFeedKeys();
+  const externalAllowed = readExternalAllowedOnStudentFeedKeys();
+  const scraperBlocked = readScraperBlockedOnStudentFeedKeys();
+  let externalChanged = false;
+  let scraperChanged = false;
   for (const j of jobs) {
-    if (
-      j.listing_source !== EXTERNAL_JSON_LISTING &&
-      j.listing_source !== LEGACY_LISTING
-    ) {
-      continue;
-    }
     const k = studentFeedApplyKey(j);
-    if (k) s.add(k);
+    if (!k) continue;
+    if (j.listing_source === JOB_SCRAPER_LISTING) {
+      if (scraperBlocked.has(k)) {
+        scraperBlocked.delete(k);
+        scraperChanged = true;
+      }
+    } else if (
+      j.listing_source === EXTERNAL_JSON_LISTING ||
+      j.listing_source === LEGACY_LISTING
+    ) {
+      if (!externalAllowed.has(k)) {
+        externalAllowed.add(k);
+        externalChanged = true;
+      }
+    }
   }
-  writeExternalAllowedOnStudentFeedKeys(s);
+  if (externalChanged) writeExternalAllowedOnStudentFeedKeys(externalAllowed);
+  if (scraperChanged) writeScraperBlockedOnStudentFeedKeys(scraperBlocked);
 }
 
 export function filterStudentVisibleFeedJobs(jobs: JobV2[]): JobV2[] {
   const allowed = readExternalAllowedOnStudentFeedKeys();
+  const scraperBlocked = readScraperBlockedOnStudentFeedKeys();
   return jobs.filter((j) => {
-    if (j.listing_source === JOB_SCRAPER_LISTING) return true;
+    if (j.listing_source === JOB_SCRAPER_LISTING) {
+      const k = studentFeedApplyKey(j);
+      return !!k && !scraperBlocked.has(k);
+    }
     if (!isExternalJsonFeedJob(j)) return true;
     const k = studentFeedApplyKey(j);
     return !!k && allowed.has(k);
@@ -241,6 +313,7 @@ export function subscribeStudentFeedSuppression(listener: () => void): () => voi
   const onStorage = (e: StorageEvent) => {
     if (
       e.key === STUDENT_FEED_EXTERNAL_ALLOWED_STORAGE_KEY ||
+      e.key === STUDENT_FEED_SCRAPER_BLOCKED_STORAGE_KEY ||
       e.key === STUDENT_FEED_SUPPRESSION_STORAGE_KEY
     ) {
       listener();

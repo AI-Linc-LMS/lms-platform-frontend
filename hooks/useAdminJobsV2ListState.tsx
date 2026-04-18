@@ -31,6 +31,11 @@ import {
   getShowAdminJobDateColumns,
   type AdminJobsTab,
 } from "@/components/admin/jobs-v2/adminJobsGrid";
+import {
+  adminJobsBrowseCacheKey,
+  getCachedAdminJobsList,
+  setCachedAdminJobsList,
+} from "@/lib/jobs/jobs-browse-cache";
 
 export function useAdminJobsV2ListState() {
   const router = useRouter();
@@ -259,31 +264,53 @@ export function useAdminJobsV2ListState() {
     [pathname, router, searchParams]
   );
 
-  const loadJobs = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await adminJobsV2Service.getJobs(config.clientId, {
-        status: statusFilter || undefined,
-      });
-      const platform = data.results ?? [];
-      setPlatformJobs(platform);
-      const platformLinks = new Set(
-        platform.map((j) => normalizeApplyLinkKey(j.apply_link)).filter(Boolean)
-      );
-      const externalJsonFeedJobs = await fetchAndMapExternalJsonJobs().catch((): JobV2[] => []);
-      const available = externalJsonFeedJobs.filter((j) => {
-        const k = normalizeApplyLinkKey(j.apply_link);
-        return k && !platformLinks.has(k);
-      });
-      setAvailableJobs(available);
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load jobs", "error");
-      setPlatformJobs([]);
-      setAvailableJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast, statusFilter]);
+  const loadJobs = useCallback(
+    async (bypassCache = false) => {
+      const cacheKey = adminJobsBrowseCacheKey(statusFilter || "");
+      const cached = !bypassCache ? getCachedAdminJobsList(cacheKey) : null;
+      if (cached) {
+        setPlatformJobs(cached.platformJobs);
+        setAvailableJobs(cached.availableJobs);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
+      try {
+        const data = await adminJobsV2Service.getJobs(config.clientId, {
+          status: statusFilter || undefined,
+        });
+        const platform = data.results ?? [];
+        setPlatformJobs(platform);
+        const platformLinks = new Set(
+          platform.map((j) => normalizeApplyLinkKey(j.apply_link)).filter(Boolean)
+        );
+        const externalJsonFeedJobs = await fetchAndMapExternalJsonJobs({
+          page: 1,
+          limit: 100,
+          maxPages: 10,
+          replaceStore: true,
+        })
+          .then((r) => r.jobs)
+          .catch((): JobV2[] => []);
+        const available = externalJsonFeedJobs.filter((j) => {
+          const k = normalizeApplyLinkKey(j.apply_link);
+          return k && !platformLinks.has(k);
+        });
+        setAvailableJobs(available);
+        setCachedAdminJobsList(cacheKey, { platformJobs: platform, availableJobs: available });
+      } catch (err) {
+        showToast((err as Error)?.message ?? "Failed to load jobs", "error");
+        if (!cached) {
+          setPlatformJobs([]);
+          setAvailableJobs([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showToast, statusFilter]
+  );
 
   useEffect(() => {
     loadJobs();
@@ -393,7 +420,7 @@ export function useAdminJobsV2ListState() {
       await adminJobsV2Service.deleteJob(deleteConfirm.id, config.clientId);
       showToast("Job deleted successfully", "success");
       setDeleteConfirm(null);
-      loadJobs();
+      loadJobs(true);
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to delete job", "error");
     }
@@ -467,7 +494,7 @@ export function useAdminJobsV2ListState() {
       setSelectedIds(new Set());
       setBulkStatus("");
       setBulkVisibility("");
-      loadJobs();
+      loadJobs(true);
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to bulk update", "error");
     } finally {
@@ -554,7 +581,7 @@ export function useAdminJobsV2ListState() {
       setUpdating(true);
       await adminJobsV2Service.updateJob(job.id, { status: status as JobV2["status"] }, config.clientId);
       showToast("Status updated", "success");
-      loadJobs();
+      loadJobs(true);
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to update status", "error");
     } finally {

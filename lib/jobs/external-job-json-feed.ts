@@ -12,7 +12,7 @@
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "../config";
 import { replaceExternalJsonFeedJobs } from "./external-json-jobs-store";
-import { fetchAndMapJobScraperJobs } from "./job-scraper-feed";
+import { fetchAndMapJobScraperJobs, type JobScraperListResult } from "./job-scraper-feed";
 import { syntheticIdFromApplyLink } from "./synthetic-job-id";
 
 export { syntheticIdFromApplyLink } from "./synthetic-job-id";
@@ -544,7 +544,13 @@ export function mapExternalJsonRecordsToJobV2List(records: ExternalJobJsonRecord
 export type FetchExternalJsonJobsOptions = {
   search?: string;
   location?: string;
+  page?: number;
+  limit?: number;
+  maxPages?: number;
+  replaceStore?: boolean;
 };
+
+export type ExternalJsonJobsFetchResult = JobScraperListResult;
 
 /**
  * Loads merged “external” listings: job-scraper service when
@@ -552,13 +558,23 @@ export type FetchExternalJsonJobsOptions = {
  */
 export async function fetchAndMapExternalJsonJobs(
   opts?: FetchExternalJsonJobsOptions
-): Promise<JobV2[]> {
+): Promise<ExternalJsonJobsFetchResult> {
   if (!config.jobScraperApiUrl?.trim()) {
     replaceExternalJsonFeedJobs([]);
-    return [];
+    return {
+      jobs: [],
+      total: 0,
+      has_next: false,
+      page: opts?.page ?? 1,
+      limit: opts?.limit ?? 100,
+    };
   }
   return fetchAndMapJobScraperJobs({
     search: opts?.search,
     location: opts?.location,
+    page: opts?.page,
+    limit: opts?.limit,
+    maxPages: opts?.maxPages,
+    replaceStore: opts?.replaceStore,
   });
 }

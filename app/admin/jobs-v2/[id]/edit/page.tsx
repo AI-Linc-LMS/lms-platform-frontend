@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Box,
@@ -28,8 +28,16 @@ import { config } from "@/lib/config";
 export default function EditJobPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const jobId = Number(params?.id);
+
+  const adminJobsListBackHref = useMemo(() => {
+    const qs = searchParams.toString();
+    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
+  }, [searchParams]);
+
+  const listQuerySuffix = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const [job, setJob] = useState<JobV2 | null>(null);
   const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -72,17 +80,17 @@ export default function EditJobPage() {
           await adminJobsV2Service.uploadJobJd(job.id, options.jdFile, config.clientId);
         }
         showToast("Job updated successfully", "success");
-        router.push("/admin/jobs-v2");
+        router.push(adminJobsListBackHref);
       } catch (err) {
         throw err;
       }
     },
-    [job, router, showToast]
+    [job, router, showToast, adminJobsListBackHref]
   );
 
   const handleCancel = useCallback(() => {
-    router.push("/admin/jobs-v2");
-  }, [router]);
+    router.push(adminJobsListBackHref);
+  }, [router, adminJobsListBackHref]);
 
   if (loading) {
     return (
@@ -146,7 +154,7 @@ export default function EditJobPage() {
           <Button
             variant="contained"
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-            onClick={() => router.push("/admin/jobs-v2")}
+            onClick={() => router.push(adminJobsListBackHref)}
             sx={{
               textTransform: "none",
               fontWeight: 600,
@@ -170,7 +178,7 @@ export default function EditJobPage() {
           aria-label="breadcrumb"
         >
           <Link
-            href="/admin/jobs-v2"
+            href={adminJobsListBackHref}
             style={{
               color: "#64748b",
               textDecoration: "none",
@@ -257,7 +265,7 @@ export default function EditJobPage() {
           </Box>
           <Button
             component={Link}
-            href={`/admin/jobs-v2/${job.id}/applications`}
+            href={`/admin/jobs-v2/${job.id}/applications${listQuerySuffix}`}
             variant="outlined"
             startIcon={<IconWrapper icon="mdi:account-group" size={18} />}
             sx={{

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import NextLink from "next/link";
 import {
   Box,
@@ -144,10 +144,18 @@ function DetailRow({ label, value }: { label: string; value?: string | number | 
 
 export default function JobApplicationsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const jobId = Number(params?.id);
+
+  const adminJobsListBackHref = useMemo(() => {
+    const qs = searchParams.toString();
+    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
+  }, [searchParams]);
+
+  const listQuerySuffix = searchParams.toString() ? `?${searchParams.toString()}` : "";
   const [job, setJob] = useState<JobV2 | null>(null);
   const [applications, setApplications] = useState<JobApplicationV2[]>([]);
   const [loading, setLoading] = useState(true);
@@ -364,7 +372,7 @@ export default function JobApplicationsPage() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, flexWrap: "wrap" }}>
           <Button
             component={NextLink}
-            href="/admin/jobs-v2"
+            href={adminJobsListBackHref}
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
             sx={{
               textTransform: "none",
@@ -378,7 +386,7 @@ export default function JobApplicationsPage() {
           <Typography variant="body2" color="text.secondary">/</Typography>
           <Button
             component={NextLink}
-            href={`/admin/jobs-v2/${jobId}`}
+            href={`/admin/jobs-v2/${jobId}${listQuerySuffix}`}
             sx={{
               textTransform: "none",
               color: "text.secondary",
@@ -754,7 +762,7 @@ export default function JobApplicationsPage() {
               </Typography>
               <Button
                 component={NextLink}
-                href="/admin/jobs-v2"
+                href={adminJobsListBackHref}
                 variant="outlined"
                 size="small"
                 sx={{ mt: 2, textTransform: "none", borderRadius: 2 }}

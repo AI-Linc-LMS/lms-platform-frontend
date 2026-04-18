@@ -3,6 +3,7 @@
 import { Box, Typography, TextField, MenuItem } from "@mui/material";
 import { memo, useCallback, useMemo } from "react";
 import { JobFilters, Job } from "@/lib/services/jobs.service";
+import { appendIndiaToLocationOptions } from "@/lib/jobs/job-filters-shared";
 import { JobSearchBar } from "./JobSearchBar";
 import { JobSearchIllustration } from "@/components/jobs-v2/illustrations";
 
@@ -18,6 +19,13 @@ const EMPLOYMENT_TYPE_OPTIONS = [
   { value: "Part-time", label: "Part-time" },
   { value: "Internship", label: "Internship" },
   { value: "Contract", label: "Contract" },
+];
+
+const DATE_POSTED_OPTIONS = [
+  { value: "", label: "Any time" },
+  { value: "24h", label: "Past 24 hours" },
+  { value: "7d", label: "Past week" },
+  { value: "30d", label: "Past month" },
 ];
 
 interface MobileJobFiltersProps {
@@ -61,6 +69,13 @@ const MobileJobFiltersComponent = ({
     [onFilterChange]
   );
 
+  const handleDatePostedChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onFilterChange("posted_within", String(e.target.value || ""));
+    },
+    [onFilterChange]
+  );
+
   const locationOptions = useMemo(() => {
     const seen = new Set<string>();
     const locations: string[] = [];
@@ -71,7 +86,7 @@ const MobileJobFiltersComponent = ({
         locations.push(loc);
       }
     }
-    return locations.sort((a, b) => a.localeCompare(b));
+    return appendIndiaToLocationOptions(locations.sort((a, b) => a.localeCompare(b)));
   }, [jobs]);
 
   return (
@@ -114,6 +129,25 @@ const MobileJobFiltersComponent = ({
       )}
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 0 }}>
+        <TextField
+          select
+          fullWidth
+          size="small"
+          label="Date posted"
+          value={filters.posted_within || ""}
+          onChange={handleDatePostedChange}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1.5,
+            },
+          }}
+        >
+          {DATE_POSTED_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value || "any"} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </TextField>
         <Box sx={{ display: "flex", gap: 1 }}>
           <TextField
             select
