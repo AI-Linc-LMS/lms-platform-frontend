@@ -145,12 +145,41 @@ export function AdminLiveSessionsTable({
                 }}
               >
                 <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600, color: "#111827" }}
-                  >
-                    {activity.topic_name ?? "—"}
-                  </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", alignItems: "center" }}>
+                      {activity.is_google_meet ? (
+                        <Chip
+                          label={t("adminLiveSessions.platformMeet")}
+                          size="small"
+                          sx={{
+                            bgcolor: "#e8f5e9",
+                            color: "#0f9d58",
+                            fontWeight: 600,
+                            fontSize: "0.7rem",
+                            height: 22,
+                          }}
+                        />
+                      ) : activity.is_zoom || activity.zoom_meeting_id ? (
+                        <Chip
+                          label={t("adminLiveSessions.platformZoom")}
+                          size="small"
+                          sx={{
+                            bgcolor: "#eef2ff",
+                            color: "#4f46e5",
+                            fontWeight: 600,
+                            fontSize: "0.7rem",
+                            height: 22,
+                          }}
+                        />
+                      ) : null}
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, color: "#111827" }}
+                    >
+                      {activity.topic_name ?? "—"}
+                    </Typography>
+                  </Box>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ color: "#374151" }}>
@@ -198,6 +227,17 @@ export function AdminLiveSessionsTable({
                         fontSize: "0.75rem",
                       }}
                     />
+                  ) : activity.meeting_status === "scheduled" ? (
+                    <Chip
+                      label={t("liveSessions.scheduled")}
+                      size="small"
+                      sx={{
+                        backgroundColor: "#dbeafe",
+                        color: "#1e40af",
+                        fontWeight: 600,
+                        fontSize: "0.75rem",
+                      }}
+                    />
                   ) : (
                     <Typography variant="body2" sx={{ color: "#374151" }}>
                       —
@@ -219,7 +259,9 @@ export function AdminLiveSessionsTable({
                       gap: 1,
                     }}
                   >
-                    {!activity.zoom_meeting_id && !activity.zoom_join_url && (
+                    {!activity.is_google_meet &&
+                      !activity.zoom_meeting_id &&
+                      !activity.zoom_join_url && (
                       <Button
                         variant="outlined"
                         size="small"
@@ -243,7 +285,32 @@ export function AdminLiveSessionsTable({
                         {t("adminLiveSessions.createZoom")}
                       </Button>
                     )}
-                    {activity.meeting_status === "live" &&
+                    {(activity.meeting_status === "scheduled" ||
+                      activity.meeting_status === "live") &&
+                      activity.is_google_meet &&
+                      activity.join_link?.trim() && (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() =>
+                            window.open(activity.join_link!.trim(), "_blank")
+                          }
+                          startIcon={
+                            <IconWrapper icon="mdi:video" size={16} />
+                          }
+                          sx={{
+                            textTransform: "none",
+                            fontSize: "0.8rem",
+                            alignSelf: "flex-start",
+                            bgcolor: "#0f9d58",
+                            "&:hover": { bgcolor: "#0c7c45" },
+                          }}
+                        >
+                          {t("adminLiveSessions.openGoogleMeet")}
+                        </Button>
+                      )}
+                    {(activity.meeting_status === "scheduled" ||
+                      activity.meeting_status === "live") &&
                       activity.zoom_start_url && (
                         <Button
                           variant="contained"
@@ -265,7 +332,8 @@ export function AdminLiveSessionsTable({
                           {t("adminLiveSessions.startMeeting")}
                         </Button>
                       )}
-                    {activity.meeting_status === "live" &&
+                    {(activity.meeting_status === "scheduled" ||
+                      activity.meeting_status === "live") &&
                       activity.zoom_join_url && (
                         <Button
                           variant="outlined"
@@ -285,7 +353,8 @@ export function AdminLiveSessionsTable({
                           {t("adminLiveSessions.openJoinLink")}
                         </Button>
                       )}
-                    {activity.meeting_status === "live" &&
+                    {(activity.meeting_status === "scheduled" ||
+                      activity.meeting_status === "live") &&
                       activity.zoom_password && (
                       <Typography
                         variant="caption"

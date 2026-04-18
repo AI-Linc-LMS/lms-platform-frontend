@@ -31,6 +31,8 @@ export interface LiveActivity {
   duration_minutes: number;
   instructor?: unknown;
   is_zoom: boolean;
+  is_google_meet?: boolean;
+  closes_at?: string | null;
   zoom_meeting_id?: string | null;
   zoom_meeting_uuid?: string | null;
   zoom_start_url?: string | null;
@@ -40,7 +42,8 @@ export interface LiveActivity {
   zoom_recording_file_id?: string | null;
   zoom_recording_duration_seconds?: number | null;
   zoom_meeting_ended_at?: string | null;
-  meeting_status?: "live" | "ended" | "expired" | null;
+  meeting_status?: "scheduled" | "live" | "ended" | "expired" | null;
+  time_remaining_minutes?: number;
   zoom_participants?: ZoomParticipant[];
   course?: number | null;
   course_detail?: CourseDetail | null;

@@ -20,11 +20,13 @@ interface LiveActivityListItem {
   class_datetime?: string;
   duration_minutes?: number;
   is_zoom?: boolean;
+  is_google_meet?: boolean;
+  join_link?: string | null;
   zoom_join_url?: string | null;
   zoom_password?: string | null;
   zoom_recording_url?: string | null;
   zoom_meeting_ended_at?: string | null;
-  meeting_status?: "live" | "ended" | "expired" | null;
+  meeting_status?: "scheduled" | "live" | "ended" | "expired" | null;
   time_remaining_minutes?: number;
   [key: string]: unknown;
 }
@@ -36,6 +38,8 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     class_datetime: item.class_datetime,
     duration_minutes: item.duration_minutes,
     is_zoom: item.is_zoom,
+    is_google_meet: item.is_google_meet,
+    join_link: item.join_link,
     zoom_join_url: item.zoom_join_url,
     zoom_password: item.zoom_password,
     zoom_recording_url: item.zoom_recording_url,
@@ -45,8 +49,14 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
   };
 }
 
-function isZoomSession(item: LiveActivityListItem): boolean {
-  return item.is_zoom === true || Boolean(item.zoom_join_url?.trim());
+function isIncludedLiveSession(item: LiveActivityListItem): boolean {
+  if (item.is_zoom === true || Boolean(item.zoom_join_url?.trim())) {
+    return true;
+  }
+  if (item.is_google_meet === true && Boolean(item.join_link?.trim())) {
+    return true;
+  }
+  return false;
 }
 
 export const studentLiveSessionsService = {
@@ -56,7 +66,7 @@ export const studentLiveSessionsService = {
     );
     const data = response.data;
     const list = Array.isArray(data) ? data : [];
-    return list.filter(isZoomSession).map(toStudentSession);
+    return list.filter(isIncludedLiveSession).map(toStudentSession);
   },
 
   getRecording: async (
