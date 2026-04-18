@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Box, LinearProgress, Typography, Tabs, Tab } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { JobCardV2 } from "@/components/jobs-v2/JobCardV2";
@@ -15,8 +16,40 @@ import type { Job, JobFilters } from "@/lib/services/jobs.service";
 import { jobsV2Service, JobV2, JobV2Filters } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
+import { fetchAndMapExternalJsonJobs } from "@/lib/jobs/external-job-json-feed";
+import {
+  filterStudentVisibleFeedJobs,
+  isExternalJsonFeedJob,
+  mergeApiJobsWithExternalJson,
+  normalizeApplyLinkKey,
+  subscribeStudentFeedSuppression,
+  syncExternalJsonJobFavoriteFlags,
+} from "@/lib/jobs/external-json-jobs-store";
+import {
+  appendIndiaToLocationOptions,
+  INDIA_LOCATION_OPTION,
+  jobPostedWithin,
+  locationMatchesFilter,
+} from "@/lib/jobs/job-filters-shared";
+import {
+  getCachedJobsV2Merged,
+  jobsV2BrowseCacheKey,
+  setCachedJobsV2Merged,
+} from "@/lib/jobs/jobs-browse-cache";
 
 const ITEMS_PER_PAGE = 10;
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
+
+/** Max scraper list pages to pull in the background (100 jobs/page). Prevents unbounded requests. */
+const SCRAPER_PROGRESSIVE_MAX_PAGE = 50;
+
+function parseJobsV2PageSize(raw: string | null): number {
+  if (!raw) return ITEMS_PER_PAGE;
+  const n = parseInt(raw, 10);
+  return PAGE_SIZE_OPTIONS.includes(n as (typeof PAGE_SIZE_OPTIONS)[number])
+    ? n
+    : ITEMS_PER_PAGE;
+}
 
 /** Parse job's years_of_experience string into min/max range. Returns null if unparseable. */
 function parseExperienceRange(str: string | null | undefined): { min: number; max: number } | null {
@@ -88,35 +121,140 @@ type JobsV2FiltersState = {
   experience?: string;
   search?: string;
   skills?: string[];
+  posted_within?: string;
 };
 
 export default function JobsV2Page() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [loadingMoreScraper, setLoadingMoreScraper] = useState(false);
   const [allJobs, setAllJobs] = useState<JobV2[]>([]);
+  const [listMeta, setListMeta] = useState({ scraperHasNext: false });
+  const apiResultsRef = useRef<JobV2[]>([]);
+  const scraperNextPageRef = useRef(2);
+  /** Mirrors listMeta.scraperHasNext so progressive fetch does not depend on listMeta in effect deps (avoids cancel/restart mid-chain). */
+  const scraperHasNextRef = useRef(false);
+  const scraperProgressiveRunningRef = useRef(false);
   const [filters, setFilters] = useState<JobsV2FiltersState>({});
   const [searchInput, setSearchInput] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [experienceInput, setExperienceInput] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [activeTab, setActiveTab] = useState<"browse" | "applied">("browse");
 
+  const page = useMemo(() => {
+    const raw = searchParams.get("page");
+    const n = raw ? parseInt(raw, 10) : 1;
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+  }, [searchParams]);
+
+  const pageSize = useMemo(
+    () => parseJobsV2PageSize(searchParams.get("page_size")),
+    [searchParams]
+  );
+
+  const syncJobsListUrl = useCallback(
+    (overrides: { page?: number; page_size?: number }) => {
+      const p = new URLSearchParams(searchParams.toString());
+      const currentPage = (() => {
+        const r = p.get("page");
+        const n = r ? parseInt(r, 10) : 1;
+        return Number.isFinite(n) && n >= 1 ? n : 1;
+      })();
+      const currentSize = parseJobsV2PageSize(p.get("page_size"));
+      const nextPage = overrides.page !== undefined ? overrides.page : currentPage;
+      const nextSize =
+        overrides.page_size !== undefined ? overrides.page_size : currentSize;
+      if (nextPage <= 1) p.delete("page");
+      else p.set("page", String(nextPage));
+      if (nextSize === ITEMS_PER_PAGE) p.delete("page_size");
+      else p.set("page_size", String(nextSize));
+      const qs = p.toString();
+      const url = qs ? `${pathname}?${qs}` : pathname;
+      router.replace(url, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
   const fetchJobs = useCallback(async () => {
-    try {
+    const rawLoc = filters.location?.trim();
+    const apiLocation =
+      rawLoc && rawLoc.toLowerCase() !== INDIA_LOCATION_OPTION.toLowerCase()
+        ? rawLoc
+        : undefined;
+
+    const apiFilters: JobV2Filters = {
+      client_id: config.clientId,
+      location: apiLocation,
+      job_type: filters.job_type || undefined,
+      employment_type: filters.employment_type || undefined,
+      search: filters.search?.trim() || undefined,
+    };
+
+    const cacheKey = jobsV2BrowseCacheKey({
+      clientId: config.clientId,
+      location: apiLocation,
+      job_type: apiFilters.job_type,
+      employment_type: apiFilters.employment_type,
+      search: apiFilters.search,
+    });
+
+    const cached = getCachedJobsV2Merged(cacheKey);
+    if (cached !== null) {
+      setAllJobs(
+        filterStudentVisibleFeedJobs(syncExternalJsonJobFavoriteFlags(cached))
+      );
+      setLoading(false);
+    } else {
       setLoading(true);
-      const apiFilters: JobV2Filters = {
-        client_id: config.clientId,
-        location: filters.location || undefined,
-        job_type: filters.job_type || undefined,
-        employment_type: filters.employment_type || undefined,
-        search: filters.search?.trim() || undefined,
+    }
+
+    const loadMerged = async (): Promise<JobV2[]> => {
+      scraperNextPageRef.current = 2;
+      let apiResults: JobV2[] = [];
+      try {
+        const res = await jobsV2Service.getJobs(apiFilters);
+        apiResults = res.results;
+      } catch (err) {
+        showToast((err as Error)?.message ?? "Failed to load jobs", "error");
+      }
+      apiResultsRef.current = apiResults;
+
+      const emptyExt = {
+        jobs: [] as JobV2[],
+        total: 0,
+        has_next: false,
+        page: 1,
+        limit: 100,
       };
-      const res = await jobsV2Service.getJobs(apiFilters);
-      setAllJobs(res.results);
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load jobs", "error");
-      setAllJobs([]);
+      const ext = await fetchAndMapExternalJsonJobs({
+        search: filters.search?.trim(),
+        location: apiLocation,
+        page: 1,
+        limit: 100,
+        maxPages: 1,
+        replaceStore: true,
+      }).catch(() => emptyExt);
+
+      setListMeta({ scraperHasNext: ext.has_next });
+
+      return filterStudentVisibleFeedJobs(
+        syncExternalJsonJobFavoriteFlags(
+          mergeApiJobsWithExternalJson(apiResults, ext.jobs)
+        )
+      );
+    };
+
+    try {
+      const merged = await loadMerged();
+      setCachedJobsV2Merged(cacheKey, merged);
+      setAllJobs(merged);
+    } catch {
+      if (cached === null) {
+        setAllJobs([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -126,6 +264,16 @@ export default function JobsV2Page() {
     fetchJobs();
   }, [fetchJobs]);
 
+  useEffect(() => {
+    scraperHasNextRef.current = listMeta.scraperHasNext;
+  }, [listMeta.scraperHasNext]);
+
+  useEffect(() => {
+    return subscribeStudentFeedSuppression(() => {
+      setAllJobs((prev) => filterStudentVisibleFeedJobs(prev));
+    });
+  }, []);
+
   const handleSearchClick = useCallback(() => {
     setFilters((prev) => ({
       ...prev,
@@ -133,8 +281,8 @@ export default function JobsV2Page() {
       location: locationInput.trim() || undefined,
       experience: experienceInput.trim() || undefined,
     }));
-    setPage(1);
-  }, [searchInput, locationInput, experienceInput]);
+    syncJobsListUrl({ page: 1 });
+  }, [searchInput, locationInput, experienceInput, syncJobsListUrl]);
 
   const filteredJobs = useMemo(() => {
     let result = allJobs;
@@ -153,10 +301,18 @@ export default function JobsV2Page() {
         return words.every((w) => searchable.includes(w));
       });
     }
-    if (locationInput.trim()) {
-      const loc = locationInput.trim().toLowerCase();
+    const effectiveLocation = (
+      filters.location?.trim() ||
+      locationInput.trim()
+    );
+    if (effectiveLocation) {
       result = result.filter((job) =>
-        (job.location ?? "").toLowerCase().includes(loc)
+        locationMatchesFilter(job.location, effectiveLocation)
+      );
+    }
+    if (filters.posted_within) {
+      result = result.filter((job) =>
+        jobPostedWithin(job.created_at, filters.posted_within)
       );
     }
     if (filters.skills && filters.skills.length > 0) {
@@ -181,30 +337,189 @@ export default function JobsV2Page() {
       }
     }
     return result;
-  }, [allJobs, searchInput, locationInput, experienceInput, filters.skills, filters.experience]);
+  }, [
+    allJobs,
+    searchInput,
+    locationInput,
+    experienceInput,
+    filters.skills,
+    filters.experience,
+    filters.location,
+    filters.posted_within,
+  ]);
 
   const paginatedJobs = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredJobs.slice(start, start + pageSize);
   }, [filteredJobs, page, pageSize]);
 
+  const listHeaderTotalCount = filteredJobs.length;
+
+  const maxPage = useMemo(
+    () => Math.max(1, Math.ceil(filteredJobs.length / pageSize) || 1),
+    [filteredJobs.length, pageSize]
+  );
+
+  useEffect(() => {
+    if (page > maxPage) {
+      syncJobsListUrl({ page: maxPage });
+    }
+  }, [page, maxPage, syncJobsListUrl]);
+
+  const rawLocForScraper = filters.location?.trim();
+  const apiLocationForScraper =
+    rawLocForScraper && rawLocForScraper.toLowerCase() !== INDIA_LOCATION_OPTION.toLowerCase()
+      ? rawLocForScraper
+      : undefined;
+
+  /** Single dep for progressive scraper effect — keeps useEffect arity stable for Fast Refresh. */
+  const scraperProgressiveDepsKey = useMemo(
+    () =>
+      JSON.stringify({
+        loading,
+        search: filters.search ?? "",
+        job_type: filters.job_type ?? "",
+        employment_type: filters.employment_type ?? "",
+        location: filters.location ?? "",
+        apiLocation: apiLocationForScraper ?? "",
+      }),
+    [
+      loading,
+      filters.search,
+      filters.job_type,
+      filters.employment_type,
+      filters.location,
+      apiLocationForScraper,
+    ]
+  );
+
+  useEffect(() => {
+    if (loading) return;
+    if (!config.jobScraperApiUrl?.trim()) return;
+    if (!scraperHasNextRef.current) return;
+    if (scraperProgressiveRunningRef.current) return;
+
+    let cancelled = false;
+    scraperProgressiveRunningRef.current = true;
+    setLoadingMoreScraper(true);
+
+    const mergeFeedPage = (extJobs: JobV2[]) => {
+      setAllJobs((prev) => {
+        const api = apiResultsRef.current;
+        const seen = new Set<string>();
+        const prevFeed: JobV2[] = [];
+        for (const j of prev) {
+          if (!isExternalJsonFeedJob(j)) continue;
+          const k = normalizeApplyLinkKey(j.apply_link);
+          if (!k || seen.has(k)) continue;
+          seen.add(k);
+          prevFeed.push(j);
+        }
+        for (const j of extJobs) {
+          const k = normalizeApplyLinkKey(j.apply_link);
+          if (!k || seen.has(k)) continue;
+          seen.add(k);
+          prevFeed.push(j);
+        }
+        return filterStudentVisibleFeedJobs(
+          syncExternalJsonJobFavoriteFlags(
+            mergeApiJobsWithExternalJson(api, prevFeed)
+          )
+        );
+      });
+    };
+
+    (async () => {
+      try {
+        let hasNext = true;
+        while (!cancelled && hasNext) {
+          const p = scraperNextPageRef.current;
+          if (p > SCRAPER_PROGRESSIVE_MAX_PAGE) {
+            hasNext = false;
+            break;
+          }
+          const ext = await fetchAndMapExternalJsonJobs({
+            search: filters.search?.trim(),
+            location: apiLocationForScraper,
+            page: p,
+            limit: 100,
+            maxPages: 1,
+            replaceStore: false,
+          });
+          if (cancelled) return;
+          if (ext.jobs.length === 0) {
+            hasNext = false;
+            break;
+          }
+          scraperNextPageRef.current = p + 1;
+          hasNext = ext.has_next;
+          mergeFeedPage(ext.jobs);
+        }
+        scraperHasNextRef.current = hasNext;
+        setListMeta({ scraperHasNext: hasNext });
+      } catch {
+        scraperHasNextRef.current = false;
+        setListMeta({ scraperHasNext: false });
+      } finally {
+        scraperProgressiveRunningRef.current = false;
+        if (!cancelled) setLoadingMoreScraper(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scraperProgressiveDepsKey]);
+
+  useEffect(() => {
+    if (loading) return;
+    const cacheKey = jobsV2BrowseCacheKey({
+      clientId: config.clientId,
+      location: apiLocationForScraper,
+      job_type: filters.job_type,
+      employment_type: filters.employment_type,
+      search: filters.search?.trim() || undefined,
+    });
+    setCachedJobsV2Merged(cacheKey, allJobs);
+  }, [
+    allJobs,
+    loading,
+    apiLocationForScraper,
+    filters.job_type,
+    filters.employment_type,
+    filters.search,
+  ]);
+
+  const jobsListPreserveQuery = useMemo(() => {
+    const p = new URLSearchParams();
+    if (page > 1) p.set("page", String(page));
+    if (pageSize !== ITEMS_PER_PAGE) p.set("page_size", String(pageSize));
+    return p.toString();
+  }, [page, pageSize]);
+
   const handleFilterChange = useCallback(
     (key: keyof JobFilters, value: string | string[]) => {
       if (key === "page" || key === "page_size") return;
+      if (key === "location" && typeof value === "string") {
+        setLocationInput(value);
+      }
       setFilters((prev) => ({
         ...prev,
         [key]:
           Array.isArray(value) && value.length === 0 ? undefined : value ?? undefined,
       }));
-      setPage(1);
+      syncJobsListUrl({ page: 1 });
     },
-    []
+    [syncJobsListUrl]
   );
 
-  const handleSearchInputChange = useCallback((value: string) => {
-    setSearchInput(value);
-    setPage(1);
-  }, []);
+  const handleSearchInputChange = useCallback(
+    (value: string) => {
+      setSearchInput(value);
+      syncJobsListUrl({ page: 1 });
+    },
+    [syncJobsListUrl]
+  );
 
   const handleSearchClear = useCallback(() => {
     setSearchInput("");
@@ -215,18 +530,23 @@ export default function JobsV2Page() {
     setSearchInput("");
     setLocationInput("");
     setExperienceInput("");
-    setPage(1);
-  }, []);
+    syncJobsListUrl({ page: 1 });
+  }, [syncJobsListUrl]);
 
-  const handlePageChange = useCallback((_: unknown, value: number) => {
-    setPage(value);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  const handlePageChange = useCallback(
+    (_: unknown, value: number) => {
+      syncJobsListUrl({ page: value });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [syncJobsListUrl]
+  );
 
-  const handlePageSizeChange = useCallback((size: number) => {
-    setPageSize(size);
-    setPage(1);
-  }, []);
+  const handlePageSizeChange = useCallback(
+    (size: number) => {
+      syncJobsListUrl({ page: 1, page_size: size });
+    },
+    [syncJobsListUrl]
+  );
 
   const handleFavoriteChange = useCallback((jobId: number, favorited: boolean) => {
     setAllJobs((prev) =>
@@ -260,6 +580,7 @@ export default function JobsV2Page() {
     experience: filters.experience,
     search: filters.search,
     skills: filters.skills,
+    posted_within: filters.posted_within,
   };
 
   const locationOptions = useMemo(() => {
@@ -272,7 +593,7 @@ export default function JobsV2Page() {
         locations.push(loc);
       }
     }
-    return locations.sort((a, b) => a.localeCompare(b));
+    return appendIndiaToLocationOptions(locations.sort((a, b) => a.localeCompare(b)));
   }, [allJobs]);
 
   return (
@@ -339,12 +660,12 @@ export default function JobsV2Page() {
                 location={locationInput}
                 onLocationChange={(v) => {
                   setLocationInput(v);
-                  setPage(1);
+                  syncJobsListUrl({ page: 1 });
                 }}
                 experience={experienceInput}
                 onExperienceChange={(v) => {
                   setExperienceInput(v);
-                  setPage(1);
+                  syncJobsListUrl({ page: 1 });
                 }}
                 locationOptions={locationOptions}
                 onSearch={handleSearchClick}
@@ -430,21 +751,28 @@ export default function JobsV2Page() {
               </Box>
             ) : activeTab === "browse" ? (
               <>
+                {loadingMoreScraper ? (
+                  <LinearProgress sx={{ width: "100%", height: 2, borderRadius: 1, mb: 1 }} />
+                ) : null}
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
                   <JobListHeader
-                    totalCount={filteredJobs.length}
+                    totalCount={listHeaderTotalCount}
                     pageSize={pageSize}
                     onPageSizeChange={handlePageSizeChange}
                   />
                 </Box>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {paginatedJobs.map((job) => (
-                    <JobCardV2 key={job.id} job={job} />
+                    <JobCardV2
+                      key={job.id}
+                      job={job}
+                      jobsListQuery={jobsListPreserveQuery || undefined}
+                    />
                   ))}
                 </Box>
                 <Box sx={{ mt: 3 }}>
                   <JobPagination
-                    totalCount={filteredJobs.length}
+                    totalCount={listHeaderTotalCount}
                     pageSize={pageSize}
                     page={page}
                     onPageChange={handlePageChange}
@@ -498,12 +826,12 @@ export default function JobsV2Page() {
             location={locationInput}
             onLocationChange={(v) => {
               setLocationInput(v);
-              setPage(1);
+              syncJobsListUrl({ page: 1 });
             }}
             experience={experienceInput}
             onExperienceChange={(v) => {
               setExperienceInput(v);
-              setPage(1);
+              syncJobsListUrl({ page: 1 });
             }}
             locationOptions={locationOptions}
             onSearch={handleSearchClick}
@@ -588,19 +916,27 @@ export default function JobsV2Page() {
             </Box>
           ) : activeTab === "browse" ? (
             <>
+              {loadingMoreScraper ? (
+                <LinearProgress sx={{ width: "100%", height: 2, borderRadius: 1, mb: 1 }} />
+              ) : null}
               <JobListHeader
-                totalCount={filteredJobs.length}
+                totalCount={listHeaderTotalCount}
                 pageSize={pageSize}
                 onPageSizeChange={handlePageSizeChange}
               />
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
                 {paginatedJobs.map((job) => (
-                  <JobCardV2 key={job.id} job={job} onFavoriteChange={handleFavoriteChange} />
+                  <JobCardV2
+                    key={job.id}
+                    job={job}
+                    onFavoriteChange={handleFavoriteChange}
+                    jobsListQuery={jobsListPreserveQuery || undefined}
+                  />
                 ))}
               </Box>
               <Box sx={{ mt: 3, mb: 4 }}>
                 <JobPagination
-                  totalCount={filteredJobs.length}
+                  totalCount={listHeaderTotalCount}
                   pageSize={pageSize}
                   page={page}
                   onPageChange={handlePageChange}

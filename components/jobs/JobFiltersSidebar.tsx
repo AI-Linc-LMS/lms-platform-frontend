@@ -11,6 +11,7 @@ import {
 import { memo, useCallback, useMemo } from "react";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { JobFilters, Job } from "@/lib/services/jobs.service";
+import { appendIndiaToLocationOptions } from "@/lib/jobs/job-filters-shared";
 import { SkillsFilter } from "./SkillsFilter";
 
 interface JobFiltersSidebarProps {
@@ -32,6 +33,13 @@ const EMPLOYMENT_TYPE_OPTIONS = [
   { value: "Part-time", label: "Part-time" },
   { value: "Internship", label: "Internship" },
   { value: "Contract", label: "Contract" },
+];
+
+const DATE_POSTED_OPTIONS = [
+  { value: "", label: "Any time" },
+  { value: "24h", label: "Past 24 hours" },
+  { value: "7d", label: "Past week" },
+  { value: "30d", label: "Past month" },
 ];
 
 const JobFiltersSidebarComponent = ({
@@ -74,6 +82,13 @@ const JobFiltersSidebarComponent = ({
     [onFilterChange]
   );
 
+  const handleDatePostedChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onFilterChange("posted_within", String(e.target.value || ""));
+    },
+    [onFilterChange]
+  );
+
   const locationOptions = useMemo(() => {
     const seen = new Set<string>();
     const locations: string[] = [];
@@ -84,7 +99,7 @@ const JobFiltersSidebarComponent = ({
         locations.push(loc);
       }
     }
-    return locations.sort((a, b) => a.localeCompare(b));
+    return appendIndiaToLocationOptions(locations.sort((a, b) => a.localeCompare(b)));
   }, [jobs]);
 
   return (
@@ -131,6 +146,34 @@ const JobFiltersSidebarComponent = ({
       </Box>
 
       <Divider sx={{ my: 2 }} />
+
+      {/* Date posted — same idea as LinkedIn "Date posted" */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{ mb: 1.5, fontWeight: 600, fontSize: "0.875rem" }}
+        >
+          Date posted
+        </Typography>
+        <TextField
+          fullWidth
+          select
+          size="small"
+          value={filters.posted_within || ""}
+          onChange={handleDatePostedChange}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1.5,
+            },
+          }}
+        >
+          {DATE_POSTED_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value || "any"} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
 
       {/* Job Type Filter (job / internship) */}
       <Box sx={{ mb: 3 }}>

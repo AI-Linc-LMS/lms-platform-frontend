@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Typography, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -13,12 +13,26 @@ import {
 } from "@/lib/services/admin/admin-jobs-v2.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
+import type { JobV2 } from "@/lib/services/jobs-v2.service";
+import { jobsV2Service } from "@/lib/services/jobs-v2.service";
 
 export default function NewJobPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const [seedJob, setSeedJob] = useState<JobV2 | null>(null);
+
+  const seedIdKey = searchParams.get("seedId")?.trim() ?? "";
+  const [seedResolved, setSeedResolved] = useState(!seedIdKey);
+
+  const adminJobsListBackHref = useMemo(() => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete("seedId");
+    const qs = p.toString();
+    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
+  }, [searchParams]);
 
   const loadCourses = useCallback(async () => {
     try {
@@ -36,6 +50,43 @@ export default function NewJobPage() {
     loadCourses();
   }, [loadCourses]);
 
+  useEffect(() => {
+    if (!seedIdKey) {
+      setSeedJob(null);
+      setSeedResolved(true);
+      return;
+    }
+    const id = parseInt(seedIdKey, 10);
+    if (!Number.isFinite(id)) {
+      setSeedJob(null);
+      setSeedResolved(true);
+      showToast("Invalid job id to import.", "warning");
+      return;
+    }
+    let cancelled = false;
+    setSeedResolved(false);
+    jobsV2Service
+      .getJobById(id)
+      .then((j) => {
+        if (!cancelled) {
+          setSeedJob(j);
+          if (!j) showToast("Could not load that job for import.", "warning");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSeedJob(null);
+          showToast("Could not load that job for import.", "error");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSeedResolved(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [seedIdKey, showToast]);
+
   const handleSubmit = useCallback(
     async (
       payload: JobCreateUpdatePayload | Partial<JobCreateUpdatePayload>,
@@ -51,19 +102,19 @@ export default function NewJobPage() {
           await adminJobsV2Service.uploadJobJd(job.id, options.jdFile, config.clientId);
         }
         showToast("Job created successfully", "success");
-        router.push("/admin/jobs-v2");
+        router.push(adminJobsListBackHref);
       } catch (err) {
         throw err;
       }
     },
-    [router, showToast]
+    [router, showToast, adminJobsListBackHref]
   );
 
   const handleCancel = useCallback(() => {
-    router.push("/admin/jobs-v2");
-  }, [router]);
+    router.push(adminJobsListBackHref);
+  }, [router, adminJobsListBackHref]);
 
-  if (loadingCourses) {
+  if (loadingCourses || !seedResolved) {
     return (
       <MainLayout>
         <Box
@@ -102,8 +153,9 @@ export default function NewJobPage() {
         <JobCreateEditPage
           onSubmit={handleSubmit}
           onCancel={handleCancel}
-          title="Create Job"
+          title={seedJob ? "Import job" : "Create Job"}
           courses={courses}
+          initialData={seedJob}
         />
       </Box>
     </MainLayout>
