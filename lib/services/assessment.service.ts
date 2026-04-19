@@ -21,12 +21,18 @@ export interface Assessment {
   proctoring_enabled?: boolean;
   /** "not_started" | "in_progress" | "submitted" | "completed" – when "submitted" or "completed", show results */
   status?: "not_started" | "in_progress" | "submitted" | "completed";
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
 }
 
 export interface AssessmentDetail extends Assessment {
   sections: any[];
   /** When false, hide "View Assessment Result" button on submission-success */
   show_result?: boolean;
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
 }
 
 export interface AssessmentSubmission {
