@@ -436,7 +436,9 @@
     "navAllDone": "All done",
     "navRemaining": "{{count}} left",
     "jumpToNextUnanswered": "Next unanswered",
-    "jumpToNextUnansweredShort": "Next gap"
+    "jumpToNextUnansweredShort": "Next gap",
+    "navSectionTime": "Section time",
+    "navSectionUsesOverall": "No section cap — use the timer in the top bar."
   },
   "tools": {
     "calculator": "Scientific calculator",
@@ -505,7 +507,40 @@
     "deviceCheck": {
       "title": "Device check",
       "noFaceDetected": "No face detected. Please position yourself in front of the camera.",
-      "multipleFaces": "{{count}} faces detected. Only one person should be visible."
+      "multipleFaces": "{{count}} faces detected. Only one person should be visible.",
+      "networkWaitTest": "Please wait while we verify your internet connection.",
+      "networkPoorCannotStart": "Your connection is rated as poor. You need at least a moderate connection to start. Try a stronger Wi‑Fi or wired network, then re-check.",
+      "networkModerateHint": "Your connection is moderate — you may start, but video may buffer if the network worsens.",
+      "recheckInternet": "Re-check internet connection",
+      "networkToastBlocked": "You need a moderate or good internet connection before starting."
+    },
+    "take": {
+      "sectionTimer": "Section",
+      "sectionTimeLeft": "{{time}} left",
+      "sectionTimeExpired": "Cap reached",
+      "nextSection": "Next section",
+      "nextSectionTitle": "Go to the next section?",
+      "nextSectionBody": "You have not finished every item in this block yet. Continuing follows the fixed section order — you will not be able to return to this section afterward.",
+      "nextSectionConfirm": "Continue to next section",
+      "nextSectionCancel": "Stay in this section",
+      "sectionTabsLocked": "Section order is fixed — you cannot jump by choosing another section.",
+      "previousLockedSectionBoundary": "You cannot go back to the previous section. Use Next to move forward within this section.",
+      "previousDisabledFirst": "You are on the first question.",
+      "nextDisabledUseSubmit": "This is the last question. Use “Submit Assessment” (or “Submit Early”) in the top bar to finish.",
+      "sectionTimeAutoAdvanced": "Section time ended — moving you to the next section.",
+      "lastSectionTimeEnded": "Section time for this block has ended. Continue with the overall timer; use Submit when you are ready.",
+      "strictNavTitle": "How to move in this assessment",
+      "strictNavImportantBadge": "Important — read before you start",
+      "strictNavReadBeforeStart": "This assessment uses a fixed section order. The rules below apply as soon as you click Start.",
+      "strictNavInstructions": "• During the exam, use Previous and Next to move only between questions in the current section.\n• Section chips show where you are; you cannot switch sections by tapping them.\n• At the last question of a section, Next goes to the first question of the next section in order.\n• When “Next section” appears, you can leave this block early — you will not be able to return.\n• If the instructor set a per-section time limit when building the assessment (`time_limit_minutes`), a countdown appears on the active section tab and you auto-advance at zero when another section follows. If that field is empty, only the overall timer in the top bar applies.",
+      "sectionTimerBarLabel": "Section time",
+      "sectionChipGoTo": "Select this section to jump to it.",
+      "previousTooltipEnabled": "Go to the previous question in this section.",
+      "nextTooltipEnabled": "Go to the next question, or to the next section when you are on the last question here.",
+      "nextSectionButtonTooltip": "Skip to the next section now. You will not be able to return to unfinished questions in this section.",
+      "timedSectionAlreadyCompleted": "That timed section is already finished. You cannot open it again.",
+      "timedSectionTabLocked": "This timed section is already completed — you cannot go back into it.",
+      "timedSectionCannotGoBack": "The previous section had a time limit and is already completed. You cannot go back."
     },
     "submitChecklist": {
       "title": "Review before you submit",
@@ -527,7 +562,8 @@
       "cancel": "Go back",
       "confirmSubmit": "Submit assessment",
       "submitting": "Submitting…",
-      "noSections": "No sections are loaded for this assessment. Try refreshing the page."
+      "noSections": "No sections are loaded for this assessment. Try refreshing the page.",
+      "strictOrderNotice": "This assessment used a fixed section order. Earlier sections cannot be revisited after you moved ahead."
     }
   },
   "mockInterview": {

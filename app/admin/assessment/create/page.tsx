@@ -14,7 +14,6 @@ import {
   Step,
   StepLabel,
   CircularProgress,
-  Divider,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -22,6 +21,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminAssessmentService,
   CreateAssessmentPayload,
+  AssessmentQuizSectionWrite,
+  AssessmentCodingProblemSectionWrite,
   MCQ,
   CodingProblemListItem,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -32,11 +33,23 @@ import { AssessmentSettingsSection } from "@/components/admin/assessment/Assessm
 import {
   MultipleSectionsSection,
   Section,
+  sectionTimeLimitExceedsOverallMessage,
 } from "@/components/admin/assessment/MultipleSectionsSection";
 import { SectionBasedQuestionsInput } from "@/components/admin/assessment/SectionBasedQuestionsInput";
 import { AssessmentPreviewSection } from "@/components/admin/assessment/AssessmentPreviewSection";
+import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
+
+function toAssessmentApiDecimalString(
+  raw: string | undefined
+): string | undefined {
+  if (raw == null || !String(raw).trim()) return undefined;
+  const s = String(raw).trim().replace(",", ".");
+  const n = Number(s);
+  if (!Number.isFinite(n)) return undefined;
+  return n.toFixed(2);
+}
 
 const steps = ["Assessment Details", "Add Questions", "Review & Create"];
 
@@ -75,6 +88,11 @@ export default function CreateAssessmentPage() {
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
+  const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
+    useState(true);
+  const [certificateAvailable, setCertificateAvailable] = useState(false);
+  const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
+  const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
 
   // Multiple sections
   const [sections, setSections] = useState<Section[]>([]);
@@ -115,6 +133,16 @@ export default function CreateAssessmentPage() {
     CodingProblemListItem[]
   >([]);
   const [loadingCodingProblems, setLoadingCodingProblems] = useState(false);
+
+  const passBandFieldErrors = useMemo(
+    () =>
+      getPassBandFieldErrors(
+        passBandLowerPercent,
+        passBandUpperPercent,
+        certificateAvailable
+      ),
+    [passBandLowerPercent, passBandUpperPercent, certificateAvailable]
+  );
 
   // Load existing MCQs and coding problems on page load
   useEffect(() => {
@@ -180,6 +208,19 @@ export default function CreateAssessmentPage() {
       }
       if (sections.length === 0) {
         showToast("Please add at least one section", "error");
+        return;
+      }
+      const sectionOverOverall = sections.find(
+        (s) => sectionTimeLimitExceedsOverallMessage(durationMinutes, s.timeLimitMinutes)
+      );
+      if (sectionOverOverall) {
+        showToast(
+          "A section time limit is higher than the overall assessment duration. Fix it before continuing.",
+          "error"
+        );
+        return;
+      }
+      if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
         return;
       }
     }
@@ -257,6 +298,16 @@ export default function CreateAssessmentPage() {
         return true;
       }
       if (sections.length === 0) {
+        return true;
+      }
+      if (
+        sections.some((s) =>
+          sectionTimeLimitExceedsOverallMessage(durationMinutes, s.timeLimitMinutes)
+        )
+      ) {
+        return true;
+      }
+      if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
         return true;
       }
       return false;
@@ -357,6 +408,8 @@ export default function CreateAssessmentPage() {
     aiMCQs,
     sectionCodingProblemIds,
     aiCodingProblems,
+    passBandFieldErrors.lower,
+    passBandFieldErrors.upper,
   ]);
 
   // Get total count of MCQs for a specific section (all sources combined)
@@ -508,6 +561,20 @@ export default function CreateAssessmentPage() {
         return;
       }
 
+      if (
+        durationMinutes >= 1 &&
+        sections.some((s) =>
+          sectionTimeLimitExceedsOverallMessage(durationMinutes, s.timeLimitMinutes)
+        )
+      ) {
+        showToast(
+          "A section time limit exceeds the overall assessment duration. Adjust times before creating.",
+          "error"
+        );
+        setCreating(false);
+        return;
+      }
+
       // Validate that all quiz sections have at least 1 question
       if (quizSections.length > 0) {
         const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
@@ -594,6 +661,12 @@ export default function CreateAssessmentPage() {
         return;
       }
 
+      if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
+        setActiveStep(0);
+        setCreating(false);
+        return;
+      }
+
       // Convert datetime-local strings to IST ISO format (format: "2026-01-22T22:54:00+05:30")
       // Note: datetime-local input treats the entered time as local time, but we interpret it as IST
       const convertToIST = (dateTimeString: string): string | undefined => {
@@ -648,7 +721,14 @@ export default function CreateAssessmentPage() {
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
         show_result: showResult,
+        certificate_available: certificateAvailable,
+        allow_movement: allowMovementAcrossSections,
       };
+
+      const passLower = toAssessmentApiDecimalString(passBandLowerPercent);
+      const passUpper = toAssessmentApiDecimalString(passBandUpperPercent);
+      if (passLower != null) payload.pass_band_lower_min_percent = passLower;
+      if (passUpper != null) payload.pass_band_upper_min_percent = passUpper;
 
       // Add course_ids if any courses are selected
       if (courseIds.length > 0) {
@@ -667,14 +747,12 @@ export default function CreateAssessmentPage() {
         }
       });
 
-      // Prepare quiz sections with their questions
+      // Prepare quiz sections (API: `quizSection` camelCase array)
       if (quizSections.length > 0) {
-        payload.quiz_sections = quizSections.map((section) => {
+        payload.quizSection = quizSections.map((section) => {
           const sectionMCQs = getMCQsForSection(section.id);
           const sectionMcqIds = getMcqIdsForSection(section.id);
 
-          // Separate MCQs into those from manual/csv/ai (need to send as objects)
-          // and those from existing pool (send as IDs)
           const manualMCQsForSection = manualMCQs[section.id] || [];
           const csvMCQsForSection = csvMCQs[section.id] || [];
           const aiMCQsForSection = aiMCQs[section.id] || [];
@@ -684,18 +762,19 @@ export default function CreateAssessmentPage() {
             ...aiMCQsForSection,
           ];
 
-          const sectionPayload: any = {
+          const sectionPayload: AssessmentQuizSectionWrite = {
             title: section.title.trim(),
             order: section.order,
-            number_of_questions: section.number_of_questions_to_show !== undefined ? section.number_of_questions_to_show:sectionMCQs.length, // Total count from all sources
+            number_of_questions:
+              section.number_of_questions_to_show !== undefined
+                ? section.number_of_questions_to_show
+                : sectionMCQs.length,
           };
 
-          // Include description only if it exists
           if (section.description && section.description.trim()) {
             sectionPayload.description = section.description.trim();
           }
 
-          // Include scores for quiz sections
           if (section.easyScore !== undefined) {
             sectionPayload.easy_score = section.easyScore;
           }
@@ -706,40 +785,55 @@ export default function CreateAssessmentPage() {
             sectionPayload.hard_score = section.hardScore;
           }
 
+          if (
+            section.timeLimitMinutes != null &&
+            Number.isFinite(section.timeLimitMinutes) &&
+            section.timeLimitMinutes > 0
+          ) {
+            sectionPayload.time_limit_minutes = Math.round(
+              section.timeLimitMinutes
+            );
+          }
+          const cutoff = toAssessmentApiDecimalString(section.sectionCutoffMarks);
+          if (cutoff != null) sectionPayload.section_cutoff_marks = cutoff;
 
-          // Include mcqs if there are any from manual/csv/ai input
           if (mcqsToSend.length > 0) {
             sectionPayload.mcqs = mcqsToSend;
           }
 
-          // Include mcq_ids if there are any from existing pool
           if (sectionMcqIds.length > 0) {
             sectionPayload.mcq_ids = sectionMcqIds;
+          }
+
+          if (section.number_of_questions_to_show !== undefined) {
+            sectionPayload.number_of_questions_to_show =
+              section.number_of_questions_to_show;
           }
 
           return sectionPayload;
         });
       }
 
-      // Prepare coding sections with their coding problems
+      // Prepare coding sections (API: `codingProblemSection` camelCase array)
       if (codingSections.length > 0) {
-        payload.coding_sections = codingSections.map((section) => {
+        payload.codingProblemSection = codingSections.map((section) => {
           const sectionCodingProblemIds = getCodingProblemIdsForSection(
             section.id
           );
-          const sectionPayload: any = {
+          const sectionPayload: AssessmentCodingProblemSectionWrite = {
             title: section.title.trim(),
             order: section.order,
-            number_of_questions: section.number_of_questions_to_show !== undefined? section.number_of_questions_to_show: sectionCodingProblemIds.length,
+            number_of_questions:
+              section.number_of_questions_to_show !== undefined
+                ? section.number_of_questions_to_show
+                : sectionCodingProblemIds.length,
             coding_problem_ids: sectionCodingProblemIds,
           };
 
-          // Include description only if it exists
           if (section.description && section.description.trim()) {
             sectionPayload.description = section.description.trim();
           }
 
-          // Include scores for coding sections
           if (section.easyScore !== undefined) {
             sectionPayload.easy_score = section.easyScore;
           }
@@ -750,9 +844,30 @@ export default function CreateAssessmentPage() {
             sectionPayload.hard_score = section.hardScore;
           }
 
+          if (
+            section.timeLimitMinutes != null &&
+            Number.isFinite(section.timeLimitMinutes) &&
+            section.timeLimitMinutes > 0
+          ) {
+            sectionPayload.time_limit_minutes = Math.round(
+              section.timeLimitMinutes
+            );
+          }
+          const cutoff = toAssessmentApiDecimalString(section.sectionCutoffMarks);
+          if (cutoff != null) sectionPayload.section_cutoff_marks = cutoff;
+
+          if (section.number_of_questions_to_show !== undefined) {
+            sectionPayload.number_of_questions_to_show =
+              section.number_of_questions_to_show;
+          }
+
           return sectionPayload;
         });
       }
+
+      payload.quizSection = payload.quizSection ?? [];
+      payload.codingProblemSection = payload.codingProblemSection ?? [];
+      payload.subjectiveQuestionSection = [];
 
       await adminAssessmentService.createAssessment(config.clientId, payload);
       showToast("Assessment created successfully", "success");
@@ -768,7 +883,7 @@ export default function CreateAssessmentPage() {
     switch (activeStep) {
       case 0:
         return (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <BasicInfoSection
               title={title}
               instructions={instructions}
@@ -777,7 +892,6 @@ export default function CreateAssessmentPage() {
               onInstructionsChange={setInstructions}
               onDescriptionChange={setDescription}
             />
-            <Divider />
             <AssessmentSettingsSection
               durationMinutes={durationMinutes}
               startTime={startTime}
@@ -795,6 +909,12 @@ export default function CreateAssessmentPage() {
               showLiveStreamingToggle={canConfigureLiveStreaming}
               sendCommunication={sendCommunication}
               showResult={showResult}
+              allowMovementAcrossSections={allowMovementAcrossSections}
+              certificateAvailable={certificateAvailable}
+              passBandLowerPercent={passBandLowerPercent}
+              passBandUpperPercent={passBandUpperPercent}
+              passBandLowerError={passBandFieldErrors.lower}
+              passBandUpperError={passBandFieldErrors.upper}
               onDurationChange={setDurationMinutes}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
@@ -808,11 +928,15 @@ export default function CreateAssessmentPage() {
               onLiveStreamingChange={setLiveStreaming}
               onSendCommunicationChange={setSendCommunication}
               onShowResultChange={setShowResult}
+              onAllowMovementAcrossSectionsChange={setAllowMovementAcrossSections}
+              onCertificateAvailableChange={setCertificateAvailable}
+              onPassBandLowerPercentChange={setPassBandLowerPercent}
+              onPassBandUpperPercentChange={setPassBandUpperPercent}
             />
-            <Divider />
             <MultipleSectionsSection
               sections={sections}
               onSectionsChange={setSections}
+              overallDurationMinutes={durationMinutes}
             />
           </Box>
         );
@@ -922,26 +1046,47 @@ export default function CreateAssessmentPage() {
 
         {/* Stepper */}
         <Paper
+          elevation={0}
           sx={{
             p: { xs: 2, sm: 3 },
             mb: 4,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid rgba(15, 23, 42, 0.08)",
+            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
           }}
         >
-          <Stepper activeStep={activeStep} alternativeLabel>
+          <Stepper
+            activeStep={activeStep}
+            alternativeLabel
+            sx={{
+              "& .MuiStepConnector-line": { borderTopWidth: 2 },
+              "& .MuiStepConnector-root .MuiStepConnector-line": {
+                borderColor: "rgba(148, 163, 184, 0.45)",
+              },
+              "& .MuiStepConnector-root.Mui-active .MuiStepConnector-line, & .MuiStepConnector-root.Mui-completed .MuiStepConnector-line":
+                { borderColor: "#6366f1" },
+              "& .MuiStepIcon-root": { color: "rgba(148, 163, 184, 0.65)" },
+              "& .MuiStepIcon-root.Mui-active, & .MuiStepIcon-root.Mui-completed": {
+                color: "#6366f1",
+              },
+              "& .MuiStepLabel-label": {
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                fontWeight: 500,
+                color: "#94a3b8",
+              },
+              "& .MuiStepLabel-label.Mui-active": {
+                fontWeight: 700,
+                color: "#312e81",
+              },
+              "& .MuiStepLabel-label.Mui-completed": {
+                fontWeight: 600,
+                color: "#64748b",
+              },
+            }}
+          >
             {steps.map((label) => (
               <Step key={label}>
-                <StepLabel
-                  sx={{
-                    "& .MuiStepLabel-label": {
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                      fontWeight: 500,
-                    },
-                  }}
-                >
-                  {label}
-                </StepLabel>
+                <StepLabel>{label}</StepLabel>
               </Step>
             ))}
           </Stepper>

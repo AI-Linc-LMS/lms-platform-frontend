@@ -55,6 +55,8 @@ interface AssessmentResponse {
   status: string;
   responseSheet: Record<string, any>;
   proctoring_enabled?: boolean;
+  /** When false, learners follow strict section order (no tab jumps, no Previous into prior sections). */
+  allow_movement?: boolean;
 }
 
 export function useAssessmentData(slug: string) {

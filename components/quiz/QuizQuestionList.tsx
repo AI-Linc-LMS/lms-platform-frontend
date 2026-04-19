@@ -19,7 +19,6 @@ import {
 import {
   memo,
   useMemo,
-  useState,
   useRef,
   useCallback,
   useLayoutEffect,
@@ -106,7 +105,6 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
   const theme = useTheme();
   const isCoarsePointer = useMediaQuery("(pointer: coarse)");
   const c = VARIANT_STYLES[variant];
-  const [expanded, setExpanded] = useState(true);
 
   const resolvedTitle = listTitle ?? t("quiz.questionListTitle");
   const itemElRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -135,10 +133,9 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
   }, []);
 
   useLayoutEffect(() => {
-    if (!expanded) return;
     const el = itemElRefs.current.get(String(currentQuestionId));
     el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [currentQuestionId, expanded, questions.length]);
+  }, [currentQuestionId, questions.length]);
 
   const handleJumpNextUnanswered = useCallback(
     (e: MouseEvent) => {
@@ -162,136 +159,112 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
         borderRadius: 2,
         border: "1px solid var(--border-default)",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        flex: { md: 1 },
+        minHeight: { md: 0 },
+        width: "100%",
         boxShadow:
           variant === "subjective"
-            ? "0 1px 3px 0 var(--assessment-subjective-shadow)"
-            : "0 1px 2px 0 color-mix(in srgb, var(--font-primary-dark) 6%, transparent)",
+            ? "0 2px 12px color-mix(in srgb, var(--assessment-subjective-shadow) 35%, transparent)"
+            : "0 2px 12px color-mix(in srgb, var(--font-primary-dark) 6%, transparent)",
       }}
     >
       <Box
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
-        aria-label={t("quiz.questionListToggle")}
-        onClick={() => setExpanded(!expanded)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setExpanded((v) => !v);
-          }
-        }}
         sx={{
-          p: 2,
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 1.5,
-          cursor: "pointer",
+          px: 2,
+          pt: 1.5,
+          pb: 1.25,
           borderBottom: "1px solid var(--border-default)",
           backgroundColor:
             variant === "subjective"
               ? "var(--assessment-subjective-header-strip-bg)"
               : alpha(theme.palette.primary.main, 0.03),
-          outline: "none",
-          "&:hover": {
-            backgroundColor:
-              variant === "subjective"
-                ? "var(--assessment-subjective-surface-hover)"
-                : alpha(theme.palette.primary.main, 0.06),
-          },
-          "&:focus-visible": {
-            boxShadow: `inset 0 0 0 2px ${alpha(theme.palette.primary.main, 0.35)}`,
-          },
         }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography
-            variant="subtitle1"
+        <Stack direction="row" alignItems="center" flexWrap="wrap" gap={0.75}>
+          <Chip
+            size="small"
+            label={t("quiz.answeredOf", {
+              answered: answeredCount,
+              total: questions.length,
+            })}
             sx={{
-              fontWeight: 700,
-              color: "var(--font-primary-dark)",
-              fontSize: "1rem",
-              lineHeight: 1.3,
+              height: 26,
+              fontWeight: 600,
+              fontSize: "0.72rem",
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: "primary.main",
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.22)}`,
             }}
-          >
-            {resolvedTitle}
-          </Typography>
-          <Stack direction="row" alignItems="center" flexWrap="wrap" gap={0.75} sx={{ mt: 1 }}>
+          />
+          {pendingCount === 0 ? (
             <Chip
               size="small"
-              label={t("quiz.answeredOf", {
-                answered: answeredCount,
-                total: questions.length,
-              })}
+              icon={<IconWrapper icon="mdi:check-all" size={16} color="inherit" />}
+              label={t("quiz.navAllDone")}
               sx={{
                 height: 26,
                 fontWeight: 600,
                 fontSize: "0.72rem",
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                color: "primary.main",
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.22)}`,
+                bgcolor: alpha(theme.palette.success.main, 0.12),
+                color: "success.dark",
+                border: `1px solid ${alpha(theme.palette.success.main, 0.28)}`,
+                "& .MuiChip-icon": { ml: 0.5 },
               }}
             />
-            {pendingCount === 0 ? (
-              <Chip
-                size="small"
-                icon={<IconWrapper icon="mdi:check-all" size={16} color="inherit" />}
-                label={t("quiz.navAllDone")}
-                sx={{
-                  height: 26,
-                  fontWeight: 600,
-                  fontSize: "0.72rem",
-                  bgcolor: alpha(theme.palette.success.main, 0.12),
-                  color: "success.dark",
-                  border: `1px solid ${alpha(theme.palette.success.main, 0.28)}`,
-                  "& .MuiChip-icon": { ml: 0.5 },
-                }}
-              />
-            ) : (
-              <Chip
-                size="small"
-                label={t("quiz.navRemaining", { count: pendingCount })}
-                sx={{
-                  height: 26,
-                  fontWeight: 600,
-                  fontSize: "0.72rem",
-                  bgcolor: alpha(theme.palette.warning.main, 0.12),
-                  color: "warning.dark",
-                  border: `1px solid ${alpha(theme.palette.warning.main, 0.28)}`,
-                }}
-              />
-            )}
-          </Stack>
-          {listSubtitle ? (
-            <Typography
-              variant="caption"
+          ) : (
+            <Chip
+              size="small"
+              label={t("quiz.navRemaining", { count: pendingCount })}
               sx={{
-                display: "block",
-                mt: 1,
-                color:
-                  variant === "subjective"
-                    ? "var(--assessment-subjective-muted)"
-                    : "var(--font-secondary)",
-                fontSize: "0.75rem",
-                lineHeight: 1.45,
+                height: 26,
+                fontWeight: 600,
+                fontSize: "0.72rem",
+                bgcolor: alpha(theme.palette.warning.main, 0.12),
+                color: "warning.dark",
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.28)}`,
               }}
-            >
-              {listSubtitle}
-            </Typography>
-          ) : null}
-        </Box>
-        <IconWrapper
-          icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"}
-          size={22}
-          color="var(--font-secondary)"
-        />
+            />
+          )}
+        </Stack>
+        {listSubtitle ? (
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 1,
+              color:
+                variant === "subjective"
+                  ? "var(--assessment-subjective-muted)"
+                  : "var(--font-secondary)",
+              fontSize: "0.75rem",
+              lineHeight: 1.45,
+            }}
+          >
+            {listSubtitle}
+          </Typography>
+        ) : null}
       </Box>
 
       <Box
-        sx={{ px: 2, pt: 1.25, pb: 1.25, bgcolor: alpha(theme.palette.grey[500], 0.04) }}
+        sx={{
+          px: 2,
+          pt: 1.25,
+          pb: 1.25,
+          bgcolor:
+            variant === "subjective"
+              ? "color-mix(in srgb, var(--assessment-subjective-surface-active) 8%, var(--card-bg))"
+              : "color-mix(in srgb, var(--font-primary-dark) 3.5%, var(--card-bg))",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.75 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mb: 0.75 }}
+        >
           <Typography
             variant="caption"
             color="text.secondary"
@@ -317,7 +290,7 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
             },
           }}
         />
-        {expanded && nextUnansweredId != null && onQuestionClick && (
+        {nextUnansweredId != null && onQuestionClick && (
           <Button
             fullWidth
             size="small"
@@ -340,12 +313,21 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
         )}
       </Box>
 
-      {expanded && (
+      <Box
+        sx={{
+          flex: { md: 1 },
+          minHeight: { md: 0 },
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <List
           dense
           sx={{
             py: 0.75,
-            maxHeight: { xs: "min(50vh, 340px)", md: "min(58vh, 500px)" },
+            flex: { md: 1 },
+            minHeight: { md: 0 },
+            maxHeight: { xs: "min(50vh, 340px)", md: "none" },
             overflowY: "auto",
             scrollBehavior: "smooth",
             scrollPaddingBlock: "12px",
@@ -538,7 +520,7 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
             );
           })}
         </List>
-      )}
+      </Box>
     </Paper>
   );
 }, (prevProps, nextProps) => {

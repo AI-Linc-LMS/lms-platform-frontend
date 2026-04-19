@@ -331,7 +331,7 @@ export default function DeviceCheckPage({
     } finally {
       setChecking(false);
     }
-  }, []);
+  }, [testInternetSpeed]);
 
   // Check browser support and auto-test devices on mount
   useEffect(() => {
@@ -443,6 +443,11 @@ export default function DeviceCheckPage({
       return;
     }
 
+    if (networkStatus !== "good" && networkStatus !== "moderate") {
+      showToast(t("assessments.deviceCheck.networkToastBlocked"), "error");
+      return;
+    }
+
     // Mark that we're navigating to assessment (so cleanup won't stop camera)
     isNavigatingToAssessmentRef.current = true;
     setIsNavigatingToAssessment(true);
@@ -464,11 +469,16 @@ export default function DeviceCheckPage({
     router.push(`/assessments/${slug}/take`);
   };
 
-  const canProceed =
+  const networkAllowsProceed =
+    networkStatus === "good" || networkStatus === "moderate";
+
+  const devicesAndBrowserReady =
     deviceStatus.camera &&
     deviceStatus.microphone &&
-    deviceStatus.browserSupported &&
-    faceValidationPassed;
+    deviceStatus.browserSupported;
+
+  const canProceed =
+    devicesAndBrowserReady && faceValidationPassed && networkAllowsProceed;
 
   // Don't show loading screen - render immediately for better UX
 
@@ -867,7 +877,7 @@ export default function DeviceCheckPage({
             )}
             {networkStatus === "moderate" && (
               <Alert severity="warning" sx={{ mt: 2 }}>
-                Connection may cause interruptions.
+                {t("assessments.deviceCheck.networkModerateHint")}
               </Alert>
             )}
             {networkStatus === "good" && (
@@ -878,6 +888,23 @@ export default function DeviceCheckPage({
           </Paper>
         </Box>
 
+        {devicesAndBrowserReady &&
+          faceValidationPassed &&
+          !networkAllowsProceed && (
+            <Alert
+              severity={
+                networkStatus === "poor" ? "error" : "info"
+              }
+              sx={{ mb: 3, maxWidth: 640, mx: "auto" }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {networkStatus === "testing" || networkStatus === null
+                  ? t("assessments.deviceCheck.networkWaitTest")
+                  : t("assessments.deviceCheck.networkPoorCannotStart")}
+              </Typography>
+            </Alert>
+          )}
+
         {/* Action Buttons */}
         <Box
           sx={{
@@ -887,6 +914,34 @@ export default function DeviceCheckPage({
             flexWrap: "wrap",
           }}
         >
+          {devicesAndBrowserReady &&
+            faceValidationPassed &&
+            !networkAllowsProceed && (
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => void testInternetSpeed()}
+                disabled={networkStatus === "testing"}
+                startIcon={
+                  networkStatus === "testing" ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <IconWrapper icon="mdi:wifi-refresh" size={22} />
+                  )
+                }
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.5,
+                  borderColor: "#6366f1",
+                  color: "#4338ca",
+                }}
+              >
+                {t("assessments.deviceCheck.recheckInternet")}
+              </Button>
+            )}
+
           {!canProceed
             ? (!deviceStatus.camera || !deviceStatus.microphone) && (
                 <Button
@@ -925,25 +980,18 @@ export default function DeviceCheckPage({
               size="large"
               onClick={handleStartAssessment}
               endIcon={<IconWrapper icon="mdi:arrow-right" size={24} />}
-              disabled={!faceValidationPassed}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
                 px: 4,
                 py: 1.5,
-                backgroundColor: faceValidationPassed ? "#10b981" : "#9ca3af",
+                backgroundColor: "#10b981",
                 "&:hover": {
-                  backgroundColor: faceValidationPassed ? "#059669" : "#9ca3af",
-                },
-                "&:disabled": {
-                  backgroundColor: "#9ca3af",
-                  color: "#ffffff",
+                  backgroundColor: "#059669",
                 },
               }}
             >
-              {faceValidationPassed
-                ? "Start Assessment"
-                : "Position Face Correctly"}
+              {t("assessments.startAssessment")}
             </Button>
           )}
 

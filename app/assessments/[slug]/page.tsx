@@ -475,6 +475,90 @@ export default function AssessmentDetailPage({
             </Box>
           )}
 
+          {assessment.allow_movement === false && (
+            <Paper
+              elevation={0}
+              sx={{
+                mb: 3,
+                p: 2.5,
+                borderRadius: 2,
+                border: "2px solid #6366f1",
+                background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
+                boxShadow: "0 4px 20px rgba(99, 102, 241, 0.15)",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 2,
+                  mb: 1.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 2,
+                    bgcolor: "#4338ca",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IconWrapper icon="mdi:routes" size={26} color="#ffffff" />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Chip
+                    label={t("assessments.take.strictNavImportantBadge")}
+                    size="small"
+                    sx={{
+                      mb: 1,
+                      fontWeight: 700,
+                      bgcolor: "#4338ca",
+                      color: "#ffffff",
+                      "& .MuiChip-label": { px: 1.25 },
+                    }}
+                  />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 800,
+                      color: "#312e81",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {t("assessments.take.strictNavTitle")}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "#4338ca",
+                  fontWeight: 700,
+                  mb: 1.5,
+                  lineHeight: 1.5,
+                }}
+              >
+                {t("assessments.take.strictNavReadBeforeStart")}
+              </Typography>
+              <Typography
+                variant="body2"
+                component="div"
+                sx={{
+                  color: "#1e1b4b",
+                  whiteSpace: "pre-line",
+                  lineHeight: 1.75,
+                  fontWeight: 500,
+                }}
+              >
+                {t("assessments.take.strictNavInstructions")}
+              </Typography>
+            </Paper>
+          )}
+
           <Button
             variant="contained"
             size="large"

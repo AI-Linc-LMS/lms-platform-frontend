@@ -1,6 +1,7 @@
 import axios, {
   AxiosInstance,
   AxiosError,
+  AxiosHeaders,
   InternalAxiosRequestConfig,
 } from "axios";
 import Cookies from "js-cookie";
@@ -21,9 +22,17 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // When sending FormData, remove Content-Type so the browser sets it with the correct boundary
+    // When sending FormData, remove Content-Type so the browser sets multipart boundary
     if (config.data instanceof FormData && config.headers) {
-      delete config.headers["Content-Type"];
+      const h = config.headers;
+      if (h instanceof AxiosHeaders) {
+        h.delete("Content-Type");
+        h.delete("content-type");
+      } else {
+        const rec = h as Record<string, unknown>;
+        delete rec["Content-Type"];
+        delete rec["content-type"];
+      }
     }
     return config;
   },
