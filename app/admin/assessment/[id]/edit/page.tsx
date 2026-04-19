@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -243,6 +244,7 @@ function toISTForAPI(dateTimeString: string | null | undefined): string | undefi
 }
 
 export default function AssessmentEditPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const params = useParams();
@@ -283,6 +285,9 @@ export default function AssessmentEditPage() {
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
+  const [allowDesktop, setAllowDesktop] = useState(true);
+  const [allowMobile, setAllowMobile] = useState(true);
+  const [allowTablet, setAllowTablet] = useState(true);
 
   const [questionsPage, setQuestionsPage] = useState(1);
   const [questionsLimit, setQuestionsLimit] = useState(10);
@@ -347,6 +352,9 @@ export default function AssessmentEditPage() {
       setLiveStreaming((data as any).live_streaming ?? false);
       setSendCommunication((data as any).send_communication ?? false);
       setShowResult((data as any).show_result ?? true);
+      setAllowDesktop((data as any).allow_desktop ?? true);
+      setAllowMobile((data as any).allow_mobile ?? true);
+      setAllowTablet((data as any).allow_tablet ?? true);
     } catch (e: any) {
       showToast(e?.message || "Failed to load assessment", "error");
       setAssessment(null);
@@ -491,6 +499,10 @@ export default function AssessmentEditPage() {
       showToast("Please enter a valid price for paid assessment", "error");
       return;
     }
+    if (!allowDesktop && !allowMobile && !allowTablet) {
+      showToast(t("assessmentDevice.atLeastOne"), "error");
+      return;
+    }
     try {
       setSaving(true);
       const payload: Partial<CreateAssessmentPayload> = {
@@ -508,6 +520,9 @@ export default function AssessmentEditPage() {
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
         show_result: showResult,
+        allow_desktop: allowDesktop,
+        allow_mobile: allowMobile,
+        allow_tablet: allowTablet,
         course_ids: courseIds,
         colleges: colleges.length ? colleges : undefined,
       };
@@ -1048,6 +1063,9 @@ export default function AssessmentEditPage() {
                   showLiveStreamingToggle={canConfigureLiveStreaming}
                   sendCommunication={sendCommunication}
                   showResult={showResult}
+                  allowDesktop={allowDesktop}
+                  allowMobile={allowMobile}
+                  allowTablet={allowTablet}
                   onDurationChange={setDurationMinutes}
                   onStartTimeChange={setStartTime}
                   onEndTimeChange={setEndTime}
@@ -1061,6 +1079,9 @@ export default function AssessmentEditPage() {
                   onLiveStreamingChange={setLiveStreaming}
                   onSendCommunicationChange={setSendCommunication}
                   onShowResultChange={setShowResult}
+                  onAllowDesktopChange={setAllowDesktop}
+                  onAllowMobileChange={setAllowMobile}
+                  onAllowTabletChange={setAllowTablet}
                   readOnly={readOnly}
                 />
                 {!readOnly && (

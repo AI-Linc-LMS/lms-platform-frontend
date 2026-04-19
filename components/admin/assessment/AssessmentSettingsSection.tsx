@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -16,21 +17,29 @@ import {
   CircularProgress,
   Autocomplete,
   Chip,
+  Paper,
+  Stack,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface AssessmentSettingsSectionProps {
   durationMinutes: number;
   startTime: string;
   endTime: string;
-  isPaid: boolean;
+  /** Omitted or undefined is normalized via default params so MUI Switch stays controlled. */
+  isPaid?: boolean;
   price: string;
   currency: string;
-  isActive: boolean;
-  proctoringEnabled: boolean;
-  liveStreaming: boolean;
+  isActive?: boolean;
+  proctoringEnabled?: boolean;
+  liveStreaming?: boolean;
   showLiveStreamingToggle?: boolean;
-  sendCommunication: boolean;
-  showResult: boolean;
+  sendCommunication?: boolean;
+  showResult?: boolean;
+  allowDesktop?: boolean;
+  allowMobile?: boolean;
+  allowTablet?: boolean;
   courseIds: number[];
   courses: any[];
   loadingCourses: boolean;
@@ -46,6 +55,9 @@ interface AssessmentSettingsSectionProps {
   onLiveStreamingChange: (value: boolean) => void;
   onSendCommunicationChange: (value: boolean) => void;
   onShowResultChange: (value: boolean) => void;
+  onAllowDesktopChange: (value: boolean) => void;
+  onAllowMobileChange: (value: boolean) => void;
+  onAllowTabletChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
   onCollegesChange: (value: string[]) => void;
   readOnly?: boolean;
@@ -55,15 +67,18 @@ export function AssessmentSettingsSection({
   durationMinutes,
   startTime,
   endTime,
-  isPaid,
+  isPaid = false,
   price,
   currency,
-  isActive,
-  proctoringEnabled,
-  liveStreaming,
+  isActive = true,
+  proctoringEnabled = true,
+  liveStreaming = false,
   showLiveStreamingToggle = false,
-  sendCommunication,
-  showResult,
+  sendCommunication = false,
+  showResult = true,
+  allowDesktop = true,
+  allowMobile = true,
+  allowTablet = true,
   courseIds,
   courses,
   loadingCourses,
@@ -79,10 +94,14 @@ export function AssessmentSettingsSection({
   onLiveStreamingChange,
   onSendCommunicationChange,
   onShowResultChange,
+  onAllowDesktopChange,
+  onAllowMobileChange,
+  onAllowTabletChange,
   onCourseIdsChange,
   onCollegesChange,
   readOnly = false,
 }: AssessmentSettingsSectionProps) {
+  const { t } = useTranslation("common");
   return (
     <Box>
       <Typography
@@ -279,7 +298,7 @@ export function AssessmentSettingsSection({
           <FormControlLabel
             control={
               <Switch
-                checked={proctoringEnabled ?? true}
+                checked={proctoringEnabled}
                 onChange={(e) => onProctoringEnabledChange(e.target.checked)}
                 disabled={readOnly}
               />
@@ -324,6 +343,150 @@ export function AssessmentSettingsSection({
           <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
             When enabled, students can view their score and detailed results after submission. When disabled, they will see an evaluation-in-progress message instead.
           </Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              mt: 2,
+              borderRadius: 2,
+              borderColor: "#e5e7eb",
+              backgroundColor: "#fafafa",
+            }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ mb: 2 }}>
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 1.5,
+                  bgcolor: alpha("#6366f1", 0.12),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <IconWrapper icon="mdi:devices" size={22} color="#6366f1" />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 700, color: "#111827" }}
+                >
+                  {t("assessmentDevice.sectionTitle")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", lineHeight: 1.5 }}
+                >
+                  {t("assessmentDevice.sectionIntro")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.75, fontWeight: 600 }}
+                >
+                  {t("assessmentDevice.sectionHint")}
+                </Typography>
+              </Box>
+            </Stack>
+            <Stack spacing={0}>
+              <Box
+                sx={{
+                  py: 1.25,
+                  borderBottom: "1px solid",
+                  borderColor: "#ececec",
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <IconWrapper icon="mdi:monitor" size={22} color="#6366f1" />
+                  <FormControlLabel
+                    sx={{ flex: 1, m: 0 }}
+                    control={
+                      <Switch
+                        checked={allowDesktop}
+                        onChange={(e) => onAllowDesktopChange(e.target.checked)}
+                        disabled={readOnly}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {t("assessmentDevice.allowDesktop")}
+                      </Typography>
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
+                >
+                  {t("assessmentDevice.allowDesktopHint")}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  py: 1.25,
+                  borderBottom: "1px solid",
+                  borderColor: "#ececec",
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <IconWrapper icon="mdi:cellphone" size={22} color="#6366f1" />
+                  <FormControlLabel
+                    sx={{ flex: 1, m: 0 }}
+                    control={
+                      <Switch
+                        checked={allowMobile}
+                        onChange={(e) => onAllowMobileChange(e.target.checked)}
+                        disabled={readOnly}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {t("assessmentDevice.allowMobile")}
+                      </Typography>
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
+                >
+                  {t("assessmentDevice.allowMobileHint")}
+                </Typography>
+              </Box>
+              <Box sx={{ py: 1.25 }}>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <IconWrapper icon="mdi:tablet" size={22} color="#6366f1" />
+                  <FormControlLabel
+                    sx={{ flex: 1, m: 0 }}
+                    control={
+                      <Switch
+                        checked={allowTablet}
+                        onChange={(e) => onAllowTabletChange(e.target.checked)}
+                        disabled={readOnly}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {t("assessmentDevice.allowTablet")}
+                      </Typography>
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
+                >
+                  {t("assessmentDevice.allowTabletHint")}
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
         </Box>
       </Box>
     </Box>

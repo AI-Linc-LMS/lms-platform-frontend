@@ -178,9 +178,12 @@ export function ContentTable({
                         }
                       >
                         <Switch
-                          checked={content.is_verified}
+                          checked={content.is_verified ?? false}
                           onChange={() =>
-                            onToggleVerification(content.id, !content.is_verified)
+                            onToggleVerification(
+                              content.id,
+                              !(content.is_verified ?? false),
+                            )
                           }
                           disabled={isVerifying}
                           size="small"

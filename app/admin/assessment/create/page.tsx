@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -41,6 +42,7 @@ type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 const steps = ["Assessment Details", "Add Questions", "Review & Create"];
 
 export default function CreateAssessmentPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -75,6 +77,9 @@ export default function CreateAssessmentPage() {
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
+  const [allowDesktop, setAllowDesktop] = useState(true);
+  const [allowMobile, setAllowMobile] = useState(true);
+  const [allowTablet, setAllowTablet] = useState(true);
 
   // Multiple sections
   const [sections, setSections] = useState<Section[]>([]);
@@ -494,6 +499,12 @@ export default function CreateAssessmentPage() {
     try {
       setCreating(true);
 
+      if (!allowDesktop && !allowMobile && !allowTablet) {
+        showToast(t("assessmentDevice.atLeastOne"), "error");
+        setCreating(false);
+        return;
+      }
+
       const quizSections = sections
         .filter((s) => s.type === "quiz")
         .sort((a, b) => a.order - b.order);
@@ -648,6 +659,9 @@ export default function CreateAssessmentPage() {
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
         show_result: showResult,
+        allow_desktop: allowDesktop,
+        allow_mobile: allowMobile,
+        allow_tablet: allowTablet,
       };
 
       // Add course_ids if any courses are selected
@@ -795,6 +809,9 @@ export default function CreateAssessmentPage() {
               showLiveStreamingToggle={canConfigureLiveStreaming}
               sendCommunication={sendCommunication}
               showResult={showResult}
+              allowDesktop={allowDesktop}
+              allowMobile={allowMobile}
+              allowTablet={allowTablet}
               onDurationChange={setDurationMinutes}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
@@ -808,6 +825,9 @@ export default function CreateAssessmentPage() {
               onLiveStreamingChange={setLiveStreaming}
               onSendCommunicationChange={setSendCommunication}
               onShowResultChange={setShowResult}
+              onAllowDesktopChange={setAllowDesktop}
+              onAllowMobileChange={setAllowMobile}
+              onAllowTabletChange={setAllowTablet}
             />
             <Divider />
             <MultipleSectionsSection

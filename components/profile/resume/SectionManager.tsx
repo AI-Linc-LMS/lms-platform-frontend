@@ -135,7 +135,7 @@ export function SectionManager({ sections, onSectionsChange }: SectionManagerPro
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={section.enabled}
+                      checked={section.enabled ?? false}
                       onChange={(e) => toggleSection(section.id, e.target.checked)}
                       size="small"
                     />

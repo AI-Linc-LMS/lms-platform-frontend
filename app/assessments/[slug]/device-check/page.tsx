@@ -17,7 +17,12 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { assessmentService } from "@/lib/services/assessment.service";
+import {
+  assessmentService,
+  type AssessmentDetail,
+} from "@/lib/services/assessment.service";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { CheckCircle, XCircle, Video, Mic, AlertCircle } from "lucide-react";
 
@@ -37,7 +42,9 @@ export default function DeviceCheckPage({
   const router = useRouter();
   const [loading, setLoading] = useState(false); // Start with false - don't block initial render
   const [checking, setChecking] = useState(false);
-  const [, setAssessment] = useState<any>(null);
+  const [deviceAccessDenied, setDeviceAccessDenied] = useState(false);
+  const [deniedAssessment, setDeniedAssessment] =
+    useState<AssessmentDetail | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>({
     camera: false,
     microphone: false,
@@ -352,7 +359,12 @@ export default function DeviceCheckPage({
     const loadAssessment = async () => {
       try {
         const data = await assessmentService.getAssessmentDetail(slug);
-        setAssessment(data);
+
+        if (!isCurrentDeviceAllowedForAssessment(data)) {
+          setDeniedAssessment(data);
+          setDeviceAccessDenied(true);
+          return;
+        }
 
         // Check if assessment is already attempted
         if (data.is_attempted) {
@@ -377,7 +389,7 @@ export default function DeviceCheckPage({
     if (slug) {
       loadAssessment();
     }
-  }, [slug, router, showToast]);
+  }, [slug, router, showToast, t]);
 
   const handleStartAssessment = () => {
     if (!deviceStatus.camera || !deviceStatus.microphone) {
@@ -416,6 +428,77 @@ export default function DeviceCheckPage({
     deviceStatus.microphone &&
     deviceStatus.browserSupported &&
     faceValidationPassed;
+
+  if (deviceAccessDenied && deniedAssessment) {
+    return (
+      <MainLayout>
+        <Container maxWidth="md" sx={{ py: { xs: 3, sm: 5 }, px: 2 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, sm: 4 },
+              borderRadius: 3,
+              border: "1px solid #e5e7eb",
+              textAlign: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                backgroundColor: "rgba(245, 158, 11, 0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mx: "auto",
+                mb: 2,
+              }}
+            >
+              <IconWrapper
+                icon="mdi:cellphone-off"
+                size={40}
+                color="#d97706"
+              />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, color: "#1f2937", mb: 1 }}
+            >
+              {t("assessmentDevice.deviceCheckBlockedTitle")}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "#6b7280", mb: 3, maxWidth: 480, mx: "auto" }}
+            >
+              {t("assessmentDevice.deviceCheckBlockedSubtitle")}
+            </Typography>
+            <Box sx={{ textAlign: "left", mb: 3 }}>
+              <AssessmentDeviceStatusPanel
+                assessment={deniedAssessment}
+                sx={{ mb: 0 }}
+              />
+            </Box>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
+              onClick={() => router.push(`/assessments/${slug}`)}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                px: 3,
+                backgroundColor: "#6366f1",
+                "&:hover": { backgroundColor: "#4f46e5" },
+              }}
+            >
+              {t("assessmentDevice.backToAssessment")}
+            </Button>
+          </Paper>
+        </Container>
+      </MainLayout>
+    );
+  }
 
   // Don't show loading screen - render immediately for better UX
 
