@@ -9,7 +9,6 @@ import {
   Box,
   IconButton,
   Chip,
-  Avatar,
   Tooltip,
 } from "@mui/material";
 import { JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
@@ -27,6 +26,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { formatJobDescriptionBody } from "@/lib/utils/format-job-description";
+import { CompanyLogoAvatar } from "@/components/jobs-v2/CompanyLogoAvatar";
 
 interface JobCardV2Props {
   job: JobV2;
@@ -127,24 +127,17 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
       }}
     >
       <Box sx={{ display: "flex", gap: { xs: 1.5, md: 2 }, width: "100%" }}>
-        <Avatar
-          src={job.company_logo}
-          alt={job.company_name}
+        <CompanyLogoAvatar
+          logoUrl={job.company_logo}
+          companyName={job.company_name}
           sx={{
-            width: { xs: 48, md: 56 },
-            height: { xs: 48, md: 56 },
+            width: { xs: 48, md: 48 },
+            height: { xs: 48, md: 48 },
             borderRadius: 1.5,
-            border: "1px solid",
-            borderColor: "divider",
-            backgroundColor: "#6366f1",
-            color: "#ffffff",
-            fontSize: { xs: "1rem", md: "1.25rem" },
-            fontWeight: 600,
+            fontSize: { xs: "1rem", md: "1rem" },
             flexShrink: 0,
           }}
-        >
-          {job.company_name?.[0]?.toUpperCase() || "C"}
-        </Avatar>
+        />
 
         <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <Box

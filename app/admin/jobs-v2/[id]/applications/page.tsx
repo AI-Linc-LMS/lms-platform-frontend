@@ -39,6 +39,10 @@ import { useToast } from "@/components/common/Toast";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobApplicationV2, JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
+import {
+  getAdminJobsV2ListBackHref,
+  getAdminJobsV2ListQuerySuffix,
+} from "@/lib/utils/jobs-v2-navigation";
 import { ApplicationsIllustration } from "@/components/jobs-v2/illustrations";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeUrlPreviewModal } from "@/components/admin/ResumeUrlPreviewModal";
@@ -150,12 +154,14 @@ export default function JobApplicationsPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const jobId = Number(params?.id);
 
-  const adminJobsListBackHref = useMemo(() => {
-    const qs = searchParams.toString();
-    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
-  }, [searchParams]);
-
-  const listQuerySuffix = searchParams.toString() ? `?${searchParams.toString()}` : "";
+  const adminJobsListBackHref = useMemo(
+    () => getAdminJobsV2ListBackHref(searchParams),
+    [searchParams]
+  );
+  const listQuerySuffix = useMemo(
+    () => getAdminJobsV2ListQuerySuffix(searchParams),
+    [searchParams]
+  );
   const [job, setJob] = useState<JobV2 | null>(null);
   const [applications, setApplications] = useState<JobApplicationV2[]>([]);
   const [loading, setLoading] = useState(true);

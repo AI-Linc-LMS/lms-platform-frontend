@@ -25,6 +25,10 @@ import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { formatJobPassoutYear, jobsV2Service } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
 import {
+  getAdminJobsV2ListBackHref,
+  getAdminJobsV2ListQuerySuffix,
+} from "@/lib/utils/jobs-v2-navigation";
+import {
   isExternalJsonFeedJob,
   isLikelyExternalJsonSyntheticId,
 } from "@/lib/jobs/external-json-jobs-store";
@@ -187,12 +191,14 @@ export default function JobDetailPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  const adminJobsListBackHref = useMemo(() => {
-    const qs = searchParams.toString();
-    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
-  }, [searchParams]);
-
-  const listQuerySuffix = searchParams.toString() ? `?${searchParams.toString()}` : "";
+  const adminJobsListBackHref = useMemo(
+    () => getAdminJobsV2ListBackHref(searchParams),
+    [searchParams]
+  );
+  const listQuerySuffix = useMemo(
+    () => getAdminJobsV2ListQuerySuffix(searchParams),
+    [searchParams]
+  );
 
   const JOB_STATUS_OPTIONS = [
     { value: "active", label: "Active" },

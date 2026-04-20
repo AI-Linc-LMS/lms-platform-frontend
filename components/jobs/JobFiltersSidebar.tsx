@@ -7,6 +7,8 @@ import {
   MenuItem,
   Divider,
   Button,
+  Autocomplete,
+  createFilterOptions,
 } from "@mui/material";
 import { memo, useCallback, useMemo } from "react";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -42,6 +44,8 @@ const DATE_POSTED_OPTIONS = [
   { value: "30d", label: "Past month" },
 ];
 
+const LOCATION_FILTER_LIMIT = 50;
+
 const JobFiltersSidebarComponent = ({
   filters,
   jobs,
@@ -76,10 +80,19 @@ const JobFiltersSidebarComponent = ({
   );
 
   const handleLocationChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      onFilterChange("location", String(e.target.value || ""));
+    (value: string) => {
+      onFilterChange("location", value);
     },
     [onFilterChange]
+  );
+
+  const filterLocationOptions = useMemo(
+    () =>
+      createFilterOptions<string>({
+        limit: LOCATION_FILTER_LIMIT,
+        stringify: (option) => option,
+      }),
+    []
   );
 
   const handleDatePostedChange = useCallback(
@@ -231,7 +244,7 @@ const JobFiltersSidebarComponent = ({
         </TextField>
       </Box>
 
-      {/* Location Filter - dynamic from jobs */}
+      {/* Location — typeahead (same options as hero bar) */}
       <Box sx={{ mb: 3 }}>
         <Typography
           variant="subtitle2"
@@ -239,25 +252,30 @@ const JobFiltersSidebarComponent = ({
         >
           Location
         </Typography>
-        <TextField
+        <Autocomplete
+          freeSolo
           fullWidth
-          select
           size="small"
-          value={filters.location || ""}
-          onChange={handleLocationChange}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 1.5,
-            },
-          }}
-        >
-          <MenuItem value="">All Locations</MenuItem>
-          {locationOptions.map((location) => (
-            <MenuItem key={location} value={location}>
-              {location}
-            </MenuItem>
-          ))}
-        </TextField>
+          options={locationOptions}
+          value={filters.location ?? ""}
+          inputValue={filters.location ?? ""}
+          onInputChange={(_, v) => handleLocationChange(v)}
+          onChange={(_, v) => handleLocationChange(typeof v === "string" ? v : "")}
+          filterOptions={filterLocationOptions}
+          getOptionLabel={(o) => o}
+          isOptionEqualToValue={(a, b) => a === b}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder="All locations"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 1.5,
+                },
+              }}
+            />
+          )}
+        />
       </Box>
 
       <Divider sx={{ my: 2 }} />

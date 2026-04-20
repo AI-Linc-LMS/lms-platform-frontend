@@ -10,6 +10,11 @@ import { jobsV2Service } from "@/lib/services/jobs-v2.service";
 import { useToast } from "@/components/common/Toast";
 import { ApplyJobPage } from "@/components/jobs-v2/ApplyJobPage";
 import { JobDetailIllustration } from "@/components/jobs-v2/illustrations";
+import {
+  getJobsV2BrowseHref,
+  getJobsV2JobDetailHref,
+  getJobsV2ListQueryString,
+} from "@/lib/utils/jobs-v2-navigation";
 
 export default function ApplyJobRoutePage() {
   const params = useParams();
@@ -18,19 +23,16 @@ export default function ApplyJobRoutePage() {
   const { showToast } = useToast();
   const id = Number(params?.id);
 
-  const jobsListQueryString = useMemo(() => {
-    const p = new URLSearchParams();
-    const pg = routeSearchParams.get("page");
-    if (pg) p.set("page", pg);
-    const ps = routeSearchParams.get("page_size");
-    if (ps) p.set("page_size", ps);
-    return p.toString();
-  }, [routeSearchParams]);
-
-  const jobsListHref = jobsListQueryString ? `/jobs-v2?${jobsListQueryString}` : "/jobs-v2";
+  const jobsListQueryString = useMemo(
+    () => getJobsV2ListQueryString(routeSearchParams),
+    [routeSearchParams]
+  );
+  const jobsListHref = useMemo(
+    () => getJobsV2BrowseHref(jobsListQueryString),
+    [jobsListQueryString]
+  );
   const jobDetailHref = useMemo(
-    () =>
-      jobsListQueryString ? `/jobs-v2/${id}?${jobsListQueryString}` : `/jobs-v2/${id}`,
+    () => getJobsV2JobDetailHref(id, jobsListQueryString),
     [id, jobsListQueryString]
   );
   const [job, setJob] = useState<Awaited<ReturnType<typeof jobsV2Service.getJobById>> | null>(null);
@@ -63,22 +65,14 @@ export default function ApplyJobRoutePage() {
       if (!job) return;
       await jobsV2Service.applyForJob(job.id, payload);
       showToast("Application submitted successfully", "success");
-      router.push(
-        jobsListQueryString
-          ? `/jobs-v2/${job.id}?${jobsListQueryString}`
-          : `/jobs-v2/${job.id}`
-      );
+      router.push(getJobsV2JobDetailHref(job.id, jobsListQueryString));
     },
     [job, router, showToast, jobsListQueryString]
   );
 
   const handleCancel = useCallback(() => {
     if (job) {
-      router.push(
-        jobsListQueryString
-          ? `/jobs-v2/${job.id}?${jobsListQueryString}`
-          : `/jobs-v2/${job.id}`
-      );
+      router.push(getJobsV2JobDetailHref(job.id, jobsListQueryString));
     } else {
       router.push(jobsListHref);
     }

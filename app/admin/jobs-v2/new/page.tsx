@@ -13,6 +13,7 @@ import {
 } from "@/lib/services/admin/admin-jobs-v2.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
+import { getAdminJobsV2ListBackHrefOmittingParams } from "@/lib/utils/jobs-v2-navigation";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { jobsV2Service } from "@/lib/services/jobs-v2.service";
 
@@ -27,12 +28,10 @@ export default function NewJobPage() {
   const seedIdKey = searchParams.get("seedId")?.trim() ?? "";
   const [seedResolved, setSeedResolved] = useState(!seedIdKey);
 
-  const adminJobsListBackHref = useMemo(() => {
-    const p = new URLSearchParams(searchParams.toString());
-    p.delete("seedId");
-    const qs = p.toString();
-    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
-  }, [searchParams]);
+  const adminJobsListBackHref = useMemo(
+    () => getAdminJobsV2ListBackHrefOmittingParams(searchParams, ["seedId"]),
+    [searchParams]
+  );
 
   const loadCourses = useCallback(async () => {
     try {

@@ -24,6 +24,10 @@ import {
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
+import {
+  getAdminJobsV2ListBackHref,
+  getAdminJobsV2ListQuerySuffix,
+} from "@/lib/utils/jobs-v2-navigation";
 
 export default function EditJobPage() {
   const router = useRouter();
@@ -32,12 +36,14 @@ export default function EditJobPage() {
   const { showToast } = useToast();
   const jobId = Number(params?.id);
 
-  const adminJobsListBackHref = useMemo(() => {
-    const qs = searchParams.toString();
-    return qs ? `/admin/jobs-v2?${qs}` : "/admin/jobs-v2";
-  }, [searchParams]);
-
-  const listQuerySuffix = searchParams.toString() ? `?${searchParams.toString()}` : "";
+  const adminJobsListBackHref = useMemo(
+    () => getAdminJobsV2ListBackHref(searchParams),
+    [searchParams]
+  );
+  const listQuerySuffix = useMemo(
+    () => getAdminJobsV2ListQuerySuffix(searchParams),
+    [searchParams]
+  );
   const [job, setJob] = useState<JobV2 | null>(null);
   const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
   const [loading, setLoading] = useState(true);

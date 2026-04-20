@@ -1,3 +1,5 @@
+import indianLocationMarkers from "./indian-location-markers.json";
+
 /** Virtual location: all listings that look India-based (cities, states, "India"). */
 export const INDIA_LOCATION_OPTION = "India";
 
@@ -6,66 +8,37 @@ export function appendIndiaToLocationOptions(locations: string[]): string[] {
   return [INDIA_LOCATION_OPTION, ...rest];
 }
 
+function titleCaseLocationToken(s: string): string {
+  return s
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/**
+ * Preset cities/states for the student jobs location field (before any listings load),
+ * so the dropdown is not only "India". Merged with job-derived locations on the page.
+ */
+export function getDefaultStudentLocationAutocompleteOptions(): string[] {
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const raw of indianLocationMarkers) {
+    const label = titleCaseLocationToken(raw);
+    if (!label) continue;
+    const k = label.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    labels.push(label);
+  }
+  labels.sort((a, b) => a.localeCompare(b));
+  return appendIndiaToLocationOptions(labels);
+}
+
 function isLikelyIndianLocation(locLower: string): boolean {
   if (!locLower) return false;
   if (/\bindia\b/.test(locLower)) return true;
-  const markers = [
-    "bangalore",
-    "bengaluru",
-    "mumbai",
-    "delhi",
-    "hyderabad",
-    "pune",
-    "chennai",
-    "kolkata",
-    "ahmedabad",
-    "gurugram",
-    "gurgaon",
-    "noida",
-    "kochi",
-    "coimbatore",
-    "jaipur",
-    "indore",
-    "karnataka",
-    "maharashtra",
-    "telangana",
-    "tamil nadu",
-    "gujarat",
-    "west bengal",
-    "uttar pradesh",
-    "haryana",
-    "rajasthan",
-    "andhra",
-    "kerala",
-    "bihar",
-    "punjab",
-    "odisha",
-    "orissa",
-    "madhya pradesh",
-    "assam",
-    "goa",
-    "chandigarh",
-    "lucknow",
-    "thrissur",
-    "vizag",
-    "visakhapatnam",
-    "faridabad",
-    "ghaziabad",
-    "nagpur",
-    "surat",
-    "bhopal",
-    "vadodara",
-    "ludhiana",
-    "rajkot",
-    "varanasi",
-    "mohali",
-    "panchkula",
-    "mysore",
-    "mysuru",
-    "trivandrum",
-    "thiruvananthapuram",
-  ];
-  return markers.some((m) => locLower.includes(m));
+  return indianLocationMarkers.some((m) => locLower.includes(m));
 }
 
 /** Match job location string against sidebar/search selection (includes India aggregate). */

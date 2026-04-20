@@ -27,6 +27,11 @@ import {
   humanizeJobFieldLabel,
   formatJobSourceLabel,
 } from "@/lib/utils/format-job-description";
+import {
+  getJobsV2ApplyHref,
+  getJobsV2BrowseHref,
+  getJobsV2ListQueryString,
+} from "@/lib/utils/jobs-v2-navigation";
 
 const getPostedLabel = (d?: string) => {
   if (!d) return "—";
@@ -46,23 +51,12 @@ export default function JobDetailPage() {
   const { isAdminMode } = useAdminMode();
   const id = Number(params?.id);
 
-  const jobsListBackHref = useMemo(() => {
-    const p = new URLSearchParams();
-    const pg = detailSearchParams.get("page");
-    if (pg) p.set("page", pg);
-    const ps = detailSearchParams.get("page_size");
-    if (ps) p.set("page_size", ps);
-    const q = p.toString();
-    return q ? `/jobs-v2?${q}` : "/jobs-v2";
-  }, [detailSearchParams]);
-
-  const jobsListQueryString = useMemo(() => {
-    const p = new URLSearchParams();
-    const pg = detailSearchParams.get("page");
-    if (pg) p.set("page", pg);
-    const ps = detailSearchParams.get("page_size");
-    if (ps) p.set("page_size", ps);
-    return p.toString();
+  const { jobsListBackHref, jobsListQueryString } = useMemo(() => {
+    const qs = getJobsV2ListQueryString(detailSearchParams);
+    return {
+      jobsListQueryString: qs,
+      jobsListBackHref: getJobsV2BrowseHref(qs),
+    };
   }, [detailSearchParams]);
   const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
@@ -502,11 +496,7 @@ export default function JobDetailPage() {
                 ) : (
                   <Button
                     component={Link}
-                    href={
-                      jobsListQueryString
-                        ? `/jobs-v2/${job.id}/apply?${jobsListQueryString}`
-                        : `/jobs-v2/${job.id}/apply`
-                    }
+                    href={getJobsV2ApplyHref(job.id, jobsListQueryString)}
                     variant="contained"
                     startIcon={<ExternalLink size={18} />}
                     sx={{
@@ -1192,11 +1182,7 @@ export default function JobDetailPage() {
           ) : (
             <Button
               component={Link}
-              href={
-                      jobsListQueryString
-                        ? `/jobs-v2/${job.id}/apply?${jobsListQueryString}`
-                        : `/jobs-v2/${job.id}/apply`
-                    }
+              href={getJobsV2ApplyHref(job.id, jobsListQueryString)}
               variant="contained"
               fullWidth
               startIcon={<ExternalLink size={18} />}
