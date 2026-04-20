@@ -61,7 +61,7 @@ export function AccountStatusCard({
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Switch
-              checked={personal_info.is_active}
+              checked={personal_info.is_active ?? false}
               onChange={onToggle}
               disabled={saving}
               color="primary"

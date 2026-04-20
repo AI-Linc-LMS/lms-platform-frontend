@@ -430,7 +430,7 @@ export default function SignupPage() {
                       </Typography>
                     </Box>
                     <Switch
-                      checked={values.signup_as_instructor}
+                      checked={values.signup_as_instructor ?? false}
                       onChange={(e) =>
                         setFieldValue(
                           "signup_as_instructor",

@@ -578,6 +578,40 @@
       "noSections": "No sections are loaded for this assessment. Try refreshing the page."
     }
   },
+  "assessmentDevice": {
+    "sectionTitle": "Device access",
+    "sectionHint": "Choose which device types can take this assessment. At least one must stay enabled.",
+    "sectionIntro": "Control whether students can start this assessment from a computer, phone, or tablet. The app detects the device type automatically.",
+    "allowDesktop": "Desktop & laptop",
+    "allowMobile": "Phone",
+    "allowTablet": "Tablet",
+    "allowDesktopHint": "Web browsers on Mac, Windows, and Linux (typical laptops and desktops).",
+    "allowMobileHint": "Phones and small-screen mobile browsers.",
+    "allowTabletHint": "iPad, Android tablets, and similar.",
+    "atLeastOne": "At least one device type must be allowed.",
+    "labelDesktop": "desktop",
+    "labelMobile": "mobile",
+    "labelTablet": "tablet",
+    "classNames": {
+      "desktop": "Desktop / laptop",
+      "mobile": "Phone",
+      "tablet": "Tablet"
+    },
+    "panelTitleAllOk": "Any device allowed",
+    "panelSubtitleAllOk": "You can take this assessment on a computer, phone, or tablet.",
+    "panelTitleAllowed": "Your device is supported",
+    "panelBodyAllowed": "You’re on a {{device}}. You can start when you’re ready.",
+    "allowedDevicesHeading": "Allowed for this assessment",
+    "currentDeviceHeading": "This device",
+    "learnerAlertTitle": "This device can’t start the assessment",
+    "learnerAlertBody": "Allowed devices: {{types}}. Open this page on one of those devices to begin.",
+    "startDisabledHint": "Switch to an allowed device to enable Start.",
+    "toastBlocked": "This assessment can’t be started on this device.",
+    "deviceCheckBlockedTitle": "Wrong device type",
+    "deviceCheckBlockedSubtitle": "Use an allowed device before camera setup.",
+    "backToAssessment": "Back to assessment details",
+    "takePageRedirectHint": "Check device requirements on the assessment page."
+  },
   "mockInterview": {
     "title": "Mock Interview",
     "subtitle": "Practice with AI-powered mock interviews",

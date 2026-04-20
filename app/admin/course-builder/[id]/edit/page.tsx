@@ -237,7 +237,7 @@ export default function CourseEditPage() {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={formData.is_free}
+                    checked={formData.is_free ?? true}
                     onChange={(e) => setFormData({ ...formData, is_free: e.target.checked })}
                     color="primary"
                   />
