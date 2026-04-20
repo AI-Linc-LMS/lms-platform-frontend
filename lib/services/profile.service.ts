@@ -201,23 +201,42 @@ export const profileService = {
     return response.data;
   },
 
-  // Get user activity heatmap
+  // Get user activity heatmap (optional userId = UserProfile.id for admin viewing another student)
   getUserActivityHeatmap: async (
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    userId?: number
   ): Promise<UserActivityHeatmap> => {
     let url = `/api/clients/${config.clientId}/student/user-activity-heatmap/`;
     const params = new URLSearchParams();
 
     if (startDate) params.append("start_date", startDate);
     if (endDate) params.append("end_date", endDate);
+    if (userId != null) params.append("user_id", String(userId));
 
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
 
-    const response = await apiClient.get<UserActivityHeatmap>(url);
-    return response.data;
+    const response = await apiClient.get<unknown>(url);
+    const raw = response.data;
+
+    let heatmap_data: HeatmapData = {};
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      if (
+        "heatmap_data" in raw &&
+        raw.heatmap_data != null &&
+        typeof raw.heatmap_data === "object" &&
+        !Array.isArray(raw.heatmap_data)
+      ) {
+        heatmap_data = raw.heatmap_data as HeatmapData;
+      } else {
+        // Backend returns the date-keyed map at the top level (YYYY-MM-DD → counts)
+        heatmap_data = raw as HeatmapData;
+      }
+    }
+
+    return { heatmap_data };
   },
 
   // Get daily progress leaderboard

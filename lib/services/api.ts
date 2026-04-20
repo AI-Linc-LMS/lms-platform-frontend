@@ -5,6 +5,7 @@ import axios, {
 } from "axios";
 import Cookies from "js-cookie";
 import { config } from "../config";
+import { getClientDeviceClass } from "../utils/assessment-device";
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -24,6 +25,14 @@ apiClient.interceptors.request.use(
     // When sending FormData, remove Content-Type so the browser sets it with the correct boundary
     if (config.data instanceof FormData && config.headers) {
       delete config.headers["Content-Type"];
+    }
+    const path = `${config.baseURL ?? ""}${config.url ?? ""}`;
+    if (
+      typeof window !== "undefined" &&
+      path.includes("/assessment/api/client/") &&
+      config.headers
+    ) {
+      config.headers["X-Client-Device-Type"] = getClientDeviceClass();
     }
     return config;
   },
