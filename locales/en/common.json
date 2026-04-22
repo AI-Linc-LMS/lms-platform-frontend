@@ -542,6 +542,7 @@
     "resume": "Resume",
     "ended": "Ended",
     "availableNow": "Available now",
+    "availableFrom": "Available from {{date}}",
     "starting": "Starting...",
     "initializing": "Initializing...",
     "assessmentCompleted": "Assessment Completed",

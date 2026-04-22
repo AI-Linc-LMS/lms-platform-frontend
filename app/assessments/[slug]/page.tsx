@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -28,6 +28,14 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 
+function parseAssessmentStartTime(
+  s: string | undefined | null
+): Date | null {
+  if (!s || typeof s !== "string" || !s.trim()) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 export default function AssessmentDetailPage({
   params,
 }: {
@@ -41,6 +49,40 @@ export default function AssessmentDetailPage({
     useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const [startTimeTick, setStartTimeTick] = useState(0);
+
+  const assessmentStartAt = useMemo(
+    () => parseAssessmentStartTime(assessment?.start_time),
+    [assessment?.start_time]
+  );
+
+  const canStartAssessment = useMemo(() => {
+    void startTimeTick;
+    if (!assessmentStartAt) return true;
+    return Date.now() >= assessmentStartAt.getTime();
+  }, [assessmentStartAt, startTimeTick]);
+
+  useEffect(() => {
+    if (!assessmentStartAt) return;
+    if (Date.now() >= assessmentStartAt.getTime()) return;
+
+    const id = setInterval(() => {
+      setStartTimeTick((n) => n + 1);
+      if (Date.now() >= assessmentStartAt.getTime()) {
+        clearInterval(id);
+      }
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [assessmentStartAt]);
+
+  const assessmentAvailableFromLabel = useMemo(() => {
+    if (!assessmentStartAt) return "";
+    return assessmentStartAt.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }, [assessmentStartAt]);
 
   useEffect(() => {
     if (!slug) return;
@@ -476,9 +518,31 @@ export default function AssessmentDetailPage({
             </Box>
           )}
 
+          {!canStartAssessment && assessmentStartAt && (
+            <Typography
+              variant="body2"
+              sx={{
+                mb: 2,
+                color: "#6b7280",
+                textAlign: "center",
+                lineHeight: 1.6,
+              }}
+            >
+              {t("assessments.availableFrom", {
+                date: assessmentAvailableFromLabel,
+              })}
+            </Typography>
+          )}
+
           <Tooltip
             title={
-              !deviceAllowed ? t("assessmentDevice.startDisabledHint") : ""
+              !deviceAllowed
+                ? t("assessmentDevice.startDisabledHint")
+                : !canStartAssessment && assessmentStartAt
+                  ? t("assessments.availableFrom", {
+                      date: assessmentAvailableFromLabel,
+                    })
+                  : ""
             }
             placement="top"
             arrow
@@ -488,7 +552,7 @@ export default function AssessmentDetailPage({
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={!deviceAllowed}
+                disabled={!deviceAllowed || !canStartAssessment}
                 startIcon={
                   <IconWrapper icon="mdi:play-circle-outline" size={24} />
                 }

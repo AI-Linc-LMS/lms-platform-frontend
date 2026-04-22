@@ -542,6 +542,7 @@
     "resume": "متابعة",
     "ended": "انتهى",
     "availableNow": "متاح الآن",
+    "availableFrom": "متاح من {{date}}",
     "starting": "جاري البدء...",
     "initializing": "جاري التهيئة...",
     "assessmentCompleted": "تم إكمال التقييم",
