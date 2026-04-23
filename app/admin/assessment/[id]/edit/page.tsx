@@ -19,7 +19,6 @@ import {
   TableRow,
   CircularProgress,
   Pagination,
-  Divider,
   IconButton,
   Dialog,
   DialogTitle,
@@ -47,6 +46,7 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
+import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
@@ -121,6 +121,60 @@ function formatSubmissionDate(iso: string | null | undefined): string {
   } catch {
     return "—";
   }
+}
+
+function humanizeAnalyticsStatus(raw: string | null | undefined): string {
+  if (raw == null || !String(raw).trim()) return "—";
+  return String(raw)
+    .trim()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function analyticsStatusChipColor(
+  raw: string | null | undefined,
+): "default" | "success" | "warning" | "error" | "info" {
+  const s = String(raw ?? "")
+    .toLowerCase()
+    .replace(/-/g, "_");
+  if (
+    s === "submitted" ||
+    s === "completed" ||
+    s === "graded" ||
+    s === "passed"
+  ) {
+    return "success";
+  }
+  if (s === "in_progress" || s === "started" || s === "ongoing") {
+    return "warning";
+  }
+  if (
+    s === "failed" ||
+    s === "expired" ||
+    s === "abandoned" ||
+    s === "cancelled"
+  ) {
+    return "error";
+  }
+  if (s === "pending" || s === "draft" || s === "scheduled") {
+    return "info";
+  }
+  return "default";
+}
+
+function clampPercentDisplay(n: number | null | undefined): number {
+  if (n == null || !Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, n));
+}
+
+function toAssessmentApiDecimalString(
+  raw: string | undefined
+): string | undefined {
+  if (raw == null || !String(raw).trim()) return undefined;
+  const s = String(raw).trim().replace(",", ".");
+  const n = Number(s);
+  if (!Number.isFinite(n)) return undefined;
+  return n.toFixed(2);
 }
 
 function submissionHasProctoringPayload(
@@ -285,6 +339,11 @@ export default function AssessmentEditPage() {
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
+  const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
+    useState(true);
+  const [certificateAvailable, setCertificateAvailable] = useState(false);
+  const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
+  const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
   const [allowDesktop, setAllowDesktop] = useState(true);
   const [allowMobile, setAllowMobile] = useState(true);
   const [allowTablet, setAllowTablet] = useState(true);
@@ -312,6 +371,25 @@ export default function AssessmentEditPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsTopNApplied, setAnalyticsTopNApplied] = useState(10);
   const [analyticsTopNDraft, setAnalyticsTopNDraft] = useState("10");
+  const [analyticsStudentsPage, setAnalyticsStudentsPage] = useState(1);
+  const [analyticsStudentsLimit, setAnalyticsStudentsLimit] = useState(12);
+  const [analyticsSectionPage, setAnalyticsSectionPage] = useState(1);
+  const [analyticsSectionLimit, setAnalyticsSectionLimit] = useState(10);
+  const [analyticsTopPerformersTablePage, setAnalyticsTopPerformersTablePage] =
+    useState(1);
+  const [analyticsTopPerformersTableLimit, setAnalyticsTopPerformersTableLimit] =
+    useState(10);
+
+  const passBandFieldErrors = useMemo(
+    () =>
+      getPassBandFieldErrors(
+        passBandLowerPercent,
+        passBandUpperPercent,
+        certificateAvailable
+      ),
+    [passBandLowerPercent, passBandUpperPercent, certificateAvailable]
+  );
+
   const analyticsTopNAppliedRef = useRef(analyticsTopNApplied);
   useEffect(() => {
     analyticsTopNAppliedRef.current = analyticsTopNApplied;
@@ -352,6 +430,20 @@ export default function AssessmentEditPage() {
       setLiveStreaming((data as any).live_streaming ?? false);
       setSendCommunication((data as any).send_communication ?? false);
       setShowResult((data as any).show_result ?? true);
+      setAllowMovementAcrossSections(anyData.allow_movement !== false);
+      setCertificateAvailable(Boolean(anyData.certificate_available));
+      setPassBandLowerPercent(
+        anyData.pass_band_lower_min_percent != null &&
+          String(anyData.pass_band_lower_min_percent).trim() !== ""
+          ? String(anyData.pass_band_lower_min_percent)
+          : ""
+      );
+      setPassBandUpperPercent(
+        anyData.pass_band_upper_min_percent != null &&
+          String(anyData.pass_band_upper_min_percent).trim() !== ""
+          ? String(anyData.pass_band_upper_min_percent)
+          : ""
+      );
       setAllowDesktop((data as any).allow_desktop ?? true);
       setAllowMobile((data as any).allow_mobile ?? true);
       setAllowTablet((data as any).allow_tablet ?? true);
@@ -499,6 +591,7 @@ export default function AssessmentEditPage() {
       showToast("Please enter a valid price for paid assessment", "error");
       return;
     }
+    if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
     if (!allowDesktop && !allowMobile && !allowTablet) {
       showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
@@ -520,12 +613,24 @@ export default function AssessmentEditPage() {
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
         show_result: showResult,
+        certificate_available: certificateAvailable,
+        allow_movement: allowMovementAcrossSections,
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
         course_ids: courseIds,
         colleges: colleges.length ? colleges : undefined,
       };
+      const passLower = toAssessmentApiDecimalString(passBandLowerPercent);
+      const passUpper = toAssessmentApiDecimalString(passBandUpperPercent);
+      if (passLower != null) {
+        (payload as CreateAssessmentPayload).pass_band_lower_min_percent =
+          passLower;
+      }
+      if (passUpper != null) {
+        (payload as CreateAssessmentPayload).pass_band_upper_min_percent =
+          passUpper;
+      }
       Object.keys(payload).forEach((k) => {
         if ((payload as any)[k] === undefined) delete (payload as any)[k];
       });
@@ -542,6 +647,7 @@ export default function AssessmentEditPage() {
       setSaving(false);
     }
   };
+}
 
   const handleDownloadMCQQuestions = () => {
     if (!questionsData) return;
@@ -1035,7 +1141,7 @@ export default function AssessmentEditPage() {
 
           <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {tab === "details" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <BasicInfoSection
                   title={title}
                   instructions={instructions}
@@ -1045,7 +1151,6 @@ export default function AssessmentEditPage() {
                   onDescriptionChange={setDescription}
                   readOnly={readOnly}
                 />
-                <Divider />
                 <AssessmentSettingsSection
                   durationMinutes={durationMinutes}
                   startTime={startTime}
@@ -1063,6 +1168,12 @@ export default function AssessmentEditPage() {
                   showLiveStreamingToggle={canConfigureLiveStreaming}
                   sendCommunication={sendCommunication}
                   showResult={showResult}
+                  allowMovementAcrossSections={allowMovementAcrossSections}
+                  certificateAvailable={certificateAvailable}
+                  passBandLowerPercent={passBandLowerPercent}
+                  passBandUpperPercent={passBandUpperPercent}
+                  passBandLowerError={passBandFieldErrors.lower}
+                  passBandUpperError={passBandFieldErrors.upper}
                   allowDesktop={allowDesktop}
                   allowMobile={allowMobile}
                   allowTablet={allowTablet}
@@ -1079,6 +1190,12 @@ export default function AssessmentEditPage() {
                   onLiveStreamingChange={setLiveStreaming}
                   onSendCommunicationChange={setSendCommunication}
                   onShowResultChange={setShowResult}
+                  onAllowMovementAcrossSectionsChange={
+                    setAllowMovementAcrossSections
+                  }
+                  onCertificateAvailableChange={setCertificateAvailable}
+                  onPassBandLowerPercentChange={setPassBandLowerPercent}
+                  onPassBandUpperPercentChange={setPassBandUpperPercent}
                   onAllowDesktopChange={setAllowDesktop}
                   onAllowMobileChange={setAllowMobile}
                   onAllowTabletChange={setAllowTablet}
@@ -1089,7 +1206,12 @@ export default function AssessmentEditPage() {
                     <Button
                       variant="contained"
                       onClick={handleSave}
-                      disabled={saving}
+                      disabled={
+                        saving ||
+                        Boolean(
+                          passBandFieldErrors.lower || passBandFieldErrors.upper
+                        )
+                      }
                       startIcon={
                         saving ? (
                           <CircularProgress size={18} color="inherit" />

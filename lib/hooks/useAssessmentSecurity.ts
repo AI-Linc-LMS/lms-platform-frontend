@@ -7,6 +7,12 @@ function isInsideFloatingToolUi(target: EventTarget | null): boolean {
   return !!el?.closest?.("[data-floating-tool], [data-assessment-tool]");
 }
 
+function isAssessmentAnswerField(target: EventTarget | null): boolean {
+  if (!target) return false;
+  const el = target instanceof Element ? target : (target as Node).parentElement;
+  return !!el?.closest?.("[data-assessment-answer-field]");
+}
+
 interface UseAssessmentSecurityOptions {
   enabled: boolean;
   submitting?: boolean; // Disable beforeunload during submission
@@ -33,8 +39,37 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       return event.returnValue;
     };
 
-    // Prevent keyboard shortcuts for refresh
+    const captureOpts: AddEventListenerOptions = { capture: true, passive: false };
+
+    // Prevent keyboard shortcuts for refresh and system-style combos (where the browser allows)
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.metaKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.ctrlKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (
+        event.key === "Meta" ||
+        event.code === "MetaLeft" ||
+        event.code === "MetaRight" ||
+        event.code === "OSLeft" ||
+        event.code === "OSRight"
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
       // Prevent F5, Ctrl+R, Ctrl+Shift+R
       if (
         event.key === "F5" ||
@@ -52,6 +87,16 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         return false;
       }
 
+      // Close tab / window shortcuts
+      if (event.ctrlKey && (event.key === "w" || event.key === "W")) {
+        event.preventDefault();
+        return false;
+      }
+      if (event.ctrlKey && event.shiftKey && (event.key === "t" || event.key === "T")) {
+        event.preventDefault();
+        return false;
+      }
+
       // Prevent Ctrl+S (save page)
       if (event.ctrlKey && event.key === "s") {
         event.preventDefault();
@@ -64,8 +109,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         return false;
       }
 
-      // Prevent F12 (dev tools)
-      if (event.key === "F12") {
+      // Prevent F11 / F12 (fullscreen / devtools)
+      if (event.key === "F11" || event.key === "F12") {
         event.preventDefault();
         return false;
       }
@@ -78,6 +123,12 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
 
       // Prevent Ctrl+Shift+J (console)
       if (event.ctrlKey && event.shiftKey && event.key === "J") {
+        event.preventDefault();
+        return false;
+      }
+
+      // Prevent Ctrl+Shift+C (inspect element)
+      if (event.ctrlKey && event.shiftKey && (event.key === "C" || event.key === "c")) {
         event.preventDefault();
         return false;
       }
@@ -103,7 +154,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       window.addEventListener("beforeunload", handleBeforeUnload);
     }
     
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, captureOpts);
     window.addEventListener("popstate", handlePopState);
 
     // Prevent right-click context menu
@@ -113,7 +164,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
     };
 
     const handleSelectStart = (event: Event) => {
-      if (isInsideFloatingToolUi(event.target)) return;
+      if (isInsideFloatingToolUi(event.target) || isAssessmentAnswerField(event.target))
+        return;
       event.preventDefault();
       return false;
     };
@@ -122,7 +174,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
     document.addEventListener("selectstart", handleSelectStart);
 
     const handleDragStart = (event: DragEvent) => {
-      if (isInsideFloatingToolUi(event.target)) return;
+      if (isInsideFloatingToolUi(event.target) || isAssessmentAnswerField(event.target))
+        return;
       event.preventDefault();
       return false;
     };
@@ -133,7 +186,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       // Always try to remove, even if it wasn't added
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.onbeforeunload = null; // Also clear the property
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown, captureOpts);
       window.removeEventListener("popstate", handlePopState);
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("selectstart", handleSelectStart);

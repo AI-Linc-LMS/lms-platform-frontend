@@ -52,6 +52,8 @@ interface SubmissionDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   submitting?: boolean;
+  /** When true, show a short notice that section order was fixed (allow_movement off). */
+  strictLinearSectionOrder?: boolean;
 }
 
 function sectionKey(section: SubmissionDialogSection, index: number): string {
@@ -78,6 +80,7 @@ export function SubmissionDialog({
   onClose,
   onConfirm,
   submitting = false,
+  strictLinearSectionOrder = false,
 }: SubmissionDialogProps) {
   const { t } = useTranslation("common");
   const theme = useTheme();
@@ -213,6 +216,11 @@ export function SubmissionDialog({
             pb: 1,
           }}
         >
+          {strictLinearSectionOrder && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {t("assessments.submitChecklist.strictOrderNotice")}
+            </Alert>
+          )}
           <Box
             sx={{
               p: 2,

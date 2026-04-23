@@ -1,6 +1,13 @@
 import apiClient from "./api";
 import { config } from "../config";
 
+/** Used by assessment-movement.utils for advanced policies; take flow maps `allow_movement` boolean separately. */
+export type SectionMovementPolicy =
+  | "free"
+  | "forward_only"
+  | "sequential_questions_only"
+  | "locked_after_leave";
+
 export interface Assessment {
   id: number;
   title: string;
@@ -30,9 +37,18 @@ export interface AssessmentDetail extends Assessment {
   sections: any[];
   /** When false, hide "View Assessment Result" button on submission-success */
   show_result?: boolean;
+  /** When false, fixed section order is explained on the assessment overview page. */
+  allow_movement?: boolean;
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
+}
+
+/** Lockdown policy for the assessment take flow (aligned with `evaluateLockdownGate`). */
+export interface AssessmentTakeFlags {
+  require_lockdown_browser?: boolean;
+  lockdown_clients?: Array<"seb" | "respondus">;
+  kiosk_query_param?: { key: string; value: string } | null;
 }
 
 export interface AssessmentSubmission {
@@ -215,6 +231,9 @@ export interface CodingProblemResponseItem {
   all_test_cases_passed: boolean;
 }
 
+/** Marker for the mandatory full-page capture taken right after the learner starts the attempt (proof). */
+export const SESSION_START_SCREENSHOT_TYPE = "SESSION_START";
+
 /** Evidence row for proctoring screenshots uploaded during the assessment (final submit only). */
 export interface ViolationScreenshotSample {
   /** Same as upload API `id`. */
@@ -229,7 +248,7 @@ export interface ViolationScreenshotSample {
   created_at?: string;
   captured_at: string;
   total_violation_count_at_capture: number;
-  /** Face/trackpad/etc. from proctoring; use "TAB_SWITCH" when this row was tied to a tab visibility violation. */
+  /** Face/trackpad/etc. from proctoring; use "TAB_SWITCH" when this row was tied to a tab visibility violation; "SESSION_START" for the mandatory post-start proof capture. */
   latest_violation_type?: string | null;
   /** Tab-switch count after visibility return (same as metadata when captured). */
   tab_switch_count_at_capture?: number;

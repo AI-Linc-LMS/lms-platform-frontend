@@ -1,3 +1,5 @@
+import { config } from "@/lib/config";
+
 export interface APIEndpoint {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path: string;
@@ -9,13 +11,7 @@ export interface APIEndpoint {
   responseExample?: any;
 }
 
-// Helper function to get API endpoints with client ID
-const getClientId = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_CLIENT_ID || "1";
-  }
-  return process.env.NEXT_PUBLIC_CLIENT_ID || "1";
-};
+const getClientId = () => config.clientId;
 
 export const getApiEndpoints = (): Record<string, APIEndpoint[]> => {
   const clientId = getClientId();

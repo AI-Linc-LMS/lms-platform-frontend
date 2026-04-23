@@ -3,6 +3,7 @@ import {
   hasNavigatorKeyboardLock,
   isFullscreenExitKeyEvent,
 } from "@/lib/fullscreen/fullscreenEscapePrompt";
+import { lockProctoringKeysInFullscreen } from "@/lib/utils/proctoring-keyboard-lock";
 
 function isDocumentFullscreen(): boolean {
   return (
@@ -11,24 +12,6 @@ function isDocumentFullscreen(): boolean {
     !!(document as any).mozFullScreenElement ||
     !!(document as any).msFullscreenElement
   );
-}
-
-/**
- * Chromium: while fullscreen, locks Escape so the browser does not exit
- * fullscreen; JS still receives keydown. Must be called from fullscreen
- * (e.g. after `fullscreenchange` when entering FS). Silently no-ops if unsupported.
- */
-function lockEscapeKey(): (() => void) | null {
-  const nav = navigator as Navigator & {
-    keyboard?: { lock?: (keys: string[]) => Promise<void>; unlock?: () => void };
-  };
-  if (typeof nav.keyboard?.lock !== "function") return null;
-  nav.keyboard.lock(["Escape"]).catch(() => {
-    /* unsupported, not fullscreen yet, or denied */
-  });
-  return () => {
-    nav.keyboard?.unlock?.();
-  };
 }
 
 interface UseFullscreenHandlerOptions {
@@ -110,7 +93,7 @@ export function useFullscreenHandler({
         return;
       }
       releaseEscapeLock();
-      unlockEscapeRef.current = lockEscapeKey();
+      unlockEscapeRef.current = lockProctoringKeysInFullscreen();
 
       // Chromium: second lock on the next frame improves reliability across
       // Chrome / Edge / Brave / Opera after the fullscreen transition settles.
@@ -124,7 +107,7 @@ export function useFullscreenHandler({
           return;
         }
         unlockEscapeRef.current?.();
-        unlockEscapeRef.current = lockEscapeKey();
+        unlockEscapeRef.current = lockProctoringKeysInFullscreen();
       });
     };
 

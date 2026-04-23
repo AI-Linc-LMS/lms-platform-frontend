@@ -20,6 +20,8 @@ import {
 } from "@/lib/utils/psychometric-utils";
 import { stripHtmlTags } from "@/lib/utils/html-utils";
 import { useTranslation } from "react-i18next";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 interface AssessmentCardProps {
   assessment: Assessment;
@@ -77,6 +79,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const isPsychometric = isPsychometricAssessment(assessment);
   const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
   const [remainingTime, setRemainingTime] = useState<string>("");
+  const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
   
   // Calculate remaining time for hover tooltip
   const startDate = useMemo(() => parseDateTime(assessment.start_time), [assessment.start_time]);
@@ -172,11 +175,20 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     if (showResults) {
       router.push(`/assessments/result/${assessment.slug}`);
     } else {
+      if (isMobileOrTabletForAssessment()) {
+        setDesktopOnlyOpen(true);
+        return;
+      }
       router.push(`/assessments/${assessment.slug}`);
     }
   };
 
   return (
+    <>
+    <AssessmentDesktopOnlyDialog
+      open={desktopOnlyOpen}
+      onClose={() => setDesktopOnlyOpen(false)}
+    />
     <Card
       sx={{
         height: "100%",
@@ -721,5 +733,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         </Box>
       </CardContent>
     </Card>
+    </>
   );
 };

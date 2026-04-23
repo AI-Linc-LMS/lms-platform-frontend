@@ -1,4 +1,52 @@
 /**
+ * Resolve per-section time cap in seconds from common API shapes (snake_case, camelCase, seconds-only).
+ */
+export function getSectionTimeCapTotalSeconds(section: unknown): number | null {
+  if (!section || typeof section !== "object") return null;
+  const s = section as Record<string, unknown>;
+  const precomputed = s.section_time_cap_seconds;
+  if (
+    precomputed != null &&
+    Number.isFinite(Number(precomputed)) &&
+    Number(precomputed) > 0
+  ) {
+    return Math.floor(Number(precomputed));
+  }
+  const min = s.time_limit_minutes ?? s.timeLimitMinutes;
+  if (min != null && Number.isFinite(Number(min)) && Number(min) > 0) {
+    return Math.floor(Number(min) * 60);
+  }
+  const sec =
+    s.time_limit_seconds ??
+    s.section_time_limit_seconds ??
+    s.section_time_seconds;
+  if (sec != null && Number.isFinite(Number(sec)) && Number(sec) > 0) {
+    return Math.floor(Number(sec));
+  }
+  return null;
+}
+
+/** Stable key for timed sections that are marked `section_completely_attempted` in the response sheet. */
+export function timedSectionCompletionKey(
+  sectionType: string,
+  sectionId: number,
+): string {
+  return `${sectionType || "quiz"}:${String(sectionId)}`;
+}
+
+const SECTION_ATTEMPTED_FLAG = "section_completely_attempted" as const;
+
+/**
+ * True if payload object from API includes `section_completely_attempted: true`.
+ */
+export function parseSectionCompletelyAttempted(
+  sectionPayload: Record<string, unknown>,
+): boolean {
+  const v = sectionPayload[SECTION_ATTEMPTED_FLAG];
+  return v === true || v === "true" || v === 1;
+}
+
+/**
  * Convert API MCQ format to QuizLayout format
  */
 export function convertMCQToQuizQuestion(mcq: {
@@ -52,7 +100,8 @@ export function convertCodingProblem(problem: any) {
 }
 
 /**
- * Convert quizSection with mcqs to sections array
+ * Convert quizSection with mcqs to sections array for the **learner take** UI.
+ * Intentionally omits `section_cutoff_marks` and similar scoring thresholds so they are not exposed to students.
  */
 export function convertQuizSectionsToSections(
   quizSections: Array<{
@@ -60,6 +109,7 @@ export function convertQuizSectionsToSections(
     title: string;
     description: string;
     order: number;
+    time_limit_minutes?: number | null;
     mcqs: Array<{
       id: number;
       question_text: string;
@@ -70,18 +120,27 @@ export function convertQuizSectionsToSections(
     }>;
   }>
 ) {
-  return quizSections.map((section) => ({
-    id: section.id,
-    title: section.title,
-    description: section.description,
-    order: section.order,
-    section_type: "quiz",
-    questions: section.mcqs.map(convertMCQToQuizQuestion),
-  }));
+  return quizSections.map((section) => {
+    const capSec = getSectionTimeCapTotalSeconds(section);
+    const timeLimitMinutes =
+      capSec != null ? capSec / 60 : undefined;
+    return {
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: section.order,
+      section_type: "quiz" as const,
+      questions: section.mcqs.map(convertMCQToQuizQuestion),
+      ...(capSec != null
+        ? { time_limit_minutes: timeLimitMinutes, section_time_cap_seconds: capSec }
+        : {}),
+    };
+  });
 }
 
 /**
- * Convert codingProblemSection to sections array
+ * Convert codingProblemSection to sections array for the **learner take** UI.
+ * Intentionally omits `section_cutoff_marks` and similar scoring thresholds so they are not exposed to students.
  */
 export function convertCodingSectionsToSections(
   codingSections: Array<{
@@ -89,17 +148,26 @@ export function convertCodingSectionsToSections(
     title: string;
     description: string;
     order: number;
+    time_limit_minutes?: number | null;
     coding_problems: Array<any>;
   }>
 ) {
-  return codingSections.map((section) => ({
-    id: section.id,
-    title: section.title,
-    description: section.description,
-    order: section.order,
-    section_type: "coding",
-    questions: section.coding_problems.map(convertCodingProblem),
-  }));
+  return codingSections.map((section) => {
+    const capSec = getSectionTimeCapTotalSeconds(section);
+    const timeLimitMinutes =
+      capSec != null ? capSec / 60 : undefined;
+    return {
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: section.order,
+      section_type: "coding" as const,
+      questions: section.coding_problems.map(convertCodingProblem),
+      ...(capSec != null
+        ? { time_limit_minutes: timeLimitMinutes, section_time_cap_seconds: capSec }
+        : {}),
+    };
+  });
 }
 
 /**
@@ -116,7 +184,8 @@ export function normalizeSubjectiveAnswer(raw: unknown): string {
 }
 
 /**
- * Convert subjectiveQuestionSection to sections array
+ * Convert subjectiveQuestionSection to sections array for the **learner take** UI.
+ * Intentionally omits internal scoring fields so they are not exposed to students.
  */
 export function convertSubjectiveSectionsToSections(
   subjectiveSections: Array<{
@@ -124,6 +193,7 @@ export function convertSubjectiveSectionsToSections(
     title: string;
     description: string;
     order: number;
+    time_limit_minutes?: number | null;
     subjective_questions: Array<{
       id: number;
       question_text: string;
@@ -132,19 +202,27 @@ export function convertSubjectiveSectionsToSections(
     }>;
   }>
 ) {
-  return subjectiveSections.map((section) => ({
-    id: section.id,
-    title: section.title,
-    description: section.description,
-    order: section.order,
-    section_type: "subjective",
-    questions: (section.subjective_questions || []).map((q) => ({
-      id: q.id,
-      question_text: q.question_text,
-      max_marks: q.max_marks,
-      question_type: q.question_type,
-    })),
-  }));
+  return subjectiveSections.map((section) => {
+    const capSec = getSectionTimeCapTotalSeconds(section);
+    const timeLimitMinutes =
+      capSec != null ? capSec / 60 : undefined;
+    return {
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: section.order,
+      section_type: "subjective" as const,
+      questions: (section.subjective_questions || []).map((q) => ({
+        id: q.id,
+        question_text: q.question_text,
+        max_marks: q.max_marks,
+        question_type: q.question_type,
+      })),
+      ...(capSec != null
+        ? { time_limit_minutes: timeLimitMinutes, section_time_cap_seconds: capSec }
+        : {}),
+    };
+  });
 }
 
 /**
@@ -174,7 +252,9 @@ export function mergeAssessmentSections(
 export function formatAssessmentResponses(
   responses: Record<string, Record<string, any>>,
   sections: Array<{ id: number; section_type: string; questions: Array<{ id: number | string }> }>,
-  getCodeFromSession?: (questionId: number | string) => string | null
+  getCodeFromSession?: (questionId: number | string) => string | null,
+  /** Section keys (`timedSectionCompletionKey`) that have finished a timed block — sent as `section_completely_attempted`. */
+  timedSectionsComplete?: ReadonlySet<string> | null,
 ): {
   quizSectionId: Array<Record<string, any>>;
   codingProblemSectionId: Array<Record<string, any>>;
@@ -255,21 +335,31 @@ export function formatAssessmentResponses(
       }
     });
 
+    const capSec = getSectionTimeCapTotalSeconds(section);
+    const completionKey = timedSectionCompletionKey(sectionType, section.id);
+    const attachAttemptedFlag =
+      timedSectionsComplete?.has(completionKey) === true &&
+      capSec != null &&
+      capSec > 0;
+    const sectionPayload = attachAttemptedFlag
+      ? { ...sectionResponseData, [SECTION_ATTEMPTED_FLAG]: true }
+      : sectionResponseData;
+
     // For quiz sections: always add section (even if all questions are null)
     // For coding sections: always add section - includes all problems (attempted and unattempted)
     if (sectionType === "quiz" && sectionQuestions.length > 0) {
       const sectionEntry = {
-        [String(section.id)]: sectionResponseData,
+        [String(section.id)]: sectionPayload,
       };
       quizSectionId.push(sectionEntry);
     } else if (sectionType === "coding" && sectionQuestions.length > 0) {
       const sectionEntry = {
-        [String(section.id)]: sectionResponseData,
+        [String(section.id)]: sectionPayload,
       };
       codingProblemSectionId.push(sectionEntry);
     } else if (sectionType === "subjective" && sectionQuestions.length > 0) {
       const sectionEntry = {
-        [String(section.id)]: sectionResponseData,
+        [String(section.id)]: sectionPayload,
       };
       subjectiveQuestionSectionId.push(sectionEntry);
     }

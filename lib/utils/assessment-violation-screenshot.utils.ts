@@ -51,6 +51,24 @@ function injectLiveVideoFramesIntoClone(
   }
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | "timeout"> {
+  if (typeof window === "undefined") {
+    return promise.then((v) => v as T | "timeout").catch(() => "timeout" as const);
+  }
+  return new Promise((resolve) => {
+    const t = window.setTimeout(() => resolve("timeout"), ms);
+    promise
+      .then((v) => {
+        window.clearTimeout(t);
+        resolve(v);
+      })
+      .catch(() => {
+        window.clearTimeout(t);
+        resolve("timeout");
+      });
+  });
+}
+
 function canvasToJpegFile(
   canvas: HTMLCanvasElement,
   quality: number,
@@ -74,6 +92,27 @@ function canvasToJpegFile(
   });
 }
 
+/** Tiny JPEG so upload / evidence pipeline still runs when full-page capture fails. */
+async function minimalProofPlaceholderFile(): Promise<File | null> {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 320;
+  canvas.height = 180;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#f1f5f9";
+  ctx.fillRect(0, 0, 320, 180);
+  ctx.fillStyle = "#64748b";
+  ctx.font = "14px system-ui,sans-serif";
+  ctx.fillText("Full-page capture unavailable (browser)", 16, 96);
+  const out = await canvasToJpegFile(
+    canvas,
+    0.82,
+    `assessment-proof-placeholder-${Date.now()}.jpg`,
+  );
+  return out?.file ?? null;
+}
+
 /**
  * Rasterizes the live page with html2canvas. Includes the proctoring camera tile by
  * copying live video frames into the cloned DOM (see injectLiveVideoFramesIntoClone).
@@ -90,21 +129,30 @@ export async function captureViolationScreenshotFile(): Promise<File | null> {
   let quality = 0.82;
   let captureScale = scale;
 
+  const HTML2CANVAS_TIMEOUT_MS = 22_000;
+
   for (let attempt = 0; attempt < 8; attempt++) {
     try {
-      const canvas = await html2canvas(body, {
-        scale: captureScale,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: "#f9fafb",
-        ignoreElements: (el) => el instanceof HTMLAudioElement,
-        onclone: (clonedDoc) => {
-          injectLiveVideoFramesIntoClone(clonedDoc, document.body);
-        },
-        scrollX: -window.scrollX,
-        scrollY: -window.scrollY,
-      });
+      const canvasOrTimeout = await withTimeout(
+        html2canvas(body, {
+          scale: captureScale,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          backgroundColor: "#f9fafb",
+          ignoreElements: (el) => el instanceof HTMLAudioElement,
+          onclone: (clonedDoc) => {
+            injectLiveVideoFramesIntoClone(clonedDoc, document.body);
+          },
+          scrollX: -window.scrollX,
+          scrollY: -window.scrollY,
+        }),
+        HTML2CANVAS_TIMEOUT_MS,
+      );
+      if (canvasOrTimeout === "timeout") {
+        continue;
+      }
+      const canvas = canvasOrTimeout;
 
       const name = `assessment-violation-${Date.now()}.jpg`;
       const out = await canvasToJpegFile(canvas, quality, name);
@@ -112,7 +160,7 @@ export async function captureViolationScreenshotFile(): Promise<File | null> {
         return out.file;
       }
     } catch {
-      return null;
+      // Keep trying lower quality / scale — a single html2canvas error must not skip remaining attempts.
     }
 
     if (quality > 0.52) {
@@ -125,5 +173,5 @@ export async function captureViolationScreenshotFile(): Promise<File | null> {
     }
   }
 
-  return null;
+  return minimalProofPlaceholderFile();
 }

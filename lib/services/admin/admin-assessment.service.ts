@@ -110,6 +110,37 @@ export interface GenerateCodingProblemResponse {
   }>;
 }
 
+/** One quiz block in `quizSection` on create/update payloads. */
+export interface AssessmentQuizSectionWrite {
+  title: string;
+  description?: string;
+  order: number;
+  easy_score?: number;
+  medium_score?: number;
+  hard_score?: number;
+  time_limit_minutes?: number;
+  section_cutoff_marks?: string;
+  number_of_questions?: number;
+  number_of_questions_to_show?: number;
+  mcqs?: MCQ[];
+  mcq_ids?: number[];
+}
+
+/** One coding block in `codingProblemSection` on create/update payloads. */
+export interface AssessmentCodingProblemSectionWrite {
+  title: string;
+  description?: string;
+  order: number;
+  easy_score?: number;
+  medium_score?: number;
+  hard_score?: number;
+  time_limit_minutes?: number;
+  section_cutoff_marks?: string;
+  number_of_questions?: number;
+  number_of_questions_to_show?: number;
+  coding_problem_ids?: number[];
+}
+
 export interface CreateAssessmentPayload {
   title: string;
   course_ids?: number[];
@@ -129,10 +160,27 @@ export interface CreateAssessmentPayload {
   send_communication?: boolean;
   /** Whether to show results to students after submission (default true) */
   show_result?: boolean;
+  /** Whether a certificate can be issued for this assessment */
+  certificate_available?: boolean;
+  /** Minimum overall percent (inclusive) for pass band lower tier */
+  pass_band_lower_min_percent?: string;
+  /** Minimum overall percent (inclusive) for pass band upper tier */
+  pass_band_upper_min_percent?: string;
+  /**
+   * Allow movement across sections (assessment-wide). When true, learners may
+   * move between section blocks (e.g. quiz ↔ coding). Do not send per-section.
+   */
+  allow_movement?: boolean;
+  /** API: camelCase array of quiz sections */
+  quizSection?: AssessmentQuizSectionWrite[];
+  /** API: camelCase array of coding problem sections */
+  codingProblemSection?: AssessmentCodingProblemSectionWrite[];
+  /** API: camelCase array (send [] when unused) */
+  subjectiveQuestionSection?: unknown[];
+  quiz_section?: QuizSection;
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
-  quiz_section?: QuizSection; // For backward compatibility
   quiz_sections?: Array<{
     title: string;
     description?: string;
@@ -172,6 +220,8 @@ export interface Assessment {
   is_active: boolean;
   proctoring_enabled?: boolean;
   live_streaming?: boolean;
+  /** Allow navigation across section blocks (assessment-wide). */
+  allow_movement?: boolean;
   start_time?: string | null;
   end_time?: string | null;
   created_at: string;
@@ -196,12 +246,23 @@ export interface AssessmentDetail extends Assessment {
   allow_tablet?: boolean;
   course_ids?: number[];
   currency?: string;
-  quiz_sections?: Array<{
+  show_result?: boolean;
+  certificate_available?: boolean;
+  pass_band_lower_min_percent?: string;
+  pass_band_upper_min_percent?: string;
+  /** API: camelCase quiz sections (detail GET) */
+  quizSection?: Array<{
     id: number;
     title: string;
     description?: string;
     order: number;
-    questions: Array<{
+    easy_score?: number;
+    medium_score?: number;
+    hard_score?: number;
+    time_limit_minutes?: number;
+    section_cutoff_marks?: string;
+    mcqs?: unknown[];
+    questions?: Array<{
       id: number;
       question_text: string;
       option_a: string;
@@ -215,6 +276,14 @@ export interface AssessmentDetail extends Assessment {
       skills?: string;
     }>;
   }>;
+  codingProblemSection?: Array<{
+    id: number;
+    title: string;
+    description?: string;
+    order: number;
+    coding_problems?: unknown[];
+  }>;
+  subjectiveQuestionSection?: unknown[];
 }
 
 /**

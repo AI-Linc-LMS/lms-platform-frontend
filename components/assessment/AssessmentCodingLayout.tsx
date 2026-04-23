@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Box, Paper } from "@mui/material";
+import { Box, Paper, Typography, CircularProgress } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/common/Toast";
+import { IconWrapper } from "@/components/common/IconWrapper";
+import type { AssessmentRemoteAutosaveState } from "@/lib/hooks/useAutoSave";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { TestResults } from "@/components/coding/TestResults";
 import { AssessmentCodeEditorPanel } from "./AssessmentCodeEditorPanel";
@@ -13,7 +16,7 @@ import {
   getLanguageId,
 } from "@/components/coding/utils/languageUtils";
 
-interface AssessmentCodingLayoutProps {
+export interface AssessmentCodingLayoutProps {
   slug: string;
   questionId: number;
   problemData: any;
@@ -37,6 +40,8 @@ interface AssessmentCodingLayoutProps {
   onNextQuestion?: () => void;
   onPreviousQuestion?: () => void;
   currentQuestionIndex?: number;
+  /** Server autosave status from `useAutoSave` (assessment take page). */
+  remoteAutosave?: AssessmentRemoteAutosaveState;
 }
 
 export function AssessmentCodingLayout({
@@ -53,8 +58,10 @@ export function AssessmentCodingLayout({
   onNextQuestion,
   onPreviousQuestion,
   currentQuestionIndex = 0,
+  remoteAutosave,
 }: AssessmentCodingLayoutProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   // Get available languages from problem data
   const availableLanguages = getAvailableLanguages(
@@ -580,6 +587,49 @@ export function AssessmentCodingLayout({
           order: { xs: 0, md: 1 },
         }}
       >
+        {remoteAutosave ? (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 1,
+              flexWrap: "wrap",
+              mb: 1,
+              minHeight: 24,
+            }}
+          >
+            {remoteAutosave.status === "idle" && (
+              <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 500, textAlign: "right" }}>
+                {t("assessments.take.codingAutosaveHint")}
+              </Typography>
+            )}
+            {remoteAutosave.status === "saving" && (
+              <>
+                <CircularProgress size={14} thickness={5} sx={{ color: "#6366f1" }} />
+                <Typography variant="caption" sx={{ color: "#4b5563", fontWeight: 600 }}>
+                  {t("assessments.take.codingAutosaveSaving")}
+                </Typography>
+              </>
+            )}
+            {remoteAutosave.status === "saved" && (
+              <>
+                <IconWrapper icon="mdi:cloud-check-outline" size={16} color="#10b981" />
+                <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 500 }}>
+                  {t("assessments.take.codingAutosaveSaved")}
+                </Typography>
+              </>
+            )}
+            {remoteAutosave.status === "error" && (
+              <>
+                <IconWrapper icon="mdi:cloud-alert-outline" size={16} color="#d97706" />
+                <Typography variant="caption" sx={{ color: "#b45309", fontWeight: 600 }}>
+                  {t("assessments.take.codingAutosaveError")}
+                </Typography>
+              </>
+            )}
+          </Box>
+        ) : null}
         <Box
           sx={{
             height: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },

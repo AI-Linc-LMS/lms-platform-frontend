@@ -4,6 +4,7 @@ import { useToast } from "@/components/common/Toast";
 import { assessmentService } from "@/lib/services/assessment.service";
 import {
   AssessmentMetadata,
+  SESSION_START_SCREENSHOT_TYPE,
   type ViolationScreenshotSample,
 } from "@/lib/services/assessment.service";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
@@ -37,6 +38,8 @@ interface UseAssessmentSubmissionOptions {
   setShowFullscreenWarning: (value: boolean) => void;
   setShowSubmitDialog?: (value: boolean) => void;
   violationScreenshotSamplesRef?: MutableRefObject<ViolationScreenshotSample[]>;
+  /** Keys from `timedSectionCompletionKey` — merged into final payload. */
+  timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
 }
 
 export function useAssessmentSubmission({
@@ -51,6 +54,7 @@ export function useAssessmentSubmission({
   setShowFullscreenWarning,
   setShowSubmitDialog,
   violationScreenshotSamplesRef,
+  timedSectionsCompleteRef,
 }: UseAssessmentSubmissionOptions) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -211,12 +215,29 @@ export function useAssessmentSubmission({
         return null;
       };
       const { quizSectionId, codingProblemSectionId, subjectiveQuestionSectionId } =
-        formatAssessmentResponses(currentResponses, sections, getCodeFromSession);
+        formatAssessmentResponses(
+          currentResponses,
+          sections,
+          getCodeFromSession,
+          timedSectionsCompleteRef?.current ?? null,
+        );
 
-      const violationScreenshotSamples = pickRandomUpTo(
-        violationScreenshotSamplesRef?.current ?? [],
-        VIOLATION_SCREENSHOT_SUBMIT_MAX
+      const rawSamples = violationScreenshotSamplesRef?.current ?? [];
+      const sessionStartSamples = rawSamples.filter(
+        (s) => s.latest_violation_type === SESSION_START_SCREENSHOT_TYPE
       );
+      const otherSamples = rawSamples.filter(
+        (s) => s.latest_violation_type !== SESSION_START_SCREENSHOT_TYPE
+      );
+      const remainingSlots = Math.max(
+        0,
+        VIOLATION_SCREENSHOT_SUBMIT_MAX - sessionStartSamples.length
+      );
+      const pickedOthers = pickRandomUpTo(otherSamples, remainingSlots);
+      const violationScreenshotSamples = [
+        ...sessionStartSamples,
+        ...pickedOthers,
+      ].slice(0, VIOLATION_SCREENSHOT_SUBMIT_MAX);
 
       // Prepare metadata for transcript
       const transcriptMetadata = {
@@ -374,6 +395,7 @@ export function useAssessmentSubmission({
     showToast,
     stopCameraCompletely,
     violationScreenshotSamplesRef,
+    timedSectionsCompleteRef,
   ]);
 
   return { handleFinalSubmit };
