@@ -129,6 +129,9 @@ export interface CreateAssessmentPayload {
   send_communication?: boolean;
   /** Whether to show results to students after submission (default true) */
   show_result?: boolean;
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
   quiz_section?: QuizSection; // For backward compatibility
   quiz_sections?: Array<{
     title: string;
@@ -178,6 +181,9 @@ export interface Assessment {
   submissions_count?: number;
   courses?: Array<{ id: number; title: string }>;
   colleges?: string[];
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
 }
 
 export interface AssessmentDetail extends Assessment {
@@ -185,6 +191,9 @@ export interface AssessmentDetail extends Assessment {
   end_time?: string | null;
   proctoring_enabled?: boolean;
   live_streaming?: boolean;
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
   course_ids?: number[];
   currency?: string;
   quiz_sections?: Array<{

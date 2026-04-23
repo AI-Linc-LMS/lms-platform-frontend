@@ -10,20 +10,18 @@ import {
   Button,
   Paper,
   Alert,
-  Chip,
-  Divider,
-  TextField,
   CircularProgress,
-  LinearProgress,
+  Tooltip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
   AssessmentDetail,
-  ScholarshipStatus,
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 
 function parseAssessmentStartTime(
   s: string | undefined | null
@@ -42,8 +40,6 @@ export default function AssessmentDetailPage({
   const { slug } = use(params);
   const router = useRouter();
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
-  const [scholarshipStatus, setScholarshipStatus] =
-    useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const [startTimeTick, setStartTimeTick] = useState(0);
@@ -111,6 +107,10 @@ export default function AssessmentDetailPage({
   };
 
   const handleStart = () => {
+    if (assessment && !isCurrentDeviceAllowedForAssessment(assessment)) {
+      showToast(t("assessmentDevice.toastBlocked"), "warning");
+      return;
+    }
     // Skip device-check if proctoring is disabled
     if (assessment && assessment.proctoring_enabled === false) {
       router.push(`/assessments/${slug}/take`);
@@ -146,6 +146,8 @@ export default function AssessmentDetailPage({
       </MainLayout>
     );
   }
+
+  const deviceAllowed = isCurrentDeviceAllowedForAssessment(assessment);
 
   return (
     <MainLayout>
@@ -263,6 +265,9 @@ export default function AssessmentDetailPage({
             </Box>
           </Box>
         </Box>
+
+        <AssessmentDeviceStatusPanel assessment={assessment} />
+
         <Paper
           elevation={0}
           sx={{
@@ -522,30 +527,52 @@ export default function AssessmentDetailPage({
             </Typography>
           )}
 
-          <Button
-            variant="contained"
-            size="large"
-            fullWidth
-            disabled={!canStartAssessment}
-            startIcon={<IconWrapper icon="mdi:play-circle-outline" size={24} />}
-            onClick={handleStart}
-            sx={{
-              backgroundColor: "#6366f1",
-              color: "#ffffff",
-              fontWeight: 600,
-              py: 1.5,
-              borderRadius: 2,
-              textTransform: "none",
-              fontSize: "1rem",
-              boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
-              "&:hover": {
-                backgroundColor: "#4f46e5",
-                boxShadow: "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
-              },
-            }}
+          <Tooltip
+            title={
+              !deviceAllowed
+                ? t("assessmentDevice.startDisabledHint")
+                : !canStartAssessment && assessmentStartAt
+                  ? t("assessments.availableFrom", {
+                      date: assessmentAvailableFromLabel,
+                    })
+                  : ""
+            }
+            placement="top"
+            arrow
           >
-            {t("assessments.startAssessment")}
-          </Button>
+            <span style={{ width: "100%", display: "block" }}>
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                disabled={!deviceAllowed || !canStartAssessment}
+                startIcon={
+                  <IconWrapper icon="mdi:play-circle-outline" size={24} />
+                }
+                onClick={handleStart}
+                sx={{
+                  backgroundColor: "#6366f1",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  py: 1.5,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+                  "&:hover": {
+                    backgroundColor: "#4f46e5",
+                    boxShadow: "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                  },
+                  "&.Mui-disabled": {
+                    backgroundColor: "#c7c9f5",
+                    color: "#f3f4f6",
+                  },
+                }}
+              >
+                {t("assessments.startAssessment")}
+              </Button>
+            </span>
+          </Tooltip>
         </Paper>
       </Box>
     </MainLayout>

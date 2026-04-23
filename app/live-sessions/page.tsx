@@ -28,7 +28,8 @@ export default function LiveSessionsPage() {
     handleCopyPassword,
     handleWatchRecording,
     formatDateTime,
-    formatTimeRemaining,
+    formatSessionDuration,
+    formatSessionStatusCaption,
   } = useLiveSessions();
 
   if (
@@ -87,7 +88,8 @@ export default function LiveSessionsPage() {
             onWatchRecording={handleWatchRecording}
             watchingRecordingId={watchingRecordingId}
             formatDateTime={formatDateTime}
-            formatTimeRemaining={formatTimeRemaining}
+            formatSessionDuration={formatSessionDuration}
+            formatSessionStatusCaption={formatSessionStatusCaption}
           />
         )}
       </Container>

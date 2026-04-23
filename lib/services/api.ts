@@ -5,26 +5,44 @@ import axios, {
 } from "axios";
 import Cookies from "js-cookie";
 import { config } from "../config";
+import { getClientDeviceClass } from "../utils/assessment-device";
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 // Request interceptor to add auth token and fix FormData uploads
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const method = (config.method || "get").toLowerCase();
     const token = Cookies.get("access_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // When sending FormData, remove Content-Type so the browser sets it with the correct boundary
+    // Only set JSON content-type for methods that send request bodies.
+    if (
+      config.headers &&
+      ["post", "put", "patch", "delete"].includes(method) &&
+      !(config.data instanceof FormData) &&
+      !config.headers["Content-Type"]
+    ) {
+      config.headers["Content-Type"] = "application/json";
+    }
+    // When sending FormData, remove Content-Type so the browser sets it with the correct boundary.
     if (config.data instanceof FormData && config.headers) {
       delete config.headers["Content-Type"];
     }
+    const path = `${config.baseURL ?? ""}${config.url ?? ""}`;
+    if (
+      typeof window !== "undefined" &&
+      path.includes("/assessment") &&
+      !path.includes("/active-assessments/") &&
+      config.headers
+    ) {
+    }
+    
+    // config.headers["X-Client-Device-Type"] = getClientDeviceClass();
     return config;
   },
   (error: AxiosError) => {
