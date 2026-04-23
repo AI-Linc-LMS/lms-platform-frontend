@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -18,19 +19,22 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Stack,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface AssessmentSettingsSectionProps {
   durationMinutes: number;
   startTime: string;
   endTime: string;
-  isPaid: boolean;
+  /** Omitted or undefined is normalized via default params so MUI Switch stays controlled. */
+  isPaid?: boolean;
   price: string;
   currency: string;
-  isActive: boolean;
-  proctoringEnabled: boolean;
-  liveStreaming: boolean;
+  isActive?: boolean;
+  proctoringEnabled?: boolean;
+  liveStreaming?: boolean;
   showLiveStreamingToggle?: boolean;
   sendCommunication: boolean;
   showResult: boolean;
@@ -41,6 +45,11 @@ interface AssessmentSettingsSectionProps {
   passBandUpperPercent: string;
   passBandLowerError?: string;
   passBandUpperError?: string;
+  sendCommunication?: boolean;
+  showResult?: boolean;
+  allowDesktop?: boolean;
+  allowMobile?: boolean;
+  allowTablet?: boolean;
   courseIds: number[];
   courses: any[];
   loadingCourses: boolean;
@@ -60,6 +69,9 @@ interface AssessmentSettingsSectionProps {
   onCertificateAvailableChange: (value: boolean) => void;
   onPassBandLowerPercentChange: (value: string) => void;
   onPassBandUpperPercentChange: (value: string) => void;
+  onAllowDesktopChange: (value: boolean) => void;
+  onAllowMobileChange: (value: boolean) => void;
+  onAllowTabletChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
   onCollegesChange: (value: string[]) => void;
   readOnly?: boolean;
@@ -219,12 +231,12 @@ export function AssessmentSettingsSection({
   durationMinutes,
   startTime,
   endTime,
-  isPaid,
+  isPaid = false,
   price,
   currency,
-  isActive,
-  proctoringEnabled,
-  liveStreaming,
+  isActive = true,
+  proctoringEnabled = true,
+  liveStreaming = false,
   showLiveStreamingToggle = false,
   sendCommunication,
   showResult,
@@ -234,6 +246,11 @@ export function AssessmentSettingsSection({
   passBandUpperPercent,
   passBandLowerError,
   passBandUpperError,
+  sendCommunication = false,
+  showResult = true,
+  allowDesktop = true,
+  allowMobile = true,
+  allowTablet = true,
   courseIds,
   courses,
   loadingCourses,
@@ -253,10 +270,14 @@ export function AssessmentSettingsSection({
   onCertificateAvailableChange,
   onPassBandLowerPercentChange,
   onPassBandUpperPercentChange,
+  onAllowDesktopChange,
+  onAllowMobileChange,
+  onAllowTabletChange,
   onCourseIdsChange,
   onCollegesChange,
   readOnly = false,
 }: AssessmentSettingsSectionProps) {
+  const { t } = useTranslation("common");
   return (
     <Paper
       elevation={0}
@@ -307,9 +328,244 @@ export function AssessmentSettingsSection({
           >
             Assessment settings
           </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isPaid}
+                onChange={(e) => onPaidChange(e.target.checked)}
+                disabled={readOnly}
+              />
+            }
+            label="Paid Assessment"
+          />
+          {isPaid && (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                gap: 2,
+                ml: 4,
+              }}
+            >
+              <TextField
+                label="Price"
+                type="number"
+                value={price}
+                onChange={(e) => onPriceChange(e.target.value)}
+                fullWidth
+                required
+                inputProps={{ min: 0, step: 0.01 }}
+                helperText="Enter price"
+                disabled={readOnly}
+              />
+              <FormControl fullWidth required>
+                <InputLabel>Currency</InputLabel>
+                <Select
+                  value={currency}
+                  onChange={(e) => onCurrencyChange(e.target.value)}
+                  label="Currency"
+                  disabled={readOnly}
+                >
+                  <MenuItem value="INR">INR (₹)</MenuItem>
+                  <MenuItem value="USD">USD ($)</MenuItem>
+                  <MenuItem value="EUR">EUR (€)</MenuItem>
+                  <MenuItem value="GBP">GBP (£)</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isActive}
+                onChange={(e) => onActiveChange(e.target.checked)}
+                disabled={readOnly}
+              />
+            }
+            label="Active"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={proctoringEnabled}
+                onChange={(e) => onProctoringEnabledChange(e.target.checked)}
+                disabled={readOnly}
+              />
+            }
+            label="Proctoring Enabled"
+          />
+          {showLiveStreamingToggle && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={liveStreaming}
+                  onChange={(e) => onLiveStreamingChange(e.target.checked)}
+                  disabled={readOnly}
+                />
+              }
+              label="Live Streaming"
+            />
+          )}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={sendCommunication}
+                onChange={(e) => onSendCommunicationChange(e.target.checked)}
+                disabled={readOnly}
+              />
+            }
+            label="Send notification email to students"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
+            Should the notification email be sent when this assessment is created?
+          </Typography>
           <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5, lineHeight: 1.5 }}>
             Configure duration, scheduling, pricing, and availability for this assessment.
           </Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              mt: 2,
+              borderRadius: 2,
+              borderColor: "#e5e7eb",
+              backgroundColor: "#fafafa",
+            }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ mb: 2 }}>
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 1.5,
+                  bgcolor: alpha("#6366f1", 0.12),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <IconWrapper icon="mdi:devices" size={22} color="#6366f1" />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 700, color: "#111827" }}
+                >
+                  {t("assessmentDevice.sectionTitle")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", lineHeight: 1.5 }}
+                >
+                  {t("assessmentDevice.sectionIntro")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.75, fontWeight: 600 }}
+                >
+                  {t("assessmentDevice.sectionHint")}
+                </Typography>
+              </Box>
+            </Stack>
+            <Stack spacing={0}>
+              <Box
+                sx={{
+                  py: 1.25,
+                  borderBottom: "1px solid",
+                  borderColor: "#ececec",
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <IconWrapper icon="mdi:monitor" size={22} color="#6366f1" />
+                  <FormControlLabel
+                    sx={{ flex: 1, m: 0 }}
+                    control={
+                      <Switch
+                        checked={allowDesktop}
+                        onChange={(e) => onAllowDesktopChange(e.target.checked)}
+                        disabled={readOnly}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {t("assessmentDevice.allowDesktop")}
+                      </Typography>
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
+                >
+                  {t("assessmentDevice.allowDesktopHint")}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  py: 1.25,
+                  borderBottom: "1px solid",
+                  borderColor: "#ececec",
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <IconWrapper icon="mdi:cellphone" size={22} color="#6366f1" />
+                  <FormControlLabel
+                    sx={{ flex: 1, m: 0 }}
+                    control={
+                      <Switch
+                        checked={allowMobile}
+                        onChange={(e) => onAllowMobileChange(e.target.checked)}
+                        disabled={readOnly}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {t("assessmentDevice.allowMobile")}
+                      </Typography>
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
+                >
+                  {t("assessmentDevice.allowMobileHint")}
+                </Typography>
+              </Box>
+              <Box sx={{ py: 1.25 }}>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <IconWrapper icon="mdi:tablet" size={22} color="#6366f1" />
+                  <FormControlLabel
+                    sx={{ flex: 1, m: 0 }}
+                    control={
+                      <Switch
+                        checked={allowTablet}
+                        onChange={(e) => onAllowTabletChange(e.target.checked)}
+                        disabled={readOnly}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {t("assessmentDevice.allowTablet")}
+                      </Typography>
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
+                >
+                  {t("assessmentDevice.allowTabletHint")}
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
         </Box>
       </Box>
 

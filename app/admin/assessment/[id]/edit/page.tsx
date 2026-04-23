@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -24,9 +25,6 @@ import {
   DialogContent,
   Chip,
   Tooltip,
-  TextField,
-  LinearProgress,
-  Stack,
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -300,6 +298,7 @@ function toISTForAPI(dateTimeString: string | null | undefined): string | undefi
 }
 
 export default function AssessmentEditPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const params = useParams();
@@ -345,6 +344,9 @@ export default function AssessmentEditPage() {
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
   const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
+  const [allowDesktop, setAllowDesktop] = useState(true);
+  const [allowMobile, setAllowMobile] = useState(true);
+  const [allowTablet, setAllowTablet] = useState(true);
 
   const [questionsPage, setQuestionsPage] = useState(1);
   const [questionsLimit, setQuestionsLimit] = useState(10);
@@ -442,6 +444,9 @@ export default function AssessmentEditPage() {
           ? String(anyData.pass_band_upper_min_percent)
           : ""
       );
+      setAllowDesktop((data as any).allow_desktop ?? true);
+      setAllowMobile((data as any).allow_mobile ?? true);
+      setAllowTablet((data as any).allow_tablet ?? true);
     } catch (e: any) {
       showToast(e?.message || "Failed to load assessment", "error");
       setAssessment(null);
@@ -518,9 +523,6 @@ export default function AssessmentEditPage() {
         setAnalyticsData(data);
         setAnalyticsTopNApplied(top);
         setAnalyticsTopNDraft(String(top));
-        setAnalyticsStudentsPage(1);
-        setAnalyticsSectionPage(1);
-        setAnalyticsTopPerformersTablePage(1);
       } catch (e: any) {
         showToast(e?.message || "Failed to load analytics", "error");
         setAnalyticsData(null);
@@ -590,6 +592,8 @@ export default function AssessmentEditPage() {
       return;
     }
     if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
+    if (!allowDesktop && !allowMobile && !allowTablet) {
+      showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
     }
     try {
@@ -611,6 +615,9 @@ export default function AssessmentEditPage() {
         show_result: showResult,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
+        allow_desktop: allowDesktop,
+        allow_mobile: allowMobile,
+        allow_tablet: allowTablet,
         course_ids: courseIds,
         colleges: colleges.length ? colleges : undefined,
       };
@@ -640,6 +647,7 @@ export default function AssessmentEditPage() {
       setSaving(false);
     }
   };
+}
 
   const handleDownloadMCQQuestions = () => {
     if (!questionsData) return;
@@ -1014,46 +1022,10 @@ export default function AssessmentEditPage() {
     }
   };
 
-  const paginatedAnalyticsStudents = useMemo(() => {
-    const list = analyticsData?.students ?? [];
-    const start = (analyticsStudentsPage - 1) * analyticsStudentsLimit;
-    return list.slice(start, start + analyticsStudentsLimit);
-  }, [analyticsData, analyticsStudentsPage, analyticsStudentsLimit]);
-
-  const paginatedAnalyticsSectionAverages = useMemo(() => {
-    const list = analyticsData?.section_averages ?? [];
-    const start = (analyticsSectionPage - 1) * analyticsSectionLimit;
-    return list.slice(start, start + analyticsSectionLimit);
-  }, [
-    analyticsData,
-    analyticsSectionPage,
-    analyticsSectionLimit,
-  ]);
-
-  const paginatedAnalyticsTopPerformers = useMemo(() => {
-    const list = analyticsData?.top_performers ?? [];
-    const start =
-      (analyticsTopPerformersTablePage - 1) * analyticsTopPerformersTableLimit;
-    return list.slice(start, start + analyticsTopPerformersTableLimit);
-  }, [
-    analyticsData,
-    analyticsTopPerformersTablePage,
-    analyticsTopPerformersTableLimit,
-  ]);
-
-  const totalAnalyticsStudents = analyticsData?.students?.length ?? 0;
-  const totalAnalyticsSectionRows =
-    analyticsData?.section_averages?.length ?? 0;
-  const totalAnalyticsTopPerformersRows =
-    analyticsData?.top_performers?.length ?? 0;
-
   useEffect(() => {
     setQuestionsPage(1);
     setCodingQuestionsPage(1);
     setSubmissionsPage(1);
-    setAnalyticsStudentsPage(1);
-    setAnalyticsSectionPage(1);
-    setAnalyticsTopPerformersTablePage(1);
   }, [tab]);
 
   useEffect(() => {
@@ -1202,6 +1174,9 @@ export default function AssessmentEditPage() {
                   passBandUpperPercent={passBandUpperPercent}
                   passBandLowerError={passBandFieldErrors.lower}
                   passBandUpperError={passBandFieldErrors.upper}
+                  allowDesktop={allowDesktop}
+                  allowMobile={allowMobile}
+                  allowTablet={allowTablet}
                   onDurationChange={setDurationMinutes}
                   onStartTimeChange={setStartTime}
                   onEndTimeChange={setEndTime}
@@ -1221,6 +1196,9 @@ export default function AssessmentEditPage() {
                   onCertificateAvailableChange={setCertificateAvailable}
                   onPassBandLowerPercentChange={setPassBandLowerPercent}
                   onPassBandUpperPercentChange={setPassBandUpperPercent}
+                  onAllowDesktopChange={setAllowDesktop}
+                  onAllowMobileChange={setAllowMobile}
+                  onAllowTabletChange={setAllowTablet}
                   readOnly={readOnly}
                 />
                 {!readOnly && (
@@ -1846,833 +1824,28 @@ export default function AssessmentEditPage() {
             )}
 
             {tab === "analytics" && (
-              <>
-                <Box
-                  className="exclude-from-pdf"
-                  sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 2,
-                    alignItems: "flex-start",
-                    mb: 2,
+              <Box
+                sx={{
+                  bgcolor: "background.paper",
+                  overflow: "visible",
+                  py: { xs: 0.5, sm: 1 },
+                  px: { xs: 0, sm: 0.5 },
+                }}
+              >
+                <AssessmentAnalyticsCharts
+                  data={analyticsData}
+                  toolbar={{
+                    topNDraft: analyticsTopNDraft,
+                    onTopNDraftChange: setAnalyticsTopNDraft,
+                    appliedTopN: analyticsTopNApplied,
+                    onApply: handleAnalyticsApplyTopPerformers,
+                    onReload: handleAnalyticsReload,
+                    onDownloadPdf: handleDownloadAnalyticsPdf,
+                    loading: analyticsLoading,
+                    canDownloadPdf: !!analyticsData && !analyticsLoading,
                   }}
-                >
-                  <TextField
-                    size="small"
-                    label="Top performers limit"
-                    type="number"
-                    inputProps={{ min: 1, max: 100 }}
-                    value={analyticsTopNDraft}
-                    onChange={(e) => setAnalyticsTopNDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAnalyticsApplyTopPerformers();
-                      }
-                    }}
-                    sx={{ width: 168 }}
-                    helperText="1–100. Type a number, then Apply (or press Enter)."
-                  />
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, pt: 0.5 }}>
-                    <Button
-                      variant="contained"
-                      onClick={handleAnalyticsApplyTopPerformers}
-                      disabled={analyticsLoading}
-                      sx={{ textTransform: "none" }}
-                    >
-                      Apply
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={handleAnalyticsReload}
-                      disabled={analyticsLoading}
-                      sx={{ textTransform: "none" }}
-                    >
-                      Reload
-                    </Button>
-                    <Button
-                      variant="contained"
-                      startIcon={
-                        <IconWrapper icon="mdi:file-pdf-box" size={18} />
-                      }
-                      onClick={() => void handleDownloadAnalyticsPdf()}
-                      disabled={!analyticsData || analyticsLoading}
-                      sx={{
-                        bgcolor: "#e11d48",
-                        "&:hover": { bgcolor: "#be123c" },
-                        textTransform: "none",
-                      }}
-                    >
-                      Download PDF
-                    </Button>
-                  </Box>
-                  {analyticsLoading && (
-                    <CircularProgress size={22} sx={{ ml: 0.5, mt: 1 }} />
-                  )}
-                </Box>
-
-                {analyticsLoading && !analyticsData ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      py: 6,
-                    }}
-                  >
-                    <CircularProgress />
-                  </Box>
-                ) : !analyticsData ? (
-                  <Typography color="text.secondary">
-                    Analytics could not be loaded. Check permissions and click
-                    Apply or Reload.
-                  </Typography>
-                ) : (
-                  <Box
-                    sx={{
-                      bgcolor: "#ffffff",
-                      overflow: "visible",
-                      py: 1,
-                      px: { xs: 0.5, sm: 1 },
-                    }}
-                  >
-                    <Typography
-                      variant="h6"
-                      fontWeight={800}
-                      sx={{ color: "#111827", mb: 0.5 }}
-                    >
-                      {assessment.title}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 2 }}
-                    >
-                      Analytics report · Assessment ID {analyticsData.assessment.id}{" "}
-                      · {analyticsData.assessment.slug} · Generated{" "}
-                      {new Date().toLocaleString()}
-                    </Typography>
-
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                    <AssessmentAnalyticsCharts data={analyticsData} />
-
-                    {(analyticsData.section_averages ?? []).length > 0 && (
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          borderRadius: 2,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            px: 2,
-                            py: 1.5,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.5,
-                            borderBottom: "1px solid",
-                            borderColor: "divider",
-                            background:
-                              "linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(14, 165, 233, 0.04) 100%)",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 4,
-                              height: 22,
-                              borderRadius: 1,
-                              bgcolor: "primary.main",
-                            }}
-                          />
-                          <Typography variant="subtitle1" fontWeight={800}>
-                            Section averages
-                          </Typography>
-                          <Chip
-                            label={`${totalAnalyticsSectionRows} section${totalAnalyticsSectionRows === 1 ? "" : "s"}`}
-                            size="small"
-                            sx={{
-                              ml: "auto",
-                              fontWeight: 600,
-                              bgcolor: "background.paper",
-                            }}
-                          />
-                        </Box>
-                        <TableContainer>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow
-                                sx={{
-                                  bgcolor: "grey.50",
-                                  "& .MuiTableCell-head": {
-                                    fontWeight: 700,
-                                    fontSize: "0.7rem",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.06em",
-                                    color: "text.secondary",
-                                    py: 1.25,
-                                  },
-                                }}
-                              >
-                                <TableCell>Section</TableCell>
-                                <TableCell align="right">Avg score</TableCell>
-                                <TableCell align="right">Max</TableCell>
-                                <TableCell sx={{ minWidth: 160 }}>
-                                  Avg performance
-                                </TableCell>
-                                <TableCell align="right">Submissions</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {paginatedAnalyticsSectionAverages.map((sec) => {
-                                const pct = clampPercentDisplay(
-                                  sec.average_percentage,
-                                );
-                                const barColor =
-                                  pct >= 70
-                                    ? "success.main"
-                                    : pct >= 40
-                                      ? "warning.main"
-                                      : "error.main";
-                                return (
-                                  <TableRow
-                                    key={sec.section_title}
-                                    hover
-                                    sx={{
-                                      "&:last-of-type td": { borderBottom: 0 },
-                                    }}
-                                  >
-                                    <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                                      {sec.section_title}
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ py: 1.5 }}>
-                                      {sec.average_score?.toFixed(1) ?? "—"}
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ py: 1.5 }}>
-                                      {sec.max_score?.toFixed(1) ?? "—"}
-                                    </TableCell>
-                                    <TableCell sx={{ py: 1.5 }}>
-                                      <Stack
-                                        direction="row"
-                                        alignItems="center"
-                                        spacing={1.25}
-                                      >
-                                        <LinearProgress
-                                          variant="determinate"
-                                          value={pct}
-                                          sx={{
-                                            flex: 1,
-                                            minWidth: 72,
-                                            height: 8,
-                                            borderRadius: 1,
-                                            bgcolor: "grey.200",
-                                            "& .MuiLinearProgress-bar": {
-                                              borderRadius: 1,
-                                              bgcolor: barColor,
-                                            },
-                                          }}
-                                        />
-                                        <Typography
-                                          variant="body2"
-                                          fontWeight={700}
-                                          sx={{
-                                            minWidth: 44,
-                                            textAlign: "right",
-                                            color: "text.primary",
-                                          }}
-                                        >
-                                          {sec.average_percentage != null &&
-                                          Number.isFinite(sec.average_percentage)
-                                            ? `${sec.average_percentage.toFixed(1)}%`
-                                            : "—"}
-                                        </Typography>
-                                      </Stack>
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ py: 1.5 }}>
-                                      <Chip
-                                        label={sec.submissions_count}
-                                        size="small"
-                                        variant="outlined"
-                                        sx={{ fontWeight: 600 }}
-                                      />
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                        {totalAnalyticsSectionRows > 0 && (
-                          <Box
-                            className="exclude-from-pdf"
-                            sx={{
-                              px: 2,
-                              py: 1.5,
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              flexWrap: "wrap",
-                              gap: 2,
-                              borderTop: "1px solid",
-                              borderColor: "divider",
-                              bgcolor: "grey.50",
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              <Typography variant="body2" color="text.secondary">
-                                Showing{" "}
-                                {(analyticsSectionPage - 1) *
-                                  analyticsSectionLimit +
-                                  1}{" "}
-                                to{" "}
-                                {Math.min(
-                                  totalAnalyticsSectionRows,
-                                  analyticsSectionPage * analyticsSectionLimit,
-                                )}{" "}
-                                of {totalAnalyticsSectionRows}
-                              </Typography>
-                              <PerPageSelect
-                                value={analyticsSectionLimit}
-                                onChange={(v) => {
-                                  setAnalyticsSectionLimit(v);
-                                  setAnalyticsSectionPage(1);
-                                }}
-                                options={[10, 12, 20, 25, 50, 100]}
-                              />
-                            </Box>
-                            <Pagination
-                              count={Math.ceil(
-                                totalAnalyticsSectionRows / analyticsSectionLimit,
-                              )}
-                              page={analyticsSectionPage}
-                              onChange={(_, v) => setAnalyticsSectionPage(v)}
-                              color="primary"
-                              size="small"
-                              showFirstButton={false}
-                              showLastButton={false}
-                              boundaryCount={1}
-                              siblingCount={0}
-                              disabled={
-                                Math.ceil(
-                                  totalAnalyticsSectionRows /
-                                    analyticsSectionLimit,
-                                ) <= 1
-                              }
-                            />
-                          </Box>
-                        )}
-                      </Paper>
-                    )}
-
-                    {(analyticsData.top_performers ?? []).length > 0 && (
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          borderRadius: 2,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            px: 2,
-                            py: 1.5,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.5,
-                            borderBottom: "1px solid",
-                            borderColor: "divider",
-                            background:
-                              "linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(245, 158, 11, 0.06) 100%)",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 4,
-                              height: 22,
-                              borderRadius: 1,
-                              bgcolor: "warning.main",
-                            }}
-                          />
-                          <Typography variant="subtitle1" fontWeight={800}>
-                            Top performers
-                          </Typography>
-                          <Chip
-                            label={`${totalAnalyticsTopPerformersRows} ranked`}
-                            size="small"
-                            sx={{
-                              ml: "auto",
-                              fontWeight: 600,
-                              bgcolor: "background.paper",
-                            }}
-                          />
-                        </Box>
-                        <TableContainer>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow
-                                sx={{
-                                  bgcolor: "grey.50",
-                                  "& .MuiTableCell-head": {
-                                    fontWeight: 700,
-                                    fontSize: "0.7rem",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.06em",
-                                    color: "text.secondary",
-                                    py: 1.25,
-                                  },
-                                }}
-                              >
-                                <TableCell width={56}>Rank</TableCell>
-                                <TableCell>Learner</TableCell>
-                                <TableCell align="right">Score</TableCell>
-                                <TableCell align="right">Result</TableCell>
-                                <TableCell align="right">Time</TableCell>
-                                <TableCell>Submitted</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {paginatedAnalyticsTopPerformers.map((row) => {
-                                const rank = row.rank ?? 0;
-                                const pct = row.percentage;
-                                const pctChip =
-                                  pct != null && Number.isFinite(pct)
-                                    ? pct >= 80
-                                      ? "success"
-                                      : pct >= 50
-                                        ? "warning"
-                                        : "default"
-                                    : "default";
-                                return (
-                                  <TableRow
-                                    key={`${row.rank}-${row.user_profile_id}`}
-                                    hover
-                                    sx={{
-                                      "&:last-of-type td": { borderBottom: 0 },
-                                    }}
-                                  >
-                                    <TableCell sx={{ py: 1.5 }}>
-                                      <Chip
-                                        label={`#${rank}`}
-                                        size="small"
-                                        color={
-                                          rank === 1
-                                            ? "warning"
-                                            : rank <= 3
-                                              ? "primary"
-                                              : "default"
-                                        }
-                                        variant={
-                                          rank <= 3 ? "filled" : "outlined"
-                                        }
-                                        sx={{ fontWeight: 800, minWidth: 40 }}
-                                      />
-                                    </TableCell>
-                                    <TableCell sx={{ py: 1.5 }}>
-                                      <Typography
-                                        variant="body2"
-                                        fontWeight={700}
-                                        sx={{ lineHeight: 1.3 }}
-                                      >
-                                        {row.name || "—"}
-                                      </Typography>
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        sx={{
-                                          display: "block",
-                                          mt: 0.25,
-                                          wordBreak: "break-word",
-                                        }}
-                                      >
-                                        {row.email || ""}
-                                      </Typography>
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ py: 1.5 }}>
-                                      <Typography variant="body2" fontWeight={700}>
-                                        {row.score != null &&
-                                        Number.isFinite(row.score)
-                                          ? row.score.toFixed(1)
-                                          : "—"}
-                                      </Typography>
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ py: 1.5 }}>
-                                      {pct != null && Number.isFinite(pct) ? (
-                                        <Chip
-                                          label={`${pct.toFixed(1)}%`}
-                                          size="small"
-                                          color={pctChip}
-                                          variant="outlined"
-                                          sx={{ fontWeight: 700 }}
-                                        />
-                                      ) : (
-                                        "—"
-                                      )}
-                                    </TableCell>
-                                    <TableCell align="right" sx={{ py: 1.5 }}>
-                                      <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                      >
-                                        {row.time_taken_minutes != null
-                                          ? `${row.time_taken_minutes} min`
-                                          : "—"}
-                                      </Typography>
-                                    </TableCell>
-                                    <TableCell sx={{ py: 1.5 }}>
-                                      <Typography variant="body2">
-                                        {formatSubmissionDate(row.submitted_at)}
-                                      </Typography>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                        {totalAnalyticsTopPerformersRows > 0 && (
-                          <Box
-                            className="exclude-from-pdf"
-                            sx={{
-                              px: 2,
-                              py: 1.5,
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              flexWrap: "wrap",
-                              gap: 2,
-                              borderTop: "1px solid",
-                              borderColor: "divider",
-                              bgcolor: "grey.50",
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              <Typography variant="body2" color="text.secondary">
-                                Showing{" "}
-                                {(analyticsTopPerformersTablePage - 1) *
-                                  analyticsTopPerformersTableLimit +
-                                  1}{" "}
-                                to{" "}
-                                {Math.min(
-                                  totalAnalyticsTopPerformersRows,
-                                  analyticsTopPerformersTablePage *
-                                    analyticsTopPerformersTableLimit,
-                                )}{" "}
-                                of {totalAnalyticsTopPerformersRows}
-                              </Typography>
-                              <PerPageSelect
-                                value={analyticsTopPerformersTableLimit}
-                                onChange={(v) => {
-                                  setAnalyticsTopPerformersTableLimit(v);
-                                  setAnalyticsTopPerformersTablePage(1);
-                                }}
-                                options={[10, 12, 20, 25, 50, 100]}
-                              />
-                            </Box>
-                            <Pagination
-                              count={Math.ceil(
-                                totalAnalyticsTopPerformersRows /
-                                  analyticsTopPerformersTableLimit,
-                              )}
-                              page={analyticsTopPerformersTablePage}
-                              onChange={(_, v) =>
-                                setAnalyticsTopPerformersTablePage(v)
-                              }
-                              color="primary"
-                              size="small"
-                              showFirstButton={false}
-                              showLastButton={false}
-                              boundaryCount={1}
-                              siblingCount={0}
-                              disabled={
-                                Math.ceil(
-                                  totalAnalyticsTopPerformersRows /
-                                    analyticsTopPerformersTableLimit,
-                                ) <= 1
-                              }
-                            />
-                          </Box>
-                        )}
-                      </Paper>
-                    )}
-
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          px: 2,
-                          py: 1.5,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.5,
-                          borderBottom: "1px solid",
-                          borderColor: "divider",
-                          background:
-                            "linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(14, 165, 233, 0.05) 100%)",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 4,
-                            height: 22,
-                            borderRadius: 1,
-                            bgcolor: "secondary.main",
-                          }}
-                        />
-                        <Typography variant="subtitle1" fontWeight={800}>
-                          All submissions
-                        </Typography>
-                        <Chip
-                          label={`${totalAnalyticsStudents} total`}
-                          size="small"
-                          sx={{
-                            ml: "auto",
-                            fontWeight: 600,
-                            bgcolor: "background.paper",
-                          }}
-                        />
-                      </Box>
-                      {totalAnalyticsStudents === 0 ? (
-                        <Box sx={{ px: 2, py: 4 }}>
-                          <Typography color="text.secondary" variant="body2">
-                            No rows returned.
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <>
-                          <TableContainer>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow
-                                  sx={{
-                                    bgcolor: "grey.50",
-                                    "& .MuiTableCell-head": {
-                                      fontWeight: 700,
-                                      fontSize: "0.7rem",
-                                      textTransform: "uppercase",
-                                      letterSpacing: "0.06em",
-                                      color: "text.secondary",
-                                      py: 1.25,
-                                    },
-                                  }}
-                                >
-                                  <TableCell>Learner</TableCell>
-                                  <TableCell>Status</TableCell>
-                                  <TableCell align="right">Score</TableCell>
-                                  <TableCell align="right">%</TableCell>
-                                  <TableCell align="right">Time</TableCell>
-                                  <TableCell align="right">Progress</TableCell>
-                                  <TableCell>Submitted</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {paginatedAnalyticsStudents.map((row) => {
-                                  const stColor = analyticsStatusChipColor(
-                                    row.status,
-                                  );
-                                  return (
-                                    <TableRow
-                                      key={row.submission_id ?? row.user_profile_id}
-                                      hover
-                                      sx={{
-                                        "&:last-of-type td": { borderBottom: 0 },
-                                      }}
-                                    >
-                                      <TableCell sx={{ py: 1.5, maxWidth: 220 }}>
-                                        <Typography
-                                          variant="body2"
-                                          fontWeight={700}
-                                          sx={{ lineHeight: 1.3 }}
-                                        >
-                                          {row.name || "—"}
-                                        </Typography>
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                          sx={{
-                                            display: "block",
-                                            mt: 0.25,
-                                            wordBreak: "break-word",
-                                          }}
-                                        >
-                                          {row.email || ""}
-                                        </Typography>
-                                      </TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>
-                                        <Chip
-                                          label={humanizeAnalyticsStatus(
-                                            row.status,
-                                          )}
-                                          size="small"
-                                          color={stColor}
-                                          variant={
-                                            stColor === "default"
-                                              ? "outlined"
-                                              : "filled"
-                                          }
-                                          sx={{ fontWeight: 600 }}
-                                        />
-                                      </TableCell>
-                                      <TableCell align="right" sx={{ py: 1.5 }}>
-                                        <Typography variant="body2" fontWeight={600}>
-                                          {row.score != null
-                                            ? row.score.toFixed(1)
-                                            : "—"}
-                                        </Typography>
-                                      </TableCell>
-                                      <TableCell align="right" sx={{ py: 1.5 }}>
-                                        {row.percentage != null ? (
-                                          <Chip
-                                            label={`${row.percentage.toFixed(1)}%`}
-                                            size="small"
-                                            variant="outlined"
-                                            sx={{ fontWeight: 600 }}
-                                          />
-                                        ) : (
-                                          <Typography
-                                            variant="body2"
-                                            color="text.disabled"
-                                          >
-                                            —
-                                          </Typography>
-                                        )}
-                                      </TableCell>
-                                      <TableCell align="right" sx={{ py: 1.5 }}>
-                                        <Typography
-                                          variant="body2"
-                                          color="text.secondary"
-                                        >
-                                          {row.time_taken_minutes != null
-                                            ? `${row.time_taken_minutes} min`
-                                            : "—"}
-                                        </Typography>
-                                      </TableCell>
-                                      <TableCell align="right" sx={{ py: 1.5 }}>
-                                        {row.attempted_questions != null &&
-                                        row.total_questions != null ? (
-                                          <Typography
-                                            variant="body2"
-                                            fontWeight={600}
-                                            sx={{
-                                              fontVariantNumeric: "tabular-nums",
-                                            }}
-                                          >
-                                            {row.attempted_questions}/
-                                            {row.total_questions}
-                                          </Typography>
-                                        ) : (
-                                          "—"
-                                        )}
-                                      </TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>
-                                        <Typography variant="body2">
-                                          {formatSubmissionDate(row.submitted_at)}
-                                        </Typography>
-                                      </TableCell>
-                                    </TableRow>
-                                  );
-                                })}
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                          {totalAnalyticsStudents > 0 && (
-                            <Box
-                              className="exclude-from-pdf"
-                              sx={{
-                                px: 2,
-                                py: 1.5,
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                flexWrap: "wrap",
-                                gap: 2,
-                                borderTop: "1px solid",
-                                borderColor: "divider",
-                                bgcolor: "grey.50",
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  flexWrap: "wrap",
-                                }}
-                              >
-                                <Typography variant="body2" color="text.secondary">
-                                  Showing{" "}
-                                  {(analyticsStudentsPage - 1) *
-                                    analyticsStudentsLimit +
-                                    1}{" "}
-                                  to{" "}
-                                  {Math.min(
-                                    totalAnalyticsStudents,
-                                    analyticsStudentsPage *
-                                      analyticsStudentsLimit,
-                                  )}{" "}
-                                  of {totalAnalyticsStudents}
-                                </Typography>
-                                <PerPageSelect
-                                  value={analyticsStudentsLimit}
-                                  onChange={(v) => {
-                                    setAnalyticsStudentsLimit(v);
-                                    setAnalyticsStudentsPage(1);
-                                  }}
-                                  options={[10, 12, 20, 25, 50, 100]}
-                                />
-                              </Box>
-                              <Pagination
-                                count={Math.ceil(
-                                  totalAnalyticsStudents /
-                                    analyticsStudentsLimit,
-                                )}
-                                page={analyticsStudentsPage}
-                                onChange={(_, v) => setAnalyticsStudentsPage(v)}
-                                color="primary"
-                                size="small"
-                                showFirstButton={false}
-                                showLastButton={false}
-                                boundaryCount={1}
-                                siblingCount={0}
-                                disabled={
-                                  Math.ceil(
-                                    totalAnalyticsStudents /
-                                      analyticsStudentsLimit,
-                                  ) <= 1
-                                }
-                              />
-                            </Box>
-                          )}
-                        </>
-                      )}
-                    </Paper>
-                    </Box>
-                  </Box>
-                )}
-              </>
+                />
+              </Box>
             )}
           </Box>
         </Paper>

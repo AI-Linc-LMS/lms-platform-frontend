@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,22 +10,29 @@ import {
   Button,
   Paper,
   Alert,
-  Chip,
-  Divider,
-  TextField,
   CircularProgress,
-  LinearProgress,
+  Tooltip,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
   AssessmentDetail,
-  ScholarshipStatus,
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
 import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
+
+function parseAssessmentStartTime(
+  s: string | undefined | null
+): Date | null {
+  if (!s || typeof s !== "string" || !s.trim()) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 export default function AssessmentDetailPage({
   params,
@@ -36,11 +43,36 @@ export default function AssessmentDetailPage({
   const { slug } = use(params);
   const router = useRouter();
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
-  const [scholarshipStatus, setScholarshipStatus] =
-    useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
   const { showToast } = useToast();
+  const [startTimeTick, setStartTimeTick] = useState(0);
+
+  const assessmentStartAt = useMemo(
+    () => parseAssessmentStartTime(assessment?.start_time),
+    [assessment?.start_time]
+  );
+
+  const canStartAssessment = useMemo(() => {
+    void startTimeTick;
+    if (!assessmentStartAt) return true;
+    return Date.now() >= assessmentStartAt.getTime();
+  }, [assessmentStartAt, startTimeTick]);
+
+  useEffect(() => {
+    if (!assessmentStartAt) return;
+    if (Date.now() >= assessmentStartAt.getTime()) return;
+
+    const id = setInterval(() => {
+      setStartTimeTick((n) => n + 1);
+      if (Date.now() >= assessmentStartAt.getTime()) {
+        clearInterval(id);
+      }
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [assessmentStartAt]);
+
 
   useEffect(() => {
     if (!slug) return;
@@ -74,6 +106,8 @@ export default function AssessmentDetailPage({
   const handleStart = () => {
     if (isMobileOrTabletForAssessment()) {
       setDesktopOnlyOpen(true);
+    if (assessment && !isCurrentDeviceAllowedForAssessment(assessment)) {
+      showToast(t("assessmentDevice.toastBlocked"), "warning");
       return;
     }
     // Skip device-check if proctoring is disabled
@@ -82,7 +116,8 @@ export default function AssessmentDetailPage({
     } else {
       router.push(`/assessments/${slug}/device-check`);
     }
-  };
+  }
+}
 
   if (loading) {
     return (
@@ -111,6 +146,8 @@ export default function AssessmentDetailPage({
       </MainLayout>
     );
   }
+
+  const deviceAllowed = isCurrentDeviceAllowedForAssessment(assessment);
 
   return (
     <MainLayout>
@@ -232,6 +269,9 @@ export default function AssessmentDetailPage({
             </Box>
           </Box>
         </Box>
+
+        <AssessmentDeviceStatusPanel assessment={assessment} />
+
         <Paper
           elevation={0}
           sx={{
@@ -580,7 +620,38 @@ export default function AssessmentDetailPage({
               },
             }}
           >
-            {t("assessments.startAssessment")}
+            <span style={{ width: "100%", display: "block" }}>
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                disabled={!deviceAllowed || !canStartAssessment}
+                startIcon={
+                  <IconWrapper icon="mdi:play-circle-outline" size={24} />
+                }
+                onClick={handleStart}
+                sx={{
+                  backgroundColor: "#6366f1",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  py: 1.5,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+                  "&:hover": {
+                    backgroundColor: "#4f46e5",
+                    boxShadow: "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                  },
+                  "&.Mui-disabled": {
+                    backgroundColor: "#c7c9f5",
+                    color: "#f3f4f6",
+                  },
+                }}
+              >
+                {t("assessments.startAssessment")}
+              </Button>
+            </span>
           </Button>
         </Paper>
       </Box>

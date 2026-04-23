@@ -180,6 +180,35 @@ export interface CreateAssessmentPayload {
   quiz_section?: QuizSection;
   mcqs?: MCQ[];
   mcq_ids?: number[];
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
+  quiz_section?: QuizSection; // For backward compatibility
+  quiz_sections?: Array<{
+    title: string;
+    description?: string;
+    order: number;
+    number_of_questions?: number;
+    number_of_questions_to_show?: number;
+    easy_score?: number;
+    medium_score?: number;
+    hard_score?: number;
+    mcqs?: MCQ[];
+    mcq_ids?: number[];
+  }>;
+  coding_sections?: Array<{
+    title: string;
+    description?: string;
+    order: number;
+    number_of_questions?: number;
+    number_of_questions_to_show?: number;
+    easy_score?: number;
+    medium_score?: number;
+    hard_score?: number;
+    coding_problem_ids?: number[];
+  }>;
+  mcqs?: MCQ[]; // For backward compatibility
+  mcq_ids?: number[]; // For backward compatibility
 }
 
 export interface Assessment {
@@ -205,6 +234,9 @@ export interface Assessment {
   submissions_count?: number;
   courses?: Array<{ id: number; title: string }>;
   colleges?: string[];
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
 }
 
 export interface AssessmentDetail extends Assessment {
@@ -212,6 +244,9 @@ export interface AssessmentDetail extends Assessment {
   end_time?: string | null;
   proctoring_enabled?: boolean;
   live_streaming?: boolean;
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
   course_ids?: number[];
   currency?: string;
   show_result?: boolean;
@@ -876,9 +911,9 @@ export interface AssessmentAnalyticsSummary {
 }
 
 export interface AssessmentAnalyticsStatusBreakdown {
-  in_progress: number;
-  submitted: number;
-  finalized: number;
+  in_progress?: number;
+  submitted?: number;
+  finalized?: number;
 }
 
 export interface AssessmentAnalyticsScoreBucket {
@@ -908,6 +943,15 @@ export interface AssessmentAnalyticsSectionAverage {
   submissions_count: number;
 }
 
+export interface AssessmentAnalyticsSectionScore {
+  section_title: string;
+  score: number;
+  max_score: number;
+  percentage: number;
+  questions_attempted?: number;
+  questions_correct?: number;
+}
+
 export interface AssessmentAnalyticsTopPerformer {
   rank: number;
   user_profile_id: number;
@@ -917,6 +961,7 @@ export interface AssessmentAnalyticsTopPerformer {
   percentage: number;
   time_taken_minutes: number;
   submitted_at: string;
+  section_scores?: AssessmentAnalyticsSectionScore[];
 }
 
 export interface AssessmentAnalyticsStudentRow {
@@ -932,6 +977,28 @@ export interface AssessmentAnalyticsStudentRow {
   attempted_questions?: number | null;
   started_at: string | null;
   submitted_at: string | null;
+  section_scores?: AssessmentAnalyticsSectionScore[];
+}
+
+/** Per-question aggregates from analytics API */
+export interface AssessmentAnalyticsCodingQuestionRow {
+  problem_id: number;
+  coding_section_id?: number;
+  section_title?: string;
+  difficulty_level?: string;
+  title: string;
+  full_pass_count: number;
+  partial_count: number;
+  failed_count: number;
+  skipped_count: number;
+  appeared_count: number;
+}
+
+export interface AssessmentAnalyticsQuestionLevelResults {
+  mcq?: Record<string, unknown>[];
+  coding?: AssessmentAnalyticsCodingQuestionRow[];
+  subjective?: Record<string, unknown>[];
+  completed_submissions_used?: number;
 }
 
 export interface AssessmentAnalyticsResponse {
@@ -944,6 +1011,7 @@ export interface AssessmentAnalyticsResponse {
     submissions_timeline: AssessmentAnalyticsTimelineDay[];
   };
   section_averages: AssessmentAnalyticsSectionAverage[];
+  question_level_results?: AssessmentAnalyticsQuestionLevelResults;
   top_performers: AssessmentAnalyticsTopPerformer[];
   students: AssessmentAnalyticsStudentRow[];
 }

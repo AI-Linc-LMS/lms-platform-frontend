@@ -14,6 +14,9 @@ export interface LiveClassSession {
   instructor?: { id: number; name?: string } | number;
   status?: string;
   meeting_link?: string;
+  join_link?: string | null;
+  is_google_meet?: boolean;
+  closes_at?: string | null;
   course?: number | null;
   course_detail?: { id: number; title: string; slug: string } | null;
 }
@@ -26,6 +29,9 @@ export interface CreateLiveClassSessionPayload {
   instructor_id?: number;
   instructor?: number;
   course?: number | null;
+  join_link?: string;
+  is_google_meet?: boolean;
+  closes_at?: string | null;
 }
 
 export interface UpdateLiveClassSessionPayload {

@@ -398,7 +398,7 @@ export function CourseCard({
             <FormControlLabel
               control={
                 <Switch
-                  checked={editData.is_free}
+                  checked={editData.is_free ?? true}
                   onChange={(e) => setEditData({ ...editData, is_free: e.target.checked })}
                   color="primary"
                   size="small"

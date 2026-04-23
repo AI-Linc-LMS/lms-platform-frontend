@@ -12,11 +12,12 @@ import {
   ButtonBase,
   useTheme,
 } from "@mui/material";
-import { memo, useMemo, useRef, useState, useCallback } from "react";
+import { memo, useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { QuizQuestionList } from "@/components/quiz";
 import { QuestionTitle } from "@/components/quiz/QuestionTitle";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { MathSymbolToolbar } from "@/components/assessment/MathSymbolToolbar";
 
 export interface SubjectiveQuestionItem {
   id: string | number;
@@ -120,6 +121,38 @@ export const AssessmentSubjectiveLayout = memo(
     const toggleWritingTips = useCallback(() => {
       setWritingTipsOpen((o) => !o);
     }, []);
+
+    const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+    const pendingCaretRef = useRef<number | null>(null);
+
+    useEffect(() => {
+      pendingCaretRef.current = null;
+    }, [currentQuestion.id]);
+
+    const insertAtCaret = useCallback(
+      (text: string) => {
+        const el = textAreaRef.current;
+        const len = answerText.length;
+        const start = el ? el.selectionStart : len;
+        const end = el ? el.selectionEnd : len;
+        const next = answerText.slice(0, start) + text + answerText.slice(end);
+        pendingCaretRef.current = start + text.length;
+        onAnswerChange(next);
+      },
+      [answerText, onAnswerChange],
+    );
+
+    useEffect(() => {
+      const pos = pendingCaretRef.current;
+      if (pos === null) return;
+      pendingCaretRef.current = null;
+      const el = textAreaRef.current;
+      if (!el) return;
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(pos, pos);
+      });
+    }, [answerText]);
 
     return (
       <Box
@@ -294,6 +327,7 @@ export const AssessmentSubjectiveLayout = memo(
               fullWidth
               value={answerText}
               onChange={(e) => onAnswerChange(e.target.value)}
+              inputRef={textAreaRef}
               placeholder="Write a clear, structured answer. Use paragraphs where it helps readability."
               variant="outlined"
               inputProps={{
@@ -332,6 +366,10 @@ export const AssessmentSubjectiveLayout = memo(
                 },
               }}
             />
+
+            <Box sx={{ mt: 1.5 }}>
+              <MathSymbolToolbar onInsert={insertAtCaret} />
+            </Box>
 
             <Box
               id={`subjective-answer-stats-${currentQuestion.id}`}

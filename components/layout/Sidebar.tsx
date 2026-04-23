@@ -280,6 +280,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_assessment",
     },
     {
+      label: "Scorecard",
+      labelKey: "nav.scorecard",
+      path: "/admin/scorecard",
+      icon: "mdi:chart-box-outline",
+      featureName: "admin_scorecard",
+    },
+    {
       label: "Jobs",
       labelKey: "nav.adminJobsV2",
       path: "/admin/jobs-v2",
@@ -343,6 +350,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items = allNavigationItems.filter((item) => {
         // Always show dashboard for regular users
         if (!effectiveAdminMode && item.featureName === "dashboard") {
+          return true;
+        }
+        if (effectiveAdminMode && item.featureName === "admin_scorecard") {
           return true;
         }
         return filteredFeatureNames.has(item.featureName);

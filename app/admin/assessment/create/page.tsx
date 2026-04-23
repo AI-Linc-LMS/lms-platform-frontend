@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -54,6 +55,7 @@ function toAssessmentApiDecimalString(
 const steps = ["Assessment Details", "Add Questions", "Review & Create"];
 
 export default function CreateAssessmentPage() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -93,6 +95,9 @@ export default function CreateAssessmentPage() {
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
   const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
+  const [allowDesktop, setAllowDesktop] = useState(true);
+  const [allowMobile, setAllowMobile] = useState(true);
+  const [allowTablet, setAllowTablet] = useState(true);
 
   // Multiple sections
   const [sections, setSections] = useState<Section[]>([]);
@@ -547,6 +552,12 @@ export default function CreateAssessmentPage() {
     try {
       setCreating(true);
 
+      if (!allowDesktop && !allowMobile && !allowTablet) {
+        showToast(t("assessmentDevice.atLeastOne"), "error");
+        setCreating(false);
+        return;
+      }
+
       const quizSections = sections
         .filter((s) => s.type === "quiz")
         .sort((a, b) => a.order - b.order);
@@ -723,6 +734,9 @@ export default function CreateAssessmentPage() {
         show_result: showResult,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
+        allow_desktop: allowDesktop,
+        allow_mobile: allowMobile,
+        allow_tablet: allowTablet,
       };
 
       const passLower = toAssessmentApiDecimalString(passBandLowerPercent);
@@ -915,6 +929,9 @@ export default function CreateAssessmentPage() {
               passBandUpperPercent={passBandUpperPercent}
               passBandLowerError={passBandFieldErrors.lower}
               passBandUpperError={passBandFieldErrors.upper}
+              allowDesktop={allowDesktop}
+              allowMobile={allowMobile}
+              allowTablet={allowTablet}
               onDurationChange={setDurationMinutes}
               onStartTimeChange={setStartTime}
               onEndTimeChange={setEndTime}
@@ -932,6 +949,9 @@ export default function CreateAssessmentPage() {
               onCertificateAvailableChange={setCertificateAvailable}
               onPassBandLowerPercentChange={setPassBandLowerPercent}
               onPassBandUpperPercentChange={setPassBandUpperPercent}
+              onAllowDesktopChange={setAllowDesktop}
+              onAllowMobileChange={setAllowMobile}
+              onAllowTabletChange={setAllowTablet}
             />
             <MultipleSectionsSection
               sections={sections}
