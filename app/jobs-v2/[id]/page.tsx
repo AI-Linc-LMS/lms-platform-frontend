@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Box,
@@ -21,6 +21,17 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { JobSearchIllustration, JobDetailIllustration } from "@/components/jobs-v2/illustrations";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
+import {
+  formatJobDescriptionBody,
+  formatApplicationDeadlineLabel,
+  humanizeJobFieldLabel,
+  formatJobSourceLabel,
+} from "@/lib/utils/format-job-description";
+import {
+  getJobsV2ApplyHref,
+  getJobsV2BrowseHref,
+  getJobsV2ListQueryString,
+} from "@/lib/utils/jobs-v2-navigation";
 
 const getPostedLabel = (d?: string) => {
   if (!d) return "—";
@@ -35,9 +46,18 @@ const getPostedLabel = (d?: string) => {
 
 export default function JobDetailPage() {
   const params = useParams();
+  const detailSearchParams = useSearchParams();
   const { showToast } = useToast();
   const { isAdminMode } = useAdminMode();
   const id = Number(params?.id);
+
+  const { jobsListBackHref, jobsListQueryString } = useMemo(() => {
+    const qs = getJobsV2ListQueryString(detailSearchParams);
+    return {
+      jobsListQueryString: qs,
+      jobsListBackHref: getJobsV2BrowseHref(qs),
+    };
+  }, [detailSearchParams]);
   const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -74,7 +94,7 @@ export default function JobDetailPage() {
         setApplying(true);
         const res = await jobsV2Service.applyForJob(job.id, { external: true });
         window.open(job.apply_link!, "_blank");
-        if (res.status === "applying") {
+        if (res.status === "applying" && res.id > 0) {
           setPendingApplicationId(res.id);
           setShowConfirmAppliedDialog(true);
         }
@@ -134,6 +154,23 @@ export default function JobDetailPage() {
     }
   }, [job, favoriteLoading, showToast]);
 
+  const normalizedDescription = useMemo(
+    () => formatJobDescriptionBody(job?.job_description),
+    [job?.job_description]
+  );
+  const normalizedRequirements = useMemo(
+    () => formatJobDescriptionBody(job?.scraper_requirements),
+    [job?.scraper_requirements]
+  );
+  const normalizedBenefits = useMemo(
+    () => formatJobDescriptionBody(job?.scraper_job_benefits),
+    [job?.scraper_job_benefits]
+  );
+  const closingDateLabel = useMemo(
+    () => formatApplicationDeadlineLabel(job?.application_deadline),
+    [job?.application_deadline]
+  );
+
   if (loading || !job) {
     return (
       <MainLayout>
@@ -141,7 +178,7 @@ export default function JobDetailPage() {
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
             <Button
               component={Link}
-              href="/jobs-v2"
+              href={jobsListBackHref}
               startIcon={<ArrowLeft size={18} />}
                 sx={{
                   mb: 2,
@@ -177,7 +214,7 @@ export default function JobDetailPage() {
                 </Typography>
                 <Button
                   component={Link}
-                  href="/jobs-v2"
+                  href={jobsListBackHref}
                   startIcon={<ArrowLeft size={18} />}
                   sx={{
                     textTransform: "none",
@@ -247,7 +284,7 @@ export default function JobDetailPage() {
           <Box sx={{ maxWidth: 1100, mx: "auto", width: "100%", position: "relative", zIndex: 1 }}>
             <Button
               component={Link}
-              href="/jobs-v2"
+              href={jobsListBackHref}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 mb: 2,
@@ -324,7 +361,7 @@ export default function JobDetailPage() {
                           Job type:
                         </Typography>
                         <Chip
-                          label={job.job_type}
+                          label={humanizeJobFieldLabel(job.job_type) ?? job.job_type}
                           size="small"
                           sx={{
                             backgroundColor: "rgba(99, 102, 241, 0.1)",
@@ -340,7 +377,7 @@ export default function JobDetailPage() {
                           Employment type:
                         </Typography>
                         <Chip
-                          label={job.employment_type}
+                          label={humanizeJobFieldLabel(job.employment_type) ?? job.employment_type}
                           size="small"
                           variant="outlined"
                           sx={{ borderColor: "#6366f1", color: "#6366f1", fontWeight: 500 }}
@@ -432,7 +469,7 @@ export default function JobDetailPage() {
                         : undefined,
                     }}
                   >
-                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply"}
                   </Button>
                 ) : hasApplied || !canApply ? (
                   <Button
@@ -459,7 +496,7 @@ export default function JobDetailPage() {
                 ) : (
                   <Button
                     component={Link}
-                    href={`/jobs-v2/${job.id}/apply`}
+                    href={getJobsV2ApplyHref(job.id, jobsListQueryString)}
                     variant="contained"
                     startIcon={<ExternalLink size={18} />}
                     sx={{
@@ -512,7 +549,7 @@ export default function JobDetailPage() {
                   sx={{
                     px: 2.5,
                     py: 2,
-                    borderBottom: job.job_description ? "1px solid" : "none",
+                    borderBottom: normalizedDescription ? "1px solid" : "none",
                     borderColor: "divider",
                     background: "linear-gradient(180deg, rgba(99, 102, 241, 0.04) 0%, transparent 100%)",
                   }}
@@ -523,10 +560,11 @@ export default function JobDetailPage() {
                 </Box>
 
                 {/* Text description */}
-                {job.job_description && (
+                {normalizedDescription && (
                   <Box sx={{ px: 2.5, py: 2.5 }}>
                     <Typography
                       variant="body1"
+                      component="div"
                       sx={{
                         whiteSpace: "pre-wrap",
                         lineHeight: 1.8,
@@ -537,12 +575,12 @@ export default function JobDetailPage() {
                         "& li": { mb: 0.5 },
                       }}
                     >
-                      {job.job_description}
+                      {normalizedDescription}
                     </Typography>
                   </Box>
                 )}
 
-                {!job.job_description && !job.jd_file_url && (
+                {!normalizedDescription && !job.jd_file_url && (
                   <Box sx={{ px: 2.5, py: 3, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">
                       No job description available
@@ -550,6 +588,86 @@ export default function JobDetailPage() {
                   </Box>
                 )}
               </Paper>
+
+              {job.scraper_key_points && job.scraper_key_points.length > 0 && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: "#fff",
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "#0f172a" }}>
+                    Highlights
+                  </Typography>
+                  <Box
+                    component="ul"
+                    sx={{
+                      m: 0,
+                      pl: 2.25,
+                      color: "#475569",
+                      "& li": { mb: 1, lineHeight: 1.65 },
+                    }}
+                  >
+                    {job.scraper_key_points.map((pt, i) => (
+                      <Typography key={i} component="li" variant="body2">
+                        {pt}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Paper>
+              )}
+
+              {normalizedRequirements && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: "#fff",
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "#0f172a" }}>
+                    Requirements
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "#475569" }}
+                  >
+                    {normalizedRequirements}
+                  </Typography>
+                </Paper>
+              )}
+
+              {normalizedBenefits && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: "#fff",
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "#0f172a" }}>
+                    Benefits
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "#475569" }}
+                  >
+                    {normalizedBenefits}
+                  </Typography>
+                </Paper>
+              )}
 
               {job.role_process && (
                 <Paper
@@ -660,6 +778,30 @@ export default function JobDetailPage() {
                 </Typography>
               </Box>
               <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 0 }}>
+                {job.scraper_source && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>
+                      <FileText size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>
+                        Source
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>
+                        {formatJobSourceLabel(job.scraper_source)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
                 {job.industry_type && (
                   <Box
                     sx={{
@@ -676,7 +818,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Industry</Typography>
-                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.industry_type}</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.industry_type) ?? job.industry_type}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -696,7 +840,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Department</Typography>
-                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.department}</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.department) ?? job.department}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -716,7 +862,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Employment Type</Typography>
-                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.employment_type}</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.employment_type) ?? job.employment_type}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -736,7 +884,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Role Category</Typography>
-                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>{job.role_category}</Typography>
+                      <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.role_category) ?? job.role_category}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -822,7 +972,7 @@ export default function JobDetailPage() {
                     </Box>
                   </Box>
                 )}
-                {job.application_deadline && (
+                {closingDateLabel && (
                   <Box
                     sx={{
                       display: "flex",
@@ -839,11 +989,7 @@ export default function JobDetailPage() {
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500, display: "block" }}>Closing Date</Typography>
                       <Typography variant="body2" sx={{ color: "#0f172a", fontWeight: 500 }}>
-                        {new Date(job.application_deadline).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {closingDateLabel}
                       </Typography>
                     </Box>
                   </Box>
@@ -868,7 +1014,7 @@ export default function JobDetailPage() {
                     </Box>
                   </Box>
                 )}
-                {!job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !passoutYearDisplay && !job.ug_requirements && !job.pg_requirements && !job.application_deadline && (job.number_of_openings == null || job.number_of_openings === 0) && (
+                {!job.scraper_source && !job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !passoutYearDisplay && !job.ug_requirements && !job.pg_requirements && !closingDateLabel && (job.number_of_openings == null || job.number_of_openings === 0) && (
                   <Box sx={{ py: 2, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">No additional details</Typography>
                   </Box>
@@ -906,7 +1052,7 @@ export default function JobDetailPage() {
                     "&:hover": { borderColor: "#4f46e5", backgroundColor: "rgba(99, 102, 241, 0.08)" },
                   }}
                 >
-                  Apply on External Link
+                  Apply
                 </Button>
               </Paper>
             )}
@@ -1012,7 +1158,7 @@ export default function JobDetailPage() {
                   : undefined,
               }}
             >
-              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply"}
             </Button>
           ) : hasApplied || !canApply ? (
             <Button
@@ -1036,7 +1182,7 @@ export default function JobDetailPage() {
           ) : (
             <Button
               component={Link}
-              href={`/jobs-v2/${job.id}/apply`}
+              href={getJobsV2ApplyHref(job.id, jobsListQueryString)}
               variant="contained"
               fullWidth
               startIcon={<ExternalLink size={18} />}
