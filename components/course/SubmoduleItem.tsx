@@ -20,6 +20,7 @@ interface SubmoduleItemProps {
     article_count: number;
     coding_problem_count: number;
     assignment_count: number;
+    subjective_question_count?: number;
   };
   module: Module;
   courseId: number;
@@ -66,6 +67,14 @@ export function SubmoduleItem({
         icon: "mdi:code-tags",
       });
     }
+    const subjectiveCount = submodule.subjective_question_count ?? 0;
+    if (subjectiveCount > 0) {
+      breakdown.push({
+        label: t("courses.subjectiveProgressShort"),
+        count: subjectiveCount,
+        icon: "mdi:text-box-outline",
+      });
+    }
     if (submodule.article_count > 0) {
       breakdown.push({
         label: t("courses.articles"),
@@ -82,7 +91,8 @@ export function SubmoduleItem({
       submodule.quiz_count +
       submodule.article_count +
       submodule.coding_problem_count +
-      submodule.assignment_count
+      submodule.assignment_count +
+      (submodule.subjective_question_count ?? 0)
     );
   };
 

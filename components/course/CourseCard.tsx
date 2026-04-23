@@ -51,11 +51,18 @@ export const CourseCard = memo(
       [onEnroll, course.id]
     );
 
-    const totalLessons = useMemo(
-      () =>
-        (course.stats?.article?.total || 0) + (course.stats?.video?.total || 0),
-      [course.stats]
-    );
+    const totalLessons = useMemo(() => {
+      const s = course.stats;
+      if (!s) return 0;
+      return (
+        (s.video?.total || 0) +
+        (s.article?.total || 0) +
+        (s.quiz?.total || 0) +
+        (s.assignment?.total || 0) +
+        (s.coding_problem?.total || 0) +
+        (s.subjective_question?.total || 0)
+      );
+    }, [course.stats]);
 
     return (
       <Card
@@ -340,12 +347,19 @@ export const CourseCard = memo(
     );
   },
   (prevProps, nextProps) => {
-    // Only re-render if course data or enrolling state changes
+    const contentTotal = (c: Course) =>
+      (c.stats?.video?.total || 0) +
+      (c.stats?.article?.total || 0) +
+      (c.stats?.quiz?.total || 0) +
+      (c.stats?.assignment?.total || 0) +
+      (c.stats?.coding_problem?.total || 0) +
+      (c.stats?.subjective_question?.total || 0);
     return (
       prevProps.course.id === nextProps.course.id &&
       prevProps.course.is_enrolled === nextProps.course.is_enrolled &&
       prevProps.course.progress === nextProps.course.progress &&
-      prevProps.enrolling === nextProps.enrolling
+      prevProps.enrolling === nextProps.enrolling &&
+      contentTotal(prevProps.course) === contentTotal(nextProps.course)
     );
   }
 );
