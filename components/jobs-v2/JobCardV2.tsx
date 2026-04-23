@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, memo } from "react";
+import React, { useState, useCallback, useEffect, memo, useMemo } from "react";
 import Link from "next/link";
 import {
   Paper,
@@ -9,7 +9,6 @@ import {
   Box,
   IconButton,
   Chip,
-  Avatar,
   Tooltip,
 } from "@mui/material";
 import { JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
@@ -26,13 +25,17 @@ import {
   Banknote,
   GraduationCap,
 } from "lucide-react";
+import { formatJobDescriptionBody } from "@/lib/utils/format-job-description";
+import { CompanyLogoAvatar } from "@/components/jobs-v2/CompanyLogoAvatar";
 
 interface JobCardV2Props {
   job: JobV2;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
+  /** Query string without `?` — e.g. `page=2&page_size=20` to preserve list state on detail/back. */
+  jobsListQuery?: string;
 }
 
-const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
+const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2Props) => {
   const { showToast } = useToast();
   const { isAdminMode } = useAdminMode();
   const [isFavorite, setIsFavorite] = useState(job.is_favourited ?? false);
@@ -78,9 +81,30 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
     }
   };
 
-  const tags = job.tags ?? [];
-  const skillsDisplay = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])].slice(0, 5);
+  const chipLabels = useMemo(() => {
+    const dedupe = (items: unknown[], max: number): string[] => {
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const x of items) {
+        const s = String(x ?? "").trim();
+        if (!s) continue;
+        const k = s.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(s);
+        if (out.length >= max) break;
+      }
+      return out;
+    };
+    const fromSkills = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])];
+    if (fromSkills.length > 0) return dedupe(fromSkills, 5);
+    return dedupe(job.tags ?? [], 5);
+  }, [job.mandatory_skills, job.key_skills, job.tags]);
   const passoutYear = formatJobPassoutYear(job.applicable_passout_year);
+  const descriptionPreview = useMemo(
+    () => formatJobDescriptionBody(job.job_description),
+    [job.job_description]
+  );
 
   return (
     <Paper
@@ -103,24 +127,17 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
       }}
     >
       <Box sx={{ display: "flex", gap: { xs: 1.5, md: 2 }, width: "100%" }}>
-        <Avatar
-          src={job.company_logo}
-          alt={job.company_name}
+        <CompanyLogoAvatar
+          logoUrl={job.company_logo}
+          companyName={job.company_name}
           sx={{
-            width: { xs: 48, md: 56 },
-            height: { xs: 48, md: 56 },
+            width: { xs: 48, md: 48 },
+            height: { xs: 48, md: 48 },
             borderRadius: 1.5,
-            border: "1px solid",
-            borderColor: "divider",
-            backgroundColor: "#6366f1",
-            color: "#ffffff",
-            fontSize: { xs: "1rem", md: "1.25rem" },
-            fontWeight: 600,
+            fontSize: { xs: "1rem", md: "1rem" },
             flexShrink: 0,
           }}
-        >
-          {job.company_name?.[0]?.toUpperCase() || "C"}
-        </Avatar>
+        />
 
         <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <Box
@@ -250,7 +267,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
             )}
           </Box>
 
-          {job.job_description && (
+          {descriptionPreview && (
             <Typography
               variant="body2"
               sx={{
@@ -264,16 +281,16 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
                 overflow: "hidden",
               }}
             >
-              {job.job_description}
+              {descriptionPreview}
             </Typography>
           )}
 
-          {(skillsDisplay.length > 0 || tags.length > 0) && (
+          {chipLabels.length > 0 && (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5 }}>
-                {(skillsDisplay.length > 0 ? skillsDisplay : tags).slice(0, 5).map((tag, index) => (
+                {chipLabels.map((tag, index) => (
                 <Chip
-                  key={index}
-                  label={String(tag || "")}
+                  key={`${tag}-${index}`}
+                  label={tag}
                   size="small"
                   variant="outlined"
                   sx={{
@@ -303,7 +320,11 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
           >
             <Button
               component={Link}
-              href={`/jobs-v2/${job.id}`}
+              href={
+                jobsListQuery
+                  ? `/jobs-v2/${job.id}?${jobsListQuery}`
+                  : `/jobs-v2/${job.id}`
+              }
               variant="contained"
               endIcon={<ChevronRight size={16} />}
               sx={{
@@ -337,7 +358,8 @@ export const JobCardV2 = memo(JobCardV2Component, (prevProps, nextProps) => {
   return (
     prevProps.job.id === nextProps.job.id &&
     prevProps.job.is_favourited === nextProps.job.is_favourited &&
-    prevProps.job.applicable_passout_year === nextProps.job.applicable_passout_year
+    prevProps.job.applicable_passout_year === nextProps.job.applicable_passout_year &&
+    prevProps.jobsListQuery === nextProps.jobsListQuery
   );
 });
 JobCardV2.displayName = "JobCardV2";
