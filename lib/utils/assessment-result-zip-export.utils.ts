@@ -1,6 +1,6 @@
 import type { AssessmentResult } from "@/lib/services/assessment.service";
 import {
-  getAssessmentResultPdfBlob,
+  generateAssessmentResultPdfVector,
   type AssessmentPdfStudentOverrides,
 } from "@/lib/utils/assessment-result-pdf.utils";
 
@@ -30,7 +30,12 @@ export async function downloadAssessmentResultZipBundle(
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 
-  const pdfBlob = getAssessmentResultPdfBlob(data, studentOverrides);
+  const pdfBlob = generateAssessmentResultPdfVector(
+    data,
+    `${baseFileName}-report.pdf`,
+    studentOverrides,
+    { download: false },
+  );
   zip.file(`${baseFileName}-report.pdf`, pdfBlob);
 
   zip.file("assessment-result.json", JSON.stringify(data, null, 2));
