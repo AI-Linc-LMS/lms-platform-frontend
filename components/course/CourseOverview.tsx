@@ -32,7 +32,8 @@ export function CourseOverview({
           submodule.quiz_count +
           submodule.article_count +
           submodule.coding_problem_count +
-          submodule.assignment_count;
+          submodule.assignment_count +
+          (submodule.subjective_question_count ?? 0);
       });
     });
 
@@ -48,7 +49,8 @@ export function CourseOverview({
       submodule.quiz_count +
       submodule.article_count +
       submodule.coding_problem_count +
-      submodule.assignment_count
+      submodule.assignment_count +
+      (submodule.subjective_question_count ?? 0)
     );
   };
 

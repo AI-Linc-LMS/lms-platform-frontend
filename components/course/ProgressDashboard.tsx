@@ -26,6 +26,12 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
     { label: t("courses.articles"), value: dashboard.article_progress, icon: "mdi:file-document-outline", color: "#3b82f6" },
     { label: t("courses.assignments"), value: dashboard.assignment_progress, icon: "mdi:file-check-outline", color: "#8b5cf6" },
     { label: t("courses.coding"), value: dashboard.coding_problem_progress, icon: "mdi:code-tags", color: "#10b981" },
+    {
+      label: t("courses.subjectiveProgressShort"),
+      value: dashboard.subjective_question_progress,
+      icon: "mdi:text-box-outline",
+      color: "#0d9488",
+    },
   ].filter((item) => item.value !== undefined && item.value > 0);
 
   const hasContentProgress = contentProgressItems.length > 0;
