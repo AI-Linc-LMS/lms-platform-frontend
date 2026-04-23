@@ -36,12 +36,13 @@ apiClient.interceptors.request.use(
     const path = `${config.baseURL ?? ""}${config.url ?? ""}`;
     if (
       typeof window !== "undefined" &&
-      path.includes("/assessment/api/client/") &&
+      path.includes("/assessment") &&
       !path.includes("/active-assessments/") &&
       config.headers
     ) {
-      config.headers["X-Client-Device-Type"] = getClientDeviceClass();
     }
+    
+    // config.headers["X-Client-Device-Type"] = getClientDeviceClass();
     return config;
   },
   (error: AxiosError) => {
