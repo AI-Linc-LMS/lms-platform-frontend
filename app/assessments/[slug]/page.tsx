@@ -10,18 +10,13 @@ import {
   Button,
   Paper,
   Alert,
-  Chip,
-  Divider,
-  TextField,
   CircularProgress,
-  LinearProgress,
   Tooltip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
   AssessmentDetail,
-  ScholarshipStatus,
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -45,8 +40,6 @@ export default function AssessmentDetailPage({
   const { slug } = use(params);
   const router = useRouter();
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
-  const [scholarshipStatus, setScholarshipStatus] =
-    useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const [startTimeTick, setStartTimeTick] = useState(0);
