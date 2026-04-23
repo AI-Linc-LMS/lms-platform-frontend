@@ -525,6 +525,7 @@
     "failedToLoadDetails": "Failed to load assessment details",
     "start": "Start",
     "startAssessment": "Start Assessment",
+    "availableFrom": "Assessment available from {{date}}",
     "startAcknowledgment": "By clicking \"Start Assessment\", you acknowledge that you have read and understood all instructions and agree to abide by the examination rules and proctoring policies.",
     "notFound": "Assessment not found",
     "submittedSuccess": "Assessment Submitted Successfully!",
