@@ -595,7 +595,19 @@
       "nextSectionButtonTooltip": "تخطي إلى القسم التالي الآن. لن يمكنك العودة إلى الأسئلة غير المكتملة في هذا القسم.",
       "timedSectionAlreadyCompleted": "انتهى ذلك القسم المحدد بوقت مسبقاً — لا يمكن فتحه مرة أخرى.",
       "timedSectionTabLocked": "هذا القسم المحدد بوقت مكتمل بالفعل — لا يمكنك العودة إليه.",
-      "timedSectionCannotGoBack": "القسم السابق محدد بوقت ومكتمل بالفعل — لا يمكنك العودة."
+      "timedSectionCannotGoBack": "القسم السابق محدد بوقت ومكتمل بالفعل — لا يمكنك العودة.",
+      "subjectiveInsertImage": "إدراج صورة",
+      "subjectiveInsertImageTooltip": "رفع صورة من جهازك (PNG أو JPEG أو GIF أو WebP)",
+      "subjectiveImagePasteHint": "يمكنك أيضاً لصق صورة من الحافظة داخل إجابتك.",
+      "subjectiveImageTypeInvalid": "يُرجى اختيار ملف صورة (PNG أو JPEG أو GIF أو WebP).",
+      "subjectiveImageTooLarge": "يجب ألا يتجاوز حجم الصورة 10 ميغابايت.",
+      "subjectiveImageUploadFailed": "فشل رفع الصورة. حاول مرة أخرى.",
+      "devtoolsBlockedTitle": "أغلق أدوات المطوّر",
+      "devtoolsBlockedBody": "لا يمكن للصفحة إغلاق أدوات المطوّر نيابةً عنك في المتصفح. أغلق نافذة الأدوات أو ثبّتها حتى يختفي هذا التنبيه، ثم تابع التقييم.",
+      "codingAutosaveHint": "تُحفظ إجابتك تلقائياً مع محاولتك. يُحفظ الكود أيضاً في هذا المتصفح أثناء الكتابة.",
+      "codingAutosaveSaving": "جاري حفظ التقدم…",
+      "codingAutosaveSaved": "تم الحفظ التلقائي للتقدم",
+      "codingAutosaveError": "تعذّر المزامنة — سيتم إعادة المحاولة تلقائياً"
     },
     "submitChecklist": {
       "title": "مراجعة قبل الإرسال",

@@ -11,6 +11,9 @@ import {
   Collapse,
   ButtonBase,
   useTheme,
+  IconButton,
+  Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import { memo, useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +21,9 @@ import { QuizQuestionList } from "@/components/quiz";
 import { QuestionTitle } from "@/components/quiz/QuestionTitle";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { MathSymbolToolbar } from "@/components/assessment/MathSymbolToolbar";
+import { uploadFile } from "@/lib/services/file-upload.service";
+
+const MAX_SUBJECTIVE_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export interface SubjectiveQuestionItem {
   id: string | number;
@@ -73,6 +79,9 @@ interface AssessmentSubjectiveLayoutProps {
   onNextQuestion?: () => void;
   onPreviousQuestion?: () => void;
   onQuestionClick?: (questionId: string | number) => void;
+  /** When set, students can paste or pick images; files upload and a markdown image line is inserted. */
+  assessmentUploadClientId?: number;
+  onSubjectiveImageUploadError?: (message: string) => void;
 }
 
 export const AssessmentSubjectiveLayout = memo(
@@ -86,6 +95,8 @@ export const AssessmentSubjectiveLayout = memo(
     onNextQuestion,
     onPreviousQuestion,
     onQuestionClick,
+    assessmentUploadClientId,
+    onSubjectiveImageUploadError,
   }: AssessmentSubjectiveLayoutProps) {
     const theme = useTheme();
     const { t } = useTranslation("common");
@@ -124,22 +135,120 @@ export const AssessmentSubjectiveLayout = memo(
 
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
     const pendingCaretRef = useRef<number | null>(null);
+    const latestAnswerRef = useRef(answerText);
+    latestAnswerRef.current = answerText;
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const imageUploadLockRef = useRef(false);
+    const [imageUploadBusy, setImageUploadBusy] = useState(false);
 
     useEffect(() => {
       pendingCaretRef.current = null;
     }, [currentQuestion.id]);
 
+    const insertChunkAt = useCallback(
+      (start: number, end: number, chunk: string) => {
+        const base = latestAnswerRef.current;
+        const s = Math.max(0, Math.min(start, base.length));
+        const e = Math.max(s, Math.min(end, base.length));
+        const next = base.slice(0, s) + chunk + base.slice(e);
+        pendingCaretRef.current = s + chunk.length;
+        onAnswerChange(next);
+      },
+      [onAnswerChange],
+    );
+
     const insertAtCaret = useCallback(
       (text: string) => {
         const el = textAreaRef.current;
-        const len = answerText.length;
+        const len = latestAnswerRef.current.length;
         const start = el ? el.selectionStart : len;
         const end = el ? el.selectionEnd : len;
-        const next = answerText.slice(0, start) + text + answerText.slice(end);
-        pendingCaretRef.current = start + text.length;
-        onAnswerChange(next);
+        insertChunkAt(start, end, text);
       },
-      [answerText, onAnswerChange],
+      [insertChunkAt],
+    );
+
+    const uploadAndInsertImage = useCallback(
+      async (file: File) => {
+        if (!assessmentUploadClientId || imageUploadLockRef.current) return;
+        if (!file.type.startsWith("image/")) {
+          onSubjectiveImageUploadError?.(
+            t("assessments.take.subjectiveImageTypeInvalid"),
+          );
+          return;
+        }
+        if (file.size > MAX_SUBJECTIVE_IMAGE_BYTES) {
+          onSubjectiveImageUploadError?.(
+            t("assessments.take.subjectiveImageTooLarge"),
+          );
+          return;
+        }
+        const el = textAreaRef.current;
+        const baseLen = latestAnswerRef.current.length;
+        const start = el ? el.selectionStart : baseLen;
+        const end = el ? el.selectionEnd : baseLen;
+        imageUploadLockRef.current = true;
+        setImageUploadBusy(true);
+        try {
+          const result = await uploadFile(
+            assessmentUploadClientId,
+            file,
+            "other",
+          );
+          const md = `\n![image](${result.url})\n`;
+          insertChunkAt(start, end, md);
+        } catch (err) {
+          onSubjectiveImageUploadError?.(
+            err instanceof Error ? err.message : t("assessments.take.subjectiveImageUploadFailed"),
+          );
+        } finally {
+          imageUploadLockRef.current = false;
+          setImageUploadBusy(false);
+        }
+      },
+      [assessmentUploadClientId, insertChunkAt, onSubjectiveImageUploadError, t],
+    );
+
+    const handleAnswerPaste = useCallback(
+      (e: React.ClipboardEvent) => {
+        if (!assessmentUploadClientId) return;
+        const cd = e.clipboardData;
+        if (!cd) return;
+        let imageFile: File | null = null;
+        for (let i = 0; i < cd.items.length; i++) {
+          const it = cd.items[i];
+          if (it?.kind === "file" && it.type.startsWith("image/")) {
+            const f = it.getAsFile();
+            if (f && f.size > 0) {
+              imageFile = f;
+              break;
+            }
+          }
+        }
+        if (!imageFile && cd.files?.length) {
+          for (let i = 0; i < cd.files.length; i++) {
+            const f = cd.files[i];
+            if (f && f.type.startsWith("image/")) {
+              imageFile = f;
+              break;
+            }
+          }
+        }
+        if (!imageFile) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void uploadAndInsertImage(imageFile);
+      },
+      [assessmentUploadClientId, uploadAndInsertImage],
+    );
+
+    const handleImageFileChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const f = e.target.files?.[0];
+        e.target.value = "";
+        if (f) void uploadAndInsertImage(f);
+      },
+      [uploadAndInsertImage],
     );
 
     useEffect(() => {
@@ -328,10 +437,13 @@ export const AssessmentSubjectiveLayout = memo(
               value={answerText}
               onChange={(e) => onAnswerChange(e.target.value)}
               inputRef={textAreaRef}
+              onPaste={handleAnswerPaste}
               placeholder="Write a clear, structured answer. Use paragraphs where it helps readability."
               variant="outlined"
               inputProps={{
                 "aria-describedby": `subjective-answer-stats-${currentQuestion.id}`,
+                "data-assessment-allow-paste": "true",
+                "data-assessment-answer-field": "true",
                 style: {
                   userSelect: "text",
                   WebkitUserSelect: "text",
@@ -367,8 +479,64 @@ export const AssessmentSubjectiveLayout = memo(
               }}
             />
 
-            <Box sx={{ mt: 1.5 }}>
-              <MathSymbolToolbar onInsert={insertAtCaret} />
+            <Box
+              sx={{
+                mt: 1.5,
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { sm: "center" },
+                gap: 1.5,
+                flexWrap: "wrap",
+              }}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <MathSymbolToolbar onInsert={insertAtCaret} />
+              </Box>
+              {assessmentUploadClientId ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                    style={{ display: "none" }}
+                    onChange={handleImageFileChange}
+                  />
+                  <Tooltip title={t("assessments.take.subjectiveInsertImageTooltip")}>
+                    <span>
+                      <IconButton
+                        type="button"
+                        size="small"
+                        disabled={imageUploadBusy}
+                        onClick={() => fileInputRef.current?.click()}
+                        aria-label={t("assessments.take.subjectiveInsertImage")}
+                        sx={{
+                          border: "1px solid #c7d2fe",
+                          borderRadius: 2,
+                          bgcolor: "#fff",
+                          color: "#4f46e5",
+                          "&:hover": { bgcolor: "#eef2ff" },
+                        }}
+                      >
+                        {imageUploadBusy ? (
+                          <CircularProgress size={22} color="inherit" />
+                        ) : (
+                          <IconWrapper icon="mdi:image-plus-outline" size={22} color="currentColor" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Typography variant="caption" sx={{ color: "#64748b", maxWidth: 220, lineHeight: 1.45 }}>
+                    {t("assessments.take.subjectiveImagePasteHint")}
+                  </Typography>
+                </Box>
+              ) : null}
             </Box>
 
             <Box
@@ -722,6 +890,11 @@ export const AssessmentSubjectiveLayout = memo(
     const prevAnswered = prevProps.questions.filter((q) => q.answered).length;
     const nextAnswered = nextProps.questions.filter((q) => q.answered).length;
     if (prevAnswered !== nextAnswered) return false;
+
+    if (prevProps.assessmentUploadClientId !== nextProps.assessmentUploadClientId)
+      return false;
+    if (prevProps.onSubjectiveImageUploadError !== nextProps.onSubjectiveImageUploadError)
+      return false;
 
     return true;
   }

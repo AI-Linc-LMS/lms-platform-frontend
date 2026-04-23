@@ -47,7 +47,10 @@ import { AssessmentTimerBar } from "@/components/assessment/AssessmentTimerBar";
 import { AssessmentNavigation } from "@/components/assessment/AssessmentNavigation";
 import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
 import { AssessmentQuizLayout } from "@/components/assessment/AssessmentQuizLayout";
-import { AssessmentCodingLayout } from "@/components/assessment/AssessmentCodingLayout";
+import {
+  AssessmentCodingLayout,
+  type AssessmentCodingLayoutProps,
+} from "@/components/assessment/AssessmentCodingLayout";
 import { AssessmentSubjectiveLayout } from "@/components/assessment/AssessmentSubjectiveLayout";
 import {
   getSectionTimeCapTotalSeconds,
@@ -160,7 +163,7 @@ function trimViolationScreenshotEvidence(
 
 // Memoized question component to prevent unnecessary re-renders
 const MemoizedQuizLayout = memo(AssessmentQuizLayout);
-const MemoizedCodingLayout = memo(AssessmentCodingLayout);
+const MemoizedCodingLayout = memo<AssessmentCodingLayoutProps>(AssessmentCodingLayout);
 const MemoizedSubjectiveLayout = memo(AssessmentSubjectiveLayout);
 
 export default function TakeAssessmentPage({
@@ -177,6 +180,7 @@ export default function TakeAssessmentPage({
   const [submitting, setSubmitting] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [notepadOpen, setNotepadOpen] = useState(false);
+  const [devtoolsBlocked, setDevtoolsBlocked] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [showStartButton, setShowStartButton] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -218,6 +222,10 @@ export default function TakeAssessmentPage({
     typeof setTimeout
   > | null>(null);
   const violationScreenshotUploadingRef = useRef(false);
+  /** Serializes violation screenshot uploads so a slow capture cannot drop later violations. */
+  const violationScreenshotUploadChainRef = useRef<Promise<void>>(
+    Promise.resolve(),
+  );
   const sessionStartProofBusyRef = useRef(false);
   const sessionStartProofUploadedRef = useRef(false);
   const sessionStartProofAttemptsRef = useRef(0);
@@ -392,6 +400,15 @@ export default function TakeAssessmentPage({
     const n = Number(clientInfo?.id ?? config.clientId);
     return Number.isFinite(n) && n > 0 ? n : 1;
   }, [clientInfo?.id]);
+  const uploadClientIdRef = useRef(uploadClientId);
+  uploadClientIdRef.current = uploadClientId;
+  const submittingRef = useRef(submitting);
+  submittingRef.current = submitting;
+  const assessmentStartedRef = useRef(assessmentStarted);
+  assessmentStartedRef.current = assessmentStarted;
+  const sessionStartProofLongDelayRef = useRef(true);
+  sessionStartProofLongDelayRef.current =
+    assessment?.proctoring_enabled !== false;
   const liveProctoringEnabled = clientInfo?.live_proctoring_enabled === true;
 
   const { status: liveStreamStatus } = useLiveProctoringPublisher({
@@ -407,30 +424,35 @@ export default function TakeAssessmentPage({
   tabSwitchCountRef.current = tabSwitchCount;
   latestViolationTypeRef.current = latestViolation?.type ?? null;
 
-  // Baseline violation count when the assessment session starts (ignore pre-start noise)
+  // Baseline + violation screenshots: one effect so baseline runs before count comparisons; clear debounce when session stops.
   useEffect(() => {
-    if (!assessmentStarted) {
-      violationScreenshotLastCountRef.current = -1;
-      lastTabSwitchCountAtScreenshotRef.current = -1;
-      violationCaptureFailStreakRef.current = 0;
+    if (!assessmentStarted || submitting) {
+      if (violationScreenshotDebounceRef.current) {
+        clearTimeout(violationScreenshotDebounceRef.current);
+        violationScreenshotDebounceRef.current = null;
+      }
+      if (!assessmentStarted) {
+        violationScreenshotLastCountRef.current = -1;
+        lastTabSwitchCountAtScreenshotRef.current = -1;
+        violationCaptureFailStreakRef.current = 0;
+        violationScreenshotUploadChainRef.current = Promise.resolve();
+      }
       return;
     }
-    if (violationScreenshotLastCountRef.current === -1) {
-      violationScreenshotLastCountRef.current = totalViolationCount;
-      lastTabSwitchCountAtScreenshotRef.current = tabSwitchCount;
-    }
-  }, [assessmentStarted, totalViolationCount, tabSwitchCount]);
 
-  // On proctoring violation increases: debounced full-page screenshot → S3 (assessment_screenshots)
-  useEffect(() => {
-    if (!assessmentStarted || submitting) return;
-    if (violationScreenshotLastCountRef.current < 0) return;
     if (
       violationScreenshotEvidenceRef.current.length >=
       MAX_VIOLATION_SCREENSHOT_EVIDENCE
     ) {
       return;
     }
+
+    if (violationScreenshotLastCountRef.current < 0) {
+      violationScreenshotLastCountRef.current = totalViolationCount;
+      lastTabSwitchCountAtScreenshotRef.current = tabSwitchCount;
+      return;
+    }
+
     if (totalViolationCount <= violationScreenshotLastCountRef.current) return;
 
     if (violationScreenshotDebounceRef.current) {
@@ -439,22 +461,75 @@ export default function TakeAssessmentPage({
 
     violationScreenshotDebounceRef.current = setTimeout(() => {
       violationScreenshotDebounceRef.current = null;
-      const countAtFire = totalViolationCountRef.current;
-      if (countAtFire <= violationScreenshotLastCountRef.current) return;
 
-      void (async () => {
-        if (violationScreenshotUploadingRef.current) return;
-        if (
-          violationScreenshotEvidenceRef.current.length >=
-          MAX_VIOLATION_SCREENSHOT_EVIDENCE
-        ) {
-          return;
-        }
+      violationScreenshotUploadChainRef.current = violationScreenshotUploadChainRef.current
+        .catch(() => {})
+        .then(async () => {
+          const countAtFire = totalViolationCountRef.current;
+          if (countAtFire <= violationScreenshotLastCountRef.current) return;
 
-        violationScreenshotUploadingRef.current = true;
-        try {
-          const file = await captureViolationScreenshotFile();
-          if (!file) {
+          if (
+            violationScreenshotEvidenceRef.current.length >=
+            MAX_VIOLATION_SCREENSHOT_EVIDENCE
+          ) {
+            return;
+          }
+
+          violationScreenshotUploadingRef.current = true;
+          try {
+            const file = await captureViolationScreenshotFile();
+            if (!file) {
+              violationCaptureFailStreakRef.current += 1;
+              if (
+                violationCaptureFailStreakRef.current <
+                MAX_VIOLATION_CAPTURE_RETRIES
+              ) {
+                setViolationScreenshotRetryTick((t) => t + 1);
+              } else {
+                violationScreenshotLastCountRef.current = countAtFire;
+                violationCaptureFailStreakRef.current = 0;
+              }
+              return;
+            }
+
+            const result = await uploadFile(
+              uploadClientIdRef.current,
+              file,
+              "assessment_screenshots"
+            );
+
+            const tabNow = tabSwitchCountRef.current;
+            const hadTabSwitch =
+              lastTabSwitchCountAtScreenshotRef.current >= 0 &&
+              tabNow > lastTabSwitchCountAtScreenshotRef.current;
+            lastTabSwitchCountAtScreenshotRef.current = tabNow;
+
+            violationScreenshotEvidenceRef.current.push({
+              id: result.id,
+              file_id: result.id,
+              url: result.url,
+              screenshot_url: result.url,
+              filename: result.filename,
+              module: result.module,
+              created_at: result.created_at,
+              captured_at: result.created_at,
+              total_violation_count_at_capture: countAtFire,
+              latest_violation_type: hadTabSwitch
+                ? "TAB_SWITCH"
+                : latestViolationTypeRef.current,
+              tab_switch_count_at_capture: tabNow,
+            });
+            trimViolationScreenshotEvidence(
+              violationScreenshotEvidenceRef.current,
+              MAX_VIOLATION_SCREENSHOT_EVIDENCE
+            );
+            violationScreenshotLastCountRef.current = countAtFire;
+            violationCaptureFailStreakRef.current = 0;
+          } catch (err) {
+            console.error(
+              "[assessment] Violation screenshot upload failed:",
+              err
+            );
             violationCaptureFailStreakRef.current += 1;
             if (
               violationCaptureFailStreakRef.current <
@@ -465,62 +540,10 @@ export default function TakeAssessmentPage({
               violationScreenshotLastCountRef.current = countAtFire;
               violationCaptureFailStreakRef.current = 0;
             }
-            return;
+          } finally {
+            violationScreenshotUploadingRef.current = false;
           }
-
-          // Client upload API: POST /api/clients/{clientId}/upload/ (multipart: file + module)
-          const result = await uploadFile(
-            uploadClientId,
-            file,
-            "assessment_screenshots"
-          );
-
-          const tabNow = tabSwitchCountRef.current;
-          const hadTabSwitch =
-            lastTabSwitchCountAtScreenshotRef.current >= 0 &&
-            tabNow > lastTabSwitchCountAtScreenshotRef.current;
-          lastTabSwitchCountAtScreenshotRef.current = tabNow;
-
-          violationScreenshotEvidenceRef.current.push({
-            id: result.id,
-            file_id: result.id,
-            url: result.url,
-            screenshot_url: result.url,
-            filename: result.filename,
-            module: result.module,
-            created_at: result.created_at,
-            captured_at: result.created_at,
-            total_violation_count_at_capture: countAtFire,
-            latest_violation_type: hadTabSwitch
-              ? "TAB_SWITCH"
-              : latestViolationTypeRef.current,
-            tab_switch_count_at_capture: tabNow,
-          });
-          trimViolationScreenshotEvidence(
-            violationScreenshotEvidenceRef.current,
-            MAX_VIOLATION_SCREENSHOT_EVIDENCE
-          );
-          violationScreenshotLastCountRef.current = countAtFire;
-          violationCaptureFailStreakRef.current = 0;
-        } catch (err) {
-          console.error(
-            "[assessment] Violation screenshot upload failed:",
-            err
-          );
-          violationCaptureFailStreakRef.current += 1;
-          if (
-            violationCaptureFailStreakRef.current <
-            MAX_VIOLATION_CAPTURE_RETRIES
-          ) {
-            setViolationScreenshotRetryTick((t) => t + 1);
-          } else {
-            violationScreenshotLastCountRef.current = countAtFire;
-            violationCaptureFailStreakRef.current = 0;
-          }
-        } finally {
-          violationScreenshotUploadingRef.current = false;
-        }
-      })();
+        });
     }, VIOLATION_SCREENSHOT_DEBOUNCE_MS);
 
     return () => {
@@ -534,25 +557,39 @@ export default function TakeAssessmentPage({
     assessmentStarted,
     submitting,
     violationScreenshotRetryTick,
-    uploadClientId,
   ]);
 
   // Full-page proof screenshot once the attempt has started (uploaded like violation samples; included in final submit).
+  // Do not depend on uploadClientId / submitting here: hydration or submit-state churn would clear the timer
+  // before it fires. Wait for !submitting inside the callback instead.
   useEffect(() => {
     if (!assessmentStarted) {
       sessionStartProofUploadedRef.current = false;
       sessionStartProofAttemptsRef.current = 0;
       return;
     }
-    if (submitting || !assessment?.id) return;
+    if (!assessment?.id) return;
     if (sessionStartProofUploadedRef.current) return;
 
     let cancelled = false;
-    const delayMs = assessment.proctoring_enabled !== false ? 1400 : 600;
+    const delayMs = sessionStartProofLongDelayRef.current ? 1400 : 600;
 
     const id = window.setTimeout(() => {
       void (async () => {
         if (cancelled || sessionStartProofUploadedRef.current) return;
+
+        let waitSubmit = 0;
+        while (
+          submittingRef.current &&
+          waitSubmit < 200 &&
+          !cancelled &&
+          assessmentStartedRef.current
+        ) {
+          await new Promise<void>((r) => setTimeout(r, 100));
+          waitSubmit += 1;
+        }
+        if (cancelled || sessionStartProofUploadedRef.current) return;
+        if (!assessmentStartedRef.current || submittingRef.current) return;
 
         const arr = violationScreenshotEvidenceRef.current;
         trimViolationScreenshotEvidence(
@@ -578,7 +615,7 @@ export default function TakeAssessmentPage({
           }
 
           const result = await uploadFile(
-            uploadClientId,
+            uploadClientIdRef.current,
             file,
             "assessment_screenshots"
           );
@@ -628,14 +665,7 @@ export default function TakeAssessmentPage({
       cancelled = true;
       window.clearTimeout(id);
     };
-  }, [
-    assessmentStarted,
-    submitting,
-    assessment?.id,
-    assessment?.proctoring_enabled,
-    sessionStartProofRetryTick,
-    uploadClientId,
-  ]);
+  }, [assessmentStarted, assessment?.id, sessionStartProofRetryTick]);
 
   // Track last violation timestamp per type to avoid duplicate toasts
   const lastViolationToastRef = useRef<Map<string, number>>(new Map());
@@ -786,6 +816,38 @@ export default function TakeAssessmentPage({
 
   // Security measures - disable beforeunload during submission
   useAssessmentSecurity({ enabled: assessmentStarted, submitting });
+
+  const handleSubjectiveImageUploadError = useCallback(
+    (message: string) => {
+      showToast(message, "error");
+    },
+    [showToast],
+  );
+
+  useEffect(() => {
+    if (!assessmentStarted || submitting) {
+      setDevtoolsBlocked(false);
+      return;
+    }
+    const openThresholdPx = 140;
+    const closedGapPx = 72;
+    const tick = () => {
+      const gw = Math.abs(window.outerWidth - window.innerWidth);
+      const gh = Math.abs(window.outerHeight - window.innerHeight);
+      setDevtoolsBlocked((prev) => {
+        if (gw > openThresholdPx || gh > openThresholdPx) return true;
+        if (gw < closedGapPx && gh < closedGapPx) return false;
+        return prev;
+      });
+    };
+    const id = window.setInterval(tick, 350);
+    window.addEventListener("resize", tick);
+    tick();
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("resize", tick);
+    };
+  }, [assessmentStarted, submitting]);
 
   // Check if already submitted
   useEffect(() => {
@@ -1023,7 +1085,7 @@ export default function TakeAssessmentPage({
   }, [assessment, sections]);
 
   // Auto-save
-  useAutoSave({
+  const { remoteAutosave } = useAutoSave({
     enabled: assessmentStarted && !submitting,
     slug,
     responses,
@@ -2031,10 +2093,16 @@ export default function TakeAssessmentPage({
         }
       }}
       onPaste={(e) => {
-        if (assessmentStarted) {
-          e.preventDefault();
-          return false;
+        if (!assessmentStarted) return;
+        const el = e.target as HTMLElement | null;
+        if (
+          el?.closest?.('[data-assessment-allow-paste="true"]') ||
+          el?.closest?.("[data-assessment-answer-field]")
+        ) {
+          return;
         }
+        e.preventDefault();
+        return false;
       }}
     >
       {assessmentStarted && (
@@ -2101,6 +2169,41 @@ export default function TakeAssessmentPage({
                 </Paper>
               </Box>
             )}
+
+          {devtoolsBlocked && !submitting && (
+            <Box
+              sx={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 2000,
+                bgcolor: "rgba(15, 23, 42, 0.82)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                p: 2,
+              }}
+            >
+              <Paper
+                elevation={4}
+                sx={{
+                  maxWidth: 460,
+                  p: 3,
+                  textAlign: "center",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                  {t("assessments.take.devtoolsBlockedTitle")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "#6b7280", lineHeight: 1.65 }}
+                >
+                  {t("assessments.take.devtoolsBlockedBody")}
+                </Typography>
+              </Paper>
+            </Box>
+          )}
 
           <AssessmentTimerBar
             title={assessment.title}
@@ -2216,6 +2319,7 @@ export default function TakeAssessmentPage({
                   <MemoizedCodingLayout
                     key={`coding-${currentCodingQuestion.id}-${currentQuestionIndex}`}
                     slug={slug}
+                    remoteAutosave={remoteAutosave}
                     questionId={currentCodingQuestion.id}
                     problemData={{
                       content_title: currentCodingQuestion.title,
@@ -2295,6 +2399,8 @@ export default function TakeAssessmentPage({
                     onNextQuestion={navigation.handleNext}
                     onPreviousQuestion={navigation.handlePrevious}
                     onQuestionClick={handleSubjectiveQuestionClick}
+                    assessmentUploadClientId={uploadClientId}
+                    onSubjectiveImageUploadError={handleSubjectiveImageUploadError}
                   />
                 )}
 

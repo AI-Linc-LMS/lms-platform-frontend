@@ -178,12 +178,9 @@ export interface CreateAssessmentPayload {
   /** API: camelCase array (send [] when unused) */
   subjectiveQuestionSection?: unknown[];
   quiz_section?: QuizSection;
-  mcqs?: MCQ[];
-  mcq_ids?: number[];
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
-  quiz_section?: QuizSection; // For backward compatibility
   quiz_sections?: Array<{
     title: string;
     description?: string;

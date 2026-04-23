@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { assessmentService } from "@/lib/services/assessment.service";
 import { AssessmentMetadata } from "@/lib/services/assessment.service";
 import { formatAssessmentResponses } from "@/utils/assessment.utils";
@@ -14,6 +14,11 @@ interface UseAutoSaveOptions {
   timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
 }
 
+export type AssessmentRemoteAutosaveState = {
+  status: "idle" | "saving" | "saved" | "error";
+  updatedAt: number | null;
+};
+
 export function useAutoSave({
   enabled,
   slug,
@@ -22,12 +27,17 @@ export function useAutoSave({
   metadata,
   interval = 30000, // 30 seconds default
   timedSectionsCompleteRef,
-}: UseAutoSaveOptions) {
+}: UseAutoSaveOptions): { remoteAutosave: AssessmentRemoteAutosaveState } {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveRef = useRef<string>("");
+  const [remoteAutosave, setRemoteAutosave] = useState<AssessmentRemoteAutosaveState>({
+    status: "idle",
+    updatedAt: null,
+  });
 
   useEffect(() => {
     if (!enabled) {
+      setRemoteAutosave({ status: "idle", updatedAt: null });
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -59,6 +69,8 @@ export function useAutoSave({
         const responsesString = JSON.stringify(responses);
         const fingerprint = `${responsesString}::${timedFingerprint}`;
         if (fingerprint === lastSaveRef.current) return;
+
+        setRemoteAutosave({ status: "saving", updatedAt: Date.now() });
 
         // Format responses - for attempted coding questions, prefer sessionStorage code
         const getCodeFromSession = (questionId: number | string) => {
@@ -120,8 +132,9 @@ export function useAutoSave({
         // Save responses
         await assessmentService.saveSubmission(slug, requestBody);
         lastSaveRef.current = fingerprint;
-      } catch (error) {
-        // Silently fail - don't disrupt user experience
+        setRemoteAutosave({ status: "saved", updatedAt: Date.now() });
+      } catch {
+        setRemoteAutosave({ status: "error", updatedAt: Date.now() });
       }
     };
 
@@ -153,5 +166,7 @@ export function useAutoSave({
       }
     };
   }, []);
+
+  return { remoteAutosave };
 }
 

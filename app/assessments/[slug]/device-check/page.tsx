@@ -42,7 +42,7 @@ export default function DeviceCheckPage({
   const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
-  const [loading, setLoading] = useState(false); // Start with false - don't block initial render
+  const [, setLoading] = useState(false); // Start with false - don't block initial render
   const [checking, setChecking] = useState(false);
   const [deviceAccessDenied, setDeviceAccessDenied] = useState(false);
   const [deniedAssessment, setDeniedAssessment] =

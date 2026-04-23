@@ -20,6 +20,7 @@ import {
   ListItemText,
   ListSubheader,
   Stack,
+  FormControlLabel,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -36,8 +37,7 @@ interface AssessmentSettingsSectionProps {
   proctoringEnabled?: boolean;
   liveStreaming?: boolean;
   showLiveStreamingToggle?: boolean;
-  sendCommunication: boolean;
-  showResult: boolean;
+
   /** Assessment-wide: learners may move between section blocks (quiz, coding, etc.). */
   allowMovementAcrossSections: boolean;
   certificateAvailable: boolean;
@@ -238,8 +238,6 @@ export function AssessmentSettingsSection({
   proctoringEnabled = true,
   liveStreaming = false,
   showLiveStreamingToggle = false,
-  sendCommunication,
-  showResult,
   allowMovementAcrossSections,
   certificateAvailable,
   passBandLowerPercent,

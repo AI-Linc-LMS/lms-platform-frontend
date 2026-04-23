@@ -104,6 +104,7 @@ export default function AssessmentDetailPage({
   };
 
   const handleStart = () => {
+
     if (isMobileOrTabletForAssessment()) {
       setDesktopOnlyOpen(true);
     if (assessment && !isCurrentDeviceAllowedForAssessment(assessment)) {
@@ -111,11 +112,12 @@ export default function AssessmentDetailPage({
       return;
     }
     // Skip device-check if proctoring is disabled
-    if (assessment && assessment.proctoring_enabled === false) {
-      router.push(`/assessments/${slug}/take`);
-    } else {
-      router.push(`/assessments/${slug}/device-check`);
-    }
+  
+  }
+  if (assessment && assessment.proctoring_enabled === false) {
+    router.push(`/assessments/${slug}/take`);
+  } else {
+    router.push(`/assessments/${slug}/device-check`);
   }
 }
 
@@ -605,6 +607,7 @@ export default function AssessmentDetailPage({
             fullWidth
             startIcon={<IconWrapper icon="mdi:play-circle-outline" size={24} />}
             onClick={handleStart}
+            disabled={!deviceAllowed || !canStartAssessment}
             sx={{
               backgroundColor: "#6366f1",
               color: "#ffffff",
@@ -620,38 +623,7 @@ export default function AssessmentDetailPage({
               },
             }}
           >
-            <span style={{ width: "100%", display: "block" }}>
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={!deviceAllowed || !canStartAssessment}
-                startIcon={
-                  <IconWrapper icon="mdi:play-circle-outline" size={24} />
-                }
-                onClick={handleStart}
-                sx={{
-                  backgroundColor: "#6366f1",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  py: 1.5,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
-                  "&:hover": {
-                    backgroundColor: "#4f46e5",
-                    boxShadow: "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
-                  },
-                  "&.Mui-disabled": {
-                    backgroundColor: "#c7c9f5",
-                    color: "#f3f4f6",
-                  },
-                }}
-              >
-                {t("assessments.startAssessment")}
-              </Button>
-            </span>
+            {t("assessments.startAssessment")}
           </Button>
         </Paper>
       </Box>

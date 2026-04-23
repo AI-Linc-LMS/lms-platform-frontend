@@ -595,7 +595,19 @@
       "nextSectionButtonTooltip": "Skip to the next section now. You will not be able to return to unfinished questions in this section.",
       "timedSectionAlreadyCompleted": "That timed section is already finished. You cannot open it again.",
       "timedSectionTabLocked": "This timed section is already completed — you cannot go back into it.",
-      "timedSectionCannotGoBack": "The previous section had a time limit and is already completed. You cannot go back."
+      "timedSectionCannotGoBack": "The previous section had a time limit and is already completed. You cannot go back.",
+      "subjectiveInsertImage": "Insert image",
+      "subjectiveInsertImageTooltip": "Upload an image from your device (PNG, JPEG, GIF, or WebP)",
+      "subjectiveImagePasteHint": "You can also paste an image from the clipboard into your answer.",
+      "subjectiveImageTypeInvalid": "Please choose an image file (PNG, JPEG, GIF, or WebP).",
+      "subjectiveImageTooLarge": "Image must be 10 MB or smaller.",
+      "subjectiveImageUploadFailed": "Image upload failed. Please try again.",
+      "devtoolsBlockedTitle": "Close developer tools",
+      "devtoolsBlockedBody": "Pages cannot close developer tools for you in the browser. Close or dock the tools window until this message disappears, then continue your assessment.",
+      "codingAutosaveHint": "Your work syncs with your attempt automatically. Code is also kept in this browser while you type.",
+      "codingAutosaveSaving": "Saving progress…",
+      "codingAutosaveSaved": "Progress autosaved",
+      "codingAutosaveError": "Could not sync — will retry automatically"
     },
     "submitChecklist": {
       "title": "Review before you submit",

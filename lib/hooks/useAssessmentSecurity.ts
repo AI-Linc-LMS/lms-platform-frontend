@@ -7,6 +7,12 @@ function isInsideFloatingToolUi(target: EventTarget | null): boolean {
   return !!el?.closest?.("[data-floating-tool], [data-assessment-tool]");
 }
 
+function isAssessmentAnswerField(target: EventTarget | null): boolean {
+  if (!target) return false;
+  const el = target instanceof Element ? target : (target as Node).parentElement;
+  return !!el?.closest?.("[data-assessment-answer-field]");
+}
+
 interface UseAssessmentSecurityOptions {
   enabled: boolean;
   submitting?: boolean; // Disable beforeunload during submission
@@ -120,6 +126,12 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         event.preventDefault();
         return false;
       }
+
+      // Prevent Ctrl+Shift+C (inspect element)
+      if (event.ctrlKey && event.shiftKey && (event.key === "C" || event.key === "c")) {
+        event.preventDefault();
+        return false;
+      }
     };
 
     // Prevent back navigation
@@ -142,7 +154,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       window.addEventListener("beforeunload", handleBeforeUnload);
     }
     
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, captureOpts);
     window.addEventListener("popstate", handlePopState);
 
     // Prevent right-click context menu
@@ -152,7 +164,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
     };
 
     const handleSelectStart = (event: Event) => {
-      if (isInsideFloatingToolUi(event.target)) return;
+      if (isInsideFloatingToolUi(event.target) || isAssessmentAnswerField(event.target))
+        return;
       event.preventDefault();
       return false;
     };
@@ -161,7 +174,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
     document.addEventListener("selectstart", handleSelectStart);
 
     const handleDragStart = (event: DragEvent) => {
-      if (isInsideFloatingToolUi(event.target)) return;
+      if (isInsideFloatingToolUi(event.target) || isAssessmentAnswerField(event.target))
+        return;
       event.preventDefault();
       return false;
     };
