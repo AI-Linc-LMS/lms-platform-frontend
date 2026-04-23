@@ -41,7 +41,8 @@ type NavWithKeyboard = Navigator & {
 export function lockProctoringKeysInFullscreen(): (() => void) | null {
   if (typeof navigator === "undefined") return null;
   const nav = navigator as NavWithKeyboard;
-  if (typeof nav.keyboard?.lock !== "function") return null;
+  const lock = nav.keyboard?.lock;
+  if (typeof lock !== "function") return null;
 
   let cancelled = false;
 
@@ -49,7 +50,7 @@ export function lockProctoringKeysInFullscreen(): (() => void) | null {
     for (const keys of KEY_GROUPS) {
       if (cancelled) return;
       try {
-        await nav.keyboard!.lock(keys);
+        await lock(keys);
         return;
       } catch {
         // try smaller group

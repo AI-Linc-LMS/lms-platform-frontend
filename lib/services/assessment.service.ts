@@ -44,6 +44,13 @@ export interface AssessmentDetail extends Assessment {
   allow_tablet?: boolean;
 }
 
+/** Lockdown policy for the assessment take flow (aligned with `evaluateLockdownGate`). */
+export interface AssessmentTakeFlags {
+  require_lockdown_browser?: boolean;
+  lockdown_clients?: Array<"seb" | "respondus">;
+  kiosk_query_param?: { key: string; value: string } | null;
+}
+
 export interface AssessmentSubmission {
   assessment: {
     id: number;
