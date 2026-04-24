@@ -43,7 +43,10 @@ interface AssessmentTableProps {
   onDelete?: (assessment: Assessment) => void;
   onTriggerEmailJob?: (assessment: Assessment) => Promise<void>;
   onExportSubmissions: (assessment: Assessment) => Promise<void>;
-  onExportQuestions: (assessment: Assessment) => Promise<void>;
+  onExportQuestions: (
+    assessment: Assessment,
+    format?: "csv" | "pdf"
+  ) => Promise<void>;
   onDuplicate?: (assessment: Assessment) => Promise<void>;
   exportingSubmissionsId?: number | null;
   exportingQuestionsId?: number | null;
@@ -523,24 +526,48 @@ export function AssessmentTable({
                     );
                   })()}
                   {!actionsReadOnly && (
-                    <MenuItem
-                      onClick={() => {
-                        handleMenuClose(assessment.id);
-                        onExportQuestions(assessment);
-                      }}
-                      disabled={exportingQuestionsId === assessment.id}
-                    >
-                      <ListItemIcon>
-                        {exportingQuestionsId === assessment.id ? (
-                          <CircularProgress size={18} />
-                        ) : (
-                          <IconWrapper icon="mdi:help-circle-outline" size={18} color="#6366f1" />
-                        )}
-                      </ListItemIcon>
-                      <ListItemText>
-                        {exportingQuestionsId === assessment.id ? "Exporting..." : "Download Questions"}
-                      </ListItemText>
-                    </MenuItem>
+                    <>
+                      <MenuItem
+                        onClick={() => {
+                          handleMenuClose(assessment.id);
+                          void onExportQuestions(assessment, "csv");
+                        }}
+                        disabled={exportingQuestionsId === assessment.id}
+                      >
+                        <ListItemIcon>
+                          {exportingQuestionsId === assessment.id ? (
+                            <CircularProgress size={18} />
+                          ) : (
+                            <IconWrapper icon="mdi:file-delimited-outline" size={18} color="#6366f1" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText>
+                          {exportingQuestionsId === assessment.id
+                            ? "Exporting..."
+                            : "Download questions (CSV)"}
+                        </ListItemText>
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          handleMenuClose(assessment.id);
+                          void onExportQuestions(assessment, "pdf");
+                        }}
+                        disabled={exportingQuestionsId === assessment.id}
+                      >
+                        <ListItemIcon>
+                          {exportingQuestionsId === assessment.id ? (
+                            <CircularProgress size={18} />
+                          ) : (
+                            <IconWrapper icon="mdi:file-pdf-box" size={18} color="#b91c1c" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText>
+                          {exportingQuestionsId === assessment.id
+                            ? "Exporting..."
+                            : "Download questions (PDF)"}
+                        </ListItemText>
+                      </MenuItem>
+                    </>
                   )}
                   <MenuItem
                     onClick={() => {
@@ -1194,24 +1221,48 @@ export function AssessmentTable({
                         );
                       })()}
                       {!actionsReadOnly && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            onExportQuestions(assessment);
-                          }}
-                          disabled={exportingQuestionsId === assessment.id}
-                        >
-                          <ListItemIcon>
-                            {exportingQuestionsId === assessment.id ? (
-                              <CircularProgress size={18} />
-                            ) : (
-                              <IconWrapper icon="mdi:help-circle-outline" size={18} color="#6366f1" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText>
-                            {exportingQuestionsId === assessment.id ? "Exporting..." : "Download Questions"}
-                          </ListItemText>
-                        </MenuItem>
+                        <>
+                          <MenuItem
+                            onClick={() => {
+                              handleMenuClose(assessment.id);
+                              void onExportQuestions(assessment, "csv");
+                            }}
+                            disabled={exportingQuestionsId === assessment.id}
+                          >
+                            <ListItemIcon>
+                              {exportingQuestionsId === assessment.id ? (
+                                <CircularProgress size={18} />
+                              ) : (
+                                <IconWrapper icon="mdi:file-delimited-outline" size={18} color="#6366f1" />
+                              )}
+                            </ListItemIcon>
+                            <ListItemText>
+                              {exportingQuestionsId === assessment.id
+                                ? "Exporting..."
+                                : "Download questions (CSV)"}
+                            </ListItemText>
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => {
+                              handleMenuClose(assessment.id);
+                              void onExportQuestions(assessment, "pdf");
+                            }}
+                            disabled={exportingQuestionsId === assessment.id}
+                          >
+                            <ListItemIcon>
+                              {exportingQuestionsId === assessment.id ? (
+                                <CircularProgress size={18} />
+                              ) : (
+                                <IconWrapper icon="mdi:file-pdf-box" size={18} color="#b91c1c" />
+                              )}
+                            </ListItemIcon>
+                            <ListItemText>
+                              {exportingQuestionsId === assessment.id
+                                ? "Exporting..."
+                                : "Download questions (PDF)"}
+                            </ListItemText>
+                          </MenuItem>
+                        </>
                       )}
                       <MenuItem
                         onClick={() => {
