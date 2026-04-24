@@ -32,7 +32,10 @@ import {
   Assessment,
   isMCQQuestion,
   isCodingQuestion,
+  isSubjectiveQuestion,
+  type QuestionsExportResponse,
 } from "@/lib/services/admin/admin-assessment.service";
+import { saveAssessmentQuestionsPdfs } from "@/lib/utils/assessment-questions-export-pdf.utils";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 import {
@@ -284,7 +287,82 @@ export default function AssessmentPage() {
     }
   };
 
-  const handleExportQuestions = async (assessment: Assessment) => {
+  const buildQuestionExportRows = (
+    data: QuestionsExportResponse,
+    assessmentId: number
+  ) => {
+    const baseSlug = data.assessment.slug || String(assessmentId);
+    const mcqFlat: Record<string, unknown>[] = [];
+    const codingFlat: Record<string, unknown>[] = [];
+    const subjectiveFlat: Record<string, unknown>[] = [];
+    for (const sec of data.sections) {
+      for (const q of sec.questions) {
+        if (isMCQQuestion(q)) {
+          mcqFlat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            option_a: q.option_a,
+            option_b: q.option_b,
+            option_c: q.option_c,
+            option_d: q.option_d,
+            correct_option: q.correct_option,
+            explanation: q.explanation ?? "",
+            difficulty_level: q.difficulty_level ?? "",
+            topic: q.topic ?? "",
+            skills: q.skills ?? "",
+          });
+        } else if (isCodingQuestion(q)) {
+          const ps = typeof q.problem_statement === "string" ? q.problem_statement : "";
+          const inp = typeof q.input_format === "string" ? q.input_format : "";
+          const out = typeof q.output_format === "string" ? q.output_format : "";
+          const con = typeof q.constraints === "string" ? q.constraints : "";
+          codingFlat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            title: q.title ?? "",
+            problem_statement: htmlToPlainText(ps),
+            input_format: htmlToPlainText(inp),
+            output_format: htmlToPlainText(out),
+            sample_input: q.sample_input ?? "",
+            sample_output: q.sample_output ?? "",
+            constraints: htmlToPlainText(con),
+            difficulty_level: q.difficulty_level ?? "",
+            tags: q.tags ?? "",
+            time_limit: q.time_limit ?? "",
+            memory_limit: q.memory_limit ?? "",
+          });
+        } else if (isSubjectiveQuestion(q)) {
+          subjectiveFlat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            evaluation_prompt: htmlToPlainText(q.evaluation_prompt),
+            max_marks: q.max_marks ?? "",
+            question_type: q.question_type ?? "",
+          });
+        }
+      }
+    }
+    return {
+      mcqFlat,
+      codingFlat,
+      subjectiveFlat,
+      baseSlug,
+      assessmentTitle: data.assessment.title ?? "",
+    };
+  };
+
+  const handleExportQuestions = async (
+    assessment: Assessment,
+    format: "csv" | "pdf" = "csv"
+  ) => {
     try {
       setExportingQuestionsId(assessment.id);
       const data = await adminAssessmentService.getQuestionsExportJson(
@@ -292,54 +370,29 @@ export default function AssessmentPage() {
         assessment.id
       );
 
-      const baseSlug = data.assessment.slug || String(assessment.id);
+      const { mcqFlat, codingFlat, subjectiveFlat, baseSlug, assessmentTitle } =
+        buildQuestionExportRows(data, assessment.id);
 
-      // MCQ rows (same format as edit page)
-      const mcqFlat: Record<string, unknown>[] = [];
-      const codingFlat: Record<string, unknown>[] = [];
-      for (const sec of data.sections) {
-        for (const q of sec.questions) {
-          if (isMCQQuestion(q)) {
-            mcqFlat.push({
-              section_id: sec.section_id,
-              section_title: sec.section_title,
-              section_order: sec.order,
-              id: q.id,
-              question_text: q.question_text,
-              option_a: q.option_a,
-              option_b: q.option_b,
-              option_c: q.option_c,
-              option_d: q.option_d,
-              correct_option: q.correct_option,
-              explanation: q.explanation ?? "",
-              difficulty_level: q.difficulty_level ?? "",
-              topic: q.topic ?? "",
-              skills: q.skills ?? "",
-            });
-          } else if (isCodingQuestion(q)) {
-            const ps = typeof q.problem_statement === "string" ? q.problem_statement : "";
-            const inp = typeof q.input_format === "string" ? q.input_format : "";
-            const out = typeof q.output_format === "string" ? q.output_format : "";
-            const con = typeof q.constraints === "string" ? q.constraints : "";
-            codingFlat.push({
-              section_id: sec.section_id,
-              section_title: sec.section_title,
-              section_order: sec.order,
-              id: q.id,
-              title: q.title ?? "",
-              problem_statement: htmlToPlainText(ps),
-              input_format: htmlToPlainText(inp),
-              output_format: htmlToPlainText(out),
-              sample_input: q.sample_input ?? "",
-              sample_output: q.sample_output ?? "",
-              constraints: htmlToPlainText(con),
-              difficulty_level: q.difficulty_level ?? "",
-              tags: q.tags ?? "",
-              time_limit: q.time_limit ?? "",
-              memory_limit: q.memory_limit ?? "",
-            });
-          }
-        }
+      if (format === "pdf") {
+        const { fileCount } = saveAssessmentQuestionsPdfs(
+          { assessmentTitle, baseSlug },
+          mcqFlat,
+          codingFlat,
+          subjectiveFlat
+        );
+        const pdfParts: string[] = [];
+        if (mcqFlat.length) pdfParts.push("MCQ");
+        if (codingFlat.length) pdfParts.push("coding");
+        if (subjectiveFlat.length) pdfParts.push("subjective");
+        showToast(
+          fileCount === 0
+            ? "No questions to export"
+            : pdfParts.length
+              ? `${pdfParts.join(", ")} exported as PDF (${fileCount} file${fileCount !== 1 ? "s" : ""})`
+              : "Questions exported as PDF successfully",
+          fileCount > 0 ? "success" : "info"
+        );
+        return;
       }
 
       const mcqColumns: { key: string; header: string }[] = [
@@ -375,6 +428,16 @@ export default function AssessmentPage() {
         { key: "time_limit", header: "Time Limit (sec)" },
         { key: "memory_limit", header: "Memory Limit (MB)" },
       ];
+      const subjectiveColumns: { key: string; header: string }[] = [
+        { key: "section_id", header: "Section ID" },
+        { key: "section_title", header: "Section Title" },
+        { key: "section_order", header: "Section Order" },
+        { key: "id", header: "Question ID" },
+        { key: "question_text", header: "Question Text" },
+        { key: "evaluation_prompt", header: "Evaluation Prompt" },
+        { key: "max_marks", header: "Max Marks" },
+        { key: "question_type", header: "Question Type" },
+      ];
 
       const downloads: Array<() => void> = [];
       if (mcqFlat.length > 0) {
@@ -393,18 +456,29 @@ export default function AssessmentPage() {
           )
         );
       }
-      downloads[0]?.();
-      if (downloads.length > 1) {
-        setTimeout(() => downloads[1](), 100);
+      if (subjectiveFlat.length > 0) {
+        downloads.push(() =>
+          downloadCsv(
+            jsonToCsvRows(subjectiveFlat, subjectiveColumns),
+            `assessment-${baseSlug}-subjective-questions.csv`
+          )
+        );
       }
+      downloads.forEach((fn, i) => {
+        setTimeout(() => fn(), i * 100);
+      });
 
       const fileCount = downloads.length;
+      const csvParts: string[] = [];
+      if (mcqFlat.length) csvParts.push("MCQ");
+      if (codingFlat.length) csvParts.push("coding");
+      if (subjectiveFlat.length) csvParts.push("subjective");
       showToast(
-        fileCount === 2
-          ? "MCQ and coding questions exported (2 files)"
-          : fileCount === 1
-            ? "Questions exported successfully"
-            : "No questions to export",
+        fileCount === 0
+          ? "No questions to export"
+          : csvParts.length
+            ? `${csvParts.join(", ")} exported (${fileCount} file${fileCount !== 1 ? "s" : ""})`
+            : "Questions exported successfully",
         fileCount > 0 ? "success" : "info"
       );
     } catch (error: any) {

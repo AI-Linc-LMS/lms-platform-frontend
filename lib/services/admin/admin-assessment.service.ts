@@ -743,8 +743,20 @@ export interface QuestionsExportCodingQuestion {
   [key: string]: unknown;
 }
 
-/** Union type for quiz or coding question in export */
-export type QuestionsExportQuestion = QuestionsExportMCQQuestion | QuestionsExportCodingQuestion;
+/** Assessment export — subjective (free-text) question */
+export interface QuestionsExportSubjectiveQuestion {
+  id: number;
+  question_text: string;
+  evaluation_prompt: string;
+  max_marks: number;
+  question_type?: string;
+}
+
+/** Union type for quiz, coding, or subjective question in export */
+export type QuestionsExportQuestion =
+  | QuestionsExportMCQQuestion
+  | QuestionsExportCodingQuestion
+  | QuestionsExportSubjectiveQuestion;
 
 export function isCodingQuestion(q: QuestionsExportQuestion): q is QuestionsExportCodingQuestion {
   return "title" in q && typeof (q as QuestionsExportCodingQuestion).title === "string";
@@ -752,6 +764,18 @@ export function isCodingQuestion(q: QuestionsExportQuestion): q is QuestionsExpo
 
 export function isMCQQuestion(q: QuestionsExportQuestion): q is QuestionsExportMCQQuestion {
   return "question_text" in q && "option_a" in q;
+}
+
+export function isSubjectiveQuestion(
+  q: QuestionsExportQuestion,
+): q is QuestionsExportSubjectiveQuestion {
+  return (
+    "evaluation_prompt" in q &&
+    typeof (q as QuestionsExportSubjectiveQuestion).evaluation_prompt === "string" &&
+    "question_text" in q &&
+    typeof (q as QuestionsExportSubjectiveQuestion).question_text === "string" &&
+    !("title" in q)
+  );
 }
 
 export interface QuestionsExportSection {

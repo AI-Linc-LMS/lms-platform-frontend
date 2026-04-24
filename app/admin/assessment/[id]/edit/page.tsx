@@ -8,6 +8,7 @@ import {
   Typography,
   Paper,
   Button,
+  Stack,
   Tabs,
   Tab,
   Alert,
@@ -39,8 +40,10 @@ import {
   CreateAssessmentPayload,
   isMCQQuestion,
   isCodingQuestion,
+  isSubjectiveQuestion,
   QuestionsExportMCQQuestion,
   QuestionsExportCodingQuestion,
+  QuestionsExportSubjectiveQuestion,
   type AssessmentAnalyticsResponse,
   clampAssessmentAnalyticsTopPerformers,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -62,9 +65,14 @@ import {
   mapSubmissionsExportRowToAssessmentResult,
   safeAssessmentPdfFileName,
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
+import {
+  saveAssessmentMcqQuestionsPdf,
+  saveAssessmentCodingQuestionsPdf,
+  saveAssessmentSubjectiveQuestionsPdf,
+} from "@/lib/utils/assessment-questions-export-pdf.utils";
 
 type TabValue = "details" | "questions" | "submissions" | "analytics";
-type QuestionsSubTab = "mcq" | "coding";
+type QuestionsSubTab = "mcq" | "coding" | "subjective";
 
 function escapeCsv(val: unknown): string {
   if (val == null || val === undefined) return "";
@@ -352,6 +360,8 @@ export default function AssessmentEditPage() {
   const [questionsLimit, setQuestionsLimit] = useState(10);
   const [codingQuestionsPage, setCodingQuestionsPage] = useState(1);
   const [codingQuestionsLimit, setCodingQuestionsLimit] = useState(10);
+  const [subjectiveQuestionsPage, setSubjectiveQuestionsPage] = useState(1);
+  const [subjectiveQuestionsLimit, setSubjectiveQuestionsLimit] = useState(10);
   const [submissionsPage, setSubmissionsPage] = useState(1);
   const [submissionsLimit, setSubmissionsLimit] = useState(10);
   const [downloadingAllSubmissionPdfs, setDownloadingAllSubmissionPdfs] =
@@ -592,6 +602,14 @@ export default function AssessmentEditPage() {
       return;
     }
     if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
+      showToast(
+        [passBandFieldErrors.lower, passBandFieldErrors.upper]
+          .filter(Boolean)
+          .join(" ") || "Invalid pass band",
+        "error",
+      );
+      return;
+    }
     if (!allowDesktop && !allowMobile && !allowTablet) {
       showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
@@ -647,7 +665,6 @@ export default function AssessmentEditPage() {
       setSaving(false);
     }
   };
-}
 
   const handleDownloadMCQQuestions = () => {
     if (!questionsData) return;
@@ -745,6 +762,89 @@ export default function AssessmentEditPage() {
     const csv = jsonToCsvRows(flat, columns);
     downloadCsv(csv, `assessment-${questionsData.assessment.slug || assessmentId}-coding-questions.csv`);
     showToast("Coding questions exported", "success");
+  };
+
+  const handleDownloadMCQQuestionsPdf = () => {
+    if (!questionsData) return;
+    const flat: Record<string, unknown>[] = [];
+    for (const sec of quizSections) {
+      for (const q of sec.questions) {
+        if (isMCQQuestion(q)) {
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            option_a: q.option_a,
+            option_b: q.option_b,
+            option_c: q.option_c,
+            option_d: q.option_d,
+            correct_option: q.correct_option,
+            explanation: q.explanation ?? "",
+            difficulty_level: q.difficulty_level ?? "",
+            topic: q.topic ?? "",
+            skills: q.skills ?? "",
+          });
+        }
+      }
+    }
+    if (flat.length === 0) {
+      showToast("No MCQ questions to export", "info");
+      return;
+    }
+    saveAssessmentMcqQuestionsPdf(
+      {
+        assessmentTitle: questionsData.assessment.title ?? "",
+        baseSlug: questionsData.assessment.slug || String(assessmentId),
+      },
+      flat,
+    );
+    showToast("MCQ questions exported as PDF", "success");
+  };
+
+  const handleDownloadCodingQuestionsPdf = () => {
+    if (!questionsData) return;
+    const flat: Record<string, unknown>[] = [];
+    for (const sec of codingSections) {
+      for (const q of sec.questions) {
+        if (isCodingQuestion(q)) {
+          const ps = typeof q.problem_statement === "string" ? q.problem_statement : "";
+          const inp = typeof q.input_format === "string" ? q.input_format : "";
+          const out = typeof q.output_format === "string" ? q.output_format : "";
+          const con = typeof q.constraints === "string" ? q.constraints : "";
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            title: q.title ?? "",
+            problem_statement: htmlToPlainText(ps),
+            input_format: htmlToPlainText(inp),
+            output_format: htmlToPlainText(out),
+            sample_input: q.sample_input ?? "",
+            sample_output: q.sample_output ?? "",
+            constraints: htmlToPlainText(con),
+            difficulty_level: q.difficulty_level ?? "",
+            tags: q.tags ?? "",
+            time_limit: q.time_limit ?? "",
+            memory_limit: q.memory_limit ?? "",
+          });
+        }
+      }
+    }
+    if (flat.length === 0) {
+      showToast("No coding questions to export", "info");
+      return;
+    }
+    saveAssessmentCodingQuestionsPdf(
+      {
+        assessmentTitle: questionsData.assessment.title ?? "",
+        baseSlug: questionsData.assessment.slug || String(assessmentId),
+      },
+      flat,
+    );
+    showToast("Coding questions exported as PDF", "success");
   };
 
   function downloadCsv(csv: string, filename: string) {
@@ -857,6 +957,13 @@ export default function AssessmentEditPage() {
     );
   }, [questionsData]);
 
+  const subjectiveSections = useMemo(() => {
+    if (!questionsData?.sections) return [];
+    return questionsData.sections.filter(
+      (s) => (s.section_type ?? "").toLowerCase() === "subjective"
+    );
+  }, [questionsData]);
+
   const allQuizItems = useMemo(() => {
     return quizSections.flatMap((sec) =>
       sec.questions
@@ -873,6 +980,14 @@ export default function AssessmentEditPage() {
     );
   }, [codingSections]);
 
+  const allSubjectiveItems = useMemo(() => {
+    return subjectiveSections.flatMap((sec) =>
+      sec.questions
+        .filter((q): q is QuestionsExportSubjectiveQuestion => isSubjectiveQuestion(q))
+        .map((q) => ({ section: sec, question: q }))
+    );
+  }, [subjectiveSections]);
+
   const paginatedQuizQuestions = useMemo(() => {
     const start = (questionsPage - 1) * questionsLimit;
     return allQuizItems.slice(start, start + questionsLimit);
@@ -883,9 +998,86 @@ export default function AssessmentEditPage() {
     return allCodingItems.slice(start, start + codingQuestionsLimit);
   }, [allCodingItems, codingQuestionsPage, codingQuestionsLimit]);
 
+  const paginatedSubjectiveQuestions = useMemo(() => {
+    const start = (subjectiveQuestionsPage - 1) * subjectiveQuestionsLimit;
+    return allSubjectiveItems.slice(start, start + subjectiveQuestionsLimit);
+  }, [allSubjectiveItems, subjectiveQuestionsPage, subjectiveQuestionsLimit]);
+
   const totalQuizQuestions = allQuizItems.length;
   const totalCodingQuestions = allCodingItems.length;
-  const totalQuestions = totalQuizQuestions + totalCodingQuestions;
+  const totalSubjectiveQuestions = allSubjectiveItems.length;
+  const totalQuestions = totalQuizQuestions + totalCodingQuestions + totalSubjectiveQuestions;
+
+  const handleDownloadSubjectiveQuestions = () => {
+    if (!questionsData) return;
+    const flat: Record<string, unknown>[] = [];
+    for (const sec of subjectiveSections) {
+      for (const q of sec.questions) {
+        if (isSubjectiveQuestion(q)) {
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            evaluation_prompt: htmlToPlainText(q.evaluation_prompt),
+            max_marks: q.max_marks ?? "",
+            question_type: q.question_type ?? "",
+          });
+        }
+      }
+    }
+    if (flat.length === 0) {
+      showToast("No subjective questions to export", "info");
+      return;
+    }
+    const columns: { key: string; header: string }[] = [
+      { key: "section_id", header: "Section ID" },
+      { key: "section_title", header: "Section Title" },
+      { key: "section_order", header: "Section Order" },
+      { key: "id", header: "Question ID" },
+      { key: "question_text", header: "Question Text" },
+      { key: "evaluation_prompt", header: "Evaluation Prompt" },
+      { key: "max_marks", header: "Max Marks" },
+      { key: "question_type", header: "Question Type" },
+    ];
+    const csv = jsonToCsvRows(flat, columns);
+    downloadCsv(csv, `assessment-${questionsData.assessment.slug || assessmentId}-subjective-questions.csv`);
+    showToast("Subjective questions exported", "success");
+  };
+
+  const handleDownloadSubjectiveQuestionsPdf = () => {
+    if (!questionsData) return;
+    const flat: Record<string, unknown>[] = [];
+    for (const sec of subjectiveSections) {
+      for (const q of sec.questions) {
+        if (isSubjectiveQuestion(q)) {
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            evaluation_prompt: htmlToPlainText(q.evaluation_prompt),
+            max_marks: q.max_marks ?? "",
+            question_type: q.question_type ?? "",
+          });
+        }
+      }
+    }
+    if (flat.length === 0) {
+      showToast("No subjective questions to export", "info");
+      return;
+    }
+    saveAssessmentSubjectiveQuestionsPdf(
+      {
+        assessmentTitle: questionsData.assessment.title ?? "",
+        baseSlug: questionsData.assessment.slug || String(assessmentId),
+      },
+      flat,
+    );
+    showToast("Subjective questions exported as PDF", "success");
+  };
 
   const paginatedSubmissions = useMemo(() => {
     if (!submissionsData?.submissions) return [];
@@ -1025,17 +1217,30 @@ export default function AssessmentEditPage() {
   useEffect(() => {
     setQuestionsPage(1);
     setCodingQuestionsPage(1);
+    setSubjectiveQuestionsPage(1);
     setSubmissionsPage(1);
   }, [tab]);
 
   useEffect(() => {
     if (tab !== "questions" || !questionsData) return;
-    if (questionsSubTab === "mcq" && totalQuizQuestions === 0 && totalCodingQuestions > 0) {
-      setQuestionsSubTab("coding");
-    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0 && totalQuizQuestions > 0) {
-      setQuestionsSubTab("mcq");
+    if (questionsSubTab === "mcq" && totalQuizQuestions === 0) {
+      if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
+      else if (totalSubjectiveQuestions > 0) setQuestionsSubTab("subjective");
+    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0) {
+      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
+      else if (totalSubjectiveQuestions > 0) setQuestionsSubTab("subjective");
+    } else if (questionsSubTab === "subjective" && totalSubjectiveQuestions === 0) {
+      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
+      else if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
     }
-  }, [tab, questionsData, questionsSubTab, totalQuizQuestions, totalCodingQuestions]);
+  }, [
+    tab,
+    questionsData,
+    questionsSubTab,
+    totalQuizQuestions,
+    totalCodingQuestions,
+    totalSubjectiveQuestions,
+  ]);
 
   const codingProblemDataForPreview = (q: QuestionsExportCodingQuestion) => ({
     content_title: q.title,
@@ -1287,6 +1492,26 @@ export default function AssessmentEditPage() {
                           </Box>
                         }
                       />
+                      <Tab
+                        value="subjective"
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            Subjective
+                            {totalSubjectiveQuestions > 0 && (
+                              <Chip
+                                label={totalSubjectiveQuestions}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  bgcolor: questionsSubTab === "subjective" ? "primary.main" : "action.hover",
+                                  color: questionsSubTab === "subjective" ? "primary.contrastText" : "text.secondary",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        }
+                      />
                     </Tabs>
 
                     {questionsSubTab === "mcq" && (
@@ -1315,16 +1540,28 @@ export default function AssessmentEditPage() {
                           <Typography variant="body2" color="text.secondary">
                             {totalQuizQuestions} MCQ question{totalQuizQuestions !== 1 ? "s" : ""}
                           </Typography>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<IconWrapper icon="mdi:download" size={18} />}
-                            onClick={handleDownloadMCQQuestions}
-                            disabled={readOnly || totalQuizQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
-                          >
-                            Download MCQ CSV
-                          </Button>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<IconWrapper icon="mdi:file-delimited-outline" size={18} />}
+                              onClick={handleDownloadMCQQuestions}
+                              disabled={readOnly || totalQuizQuestions === 0}
+                              sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            >
+                              Download MCQ CSV
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<IconWrapper icon="mdi:file-pdf-box" size={18} />}
+                              onClick={handleDownloadMCQQuestionsPdf}
+                              disabled={readOnly || totalQuizQuestions === 0}
+                              color="primary"
+                            >
+                              Download MCQ PDF
+                            </Button>
+                          </Stack>
                         </Box>
                         {totalQuizQuestions === 0 ? (
                           <Box sx={{ py: 6, textAlign: "center" }}>
@@ -1422,16 +1659,28 @@ export default function AssessmentEditPage() {
                           <Typography variant="body2" color="text.secondary">
                             {totalCodingQuestions} coding question{totalCodingQuestions !== 1 ? "s" : ""}
                           </Typography>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<IconWrapper icon="mdi:download" size={18} />}
-                            onClick={handleDownloadCodingQuestions}
-                            disabled={readOnly || totalCodingQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
-                          >
-                            Download Coding CSV
-                          </Button>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<IconWrapper icon="mdi:file-delimited-outline" size={18} />}
+                              onClick={handleDownloadCodingQuestions}
+                              disabled={readOnly || totalCodingQuestions === 0}
+                              sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            >
+                              Download Coding CSV
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<IconWrapper icon="mdi:file-pdf-box" size={18} />}
+                              onClick={handleDownloadCodingQuestionsPdf}
+                              disabled={readOnly || totalCodingQuestions === 0}
+                              color="primary"
+                            >
+                              Download Coding PDF
+                            </Button>
+                          </Stack>
                         </Box>
                         {totalCodingQuestions === 0 ? (
                           <Box sx={{ py: 6, textAlign: "center" }}>
@@ -1522,6 +1771,114 @@ export default function AssessmentEditPage() {
                               limit={codingQuestionsLimit}
                               onPageChange={setCodingQuestionsPage}
                               onLimitChange={(l) => { setCodingQuestionsLimit(l); setCodingQuestionsPage(1); }}
+                              itemLabel="questions"
+                            />
+                          </>
+                        )}
+                      </Paper>
+                    )}
+
+                    {questionsSubTab === "subjective" && (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 2,
+                          overflow: "hidden",
+                          borderColor: "#e5e7eb",
+                          bgcolor: "#fafafa",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1.5,
+                            borderBottom: "1px solid #e5e7eb",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            bgcolor: "#fff",
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {totalSubjectiveQuestions} subjective question{totalSubjectiveQuestions !== 1 ? "s" : ""}
+                          </Typography>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<IconWrapper icon="mdi:file-delimited-outline" size={18} />}
+                              onClick={handleDownloadSubjectiveQuestions}
+                              disabled={readOnly || totalSubjectiveQuestions === 0}
+                              sx={{ bgcolor: "#7c3aed", "&:hover": { bgcolor: "#6d28d9" } }}
+                            >
+                              Download Subjective CSV
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<IconWrapper icon="mdi:file-pdf-box" size={18} />}
+                              onClick={handleDownloadSubjectiveQuestionsPdf}
+                              disabled={readOnly || totalSubjectiveQuestions === 0}
+                              color="secondary"
+                            >
+                              Download Subjective PDF
+                            </Button>
+                          </Stack>
+                        </Box>
+                        {totalSubjectiveQuestions === 0 ? (
+                          <Box sx={{ py: 6, textAlign: "center" }}>
+                            <Typography color="text.secondary">No subjective questions.</Typography>
+                          </Box>
+                        ) : (
+                          <>
+                            <TableContainer sx={{ maxHeight: 440 }}>
+                              <Table size="small" stickyHeader>
+                                <TableHead>
+                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem", minWidth: 220 }}>Question</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Max marks</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Type</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {paginatedSubjectiveQuestions.map(({ section: sec, question: q }) => (
+                                    <TableRow key={`subjective-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell sx={{ py: 1.5, maxWidth: 300 }}>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: "vertical",
+                                          }}
+                                          title={q.question_text}
+                                        >
+                                          {q.question_text}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{q.max_marks ?? "—"}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{q.question_type?.trim() ? q.question_type : "—"}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                            <PaginationControls
+                              totalItems={totalSubjectiveQuestions}
+                              page={subjectiveQuestionsPage}
+                              limit={subjectiveQuestionsLimit}
+                              onPageChange={setSubjectiveQuestionsPage}
+                              onLimitChange={(l) => { setSubjectiveQuestionsLimit(l); setSubjectiveQuestionsPage(1); }}
                               itemLabel="questions"
                             />
                           </>
