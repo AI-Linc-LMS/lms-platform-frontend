@@ -42,6 +42,10 @@ export interface AssessmentDetail extends Assessment {
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
+  /** Learner certificates: participation on submit; appreciation uses pass band on result */
+  certificate_available?: boolean;
+  pass_band_lower_min_percent?: string | number;
+  pass_band_upper_min_percent?: string | number;
 }
 
 /** Lockdown policy for the assessment take flow (aligned with `evaluateLockdownGate`). */

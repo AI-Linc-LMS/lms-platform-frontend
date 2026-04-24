@@ -21,6 +21,15 @@ import {
   AssessmentDetail,
   ScholarshipStatus,
 } from "@/lib/services/assessment.service";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { getUserDisplayName } from "@/lib/utils/user-utils";
+import { buildAssessmentParticipationCertificate } from "@/lib/certificate/copy";
+import {
+  buildCertificateBranding,
+  finalizeBranding,
+} from "@/lib/certificate/client-branding";
+import { CertificateLearnerToolbar } from "@/components/certificate/CertificateLearnerToolbar";
 
 export default function SubmissionSuccessPage() {
   const { t } = useTranslation("common");
@@ -32,6 +41,8 @@ export default function SubmissionSuccessPage() {
     useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const { clientInfo } = useClientInfo();
 
   // Stop any active camera and audio streams on this page
   useStopCameraOnMount();
@@ -137,6 +148,22 @@ export default function SubmissionSuccessPage() {
           <Typography variant="body1" color="text.secondary" paragraph>
             {t("assessments.submittedReview")}
           </Typography>
+
+          {assessment.certificate_available && user ? (
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                Certificate of participation
+              </Typography>
+              <CertificateLearnerToolbar
+                content={buildAssessmentParticipationCertificate({
+                  recipientName: getUserDisplayName(user),
+                  assessmentTitle: assessment.title,
+                  branding: finalizeBranding(buildCertificateBranding(clientInfo)),
+                })}
+                fileNameBase={`certificate-participation-${assessment.slug || slug}`}
+              />
+            </Box>
+          ) : null}
 
           <Box
             sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4, flexWrap: "wrap" }}

@@ -35,7 +35,7 @@ interface CssRulesPatch {
  * 
  * @returns Object containing patch state and cleanup function
  */
-const applyCssRulesPatch = (): CssRulesPatch => {
+export const applyCssRulesPatch = (): CssRulesPatch => {
   const originalDescriptor = Object.getOwnPropertyDescriptor(
     CSSStyleSheet.prototype,
     "cssRules"
@@ -69,7 +69,10 @@ const applyCssRulesPatch = (): CssRulesPatch => {
 /**
  * Restores the original CSSStyleSheet.prototype.cssRules descriptor.
  */
-const restoreCssRulesPatch = ({ originalDescriptor, patchApplied }: CssRulesPatch): void => {
+export const restoreCssRulesPatch = ({
+  originalDescriptor,
+  patchApplied,
+}: CssRulesPatch): void => {
   if (patchApplied) {
     try {
       if (originalDescriptor) {

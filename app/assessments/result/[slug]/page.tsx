@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Box, Button } from "@mui/material";
+import { Box, Button, Paper, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
+  AssessmentDetail,
   AssessmentResult,
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
@@ -24,8 +25,17 @@ import { CodingProblemResponsesSection } from "@/components/assessment/result/Co
 import { SubjectiveResponsesSection } from "@/components/assessment/result/SubjectiveResponsesSection";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { getMockPsychometricData } from "@/lib/mock-data/assessment-mock-data";
+import { buildAssessmentAppreciationCertificate } from "@/lib/certificate/copy";
+import {
+  buildCertificateBranding,
+  finalizeBranding,
+} from "@/lib/certificate/client-branding";
+import { isScoreInAppreciationBand, scoreToPercent } from "@/lib/certificate/pass-band";
+import { getLearnerDisplayNameFromResult } from "@/lib/certificate/learner-name";
+import { CertificateLearnerToolbar } from "@/components/certificate/CertificateLearnerToolbar";
 
 export default function AssessmentResultPage() {
   const params = useParams();
@@ -39,9 +49,11 @@ export default function AssessmentResultPage() {
   const [psychometricData, setPsychometricData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [assessmentDetail, setAssessmentDetail] = useState<AssessmentDetail | null>(null);
 
   const { showToast } = useToast();
   const { user } = useAuth();
+  const { clientInfo } = useClientInfo();
 
   const forcePsychometric = searchParams?.get("type") === "psychometric";
 
@@ -49,6 +61,45 @@ export default function AssessmentResultPage() {
     if (!slug) return;
     loadAssessmentResult();
   }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+    let cancelled = false;
+    assessmentService
+      .getAssessmentDetail(slug)
+      .then((d) => {
+        if (!cancelled) setAssessmentDetail(d);
+      })
+      .catch(() => {
+        if (!cancelled) setAssessmentDetail(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  const appreciationCertificateContent = useMemo(() => {
+    if (!assessmentResult || !user || !assessmentDetail?.certificate_available) return null;
+    const s = assessmentResult.stats;
+    const pct = scoreToPercent(s.score, s.maximum_marks);
+    if (
+      !isScoreInAppreciationBand(
+        pct,
+        assessmentDetail.pass_band_lower_min_percent,
+        assessmentDetail.pass_band_upper_min_percent
+      )
+    ) {
+      return null;
+    }
+    const name = getLearnerDisplayNameFromResult(assessmentResult, user);
+    const scorePct = Math.round(pct);
+    return buildAssessmentAppreciationCertificate({
+      recipientName: name,
+      assessmentTitle: assessmentResult.assessment_name || slug,
+      branding: finalizeBranding(buildCertificateBranding(clientInfo)),
+      scoreText: `${scorePct}%`,
+    });
+  }, [assessmentResult, assessmentDetail, clientInfo, user, slug]);
 
   const loadAssessmentResult = async () => {
     try {
@@ -194,6 +245,33 @@ export default function AssessmentResultPage() {
           accuracy={stats?.accuracy_percent||0}
           percentile={stats.percentile}
         />
+
+        {appreciationCertificateContent && user ? (
+          <Paper
+            className="exclude-from-pdf"
+            elevation={0}
+            sx={{
+              mt: 3,
+              mb: 2,
+              p: 2.5,
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Certificate of achievement
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Your score is within the configured appreciation band. Download your certificate below.
+            </Typography>
+            <CertificateLearnerToolbar
+              content={appreciationCertificateContent}
+              fileNameBase={`certificate-achievement-${slug}`}
+              dense
+            />
+          </Paper>
+        ) : null}
 
         {/* Stats */}
         <EnhancedStatsBar
