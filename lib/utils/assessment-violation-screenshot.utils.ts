@@ -117,7 +117,14 @@ async function minimalProofPlaceholderFile(): Promise<File | null> {
  * Rasterizes the live page with html2canvas. Includes the proctoring camera tile by
  * copying live video frames into the cloned DOM (see injectLiveVideoFramesIntoClone).
  */
-export async function captureViolationScreenshotFile(): Promise<File | null> {
+export type CaptureViolationScreenshotOptions = {
+  /** Defaults to `assessment-violation-${Date.now()}.jpg` */
+  filename?: string;
+};
+
+export async function captureViolationScreenshotFile(
+  options?: CaptureViolationScreenshotOptions
+): Promise<File | null> {
   if (typeof document === "undefined" || !document.body) {
     return null;
   }
@@ -154,7 +161,8 @@ export async function captureViolationScreenshotFile(): Promise<File | null> {
       }
       const canvas = canvasOrTimeout;
 
-      const name = `assessment-violation-${Date.now()}.jpg`;
+      const name =
+        options?.filename ?? `assessment-violation-${Date.now()}.jpg`;
       const out = await canvasToJpegFile(canvas, quality, name);
       if (out && out.size <= MAX_FILE_BYTES) {
         return out.file;

@@ -592,6 +592,12 @@ export default function AssessmentEditPage() {
       return;
     }
     if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
+      const passMsgs = [passBandFieldErrors.lower, passBandFieldErrors.upper].filter(
+        (m): m is string => Boolean(m)
+      );
+      showToast(passMsgs.join(" "), "error");
+      return;
+    }
     if (!allowDesktop && !allowMobile && !allowTablet) {
       showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
@@ -647,7 +653,6 @@ export default function AssessmentEditPage() {
       setSaving(false);
     }
   };
-}
 
   const handleDownloadMCQQuestions = () => {
     if (!questionsData) return;
