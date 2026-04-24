@@ -191,7 +191,6 @@ export default function TakeAssessmentPage({
   const [showFullscreenExitConfirm, setShowFullscreenExitConfirm] =
     useState(false);
   const [mediaInterrupted, setMediaInterrupted] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [responses, setResponses] = useState<
     Record<string, Record<string, any>>
   >({});
@@ -206,6 +205,12 @@ export default function TakeAssessmentPage({
     useState(0);
   /** Bumps when timed-section completion keys change so UI and memos re-evaluate. */
   const [timedSectionLockRevision, setTimedSectionLockRevision] = useState(0);
+  /**
+   * Violation screenshot uploads are held until session-start proof finishes (or is skipped)
+   * so startup proctoring noise does not fill all evidence slots before the baseline capture.
+   */
+  const [violationScreenshotCaptureGateOpen, setViolationScreenshotCaptureGateOpen] =
+    useState(false);
 
   // Refs
   const timeUpCallbackRef = useRef<(() => void) | null>(null);
@@ -214,6 +219,13 @@ export default function TakeAssessmentPage({
   const hasCheckedSubmission = useRef(false);
   const hasLoadedResponses = useRef(false);
   const answerChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  /**
+   * outer/inner dimension gaps are noisy (scrollbars, zoom, fullscreen, browser UI).
+   * Require several consecutive suspicious polls before blocking; require a few “clean”
+   * polls before clearing to avoid flicker.
+   */
+  const devtoolsSuspectStreakRef = useRef(0);
+  const devtoolsSafeStreakRef = useRef(0);
   const violationScreenshotEvidenceRef = useRef<ViolationScreenshotSample[]>(
     []
   );
@@ -436,7 +448,12 @@ export default function TakeAssessmentPage({
         lastTabSwitchCountAtScreenshotRef.current = -1;
         violationCaptureFailStreakRef.current = 0;
         violationScreenshotUploadChainRef.current = Promise.resolve();
+        setViolationScreenshotCaptureGateOpen(false);
       }
+      return;
+    }
+
+    if (!violationScreenshotCaptureGateOpen) {
       return;
     }
 
@@ -557,7 +574,14 @@ export default function TakeAssessmentPage({
     assessmentStarted,
     submitting,
     violationScreenshotRetryTick,
+    violationScreenshotCaptureGateOpen,
   ]);
+
+  // Non-proctored assessments: no session-start proof pipeline — open violation captures immediately.
+  useEffect(() => {
+    if (!assessmentStarted || assessment?.proctoring_enabled !== false) return;
+    setViolationScreenshotCaptureGateOpen(true);
+  }, [assessmentStarted, assessment?.proctoring_enabled]);
 
   // Full-page proof screenshot once the attempt has started (uploaded like violation samples; included in final submit).
   // Do not depend on uploadClientId / submitting here: hydration or submit-state churn would clear the timer
@@ -568,8 +592,14 @@ export default function TakeAssessmentPage({
       sessionStartProofAttemptsRef.current = 0;
       return;
     }
-    if (!assessment?.id) return;
-    if (sessionStartProofUploadedRef.current) return;
+    if (!assessment?.id) {
+      setViolationScreenshotCaptureGateOpen(true);
+      return;
+    }
+    if (sessionStartProofUploadedRef.current) {
+      setViolationScreenshotCaptureGateOpen(true);
+      return;
+    }
 
     let cancelled = false;
     const delayMs = sessionStartProofLongDelayRef.current ? 1400 : 600;
@@ -599,7 +629,9 @@ export default function TakeAssessmentPage({
 
         sessionStartProofBusyRef.current = true;
         try {
-          const file = await captureViolationScreenshotFile();
+          const file = await captureViolationScreenshotFile({
+            filename: `assessment-session-proof-${Date.now()}.jpg`,
+          });
           if (cancelled) return;
           if (!file) {
             sessionStartProofAttemptsRef.current += 1;
@@ -657,6 +689,9 @@ export default function TakeAssessmentPage({
           }
         } finally {
           sessionStartProofBusyRef.current = false;
+          if (sessionStartProofUploadedRef.current) {
+            setViolationScreenshotCaptureGateOpen(true);
+          }
         }
       })();
     }, delayMs);
@@ -826,21 +861,51 @@ export default function TakeAssessmentPage({
 
   useEffect(() => {
     if (!assessmentStarted || submitting) {
+      devtoolsSuspectStreakRef.current = 0;
+      devtoolsSafeStreakRef.current = 0;
       setDevtoolsBlocked(false);
       return;
     }
-    const openThresholdPx = 140;
-    const closedGapPx = 72;
+    devtoolsSuspectStreakRef.current = 0;
+    devtoolsSafeStreakRef.current = 0;
+
+    /** Above this, count toward “devtools may be open” (was 140; too many false positives). */
+    const suspectGapPx = 200;
+    /** Both axes below this for several ticks before clearing the overlay. */
+    const clearGapPx = 120;
+    const suspectStreakToBlock = 5;
+    const safeStreakToClear = 3;
+    const pollMs = 500;
+
     const tick = () => {
       const gw = Math.abs(window.outerWidth - window.innerWidth);
       const gh = Math.abs(window.outerHeight - window.innerHeight);
-      setDevtoolsBlocked((prev) => {
-        if (gw > openThresholdPx || gh > openThresholdPx) return true;
-        if (gw < closedGapPx && gh < closedGapPx) return false;
-        return prev;
-      });
+      const looksSuspicious = gw > suspectGapPx || gh > suspectGapPx;
+      const looksClear = gw < clearGapPx && gh < clearGapPx;
+
+      if (looksSuspicious) {
+        devtoolsSafeStreakRef.current = 0;
+        devtoolsSuspectStreakRef.current += 1;
+        if (devtoolsSuspectStreakRef.current >= suspectStreakToBlock) {
+          setDevtoolsBlocked(true);
+        }
+      } else if (looksClear) {
+        devtoolsSuspectStreakRef.current = 0;
+        devtoolsSafeStreakRef.current += 1;
+        if (devtoolsSafeStreakRef.current >= safeStreakToClear) {
+          setDevtoolsBlocked(false);
+        }
+      } else {
+        // Ambiguous gap (e.g. scrollbar / partial UI): decay so one noisy frame does not stick.
+        devtoolsSuspectStreakRef.current = Math.max(
+          0,
+          devtoolsSuspectStreakRef.current - 1,
+        );
+        devtoolsSafeStreakRef.current = 0;
+      }
     };
-    const id = window.setInterval(tick, 350);
+
+    const id = window.setInterval(tick, pollMs);
     window.addEventListener("resize", tick);
     tick();
     return () => {
@@ -1322,25 +1387,23 @@ export default function TakeAssessmentPage({
 
       timer.start();
 
-      setTimeout(() => {
-        enterFullscreen()
-          .then(() => {
-            setTimeout(() => {
-              const isFS =
-                !!document.fullscreenElement ||
-                !!(document as any).webkitFullscreenElement ||
-                !!(document as any).mozFullScreenElement ||
-                !!(document as any).msFullscreenElement;
+      void enterFullscreen()
+        .then(() => {
+          requestAnimationFrame(() => {
+            const isFS =
+              !!document.fullscreenElement ||
+              !!(document as any).webkitFullscreenElement ||
+              !!(document as any).mozFullScreenElement ||
+              !!(document as any).msFullscreenElement;
 
-              if (!isFS) {
-                setShowFullscreenWarning(true);
-              }
-            }, 100);
-          })
-          .catch(() => {
-            setShowFullscreenWarning(true);
+            if (!isFS) {
+              setShowFullscreenWarning(true);
+            }
           });
-      }, 100);
+        })
+        .catch(() => {
+          setShowFullscreenWarning(true);
+        });
     } catch (error: any) {
       showToast(error.message || "Failed to start assessment.", "error");
       setShowStartButton(true);

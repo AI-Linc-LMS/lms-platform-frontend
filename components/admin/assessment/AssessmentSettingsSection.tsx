@@ -19,10 +19,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
-  Stack,
-  FormControlLabel,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface AssessmentSettingsSectionProps {
@@ -326,150 +323,6 @@ export function AssessmentSettingsSection({
           >
             Assessment settings
           </Typography>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 2,
-              mt: 2,
-              borderRadius: 2,
-              borderColor: "#e5e7eb",
-              backgroundColor: "#fafafa",
-            }}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ mb: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 1.5,
-                  bgcolor: alpha("#6366f1", 0.12),
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper icon="mdi:devices" size={22} color="#6366f1" />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 700, color: "#111827" }}
-                >
-                  {t("assessmentDevice.sectionTitle")}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", lineHeight: 1.5 }}
-                >
-                  {t("assessmentDevice.sectionIntro")}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.75, fontWeight: 600 }}
-                >
-                  {t("assessmentDevice.sectionHint")}
-                </Typography>
-              </Box>
-            </Stack>
-            <Stack spacing={0}>
-              <Box
-                sx={{
-                  py: 1.25,
-                  borderBottom: "1px solid",
-                  borderColor: "#ececec",
-                }}
-              >
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                  <IconWrapper icon="mdi:monitor" size={22} color="#6366f1" />
-                  <FormControlLabel
-                    sx={{ flex: 1, m: 0 }}
-                    control={
-                      <Switch
-                        checked={allowDesktop}
-                        onChange={(e) => onAllowDesktopChange(e.target.checked)}
-                        disabled={readOnly}
-                      />
-                    }
-                    label={
-                      <Typography variant="body2" fontWeight={600}>
-                        {t("assessmentDevice.allowDesktop")}
-                      </Typography>
-                    }
-                  />
-                </Stack>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
-                >
-                  {t("assessmentDevice.allowDesktopHint")}
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  py: 1.25,
-                  borderBottom: "1px solid",
-                  borderColor: "#ececec",
-                }}
-              >
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                  <IconWrapper icon="mdi:cellphone" size={22} color="#6366f1" />
-                  <FormControlLabel
-                    sx={{ flex: 1, m: 0 }}
-                    control={
-                      <Switch
-                        checked={allowMobile}
-                        onChange={(e) => onAllowMobileChange(e.target.checked)}
-                        disabled={readOnly}
-                      />
-                    }
-                    label={
-                      <Typography variant="body2" fontWeight={600}>
-                        {t("assessmentDevice.allowMobile")}
-                      </Typography>
-                    }
-                  />
-                </Stack>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
-                >
-                  {t("assessmentDevice.allowMobileHint")}
-                </Typography>
-              </Box>
-              <Box sx={{ py: 1.25 }}>
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                  <IconWrapper icon="mdi:tablet" size={22} color="#6366f1" />
-                  <FormControlLabel
-                    sx={{ flex: 1, m: 0 }}
-                    control={
-                      <Switch
-                        checked={allowTablet}
-                        onChange={(e) => onAllowTabletChange(e.target.checked)}
-                        disabled={readOnly}
-                      />
-                    }
-                    label={
-                      <Typography variant="body2" fontWeight={600}>
-                        {t("assessmentDevice.allowTablet")}
-                      </Typography>
-                    }
-                  />
-                </Stack>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.5, ml: 5.5, lineHeight: 1.45 }}
-                >
-                  {t("assessmentDevice.allowTabletHint")}
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
         </Box>
       </Box>
 
@@ -477,7 +330,7 @@ export function AssessmentSettingsSection({
         <FieldGroup
           title="Overall duration"
           hint="Total minutes for the full attempt. You can still set per-section time limits separately."
-        >
+        > 
           <TextField
             label="Duration (minutes)"
             type="number"
@@ -716,6 +569,64 @@ export function AssessmentSettingsSection({
                 </Box>
               </ListItem>
             </Collapse>
+
+            <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
+              {t("assessmentDevice.sectionTitle")}
+            </ListSubheader>
+            <ListItem
+              sx={{
+                display: "block",
+                py: 1.35,
+                px: 2,
+                bgcolor: "rgba(248, 250, 252, 0.98)",
+                borderBottom: "1px solid",
+                borderColor: "rgba(15, 23, 42, 0.06)",
+              }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", lineHeight: 1.45 }}
+              >
+                {t("assessmentDevice.sectionIntro")}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  display: "block",
+                  mt: 0.75,
+                  fontWeight: 600,
+                  lineHeight: 1.45,
+                }}
+              >
+                {t("assessmentDevice.sectionHint")}
+              </Typography>
+            </ListItem>
+            <PolicySwitchRow
+              icon="mdi:monitor"
+              title={t("assessmentDevice.allowDesktop")}
+              subtitle={t("assessmentDevice.allowDesktopHint")}
+              checked={allowDesktop}
+              onChange={onAllowDesktopChange}
+              disabled={readOnly}
+            />
+            <PolicySwitchRow
+              icon="mdi:cellphone"
+              title={t("assessmentDevice.allowMobile")}
+              subtitle={t("assessmentDevice.allowMobileHint")}
+              checked={allowMobile}
+              onChange={onAllowMobileChange}
+              disabled={readOnly}
+            />
+            <PolicySwitchRow
+              icon="mdi:tablet"
+              title={t("assessmentDevice.allowTablet")}
+              subtitle={t("assessmentDevice.allowTabletHint")}
+              checked={allowTablet}
+              onChange={onAllowTabletChange}
+              disabled={readOnly}
+            />
 
             <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
               Session & integrity
