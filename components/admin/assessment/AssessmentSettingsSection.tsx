@@ -326,100 +326,6 @@ export function AssessmentSettingsSection({
           >
             Assessment settings
           </Typography>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isPaid}
-                onChange={(e) => onPaidChange(e.target.checked)}
-                disabled={readOnly}
-              />
-            }
-            label="Paid Assessment"
-          />
-          {isPaid && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                gap: 2,
-                ml: 4,
-              }}
-            >
-              <TextField
-                label="Price"
-                type="number"
-                value={price}
-                onChange={(e) => onPriceChange(e.target.value)}
-                fullWidth
-                required
-                inputProps={{ min: 0, step: 0.01 }}
-                helperText="Enter price"
-                disabled={readOnly}
-              />
-              <FormControl fullWidth required>
-                <InputLabel>Currency</InputLabel>
-                <Select
-                  value={currency}
-                  onChange={(e) => onCurrencyChange(e.target.value)}
-                  label="Currency"
-                  disabled={readOnly}
-                >
-                  <MenuItem value="INR">INR (₹)</MenuItem>
-                  <MenuItem value="USD">USD ($)</MenuItem>
-                  <MenuItem value="EUR">EUR (€)</MenuItem>
-                  <MenuItem value="GBP">GBP (£)</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          )}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isActive}
-                onChange={(e) => onActiveChange(e.target.checked)}
-                disabled={readOnly}
-              />
-            }
-            label="Active"
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={proctoringEnabled}
-                onChange={(e) => onProctoringEnabledChange(e.target.checked)}
-                disabled={readOnly}
-              />
-            }
-            label="Proctoring Enabled"
-          />
-          {showLiveStreamingToggle && (
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={liveStreaming}
-                  onChange={(e) => onLiveStreamingChange(e.target.checked)}
-                  disabled={readOnly}
-                />
-              }
-              label="Live Streaming"
-            />
-          )}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={sendCommunication}
-                onChange={(e) => onSendCommunicationChange(e.target.checked)}
-                disabled={readOnly}
-              />
-            }
-            label="Send notification email to students"
-          />
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
-            Should the notification email be sent when this assessment is created?
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5, lineHeight: 1.5 }}>
-            Configure duration, scheduling, pricing, and availability for this assessment.
-          </Typography>
           <Paper
             variant="outlined"
             sx={{
@@ -834,7 +740,7 @@ export function AssessmentSettingsSection({
               <PolicySwitchRow
                 icon="mdi:video-wireless"
                 title="Live streaming"
-                subtitle="Allow live monitoring when your tenant supports it."
+                subtitle="Allow live monitoring for this assessment."
                 checked={liveStreaming}
                 onChange={onLiveStreamingChange}
                 disabled={readOnly}
