@@ -46,6 +46,7 @@ export interface Course {
     quiz: { total: number };
     assignment: { total: number };
     coding_problem: { total: number };
+    subjective_question?: { total: number };
   };
   thumbnail: string | null;
 }
@@ -100,7 +101,8 @@ export function CourseCard({
     (course.stats?.article?.total || 0) +
     (course.stats?.quiz?.total || 0) +
     (course.stats?.assignment?.total || 0) +
-    (course.stats?.coding_problem?.total || 0);
+    (course.stats?.coding_problem?.total || 0) +
+    (course.stats?.subjective_question?.total || 0);
 
   const handleViewCourse = () => {
     router.push(`/admin/course-builder/${course.id}`);
@@ -484,7 +486,11 @@ export function CourseCard({
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
+            gridTemplateColumns: {
+              xs: "repeat(2, 1fr)",
+              sm: "repeat(4, 1fr)",
+              md: "repeat(7, 1fr)",
+            },
             gap: 1,
             mb: 2,
           }}
@@ -495,6 +501,11 @@ export function CourseCard({
             { icon: "mdi:help-circle", label: course.stats?.quiz?.total || 0, name: t("adminCourseBuilder.quiz") },
             { icon: "mdi:assignment", label: course.stats?.assignment?.total || 0, name: t("adminCourseBuilder.assignment") },
             { icon: "mdi:code-tags", label: course.stats?.coding_problem?.total || 0, name: t("adminCourseBuilder.coding") },
+            {
+              icon: "mdi:text-box-outline",
+              label: course.stats?.subjective_question?.total || 0,
+              name: t("adminCourseBuilder.subjective"),
+            },
             { icon: "mdi:file-multiple", label: totalContent, name: t("adminCourseBuilder.total") },
           ].map((stat, index) => (
             <Box

@@ -121,12 +121,13 @@ export default function SubmoduleDetailPage() {
         loadContentDetail(selectedContentId);
         setComments([]);
       }
-      // Load past submissions for quiz/assignment (CodingProblem handles its own)
+      // Load past submissions for quiz / assignment / subjective (CodingProblem handles its own)
 
       if (
         currentItem &&
         (currentItem.content_type === "Quiz" ||
-          currentItem.content_type === "Assignment") &&
+          currentItem.content_type === "Assignment" ||
+          currentItem.content_type === "SubjectiveQuestion") &&
         lastFetchedSubmissionsIdRef.current !== selectedContentId
       ) {
         lastFetchedSubmissionsIdRef.current = selectedContentId;
@@ -168,7 +169,8 @@ export default function SubmoduleDetailPage() {
       if (
         currentItem &&
         (currentItem.content_type === "Quiz" ||
-          currentItem.content_type === "Assignment") &&
+          currentItem.content_type === "Assignment" ||
+          currentItem.content_type === "SubjectiveQuestion") &&
         currentItem.submissions !== pastSubmissions.length
       ) {
         // Update the submission count to match the actual number of past submissions
@@ -556,6 +558,8 @@ export default function SubmoduleDetailPage() {
         return "mdi:file-check-outline";
       case "CodingProblem":
         return "mdi:code-braces";
+      case "SubjectiveQuestion":
+        return "mdi:text-box-outline";
       default:
         return "mdi:file-document-outline";
     }
@@ -573,6 +577,8 @@ export default function SubmoduleDetailPage() {
         return "#8b5cf6";
       case "CodingProblem":
         return "#10b981";
+      case "SubjectiveQuestion":
+        return "#0d9488";
       default:
         return "#6b7280";
     }
