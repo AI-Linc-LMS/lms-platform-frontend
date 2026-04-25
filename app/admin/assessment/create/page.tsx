@@ -90,6 +90,13 @@ export default function CreateAssessmentPage() {
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
+  const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
+  useEffect(() => {
+    if (evaluationMode === "manual" && showResult) {
+      setShowResult(false);
+    }
+  }, [evaluationMode, showResult]);
+
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
   const [certificateAvailable, setCertificateAvailable] = useState(false);
@@ -731,7 +738,8 @@ export default function CreateAssessmentPage() {
         proctoring_enabled: proctoringEnabled,
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
-        show_result: showResult,
+        show_result: evaluationMode === "manual" ? false : showResult,
+        evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
         allow_desktop: allowDesktop,
@@ -923,6 +931,7 @@ export default function CreateAssessmentPage() {
               showLiveStreamingToggle={canConfigureLiveStreaming}
               sendCommunication={sendCommunication}
               showResult={showResult}
+              evaluationMode={evaluationMode}
               allowMovementAcrossSections={allowMovementAcrossSections}
               certificateAvailable={certificateAvailable}
               passBandLowerPercent={passBandLowerPercent}
@@ -945,6 +954,7 @@ export default function CreateAssessmentPage() {
               onLiveStreamingChange={setLiveStreaming}
               onSendCommunicationChange={setSendCommunication}
               onShowResultChange={setShowResult}
+              onEvaluationModeChange={setEvaluationMode}
               onAllowMovementAcrossSectionsChange={setAllowMovementAcrossSections}
               onCertificateAvailableChange={setCertificateAvailable}
               onPassBandLowerPercentChange={setPassBandLowerPercent}

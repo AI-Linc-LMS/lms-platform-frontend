@@ -160,6 +160,7 @@ export interface CreateAssessmentPayload {
   send_communication?: boolean;
   /** Whether to show results to students after submission (default true) */
   show_result?: boolean;
+  evaluation_mode?: "auto" | "manual";
   /** Whether a certificate can be issued for this assessment */
   certificate_available?: boolean;
   /** Minimum overall percent (inclusive) for pass band lower tier */
@@ -247,6 +248,7 @@ export interface AssessmentDetail extends Assessment {
   course_ids?: number[];
   currency?: string;
   show_result?: boolean;
+  evaluation_mode?: "auto" | "manual";
   certificate_available?: boolean;
   pass_band_lower_min_percent?: string;
   pass_band_upper_min_percent?: string;
@@ -818,8 +820,11 @@ export interface SubmissionsExportUserResponses {
 }
 
 export interface SubmissionsExportSubmission {
+  submission_id?: number;
   status?: string;
+  review_status?: string;
   score?: number | null;
+  profile_pic_url?: string;
   name: string;
   email: string;
   phone?: string;
@@ -835,6 +840,7 @@ export interface SubmissionsExportSubmission {
   section_wise_scores?: Record<string, number>;
   section_wise_max_scores?: Record<string, number>;
   proctoring?: SubmissionsExportProctoringData;
+  manual_evaluation_payload?: Record<string, unknown>;
 }
 
 export interface SubmissionsExportResponse {
@@ -846,6 +852,39 @@ export interface SubmissionsExportResponse {
     show_result?: boolean;
   };
   submissions: SubmissionsExportSubmission[];
+}
+
+export interface ManualEvaluationQuestionScore {
+  id: number;
+  awarded_marks: number;
+  note?: string;
+}
+
+export interface ManualEvaluationPayload {
+  quiz_scores: ManualEvaluationQuestionScore[];
+  coding_scores: ManualEvaluationQuestionScore[];
+  subjective_scores: ManualEvaluationQuestionScore[];
+  admin_notes?: string;
+}
+
+export interface SubmissionManualEvaluationResponse {
+  assessment: { id: number; title: string; slug: string; evaluation_mode?: "auto" | "manual" };
+  submission: {
+    id: number;
+    status: string;
+    review_status: string;
+    score: number | null;
+    published_at?: string | null;
+    last_evaluated_at?: string | null;
+    manual_evaluation_payload?: ManualEvaluationPayload;
+  };
+  student: { id: number; name: string; email: string; phone?: string };
+  responses: {
+    quiz_responses: Array<Record<string, unknown> & { question_id: number; max_marks?: number }>;
+    coding_problem_responses: Array<Record<string, unknown> & { problem_id: number; max_marks?: number }>;
+    subjective_responses: Array<Record<string, unknown> & { question_id: number; max_marks?: number }>;
+  };
+  maximum_marks: number;
 }
 
 /**
@@ -872,6 +911,51 @@ export const getSubmissionsExportJson = async (
 ): Promise<SubmissionsExportResponse> => {
   const response = await apiClient.get<SubmissionsExportResponse>(
     `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/`
+  );
+  return response.data;
+};
+
+export const saveManualEvaluation = async (
+  clientId: string | number,
+  assessmentId: number,
+  submissionId: number,
+  payload: { manual_evaluation_payload?: ManualEvaluationPayload }
+): Promise<{ message: string }> => {
+  const response = await apiClient.patch(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions/${submissionId}/manual-evaluation/`,
+    payload,
+  );
+  return response.data;
+};
+
+export const getSubmissionManualEvaluation = async (
+  clientId: string | number,
+  assessmentId: number,
+  submissionId: number
+): Promise<SubmissionManualEvaluationResponse> => {
+  const response = await apiClient.get<SubmissionManualEvaluationResponse>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions/${submissionId}/manual-evaluation/`
+  );
+  return response.data;
+};
+
+export const publishSubmissionResult = async (
+  clientId: string | number,
+  assessmentId: number,
+  submissionId: number,
+): Promise<{ message: string }> => {
+  const response = await apiClient.post(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions/${submissionId}/publish/`,
+  );
+  return response.data;
+};
+
+export const publishAssessmentResultsBulk = async (
+  clientId: string | number,
+  assessmentId: number,
+): Promise<{ published_count: number }> => {
+  const response = await apiClient.post(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/publish-results/`,
   );
   return response.data;
 };
@@ -1059,6 +1143,10 @@ export const adminAssessmentService = {
   getQuestionsExport,
   getQuestionsExportJson,
   getSubmissionsExportJson,
+  getSubmissionManualEvaluation,
+  saveManualEvaluation,
+  publishSubmissionResult,
+  publishAssessmentResultsBulk,
   getAssessmentAnalytics,
   getMCQs,
   generateMCQsWithAI,

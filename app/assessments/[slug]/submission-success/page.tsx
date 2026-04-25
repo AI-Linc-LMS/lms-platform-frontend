@@ -135,7 +135,9 @@ export default function SubmissionSuccessPage() {
           )}
 
           <Typography variant="body1" color="text.secondary" paragraph>
-            {t("assessments.submittedReview")}
+            {assessment.evaluation_mode === "manual"
+              ? "Your submission is pending manual evaluation. You will be notified once published."
+              : t("assessments.submittedReview")}
           </Typography>
 
           <Box
