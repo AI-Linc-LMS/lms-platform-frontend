@@ -75,7 +75,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const theme = useTheme();
   const isRtl = theme.direction === "rtl";
   const router = useRouter();
-  const showResults = assessment.status === "submitted";
+  const showResults =
+    assessment.status === "submitted" &&
+    assessment.show_result !== false &&
+    (assessment.evaluation_mode !== "manual" || assessment.review_status === "published");
   const isPsychometric = isPsychometricAssessment(assessment);
   const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
   const [remainingTime, setRemainingTime] = useState<string>("");

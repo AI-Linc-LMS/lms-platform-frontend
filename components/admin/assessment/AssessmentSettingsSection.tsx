@@ -44,6 +44,7 @@ interface AssessmentSettingsSectionProps {
   passBandUpperError?: string;
   sendCommunication?: boolean;
   showResult?: boolean;
+  evaluationMode?: "auto" | "manual";
   allowDesktop?: boolean;
   allowMobile?: boolean;
   allowTablet?: boolean;
@@ -62,6 +63,7 @@ interface AssessmentSettingsSectionProps {
   onLiveStreamingChange: (value: boolean) => void;
   onSendCommunicationChange: (value: boolean) => void;
   onShowResultChange: (value: boolean) => void;
+  onEvaluationModeChange: (value: "auto" | "manual") => void;
   onAllowMovementAcrossSectionsChange: (value: boolean) => void;
   onCertificateAvailableChange: (value: boolean) => void;
   onPassBandLowerPercentChange: (value: string) => void;
@@ -243,6 +245,7 @@ export function AssessmentSettingsSection({
   passBandUpperError,
   sendCommunication = false,
   showResult = true,
+  evaluationMode = "auto",
   allowDesktop = true,
   allowMobile = true,
   allowTablet = true,
@@ -261,6 +264,7 @@ export function AssessmentSettingsSection({
   onLiveStreamingChange,
   onSendCommunicationChange,
   onShowResultChange,
+  onEvaluationModeChange,
   onAllowMovementAcrossSectionsChange,
   onCertificateAvailableChange,
   onPassBandLowerPercentChange,
@@ -669,13 +673,54 @@ export function AssessmentSettingsSection({
               onChange={onSendCommunicationChange}
               disabled={readOnly}
             />
+            <ListItem
+              sx={{
+                py: 1.35,
+                px: 2,
+                borderBottom: "1px solid",
+                borderColor: "rgba(15, 23, 42, 0.06)",
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 48, mt: 0.15 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: "rgba(99, 102, 241, 0.1)",
+                    border: "1px solid rgba(99, 102, 241, 0.18)",
+                  }}
+                >
+                  <IconWrapper icon="mdi:clipboard-check-outline" size={22} color="#4f46e5" />
+                </Box>
+              </ListItemIcon>
+              <ListItemText
+                primary="Evaluation mode"
+                secondary="Manual mode requires admins to evaluate and publish results."
+                primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, color: "#0f172a", pr: 1 } }}
+                secondaryTypographyProps={{ variant: "caption", sx: { display: "block", mt: 0.35, color: "text.secondary", lineHeight: 1.45 } }}
+              />
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <Select
+                  value={evaluationMode}
+                  disabled={readOnly}
+                  onChange={(e) => onEvaluationModeChange(e.target.value as "auto" | "manual")}
+                >
+                  <MenuItem value="auto">Auto (AI)</MenuItem>
+                  <MenuItem value="manual">Manual</MenuItem>
+                </Select>
+              </FormControl>
+            </ListItem>
             <PolicySwitchRow
               icon="mdi:chart-box-outline"
               title="Show results to students"
               subtitle="When off, learners see an evaluation-in-progress message instead of scores."
               checked={showResult}
               onChange={onShowResultChange}
-              disabled={readOnly}
+              disabled={readOnly || evaluationMode === "manual"}
             />
             <PolicySwitchRow
               icon="mdi:swap-horizontal"

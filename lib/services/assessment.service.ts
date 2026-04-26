@@ -31,6 +31,9 @@ export interface Assessment {
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
+  show_result?: boolean;
+  evaluation_mode?: "auto" | "manual";
+  review_status?: "not_required" | "pending_evaluation" | "evaluated" | "published";
 }
 
 export interface AssessmentDetail extends Assessment {
@@ -74,11 +77,14 @@ export interface SubmissionResponse {
 }
 
 export interface FinalSubmissionResponse {
-  id: number;
-  score: number;
-  offered_scholarship_percentage: number;
+  id?: number;
+  score?: number;
+  offered_scholarship_percentage?: number;
   status: string;
-  submitted_at: string;
+  submitted_at?: string;
+  review_status?: string;
+  show_result?: boolean;
+  message?: string;
 }
 
 export interface ScholarshipStatus {
@@ -144,6 +150,7 @@ export interface AssessmentResult {
   };
   /** When false, show evaluation-in-progress message instead of full result */
   show_result?: boolean;
+  review_status?: string;
   /** Optional server-provided feedback lines for the report */
   feedback_points?: string[];
   stats: {
@@ -192,6 +199,8 @@ export interface QuizResponseItem {
   selected_answer: string | null;
   is_correct: boolean;
   explanation?: string | null;
+  awarded_marks?: number | null;
+  feedback?: string | null;
   difficulty_level?: "Easy" | "Medium" | "Hard";
   topic?: string | null;
   skills?: string | null;
@@ -229,6 +238,8 @@ export interface CodingProblemResponseItem {
   total_test_cases: number;
   passed_test_cases: number;
   all_test_cases_passed: boolean;
+  awarded_marks?: number | null;
+  feedback?: string | null;
 }
 
 /** Marker for the mandatory full-page capture taken right after the learner starts the attempt (proof). */

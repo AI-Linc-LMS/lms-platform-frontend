@@ -860,58 +860,10 @@ export default function TakeAssessmentPage({
   );
 
   useEffect(() => {
-    if (!assessmentStarted || submitting) {
-      devtoolsSuspectStreakRef.current = 0;
-      devtoolsSafeStreakRef.current = 0;
-      setDevtoolsBlocked(false);
-      return;
-    }
+    // Devtools detection/overlay intentionally disabled for assessment take flow.
     devtoolsSuspectStreakRef.current = 0;
     devtoolsSafeStreakRef.current = 0;
-
-    /** Above this, count toward “devtools may be open” (was 140; too many false positives). */
-    const suspectGapPx = 200;
-    /** Both axes below this for several ticks before clearing the overlay. */
-    const clearGapPx = 120;
-    const suspectStreakToBlock = 5;
-    const safeStreakToClear = 3;
-    const pollMs = 500;
-
-    const tick = () => {
-      const gw = Math.abs(window.outerWidth - window.innerWidth);
-      const gh = Math.abs(window.outerHeight - window.innerHeight);
-      const looksSuspicious = gw > suspectGapPx || gh > suspectGapPx;
-      const looksClear = gw < clearGapPx && gh < clearGapPx;
-
-      if (looksSuspicious) {
-        devtoolsSafeStreakRef.current = 0;
-        devtoolsSuspectStreakRef.current += 1;
-        if (devtoolsSuspectStreakRef.current >= suspectStreakToBlock) {
-          setDevtoolsBlocked(true);
-        }
-      } else if (looksClear) {
-        devtoolsSuspectStreakRef.current = 0;
-        devtoolsSafeStreakRef.current += 1;
-        if (devtoolsSafeStreakRef.current >= safeStreakToClear) {
-          setDevtoolsBlocked(false);
-        }
-      } else {
-        // Ambiguous gap (e.g. scrollbar / partial UI): decay so one noisy frame does not stick.
-        devtoolsSuspectStreakRef.current = Math.max(
-          0,
-          devtoolsSuspectStreakRef.current - 1,
-        );
-        devtoolsSafeStreakRef.current = 0;
-      }
-    };
-
-    const id = window.setInterval(tick, pollMs);
-    window.addEventListener("resize", tick);
-    tick();
-    return () => {
-      window.clearInterval(id);
-      window.removeEventListener("resize", tick);
-    };
+    setDevtoolsBlocked(false);
   }, [assessmentStarted, submitting]);
 
   // Check if already submitted

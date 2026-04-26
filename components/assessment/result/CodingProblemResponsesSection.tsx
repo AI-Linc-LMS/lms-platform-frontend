@@ -49,6 +49,9 @@ export function CodingProblemResponsesSection({ codingResponses }: CodingProblem
 
   const diffStyle = getDifficultyColor(item.difficulty_level);
   const allPassed = item.all_test_cases_passed;
+  const feedbackText =
+    typeof item.feedback === "string" ? item.feedback.trim() : "";
+  const hasFeedback = feedbackText.length > 0;
 
   return (
     <Paper
@@ -221,6 +224,18 @@ export function CodingProblemResponsesSection({ codingResponses }: CodingProblem
                   }}
                 />
               )}
+              {item.awarded_marks != null && Number.isFinite(Number(item.awarded_marks)) ? (
+                <Chip
+                  label={`Score: ${item.awarded_marks}`}
+                  size="small"
+                  sx={{
+                    backgroundColor: "#d1fae5",
+                    color: "#065f46",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                  }}
+                />
+              ) : null}
             </Box>
           </Box>
         </Box>
@@ -417,6 +432,44 @@ export function CodingProblemResponsesSection({ codingResponses }: CodingProblem
             </Box>
           </Box>
         )}
+
+        {hasFeedback ? (
+          <Box sx={{ mt: 2 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                color: "#0d9488",
+                textTransform: "uppercase",
+                fontSize: "0.75rem",
+                mb: 1,
+              }}
+            >
+              Evaluator feedback
+            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                border: "1px solid #ccfbf1",
+                backgroundColor: "#f0fdfa",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#134e4a",
+                  lineHeight: 1.65,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {feedbackText}
+              </Typography>
+            </Paper>
+          </Box>
+        ) : null}
       </Box>
     </Paper>
   );

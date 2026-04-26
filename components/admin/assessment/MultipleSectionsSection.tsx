@@ -579,6 +579,7 @@ export function MultipleSectionsSection({
                         <Box
                           ref={provided.innerRef}
                           {...provided.draggableProps}
+                          {...provided.dragHandleProps}
                           sx={{ mb: 2 }}
                         >
                           <SectionCard
