@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useState,
   useCallback,
   useRef,
@@ -15,7 +16,18 @@ import {
 import type { RefObject } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Box, Typography, Button, Paper } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  CircularProgress,
+} from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { AssessmentFloatingTools } from "@/components/assessment/tools/AssessmentFloatingTools";
 import { AssessmentToolbarTools } from "@/components/assessment/tools/AssessmentToolbarTools";
@@ -35,11 +47,17 @@ import { AssessmentTimerBar } from "@/components/assessment/AssessmentTimerBar";
 import { AssessmentNavigation } from "@/components/assessment/AssessmentNavigation";
 import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
 import { AssessmentQuizLayout } from "@/components/assessment/AssessmentQuizLayout";
-import { AssessmentCodingLayout } from "@/components/assessment/AssessmentCodingLayout";
+import {
+  AssessmentCodingLayout,
+  type AssessmentCodingLayoutProps,
+} from "@/components/assessment/AssessmentCodingLayout";
 import { AssessmentSubjectiveLayout } from "@/components/assessment/AssessmentSubjectiveLayout";
 import {
+  getSectionTimeCapTotalSeconds,
   mergeAssessmentSections,
   normalizeSubjectiveAnswer,
+  parseSectionCompletelyAttempted,
+  timedSectionCompletionKey,
 } from "@/utils/assessment.utils";
 import {
   getResponseForQuestion,
@@ -49,8 +67,13 @@ import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
 import { config } from "@/lib/config";
 import { uploadFile } from "@/lib/services/file-upload.service";
-import type { ViolationScreenshotSample } from "@/lib/services/assessment.service";
+import {
+  SESSION_START_SCREENSHOT_TYPE,
+  type ViolationScreenshotSample,
+} from "@/lib/services/assessment.service";
 import { captureViolationScreenshotFile } from "@/lib/utils/assessment-violation-screenshot.utils";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 // Lazy load dialogs only
 const SubmissionDialog = lazy(() =>
@@ -72,6 +95,26 @@ const FullscreenExitConfirmDialog = lazy(() =>
 const MAX_VIOLATIONS = 100;
 const MAX_VIOLATION_SCREENSHOT_EVIDENCE = 5;
 const VIOLATION_SCREENSHOT_DEBOUNCE_MS = 400;
+const MAX_VIOLATION_CAPTURE_RETRIES = 6;
+const MAX_SESSION_START_PROOF_ATTEMPTS = 6;
+
+const SECTION_COMPLETELY_ATTEMPTED_KEY = "section_completely_attempted";
+
+/** First section index the learner may enter: skips timed sections already marked complete on the response sheet. */
+function firstTimedSectionEntryIndex(
+  secs: Array<{ id: number; section_type?: string }>,
+  complete: ReadonlySet<string>
+): number {
+  for (let i = 0; i < secs.length; i++) {
+    const s = secs[i]!;
+    const type = s.section_type || "quiz";
+    const cap = getSectionTimeCapTotalSeconds(s);
+    if (cap == null || cap <= 0) return i;
+    const key = timedSectionCompletionKey(type, s.id);
+    if (!complete.has(key)) return i;
+  }
+  return Math.max(0, secs.length - 1);
+}
 
 function getAssessmentWindowStream(): MediaStream | null {
   if (typeof window === "undefined") return null;
@@ -105,9 +148,22 @@ async function waitForLiveCameraAndMicOnVideo(
   return false;
 }
 
+function trimViolationScreenshotEvidence(
+  list: ViolationScreenshotSample[],
+  max: number
+) {
+  while (list.length > max) {
+    const idx = list.findIndex(
+      (s) => s.latest_violation_type !== SESSION_START_SCREENSHOT_TYPE
+    );
+    if (idx === -1) list.shift();
+    else list.splice(idx, 1);
+  }
+}
+
 // Memoized question component to prevent unnecessary re-renders
 const MemoizedQuizLayout = memo(AssessmentQuizLayout);
-const MemoizedCodingLayout = memo(AssessmentCodingLayout);
+const MemoizedCodingLayout = memo<AssessmentCodingLayoutProps>(AssessmentCodingLayout);
 const MemoizedSubjectiveLayout = memo(AssessmentSubjectiveLayout);
 
 export default function TakeAssessmentPage({
@@ -124,18 +180,37 @@ export default function TakeAssessmentPage({
   const [submitting, setSubmitting] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [notepadOpen, setNotepadOpen] = useState(false);
+  const [devtoolsBlocked, setDevtoolsBlocked] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [showStartButton, setShowStartButton] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [advanceSectionDialogOpen, setAdvanceSectionDialogOpen] =
+    useState(false);
   const [showFullscreenExitConfirm, setShowFullscreenExitConfirm] =
     useState(false);
   const [mediaInterrupted, setMediaInterrupted] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [responses, setResponses] = useState<
     Record<string, Record<string, any>>
   >({});
+  const [mobileAssessmentGate, setMobileAssessmentGate] = useState<
+    "pending" | "blocked" | "ok"
+  >("pending");
+  /** Re-runs violation screenshot effect after a failed capture/upload so samples can retry. */
+  const [violationScreenshotRetryTick, setViolationScreenshotRetryTick] =
+    useState(0);
+  /** Re-runs session-start proof effect after a failed capture/upload. */
+  const [sessionStartProofRetryTick, setSessionStartProofRetryTick] =
+    useState(0);
+  /** Bumps when timed-section completion keys change so UI and memos re-evaluate. */
+  const [timedSectionLockRevision, setTimedSectionLockRevision] = useState(0);
+  /**
+   * Violation screenshot uploads are held until session-start proof finishes (or is skipped)
+   * so startup proctoring noise does not fill all evidence slots before the baseline capture.
+   */
+  const [violationScreenshotCaptureGateOpen, setViolationScreenshotCaptureGateOpen] =
+    useState(false);
 
   // Refs
   const timeUpCallbackRef = useRef<(() => void) | null>(null);
@@ -144,6 +219,13 @@ export default function TakeAssessmentPage({
   const hasCheckedSubmission = useRef(false);
   const hasLoadedResponses = useRef(false);
   const answerChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  /**
+   * outer/inner dimension gaps are noisy (scrollbars, zoom, fullscreen, browser UI).
+   * Require several consecutive suspicious polls before blocking; require a few “clean”
+   * polls before clearing to avoid flicker.
+   */
+  const devtoolsSuspectStreakRef = useRef(0);
+  const devtoolsSafeStreakRef = useRef(0);
   const violationScreenshotEvidenceRef = useRef<ViolationScreenshotSample[]>(
     []
   );
@@ -152,15 +234,31 @@ export default function TakeAssessmentPage({
     typeof setTimeout
   > | null>(null);
   const violationScreenshotUploadingRef = useRef(false);
+  /** Serializes violation screenshot uploads so a slow capture cannot drop later violations. */
+  const violationScreenshotUploadChainRef = useRef<Promise<void>>(
+    Promise.resolve(),
+  );
+  const sessionStartProofBusyRef = useRef(false);
+  const sessionStartProofUploadedRef = useRef(false);
+  const sessionStartProofAttemptsRef = useRef(0);
+  const violationCaptureFailStreakRef = useRef(0);
   const totalViolationCountRef = useRef(0);
   const tabSwitchCountRef = useRef(0);
   const latestViolationTypeRef = useRef<string | null>(null);
   const lastTabSwitchCountAtScreenshotRef = useRef(-1);
   const handleFinalSubmitRef = useRef<() => void>(() => {});
   const mediaGraceUntilRef = useRef(0);
+  const timedSectionsCompleteRef = useRef<Set<string>>(new Set());
+  const prevSectionIndexMarkRef = useRef<number | null>(null);
 
   // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
+
+  useLayoutEffect(() => {
+    setMobileAssessmentGate(
+      isMobileOrTabletForAssessment() ? "blocked" : "ok"
+    );
+  }, []);
 
   // Preload proctoring model in background (non-blocking)
   useEffect(() => {
@@ -227,6 +325,57 @@ export default function TakeAssessmentPage({
     return merged;
   }, [assessment]);
 
+  const allowMovementAcrossSections = useMemo(
+    () => assessment?.allow_movement !== false,
+    [assessment?.allow_movement]
+  );
+
+  const getTimedSectionClosed = useCallback(
+    (sectionIndex: number) => {
+      const s = sections[sectionIndex];
+      if (!s) return false;
+      const cap = getSectionTimeCapTotalSeconds(s);
+      if (cap == null || cap <= 0) return false;
+      const type = (s as { section_type?: string }).section_type || "quiz";
+      const id = Number((s as { id: number }).id);
+      if (!Number.isFinite(id)) return false;
+      return timedSectionsCompleteRef.current.has(
+        timedSectionCompletionKey(type, id)
+      );
+    },
+    [sections]
+  );
+
+  const crossSectionPreviousBlocked = useMemo(
+    () =>
+      currentQuestionIndex === 0 &&
+      currentSectionIndex > 0 &&
+      getTimedSectionClosed(currentSectionIndex - 1),
+    [
+      currentQuestionIndex,
+      currentSectionIndex,
+      getTimedSectionClosed,
+      timedSectionLockRevision,
+    ]
+  );
+
+  const addTimedCompletionForSectionIndex = useCallback(
+    (sectionIndex: number) => {
+      const s = sections[sectionIndex];
+      if (!s) return;
+      const cap = getSectionTimeCapTotalSeconds(s);
+      if (cap == null || cap <= 0) return;
+      const type = (s as { section_type?: string }).section_type || "quiz";
+      const id = Number((s as { id: number }).id);
+      if (!Number.isFinite(id)) return;
+      const key = timedSectionCompletionKey(type, id);
+      if (timedSectionsCompleteRef.current.has(key)) return;
+      timedSectionsCompleteRef.current.add(key);
+      setTimedSectionLockRevision((r) => r + 1);
+    },
+    [sections]
+  );
+
   // Proctoring
   const handleViolationThresholdReached = useCallback(() => {
     // Handled by proctoring system
@@ -258,6 +407,20 @@ export default function TakeAssessmentPage({
       assessmentStarted && assessment?.proctoring_enabled !== false,
   });
   const { clientInfo } = useClientInfo();
+  /** Same tenant as client-info / assessment APIs (env can be wrong on some deploys). */
+  const uploadClientId = useMemo(() => {
+    const n = Number(clientInfo?.id ?? config.clientId);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  }, [clientInfo?.id]);
+  const uploadClientIdRef = useRef(uploadClientId);
+  uploadClientIdRef.current = uploadClientId;
+  const submittingRef = useRef(submitting);
+  submittingRef.current = submitting;
+  const assessmentStartedRef = useRef(assessmentStarted);
+  assessmentStartedRef.current = assessmentStarted;
+  const sessionStartProofLongDelayRef = useRef(true);
+  sessionStartProofLongDelayRef.current =
+    assessment?.proctoring_enabled !== false;
   const liveProctoringEnabled = clientInfo?.live_proctoring_enabled === true;
 
   const { status: liveStreamStatus } = useLiveProctoringPublisher({
@@ -273,29 +436,40 @@ export default function TakeAssessmentPage({
   tabSwitchCountRef.current = tabSwitchCount;
   latestViolationTypeRef.current = latestViolation?.type ?? null;
 
-  // Baseline violation count when the assessment session starts (ignore pre-start noise)
+  // Baseline + violation screenshots: one effect so baseline runs before count comparisons; clear debounce when session stops.
   useEffect(() => {
-    if (!assessmentStarted) {
-      violationScreenshotLastCountRef.current = -1;
-      lastTabSwitchCountAtScreenshotRef.current = -1;
+    if (!assessmentStarted || submitting) {
+      if (violationScreenshotDebounceRef.current) {
+        clearTimeout(violationScreenshotDebounceRef.current);
+        violationScreenshotDebounceRef.current = null;
+      }
+      if (!assessmentStarted) {
+        violationScreenshotLastCountRef.current = -1;
+        lastTabSwitchCountAtScreenshotRef.current = -1;
+        violationCaptureFailStreakRef.current = 0;
+        violationScreenshotUploadChainRef.current = Promise.resolve();
+        setViolationScreenshotCaptureGateOpen(false);
+      }
       return;
     }
-    if (violationScreenshotLastCountRef.current === -1) {
-      violationScreenshotLastCountRef.current = totalViolationCount;
-      lastTabSwitchCountAtScreenshotRef.current = tabSwitchCount;
-    }
-  }, [assessmentStarted, totalViolationCount, tabSwitchCount]);
 
-  // On proctoring violation increases: debounced full-page screenshot → S3 (assessment_screenshots)
-  useEffect(() => {
-    if (!assessmentStarted || submitting) return;
-    if (violationScreenshotLastCountRef.current < 0) return;
+    if (!violationScreenshotCaptureGateOpen) {
+      return;
+    }
+
     if (
       violationScreenshotEvidenceRef.current.length >=
       MAX_VIOLATION_SCREENSHOT_EVIDENCE
     ) {
       return;
     }
+
+    if (violationScreenshotLastCountRef.current < 0) {
+      violationScreenshotLastCountRef.current = totalViolationCount;
+      lastTabSwitchCountAtScreenshotRef.current = tabSwitchCount;
+      return;
+    }
+
     if (totalViolationCount <= violationScreenshotLastCountRef.current) return;
 
     if (violationScreenshotDebounceRef.current) {
@@ -304,29 +478,12 @@ export default function TakeAssessmentPage({
 
     violationScreenshotDebounceRef.current = setTimeout(() => {
       violationScreenshotDebounceRef.current = null;
-      const countAtFire = totalViolationCountRef.current;
-      if (countAtFire <= violationScreenshotLastCountRef.current) return;
-      violationScreenshotLastCountRef.current = countAtFire;
 
-      void (async () => {
-        if (violationScreenshotUploadingRef.current) return;
-        if (
-          violationScreenshotEvidenceRef.current.length >=
-          MAX_VIOLATION_SCREENSHOT_EVIDENCE
-        ) {
-          return;
-        }
-
-        violationScreenshotUploadingRef.current = true;
-        try {
-          const file = await captureViolationScreenshotFile();
-          if (!file) return;
-
-          const result = await uploadFile(
-            Number(config.clientId),
-            file,
-            "assessment_screenshots"
-          );
+      violationScreenshotUploadChainRef.current = violationScreenshotUploadChainRef.current
+        .catch(() => {})
+        .then(async () => {
+          const countAtFire = totalViolationCountRef.current;
+          if (countAtFire <= violationScreenshotLastCountRef.current) return;
 
           if (
             violationScreenshotEvidenceRef.current.length >=
@@ -335,36 +492,75 @@ export default function TakeAssessmentPage({
             return;
           }
 
-          const tabNow = tabSwitchCountRef.current;
-          const hadTabSwitch =
-            lastTabSwitchCountAtScreenshotRef.current >= 0 &&
-            tabNow > lastTabSwitchCountAtScreenshotRef.current;
-          lastTabSwitchCountAtScreenshotRef.current = tabNow;
+          violationScreenshotUploadingRef.current = true;
+          try {
+            const file = await captureViolationScreenshotFile();
+            if (!file) {
+              violationCaptureFailStreakRef.current += 1;
+              if (
+                violationCaptureFailStreakRef.current <
+                MAX_VIOLATION_CAPTURE_RETRIES
+              ) {
+                setViolationScreenshotRetryTick((t) => t + 1);
+              } else {
+                violationScreenshotLastCountRef.current = countAtFire;
+                violationCaptureFailStreakRef.current = 0;
+              }
+              return;
+            }
 
-          violationScreenshotEvidenceRef.current.push({
-            id: result.id,
-            file_id: result.id,
-            url: result.url,
-            screenshot_url: result.url,
-            filename: result.filename,
-            module: result.module,
-            created_at: result.created_at,
-            captured_at: result.created_at,
-            total_violation_count_at_capture: countAtFire,
-            latest_violation_type: hadTabSwitch
-              ? "TAB_SWITCH"
-              : latestViolationTypeRef.current,
-            tab_switch_count_at_capture: tabNow,
-          });
-        } catch (err) {
-          console.error(
-            "[assessment] Violation screenshot upload failed:",
-            err
-          );
-        } finally {
-          violationScreenshotUploadingRef.current = false;
-        }
-      })();
+            const result = await uploadFile(
+              uploadClientIdRef.current,
+              file,
+              "assessment_screenshots"
+            );
+
+            const tabNow = tabSwitchCountRef.current;
+            const hadTabSwitch =
+              lastTabSwitchCountAtScreenshotRef.current >= 0 &&
+              tabNow > lastTabSwitchCountAtScreenshotRef.current;
+            lastTabSwitchCountAtScreenshotRef.current = tabNow;
+
+            violationScreenshotEvidenceRef.current.push({
+              id: result.id,
+              file_id: result.id,
+              url: result.url,
+              screenshot_url: result.url,
+              filename: result.filename,
+              module: result.module,
+              created_at: result.created_at,
+              captured_at: result.created_at,
+              total_violation_count_at_capture: countAtFire,
+              latest_violation_type: hadTabSwitch
+                ? "TAB_SWITCH"
+                : latestViolationTypeRef.current,
+              tab_switch_count_at_capture: tabNow,
+            });
+            trimViolationScreenshotEvidence(
+              violationScreenshotEvidenceRef.current,
+              MAX_VIOLATION_SCREENSHOT_EVIDENCE
+            );
+            violationScreenshotLastCountRef.current = countAtFire;
+            violationCaptureFailStreakRef.current = 0;
+          } catch (err) {
+            console.error(
+              "[assessment] Violation screenshot upload failed:",
+              err
+            );
+            violationCaptureFailStreakRef.current += 1;
+            if (
+              violationCaptureFailStreakRef.current <
+              MAX_VIOLATION_CAPTURE_RETRIES
+            ) {
+              setViolationScreenshotRetryTick((t) => t + 1);
+            } else {
+              violationScreenshotLastCountRef.current = countAtFire;
+              violationCaptureFailStreakRef.current = 0;
+            }
+          } finally {
+            violationScreenshotUploadingRef.current = false;
+          }
+        });
     }, VIOLATION_SCREENSHOT_DEBOUNCE_MS);
 
     return () => {
@@ -373,7 +569,138 @@ export default function TakeAssessmentPage({
         violationScreenshotDebounceRef.current = null;
       }
     };
-  }, [totalViolationCount, assessmentStarted, submitting]);
+  }, [
+    totalViolationCount,
+    assessmentStarted,
+    submitting,
+    violationScreenshotRetryTick,
+    violationScreenshotCaptureGateOpen,
+  ]);
+
+  // Non-proctored assessments: no session-start proof pipeline — open violation captures immediately.
+  useEffect(() => {
+    if (!assessmentStarted || assessment?.proctoring_enabled !== false) return;
+    setViolationScreenshotCaptureGateOpen(true);
+  }, [assessmentStarted, assessment?.proctoring_enabled]);
+
+  // Full-page proof screenshot once the attempt has started (uploaded like violation samples; included in final submit).
+  // Do not depend on uploadClientId / submitting here: hydration or submit-state churn would clear the timer
+  // before it fires. Wait for !submitting inside the callback instead.
+  useEffect(() => {
+    if (!assessmentStarted) {
+      sessionStartProofUploadedRef.current = false;
+      sessionStartProofAttemptsRef.current = 0;
+      return;
+    }
+    if (!assessment?.id) {
+      setViolationScreenshotCaptureGateOpen(true);
+      return;
+    }
+    if (sessionStartProofUploadedRef.current) {
+      setViolationScreenshotCaptureGateOpen(true);
+      return;
+    }
+
+    let cancelled = false;
+    const delayMs = sessionStartProofLongDelayRef.current ? 1400 : 600;
+
+    const id = window.setTimeout(() => {
+      void (async () => {
+        if (cancelled || sessionStartProofUploadedRef.current) return;
+
+        let waitSubmit = 0;
+        while (
+          submittingRef.current &&
+          waitSubmit < 200 &&
+          !cancelled &&
+          assessmentStartedRef.current
+        ) {
+          await new Promise<void>((r) => setTimeout(r, 100));
+          waitSubmit += 1;
+        }
+        if (cancelled || sessionStartProofUploadedRef.current) return;
+        if (!assessmentStartedRef.current || submittingRef.current) return;
+
+        const arr = violationScreenshotEvidenceRef.current;
+        trimViolationScreenshotEvidence(
+          arr,
+          MAX_VIOLATION_SCREENSHOT_EVIDENCE - 1
+        );
+
+        sessionStartProofBusyRef.current = true;
+        try {
+          const file = await captureViolationScreenshotFile({
+            filename: `assessment-session-proof-${Date.now()}.jpg`,
+          });
+          if (cancelled) return;
+          if (!file) {
+            sessionStartProofAttemptsRef.current += 1;
+            if (
+              sessionStartProofAttemptsRef.current <
+              MAX_SESSION_START_PROOF_ATTEMPTS
+            ) {
+              setSessionStartProofRetryTick((t) => t + 1);
+            } else {
+              sessionStartProofUploadedRef.current = true;
+            }
+            return;
+          }
+
+          const result = await uploadFile(
+            uploadClientIdRef.current,
+            file,
+            "assessment_screenshots"
+          );
+          if (cancelled) return;
+
+          const tabNow = tabSwitchCountRef.current;
+          violationScreenshotEvidenceRef.current.unshift({
+            id: result.id,
+            file_id: result.id,
+            url: result.url,
+            screenshot_url: result.url,
+            filename: result.filename,
+            module: result.module,
+            created_at: result.created_at,
+            captured_at: result.created_at,
+            total_violation_count_at_capture: totalViolationCountRef.current,
+            latest_violation_type: SESSION_START_SCREENSHOT_TYPE,
+            tab_switch_count_at_capture: tabNow,
+          });
+          trimViolationScreenshotEvidence(
+            violationScreenshotEvidenceRef.current,
+            MAX_VIOLATION_SCREENSHOT_EVIDENCE
+          );
+          sessionStartProofUploadedRef.current = true;
+          sessionStartProofAttemptsRef.current = 0;
+        } catch (err) {
+          console.error(
+            "[assessment] Session start proof screenshot failed:",
+            err
+          );
+          sessionStartProofAttemptsRef.current += 1;
+          if (
+            sessionStartProofAttemptsRef.current <
+            MAX_SESSION_START_PROOF_ATTEMPTS
+          ) {
+            setSessionStartProofRetryTick((t) => t + 1);
+          } else {
+            sessionStartProofUploadedRef.current = true;
+          }
+        } finally {
+          sessionStartProofBusyRef.current = false;
+          if (sessionStartProofUploadedRef.current) {
+            setViolationScreenshotCaptureGateOpen(true);
+          }
+        }
+      })();
+    }, delayMs);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [assessmentStarted, assessment?.id, sessionStartProofRetryTick]);
 
   // Track last violation timestamp per type to avoid duplicate toasts
   const lastViolationToastRef = useRef<Map<string, number>>(new Map());
@@ -493,6 +820,24 @@ export default function TakeAssessmentPage({
     }
   }, [metadata.proctoring.eye_movement_count]);
 
+  useLayoutEffect(() => {
+    const prev = prevSectionIndexMarkRef.current;
+    if (!assessmentStarted) {
+      prevSectionIndexMarkRef.current = currentSectionIndex;
+      return;
+    }
+    if (prev !== null && currentSectionIndex > prev) {
+      for (let i = prev; i < currentSectionIndex; i++) {
+        addTimedCompletionForSectionIndex(i);
+      }
+    }
+    prevSectionIndexMarkRef.current = currentSectionIndex;
+  }, [
+    addTimedCompletionForSectionIndex,
+    assessmentStarted,
+    currentSectionIndex,
+  ]);
+
   // Navigation
   const navigation = useAssessmentNavigation({
     currentSectionIndex,
@@ -500,11 +845,26 @@ export default function TakeAssessmentPage({
     sections,
     setCurrentSectionIndex,
     setCurrentQuestionIndex,
+    allowMovementAcrossSections,
+    blockCrossSectionPrevious: crossSectionPreviousBlocked,
   });
 
   // Security measures - disable beforeunload during submission
   useAssessmentSecurity({ enabled: assessmentStarted, submitting });
-  useKeyboardShortcuts({ enabled: assessmentStarted });
+
+  const handleSubjectiveImageUploadError = useCallback(
+    (message: string) => {
+      showToast(message, "error");
+    },
+    [showToast],
+  );
+
+  useEffect(() => {
+    // Devtools detection/overlay intentionally disabled for assessment take flow.
+    devtoolsSuspectStreakRef.current = 0;
+    devtoolsSafeStreakRef.current = 0;
+    setDevtoolsBlocked(false);
+  }, [assessmentStarted, submitting]);
 
   // Check if already submitted
   useEffect(() => {
@@ -586,9 +946,22 @@ export default function TakeAssessmentPage({
                 // sectionData is like: { "75": { "84205": "a", "84206": "a", ... } }
                 Object.keys(sectionData).forEach((sectionIdKey) => {
                   const questionResponses = sectionData[sectionIdKey];
-                  
+                  const sectionIdNum = Number(sectionIdKey);
+                  if (
+                    parseSectionCompletelyAttempted(
+                      questionResponses as Record<string, unknown>
+                    )
+                  ) {
+                    timedSectionsCompleteRef.current.add(
+                      timedSectionCompletionKey("quiz", sectionIdNum)
+                    );
+                  }
+
                   // Map each question response - bind ALL responses including null
                   Object.keys(questionResponses).forEach((questionIdKey) => {
+                    if (questionIdKey === SECTION_COMPLETELY_ATTEMPTED_KEY) {
+                      return;
+                    }
                     const response = questionResponses[questionIdKey];
                     const questionId = Number(questionIdKey);
                     
@@ -612,8 +985,21 @@ export default function TakeAssessmentPage({
               responseSheet.codingProblemSectionId.forEach((sectionData: any) => {
                 Object.keys(sectionData).forEach((sectionIdKey) => {
                   const questionResponses = sectionData[sectionIdKey];
-                  
+                  const sectionIdNum = Number(sectionIdKey);
+                  if (
+                    parseSectionCompletelyAttempted(
+                      questionResponses as Record<string, unknown>
+                    )
+                  ) {
+                    timedSectionsCompleteRef.current.add(
+                      timedSectionCompletionKey("coding", sectionIdNum)
+                    );
+                  }
+
                   Object.keys(questionResponses).forEach((questionIdKey) => {
+                    if (questionIdKey === SECTION_COMPLETELY_ATTEMPTED_KEY) {
+                      return;
+                    }
                     const response = questionResponses[questionIdKey];
                     const questionId = Number(questionIdKey);
                     
@@ -634,7 +1020,20 @@ export default function TakeAssessmentPage({
               responseSheet.subjectiveQuestionSectionId.forEach((sectionData: any) => {
                 Object.keys(sectionData).forEach((sectionIdKey) => {
                   const questionResponses = sectionData[sectionIdKey];
+                  const sectionIdNum = Number(sectionIdKey);
+                  if (
+                    parseSectionCompletelyAttempted(
+                      questionResponses as Record<string, unknown>
+                    )
+                  ) {
+                    timedSectionsCompleteRef.current.add(
+                      timedSectionCompletionKey("subjective", sectionIdNum)
+                    );
+                  }
                   Object.keys(questionResponses).forEach((questionIdKey) => {
+                    if (questionIdKey === SECTION_COMPLETELY_ATTEMPTED_KEY) {
+                      return;
+                    }
                     const response = questionResponses[questionIdKey];
                     const questionId = Number(questionIdKey);
                     if (response !== undefined) {
@@ -650,6 +1049,13 @@ export default function TakeAssessmentPage({
             // Merge into existing section buckets so a partial response_sheet never wipes other section types
             if (Object.keys(loadedResponses).length > 0) {
               startTransition(() => {
+                const entryIdx = firstTimedSectionEntryIndex(
+                  sections,
+                  timedSectionsCompleteRef.current
+                );
+                setCurrentSectionIndex(entryIdx);
+                setCurrentQuestionIndex(0);
+                setTimedSectionLockRevision((r) => r + 1);
                 setResponses((prev) => {
                   const next = { ...prev };
                   if (loadedResponses.quiz) {
@@ -666,6 +1072,16 @@ export default function TakeAssessmentPage({
                   }
                   return next;
                 });
+              });
+            } else if (timedSectionsCompleteRef.current.size > 0) {
+              startTransition(() => {
+                const entryIdx = firstTimedSectionEntryIndex(
+                  sections,
+                  timedSectionsCompleteRef.current
+                );
+                setCurrentSectionIndex(entryIdx);
+                setCurrentQuestionIndex(0);
+                setTimedSectionLockRevision((r) => r + 1);
               });
             }
           } catch (error) {
@@ -686,12 +1102,13 @@ export default function TakeAssessmentPage({
   }, [assessment, sections]);
 
   // Auto-save
-  useAutoSave({
+  const { remoteAutosave } = useAutoSave({
     enabled: assessmentStarted && !submitting,
     slug,
     responses,
     sections,
     metadata,
+    timedSectionsCompleteRef,
   });
 
   // Track proctoring state
@@ -749,6 +1166,14 @@ export default function TakeAssessmentPage({
     suppressEscapeInterceptor: showFullscreenExitConfirm,
   });
 
+  useKeyboardShortcuts({
+    enabled: assessmentStarted && !submitting,
+    suspend:
+      showSubmitDialog ||
+      showFullscreenWarning ||
+      showFullscreenExitConfirm,
+  });
+
   // Submission handler
   const { handleFinalSubmit } = useAssessmentSubmission({
     assessment,
@@ -762,6 +1187,7 @@ export default function TakeAssessmentPage({
     setShowFullscreenWarning,
     setShowSubmitDialog,
     violationScreenshotSamplesRef: violationScreenshotEvidenceRef,
+    timedSectionsCompleteRef,
   });
 
   useEffect(() => {
@@ -913,25 +1339,23 @@ export default function TakeAssessmentPage({
 
       timer.start();
 
-      setTimeout(() => {
-        enterFullscreen()
-          .then(() => {
-            setTimeout(() => {
-              const isFS =
-                !!document.fullscreenElement ||
-                !!(document as any).webkitFullscreenElement ||
-                !!(document as any).mozFullScreenElement ||
-                !!(document as any).msFullscreenElement;
+      void enterFullscreen()
+        .then(() => {
+          requestAnimationFrame(() => {
+            const isFS =
+              !!document.fullscreenElement ||
+              !!(document as any).webkitFullscreenElement ||
+              !!(document as any).mozFullScreenElement ||
+              !!(document as any).msFullscreenElement;
 
-              if (!isFS) {
-                setShowFullscreenWarning(true);
-              }
-            }, 100);
-          })
-          .catch(() => {
-            setShowFullscreenWarning(true);
+            if (!isFS) {
+              setShowFullscreenWarning(true);
+            }
           });
-      }, 100);
+        })
+        .catch(() => {
+          setShowFullscreenWarning(true);
+        });
     } catch (error: any) {
       showToast(error.message || "Failed to start assessment.", "error");
       setShowStartButton(true);
@@ -1172,13 +1596,17 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog(false);
   }, []);
 
-  // Section change handler - IMMEDIATE, never block navigation
-  const handleSectionChange = useCallback((sectionIndex: number) => {
-    // Never block navigation - update immediately
-    setCurrentSectionIndex(sectionIndex);
-    setCurrentQuestionIndex(0);
-    // Don't use transition state - it blocks navigation
-  }, []);
+  const handleSectionChange = useCallback(
+    (sectionIndex: number) => {
+      if (getTimedSectionClosed(sectionIndex)) {
+        showToast(t("assessments.take.timedSectionAlreadyCompleted"), "warning");
+        return;
+      }
+      setCurrentSectionIndex(sectionIndex);
+      setCurrentQuestionIndex(0);
+    },
+    [getTimedSectionClosed, showToast, t]
+  );
 
   // Computed values - heavily memoized
   const currentSection = useMemo(
@@ -1190,6 +1618,104 @@ export default function TakeAssessmentPage({
     () => currentSection?.section_type || "quiz",
     [currentSection]
   );
+
+  const sectionEnteredAtRef = useRef(Date.now());
+  const [sectionClockTick, setSectionClockTick] = useState(0);
+
+  useLayoutEffect(() => {
+    sectionEnteredAtRef.current = Date.now();
+    setSectionClockTick(0);
+  }, [currentSectionIndex]);
+
+  useEffect(() => {
+    if (!assessmentStarted) return;
+    const sec = sections[currentSectionIndex];
+    const cap = sec ? getSectionTimeCapTotalSeconds(sec) : null;
+    if (cap == null || cap <= 0) return;
+    const id = window.setInterval(() => {
+      setSectionClockTick((tick) => tick + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [assessmentStarted, currentSectionIndex, sections]);
+
+  const sectionTimeRemainingSeconds = useMemo(() => {
+    void sectionClockTick;
+    const sec = sections[currentSectionIndex];
+    const maxSec = sec ? getSectionTimeCapTotalSeconds(sec) : null;
+    if (maxSec == null || maxSec <= 0) return null;
+    const elapsed = Math.floor((Date.now() - sectionEnteredAtRef.current) / 1000);
+    return Math.max(0, maxSec - elapsed);
+  }, [sectionClockTick, sections, currentSectionIndex]);
+
+  const atLastQuestionInCurrentSection =
+    navigation.currentSectionQuestionCount > 0 &&
+    currentQuestionIndex === navigation.currentSectionQuestionCount - 1;
+
+  const showAdvanceToNextSection =
+    !allowMovementAcrossSections &&
+    sections.length > 0 &&
+    currentSectionIndex < sections.length - 1 &&
+    !atLastQuestionInCurrentSection;
+
+  const handleOpenAdvanceSectionDialog = useCallback(() => {
+    setAdvanceSectionDialogOpen(true);
+  }, []);
+
+  const handleCloseAdvanceSectionDialog = useCallback(() => {
+    setAdvanceSectionDialogOpen(false);
+  }, []);
+
+  const handleConfirmAdvanceSection = useCallback(() => {
+    setAdvanceSectionDialogOpen(false);
+    setCurrentSectionIndex((i) => Math.min(i + 1, Math.max(0, sections.length - 1)));
+    setCurrentQuestionIndex(0);
+  }, [sections.length]);
+
+  const prevSectionTimeRemainingRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    prevSectionTimeRemainingRef.current = null;
+  }, [currentSectionIndex]);
+
+  useEffect(() => {
+    if (!assessmentStarted) return;
+
+    const sec = sections[currentSectionIndex];
+    const cap = sec ? getSectionTimeCapTotalSeconds(sec) : null;
+    if (cap == null || cap <= 0) {
+      prevSectionTimeRemainingRef.current = null;
+      return;
+    }
+
+    if (sectionTimeRemainingSeconds === null) {
+      prevSectionTimeRemainingRef.current = null;
+      return;
+    }
+
+    const prev = prevSectionTimeRemainingRef.current;
+    prevSectionTimeRemainingRef.current = sectionTimeRemainingSeconds;
+
+    if (sectionTimeRemainingSeconds !== 0) return;
+    if (prev === null || prev <= 0) return;
+
+    if (currentSectionIndex < sections.length - 1) {
+      showToast(t("assessments.take.sectionTimeAutoAdvanced"), "warning");
+      setCurrentSectionIndex((i) =>
+        Math.min(i + 1, Math.max(0, sections.length - 1))
+      );
+      setCurrentQuestionIndex(0);
+      return;
+    }
+
+    showToast(t("assessments.take.lastSectionTimeEnded"), "info");
+  }, [
+    assessmentStarted,
+    sectionTimeRemainingSeconds,
+    currentSectionIndex,
+    sections,
+    showToast,
+    t,
+  ]);
 
   const quizQuestions = useMemo(() => {
     if (!currentSection || sectionType !== "quiz") return [];
@@ -1471,8 +1997,51 @@ export default function TakeAssessmentPage({
   );
 
   // Early return
+  if (mobileAssessmentGate === "blocked") {
+    return <AssessmentDesktopOnlyFullPage slug={slug} />;
+  }
+  if (mobileAssessmentGate === "pending" || (loading && !assessment)) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+          backgroundColor: "#f9fafb",
+        }}
+      >
+        <CircularProgress size={40} sx={{ color: "#6366f1" }} aria-label={t("assessments.initializing")} />
+        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+          {t("assessments.initializing")}
+        </Typography>
+      </Box>
+    );
+  }
+
   if (!assessment) {
-    return null;
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+          backgroundColor: "#f9fafb",
+          px: 2,
+          textAlign: "center",
+        }}
+      >
+        <CircularProgress size={40} sx={{ color: "#6366f1" }} aria-label={t("assessments.starting")} />
+        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+          {t("assessments.starting")}
+        </Typography>
+      </Box>
+    );
   }
 
   // Check if assessment has no sections/questions
@@ -1539,10 +2108,16 @@ export default function TakeAssessmentPage({
         }
       }}
       onPaste={(e) => {
-        if (assessmentStarted) {
-          e.preventDefault();
-          return false;
+        if (!assessmentStarted) return;
+        const el = e.target as HTMLElement | null;
+        if (
+          el?.closest?.('[data-assessment-allow-paste="true"]') ||
+          el?.closest?.("[data-assessment-answer-field]")
+        ) {
+          return;
         }
+        e.preventDefault();
+        return false;
       }}
     >
       {assessmentStarted && (
@@ -1610,6 +2185,41 @@ export default function TakeAssessmentPage({
               </Box>
             )}
 
+          {devtoolsBlocked && !submitting && (
+            <Box
+              sx={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 2000,
+                bgcolor: "rgba(15, 23, 42, 0.82)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                p: 2,
+              }}
+            >
+              <Paper
+                elevation={4}
+                sx={{
+                  maxWidth: 460,
+                  p: 3,
+                  textAlign: "center",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                  {t("assessments.take.devtoolsBlockedTitle")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "#6b7280", lineHeight: 1.65 }}
+                >
+                  {t("assessments.take.devtoolsBlockedBody")}
+                </Typography>
+              </Paper>
+            </Box>
+          )}
+
           <AssessmentTimerBar
             title={assessment.title}
             formattedTime={timer.formattedTime}
@@ -1650,13 +2260,48 @@ export default function TakeAssessmentPage({
             isLastQuestion={navigation.isLastQuestion}
             onPrevious={navigation.handlePrevious}
             onNext={navigation.handleNext}
-            onSectionChange={handleSectionChange}
+            onSectionChange={
+              allowMovementAcrossSections ? handleSectionChange : undefined
+            }
+            allowMovementAcrossSections={allowMovementAcrossSections}
+            sectionTimeRemainingSeconds={sectionTimeRemainingSeconds}
+            showAdvanceToNextSection={showAdvanceToNextSection}
+            onAdvanceToNextSection={handleOpenAdvanceSectionDialog}
+            timedSectionLockRevision={timedSectionLockRevision}
+            isTimedSectionClosed={getTimedSectionClosed}
+            blockCrossSectionPrevious={crossSectionPreviousBlocked}
           />
+
+          <Dialog
+            open={advanceSectionDialogOpen}
+            onClose={handleCloseAdvanceSectionDialog}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>{t("assessments.take.nextSectionTitle")}</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                {t("assessments.take.nextSectionBody")}
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button onClick={handleCloseAdvanceSectionDialog} color="inherit">
+                {t("assessments.take.nextSectionCancel")}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleConfirmAdvanceSection}
+                sx={{ bgcolor: "#6366f1" }}
+              >
+                {t("assessments.take.nextSectionConfirm")}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Box
             sx={{
               pt: 18.5,
-              pb: 2,
+              pb: { xs: 4, md: 6 },
               px: { xs: 2, md: 4 },
               maxWidth: "100%",
               height: "100vh",
@@ -1689,6 +2334,7 @@ export default function TakeAssessmentPage({
                   <MemoizedCodingLayout
                     key={`coding-${currentCodingQuestion.id}-${currentQuestionIndex}`}
                     slug={slug}
+                    remoteAutosave={remoteAutosave}
                     questionId={currentCodingQuestion.id}
                     problemData={{
                       content_title: currentCodingQuestion.title,
@@ -1768,6 +2414,8 @@ export default function TakeAssessmentPage({
                     onNextQuestion={navigation.handleNext}
                     onPreviousQuestion={navigation.handlePrevious}
                     onQuestionClick={handleSubjectiveQuestionClick}
+                    assessmentUploadClientId={uploadClientId}
+                    onSubjectiveImageUploadError={handleSubjectiveImageUploadError}
                   />
                 )}
 
@@ -1864,6 +2512,7 @@ export default function TakeAssessmentPage({
                 onClose={handleCloseSubmitDialog}
                 onConfirm={handleFinalSubmit}
                 submitting={submitting}
+                strictLinearSectionOrder={!allowMovementAcrossSections}
               />
             )}
 

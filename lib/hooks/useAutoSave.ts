@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { assessmentService } from "@/lib/services/assessment.service";
 import { AssessmentMetadata } from "@/lib/services/assessment.service";
 import { formatAssessmentResponses } from "@/utils/assessment.utils";
@@ -10,7 +10,14 @@ interface UseAutoSaveOptions {
   sections: Array<{ id: number; section_type: string; questions: Array<{ id: number | string }> }>;
   metadata: AssessmentMetadata;
   interval?: number; // in milliseconds
+  /** Keys from `timedSectionCompletionKey` — included in autosave payload. */
+  timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
 }
+
+export type AssessmentRemoteAutosaveState = {
+  status: "idle" | "saving" | "saved" | "error";
+  updatedAt: number | null;
+};
 
 export function useAutoSave({
   enabled,
@@ -19,12 +26,18 @@ export function useAutoSave({
   sections,
   metadata,
   interval = 30000, // 30 seconds default
-}: UseAutoSaveOptions) {
+  timedSectionsCompleteRef,
+}: UseAutoSaveOptions): { remoteAutosave: AssessmentRemoteAutosaveState } {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveRef = useRef<string>("");
+  const [remoteAutosave, setRemoteAutosave] = useState<AssessmentRemoteAutosaveState>({
+    status: "idle",
+    updatedAt: null,
+  });
 
   useEffect(() => {
     if (!enabled) {
+      setRemoteAutosave({ status: "idle", updatedAt: null });
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -45,12 +58,19 @@ export function useAutoSave({
             responses[sectionType] &&
             Object.keys(responses[sectionType]).length > 0
         );
+        const hasTimedCompletion =
+          (timedSectionsCompleteRef?.current?.size ?? 0) > 0;
 
-        if (!hasResponses) return;
+        if (!hasResponses && !hasTimedCompletion) return;
 
-        // Check if responses have changed since last save
+        const timedFingerprint = timedSectionsCompleteRef?.current?.size
+          ? [...timedSectionsCompleteRef.current].sort().join("|")
+          : "";
         const responsesString = JSON.stringify(responses);
-        if (responsesString === lastSaveRef.current) return;
+        const fingerprint = `${responsesString}::${timedFingerprint}`;
+        if (fingerprint === lastSaveRef.current) return;
+
+        setRemoteAutosave({ status: "saving", updatedAt: Date.now() });
 
         // Format responses - for attempted coding questions, prefer sessionStorage code
         const getCodeFromSession = (questionId: number | string) => {
@@ -68,7 +88,12 @@ export function useAutoSave({
           return null;
         };
         const { quizSectionId, codingProblemSectionId, subjectiveQuestionSectionId } =
-          formatAssessmentResponses(responses, sections, getCodeFromSession);
+          formatAssessmentResponses(
+            responses,
+            sections,
+            getCodeFromSession,
+            timedSectionsCompleteRef?.current ?? null,
+          );
 
         // Calculate total duration
         const totalDurationSeconds =
@@ -106,9 +131,10 @@ export function useAutoSave({
 
         // Save responses
         await assessmentService.saveSubmission(slug, requestBody);
-        lastSaveRef.current = responsesString;
-      } catch (error) {
-        // Silently fail - don't disrupt user experience
+        lastSaveRef.current = fingerprint;
+        setRemoteAutosave({ status: "saved", updatedAt: Date.now() });
+      } catch {
+        setRemoteAutosave({ status: "error", updatedAt: Date.now() });
       }
     };
 
@@ -129,7 +155,7 @@ export function useAutoSave({
         intervalRef.current = null;
       }
     };
-  }, [enabled, slug, responses, sections, metadata, interval]);
+  }, [enabled, slug, responses, sections, metadata, interval, timedSectionsCompleteRef]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -140,5 +166,7 @@ export function useAutoSave({
       }
     };
   }, []);
+
+  return { remoteAutosave };
 }
 

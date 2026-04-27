@@ -8,6 +8,10 @@ interface UseAssessmentNavigationOptions {
   sections: Array<{ questions?: Array<any> }>;
   setCurrentSectionIndex: (index: number) => void;
   setCurrentQuestionIndex: (index: number) => void;
+  /** When false, block Previous from crossing into a lower section index (strict linear flow). Default true. */
+  allowMovementAcrossSections?: boolean;
+  /** When true, block Previous from leaving the first question of this section into the previous section (e.g. timed block already completed). */
+  blockCrossSectionPrevious?: boolean;
 }
 
 interface UseAssessmentNavigationReturn {
@@ -24,6 +28,8 @@ export function useAssessmentNavigation({
   sections,
   setCurrentSectionIndex,
   setCurrentQuestionIndex,
+  allowMovementAcrossSections = true,
+  blockCrossSectionPrevious = false,
 }: UseAssessmentNavigationOptions): UseAssessmentNavigationReturn {
   const currentSection = sections[currentSectionIndex] || null;
   const currentSectionQuestionCount = currentSection?.questions?.length || 0;
@@ -41,12 +47,22 @@ export function useAssessmentNavigation({
     // IMMEDIATE navigation - no delays
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-    } else if (currentSectionIndex > 0) {
+      return;
+    }
+    if (currentSectionIndex > 0) {
+      if (!allowMovementAcrossSections) {
+        return;
+      }
+      if (blockCrossSectionPrevious) {
+        return;
+      }
       setCurrentSectionIndex(currentSectionIndex - 1);
       const prevSection = sections[currentSectionIndex - 1];
       setCurrentQuestionIndex((prevSection?.questions?.length || 1) - 1);
     }
   }, [
+    allowMovementAcrossSections,
+    blockCrossSectionPrevious,
     currentQuestionIndex,
     currentSectionIndex,
     sections,

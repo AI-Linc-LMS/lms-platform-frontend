@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Box, Button } from "@mui/material";
+import { Box, Button, Alert, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
@@ -92,6 +92,7 @@ export default function AssessmentResultPage() {
   }
 
   const stats = assessmentResult?.stats || ({} as AssessmentResult["stats"]);
+  const resultHidden = assessmentResult?.show_result === false;
 
   const quizResponses = assessmentResult?.user_responses?.quiz_responses || [];
 
@@ -187,6 +188,19 @@ export default function AssessmentResultPage() {
           status={assessmentResult?.status || ""}
         />
 
+        {resultHidden && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              {assessmentResult?.review_status === "published"
+                ? "Result visibility is currently disabled."
+                : "Your assessment is under manual evaluation. Results will appear after publish."}
+            </Typography>
+          </Alert>
+        )}
+
+        {!resultHidden && (
+          <>
+
         {/* Score */}
         <ScoreDisplay
           score={stats.score}
@@ -249,6 +263,8 @@ export default function AssessmentResultPage() {
             assessmentResult as AssessmentResult
           )}
         />
+          </>
+        )}
       </Box>
     </MainLayout>
   );

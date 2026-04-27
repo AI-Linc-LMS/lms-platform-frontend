@@ -635,7 +635,7 @@ export default function AssessmentPage() {
     paidFilter !== "all";
 
   return (
-    <MainLayout>
+    <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header */}
         <Box

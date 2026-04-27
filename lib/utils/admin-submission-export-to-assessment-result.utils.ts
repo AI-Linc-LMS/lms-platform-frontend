@@ -92,6 +92,22 @@ export function mapSubmissionsExportRowToAssessmentResult(
       }
     : undefined;
 
+  const manualPayload =
+    sub.manual_evaluation_payload &&
+    typeof sub.manual_evaluation_payload === "object"
+      ? (sub.manual_evaluation_payload as {
+          admin_notes?: string;
+        })
+      : null;
+  const feedbackPoints =
+    manualPayload?.admin_notes && manualPayload.admin_notes.trim()
+      ? manualPayload.admin_notes
+          .split(/\r?\n/)
+          .map((line) => line.trim().replace(/^[-*]\s*/, ""))
+          .filter(Boolean)
+          .slice(0, 6)
+      : [];
+
   return {
     message: "",
     status: sub.status?.trim() || "submitted",
@@ -108,6 +124,7 @@ export function mapSubmissionsExportRowToAssessmentResult(
     show_result: a.show_result,
     stats,
     user_responses: sub.user_responses as AssessmentResult["user_responses"],
+    feedback_points: feedbackPoints,
     proctoring,
   };
 }

@@ -29,6 +29,7 @@ export interface Course {
     coding_problem: { total: number };
     article: { total: number };
     assignment?: { total: number };
+    subjective_question?: { total: number };
   };
   rating?: number; // Average rating (0-5)
   rating_count?: number; // Number of ratings

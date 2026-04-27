@@ -41,6 +41,10 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
   const options = getOptionsArray(q?.options || {});
   const selected = q?.selected_answer?.toUpperCase() ?? null;
   const correct = q?.correct_option ?? "";
+  const feedbackText = typeof q?.feedback === "string" ? q.feedback.trim() : "";
+  const hasFeedback = feedbackText.length > 0;
+  const graded =
+    q?.awarded_marks != null && Number.isFinite(Number(q?.awarded_marks));
   const diffStyle = getDifficultyColor(q?.difficulty_level);
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === total - 1;
@@ -194,6 +198,13 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                   sx={{ backgroundColor: "#e0e7ff", color: "#4338ca", fontSize: "0.75rem" }}
                 />
               )}
+              {graded ? (
+                <Chip
+                  label={`Score: ${q.awarded_marks}`}
+                  size="small"
+                  sx={{ backgroundColor: "#d1fae5", color: "#065f46", fontWeight: 700, fontSize: "0.75rem" }}
+                />
+              ) : null}
             </Box>
             <Typography variant="body1" sx={{ fontWeight: 500, color: "#1a1f2e", lineHeight: 1.6 }}>
               {q.question_text}
@@ -295,6 +306,36 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
             </Typography>
           </Box>
         )}
+
+        {hasFeedback ? (
+          <Box
+            sx={{
+              mt: 2,
+              pl: { xs: 0, sm: 6 },
+              p: 2,
+              backgroundColor: "#f0fdfa",
+              borderRadius: 2,
+              borderLeft: "4px solid #0d9488",
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                color: "#0d9488",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                display: "block",
+                mb: 0.5,
+              }}
+            >
+              Evaluator feedback
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#134e4a", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+              {feedbackText}
+            </Typography>
+          </Box>
+        ) : null}
       </Box>
     </Paper>
   );
