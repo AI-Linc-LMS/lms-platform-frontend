@@ -287,12 +287,6 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                         fontWeight: 600,
                         fontSize: "0.75rem",
                       }}
-                      sx={{
-                        backgroundColor: "var(--success-500)",
-                        color: "var(--font-light)",
-                        fontWeight: 600,
-                        fontSize: "0.75rem",
-                      }}
                     />
                   )}
                   {isSelected && !isCorrectOpt && (
