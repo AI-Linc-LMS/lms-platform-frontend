@@ -158,13 +158,13 @@ export function ExperienceSection({
         elevation={0}
         sx={{
           p: { xs: 2, sm: 3 },
-          border: "1px solid rgba(0,0,0,0.08)",
+          border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
           borderRadius: { xs: 1, sm: 2 },
           mb: { xs: 2, sm: 3 },
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           transition: "box-shadow 0.2s ease",
           "&:hover": {
-            boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+            boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
           },
         }}
       >
@@ -180,7 +180,7 @@ export function ExperienceSection({
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#000000",
+              color: "var(--font-primary)",
               fontSize: "1.25rem",
             }}
           >
@@ -195,10 +195,10 @@ export function ExperienceSection({
               onClick={onRemoveSection}
               sx={{
                 textTransform: "none",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontWeight: 500,
                 fontSize: "0.8125rem",
-                "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+                "&:hover": { backgroundColor: "color-mix(in srgb, var(--error-500) 10%, transparent)", color: "var(--error-500)" },
               }}
             >
               Remove
@@ -212,11 +212,11 @@ export function ExperienceSection({
               onClick={() => setEditing(true)}
               sx={{
                 textTransform: "none",
-                color: "#0a66c2",
+                color: "var(--accent-indigo)",
                 fontWeight: 600,
                 fontSize: "0.9375rem",
                 "&:hover": {
-                  backgroundColor: "rgba(10, 102, 194, 0.08)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
                 transition: "all 0.2s ease",
               }}
@@ -233,12 +233,12 @@ export function ExperienceSection({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  borderColor: "#0a66c2",
-                  color: "#0a66c2",
+                  borderColor: "var(--accent-indigo)",
+                  color: "var(--accent-indigo)",
                   borderRadius: "24px",
                   "&:hover": {
-                    borderColor: "#004182",
-                    backgroundColor: "rgba(10, 102, 194, 0.08)",
+                    borderColor: "var(--accent-indigo-dark)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                   },
                   transition: "all 0.2s ease",
                 }}
@@ -253,12 +253,12 @@ export function ExperienceSection({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  borderColor: "#e5e7eb",
-                  color: "#6b7280",
+                  borderColor: "var(--border-default)",
+                  color: "var(--font-secondary)",
                   borderRadius: 1.5,
                   "&:hover": {
-                    borderColor: "#d1d5db",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
+                    backgroundColor: "var(--surface)",
                   },
                 }}
             >
@@ -272,11 +272,11 @@ export function ExperienceSection({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                backgroundColor: "#0a66c2",
+                backgroundColor: "var(--accent-indigo)",
                 borderRadius: "24px",
                 px: 2,
                 "&:hover": {
-                  backgroundColor: "#004182",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
                 transition: "all 0.2s ease",
                 }}
@@ -295,9 +295,9 @@ export function ExperienceSection({
                 key={exp.id || index}
                 sx={{
                   p: 2,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   borderRadius: 1.5,
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                 }}
               >
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", mb: 1 }}>
@@ -306,7 +306,7 @@ export function ExperienceSection({
                       variant="subtitle1"
                       sx={{
                         fontWeight: 700,
-                        color: "#000000",
+                        color: "var(--font-primary)",
                         mb: 0.5,
                       }}
                     >
@@ -315,7 +315,7 @@ export function ExperienceSection({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#0a66c2",
+                        color: "var(--accent-indigo)",
                         fontWeight: 600,
                         mb: 0.5,
                       }}
@@ -325,7 +325,7 @@ export function ExperienceSection({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         fontSize: "0.875rem",
                       }}
                     >
@@ -336,7 +336,7 @@ export function ExperienceSection({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#000000",
+                          color: "var(--font-primary)",
                           mt: 1,
                           whiteSpace: "pre-wrap",
                         }}
@@ -351,9 +351,9 @@ export function ExperienceSection({
                         size="small"
                         onClick={() => handleEdit(index)}
                         sx={{
-                          color: "#0a66c2",
+                          color: "var(--accent-indigo)",
                           "&:hover": {
-                            backgroundColor: "rgba(99, 102, 241, 0.08)",
+                            backgroundColor: "color-mix(in srgb, var(--accent-purple) 10%, transparent)",
                           },
                         }}
                       >
@@ -363,9 +363,9 @@ export function ExperienceSection({
                         size="small"
                         onClick={() => handleDelete(index)}
                         sx={{
-                          color: "#ef4444",
+                          color: "var(--error-500)",
                           "&:hover": {
-                            backgroundColor: "rgba(239, 68, 68, 0.08)",
+                            backgroundColor: "color-mix(in srgb, var(--error-500) 10%, transparent)",
                           },
                         }}
                       >
@@ -383,16 +383,16 @@ export function ExperienceSection({
               textAlign: "center",
               py: 4,
               px: 2,
-              border: "1px dashed rgba(0,0,0,0.12)",
+              border: "1px dashed color-mix(in srgb, var(--font-primary) 14%, transparent)",
               borderRadius: 2,
-              backgroundColor: "#f9fafb",
+              backgroundColor: "var(--surface)",
             }}
           >
-            <IconWrapper icon="mdi:briefcase" size={48} color="#9ca3af" />
+            <IconWrapper icon="mdi:briefcase" size={48} color="var(--font-tertiary)" />
             <Typography
               variant="body2"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 mt: 2,
                 fontSize: "0.9375rem",
                 fontWeight: 500,
@@ -403,7 +403,7 @@ export function ExperienceSection({
             <Typography
               variant="caption"
               sx={{
-                color: "#9ca3af",
+                color: "var(--font-tertiary)",
                 mt: 0.5,
                 fontSize: "0.8125rem",
                 display: "block",
@@ -420,11 +420,11 @@ export function ExperienceSection({
                 mt: 2,
                 textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: "#0a66c2",
+                backgroundColor: "var(--accent-indigo)",
                 borderRadius: 2,
                 px: 2.5,
                 py: 1,
-                "&:hover": { backgroundColor: "#004182" },
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               {t("profile.add")} {t("profile.experience")}
@@ -441,7 +441,7 @@ export function ExperienceSection({
         PaperProps={{
           sx: {
             borderRadius: { xs: 0, sm: 2 },
-            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+            boxShadow: "0 4px 16px color-mix(in srgb, var(--font-primary) 14%, transparent)",
             m: { xs: 0, sm: 2 },
             maxHeight: { xs: "100vh", sm: "90vh" },
           },
@@ -453,7 +453,7 @@ export function ExperienceSection({
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
             pt: { xs: 2, sm: 3 },
-            borderBottom: "1px solid rgba(0,0,0,0.08)",
+            borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
             display: "flex",
             alignItems: "center",
             gap: { xs: 1, sm: 1.5 },
@@ -462,14 +462,14 @@ export function ExperienceSection({
           <IconWrapper 
             icon="mdi:briefcase" 
             size={20} 
-            color="#0a66c2" 
+            color="var(--accent-indigo)" 
           />
           <Typography
             component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#000000",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
@@ -562,9 +562,9 @@ export function ExperienceSection({
                     });
                   }}
                   sx={{
-                    color: "#0a66c2",
+                    color: "var(--accent-indigo)",
                     "&.Mui-checked": {
-                      color: "#0a66c2",
+                      color: "var(--accent-indigo)",
                     },
                   }}
                 />
@@ -573,7 +573,7 @@ export function ExperienceSection({
               sx={{
                 "& .MuiFormControlLabel-label": {
                   fontSize: "0.9375rem",
-                  color: "#000000",
+                  color: "var(--font-primary)",
                 },
               }}
             />
@@ -599,7 +599,7 @@ export function ExperienceSection({
           sx={{
             px: { xs: 2, sm: 3 },
             py: { xs: 1.5, sm: 2 },
-            borderTop: "1px solid rgba(0,0,0,0.08)",
+            borderTop: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
             gap: { xs: 0.75, sm: 1 },
             flexDirection: { xs: "column-reverse", sm: "row" },
           }}
@@ -609,13 +609,13 @@ export function ExperienceSection({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              color: "#666666",
+              color: "var(--font-secondary)",
               borderRadius: { xs: 1.5, sm: 1.5 },
               px: { xs: 2, sm: 2 },
               py: { xs: 1, sm: 0.75 },
               width: { xs: "100%", sm: "auto" },
               "&:hover": {
-                backgroundColor: "#f3f2ef",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
@@ -628,17 +628,17 @@ export function ExperienceSection({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              backgroundColor: "#0a66c2",
+              backgroundColor: "var(--accent-indigo)",
               borderRadius: "24px",
               px: { xs: 3, sm: 3 },
               py: { xs: 1, sm: 0.75 },
               width: { xs: "100%", sm: "auto" },
               "&:hover": {
-                backgroundColor: "#004182",
+                backgroundColor: "var(--accent-indigo-dark)",
               },
               "&:disabled": {
-                backgroundColor: "#e5e7eb",
-                color: "#9ca3af",
+                backgroundColor: "var(--border-default)",
+                color: "var(--font-tertiary)",
               },
               transition: "all 0.2s ease",
             }}

@@ -46,7 +46,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
         height: "297mm",
         minHeight: "297mm",
         overflow: "hidden",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
         colorAdjust: "exact !important",
@@ -58,7 +58,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
           sx={{
             fontSize: "1.5rem",
             fontWeight: 700,
-            color: "#1f2937",
+            color: "var(--font-primary)",
             mb: 0.3,
           }}
         >
@@ -69,7 +69,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
           <Typography
             sx={{
               fontSize: "0.875rem",
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               mb: 1,
               fontStyle: "italic",
             }}
@@ -84,7 +84,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             justifyContent: "center",
             gap: 1.5,
             flexWrap: "wrap",
-            color: "#4b5563",
+            color: "var(--font-secondary)",
           }}
         >
           {[
@@ -107,7 +107,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 sx={{ display: "flex", alignItems: "center", gap: 0.5, textDecoration: "none", color: "inherit" }}
               >
                 <Box sx={{ flexShrink: 0, display: "flex" }}>
-                  <IconWrapper icon={item.icon} size={11} color="#4b5563" />
+                  <IconWrapper icon={item.icon} size={11} color="var(--font-secondary)" />
                 </Box>
                 <Typography
                   data-resume-contact-item
@@ -128,7 +128,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
         </Box>
       </Box>
 
-      <Divider sx={{ mb: 2, borderColor: "#1f2937", borderWidth: 1 }} />
+      <Divider sx={{ mb: 2, borderColor: "var(--font-primary)", borderWidth: 1 }} />
 
       {/* Summary */}
       {data.basicInfo.summary && (
@@ -137,7 +137,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 0.8,
               textTransform: "uppercase",
             }}
@@ -147,7 +147,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
           <Typography
             sx={{
               fontSize: "0.625rem",
-              color: "#374151",
+              color: "var(--font-primary)",
               lineHeight: 1.6,
               textAlign: "justify",
             }}
@@ -165,7 +165,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 1,
               textTransform: "uppercase",
             }}
@@ -192,7 +192,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                     sx={{
                       fontSize: "0.75rem",
                       fontWeight: 600,
-                      color: "#1f2937",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {exp.position}
@@ -200,7 +200,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.625rem",
-                      color: "#4b5563",
+                      color: "var(--font-secondary)",
                       fontStyle: "italic",
                     }}
                   >
@@ -211,7 +211,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontStyle: "italic",
                     whiteSpace: "nowrap",
                     ml: 2,
@@ -232,7 +232,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                         key={descIndex}
                         sx={{
                           fontSize: "0.625rem",
-                          color: "#374151",
+                          color: "var(--font-primary)",
                           lineHeight: 1.6,
                           mb: 0.5,
                         }}
@@ -255,7 +255,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 1,
               textTransform: "uppercase",
             }}
@@ -281,7 +281,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                     sx={{
                       fontSize: "0.75rem",
                       fontWeight: 600,
-                      color: "#1f2937",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {edu.degree}
@@ -289,7 +289,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.625rem",
-                      color: "#4b5563",
+                      color: "var(--font-secondary)",
                       fontStyle: "italic",
                     }}
                   >
@@ -298,7 +298,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                   </Typography>
                   {edu.gpa && (
                     <Typography
-                      sx={{ fontSize: "0.625rem", color: "#6b7280", mt: 0.3, whiteSpace: "nowrap" }}
+                      sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mt: 0.3, whiteSpace: "nowrap" }}
                     >
                       GPA: {edu.gpa}
                     </Typography>
@@ -307,7 +307,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontStyle: "italic",
                     whiteSpace: "nowrap",
                     ml: 2,
@@ -321,7 +321,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#374151",
+                    color: "var(--font-primary)",
                     mt: 0.3,
                     lineHeight: 1.5,
                   }}
@@ -342,7 +342,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 0.8,
               textTransform: "uppercase",
             }}
@@ -356,7 +356,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 key={skill.id}
                 sx={{
                   fontSize: "0.625rem",
-                  color: "#374151",
+                  color: "var(--font-primary)",
                 }}
               >
                 {skill.name}
@@ -375,7 +375,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 0.8,
               textTransform: "uppercase",
             }}
@@ -404,7 +404,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                   sx={{
                     fontSize: "0.75rem",
                     fontWeight: 600,
-                    color: "#1f2937",
+                    color: "var(--font-primary)",
                   }}
                 >
                   {project.name}
@@ -417,7 +417,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                     rel="noopener noreferrer"
                     sx={{
                       fontSize: "0.625rem",
-                      color: "#1d4ed8",
+                      color: "var(--accent-indigo)",
                       fontWeight: 600,
                       flexShrink: 0,
                       whiteSpace: "nowrap",
@@ -433,7 +433,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#374151",
+                    color: "var(--font-primary)",
                     lineHeight: 1.5,
                     mb: 0.3,
                   }}
@@ -446,7 +446,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontStyle: "italic",
                   }}
                 >
@@ -470,7 +470,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
             sx={{
               fontSize: "0.75rem",
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 0.8,
               textTransform: "uppercase",
             }}
@@ -493,7 +493,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                     sx={{
                       fontSize: "0.625rem",
                       fontWeight: 600,
-                      color: "#1f2937",
+                      color: "var(--font-primary)",
                       flex: 1,
                       minWidth: 0,
                     }}
@@ -508,7 +508,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{
                         fontSize: "0.55rem",
-                        color: "#1d4ed8",
+                        color: "var(--accent-indigo)",
                         fontWeight: 600,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
@@ -518,7 +518,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                     </Typography>
                   )}
                 </Box>
-                <Typography sx={{ fontSize: "0.625rem", color: "#4b5563" }}>
+                <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)" }}>
                   {cert.issuer}
                 </Typography>
               </Box>
@@ -526,7 +526,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontStyle: "italic",
                   }}
                 >

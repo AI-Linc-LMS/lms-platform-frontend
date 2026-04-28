@@ -147,14 +147,14 @@ export function UserDetailsCard({
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
         borderRadius: { xs: 1, sm: 2 },
         mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
-        backgroundColor: "#ffffff",
+        boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        backgroundColor: "var(--background)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
@@ -173,24 +173,24 @@ export function UserDetailsCard({
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                backgroundColor: "#f3f2ef",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  backgroundColor: "#e9e7e3",
+                  backgroundColor: "color-mix(in srgb, var(--surface) 72%, var(--background))",
                 },
               }}
             >
-              <IconWrapper icon={detail.icon} size={22} color="#0a66c2" />
+              <IconWrapper icon={detail.icon} size={22} color="var(--accent-indigo)" />
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.8125rem",
                   fontWeight: 600,
                   display: "block",
@@ -211,10 +211,10 @@ export function UserDetailsCard({
                     sx={{
                       display: "block",
                       textDecoration: "none",
-                      color: "#0a66c2",
+                      color: "var(--accent-indigo)",
                       "&:hover": {
                         textDecoration: "underline",
-                        color: "#004182",
+                        color: "var(--accent-indigo-dark)",
                       },
                       transition: "all 0.2s ease",
                     }}
@@ -237,7 +237,7 @@ export function UserDetailsCard({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#000000",
+                      color: "var(--font-primary)",
                       fontWeight: 500,
                       fontSize: "0.9375rem",
                       overflow: "hidden",
@@ -260,7 +260,7 @@ export function UserDetailsCard({
                     borderRadius: "50%",
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      backgroundColor: "#f3f2ef",
+                      backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
                       transform: "scale(1.1)",
                     },
                   }}
@@ -271,7 +271,7 @@ export function UserDetailsCard({
                   <IconWrapper
                     icon="mdi:content-copy"
                     size={16}
-                    color="#9ca3af"
+                    color="var(--font-tertiary)"
                   />
                 </Box>
               </Tooltip>

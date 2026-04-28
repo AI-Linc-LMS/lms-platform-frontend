@@ -29,7 +29,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
     <Box
       sx={{
         p: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         height: "297mm",
         minHeight: "297mm",
         overflow: "hidden",
@@ -41,8 +41,8 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       {/* Header with dark background */}
       <Box
         sx={{
-          backgroundColor: "#1a1a1a !important",
-          color: "#ffffff",
+          backgroundColor: "var(--font-primary) !important",
+          color: "var(--background)",
           p: 2.5,
           mx: -3,
           mt: -3,
@@ -66,7 +66,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
           <Typography
             sx={{
               fontSize: "1rem",
-              color: "#d4af37",
+              color: "var(--warning-500)",
               fontWeight: 500,
               mb: 1.5,
             }}
@@ -80,7 +80,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             display: "flex",
             gap: 3,
             flexWrap: "wrap",
-            color: "#cccccc",
+            color: "var(--font-tertiary)",
           }}
         >
           {[
@@ -103,7 +103,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 sx={{ display: "flex", alignItems: "center", gap: 0.75, textDecoration: "none", color: "inherit" }}
               >
                 <Box sx={{ flexShrink: 0, display: "flex" }}>
-                  <IconWrapper icon={item.icon} size={14} color="#d4af37" />
+                  <IconWrapper icon={item.icon} size={14} color="var(--warning-500)" />
                 </Box>
                 <Typography
                   data-resume-contact-item
@@ -131,7 +131,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
-              color: "#1a1a1a",
+              color: "var(--font-primary)",
               mb: 1,
               textTransform: "uppercase",
               letterSpacing: "0.05em",
@@ -142,7 +142,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
           <Typography
             sx={{
               fontSize: "0.8rem",
-              color: "#4a4a4a",
+              color: "var(--font-secondary)",
               lineHeight: 1.6,
             }}
           >
@@ -159,7 +159,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
-              color: "#1a1a1a",
+              color: "var(--font-primary)",
               mb: 1,
               textTransform: "uppercase",
               letterSpacing: "0.05em",
@@ -187,7 +187,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                     sx={{
                       fontSize: "0.9rem",
                       fontWeight: 700,
-                      color: "#1a1a1a",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {exp.position}
@@ -195,7 +195,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.85rem",
-                      color: "#d4af37",
+                      color: "var(--warning-500)",
                       fontWeight: 600,
                     }}
                   >
@@ -205,7 +205,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.75rem",
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     whiteSpace: "nowrap",
                     ml: 2,
                   }}
@@ -216,7 +216,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
               {exp.location && (
                 <Typography
-                  sx={{ fontSize: "0.75rem", color: "#6b7280", mb: 0.5 }}
+                  sx={{ fontSize: "0.75rem", color: "var(--font-secondary)", mb: 0.5 }}
                 >
                   {exp.location}
                 </Typography>
@@ -233,7 +233,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                         key={descIndex}
                         sx={{
                           fontSize: "0.75rem",
-                          color: "#4a4a4a",
+                          color: "var(--font-secondary)",
                           lineHeight: 1.6,
                           mb: 0.5,
                         }}
@@ -256,7 +256,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
-              color: "#1a1a1a",
+              color: "var(--font-primary)",
               mb: 1,
               textTransform: "uppercase",
               letterSpacing: "0.05em",
@@ -277,17 +277,17 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                     sx={{
                       fontSize: "0.85rem",
                       fontWeight: 600,
-                      color: "#1a1a1a",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {edu.degree}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.8rem", color: "#4a4a4a" }}>
+                  <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
                     {edu.institution}
                   </Typography>
                   {edu.gpa && (
                     <Typography
-                      sx={{ fontSize: "0.75rem", color: "#6b7280", mt: 0.3, whiteSpace: "nowrap" }}
+                      sx={{ fontSize: "0.75rem", color: "var(--font-secondary)", mt: 0.3, whiteSpace: "nowrap" }}
                     >
                       GPA: {edu.gpa}
                     </Typography>
@@ -296,7 +296,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.75rem",
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     whiteSpace: "nowrap",
                     ml: 2,
                   }}
@@ -318,7 +318,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               sx={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
-                color: "#1a1a1a",
+                color: "var(--font-primary)",
                 mb: 1,
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -331,7 +331,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               {data.skills.slice(0, 6).map((skill) => (
                 <Box key={skill.id}>
                   <Typography
-                    sx={{ fontSize: "0.75rem", color: "#4a4a4a", mb: 0.3 }}
+                    sx={{ fontSize: "0.75rem", color: "var(--font-secondary)", mb: 0.3 }}
                   >
                     {skill.name}
                   </Typography>
@@ -346,8 +346,8 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                           height: 6,
                           backgroundColor:
                             index < (skill.level || 3)
-                              ? "#d4af37 !important"
-                              : "#e5e7eb !important",
+                              ? "var(--warning-500) !important"
+                              : "var(--border-default) !important",
                           WebkitPrintColorAdjust: "exact !important",
                           printColorAdjust: "exact !important",
                           colorAdjust: "exact !important",
@@ -369,7 +369,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               sx={{
                 fontSize: "0.9rem",
                 fontWeight: 700,
-                color: "#1a1a1a",
+                color: "var(--font-primary)",
                 mb: 1,
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -382,7 +382,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               <Box key={cert.id} sx={{ mb: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <Typography
-                    sx={{ fontSize: "0.8rem", fontWeight: 600, color: "#1a1a1a", flex: 1, minWidth: 0 }}
+                    sx={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--font-primary)", flex: 1, minWidth: 0 }}
                   >
                     {cert.name}
                   </Typography>
@@ -394,7 +394,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{
                         fontSize: "0.65rem",
-                        color: "#d4af37",
+                        color: "var(--warning-500)",
                         fontWeight: 600,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
@@ -404,7 +404,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                     </Typography>
                   )}
                 </Box>
-                <Typography sx={{ fontSize: "0.7rem", color: "#4a4a4a" }}>
+                <Typography sx={{ fontSize: "0.7rem", color: "var(--font-secondary)" }}>
                   {cert.issuer}
                 </Typography>
               </Box>
@@ -421,7 +421,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
             sx={{
               fontSize: "0.9rem",
               fontWeight: 700,
-              color: "#1a1a1a",
+              color: "var(--font-primary)",
               mb: 1,
               textTransform: "uppercase",
               letterSpacing: "0.05em",
@@ -451,7 +451,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                   sx={{
                     fontSize: "0.85rem",
                     fontWeight: 600,
-                    color: "#1a1a1a",
+                    color: "var(--font-primary)",
                   }}
                 >
                   {project.name}
@@ -464,7 +464,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                     rel="noopener noreferrer"
                     sx={{
                       fontSize: "0.7rem",
-                      color: "#d4af37",
+                      color: "var(--warning-500)",
                       fontWeight: 600,
                       flexShrink: 0,
                       whiteSpace: "nowrap",
@@ -479,7 +479,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.75rem",
-                    color: "#4a4a4a",
+                    color: "var(--font-secondary)",
                     lineHeight: 1.5,
                     mb: 0.3,
                   }}
@@ -491,7 +491,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.7rem",
-                    color: "#d4af37",
+                    color: "var(--warning-500)",
                     fontStyle: "italic",
                   }}
                 >
