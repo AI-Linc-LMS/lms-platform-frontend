@@ -620,8 +620,13 @@ export default function AdminScorecardPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: 0.2 }}
                       variant="body2"
-                      sx={{ color: "var(--font-secondary)" }}
-                      sx={{ mt: 1, maxWidth: 360, mx: "auto", display: "block" }}
+                      sx={{
+                        color: "var(--font-secondary)",
+                        mt: 1,
+                        maxWidth: 360,
+                        mx: "auto",
+                        display: "block",
+                      }}
                     >
                       Use the search above to find and select a student. Their scorecard will appear here.
                     </Typography>
