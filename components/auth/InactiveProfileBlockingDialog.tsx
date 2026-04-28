@@ -43,7 +43,8 @@ export function InactiveProfileBlockingDialog({
           sx: {
             zIndex: 19999,
             backdropFilter: "blur(14px)",
-            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backgroundColor:
+              "color-mix(in srgb, var(--font-primary) 70%, transparent)",
           },
         },
       }}

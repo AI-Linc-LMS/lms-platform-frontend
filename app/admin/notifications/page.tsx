@@ -207,14 +207,15 @@ export default function AdminNotificationsPage() {
               width: 56,
               height: 56,
               borderRadius: 3,
-              backgroundColor: "rgba(99, 102, 241, 0.12)",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <IconWrapper icon="mdi:bell-badge" size={28} color="#6366f1" />
+            <IconWrapper icon="mdi:bell-badge" size={28} color="var(--accent-indigo)" />
           </Box>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, color: "text.primary" }}>
@@ -237,7 +238,9 @@ export default function AdminNotificationsPage() {
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 8%, transparent)",
           }}
         >
           {/* Target type selector */}
@@ -255,11 +258,22 @@ export default function AdminNotificationsPage() {
                 borderColor: "divider",
                 textTransform: "none",
                 fontWeight: 500,
+                color: "var(--font-primary)",
+                backgroundColor: "var(--surface)",
+                "& .iconify": {
+                  color: "inherit",
+                },
               },
               "& .Mui-selected": {
-                backgroundColor: "rgba(99, 102, 241, 0.12) !important",
-                color: "#6366f1",
-                borderColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo) !important",
+                color: "var(--font-light) !important",
+                borderColor: "var(--accent-indigo)",
+                "& .iconify": {
+                  color: "inherit",
+                },
+                "&:hover": {
+                  backgroundColor: "var(--accent-indigo-dark) !important",
+                },
               },
             }}
           >
@@ -289,8 +303,9 @@ export default function AdminNotificationsPage() {
               label={recipientLabel}
               size="small"
               sx={{
-                backgroundColor: "rgba(99, 102, 241, 0.08)",
-                color: "#6366f1",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+                color: "var(--accent-indigo)",
                 fontWeight: 500,
               }}
             />
@@ -475,7 +490,10 @@ export default function AdminNotificationsPage() {
                   onClick={() => setActionUrl(link.url)}
                   sx={{
                     cursor: "pointer",
-                    "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.12)" },
+                    "&:hover": {
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    },
                   }}
                 />
               ))}
@@ -490,8 +508,10 @@ export default function AdminNotificationsPage() {
                 p: 2,
                 mb: 3,
                 borderRadius: 2,
-                backgroundColor: "rgba(99, 102, 241, 0.04)",
-                borderColor: "rgba(99, 102, 241, 0.2)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 6%, var(--surface) 94%)",
+                borderColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--border-default) 76%)",
               }}
             >
               <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}>
@@ -523,8 +543,14 @@ export default function AdminNotificationsPage() {
               px: 3,
               py: 1.25,
               borderRadius: 2,
-              backgroundColor: "#6366f1",
-              "&:hover": { backgroundColor: "#4f46e5" },
+              backgroundColor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
             }}
           >
             {sending ? "Sending..." : "Send Notification"}

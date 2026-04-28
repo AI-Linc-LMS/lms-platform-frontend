@@ -639,7 +639,8 @@ export default function ManageStudentsPage() {
                 mb: 2,
                 cursor: "pointer",
                 "&:hover": {
-                  backgroundColor: "#f9fafb",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
                 },
               }}
               onClick={() => setShowJobHistory(!showJobHistory)}

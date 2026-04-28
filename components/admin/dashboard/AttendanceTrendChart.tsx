@@ -38,7 +38,10 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         height: "100%",
       }}
     >
@@ -46,7 +49,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
         variant="h6"
         sx={{
           fontWeight: 600,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 3,
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
@@ -60,7 +63,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#6b7280",
+            color: "var(--font-secondary)",
           }}
         >
           <Typography variant="body2">{t("admin.dashboard.noAttendanceData")}</Typography>
@@ -68,23 +71,23 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
       ) : (
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={formattedData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
             <XAxis
               dataKey="label"
-              stroke="#6b7280"
+              stroke="var(--font-secondary)"
               fontSize={12}
-              tick={{ fill: "#6b7280" }}
+              tick={{ fill: "var(--font-secondary)" }}
             />
             <YAxis
-              stroke="#6b7280"
+              stroke="var(--font-secondary)"
               fontSize={12}
-              tick={{ fill: "#6b7280" }}
+              tick={{ fill: "var(--font-secondary)" }}
               label={{ value: "Total Attendance", angle: -90, position: "insideLeft" }}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#ffffff",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "var(--card-bg)",
+                border: "1px solid var(--border-default)",
                 borderRadius: "8px",
               }}
             />
@@ -92,7 +95,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
             <Line
               type="monotone"
               dataKey="total_attendance_count"
-              stroke="#6366f1"
+              stroke="var(--accent-indigo)"
               strokeWidth={2}
               dot={{ r: 4 }}
               name="Total Attendance"

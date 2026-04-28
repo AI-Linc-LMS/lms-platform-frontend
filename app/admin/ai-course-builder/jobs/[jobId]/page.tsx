@@ -242,7 +242,7 @@ export default function JobDetailPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               textDecoration: "none",
               fontSize: "0.875rem",
             }}
@@ -264,10 +264,10 @@ export default function JobDetailPage() {
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5 }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 0.5 }}>
                 {t("adminAICourseBuilder.status")} {status.replace(/_/g, " ")}
               </Typography>
-              <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
                 {t("adminAICourseBuilder.jobId")} {job.job_id}
               </Typography>
             </Box>
@@ -280,12 +280,14 @@ export default function JobDetailPage() {
                   px: 1.5,
                   py: 0.5,
                   borderRadius: 1,
-                  bgcolor: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
+                  bgcolor:
+                    "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--success-500) 35%, var(--border-default) 65%)",
                 }}
               >
-                <CircularProgress size={14} sx={{ color: "#059669" }} />
-                <Typography variant="caption" sx={{ color: "#047857", fontWeight: 500 }}>
+                <CircularProgress size={14} sx={{ color: "var(--success-500)" }} />
+                <Typography variant="caption" sx={{ color: "var(--success-500)", fontWeight: 500 }}>
                   {t("adminAICourseBuilder.live")}
                 </Typography>
               </Box>
@@ -314,8 +316,12 @@ export default function JobDetailPage() {
               variant="contained"
               onClick={() => setApproveOpen(true)}
               sx={{
-                bgcolor: "#10b981",
-                "&:hover": { bgcolor: "#059669" },
+                bgcolor: "var(--success-500)",
+                color: "var(--font-light)",
+                "&:hover": {
+                  bgcolor:
+                    "color-mix(in srgb, var(--success-500) 85%, black 15%)",
+                },
               }}
             >
               {t("adminAICourseBuilder.approveOutlineCreateCourse")}
@@ -360,7 +366,7 @@ export default function JobDetailPage() {
                 </Typography>
               </Box>
               {hasTaskBreakdown && (
-                <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mt: 0.5 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.5 }}>
                   {t("adminAICourseBuilder.pendingLabel")} {data.pending_tasks ?? 0} • {t("adminAICourseBuilder.generatingLabel")}{" "}
                   {data.generating_tasks ?? 0} • {t("adminAICourseBuilder.completedLabel")} {data.completed_tasks}{" "}
                   • {t("adminAICourseBuilder.failedLabel")} {data.failed_tasks ?? 0}
@@ -387,8 +393,9 @@ export default function JobDetailPage() {
                 )
               }
               sx={{
-                bgcolor: "#6366f1",
-                "&:hover": { bgcolor: "#4f46e5" },
+                bgcolor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
               }}
             >
               {generatingContent
@@ -539,7 +546,8 @@ export default function JobDetailPage() {
                                                   flexWrap: "wrap",
                                                   gap: 1,
                                                   ...(task.status === "failed" && {
-                                                    bgcolor: "rgba(211, 47, 47, 0.08)",
+                                                    bgcolor:
+                                                      "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
                                                     borderLeft: "3px solid",
                                                     borderColor: "error.main",
                                                     pl: 0.75,
@@ -669,7 +677,8 @@ export default function JobDetailPage() {
                                       flexWrap: "wrap",
                                       gap: 1,
                                       ...(task.status === "failed" && {
-                                        bgcolor: "rgba(211, 47, 47, 0.08)",
+                                        bgcolor:
+                                          "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
                                         borderLeft: "3px solid",
                                         borderColor: "error.main",
                                         pl: 0.75,
@@ -752,8 +761,10 @@ export default function JobDetailPage() {
                 p: 2,
                 mb: 3,
                 borderRadius: 2,
-                bgcolor: "#fef2f2",
-                border: "1px solid #fecaca",
+                bgcolor:
+                  "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
+                border:
+                  "1px solid color-mix(in srgb, var(--error-500) 35%, var(--border-default) 65%)",
               }}
             >
               <Typography variant="subtitle2" color="error" sx={{ mb: 1 }}>
@@ -768,7 +779,8 @@ export default function JobDetailPage() {
                   m: 0,
                   p: 1.5,
                   borderRadius: 1,
-                  bgcolor: "rgba(0,0,0,0.03)",
+                  bgcolor:
+                    "color-mix(in srgb, var(--font-primary) 5%, transparent)",
                 }}
               >
                 {entries.map((entry, i) => {
@@ -834,14 +846,28 @@ export default function JobDetailPage() {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setApproveOpen(false)}>{t("adminAICourseBuilder.cancel")}</Button>
+            <Button
+              onClick={() => setApproveOpen(false)}
+              sx={{ color: "var(--font-secondary)" }}
+            >
+              {t("adminAICourseBuilder.cancel")}
+            </Button>
             <Button
               variant="contained"
               onClick={handleApprove}
               disabled={approving}
               sx={{
-                bgcolor: "#10b981",
-                "&:hover": { bgcolor: "#059669" },
+                bgcolor: "var(--success-500)",
+                color: "var(--font-light)",
+                "&:hover": {
+                  bgcolor:
+                    "color-mix(in srgb, var(--success-500) 85%, black 15%)",
+                },
+                "&.Mui-disabled": {
+                  color: "var(--font-secondary)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+                },
               }}
             >
               {approving ? t("adminAICourseBuilder.creating") : t("adminAICourseBuilder.createCourse")}

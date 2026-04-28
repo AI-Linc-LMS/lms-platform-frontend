@@ -12,7 +12,7 @@ interface JobSearchIllustrationProps {
 const JobSearchIllustrationComponent = ({
   width = 200,
   height = 160,
-  primaryColor = "#6366f1",
+  primaryColor = "var(--accent-indigo)",
 }: JobSearchIllustrationProps) => (
   <Box
     component="svg"
@@ -30,7 +30,7 @@ const JobSearchIllustrationComponent = ({
     </defs>
     {/* Briefcase */}
     <rect x="60" y="50" width="80" height="55" rx="4" fill="url(#jobSearchGrad)" />
-    <rect x="65" y="55" width="70" height="45" rx="2" fill="#fff" opacity={0.9} />
+    <rect x="65" y="55" width="70" height="45" rx="2" fill="var(--font-light)" opacity={0.9} />
     <rect x="90" y="45" width="20" height="15" rx="2" fill={primaryColor} />
     {/* Search magnifier */}
     <circle cx="130" cy="75" r="18" fill="none" stroke={primaryColor} strokeWidth="4" />

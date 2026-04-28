@@ -22,20 +22,20 @@ export function EmptyState({
         <IconWrapper
           icon="mdi:magnify"
           size={48}
-          color="#9ca3af"
+          color="var(--font-tertiary)"
           style={{ marginBottom: 16 }}
         />
         <Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
           {t("adminCourseBuilder.noCoursesFound")}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
           {t("adminCourseBuilder.tryAdjustingSearch")}
         </Typography>
         {onClearSearch && (
           <Button
             variant="outlined"
             onClick={onClearSearch}
-            sx={{ color: "#6366f1", borderColor: "#6366f1" }}
+            sx={{ color: "var(--accent-indigo)", borderColor: "var(--accent-indigo)" }}
           >
             {t("adminCourseBuilder.clearSearchAndViewAll")}
           </Button>
@@ -49,13 +49,13 @@ export function EmptyState({
       <IconWrapper
         icon="mdi:book-open-variant"
         size={48}
-        color="#9ca3af"
+        color="var(--font-tertiary)"
         style={{ marginBottom: 16 }}
       />
       <Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
         {t("adminCourseBuilder.noCoursesYet")}
       </Typography>
-      <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
         {t("adminCourseBuilder.getStartedFirstCourse")}
       </Typography>
       {onCreateClick && (
@@ -63,7 +63,7 @@ export function EmptyState({
           variant="contained"
           startIcon={<IconWrapper icon="mdi:plus" size={20} />}
           onClick={onCreateClick}
-          sx={{ bgcolor: "#6366f1" }}
+          sx={{ bgcolor: "var(--accent-indigo)", color: "var(--font-light)" }}
         >
           {t("adminCourseBuilder.createFirstCourse")}
         </Button>

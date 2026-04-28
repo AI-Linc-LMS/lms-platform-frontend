@@ -45,14 +45,14 @@ type ResumeMode = "saved" | "upload";
 const inputSx = {
   "& .MuiOutlinedInput-root": {
     borderRadius: 2,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--card-bg)",
     transition: "all 0.2s ease",
-    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#6366f1",
+      borderColor: "var(--accent-indigo)",
       borderWidth: 2,
     },
-    "&.Mui-focused .MuiInputLabel-root": { color: "#6366f1" },
+    "&.Mui-focused .MuiInputLabel-root": { color: "var(--accent-indigo)" },
   },
 };
 
@@ -255,8 +255,8 @@ export function ApplyJobPage({
             p: 3,
             borderRadius: 2.5,
             border: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
-            backgroundColor: "#fff",
+            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+            backgroundColor: "var(--card-bg)",
             mb: 2.5,
             position: "relative",
             overflow: "hidden",
@@ -267,15 +267,16 @@ export function ApplyJobPage({
               left: 0,
               right: 0,
               height: 3,
-              background: "linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%)",
+              background:
+                "linear-gradient(90deg, color-mix(in srgb, var(--accent-indigo) 18%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 7%, transparent) 100%)",
             },
             "&:hover": {
-              borderColor: "rgba(99, 102, 241, 0.2)",
-              boxShadow: "0 8px 30px rgba(99, 102, 241, 0.08)",
+              borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+              boxShadow: "0 8px 30px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
             },
           }}
         >
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: "#0f172a", fontSize: "1.05rem" }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: "var(--font-primary)", fontSize: "1.05rem" }}>
             Your resume
           </Typography>
           <Box
@@ -284,7 +285,7 @@ export function ApplyJobPage({
               gap: 0,
               p: 0.5,
               borderRadius: 2,
-              backgroundColor: "#f1f5f9",
+              backgroundColor: "var(--surface)",
               width: "fit-content",
             }}
           >
@@ -303,13 +304,13 @@ export function ApplyJobPage({
                   borderRadius: 1.5,
                   border: "none",
                   cursor: "pointer",
-                  backgroundColor: resumeMode === mode ? "#fff" : "transparent",
-                  color: resumeMode === mode ? "#0f172a" : "#64748b",
+                  backgroundColor: resumeMode === mode ? "var(--font-light)" : "transparent",
+                  color: resumeMode === mode ? "var(--font-primary)" : "var(--font-secondary)",
                   fontWeight: resumeMode === mode ? 600 : 500,
                   fontSize: "0.875rem",
-                  boxShadow: resumeMode === mode ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
+                  boxShadow: resumeMode === mode ? "0 1px 2px color-mix(in srgb, var(--font-primary) 7%, transparent)" : "none",
                   transition: "all 0.2s ease",
-                  "&:hover": { backgroundColor: resumeMode === mode ? "#fff" : "rgba(255,255,255,0.6)" },
+                  "&:hover": { backgroundColor: resumeMode === mode ? "var(--font-light)" : "color-mix(in srgb, var(--font-light) 60%, transparent)" },
                 }}
               >
                 {mode === "saved" ? <FileText size={18} /> : <FileUp size={18} />}
@@ -351,9 +352,9 @@ export function ApplyJobPage({
                     textTransform: "none",
                     fontWeight: 600,
                     borderRadius: 2,
-                    borderColor: "#6366f1",
-                    color: "#6366f1",
-                    "&:hover": { borderColor: "#4f46e5", backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                    borderColor: "var(--accent-indigo)",
+                    color: "var(--accent-indigo)",
+                    "&:hover": { borderColor: "var(--accent-indigo-dark)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
                   }}
                 >
                   Preview
@@ -375,15 +376,15 @@ export function ApplyJobPage({
                 onClick={() => !uploading && fileInputRef.current?.click()}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  if (!uploading) e.currentTarget.style.borderColor = "#6366f1";
+                  if (!uploading) e.currentTarget.style.borderColor = "var(--accent-indigo)";
                 }}
                 onDragLeave={(e) => {
                   e.preventDefault();
-                  e.currentTarget.style.borderColor = uploadedResumeUrl ? "#22c55e" : "rgba(99, 102, 241, 0.4)";
+                  e.currentTarget.style.borderColor = uploadedResumeUrl ? "var(--success-500)" : "color-mix(in srgb, var(--accent-indigo) 45%, transparent)";
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
-                  e.currentTarget.style.borderColor = uploadedResumeUrl ? "#22c55e" : "rgba(99, 102, 241, 0.4)";
+                  e.currentTarget.style.borderColor = uploadedResumeUrl ? "var(--success-500)" : "color-mix(in srgb, var(--accent-indigo) 45%, transparent)";
                   const file = e.dataTransfer.files?.[0];
                   if (file && !uploading) processFile(file);
                 }}
@@ -392,23 +393,25 @@ export function ApplyJobPage({
                   px: 3,
                   borderRadius: 2,
                   border: "2px dashed",
-                  borderColor: uploadedResumeUrl ? "#22c55e" : "rgba(99, 102, 241, 0.4)",
-                  backgroundColor: uploadedResumeUrl ? "rgba(34, 197, 94, 0.06)" : "rgba(99, 102, 241, 0.04)",
+                  borderColor: uploadedResumeUrl ? "var(--success-500)" : "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                  backgroundColor: uploadedResumeUrl
+                    ? "color-mix(in srgb, var(--success-500) 8%, transparent)"
+                    : "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   cursor: uploading ? "wait" : "pointer",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    borderColor: uploading ? undefined : "#6366f1",
-                    backgroundColor: uploading ? undefined : "rgba(99, 102, 241, 0.08)",
+                    borderColor: uploading ? undefined : "var(--accent-indigo)",
+                    backgroundColor: uploading ? undefined : "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                   },
                 }}
               >
                 <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
                   {uploading ? (
-                    <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+                    <CircularProgress size={40} sx={{ color: "var(--accent-indigo)" }} />
                   ) : (
-                    <FileUp size={44} style={{ color: uploadedResumeUrl ? "#22c55e" : "#6366f1" }} />
+                    <FileUp size={44} style={{ color: uploadedResumeUrl ? "var(--success-500)" : "var(--accent-indigo)" }} />
                   )}
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#334155" }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>
                     {uploading ? "Uploading..." : uploadedResumeUrl ? "Resume uploaded ✓" : "Click or drop PDF here (max 5MB)"}
                   </Typography>
                 </Box>
@@ -422,10 +425,10 @@ export function ApplyJobPage({
                     textTransform: "none",
                     fontWeight: 600,
                     borderRadius: 2,
-                    borderColor: "#6366f1",
-                    color: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
+                    color: "var(--accent-indigo)",
                     alignSelf: "flex-start",
-                    "&:hover": { borderColor: "#4f46e5", backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                    "&:hover": { borderColor: "var(--accent-indigo-dark)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
                   }}
                 >
                   Preview uploaded resume
@@ -445,8 +448,8 @@ export function ApplyJobPage({
             p: 3,
             borderRadius: 2.5,
             border: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
-            backgroundColor: "#fff",
+            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+            backgroundColor: "var(--card-bg)",
             mb: 2.5,
             position: "relative",
             overflow: "hidden",
@@ -457,15 +460,16 @@ export function ApplyJobPage({
               left: 0,
               right: 0,
               height: 3,
-              background: "linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%)",
+              background:
+                "linear-gradient(90deg, color-mix(in srgb, var(--accent-indigo) 18%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 7%, transparent) 100%)",
             },
             "&:hover": {
-              borderColor: "rgba(99, 102, 241, 0.2)",
-              boxShadow: "0 8px 30px rgba(99, 102, 241, 0.08)",
+              borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+              boxShadow: "0 8px 30px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
             },
           }}
         >
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, color: "#0f172a", fontSize: "1.05rem" }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2.5, color: "var(--font-primary)", fontSize: "1.05rem" }}>
             Application questions
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -477,7 +481,7 @@ export function ApplyJobPage({
 
               return (
                 <Box key={q.id}>
-                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#334155" }}>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "var(--font-secondary)" }}>
                     {q.question_text}
                     {q.is_required && (
                       <Typography component="span" color="error" sx={{ ml: 0.25 }}>
@@ -497,9 +501,9 @@ export function ApplyJobPage({
                             key={opt}
                             value={opt}
                             control={
-                              <Radio size="small" sx={{ color: "#6366f1", "&.Mui-checked": { color: "#6366f1" } }} />
+                              <Radio size="small" sx={{ color: "var(--accent-indigo)", "&.Mui-checked": { color: "var(--accent-indigo)" } }} />
                             }
-                            label={<Typography variant="body2" sx={{ color: "#475569" }}>{opt}</Typography>}
+                            label={<Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>{opt}</Typography>}
                           />
                         ))}
                       </RadioGroup>
@@ -523,10 +527,10 @@ export function ApplyJobPage({
                                   return { ...prev, [q.id]: current.filter((o) => o !== opt) };
                                 });
                               }}
-                              sx={{ color: "#6366f1", "&.Mui-checked": { color: "#6366f1" } }}
+                              sx={{ color: "var(--accent-indigo)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                             />
                           }
-                          label={<Typography variant="body2" sx={{ color: "#475569" }}>{opt}</Typography>}
+                          label={<Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>{opt}</Typography>}
                         />
                       ))}
                     </FormGroup>
@@ -557,8 +561,9 @@ export function ApplyJobPage({
         sx={{
           p: 3,
           borderRadius: 2.5,
-          background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)",
-          color: "#fff",
+          background:
+            "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 50%, color-mix(in srgb, var(--accent-indigo-dark) 88%, var(--accent-purple)) 100%)",
+          color: "var(--font-light)",
           position: "relative",
           overflow: "hidden",
           mb: 3,
@@ -570,7 +575,7 @@ export function ApplyJobPage({
             width: 200,
             height: 200,
             borderRadius: "50%",
-            background: "rgba(255,255,255,0.08)",
+            background: "color-mix(in srgb, var(--font-light) 8%, transparent)",
           },
         }}
       >
@@ -580,26 +585,41 @@ export function ApplyJobPage({
               width: 52,
               height: 52,
               borderRadius: 2,
-              backgroundColor: "rgba(255,255,255,0.2)",
+              backgroundColor: "color-mix(in srgb, var(--font-light) 20%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <IconWrapper icon="mdi:clipboard-check-outline" size={30} color="#fff" />
+            <IconWrapper icon="mdi:clipboard-check-outline" size={30} color="var(--font-light)" />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.85)", fontSize: "0.7rem", letterSpacing: 1.5, fontWeight: 600 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                color: "color-mix(in srgb, var(--font-light) 85%, transparent)",
+                fontSize: "0.7rem",
+                letterSpacing: 1.5,
+                fontWeight: 600,
+              }}
+            >
               Ready to submit
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: "#fff", fontSize: "1.25rem", letterSpacing: "-0.02em", mt: 0.25 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--font-light)", fontSize: "1.25rem", letterSpacing: "-0.02em", mt: 0.25 }}>
               Review your application
             </Typography>
-            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.9)", mt: 0.5, fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ color: "color-mix(in srgb, var(--font-light) 90%, transparent)", mt: 0.5, fontWeight: 500 }}>
               {jobTitle} at {companyName}
             </Typography>
-            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.75)", display: "block", mt: 0.75 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "color-mix(in srgb, var(--font-light) 75%, transparent)",
+                display: "block",
+                mt: 0.75,
+              }}
+            >
               Please verify all details below before clicking Apply
             </Typography>
           </Box>
@@ -616,14 +636,16 @@ export function ApplyJobPage({
           gap: 2,
           p: 2.5,
           borderRadius: 2,
-          backgroundColor: "#fff",
+          backgroundColor: "var(--card-bg)",
           border: "1px solid",
-          borderColor: "rgba(99, 102, 241, 0.15)",
-          boxShadow: "0 1px 3px rgba(99, 102, 241, 0.06)",
+          borderColor:
+            "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default))",
+          boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
           transition: "all 0.2s ease",
           "&:hover": {
-            borderColor: "rgba(99, 102, 241, 0.25)",
-            boxShadow: "0 4px 12px rgba(99, 102, 241, 0.1)",
+            borderColor:
+              "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
+            boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
           },
         }}
       >
@@ -633,19 +655,20 @@ export function ApplyJobPage({
               width: 48,
               height: 48,
               borderRadius: 2,
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.05) 100%)",
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 14%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 7%, transparent) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <FileText size={26} style={{ color: "#6366f1" }} />
+            <FileText size={26} style={{ color: "var(--accent-indigo)" }} />
           </Box>
           <Box>
-            <Typography variant="caption" sx={{ color: "#64748b", display: "block", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
               Resume
             </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "1rem" }}>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "1rem" }}>
               {resumeMode === "saved" ? selectedResume?.display_name || `Resume ${selectedResumeId}` : "Uploaded resume"}
             </Typography>
           </Box>
@@ -660,12 +683,12 @@ export function ApplyJobPage({
             textTransform: "none",
             fontWeight: 600,
             borderRadius: 2,
-            borderColor: "#6366f1",
-            color: "#6366f1",
+            borderColor: "var(--accent-indigo)",
+            color: "var(--accent-indigo)",
             fontSize: "0.875rem",
             py: 1,
             px: 2,
-            "&:hover": { borderColor: "#4f46e5", backgroundColor: "rgba(99, 102, 241, 0.08)" },
+            "&:hover": { borderColor: "var(--accent-indigo-dark)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
           }}
         >
           Preview
@@ -693,10 +716,11 @@ export function ApplyJobPage({
                 sx={{
                   p: 2.5,
                   borderRadius: 2,
-                  backgroundColor: "#fff",
+                  backgroundColor: "var(--card-bg)",
                   border: "1px solid",
-                  borderColor: "rgba(99, 102, 241, 0.12)",
-                  boxShadow: "0 1px 3px rgba(99, 102, 241, 0.04)",
+                  borderColor:
+                    "color-mix(in srgb, var(--accent-indigo) 18%, var(--border-default))",
+                  boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
@@ -705,15 +729,15 @@ export function ApplyJobPage({
                       width: 36,
                       height: 36,
                       borderRadius: 1.5,
-                      backgroundColor: "rgba(99, 102, 241, 0.1)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <IconWrapper icon="mdi:format-list-checks" size={20} color="#6366f1" />
+                    <IconWrapper icon="mdi:format-list-checks" size={20} color="var(--accent-indigo)" />
                   </Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a" }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--font-primary)" }}>
                     Your answers
                   </Typography>
                 </Box>
@@ -730,21 +754,22 @@ export function ApplyJobPage({
                         sx={{
                           p: 2,
                           borderRadius: 1.5,
-                          backgroundColor: "#fafbff",
+                          backgroundColor: "var(--surface)",
                           border: "1px solid",
-                          borderColor: "rgba(99, 102, 241, 0.1)",
-                          borderLeft: "3px solid #6366f1",
+                          borderColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                          borderLeft: "3px solid var(--accent-indigo)",
                           transition: "all 0.2s ease",
                           "&:hover": {
-                            backgroundColor: "#f8fafc",
-                            borderColor: "rgba(99, 102, 241, 0.18)",
+                            backgroundColor: "var(--background)",
+                            borderColor:
+                              "color-mix(in srgb, var(--accent-indigo) 24%, var(--border-default))",
                           },
                         }}
                       >
-                        <Typography variant="caption" sx={{ color: "#64748b", display: "block", mb: 0.5, fontWeight: 600 }}>
+                        <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5, fontWeight: 600 }}>
                           Q{idx + 1}: {q.question_text}
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#0f172a", lineHeight: 1.6 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.6 }}>
                           {text}
                         </Typography>
                       </Box>
@@ -771,12 +796,14 @@ export function ApplyJobPage({
           alignItems: { xs: "stretch", md: "center" },
           gap: 3,
           p: 3.5,
-          background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 35%, #eef2ff 100%)",
+          background:
+            "linear-gradient(135deg, var(--background) 0%, var(--surface) 35%, color-mix(in srgb, var(--accent-indigo) 10%, var(--surface)) 100%)",
           borderRadius: 2.5,
           mb: 3,
           border: "1px solid",
-          borderColor: "rgba(99, 102, 241, 0.12)",
-          boxShadow: "0 4px 20px rgba(99, 102, 241, 0.06)",
+          borderColor:
+            "color-mix(in srgb, var(--accent-indigo) 18%, var(--border-default))",
+          boxShadow: "0 4px 20px color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
           position: "relative",
           overflow: "hidden",
           "&::after": {
@@ -787,7 +814,7 @@ export function ApplyJobPage({
             width: 160,
             height: 160,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 0%, transparent 70%)",
           },
         }}
       >
@@ -803,19 +830,19 @@ export function ApplyJobPage({
             zIndex: 1,
           }}
         >
-          <JobDetailIllustration width={100} height={88} primaryColor="#6366f1" />
+          <JobDetailIllustration width={100} height={88} primaryColor="var(--accent-indigo)" />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.03em" }}>
             Apply for this role
           </Typography>
-          <Typography variant="body2" sx={{ mt: 0.5, color: "#64748b", fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ mt: 0.5, color: "var(--font-secondary)", fontWeight: 500 }}>
             {jobTitle} · {companyName}
           </Typography>
           <Typography
             variant="body2"
             sx={{
-              color: "#64748b",
+              color: "var(--font-secondary)",
               fontWeight: 500,
               display: "inline-flex",
               alignItems: "center",
@@ -824,8 +851,13 @@ export function ApplyJobPage({
             }}
           >
             Step {activeStep + 1} of {STEPS.length}
-            <Box component="span" sx={{ color: "rgba(0,0,0,0.3)" }}>·</Box>
-            <Box component="span" sx={{ color: "#6366f1", fontWeight: 700 }}>{STEPS[activeStep]}</Box>
+            <Box
+              component="span"
+              sx={{ color: "color-mix(in srgb, var(--font-primary) 35%, transparent)" }}
+            >
+              .
+            </Box>
+            <Box component="span" sx={{ color: "var(--accent-indigo)", fontWeight: 700 }}>{STEPS[activeStep]}</Box>
           </Typography>
         </Box>
       </Box>
@@ -838,29 +870,30 @@ export function ApplyJobPage({
           mb: 3,
           borderRadius: 2.5,
           border: "1px solid",
-          borderColor: "rgba(0,0,0,0.06)",
-          backgroundColor: "#fff",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 6%, transparent)",
         }}
       >
         <Stepper
           activeStep={activeStep}
           sx={{
             "& .MuiStepConnector-line": {
-              borderColor: "rgba(99, 102, 241, 0.25)",
+              borderColor:
+                "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
               borderTopWidth: 2,
               transition: "border-color 0.2s ease",
             },
             "& .MuiStepLabel-label": {
               fontWeight: 500,
               fontSize: { xs: "0.8rem", sm: "0.9rem" },
-              color: "#64748b",
+              color: "var(--font-secondary)",
             },
-            "& .MuiStepIcon-root.Mui-completed": { color: "#16a34a" },
-            "& .MuiStepIcon-root.Mui-completed .MuiStepIcon-text": { fill: "#fff" },
-            "& .MuiStepIcon-root.Mui-active": { color: "#6366f1" },
+            "& .MuiStepIcon-root.Mui-completed": { color: "var(--success-500)" },
+            "& .MuiStepIcon-root.Mui-completed .MuiStepIcon-text": { fill: "var(--font-light)" },
+            "& .MuiStepIcon-root.Mui-active": { color: "var(--accent-indigo)" },
             "& .MuiStepLabel-root.Mui-active .MuiStepLabel-label": {
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               fontWeight: 700,
             },
           }}
@@ -889,10 +922,10 @@ export function ApplyJobPage({
           p: 3,
           borderRadius: 2.5,
           borderTop: "1px solid",
-          borderColor: "rgba(0,0,0,0.06)",
-          backgroundColor: "#fff",
+          borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+          backgroundColor: "var(--card-bg)",
           zIndex: 10,
-          boxShadow: "0 -8px 30px rgba(0,0,0,0.06)",
+          boxShadow: "0 -8px 30px color-mix(in srgb, var(--font-primary) 8%, transparent)",
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
@@ -902,9 +935,9 @@ export function ApplyJobPage({
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                color: "#64748b",
+                color: "var(--font-secondary)",
                 px: 2,
-                "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+                "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
               }}
             >
               Cancel
@@ -917,9 +950,9 @@ export function ApplyJobPage({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  color: "#64748b",
+                  color: "var(--font-secondary)",
                   px: 2.5,
-                  "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)", color: "#6366f1" },
+                  "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)", color: "var(--accent-indigo)" },
                 }}
               >
                 Back
@@ -935,12 +968,23 @@ export function ApplyJobPage({
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
+                  color: "var(--font-light)",
                   px: 3.5,
                   py: 1.25,
                   borderRadius: 2,
-                  backgroundColor: "#6366f1",
-                  boxShadow: "0 1px 3px rgba(99, 102, 241, 0.3)",
-                  "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.35)" },
+                  backgroundColor: "var(--accent-indigo)",
+                  boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                  "&:hover": {
+                    backgroundColor: "var(--accent-indigo-dark)",
+                    boxShadow:
+                      "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                  },
+                  "&.Mui-disabled": {
+                    color: "var(--font-secondary)",
+                    WebkitTextFillColor: "var(--font-secondary)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                  },
                 }}
               >
                 Next
@@ -954,12 +998,23 @@ export function ApplyJobPage({
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
+                  color: "var(--font-light)",
                   px: 3.5,
                   py: 1.25,
                   borderRadius: 2,
-                  backgroundColor: "#6366f1",
-                  boxShadow: "0 1px 3px rgba(99, 102, 241, 0.3)",
-                  "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.35)" },
+                  backgroundColor: "var(--accent-indigo)",
+                  boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                  "&:hover": {
+                    backgroundColor: "var(--accent-indigo-dark)",
+                    boxShadow:
+                      "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                  },
+                  "&.Mui-disabled": {
+                    color: "var(--font-secondary)",
+                    WebkitTextFillColor: "var(--font-secondary)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                  },
                 }}
               >
                 {applying ? "Applying..." : "Apply"}

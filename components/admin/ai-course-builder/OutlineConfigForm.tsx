@@ -76,7 +76,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151" }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
         {t("adminAICourseBuilder.contentConfiguration")}
       </Typography>
 

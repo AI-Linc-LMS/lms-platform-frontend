@@ -290,7 +290,7 @@ export const BottomNavigation: React.FC = () => {
                   justifyContent: "center",
                   position: "relative",
                   mb: 0.25,
-                  color: isActive ? shell.p300 : shell.navMuted,
+                  color: isActive ? shell.activeText : shell.navMuted,
                   "& svg": {
                     transition: "all 0.2s ease",
                     filter: isActive
@@ -315,7 +315,7 @@ export const BottomNavigation: React.FC = () => {
                 sx={{
                   fontSize: "0.7rem",
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? shell.p300 : shell.navMuted,
+                  color: isActive ? shell.activeText : shell.navMuted,
                   textAlign: "center",
                   lineHeight: 1.2,
                   mt: 0.25,

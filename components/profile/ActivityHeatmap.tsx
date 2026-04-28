@@ -152,17 +152,17 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
   const getColor = (level: number) => {
     switch (level) {
       case 0:
-        return "#ebedf0";
+        return "var(--border-default)";
       case 1:
-        return "#9be9a8";
+        return "color-mix(in srgb, var(--success-500) 35%, var(--card-bg))";
       case 2:
-        return "#40c463";
+        return "color-mix(in srgb, var(--success-500) 55%, var(--card-bg))";
       case 3:
-        return "#30a14e";
+        return "color-mix(in srgb, var(--success-500) 75%, var(--card-bg))";
       case 4:
-        return "#216e39";
+        return "var(--success-500)";
       default:
-        return "#ebedf0";
+        return "var(--border-default)";
     }
   };
 
@@ -177,8 +177,8 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
         border: "1px solid",
         borderColor: "divider",
         borderRadius: 3,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        backgroundColor: "#ffffff",
+        boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+        backgroundColor: "var(--card-bg)",
         overflow: "hidden",
       }}
     >
@@ -199,38 +199,38 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
               width: 56,
               height: 56,
               borderRadius: 2.5,
-              background: "linear-gradient(145deg, #34d399 0%, #22c55e 50%, #16a34a 100%)",
+              background: "linear-gradient(145deg, var(--success-500) 0%, color-mix(in srgb, var(--success-500) 82%, var(--background)) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(34, 197, 94, 0.4), 0 0 0 1px rgba(255,255,255,0.2) inset",
+              boxShadow: "0 4px 16px color-mix(in srgb, var(--success-500) 35%, transparent), 0 0 0 1px color-mix(in srgb, var(--font-light) 25%, transparent) inset",
               position: "relative",
               overflow: "hidden",
               "&::before": {
                 content: '""',
                 position: "absolute",
                 inset: 0,
-                background: `linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%)`,
+                background: `linear-gradient(135deg, color-mix(in srgb, var(--font-light) 25%, transparent) 0%, transparent 50%)`,
                 borderRadius: "inherit",
                 pointerEvents: "none",
               },
             }}
           >
-            <IconWrapper icon="mdi:chart-box-outline" size={28} color="#fff" style={{ position: "relative", zIndex: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" }} />
+            <IconWrapper icon="mdi:chart-box-outline" size={28} color="var(--font-light)" style={{ position: "relative", zIndex: 1, filter: "drop-shadow(0 1px 2px color-mix(in srgb, var(--font-primary) 16%, transparent))" }} />
           </Box>
           <Box>
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 700,
-                color: "#111827",
+                color: "var(--font-primary)",
                 fontSize: "1.25rem",
                 letterSpacing: "-0.02em",
               }}
             >
               Activity
             </Typography>
-            <Typography variant="body2" sx={{ color: "#6b7280", fontSize: "0.875rem", mt: 0.25 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.875rem", mt: 0.25 }}>
               {subtitle}
             </Typography>
           </Box>
@@ -288,11 +288,11 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
             gap: 1,
           }}
         >
-          <IconWrapper icon="mdi:calendar-check" size={18} color="#16a34a" />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#166534" }}>
+          <IconWrapper icon="mdi:calendar-check" size={18} color="var(--success-500)" />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--success-500)" }}>
             {stats.daysActive}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
             days active
           </Typography>
         </Box>
@@ -307,11 +307,11 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
             gap: 1,
           }}
         >
-          <IconWrapper icon="mdi:layers" size={18} color="#0a66c2" />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#0a66c2" }}>
+          <IconWrapper icon="mdi:layers" size={18} color="var(--accent-indigo)" />
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--accent-indigo)" }}>
             {stats.totalActivities}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
             activities
           </Typography>
         </Box>
@@ -335,7 +335,7 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                 variant="caption"
                 sx={{
                   fontSize: "0.6875rem",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontWeight: 500,
                   lineHeight: `${cellSize + cellGap}px`,
                   height: index === 0 ? cellSize + cellGap : (cellSize + cellGap) * 2,
@@ -376,7 +376,7 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                         variant="caption"
                         sx={{
                           fontSize: "0.6875rem",
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontWeight: 600,
                         }}
                       >
@@ -413,21 +413,21 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                         key={dayIndex}
                         title={
                           <Box sx={{ py: 0.5, px: 0.5, maxWidth: 220 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1, color: "#fff" }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1, color: "var(--font-light)" }}>
                               {day.date}
                             </Typography>
                             {day.count === 0 ? (
-                              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>No activities</Typography>
+                              <Typography variant="caption" sx={{ color: "color-mix(in srgb, var(--font-light) 70%, transparent)" }}>No activities</Typography>
                             ) : (
                               <>
-                                <Typography variant="caption" sx={{ display: "block", mb: 0.5, fontWeight: 600, color: "#fff" }}>
+                                <Typography variant="caption" sx={{ display: "block", mb: 0.5, fontWeight: 600, color: "var(--font-light)" }}>
                                   {day.count} {day.count === 1 ? "activity" : "activities"}
                                 </Typography>
                                 <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
                                   {Object.entries(day.activities)
                                     .filter(([, c]) => c > 0)
                                     .map(([key, count]) => (
-                                      <Typography key={key} variant="caption" sx={{ color: "rgba(255,255,255,0.85)" }}>
+                                      <Typography key={key} variant="caption" sx={{ color: "color-mix(in srgb, var(--font-light) 85%, transparent)" }}>
                                         {activityLabels[key] ?? key}: {count}
                                       </Typography>
                                     ))}
@@ -440,8 +440,8 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                         slotProps={{
                           tooltip: {
                             sx: {
-                              bgcolor: "grey.900",
-                              "& .MuiTooltip-arrow": { color: "grey.900" },
+                              bgcolor: "color-mix(in srgb, var(--font-primary) 92%, var(--background))",
+                              "& .MuiTooltip-arrow": { color: "color-mix(in srgb, var(--font-primary) 92%, var(--background))" },
                             },
                           },
                         }}
@@ -457,7 +457,7 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                             // Inset ring stays inside the cell so Paper overflow:hidden / tight grids do not clip it (outline draws outside the box).
                             ...(isTodayCell
                               ? {
-                                  boxShadow: "inset 0 0 0 2px #111827",
+                                  boxShadow: "inset 0 0 0 2px var(--font-primary)",
                                   position: "relative",
                                   zIndex: 1,
                                 }
@@ -469,8 +469,8 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                             "&:hover": {
                               transform: "scale(1.2)",
                               boxShadow: isTodayCell
-                                ? "inset 0 0 0 2px #111827, 0 3px 10px rgba(0, 0, 0, 0.25)"
-                                : "0 3px 10px rgba(0, 0, 0, 0.2)",
+                                ? "inset 0 0 0 2px var(--font-primary), 0 3px 10px color-mix(in srgb, var(--font-primary) 25%, transparent)"
+                                : "0 3px 10px color-mix(in srgb, var(--font-primary) 22%, transparent)",
                               zIndex: 2,
                             },
                           }}
@@ -500,7 +500,7 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, justifyContent: "center" }}>
-          <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", fontWeight: 500 }}>
             Less
           </Typography>
           {[0, 1, 2, 3, 4].map((level) => (
@@ -514,12 +514,12 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
               }}
             />
           ))}
-          <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem", fontWeight: 500 }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", fontWeight: 500 }}>
             More
           </Typography>
         </Box>
         {isCurrentYear && (
-          <Typography variant="caption" sx={{ color: "#9ca3af", fontSize: "0.75rem" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.75rem" }}>
             Today highlighted
           </Typography>
         )}

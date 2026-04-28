@@ -47,8 +47,9 @@ export function LoginHeroPreview({
         maxHeight: 400,
         display: "flex",
         position: "relative",
-        bgcolor: "#f1f5f9",
-        boxShadow: "0 4px 24px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04)",
+        bgcolor: "var(--surface)",
+        boxShadow:
+          "0 4px 24px color-mix(in srgb, var(--font-primary) 12%, transparent), 0 0 0 1px color-mix(in srgb, var(--font-primary) 7%, transparent)",
       }}
     >
       {hero ? (
@@ -134,8 +135,7 @@ export function LoginHeroPreview({
                           left: 0,
                           right: 0,
                           height: "40%",
-                          background:
-                            "linear-gradient(135deg, #f97316 0%, #ec4899 100%)",
+                          background: "linear-gradient(135deg, var(--warning-500) 0%, var(--accent-purple) 100%)",
                           borderRadius: "20px",
                           opacity: 0.3,
                           zIndex: -1,

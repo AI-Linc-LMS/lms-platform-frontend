@@ -55,25 +55,25 @@ function ResumePreviewCard({ label, children }: { label: string; children: React
         mt: 2,
         borderRadius: 2,
         overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 8%, transparent)",
         border: "1px solid",
-        borderColor: "rgba(0,0,0,0.06)",
+        borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
       }}
     >
       <Box
         sx={{
           px: 2,
           py: 1.25,
-          backgroundColor: "#fafbfc",
+          backgroundColor: "var(--surface)",
           borderBottom: "1px solid",
-          borderColor: "rgba(0,0,0,0.06)",
+          borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
           display: "flex",
           alignItems: "center",
           gap: 1,
         }}
       >
-        <FileText size={14} style={{ color: "#64748b" }} />
-        <Typography variant="caption" sx={{ fontWeight: 600, color: "#475569", letterSpacing: "0.02em" }}>
+        <FileText size={14} style={{ color: "var(--font-secondary)" }} />
+        <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)", letterSpacing: "0.02em" }}>
           {label}
         </Typography>
       </Box>
@@ -83,7 +83,7 @@ function ResumePreviewCard({ label, children }: { label: string; children: React
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#f8fafc",
+          backgroundColor: "var(--background)",
         }}
       >
         {children}
@@ -281,15 +281,17 @@ export function ApplyJobDialog({
         sx: {
           borderRadius: 3,
           maxHeight: "90vh",
-          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+          boxShadow:
+            "0 25px 50px -12px color-mix(in srgb, var(--font-primary) 30%, transparent)",
           overflow: "hidden",
         },
       }}
     >
       <Box
         sx={{
-          background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-          color: "#fff",
+          background:
+            "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+          color: "var(--font-light)",
           px: 3,
           py: 2.5,
         }}
@@ -303,7 +305,7 @@ export function ApplyJobDialog({
       </Box>
 
       <DialogContent sx={{ px: 3, pt: 3, pb: 2 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: "#0f172a", fontSize: "0.875rem" }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)", fontSize: "0.875rem" }}>
           Your resume
         </Typography>
 
@@ -313,7 +315,7 @@ export function ApplyJobDialog({
             gap: 0,
             p: 0.5,
             borderRadius: 2,
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "var(--surface)",
             width: "fit-content",
           }}
         >
@@ -332,14 +334,14 @@ export function ApplyJobDialog({
                 borderRadius: 1.5,
                 border: "none",
                 cursor: "pointer",
-                backgroundColor: resumeMode === mode ? "#fff" : "transparent",
-                color: resumeMode === mode ? "#0f172a" : "#64748b",
+                backgroundColor: resumeMode === mode ? "var(--font-light)" : "transparent",
+                color: resumeMode === mode ? "var(--font-primary)" : "var(--font-secondary)",
                 fontWeight: resumeMode === mode ? 600 : 500,
                 fontSize: "0.875rem",
-                boxShadow: resumeMode === mode ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
+                boxShadow: resumeMode === mode ? "0 1px 2px color-mix(in srgb, var(--font-primary) 7%, transparent)" : "none",
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  backgroundColor: resumeMode === mode ? "#fff" : "rgba(255,255,255,0.6)",
+                  backgroundColor: resumeMode === mode ? "var(--font-light)" : "color-mix(in srgb, var(--font-light) 60%, transparent)",
                 },
               }}
             >
@@ -360,9 +362,9 @@ export function ApplyJobDialog({
                 onChange={(e) => setSelectedResumeId(e.target.value as number | "")}
                 sx={{
                   borderRadius: 2,
-                  backgroundColor: "#fff",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(0,0,0,0.12)" },
-                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                  backgroundColor: "var(--card-bg)",
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--font-primary) 15%, transparent)" },
+                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                 }}
               >
                 {savedResumes.length === 0 ? (
@@ -383,7 +385,7 @@ export function ApplyJobDialog({
               <ResumePreviewCard label={selectedResume?.display_name || `Resume ${selectedResumeId}`}>
                 {previewLoading ? (
                   <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
-                    <CircularProgress size={36} sx={{ color: "#6366f1" }} />
+                    <CircularProgress size={36} sx={{ color: "var(--accent-indigo)" }} />
                     <Typography variant="caption" color="text.secondary">
                       Loading preview...
                     </Typography>
@@ -421,15 +423,15 @@ export function ApplyJobDialog({
               onClick={() => !uploading && fileInputRef.current?.click()}
               onDragOver={(e) => {
                 e.preventDefault();
-                if (!uploading) e.currentTarget.style.borderColor = "#6366f1";
+                if (!uploading) e.currentTarget.style.borderColor = "var(--accent-indigo)";
               }}
               onDragLeave={(e) => {
                 e.preventDefault();
-                e.currentTarget.style.borderColor = uploadedResumeUrl ? "#94a3b8" : "rgba(99, 102, 241, 0.4)";
+                e.currentTarget.style.borderColor = uploadedResumeUrl ? "var(--font-tertiary)" : "color-mix(in srgb, var(--accent-indigo) 45%, transparent)";
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                e.currentTarget.style.borderColor = uploadedResumeUrl ? "#94a3b8" : "rgba(99, 102, 241, 0.4)";
+                e.currentTarget.style.borderColor = uploadedResumeUrl ? "var(--font-tertiary)" : "color-mix(in srgb, var(--accent-indigo) 45%, transparent)";
                 const file = e.dataTransfer.files?.[0];
                 if (file && !uploading) processFile(file);
               }}
@@ -439,23 +441,25 @@ export function ApplyJobDialog({
                 px: 3,
                 borderRadius: 2,
                 border: "2px dashed",
-                borderColor: uploadedResumeUrl ? "#94a3b8" : "rgba(99, 102, 241, 0.4)",
-                backgroundColor: uploadedResumeUrl ? "#f0fdf4" : "rgba(99, 102, 241, 0.04)",
+                borderColor: uploadedResumeUrl ? "var(--font-tertiary)" : "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                backgroundColor: uploadedResumeUrl
+                  ? "color-mix(in srgb, var(--success-500) 10%, transparent)"
+                  : "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                 cursor: uploading ? "wait" : "pointer",
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  borderColor: uploading ? undefined : "#6366f1",
-                  backgroundColor: uploading ? undefined : "rgba(99, 102, 241, 0.08)",
+                  borderColor: uploading ? undefined : "var(--accent-indigo)",
+                  backgroundColor: uploading ? undefined : "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
               }}
             >
               <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
                 {uploading ? (
-                  <CircularProgress size={32} sx={{ color: "#6366f1" }} />
+                  <CircularProgress size={32} sx={{ color: "var(--accent-indigo)" }} />
                 ) : (
-                  <FileUp size={32} style={{ color: uploadedResumeUrl ? "#22c55e" : "#6366f1" }} />
+                  <FileUp size={32} style={{ color: uploadedResumeUrl ? "var(--success-500)" : "var(--accent-indigo)" }} />
                 )}
-                <Typography variant="body2" sx={{ fontWeight: 500, color: "#334155" }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, color: "var(--font-secondary)" }}>
                   {uploading ? "Uploading..." : uploadedResumeUrl ? "Resume uploaded ✓" : "Click or drop PDF here (max 5MB)"}
                 </Typography>
               </Box>
@@ -465,7 +469,7 @@ export function ApplyJobDialog({
               <ResumePreviewCard label="Uploaded resume">
                 {previewLoading ? (
                   <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
-                    <CircularProgress size={36} sx={{ color: "#6366f1" }} />
+                    <CircularProgress size={36} sx={{ color: "var(--accent-indigo)" }} />
                     <Typography variant="caption" color="text.secondary">
                       Loading preview...
                     </Typography>
@@ -491,8 +495,8 @@ export function ApplyJobDialog({
         )}
 
         {questions.length > 0 && (
-          <Box sx={{ mt: 3.5, pt: 3, borderTop: "1px solid", borderColor: "rgba(0,0,0,0.08)" }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: "#0f172a", fontSize: "0.875rem" }}>
+          <Box sx={{ mt: 3.5, pt: 3, borderTop: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 10%, transparent)" }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)", fontSize: "0.875rem" }}>
               Application questions
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -504,7 +508,7 @@ export function ApplyJobDialog({
 
                 return (
                   <Box key={q.id}>
-                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#334155" }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "var(--font-secondary)" }}>
                       {q.question_text}
                       {q.is_required && (
                         <Typography component="span" color="error" sx={{ ml: 0.25 }}>
@@ -526,9 +530,9 @@ export function ApplyJobDialog({
                               key={opt}
                               value={opt}
                               control={
-                                <Radio size="small" sx={{ color: "#6366f1", "&.Mui-checked": { color: "#6366f1" } }} />
+                                <Radio size="small" sx={{ color: "var(--accent-indigo)", "&.Mui-checked": { color: "var(--accent-indigo)" } }} />
                               }
-                              label={<Typography variant="body2" sx={{ color: "#475569" }}>{opt}</Typography>}
+                              label={<Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>{opt}</Typography>}
                             />
                           ))}
                         </RadioGroup>
@@ -552,10 +556,10 @@ export function ApplyJobDialog({
                                     return { ...prev, [q.id]: current.filter((o) => o !== opt) };
                                   });
                                 }}
-                                sx={{ color: "#6366f1", "&.Mui-checked": { color: "#6366f1" } }}
+                                sx={{ color: "var(--accent-indigo)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                               />
                             }
-                            label={<Typography variant="body2" sx={{ color: "#475569" }}>{opt}</Typography>}
+                            label={<Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>{opt}</Typography>}
                           />
                         ))}
                       </FormGroup>
@@ -575,7 +579,7 @@ export function ApplyJobDialog({
                         sx={{
                           "& .MuiOutlinedInput-root": {
                             borderRadius: 2,
-                            backgroundColor: "#fff",
+                            backgroundColor: "var(--card-bg)",
                           },
                         }}
                       />
@@ -593,8 +597,8 @@ export function ApplyJobDialog({
           px: 3,
           py: 2,
           borderTop: "1px solid",
-          borderColor: "rgba(0,0,0,0.08)",
-          backgroundColor: "#fafbfc",
+          borderColor: "color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          backgroundColor: "var(--surface)",
           display: "flex",
           justifyContent: "flex-end",
           gap: 1.5,
@@ -605,8 +609,8 @@ export function ApplyJobDialog({
           sx={{
             textTransform: "none",
             fontWeight: 500,
-            color: "#64748b",
-            "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+            color: "var(--font-secondary)",
+            "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
           }}
         >
           Cancel
@@ -619,8 +623,8 @@ export function ApplyJobDialog({
             textTransform: "none",
             fontWeight: 600,
             px: 3,
-            backgroundColor: "#6366f1",
-            "&:hover": { backgroundColor: "#4f46e5" },
+            backgroundColor: "var(--accent-indigo)",
+            "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
           {applying ? "Applying..." : "Apply"}

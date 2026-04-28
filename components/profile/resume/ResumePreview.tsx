@@ -41,7 +41,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
           width: "100%",
           display: "flex",
           justifyContent: "center",
-          backgroundColor: "#f9fafb",
+          backgroundColor: "color-mix(in srgb, var(--surface) 65%, var(--background))",
           p: 2,
           borderRadius: 2,
           minHeight: "calc(297mm * 0.8)", // Account for scaling
@@ -54,8 +54,8 @@ export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
             width: "210mm", // A4 width (794px at 96 DPI)
             height: "297mm", // A4 height (1123px at 96 DPI)
             minHeight: "297mm",
-            backgroundColor: "#ffffff",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow: "0 2px 4px color-mix(in srgb, var(--font-primary) 22%, transparent)",
             overflow: "hidden", // Ensure content doesn't overflow
             transform: {
               xs: "scale(0.4)",

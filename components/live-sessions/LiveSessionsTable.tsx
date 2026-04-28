@@ -60,8 +60,9 @@ export function LiveSessionsTable({
           label={t("liveSessions.scheduled")}
           size="small"
           sx={{
-            backgroundColor: "#dbeafe",
-            color: "#1e40af",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+            color: "var(--accent-indigo)",
             fontWeight: 600,
             fontSize: "0.75rem",
           }}
@@ -74,8 +75,9 @@ export function LiveSessionsTable({
           label={t("liveSessions.live")}
           size="small"
           sx={{
-            backgroundColor: "#d1fae5",
-            color: "#065f46",
+            backgroundColor:
+              "color-mix(in srgb, var(--success-500) 16%, transparent)",
+            color: "var(--success-500)",
             fontWeight: 600,
             fontSize: "0.75rem",
           }}
@@ -88,8 +90,9 @@ export function LiveSessionsTable({
           label={t("liveSessions.classEnded")}
           size="small"
           sx={{
-            backgroundColor: "#9ca3af",
-            color: "#1f2937",
+            backgroundColor:
+              "color-mix(in srgb, var(--font-tertiary) 45%, transparent)",
+            color: "var(--font-primary)",
             fontWeight: 600,
             fontSize: "0.75rem",
           }}
@@ -102,8 +105,9 @@ export function LiveSessionsTable({
           label={t("liveSessions.expired")}
           size="small"
           sx={{
-            backgroundColor: "#fed7aa",
-            color: "#9a3412",
+            backgroundColor:
+              "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+            color: "var(--warning-500)",
             fontWeight: 600,
             fontSize: "0.75rem",
           }}
@@ -116,8 +120,8 @@ export function LiveSessionsTable({
           label={t("liveSessions.expired")}
           size="small"
           sx={{
-            backgroundColor: "#ed4545",
-            color: "#ffffff",
+            backgroundColor: "var(--error-500)",
+            color: "var(--font-light)",
             fontWeight: 600,
             fontSize: "0.75rem",
           }}
@@ -129,8 +133,8 @@ export function LiveSessionsTable({
         label={t("liveSessions.scheduled")}
         size="small"
         sx={{
-          backgroundColor: "#e5e7eb",
-          color: "#374151",
+          backgroundColor: "var(--surface)",
+          color: "var(--font-secondary)",
           fontWeight: 600,
           fontSize: "0.75rem",
         }}
@@ -142,18 +146,19 @@ export function LiveSessionsTable({
     <Paper
       sx={{
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         overflow: "hidden",
+          backgroundColor: "var(--card-bg)",
       }}
     >
       <TableContainer>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+            <TableRow sx={{ backgroundColor: "var(--surface)" }}>
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -162,7 +167,7 @@ export function LiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                   minWidth: 160,
                 }}
@@ -172,7 +177,7 @@ export function LiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                   width: 100,
                 }}
@@ -182,7 +187,7 @@ export function LiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                   minWidth: 140,
                 }}
@@ -192,7 +197,7 @@ export function LiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
                 align="right"
@@ -209,23 +214,23 @@ export function LiveSessionsTable({
               return (
                 <TableRow
                   key={activity.id}
-                  sx={{ "&:hover": { backgroundColor: "#f9fafb" } }}
+                  sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}
                 >
                   <TableCell>
                     <Typography
                       variant="body2"
-                      sx={{ fontWeight: 600, color: "#111827" }}
+                      sx={{ fontWeight: 600, color: "var(--font-primary)" }}
                     >
                       {activity.topic_name ?? activity.name ?? "—"}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ color: "#111827" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
                       {startRaw ? formatDateTime(startRaw) : "—"}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ color: "#374151" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       {formatSessionDuration(activity.duration_minutes)}
                     </Typography>
                   </TableCell>
@@ -242,7 +247,7 @@ export function LiveSessionsTable({
                       {statusCaption ? (
                         <Typography
                           variant="caption"
-                          sx={{ color: "#6b7280", lineHeight: 1.4 }}
+                          sx={{ color: "var(--font-secondary)", lineHeight: 1.4 }}
                         >
                           {statusCaption}
                         </Typography>
@@ -287,17 +292,17 @@ export function LiveSessionsTable({
                               }
                               sx={{
                                 backgroundColor: activity.is_google_meet
-                                  ? "#0f9d58"
-                                  : "#6366f1",
-                                color: "#ffffff",
+                                  ? "var(--success-500)"
+                                  : "var(--accent-indigo)",
+                                color: "var(--font-light)",
                                 textTransform: "none",
                                 fontWeight: 600,
                                 fontSize: "0.875rem",
                                 px: 2,
                                 "&:hover": {
                                   backgroundColor: activity.is_google_meet
-                                    ? "#0c7c45"
-                                    : "#4f46e5",
+                                    ? "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark))"
+                                    : "var(--accent-indigo-dark)",
                                 },
                               }}
                             >
@@ -309,7 +314,7 @@ export function LiveSessionsTable({
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: "#6b7280",
+                                  color: "var(--font-secondary)",
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 0.5,
@@ -357,7 +362,14 @@ export function LiveSessionsTable({
                             sx={{
                               fontSize: "0.75rem",
                               textTransform: "none",
-                              color: "#6366f1",
+                              color: "var(--font-primary)",
+                              "& .MuiButton-startIcon": {
+                                color: "inherit",
+                              },
+                              "&:hover": {
+                                backgroundColor:
+                                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                              },
                             }}
                           >
                             {t("liveSessions.watchRecording")}
@@ -381,7 +393,15 @@ export function LiveSessionsTable({
                                 sx={{
                                   fontSize: "0.75rem",
                                   textTransform: "none",
-                                  color: "#9ca3af",
+                                  color: "var(--font-secondary)",
+                                  "& .MuiButton-startIcon": {
+                                    color: "inherit",
+                                  },
+                                  "&.Mui-disabled": {
+                                    color: "var(--font-secondary)",
+                                    WebkitTextFillColor: "var(--font-secondary)",
+                                    opacity: 0.85,
+                                  },
                                 }}
                               >
                                 {t("liveSessions.watchRecording")}
@@ -406,15 +426,15 @@ export function LiveSessionsTable({
         onRowsPerPageChange={onRowsPerPageChange}
         rowsPerPageOptions={[5, 10, 25, 50]}
         sx={{
-          borderTop: "1px solid #e5e7eb",
+          borderTop: "1px solid var(--border-default)",
           "& .MuiTablePagination-toolbar": { px: 2 },
           "& .MuiTablePagination-selectLabel": {
             fontSize: "0.875rem",
-            color: "#6b7280",
+            color: "var(--font-secondary)",
           },
           "& .MuiTablePagination-displayedRows": {
             fontSize: "0.875rem",
-            color: "#6b7280",
+            color: "var(--font-secondary)",
           },
           "& .MuiTablePagination-select": { fontSize: "0.875rem" },
         }}

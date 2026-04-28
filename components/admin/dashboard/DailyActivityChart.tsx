@@ -50,7 +50,10 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         height: "100%",
       }}
     >
@@ -58,7 +61,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
         variant="h6"
         sx={{
           fontWeight: 600,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 3,
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
@@ -72,7 +75,7 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#6b7280",
+            color: "var(--font-secondary)",
           }}
         >
           <Typography variant="body2">{t("admin.dashboard.noActivityData")}</Typography>
@@ -80,25 +83,25 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
       ) : (
         <ResponsiveContainer width="100%" height={380}>
           <BarChart data={formattedData} margin={{ bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
             <XAxis
               dataKey="label"
-              stroke="#6b7280"
+              stroke="var(--font-secondary)"
               fontSize={11}
-              tick={{ fill: "#6b7280" }}
+              tick={{ fill: "var(--font-secondary)" }}
               angle={-45}
               textAnchor="end"
               height={100}
             />
             <YAxis
-              stroke="#6b7280"
+              stroke="var(--font-secondary)"
               fontSize={12}
-              tick={{ fill: "#6b7280" }}
+              tick={{ fill: "var(--font-secondary)" }}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#ffffff",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "var(--card-bg)",
+                border: "1px solid var(--border-default)",
                 borderRadius: "8px",
               }}
             />
@@ -106,37 +109,37 @@ export function DailyActivityChart({ data }: DailyActivityChartProps) {
             <Bar
               dataKey="Articles"
               stackId="a"
-              fill="#000000"
+              fill="var(--font-primary)"
               name="Articles"
             />
             <Bar
               dataKey="Videos"
               stackId="a"
-              fill="#4ecdc4"
+              fill="var(--accent-indigo-dark)"
               name="Videos"
             />
             <Bar
               dataKey="Problems"
               stackId="a"
-              fill="#ffd93d"
+              fill="var(--warning-500)"
               name="Problems"
             />
             <Bar
               dataKey="Quiz"
               stackId="a"
-              fill="#6c5ce7"
+              fill="var(--accent-purple)"
               name="Quiz"
             />
             <Bar
               dataKey="Subjective"
               stackId="a"
-              fill="#a8e6cf"
+              fill="var(--success-500)"
               name="Subjective"
             />
             <Bar
               dataKey="Development"
               stackId="a"
-              fill="#ff6b9d"
+              fill="var(--error-500)"
               name="Development"
             />
           </BarChart>

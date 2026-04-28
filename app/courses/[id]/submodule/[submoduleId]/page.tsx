@@ -568,19 +568,19 @@ export default function SubmoduleDetailPage() {
   const getContentColor = (contentType: string) => {
     switch (contentType) {
       case "VideoTutorial":
-        return "#ef4444";
+        return "var(--error-500)";
       case "Quiz":
-        return "#f59e0b";
+        return "var(--warning-500)";
       case "Article":
-        return "#3b82f6";
+        return "var(--accent-indigo)";
       case "Assignment":
-        return "#8b5cf6";
+        return "var(--accent-purple)";
       case "CodingProblem":
-        return "#10b981";
+        return "var(--success-500)";
       case "SubjectiveQuestion":
-        return "#0d9488";
+        return "var(--accent-indigo-dark)";
       default:
-        return "#6b7280";
+        return "var(--font-secondary)";
     }
   };
 
@@ -604,7 +604,7 @@ export default function SubmoduleDetailPage() {
           py: 8,
         }}
       >
-        <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+        <CircularProgress size={40} sx={{ color: "var(--accent-indigo)" }} />
       </Box>
     );
   }
@@ -675,10 +675,10 @@ export default function SubmoduleDetailPage() {
                 height: sidebarCollapsed ? 36 : 24,
                 p: 0,
                 borderRadius: sidebarCollapsed ? 1 : "50%",
-                backgroundColor: "#4285f4",
+                backgroundColor: "var(--accent-indigo)",
                 boxShadow: "none",
                 "&:hover": {
-                  backgroundColor: "#3367d6",
+                  backgroundColor: "var(--accent-indigo-dark)",
                   boxShadow: "none",
                 },
               }}
@@ -690,7 +690,7 @@ export default function SubmoduleDetailPage() {
                     : "mdi:chevron-left"
                 }
                 size={sidebarCollapsed ? 20 : 16}
-                color="#ffffff"
+                color="var(--font-light)"
               />
             </Button>
           </Box>
@@ -743,12 +743,12 @@ export default function SubmoduleDetailPage() {
             sx={{
               px: { xs: 2, sm: 3 },
               py: { xs: 1.5, sm: 2 },
-              borderBottom: "1px solid #e5e7eb",
+              borderBottom: "1px solid var(--border-default)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               flexShrink: 0,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
               minHeight: { xs: "60px", sm: "72px" },
             }}
           >
@@ -776,11 +776,12 @@ export default function SubmoduleDetailPage() {
                   mr: 1,
                   flexShrink: 0,
                   "&:hover": {
-                    backgroundColor: "#f3f4f6",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
                   },
                 }}
               >
-                <IconWrapper icon="mdi:menu" size={24} color="#1a1f2e" />
+                <IconWrapper icon="mdi:menu" size={24} color="var(--font-primary)" />
               </IconButton>
             )}
 
@@ -804,18 +805,19 @@ export default function SubmoduleDetailPage() {
                         px: 1,
                         py: 0.25,
                         borderRadius: 1,
-                        backgroundColor: "#eef2ff",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
                       }}
                     >
                       <IconWrapper
                         icon="mdi:calendar-week"
                         size={14}
-                        color="#6366f1"
+                        color="var(--accent-indigo)"
                       />
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "#6366f1",
+                          color: "var(--accent-indigo)",
                           fontSize: "0.7rem",
                           fontWeight: 600,
                         }}
@@ -827,7 +829,7 @@ export default function SubmoduleDetailPage() {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontSize: "0.75rem",
                     }}
                   >
@@ -841,7 +843,7 @@ export default function SubmoduleDetailPage() {
                   variant="h6"
                   sx={{
                     fontWeight: 600,
-                    color: "#1a1f2e",
+                    color: "var(--font-primary)",
                     mt: 0.25,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -863,20 +865,31 @@ export default function SubmoduleDetailPage() {
                 }
                 size="small"
                 sx={{
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   borderRadius: "8px",
                   width: { xs: 32, sm: 40 },
                   height: { xs: 32, sm: 40 },
+                  color: "var(--font-primary)",
                   "&:hover": {
-                    backgroundColor: "#f9fafb",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
                   },
-                  "&:disabled": {
-                    opacity: 0.3,
+                  "&.Mui-disabled": {
+                    color: "var(--font-tertiary)",
+                    opacity: 0.65,
                     cursor: "not-allowed",
                   },
                 }}
               >
-                <IconWrapper icon="mdi:chevron-left" size={20} />
+                <IconWrapper
+                  icon="mdi:chevron-left"
+                  size={20}
+                  color={
+                    !!currentContent?.previous_content || currentIndex > 1
+                      ? "var(--font-primary)"
+                      : "var(--font-tertiary)"
+                  }
+                />
               </IconButton>
               <IconButton
                 onClick={() => handleNavigateContent("next")}
@@ -888,20 +901,31 @@ export default function SubmoduleDetailPage() {
                 }
                 size="small"
                 sx={{
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   borderRadius: "8px",
                   width: { xs: 32, sm: 40 },
                   height: { xs: 32, sm: 40 },
+                  color: "var(--font-primary)",
                   "&:hover": {
-                    backgroundColor: "#f9fafb",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
                   },
-                  "&:disabled": {
-                    opacity: 0.3,
+                  "&.Mui-disabled": {
+                    color: "var(--font-tertiary)",
+                    opacity: 0.65,
                     cursor: "not-allowed",
                   },
                 }}
               >
-                <IconWrapper icon="mdi:chevron-right" size={20} />
+                <IconWrapper
+                  icon="mdi:chevron-right"
+                  size={20}
+                  color={
+                    !!currentContent?.next_content || currentIndex < totalContents
+                      ? "var(--font-primary)"
+                      : "var(--font-tertiary)"
+                  }
+                />
               </IconButton>
             </Box>
           </Box>
@@ -913,7 +937,7 @@ export default function SubmoduleDetailPage() {
               overflowY: "auto",
               overflowX: "hidden",
               p: { xs: 1, sm: 2, md: 3 },
-              backgroundColor: "#f9fafb",
+              backgroundColor: "var(--background)",
               minHeight: 0, // Allows flex child to shrink below content size
               "&::-webkit-scrollbar": {
                 width: "6px",
@@ -922,10 +946,11 @@ export default function SubmoduleDetailPage() {
                 backgroundColor: "transparent",
               },
               "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#cbd5e1",
+                backgroundColor: "var(--border-default)",
                 borderRadius: "3px",
                 "&:hover": {
-                  backgroundColor: "#94a3b8",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
                 },
               },
             }}
@@ -1121,7 +1146,7 @@ export default function SubmoduleDetailPage() {
                   height: "100%",
                 }}
               >
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   Select a content item to view
                 </Typography>
               </Box>
@@ -1159,21 +1184,21 @@ export default function SubmoduleDetailPage() {
               width: { xs: 40, sm: 48 },
               height: { xs: 40, sm: 48 },
               borderRadius: "50%",
-              backgroundColor: "#10b981",
+              backgroundColor: "var(--success-500)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <IconWrapper icon="mdi:check" size={28} color="#ffffff" />
+            <IconWrapper icon="mdi:check" size={28} color="var(--font-light)" />
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 600,
-                color: "#1a1f2e",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1rem", sm: "1.25rem" },
               }}
             >
@@ -1182,7 +1207,7 @@ export default function SubmoduleDetailPage() {
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: { xs: "0.7rem", sm: "0.75rem" },
               }}
             >
@@ -1201,16 +1226,16 @@ export default function SubmoduleDetailPage() {
             {currentContent?.next_content && (
               <Box
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   borderRadius: 2,
                   p: { xs: 2, sm: 2.5 },
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                 }}
               >
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     mb: 1,
                     fontWeight: 500,
                   }}
@@ -1243,7 +1268,7 @@ export default function SubmoduleDetailPage() {
                         currentContent.next_content.content_type
                       )}
                       size={18}
-                      color="#ffffff"
+                      color="var(--font-light)"
                     />
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -1251,7 +1276,7 @@ export default function SubmoduleDetailPage() {
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "#1a1f2e",
+                        color: "var(--font-primary)",
                         mb: 0.25,
                         fontSize: { xs: "0.85rem", sm: "0.875rem" },
                       }}
@@ -1261,7 +1286,7 @@ export default function SubmoduleDetailPage() {
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         fontSize: { xs: "0.7rem", sm: "0.75rem" },
                       }}
                     >
@@ -1292,13 +1317,14 @@ export default function SubmoduleDetailPage() {
                 }
               }}
               sx={{
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
                 textTransform: "none",
                 fontWeight: 600,
                 py: { xs: 1.25, sm: 1.5 },
                 fontSize: { xs: "0.9rem", sm: "1rem" },
+                color: "var(--font-light)",
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
               }}
             >

@@ -63,11 +63,36 @@ const CONTENT_TYPE_CONFIG: Record<
   ContentIdType,
   { label: string; icon: string; color: string; bg: string }
 > = {
-  video: { label: "Video", icon: "mdi:video", color: "#7c3aed", bg: "#f5f3ff" },
-  article: { label: "Article", icon: "mdi:file-document", color: "#2563eb", bg: "#eff6ff" },
-  quiz: { label: "Quiz", icon: "mdi:help-circle", color: "#d97706", bg: "#fffbeb" },
-  assignment: { label: "Assignment", icon: "mdi:clipboard-text", color: "#059669", bg: "#ecfdf5" },
-  coding_problem: { label: "Coding", icon: "mdi:code-tags", color: "#dc2626", bg: "#fef2f2" },
+  video: {
+    label: "Video",
+    icon: "mdi:video",
+    color: "var(--accent-purple)",
+    bg: "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
+  },
+  article: {
+    label: "Article",
+    icon: "mdi:file-document",
+    color: "var(--accent-indigo)",
+    bg: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+  },
+  quiz: {
+    label: "Quiz",
+    icon: "mdi:help-circle",
+    color: "var(--warning-500)",
+    bg: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+  },
+  assignment: {
+    label: "Assignment",
+    icon: "mdi:clipboard-text",
+    color: "var(--success-500)",
+    bg: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)",
+  },
+  coding_problem: {
+    label: "Coding",
+    icon: "mdi:code-tags",
+    color: "var(--error-500)",
+    bg: "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+  },
 };
 
 const PICKABLE_CONTENT_TYPES: ContentIdType[] = [
@@ -723,7 +748,7 @@ export function ContentList({
   return (
     <Box sx={{ mt: 1 }}>
       {contents.length === 0 ? (
-        <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+        <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
           No content items yet
         </Typography>
       ) : (
@@ -740,9 +765,12 @@ export function ContentList({
                   px: 1.5,
                   py: 1,
                   borderRadius: 1,
-                  bgcolor: "#fafafa",
-                  border: "1px solid #f3f4f6",
-                  "&:hover": { bgcolor: "#f3f4f6" },
+                  bgcolor: "var(--surface)",
+                  border: "1px solid var(--border-default)",
+                  "&:hover": {
+                    bgcolor:
+                      "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
+                  },
                   transition: "background 0.15s",
                 }}
               >
@@ -792,7 +820,12 @@ export function ContentList({
                 >
                   <Typography
                     variant="body2"
-                    sx={{ fontWeight: 500, color: "#111827", fontSize: "0.8rem", lineHeight: 1.3 }}
+                    sx={{
+                      fontWeight: 500,
+                      color: "var(--font-primary)",
+                      fontSize: "0.8rem",
+                      lineHeight: 1.3,
+                    }}
                   >
                     {item.title}
                   </Typography>
@@ -809,7 +842,10 @@ export function ContentList({
                       }}
                     />
                     {Number(item.duration_in_minutes) > 0 && (
-                      <Typography variant="caption" sx={{ color: "#9ca3af", fontSize: "0.65rem" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "var(--font-tertiary)", fontSize: "0.65rem" }}
+                      >
                         {item.duration_in_minutes} min
                       </Typography>
                     )}
@@ -823,7 +859,7 @@ export function ContentList({
                         e.stopPropagation();
                         void openEdit(item);
                       }}
-                      sx={{ color: "#6366f1", p: 0.5 }}
+                      sx={{ color: "var(--accent-indigo)", p: 0.5 }}
                     >
                       <IconWrapper icon="mdi:pencil" size={14} />
                     </IconButton>
@@ -833,7 +869,7 @@ export function ContentList({
                         e.stopPropagation();
                         setDeleteTarget(item);
                       }}
-                      sx={{ color: "#ef4444", p: 0.5 }}
+                      sx={{ color: "var(--error-500)", p: 0.5 }}
                     >
                       <IconWrapper icon="mdi:delete" size={14} />
                     </IconButton>
@@ -850,7 +886,13 @@ export function ContentList({
           size="small"
           startIcon={<IconWrapper icon="mdi:plus" size={14} />}
           onClick={openAdd}
-          sx={{ mt: 0.75, color: "#6366f1", textTransform: "none", fontWeight: 600, fontSize: "0.75rem" }}
+          sx={{
+            mt: 0.75,
+            color: "var(--accent-indigo)",
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.75rem",
+          }}
         >
           Add Content
         </Button>
@@ -1091,7 +1133,7 @@ export function ContentList({
                     <Box
                       key={`${q.title}-${index}`}
                       sx={{
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid var(--border-default)",
                         borderRadius: 1,
                         p: 1,
                         display: "flex",
@@ -1100,7 +1142,7 @@ export function ContentList({
                         alignItems: "center",
                       }}
                     >
-                      <Typography variant="caption" sx={{ color: "#374151" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-primary)" }}>
                         Q{index + 1}: {q.title}
                       </Typography>
                       <IconButton
@@ -1228,7 +1270,7 @@ export function ContentList({
                     <Box
                       key={mcq.id ?? `new-${index}-${mcq.question_text.slice(0, 20)}`}
                       sx={{
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid var(--border-default)",
                         borderRadius: 1,
                         p: 1,
                         display: "flex",
@@ -1237,7 +1279,7 @@ export function ContentList({
                         alignItems: "center",
                       }}
                     >
-                      <Typography variant="caption" sx={{ color: "#374151" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-primary)" }}>
                         Q{index + 1}: {mcq.question_text}
                       </Typography>
                       <IconButton
@@ -1264,7 +1306,7 @@ export function ContentList({
           )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeDialog} disabled={saving} sx={{ color: "#6b7280" }}>
+          <Button onClick={closeDialog} disabled={saving} sx={{ color: "var(--font-secondary)" }}>
             Cancel
           </Button>
           <Button
@@ -1278,7 +1320,16 @@ export function ContentList({
             }
             variant="contained"
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
-            sx={{ bgcolor: "#6366f1" }}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {saving ? "Saving..." : editingId !== null ? "Update" : "Add"}
           </Button>

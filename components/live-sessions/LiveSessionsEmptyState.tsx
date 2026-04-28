@@ -12,18 +12,19 @@ export function LiveSessionsEmptyState() {
         p: 5,
         textAlign: "center",
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <IconWrapper
         icon="mdi:video-off-outline"
         size={72}
-        color="#9ca3af"
+        color="var(--font-tertiary)"
       />
-      <Typography variant="h6" sx={{ color: "#374151", mt: 2, mb: 1 }}>
+      <Typography variant="h6" sx={{ color: "var(--font-primary)", mt: 2, mb: 1 }}>
         {t("liveSessions.emptyStateTitle")}
       </Typography>
-      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
         {t("liveSessions.emptyStateDesc")}
       </Typography>
     </Paper>

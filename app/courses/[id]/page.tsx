@@ -232,7 +232,7 @@ export default function CourseDetailPage() {
             href="/courses"
             style={{
               textDecoration: "none",
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.875rem",
               display: "flex",
               alignItems: "center",
@@ -242,7 +242,10 @@ export default function CourseDetailPage() {
             <IconWrapper icon="mdi:chevron-left" size={24} />
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", "&:hover": { color: "#1a1f2e" } }}
+              sx={{
+                color: "var(--font-secondary)",
+                "&:hover": { color: "var(--font-primary)" },
+              }}
             >
               {t("courses.myCourses")} / {course.course_title}
             </Typography>

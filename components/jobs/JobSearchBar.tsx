@@ -33,15 +33,17 @@ const JobSearchBarComponent = ({
         p: isHero ? 1.75 : 1.5,
         borderRadius: 2,
         border: '1px solid',
-        borderColor: isHero ? 'rgba(255,255,255,0.3)' : 'divider',
+        borderColor: isHero ? 'color-mix(in srgb, var(--font-light) 30%, transparent)' : 'divider',
         display: 'flex',
         alignItems: 'center',
         gap: 1,
-        backgroundColor: isHero ? '#fff' : undefined,
-        boxShadow: isHero ? '0 4px 20px rgba(0,0,0,0.15)' : undefined,
+        backgroundColor: isHero ? 'var(--font-light)' : undefined,
+        boxShadow: isHero
+          ? '0 4px 20px color-mix(in srgb, var(--font-primary) 18%, transparent)'
+          : undefined,
       }}
     >
-      <Search size={20} style={{ color: '#6b7280', marginLeft: 8 }} />
+      <Search size={20} style={{ color: 'var(--font-secondary)', marginLeft: 8 }} />
       <TextField
         fullWidth
         placeholder={placeholder}

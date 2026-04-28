@@ -1066,7 +1066,7 @@ export default function CreateAssessmentPage() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.5rem", sm: "2rem" },
             }}
           >
@@ -1081,8 +1081,10 @@ export default function CreateAssessmentPage() {
             p: { xs: 2, sm: 3 },
             mb: 4,
             borderRadius: 2,
-            border: "1px solid rgba(15, 23, 42, 0.08)",
-            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
+            border: "1px solid color-mix(in srgb, var(--font-primary) 10%, var(--border-default) 90%)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Stepper
@@ -1091,26 +1093,30 @@ export default function CreateAssessmentPage() {
             sx={{
               "& .MuiStepConnector-line": { borderTopWidth: 2 },
               "& .MuiStepConnector-root .MuiStepConnector-line": {
-                borderColor: "rgba(148, 163, 184, 0.45)",
+                borderColor:
+                  "color-mix(in srgb, var(--font-secondary) 45%, var(--border-default) 55%)",
               },
               "& .MuiStepConnector-root.Mui-active .MuiStepConnector-line, & .MuiStepConnector-root.Mui-completed .MuiStepConnector-line":
-                { borderColor: "#6366f1" },
-              "& .MuiStepIcon-root": { color: "rgba(148, 163, 184, 0.65)" },
+                { borderColor: "var(--accent-indigo)" },
+              "& .MuiStepIcon-root": {
+                color:
+                  "color-mix(in srgb, var(--font-secondary) 65%, var(--border-default) 35%)",
+              },
               "& .MuiStepIcon-root.Mui-active, & .MuiStepIcon-root.Mui-completed": {
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
               },
               "& .MuiStepLabel-label": {
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 fontWeight: 500,
-                color: "#94a3b8",
+                color: "var(--font-secondary)",
               },
               "& .MuiStepLabel-label.Mui-active": {
                 fontWeight: 700,
-                color: "#312e81",
+                color: "var(--accent-indigo-dark)",
               },
               "& .MuiStepLabel-label.Mui-completed": {
                 fontWeight: 600,
-                color: "#64748b",
+                color: "var(--font-secondary)",
               },
             }}
           >
@@ -1127,8 +1133,10 @@ export default function CreateAssessmentPage() {
           sx={{
             p: { xs: 3, sm: 4, md: 5 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            backgroundColor: "#ffffff",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+            backgroundColor: "var(--card-bg)",
+            border: "1px solid var(--border-default)",
           }}
         >
           {renderStepContent()}
@@ -1163,7 +1171,16 @@ export default function CreateAssessmentPage() {
                     <IconWrapper icon="mdi:check" size={18} />
                   )
                 }
-                sx={{ bgcolor: "#6366f1" }}
+                sx={{
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                  "&.Mui-disabled": {
+                    color: "var(--font-secondary)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                  },
+                }}
               >
                 {creating ? "Creating..." : "Create Assessment"}
               </Button>
@@ -1173,7 +1190,16 @@ export default function CreateAssessmentPage() {
                 onClick={handleNext}
                 disabled={isNextButtonDisabled}
                 endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
-                sx={{ bgcolor: "#6366f1" }}
+                sx={{
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                  "&.Mui-disabled": {
+                    color: "var(--font-secondary)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                  },
+                }}
               >
                 Next
               </Button>

@@ -73,7 +73,10 @@ export function SessionStartTimeChart({ data }: SessionStartTimeChartProps) {
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         height: "100%",
       }}
     >
@@ -81,7 +84,7 @@ export function SessionStartTimeChart({ data }: SessionStartTimeChartProps) {
         variant="h6"
         sx={{
           fontWeight: 600,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 3,
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
@@ -90,20 +93,20 @@ export function SessionStartTimeChart({ data }: SessionStartTimeChartProps) {
       </Typography>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={formattedData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
           <XAxis
             dataKey="label"
-            stroke="#6b7280"
+            stroke="var(--font-secondary)"
             fontSize={12}
-            tick={{ fill: "#6b7280" }}
+            tick={{ fill: "var(--font-secondary)" }}
             angle={-45}
             textAnchor="end"
             height={80}
           />
           <YAxis
-            stroke="#6b7280"
+            stroke="var(--font-secondary)"
             fontSize={12}
-            tick={{ fill: "#6b7280" }}
+            tick={{ fill: "var(--font-secondary)" }}
             tickFormatter={formatYAxis}
             label={{ value: "Time", angle: -90, position: "insideLeft" }}
             domain={[0, 24]}
@@ -122,8 +125,8 @@ export function SessionStartTimeChart({ data }: SessionStartTimeChartProps) {
               });
             }}
             contentStyle={{
-              backgroundColor: "#ffffff",
-              border: "1px solid #e5e7eb",
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
               borderRadius: "8px",
             }}
           />
@@ -131,7 +134,7 @@ export function SessionStartTimeChart({ data }: SessionStartTimeChartProps) {
           <Line
             type="monotone"
             dataKey="time"
-            stroke="#6366f1"
+            stroke="var(--accent-indigo)"
             strokeWidth={2}
             dot={{ r: 4 }}
             name="Session Start Time"

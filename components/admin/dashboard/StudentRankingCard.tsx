@@ -24,7 +24,10 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         height: "100%",
       }}
     >
@@ -32,7 +35,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
         variant="h6"
         sx={{
           fontWeight: 600,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 3,
           fontSize: { xs: "1rem", sm: "1.25rem" },
         }}
@@ -53,7 +56,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
             variant="body1"
             sx={{
               fontWeight: 600,
-              color: "#111827",
+              color: "var(--font-primary)",
               mb: 2,
               fontSize: { xs: "0.875rem", sm: "1rem" },
             }}
@@ -67,15 +70,16 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
               gap: 1,
               p: 2,
               borderRadius: 1,
-              backgroundColor: "#eef2ff",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
               maxWidth: 400,
             }}
           >
-            <IconWrapper icon="mdi:information" size={20} color="#6366f1" />
+            <IconWrapper icon="mdi:information" size={20} color="var(--accent-indigo)" />
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
@@ -96,14 +100,15 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
               width: "6px",
             },
             "&::-webkit-scrollbar-track": {
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
               borderRadius: "3px",
             },
             "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "#d1d5db",
+              backgroundColor: "var(--border-default)",
               borderRadius: "3px",
               "&:hover": {
-                backgroundColor: "#9ca3af",
+                backgroundColor:
+                  "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
               },
             },
           }}
@@ -119,7 +124,11 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
 
             // Medal icons for top 3
             const medalIcons = ["mdi:trophy", "mdi:trophy-variant", "mdi:trophy-award"];
-            const medalColors = ["#fbbf24", "#9ca3af", "#cd7f32"];
+            const medalColors = [
+              "var(--warning-500)",
+              "var(--font-tertiary)",
+              "var(--accent-purple)",
+            ];
             const showIcon = rank <= 3;
 
             return (
@@ -131,11 +140,17 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
                   justifyContent: "space-between",
                   p: 1.5,
                   borderRadius: 1,
-                  backgroundColor: rank <= 3 ? "#fef3c7" : "transparent", // Yellowish background for top 3
+                  backgroundColor:
+                    rank <= 3
+                      ? "color-mix(in srgb, var(--warning-500) 18%, var(--surface) 82%)"
+                      : "transparent",
                   minHeight: "80px",
                   flexShrink: 0,
                   "&:hover": {
-                    backgroundColor: rank <= 3 ? "#fde68a" : "#f9fafb",
+                    backgroundColor:
+                      rank <= 3
+                        ? "color-mix(in srgb, var(--warning-500) 26%, var(--surface) 74%)"
+                        : "var(--surface)",
                   },
                 }}
               >
@@ -167,7 +182,8 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
                       variant="body2"
                       sx={{
                         fontWeight: rank <= 3 ? 700 : 600,
-                        color: rank <= 3 ? "#111827" : "#6b7280",
+                        color:
+                          rank <= 3 ? "var(--font-primary)" : "var(--font-secondary)",
                         fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       }}
                     >
@@ -179,7 +195,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
                       variant="body2"
                       sx={{
                         fontWeight: rank <= 3 ? 600 : 500,
-                        color: "#111827",
+                        color: "var(--font-primary)",
                         fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -192,7 +208,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: { xs: "0.7rem", sm: "0.75rem" },
                         }}
                       >
@@ -205,7 +221,7 @@ export function StudentRankingCard({ leaderboard, expandForPdf }: StudentRanking
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       ml: 1,
                       fontWeight: rank <= 3 ? 500 : 400,

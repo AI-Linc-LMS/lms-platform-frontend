@@ -31,9 +31,9 @@ export function QuizNavigationBar({
         justifyContent: "space-between",
         px: { xs: 1, sm: 2 },
         py: 1.5,
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
       }}
     >
       {/* Previous Button - Left */}
@@ -44,8 +44,8 @@ export function QuizNavigationBar({
             onClick={onPrevious}
             disabled={isSubmitting}
             sx={{
-              borderColor: "#6366f1",
-              color: "#6366f1",
+              borderColor: "var(--accent-indigo)",
+              color: "var(--accent-indigo)",
               px: 2.5,
               py: 1,
               minWidth: "110px",
@@ -54,12 +54,13 @@ export function QuizNavigationBar({
               borderRadius: 2,
               textTransform: "none",
               "&:hover": {
-                borderColor: "#4f46e5",
-                backgroundColor: "#6366f115",
+                borderColor: "var(--accent-indigo-dark)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
               },
-              "&:disabled": {
-                borderColor: "#d1d5db",
-                color: "#9ca3af",
+              "&.Mui-disabled": {
+                borderColor: "var(--border-default)",
+                color: "var(--font-tertiary)",
               },
             }}
           >
@@ -80,7 +81,7 @@ export function QuizNavigationBar({
         <Typography
           variant="body2"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontWeight: 600,
             fontSize: "0.9375rem",
           }}
@@ -99,8 +100,9 @@ export function QuizNavigationBar({
           onClick={onSubmit}
           disabled={isSubmitting}
           sx={{
-            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-            color: "#ffffff",
+            background:
+              "linear-gradient(135deg, var(--success-500) 0%, color-mix(in srgb, var(--success-500) 85%, black 15%) 100%)",
+            color: "var(--font-light)",
             px: 3,
             py: 1,
             minWidth: "130px",
@@ -108,18 +110,22 @@ export function QuizNavigationBar({
             fontWeight: 600,
             borderRadius: 2,
             textTransform: "none",
-            boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+            boxShadow:
+              "0 4px 12px color-mix(in srgb, var(--success-500) 35%, transparent)",
             "&:hover": {
-              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-              boxShadow: "0 6px 16px rgba(16, 185, 129, 0.4)",
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--success-500) 85%, black 15%) 0%, color-mix(in srgb, var(--success-500) 70%, black 30%) 100%)",
+              boxShadow:
+                "0 6px 16px color-mix(in srgb, var(--success-500) 45%, transparent)",
               transform: "translateY(-1px)",
             },
             "&:active": {
               transform: "translateY(0)",
             },
-            "&:disabled": {
-              background: "linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)",
-              color: "#ffffff",
+            "&.Mui-disabled": {
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--border-default) 80%, var(--surface) 20%) 0%, color-mix(in srgb, var(--font-tertiary) 60%, var(--surface) 40%) 100%)",
+              color: "var(--font-light)",
               boxShadow: "none",
               opacity: 0.6,
             },

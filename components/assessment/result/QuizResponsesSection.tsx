@@ -21,16 +21,25 @@ function getOptionsArray(options: Record<string, string>): Array<{ id: string; l
 }
 
 function getDifficultyColor(level?: string) {
-  if (!level) return { bg: "#f3f4f6", color: "#6b7280" };
+  if (!level) return { bg: "var(--surface)", color: "var(--font-secondary)" };
   switch (level) {
     case "Easy":
-      return { bg: "#d1fae5", color: "#065f46" };
+      return {
+        bg: "color-mix(in srgb, var(--success-500) 16%, transparent)",
+        color: "var(--success-500)",
+      };
     case "Medium":
-      return { bg: "#fef3c7", color: "#92400e" };
+      return {
+        bg: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+        color: "var(--warning-500)",
+      };
     case "Hard":
-      return { bg: "#fee2e2", color: "#991b1b" };
+      return {
+        bg: "color-mix(in srgb, var(--error-500) 16%, transparent)",
+        color: "var(--error-500)",
+      };
     default:
-      return { bg: "#f3f4f6", color: "#6b7280" };
+      return { bg: "var(--surface)", color: "var(--font-secondary)" };
   }
 }
 
@@ -56,9 +65,9 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         borderRadius: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         mb: 4,
       }}
     >
@@ -66,7 +75,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
         variant="h6"
         sx={{
           fontWeight: 700,
-          color: "#1a1f2e",
+          color: "var(--font-primary)",
           mb: 2,
           fontSize: { xs: "1.125rem", sm: "1.25rem" },
         }}
@@ -83,9 +92,9 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
           mb: 2,
           px: { xs: 1, sm: 2 },
           py: 1.5,
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--surface)",
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
         }}
       >
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
@@ -94,8 +103,8 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
               variant="outlined"
               onClick={() => setCurrentIndex((i) => i - 1)}
               sx={{
-                borderColor: "#6366f1",
-                color: "#6366f1",
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
                 px: 2,
                 py: 1,
                 minWidth: "100px",
@@ -104,8 +113,9 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                 borderRadius: 2,
                 textTransform: "none",
                 "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "#6366f115",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
               }}
             >
@@ -114,7 +124,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
           )}
         </Box>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <Typography variant="body2" sx={{ color: "#6b7280", fontWeight: 600, fontSize: "0.9375rem" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 600, fontSize: "0.9375rem" }}>
             Question {currentIndex + 1} of {total}
           </Typography>
         </Box>
@@ -124,8 +134,9 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
               variant="contained"
               onClick={() => setCurrentIndex((i) => i + 1)}
               sx={{
-                background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                color: "#ffffff",
+                background:
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+                color: "var(--font-light)",
                 px: 2.5,
                 py: 1,
                 minWidth: "100px",
@@ -133,10 +144,13 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                 fontWeight: 600,
                 borderRadius: 2,
                 textTransform: "none",
-                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                boxShadow:
+                  "0 4px 12px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                 "&:hover": {
-                  background: "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)",
-                  boxShadow: "0 6px 16px rgba(99, 102, 241, 0.4)",
+                  background:
+                    "linear-gradient(135deg, var(--accent-indigo-dark) 0%, var(--accent-indigo) 100%)",
+                  boxShadow:
+                    "0 6px 16px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
                   transform: "translateY(-1px)",
                 },
                 transition: "all 0.2s ease-in-out",
@@ -153,8 +167,8 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
         sx={{
           p: 2,
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#fafafa",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2 }}>
@@ -163,7 +177,9 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
               minWidth: 36,
               height: 36,
               borderRadius: "50%",
-              backgroundColor: q.is_correct ? "#10b981" : "#ef4444",
+              backgroundColor: q.is_correct
+                ? "var(--success-500)"
+                : "var(--error-500)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -173,7 +189,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
             <IconWrapper
               icon={q.is_correct ? "mdi:check" : "mdi:close"}
               size={20}
-              color="#ffffff"
+              color="var(--font-light)"
             />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -195,18 +211,29 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                 <Chip
                   label={q.topic}
                   size="small"
-                  sx={{ backgroundColor: "#e0e7ff", color: "#4338ca", fontSize: "0.75rem" }}
+                  sx={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                    color: "var(--accent-indigo)",
+                    fontSize: "0.75rem",
+                  }}
                 />
               )}
               {graded ? (
                 <Chip
                   label={`Score: ${q.awarded_marks}`}
                   size="small"
-                  sx={{ backgroundColor: "#d1fae5", color: "#065f46", fontWeight: 700, fontSize: "0.75rem" }}
+                  sx={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                    color: "var(--success-500)",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                  }}
                 />
               ) : null}
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 500, color: "#1a1f2e", lineHeight: 1.6 }}>
+            <Typography variant="body1" sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.6 }}>
               {q.question_text}
             </Typography>
           </Box>
@@ -224,20 +251,20 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                   p: 2,
                   border:
                     isCorrectOpt && isSelected
-                      ? "2px solid #10b981"
+                      ? "2px solid var(--success-500)"
                       : isCorrectOpt
-                      ? "2px solid #10b981"
+                      ? "2px solid var(--success-500)"
                       : isSelected
-                      ? "2px solid #ef4444"
-                      : "1px solid #e5e7eb",
+                      ? "2px solid var(--error-500)"
+                      : "1px solid var(--border-default)",
                   backgroundColor:
                     isCorrectOpt && isSelected
-                      ? "#f0fdf4"
+                      ? "color-mix(in srgb, var(--success-500) 10%, var(--card-bg))"
                       : isCorrectOpt
-                      ? "#f0fdf4"
+                      ? "color-mix(in srgb, var(--success-500) 10%, var(--card-bg))"
                       : isSelected
-                      ? "#fef2f2"
-                      : "#ffffff",
+                      ? "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))"
+                      : "var(--card-bg)",
                   borderRadius: 2,
                   display: "flex",
                   alignItems: "center",
@@ -246,7 +273,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                   gap: 1,
                 }}
               >
-                <Typography sx={{ color: "#1a1f2e", fontWeight: isSelected || isCorrectOpt ? 500 : 400 }}>
+                <Typography sx={{ color: "var(--font-primary)", fontWeight: isSelected || isCorrectOpt ? 500 : 400 }}>
                   <strong>{opt.id}.</strong> {opt.label}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 1 }}>
@@ -254,21 +281,36 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                     <Chip
                       label="Correct"
                       size="small"
-                      sx={{ backgroundColor: "#10b981", color: "#fff", fontWeight: 600, fontSize: "0.75rem" }}
+                      sx={{
+                        backgroundColor: "var(--success-500)",
+                        color: "var(--font-light)",
+                        fontWeight: 600,
+                        fontSize: "0.75rem",
+                      }}
                     />
                   )}
                   {isSelected && !isCorrectOpt && (
                     <Chip
                       label="Your Answer"
                       size="small"
-                      sx={{ backgroundColor: "#ef4444", color: "#fff", fontWeight: 600, fontSize: "0.75rem" }}
+                      sx={{
+                        backgroundColor: "var(--error-500)",
+                        color: "var(--font-light)",
+                        fontWeight: 600,
+                        fontSize: "0.75rem",
+                      }}
                     />
                   )}
                   {isSelected && isCorrectOpt && (
                     <Chip
                       label="Your Answer"
                       size="small"
-                      sx={{ backgroundColor: "#10b981", color: "#fff", fontWeight: 600, fontSize: "0.75rem" }}
+                      sx={{
+                        backgroundColor: "var(--success-500)",
+                        color: "var(--font-light)",
+                        fontWeight: 600,
+                        fontSize: "0.75rem",
+                      }}
                     />
                   )}
                 </Box>
@@ -283,16 +325,17 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
               mt: 2,
               pl: { xs: 0, sm: 6 },
               p: 2,
-              backgroundColor: "#f0f9ff",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface))",
               borderRadius: 2,
-              borderLeft: "4px solid #6366f1",
+              borderLeft: "4px solid var(--accent-indigo)",
             }}
           >
             <Typography
               variant="caption"
               sx={{
                 fontWeight: 600,
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
                 display: "block",
@@ -301,7 +344,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
             >
               Explanation
             </Typography>
-            <Typography variant="body2" sx={{ color: "#374151", lineHeight: 1.7 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.7 }}>
               {q.explanation}
             </Typography>
           </Box>
@@ -313,16 +356,17 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
               mt: 2,
               pl: { xs: 0, sm: 6 },
               p: 2,
-              backgroundColor: "#f0fdfa",
+              backgroundColor:
+                "color-mix(in srgb, var(--success-500) 12%, var(--surface))",
               borderRadius: 2,
-              borderLeft: "4px solid #0d9488",
+              borderLeft: "4px solid var(--success-500)",
             }}
           >
             <Typography
               variant="caption"
               sx={{
                 fontWeight: 700,
-                color: "#0d9488",
+                color: "var(--success-500)",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
                 display: "block",
@@ -331,7 +375,14 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
             >
               Evaluator feedback
             </Typography>
-            <Typography variant="body2" sx={{ color: "#134e4a", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "var(--font-secondary)",
+                lineHeight: 1.7,
+                whiteSpace: "pre-wrap",
+              }}
+            >
               {feedbackText}
             </Typography>
           </Box>

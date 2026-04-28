@@ -116,7 +116,7 @@ export function AddSectionModal({
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 3 },
-          boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+          boxShadow: "0 24px 64px color-mix(in srgb, var(--font-primary) 20%, transparent)",
           overflow: "hidden",
         },
       }}
@@ -128,8 +128,8 @@ export function AddSectionModal({
           justifyContent: "space-between",
           px: { xs: 2.5, sm: 3 },
           py: 2,
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -139,7 +139,7 @@ export function AddSectionModal({
               height: 48,
               borderRadius: 2,
               background:
-                "linear-gradient(135deg, rgba(10, 102, 194, 0.12) 0%, rgba(10, 102, 194, 0.06) 100%)",
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 14%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -148,7 +148,7 @@ export function AddSectionModal({
             <IconWrapper
               icon="mdi:plus-box-multiple-outline"
               size={26}
-              color="#0a66c2"
+              color="var(--accent-indigo)"
             />
           </Box>
           <Box>
@@ -156,7 +156,7 @@ export function AddSectionModal({
               variant="h6"
               sx={{
                 fontWeight: 700,
-                color: "#111827",
+                color: "var(--font-primary)",
                 fontSize: "1.25rem",
               }}
             >
@@ -164,7 +164,7 @@ export function AddSectionModal({
             </Typography>
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", fontSize: "0.8125rem", mt: 0.25 }}
+              sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", mt: 0.25 }}
             >
               Choose a section to add to your profile
             </Typography>
@@ -186,13 +186,13 @@ export function AddSectionModal({
             <IconWrapper
               icon="mdi:check-circle-outline"
               size={56}
-              color="#22c55e"
+              color="var(--success-500)"
             />
             <Typography
               variant="body1"
               sx={{
                 mt: 2,
-                color: "#64748b",
+                color: "var(--font-secondary)",
                 fontWeight: 500,
               }}
             >
@@ -203,7 +203,7 @@ export function AddSectionModal({
               sx={{
                 display: "block",
                 mt: 0.5,
-                color: "#94a3b8",
+                color: "var(--font-tertiary)",
               }}
             >
               Remove a section to add it again from here
@@ -224,11 +224,11 @@ export function AddSectionModal({
                     py: 2,
                     px: { xs: 2.5, sm: 3 },
                     "&:hover": {
-                      backgroundColor: "rgba(10, 102, 194, 0.06)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                     },
                     borderBottom:
                       index < availableSections.length - 1
-                        ? "1px solid rgba(0,0,0,0.06)"
+                        ? "1px solid color-mix(in srgb, var(--font-primary) 8%, transparent)"
                         : "none",
                   }}
                 >
@@ -243,7 +243,7 @@ export function AddSectionModal({
                         width: 44,
                         height: 44,
                         borderRadius: 2,
-                        backgroundColor: "rgba(10, 102, 194, 0.08)",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -252,7 +252,7 @@ export function AddSectionModal({
                       <IconWrapper
                         icon={section.icon}
                         size={24}
-                        color="#0a66c2"
+                        color="var(--accent-indigo)"
                       />
                     </Box>
                   </ListItemIcon>
@@ -262,7 +262,7 @@ export function AddSectionModal({
                         variant="subtitle1"
                         sx={{
                           fontWeight: 600,
-                          color: "#111827",
+                          color: "var(--font-primary)",
                           fontSize: "1rem",
                         }}
                       >
@@ -273,7 +273,7 @@ export function AddSectionModal({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: "0.8125rem",
                           mt: 0.25,
                         }}
@@ -285,7 +285,7 @@ export function AddSectionModal({
                   <IconWrapper
                     icon="mdi:plus"
                     size={22}
-                    color="#0a66c2"
+                    color="var(--accent-indigo)"
                     style={{ marginLeft: 8 }}
                   />
                 </ListItemButton>

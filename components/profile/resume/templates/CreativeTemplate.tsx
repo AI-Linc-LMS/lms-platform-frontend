@@ -8,6 +8,17 @@ interface CreativeTemplateProps {
   data: ResumeData;
 }
 
+const TEMPLATE_GRADIENT =
+  "linear-gradient(180deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)";
+const TEMPLATE_GRADIENT_INLINE =
+  "linear-gradient(90deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)";
+const LIGHT_TEXT = "var(--font-light)";
+const LIGHT_TEXT_DIM = "color-mix(in srgb, var(--font-light) 78%, transparent)";
+const LIGHT_TEXT_SOFT = "color-mix(in srgb, var(--font-light) 88%, transparent)";
+const BODY_TEXT = "var(--font-primary)";
+const BODY_TEXT_SECONDARY = "var(--font-secondary)";
+const BODY_TEXT_TERTIARY = "var(--font-tertiary)";
+
 export function CreativeTemplate({ data }: CreativeTemplateProps) {
   const formatDate = (startDate: string, endDate: string, current?: boolean) => {
     const formatMonth = (date: string) => {
@@ -28,8 +39,8 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
       <Box
         sx={{
           width: "30%",
-          background: "linear-gradient(180deg, #667eea 0%, #764ba2 100%)",
-          color: "#ffffff",
+          background: TEMPLATE_GRADIENT,
+          color: LIGHT_TEXT,
           p: 4,
           display: "flex",
           flexDirection: "column",
@@ -51,7 +62,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
               borderRadius: "50%",
               objectFit: "cover",
               mx: "auto",
-              border: "3px solid rgba(255, 255, 255, 0.3)",
+              border: "3px solid color-mix(in srgb, var(--font-light) 35%, transparent)",
             }}
           />
         ) : (
@@ -60,14 +71,14 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
               width: 100,
               height: 100,
               borderRadius: "50%",
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
+              backgroundColor: "color-mix(in srgb, var(--font-light) 22%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: "2.5rem",
               fontWeight: 700,
               mx: "auto",
-              border: "3px solid rgba(255, 255, 255, 0.3)",
+              border: "3px solid color-mix(in srgb, var(--font-light) 35%, transparent)",
             }}
           >
             {data.basicInfo.firstName[0]}
@@ -83,7 +94,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
               fontWeight: 700,
               letterSpacing: "0.1em",
               mb: 2,
-              color: "rgba(255, 255, 255, 0.7)",
+              color: LIGHT_TEXT_DIM,
               whiteSpace: "nowrap",
             }}
           >
@@ -110,7 +121,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.25, textDecoration: "none", color: "inherit" }}
               >
                 <Box sx={{ flexShrink: 0, display: "flex" }}>
-                  <IconWrapper icon={item.icon} size={13} color="rgba(255,255,255,0.8)" />
+                  <IconWrapper icon={item.icon} size={13} color={LIGHT_TEXT_SOFT} />
                 </Box>
                 <Typography
                   data-resume-contact-item
@@ -141,7 +152,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 mb: 2,
-                color: "rgba(255, 255, 255, 0.7)",
+                color: LIGHT_TEXT_DIM,
               }}
             >
               SKILLS
@@ -156,7 +167,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   sx={{
                     width: "100%",
                     height: 6,
-                    backgroundColor: "rgba(255, 255, 255, 0.2) !important",
+                    backgroundColor: "color-mix(in srgb, var(--font-light) 22%, transparent) !important",
                     borderRadius: 3,
                     overflow: "hidden",
                     WebkitPrintColorAdjust: "exact !important",
@@ -168,7 +179,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                     sx={{
                       width: `${(skill.level || 3) * 20}%`,
                       height: "100%",
-                      backgroundColor: "#fbbf24 !important",
+                      backgroundColor: "var(--warning-500) !important",
                       borderRadius: 3,
                       WebkitPrintColorAdjust: "exact !important",
                       printColorAdjust: "exact !important",
@@ -191,7 +202,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 mb: 2,
-                color: "rgba(255, 255, 255, 0.7)",
+                color: LIGHT_TEXT_DIM,
               }}
             >
               EDUCATION
@@ -202,10 +213,10 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 <Typography data-resume-nowrap sx={{ fontSize: "0.85rem", fontWeight: 600, mb: 0.5 }}>
                   {edu.degree}
                 </Typography>
-                <Typography sx={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.8)" }}>
+                <Typography sx={{ fontSize: "0.75rem", color: LIGHT_TEXT_SOFT }}>
                   {edu.institution}
                 </Typography>
-                <Typography sx={{ fontSize: "0.7rem", color: "rgba(255, 255, 255, 0.6)", mt: 0.3, whiteSpace: "nowrap" }}>
+                <Typography sx={{ fontSize: "0.7rem", color: "color-mix(in srgb, var(--font-light) 70%, transparent)", mt: 0.3, whiteSpace: "nowrap" }}>
                   {formatDate(edu.startDate, edu.endDate)}
                 </Typography>
               </Box>
@@ -215,16 +226,16 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
       </Box>
 
       {/* Right Content */}
-      <Box sx={{ width: "70%", p: 4, backgroundColor: "#ffffff" }}>
+      <Box sx={{ width: "70%", p: 4, backgroundColor: "var(--card-bg)" }}>
         {/* Name and Title */}
         <Box sx={{ mb: 4 }}>
           <Typography
             sx={{
               fontSize: "2.5rem",
               fontWeight: 700,
-              color: "#1f2937",
+              color: BODY_TEXT,
               mb: 0.5,
-              background: "linear-gradient(90deg, #667eea 0%, #764ba2 100%)",
+              background: TEMPLATE_GRADIENT_INLINE,
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -237,7 +248,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
             <Typography
               sx={{
                 fontSize: "1.2rem",
-                color: "#6b7280",
+                color: BODY_TEXT_SECONDARY,
                 fontWeight: 500,
                 mb: 2,
               }}
@@ -250,7 +261,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
             <Typography
               sx={{
                 fontSize: "0.9rem",
-                color: "#4b5563",
+                color: BODY_TEXT_SECONDARY,
                 lineHeight: 1.7,
               }}
             >
@@ -276,7 +287,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: "linear-gradient(90deg, #667eea 0%, #764ba2 100%)",
+                  background: TEMPLATE_GRADIENT_INLINE,
                 }}
               />
               <Typography
@@ -284,7 +295,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 sx={{
                   fontSize: "1.1rem",
                   fontWeight: 700,
-                  color: "#1f2937",
+                  color: BODY_TEXT,
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                 }}
@@ -299,21 +310,21 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 sx={{
                   mb: index < data.workExperience.length - 1 ? 3 : 0,
                   pl: 2.5,
-                  borderLeft: "2px solid #e5e7eb",
+                  borderLeft: "2px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 }}
               >
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
                   <Box>
                     <Typography
                       data-resume-nowrap
-                      sx={{ fontSize: "1rem", fontWeight: 600, color: "#1f2937" }}
+                      sx={{ fontSize: "1rem", fontWeight: 600, color: BODY_TEXT }}
                     >
                       {exp.position}
                     </Typography>
                     <Typography
                       sx={{
                         fontSize: "0.9rem",
-                        background: "linear-gradient(90deg, #667eea 0%, #764ba2 100%)",
+                        background: TEMPLATE_GRADIENT_INLINE,
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
                         backgroundClip: "text",
@@ -324,7 +335,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                     </Typography>
                   </Box>
                   <Typography
-                    sx={{ fontSize: "0.75rem", color: "#9ca3af", whiteSpace: "nowrap", ml: 2 }}
+                    sx={{ fontSize: "0.75rem", color: BODY_TEXT_TERTIARY, whiteSpace: "nowrap", ml: 2 }}
                   >
                     {formatDate(exp.startDate, exp.endDate, exp.current)}
                   </Typography>
@@ -340,7 +351,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                           key={descIndex}
                           sx={{
                             fontSize: "0.85rem",
-                            color: "#4b5563",
+                            color: BODY_TEXT_SECONDARY,
                             lineHeight: 1.6,
                             mb: 0.5,
                           }}
@@ -372,7 +383,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: "linear-gradient(90deg, #667eea 0%, #764ba2 100%)",
+                  background: TEMPLATE_GRADIENT_INLINE,
                 }}
               />
               <Typography
@@ -380,7 +391,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 sx={{
                   fontSize: "1.1rem",
                   fontWeight: 700,
-                  color: "#1f2937",
+                  color: BODY_TEXT,
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                 }}
@@ -395,7 +406,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 sx={{
                   mb: index < data.projects.length - 1 ? 2.5 : 0,
                   pl: 2.5,
-                  borderLeft: "2px solid #e5e7eb",
+                  borderLeft: "2px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 }}
               >
                 <Box
@@ -409,7 +420,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 >
                   <Typography
                     data-resume-nowrap
-                    sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#1f2937" }}
+                    sx={{ fontSize: "0.95rem", fontWeight: 600, color: BODY_TEXT }}
                   >
                     {project.name}
                   </Typography>
@@ -421,7 +432,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{
                         fontSize: "0.75rem",
-                        color: "#667eea",
+                        color: "var(--accent-indigo)",
                         fontWeight: 600,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
@@ -435,7 +446,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
 
                 {project.description && (
                   <Typography
-                    sx={{ fontSize: "0.85rem", color: "#4b5563", lineHeight: 1.6, mb: 0.5 }}
+                    sx={{ fontSize: "0.85rem", color: BODY_TEXT_SECONDARY, lineHeight: 1.6, mb: 0.5 }}
                   >
                     {project.description}
                   </Typography>
@@ -451,8 +462,8 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                           sx={{
                             px: 1.5,
                             py: 0.5,
-                            background: "linear-gradient(90deg, #667eea 0%, #764ba2 100%)",
-                            color: "#ffffff",
+                            background: TEMPLATE_GRADIENT_INLINE,
+                            color: LIGHT_TEXT,
                             fontSize: "0.7rem",
                             borderRadius: 2,
                             fontWeight: 500,
@@ -487,7 +498,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: "linear-gradient(90deg, #667eea 0%, #764ba2 100%)",
+                  background: TEMPLATE_GRADIENT_INLINE,
                 }}
               />
               <Typography
@@ -495,7 +506,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 sx={{
                   fontSize: "1.1rem",
                   fontWeight: 700,
-                  color: "#1f2937",
+                  color: BODY_TEXT,
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                 }}
@@ -509,7 +520,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 <Box key={cert.id}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                     <Typography
-                      sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#1f2937", flex: 1, minWidth: 0 }}
+                      sx={{ fontSize: "0.85rem", fontWeight: 600, color: BODY_TEXT, flex: 1, minWidth: 0 }}
                     >
                       {cert.name}
                     </Typography>
@@ -521,7 +532,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                         rel="noopener noreferrer"
                         sx={{
                           fontSize: "0.65rem",
-                          color: "#667eea",
+                          color: "var(--accent-indigo)",
                           fontWeight: 600,
                           flexShrink: 0,
                           whiteSpace: "nowrap",
@@ -532,7 +543,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                       </Typography>
                     )}
                   </Box>
-                  <Typography sx={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                  <Typography sx={{ fontSize: "0.75rem", color: BODY_TEXT_SECONDARY }}>
                     {cert.issuer}
                   </Typography>
                 </Box>

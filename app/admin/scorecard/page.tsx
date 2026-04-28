@@ -265,10 +265,11 @@ export default function AdminScorecardPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    boxShadow:
+                      "0 4px 12px color-mix(in srgb, var(--font-primary) 16%, transparent)",
                   }}
                 >
-                  <IconWrapper icon="mdi:chart-box-outline" size={28} color="#fff" />
+                  <IconWrapper icon="mdi:chart-box-outline" size={28} color="var(--font-light)" />
                 </Box>
                 <Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
@@ -276,7 +277,7 @@ export default function AdminScorecardPage() {
                       variant="h4"
                       sx={{
                         fontWeight: 700,
-                        color: "text.primary",
+                        color: "var(--font-primary)",
                         letterSpacing: "-0.03em",
                         lineHeight: 1.2,
                       }}
@@ -296,7 +297,7 @@ export default function AdminScorecardPage() {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "text.secondary",
+                      color: "var(--font-secondary)",
                       mt: 0.5,
                       fontWeight: 400,
                     }}
@@ -313,7 +314,7 @@ export default function AdminScorecardPage() {
                 startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
                 onClick={() => router.push("/admin/dashboard")}
                 sx={{
-                  color: "text.primary",
+                  color: "var(--font-primary)",
                   textTransform: "none",
                   borderRadius: 2,
                   px: 2,
@@ -345,7 +346,8 @@ export default function AdminScorecardPage() {
                   icon: "mdi:account-group",
                   label: "Students",
                   value: loadingStudents ? "—" : stats.students,
-                  gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                  gradient:
+                    "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
                   delay: 0,
                 },
                 {
@@ -353,7 +355,8 @@ export default function AdminScorecardPage() {
                   icon: "mdi:view-dashboard-outline",
                   label: "Scorecard sections",
                   value: stats.sectionTypes,
-                  gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  gradient:
+                    "linear-gradient(135deg, var(--success-500) 0%, color-mix(in srgb, var(--success-500) 82%, var(--accent-indigo-dark)) 100%)",
                   delay: 0.08,
                 },
                 {
@@ -361,7 +364,8 @@ export default function AdminScorecardPage() {
                   icon: "mdi:view-module",
                   label: "Modules visible",
                   value: loadingConfig ? "—" : stats.modulesEnabled,
-                  gradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                  gradient:
+                    "linear-gradient(135deg, var(--accent-purple) 0%, color-mix(in srgb, var(--accent-purple) 82%, var(--accent-indigo-dark)) 100%)",
                   delay: 0.16,
                 },
               ].map((stat) => (
@@ -382,10 +386,12 @@ export default function AdminScorecardPage() {
                     gap: 2,
                     minWidth: 140,
                     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    color: "var(--font-primary)",
                     "&:hover": {
                       borderColor: "primary.main",
                       transform: "translateY(-2px)",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                      boxShadow:
+                        "0 8px 24px color-mix(in srgb, var(--font-primary) 18%, transparent)",
                     },
                   }}
                 >
@@ -398,16 +404,17 @@ export default function AdminScorecardPage() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                      boxShadow:
+                        "0 4px 12px color-mix(in srgb, var(--font-primary) 20%, transparent)",
                     }}
                   >
-                    <IconWrapper icon={stat.icon} size={24} color="#fff" />
+                    <IconWrapper icon={stat.icon} size={24} color="var(--font-light)" />
                   </Box>
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                       {stat.label}
                     </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: "text.primary", lineHeight: 1.2 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)", lineHeight: 1.2 }}>
                       {stat.value}
                     </Typography>
                   </Box>
@@ -428,7 +435,7 @@ export default function AdminScorecardPage() {
             marginRight: { xs: -2, sm: -3, md: -4 },
             width: { xs: "calc(100% + 32px)", sm: "calc(100% + 48px)", md: "calc(100% + 64px)" },
             px: { xs: 2, sm: 3, md: 4 },
-            bgcolor: "#f8fafc",
+            bgcolor: "var(--background)",
             minHeight: "60vh",
           }}
         >
@@ -444,9 +451,10 @@ export default function AdminScorecardPage() {
                 borderRadius: 2.5,
                 border: "1px solid",
                 borderColor: "divider",
-                bgcolor: "#fff",
+                bgcolor: "var(--card-bg)",
                 overflow: "hidden",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+                boxShadow:
+                  "0 4px 24px color-mix(in srgb, var(--font-primary) 14%, transparent)",
               }}
             >
               <Tabs
@@ -488,8 +496,9 @@ export default function AdminScorecardPage() {
                     borderRadius: 2,
                     border: "1px solid",
                     borderColor: "divider",
-                    bgcolor: "#fff",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                    bgcolor: "var(--card-bg)",
+                    boxShadow:
+                      "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
@@ -500,7 +509,7 @@ export default function AdminScorecardPage() {
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                         Select Student
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                         Search by name or email to view their scorecard
                       </Typography>
                     </Box>
@@ -535,8 +544,11 @@ export default function AdminScorecardPage() {
                             minWidth: 320,
                             "& .MuiOutlinedInput-root": {
                               borderRadius: 2,
-                              bgcolor: "grey.50",
-                              "&:hover": { bgcolor: "grey.100" },
+                              bgcolor: "var(--surface)",
+                              "&:hover": {
+                                bgcolor:
+                                  "color-mix(in srgb, var(--surface) 88%, var(--card-bg) 12%)",
+                              },
                             },
                           }}
                         />
@@ -608,8 +620,13 @@ export default function AdminScorecardPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: 0.2 }}
                       variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 1, maxWidth: 360, mx: "auto", display: "block" }}
+                      sx={{
+                        color: "var(--font-secondary)",
+                        mt: 1,
+                        maxWidth: 360,
+                        mx: "auto",
+                        display: "block",
+                      }}
                     >
                       Use the search above to find and select a student. Their scorecard will appear here.
                     </Typography>
@@ -626,7 +643,7 @@ export default function AdminScorecardPage() {
                       borderRadius: 2,
                       border: "1px solid",
                       borderColor: "divider",
-                      bgcolor: "#fff",
+                      bgcolor: "var(--card-bg)",
                     }}
                   >
                     <Box
@@ -643,12 +660,12 @@ export default function AdminScorecardPage() {
                     >
                       <Skeleton variant="circular" width={48} height={48} animation="wave" sx={{ flexShrink: 0 }} />
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "text.primary" }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                           {selectedStudent.name}
                         </Typography>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
                           <CircularProgress size={14} sx={{ color: "primary.main" }} />
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                             Loading scorecard data...
                           </Typography>
                         </Box>
@@ -701,7 +718,7 @@ export default function AdminScorecardPage() {
                     })}
                   </Box>
                 ) : (
-                  <Paper sx={{ p: 6, textAlign: "center" }}>
+                  <Paper sx={{ p: 6, textAlign: "center", bgcolor: "var(--card-bg)", color: "var(--font-primary)" }}>
                     <Typography color="error">Failed to load scorecard</Typography>
                   </Paper>
                 )}
@@ -728,8 +745,9 @@ export default function AdminScorecardPage() {
                         borderRadius: 2,
                         border: "1px solid",
                         borderColor: "divider",
-                        bgcolor: "#fff",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                        bgcolor: "var(--card-bg)",
+                        boxShadow:
+                          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
                         height: "100%",
                       }}
                     >
@@ -741,12 +759,12 @@ export default function AdminScorecardPage() {
                           <Typography variant="h6" sx={{ fontWeight: 600 }}>
                             Visible Modules
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                             Control which sections appear on student scorecards (overview, heatmap, learning consumption)
                           </Typography>
                         </Box>
                       </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2, mb: 1 }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 2, mb: 1 }}>
                         Drag to reorder • Toggle to show/hide
                       </Typography>
                       <DragDropContext onDragEnd={handleDragEnd}>
@@ -786,7 +804,7 @@ export default function AdminScorecardPage() {
                                           {...provided.dragHandleProps}
                                           sx={{
                                             cursor: "grab",
-                                            color: "text.secondary",
+                                            color: "var(--font-secondary)",
                                             display: "flex",
                                             alignItems: "center",
                                             "&:active": { cursor: "grabbing" },

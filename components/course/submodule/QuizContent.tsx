@@ -796,11 +796,12 @@ export function QuizContent({
                 textTransform: "none",
                 fontSize: "0.9375rem",
                 fontWeight: 600,
-                borderColor: "#6366f1",
-                color: "#6366f1",
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
                 "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "#6366f115",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                 },
               }}
             >

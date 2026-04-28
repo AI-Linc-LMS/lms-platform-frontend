@@ -36,8 +36,9 @@ export function AICourseBuilderActions({
             router.push("/admin/ai-course-builder/generate/description")
           }
           sx={{
-            bgcolor: "#6366f1",
-            "&:hover": { bgcolor: "#4f46e5" },
+            bgcolor: "var(--accent-indigo)",
+            color: "var(--font-light)",
+            "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
             whiteSpace: "nowrap",
           }}
         >
@@ -50,8 +51,9 @@ export function AICourseBuilderActions({
             router.push("/admin/ai-course-builder/generate/structured-plan")
           }
           sx={{
-            bgcolor: "#10b981",
-            "&:hover": { bgcolor: "#059669" },
+            bgcolor: "var(--success-500)",
+            color: "var(--font-light)",
+            "&:hover": { bgcolor: "color-mix(in srgb, var(--success-500) 85%, black 15%)" },
             whiteSpace: "nowrap",
           }}
         >
@@ -71,7 +73,7 @@ export function AICourseBuilderActions({
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <IconWrapper icon="mdi:magnify" size={20} color="#9ca3af" />
+            <IconWrapper icon="mdi:magnify" size={20} color="var(--font-tertiary)" />
           </InputAdornment>
         ),
         endAdornment: searchQuery && (
@@ -79,7 +81,7 @@ export function AICourseBuilderActions({
             <IconButton
               size="small"
               onClick={() => onSearchChange?.("")}
-              sx={{ color: "#9ca3af" }}
+              sx={{ color: "var(--font-tertiary)" }}
             >
               <IconWrapper icon="mdi:close" size={18} />
             </IconButton>

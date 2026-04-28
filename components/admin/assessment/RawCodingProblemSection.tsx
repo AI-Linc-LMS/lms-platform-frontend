@@ -110,11 +110,11 @@ export function RawCodingProblemSection({
       <Typography variant="h6" sx={{ fontWeight: 600 }}>
         Add Your Problem
       </Typography>
-      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
         Paste your problem statement (title, description, I/O, constraints). One problem per generation.
       </Typography>
 
-      <Paper sx={{ p: 3, bgcolor: "#f9fafb" }}>
+      <Paper sx={{ p: 3, bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           <Box
             sx={{
@@ -218,7 +218,7 @@ Constraints:
                 <IconWrapper icon="mdi:send" size={18} />
               )
             }
-            sx={{ bgcolor: "#6366f1", alignSelf: "flex-start" }}
+            sx={{ bgcolor: "var(--accent-indigo)", alignSelf: "flex-start" }}
           >
             {generating ? "Creating..." : "Create coding problem(s)"}
           </Button>
@@ -234,7 +234,7 @@ Constraints:
             <TableContainer>
               <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                  <TableRow sx={{ backgroundColor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
                     <TableCell sx={{ fontWeight: 600, width: 48 }}>#</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Difficulty</TableCell>
@@ -249,7 +249,7 @@ Constraints:
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((p, idx) => (
                       <TableRow key={p.id} hover>
-                        <TableCell sx={{ color: "#6b7280", fontFamily: "monospace" }}>
+                        <TableCell sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}>
                           {page * rowsPerPage + idx + 1}
                         </TableCell>
                         <TableCell sx={{ maxWidth: 280 }}>
@@ -263,7 +263,7 @@ Constraints:
                           <IconButton
                             size="small"
                             onClick={() => setPreviewProblem(p)}
-                            sx={{ color: "#6366f1" }}
+                            sx={{ color: "var(--accent-indigo)" }}
                             title="Preview"
                           >
                             <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -281,7 +281,7 @@ Constraints:
                                 Math.max(0, Math.min(prev, Math.ceil((generatedProblems.length - 1) / rowsPerPage) - 1))
                               );
                             }}
-                            sx={{ color: "#ef4444" }}
+                            sx={{ color: "var(--error-500)" }}
                             title="Remove"
                           >
                             <IconWrapper icon="mdi:delete-outline" size={18} />
