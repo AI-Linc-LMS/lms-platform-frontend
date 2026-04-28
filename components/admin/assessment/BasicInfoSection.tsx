@@ -17,7 +17,7 @@ const helperFormProps = {
   sx: {
     fontSize: "0.8125rem",
     lineHeight: 1.45,
-    color: "#475569",
+    color: "var(--font-secondary)",
     mt: 0.5,
   },
 };
@@ -27,7 +27,7 @@ const groupTitleSx = {
   fontWeight: 700,
   letterSpacing: "0.06em",
   textTransform: "uppercase" as const,
-  color: "#64748b",
+  color: "var(--font-secondary)",
   mb: 0.25,
 };
 
@@ -46,7 +46,7 @@ function FieldGroup({
         {title}
       </Typography>
       {hint ? (
-        <Typography variant="caption" sx={{ color: "#64748b", display: "block", mb: 1.25 }}>
+        <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.25 }}>
           {hint}
         </Typography>
       ) : (
@@ -73,11 +73,13 @@ export function BasicInfoSection({
         mb: 0,
         borderRadius: 2,
         border: "1px solid",
-        borderColor: "rgba(99, 102, 241, 0.2)",
+        borderColor:
+          "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
         overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         background:
-          "linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, #ffffff 56px)",
+          "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 56px)",
         opacity: readOnly ? 0.96 : 1,
       }}
     >
@@ -89,7 +91,8 @@ export function BasicInfoSection({
           alignItems: "flex-start",
           gap: 1.5,
           borderBottom: "1px solid",
-          borderColor: "rgba(99, 102, 241, 0.12)",
+          borderColor:
+            "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
         }}
       >
         <Box
@@ -100,18 +103,20 @@ export function BasicInfoSection({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "rgba(99, 102, 241, 0.12)",
-            border: "1px solid rgba(99, 102, 241, 0.2)",
+            bgcolor:
+              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:file-document-edit-outline" size={24} color="#4f46e5" />
+          <IconWrapper icon="mdi:file-document-edit-outline" size={24} color="var(--accent-indigo)" />
         </Box>
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e1b4b" }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
             Basic information
           </Typography>
-          <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5, lineHeight: 1.5 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5, lineHeight: 1.5 }}>
             Name and describe your assessment so students know what to expect before they start.
           </Typography>
         </Box>
@@ -139,7 +144,7 @@ export function BasicInfoSection({
                 }}
               >
                 <span>Maximum 255 characters.</span>
-                <Box component="span" sx={{ color: "#94a3b8", flexShrink: 0 }}>
+                <Box component="span" sx={{ color: "var(--font-tertiary)", flexShrink: 0 }}>
                   {title.length}/255
                 </Box>
               </Box>

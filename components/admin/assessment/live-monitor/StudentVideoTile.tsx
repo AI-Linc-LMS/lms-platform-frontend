@@ -34,17 +34,20 @@ export function StudentVideoTile({
         cursor: "pointer",
         overflow: "hidden",
         borderRadius: 2,
-        border: selected ? "2px solid #6366f1" : "1px solid #e2e8f0",
+        border: selected
+          ? "2px solid var(--accent-indigo)"
+          : "1px solid var(--border-default)",
         transition: "border-color 0.2s, box-shadow 0.2s",
         "&:hover": {
-          boxShadow: "0 4px 12px rgba(99, 102, 241, 0.15)",
+          boxShadow:
+            "0 4px 12px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
         },
       }}
     >
       <Box
         sx={{
           aspectRatio: "4/3",
-          bgcolor: "#0f172a",
+          bgcolor: "color-mix(in srgb, var(--font-primary) 88%, black 12%)",
           position: "relative",
           display: "flex",
           alignItems: "center",
@@ -61,20 +64,20 @@ export function StudentVideoTile({
             }}
           />
         ) : (
-          <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
             No video
           </Typography>
         )}
       </Box>
-      <Box sx={{ px: 1, py: 0.75, bgcolor: "#f8fafc" }}>
+      <Box sx={{ px: 1, py: 0.75, bgcolor: "var(--surface)" }}>
         <Typography
           variant="body2"
-          sx={{ fontWeight: 600, color: "#0f172a", lineHeight: 1.3 }}
+          sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}
           noWrap
         >
           {name || identity}
         </Typography>
-        <Typography variant="caption" sx={{ color: "#64748b" }} noWrap>
+        <Typography variant="caption" sx={{ color: "var(--font-secondary)" }} noWrap>
           {identity}
         </Typography>
       </Box>

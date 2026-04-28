@@ -126,7 +126,7 @@ export default function AssessmentLiveMonitorPage() {
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/admin/assessment")}
-          sx={{ mb: 2, color: "#64748b" }}
+          sx={{ mb: 2, color: "var(--font-secondary)" }}
         >
           Back to assessments
         </Button>
@@ -136,7 +136,8 @@ export default function AssessmentLiveMonitorPage() {
           sx={{
             fontWeight: 700,
             mb: 0.5,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",

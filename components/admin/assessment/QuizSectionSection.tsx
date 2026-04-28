@@ -25,13 +25,13 @@ export function QuizSectionSection({
         variant="h6"
         sx={{
           fontWeight: 700,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 1,
         }}
       >
         Quiz Section
       </Typography>
-      <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
         Configure the quiz section details and display order.
       </Typography>
 

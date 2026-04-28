@@ -1232,7 +1232,7 @@ export default function AssessmentEditPage() {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1.5rem", sm: "2rem" },
             mb: 1,
           }}
@@ -1353,7 +1353,10 @@ export default function AssessmentEditPage() {
                           <IconWrapper icon="mdi:content-save" size={18} />
                         )
                       }
-                      sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                      sx={{
+                        bgcolor: "var(--accent-indigo)",
+                        "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                      }}
                     >
                       {saving ? "Saving…" : "Save"}
                     </Button>
@@ -1429,21 +1432,21 @@ export default function AssessmentEditPage() {
                         sx={{
                           borderRadius: 2,
                           overflow: "hidden",
-                          borderColor: "#e5e7eb",
-                          bgcolor: "#fafafa",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
                         }}
                       >
                         <Box
                           sx={{
                             px: 2,
                             py: 1.5,
-                            borderBottom: "1px solid #e5e7eb",
+                            borderBottom: "1px solid var(--border-default)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
                             flexWrap: "wrap",
                             gap: 1,
-                            bgcolor: "#fff",
+                            bgcolor: "var(--card-bg)",
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
@@ -1455,7 +1458,10 @@ export default function AssessmentEditPage() {
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadMCQQuestions}
                             disabled={readOnly || totalQuizQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            sx={{
+                              bgcolor: "var(--accent-indigo)",
+                              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                            }}
                           >
                             Download MCQ CSV
                           </Button>
@@ -1469,7 +1475,7 @@ export default function AssessmentEditPage() {
                             <TableContainer sx={{ maxHeight: 440 }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
-                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
@@ -1481,7 +1487,7 @@ export default function AssessmentEditPage() {
                                 </TableHead>
                                 <TableBody>
                                   {paginatedQuizQuestions.map(({ section: sec, question: q }) => (
-                                    <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                    <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
                                       <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
                                       <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
                                       <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
@@ -1506,7 +1512,7 @@ export default function AssessmentEditPage() {
                                         <IconButton
                                           size="small"
                                           onClick={() => setPreviewMCQ({ section: sec, question: q })}
-                                          sx={{ color: "#6366f1" }}
+                                          sx={{ color: "var(--accent-indigo)" }}
                                           title="Preview"
                                         >
                                           <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -1536,21 +1542,21 @@ export default function AssessmentEditPage() {
                         sx={{
                           borderRadius: 2,
                           overflow: "hidden",
-                          borderColor: "#e5e7eb",
-                          bgcolor: "#fafafa",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
                         }}
                       >
                         <Box
                           sx={{
                             px: 2,
                             py: 1.5,
-                            borderBottom: "1px solid #e5e7eb",
+                            borderBottom: "1px solid var(--border-default)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
                             flexWrap: "wrap",
                             gap: 1,
-                            bgcolor: "#fff",
+                            bgcolor: "var(--card-bg)",
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
@@ -1562,7 +1568,10 @@ export default function AssessmentEditPage() {
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadCodingQuestions}
                             disabled={readOnly || totalCodingQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            sx={{
+                              bgcolor: "var(--accent-indigo)",
+                              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                            }}
                           >
                             Download Coding CSV
                           </Button>
@@ -1576,7 +1585,7 @@ export default function AssessmentEditPage() {
                             <TableContainer sx={{ maxHeight: 440 }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
-                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
@@ -1588,7 +1597,7 @@ export default function AssessmentEditPage() {
                                 </TableHead>
                                 <TableBody>
                                   {paginatedCodingQuestions.map(({ section: sec, question: q }) => (
-                                    <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                    <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
                                       <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
                                       <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
                                       <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
@@ -1599,7 +1608,7 @@ export default function AssessmentEditPage() {
                                         {q.problem_statement && (
                                           <Typography
                                             variant="caption"
-                                            sx={{ color: "#6b7280", display: "block", mt: 0.25 }}
+                                            sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}
                                           >
                                             {(() => {
                                               const text = htmlToPlainText(String(q.problem_statement));
@@ -1616,16 +1625,16 @@ export default function AssessmentEditPage() {
                                             sx={{
                                               bgcolor:
                                                 q.difficulty_level === "Easy"
-                                                  ? "#d1fae5"
+                                                  ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                                                   : q.difficulty_level === "Medium"
-                                                  ? "#fde68a"
-                                                  : "#fed7aa",
+                                                  ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                                                  : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                                               color:
                                                 q.difficulty_level === "Easy"
-                                                  ? "#065f46"
+                                                  ? "var(--success-500)"
                                                   : q.difficulty_level === "Medium"
-                                                  ? "#92400e"
-                                                  : "#7c2d12",
+                                                  ? "var(--warning-500)"
+                                                  : "var(--warning-500)",
                                               fontWeight: 600,
                                               fontSize: "0.7rem",
                                             }}
@@ -1639,7 +1648,7 @@ export default function AssessmentEditPage() {
                                         <IconButton
                                           size="small"
                                           onClick={() => setPreviewCoding({ section: sec, question: q })}
-                                          sx={{ color: "#6366f1" }}
+                                          sx={{ color: "var(--accent-indigo)" }}
                                           title="Preview"
                                         >
                                           <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -1737,7 +1746,7 @@ export default function AssessmentEditPage() {
                     border: "1px solid",
                     borderColor: "divider",
                     background:
-                      "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(255,255,255,1) 46%)",
+                      "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 46%)",
                   }}
                 >
                   <Box
@@ -1750,7 +1759,7 @@ export default function AssessmentEditPage() {
                     }}
                   >
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
                         Submissions workspace
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -1778,8 +1787,8 @@ export default function AssessmentEditPage() {
                           (readOnly && !hideAdminQuestions)
                         }
                         sx={{
-                          bgcolor: "#6366f1",
-                          "&:hover": { bgcolor: "#4f46e5" },
+                          bgcolor: "var(--accent-indigo)",
+                          "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                           textTransform: "none",
                         }}
                       >
@@ -1802,8 +1811,11 @@ export default function AssessmentEditPage() {
                           (readOnly && !hideAdminQuestions)
                         }
                         sx={{
-                          bgcolor: "#e11d48",
-                          "&:hover": { bgcolor: "#be123c" },
+                          bgcolor: "var(--error-500)",
+                          "&:hover": {
+                            bgcolor:
+                              "color-mix(in srgb, var(--error-500) 86%, var(--accent-indigo-dark))",
+                          },
                           textTransform: "none",
                         }}
                       >
@@ -1848,7 +1860,7 @@ export default function AssessmentEditPage() {
                     >
                       <Table size="small" stickyHeader>
                         <TableHead>
-                          <TableRow sx={{ bgcolor: "#f8fafc" }}>
+                          <TableRow sx={{ bgcolor: "var(--surface)" }}>
                             <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 210 }}>
                               Name
                             </TableCell>
@@ -1888,7 +1900,10 @@ export default function AssessmentEditPage() {
                               key={`${s.email}-${s.submitted_at ?? idx}-${(submissionsPage - 1) * submissionsLimit + idx}`}
                               hover
                               sx={{
-                                "&:nth-of-type(even)": { bgcolor: "rgba(148, 163, 184, 0.04)" },
+                                "&:nth-of-type(even)": {
+                                  bgcolor:
+                                    "color-mix(in srgb, var(--font-secondary) 8%, transparent)",
+                                },
                               }}
                             >
                               <TableCell sx={{ py: 1.25 }}>
@@ -1900,13 +1915,14 @@ export default function AssessmentEditPage() {
                                       height: 30,
                                       fontSize: 12,
                                       fontWeight: 700,
-                                      bgcolor: "rgba(99, 102, 241, 0.16)",
-                                      color: "#4338ca",
+                                      bgcolor:
+                                        "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                                      color: "var(--accent-indigo-dark)",
                                     }}
                                   >
                                     {buildInitials(s.name)}
                                   </Avatar>
-                                  <Typography variant="body2" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                                     {s.name || "Unknown learner"}
                                   </Typography>
                                 </Box>
@@ -2041,7 +2057,7 @@ export default function AssessmentEditPage() {
                       <Box
                         sx={{
                           pt: 2,
-                          borderTop: "1px solid #e5e7eb",
+                          borderTop: "1px solid var(--border-default)",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",

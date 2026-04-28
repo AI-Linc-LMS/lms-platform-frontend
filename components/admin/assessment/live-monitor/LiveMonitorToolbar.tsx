@@ -65,12 +65,12 @@ export function LiveMonitorToolbar({
       }}
     >
       <Box sx={{ minWidth: 0, flex: "1 1 200px" }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: "#0f172a" }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
           Live proctoring
         </Typography>
         <Typography
           variant="body2"
-          sx={{ color: "#64748b", mt: 0.5 }}
+          sx={{ color: "var(--font-secondary)", mt: 0.5 }}
           noWrap
           title={roomName ? `${title} · ${roomName}` : title}
         >
@@ -78,7 +78,7 @@ export function LiveMonitorToolbar({
           {roomName ? (
             <Box
               component="span"
-              sx={{ ml: 1, color: "#94a3b8", fontSize: "0.75rem" }}
+              sx={{ ml: 1, color: "var(--font-tertiary)", fontSize: "0.75rem" }}
             >
               · {roomName}
             </Box>
@@ -95,7 +95,7 @@ export function LiveMonitorToolbar({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <IconWrapper icon="mdi:magnify" size={18} color="#94a3b8" />
+              <IconWrapper icon="mdi:magnify" size={18} color="var(--font-tertiary)" />
             </InputAdornment>
           ),
         }}
@@ -118,11 +118,11 @@ export function LiveMonitorToolbar({
       </FormControl>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-        <Typography variant="body2" sx={{ color: "#64748b" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           {filteredCount} / {totalCount} students
         </Typography>
         {typeof autoRefreshInSeconds === "number" && (
-          <Typography variant="caption" sx={{ color: "#64748b" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
             Auto refresh in {autoRefreshInSeconds}s
           </Typography>
         )}
@@ -169,7 +169,7 @@ export function LiveMonitorToolbar({
           >
             Prev
           </Button>
-          <Typography variant="body2" sx={{ color: "#64748b" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
             Page {page} / {totalPages}
           </Typography>
           <Button

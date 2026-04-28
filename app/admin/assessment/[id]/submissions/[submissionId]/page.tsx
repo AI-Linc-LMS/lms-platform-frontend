@@ -23,7 +23,6 @@ import {
   Stack,
   TextField,
   Typography,
-  useTheme,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DRAWER_WIDTH } from "@/components/layout/Sidebar";
@@ -90,9 +89,10 @@ function optionStateChipSx(kind: "selected" | "correct") {
       height: 24,
       borderRadius: 999,
       fontWeight: 700,
-      color: "#065f46",
-      bgcolor: "rgba(16, 185, 129, 0.16)",
-      border: "1px solid rgba(16, 185, 129, 0.45)",
+      color: "var(--success-500)",
+      bgcolor: "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)",
+      border:
+        "1px solid color-mix(in srgb, var(--success-500) 40%, var(--border-default) 60%)",
       "& .MuiChip-label": { px: 1 },
     };
   }
@@ -100,9 +100,10 @@ function optionStateChipSx(kind: "selected" | "correct") {
     height: 24,
     borderRadius: 999,
     fontWeight: 700,
-    color: "#3730a3",
-    bgcolor: "rgba(99, 102, 241, 0.16)",
-    border: "1px solid rgba(99, 102, 241, 0.45)",
+    color: "var(--accent-indigo)",
+    bgcolor: "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)",
+    border:
+      "1px solid color-mix(in srgb, var(--accent-indigo) 40%, var(--border-default) 60%)",
     "& .MuiChip-label": { px: 1 },
   };
 }
@@ -110,7 +111,6 @@ function optionStateChipSx(kind: "selected" | "correct") {
 export default function AdminSubmissionEvaluationPage() {
   const params = useParams();
   const router = useRouter();
-  const theme = useTheme();
   const { i18n } = useTranslation("common");
   const { showToast } = useToast();
   const rtl = isRtl(i18n.language || "en");
@@ -371,7 +371,7 @@ export default function AdminSubmissionEvaluationPage() {
             border: "1px solid",
             borderColor: "divider",
             background:
-              "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(255,255,255,1) 48%)",
+              "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%) 0%, var(--card-bg) 48%)",
           }}
         >
           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2} flexWrap="wrap">
@@ -379,7 +379,7 @@ export default function AdminSubmissionEvaluationPage() {
               <Typography variant="overline" sx={{ color: "text.secondary", letterSpacing: 0.08 }}>
                 Manual evaluation
               </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.25 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--font-primary)", lineHeight: 1.25 }}>
                 {data.assessment.title}
               </Typography>
               <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
@@ -413,10 +413,10 @@ export default function AdminSubmissionEvaluationPage() {
 
           <Stack spacing={1}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2} flexWrap="wrap">
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#334155" }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
                 Running total (draft)
               </Typography>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#4f46e5" }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--accent-indigo)" }}>
                 {totalScore} / {data.maximum_marks}
               </Typography>
             </Stack>
@@ -427,8 +427,9 @@ export default function AdminSubmissionEvaluationPage() {
                 sx={{
                   height: 10,
                   borderRadius: 999,
-                  bgcolor: "rgba(15, 23, 42, 0.06)",
-                  "& .MuiLinearProgress-bar": { borderRadius: 999, bgcolor: "#6366f1" },
+                  bgcolor:
+                    "color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                  "& .MuiLinearProgress-bar": { borderRadius: 999, bgcolor: "var(--accent-indigo)" },
                 }}
               />
             ) : null}
@@ -450,7 +451,7 @@ export default function AdminSubmissionEvaluationPage() {
         {!isPublished ? (
           <Paper sx={{ p: 2.5, mb: 2.5, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25 }}>
-              <IconWrapper icon="mdi:note-text-outline" size={20} color="#6366f1" />
+              <IconWrapper icon="mdi:note-text-outline" size={20} color="var(--accent-indigo)" />
               <Typography variant="h6" sx={{ fontWeight: 800 }}>
                 Overall notes
               </Typography>
@@ -480,11 +481,13 @@ export default function AdminSubmissionEvaluationPage() {
                     borderRadius: 1.5,
                     display: "grid",
                     placeItems: "center",
-                    bgcolor: "rgba(99, 102, 241, 0.12)",
-                    border: "1px solid rgba(99, 102, 241, 0.22)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--accent-indigo) 28%, var(--border-default) 72%)",
                   }}
                 >
-                  <IconWrapper icon="mdi:help-circle-outline" size={22} color="#4f46e5" />
+                  <IconWrapper icon="mdi:help-circle-outline" size={22} color="var(--accent-indigo)" />
                 </Box>
                 <Box>
                   <Typography sx={{ fontWeight: 800 }}>Quiz</Typography>
@@ -514,7 +517,7 @@ export default function AdminSubmissionEvaluationPage() {
                       <CardContent sx={{ p: { xs: 2, sm: 2.25 }, "&:last-child": { pb: { xs: 2, sm: 2.25 } } }}>
                         <Stack spacing={1.25}>
                           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2} flexWrap="wrap">
-                            <Typography sx={{ fontWeight: 800, color: "#0f172a", whiteSpace: "pre-wrap" }}>
+                            <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", whiteSpace: "pre-wrap" }}>
                               {q.question_text}
                             </Typography>
                             <Stack direction="row" spacing={0.75} flexWrap="wrap" justifyContent="flex-end">
@@ -531,15 +534,15 @@ export default function AdminSubmissionEvaluationPage() {
                               const isSelected = selected === letter;
                               const isCorrect = correct === letter;
                               const border = isCorrect
-                                ? "1px solid rgba(16, 185, 129, 0.55)"
+                                ? "1px solid color-mix(in srgb, var(--success-500) 48%, var(--border-default) 52%)"
                                 : isSelected
-                                  ? "1px solid rgba(99, 102, 241, 0.55)"
-                                  : "1px solid rgba(15, 23, 42, 0.10)";
+                                  ? "1px solid color-mix(in srgb, var(--accent-indigo) 48%, var(--border-default) 52%)"
+                                  : "1px solid var(--border-default)";
                               const bg = isCorrect
-                                ? "rgba(16, 185, 129, 0.08)"
+                                ? "color-mix(in srgb, var(--success-500) 10%, var(--surface) 90%)"
                                 : isSelected
-                                  ? "rgba(99, 102, 241, 0.08)"
-                                  : "rgba(248, 250, 252, 0.9)";
+                                  ? "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)"
+                                  : "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)";
 
                               return (
                                 <Box
@@ -561,7 +564,7 @@ export default function AdminSubmissionEvaluationPage() {
                                       <Chip
                                         size="small"
                                         label="Selected"
-                                        icon={<IconWrapper icon="mdi:account-check-outline" size={14} color="#3730a3" />}
+                                        icon={<IconWrapper icon="mdi:account-check-outline" size={14} color="var(--accent-indigo)" />}
                                         sx={optionStateChipSx("selected")}
                                       />
                                     ) : null}
@@ -569,12 +572,12 @@ export default function AdminSubmissionEvaluationPage() {
                                       <Chip
                                         size="small"
                                         label="Correct"
-                                        icon={<IconWrapper icon="mdi:check-circle-outline" size={14} color="#065f46" />}
+                                        icon={<IconWrapper icon="mdi:check-circle-outline" size={14} color="var(--success-500)" />}
                                         sx={optionStateChipSx("correct")}
                                       />
                                     ) : null}
                                   </Stack>
-                                  <Typography variant="body2" sx={{ color: "#0f172a", whiteSpace: "pre-wrap" }}>
+                                  <Typography variant="body2" sx={{ color: "var(--font-primary)", whiteSpace: "pre-wrap" }}>
                                     {opts[letter]}
                                   </Typography>
                                 </Box>
@@ -626,11 +629,13 @@ export default function AdminSubmissionEvaluationPage() {
                     borderRadius: 1.5,
                     display: "grid",
                     placeItems: "center",
-                    bgcolor: "rgba(16, 185, 129, 0.12)",
-                    border: "1px solid rgba(16, 185, 129, 0.22)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--success-500) 28%, var(--border-default) 72%)",
                   }}
                 >
-                  <IconWrapper icon="mdi:code-tags" size={22} color="#047857" />
+                  <IconWrapper icon="mdi:code-tags" size={22} color="var(--success-500)" />
                 </Box>
                 <Box>
                   <Typography sx={{ fontWeight: 800 }}>Coding</Typography>
@@ -660,7 +665,7 @@ export default function AdminSubmissionEvaluationPage() {
                       <CardContent sx={{ p: { xs: 2, sm: 2.25 }, "&:last-child": { pb: { xs: 2, sm: 2.25 } } }}>
                         <Stack spacing={1.25}>
                           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2} flexWrap="wrap">
-                            <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>{q.title}</Typography>
+                            <Typography sx={{ fontWeight: 800, color: "var(--font-primary)" }}>{q.title}</Typography>
                             <Stack direction="row" spacing={0.75} flexWrap="wrap" justifyContent="flex-end">
                               {q.difficulty_level ? <Chip size="small" label={String(q.difficulty_level)} variant="outlined" /> : null}
                               <Chip size="small" variant="outlined" label={`Max ${Number(q.max_marks) || 0}`} />
@@ -673,7 +678,7 @@ export default function AdminSubmissionEvaluationPage() {
                               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
                                 Automated signal
                               </Typography>
-                              <Typography variant="caption" sx={{ fontWeight: 800, color: "#334155" }}>
+                              <Typography variant="caption" sx={{ fontWeight: 800, color: "var(--font-secondary)" }}>
                                 {passed}/{totalTc} tests
                               </Typography>
                             </Stack>
@@ -683,33 +688,66 @@ export default function AdminSubmissionEvaluationPage() {
                               sx={{
                                 height: 8,
                                 borderRadius: 999,
-                                bgcolor: "rgba(15, 23, 42, 0.06)",
-                                "& .MuiLinearProgress-bar": { borderRadius: 999, bgcolor: q.all_test_cases_passed ? "#10b981" : "#f59e0b" },
+                                bgcolor:
+                                  "color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                                "& .MuiLinearProgress-bar": {
+                                  borderRadius: 999,
+                                  bgcolor: q.all_test_cases_passed
+                                    ? "var(--success-500)"
+                                    : "var(--warning-500)",
+                                },
                               }}
                             />
                           </Stack>
 
                           {stmt ? (
-                            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: "rgba(248, 250, 252, 0.9)" }}>
+                            <Paper
+                              variant="outlined"
+                              sx={{
+                                p: 1.5,
+                                borderRadius: 2,
+                                bgcolor:
+                                  "color-mix(in srgb, var(--surface) 88%, var(--card-bg) 12%)",
+                              }}
+                            >
                               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, display: "block", mb: 0.75 }}>
                                 Problem statement
                               </Typography>
                               {looksLikeHtml(stmt) ? (
                                 <Box
                                   className="assessment-admin-html"
-                                  sx={{ color: "#0f172a", "& p": { m: 0 }, "& img": { maxWidth: "100%" } }}
+                                  sx={{ color: "var(--font-primary)", "& p": { m: 0 }, "& img": { maxWidth: "100%" } }}
                                   dangerouslySetInnerHTML={{ __html: stmt }}
                                 />
                               ) : (
-                                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "#0f172a" }}>
+                                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "var(--font-primary)" }}>
                                   {stmt}
                                 </Typography>
                               )}
                             </Paper>
                           ) : null}
 
-                          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: "#0b1220" }}>
-                            <Typography variant="caption" sx={{ fontWeight: 800, color: "rgba(255,255,255,0.75)", display: "block", mb: 0.75 }}>
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 2,
+                              bgcolor:
+                                "color-mix(in srgb, var(--font-primary) 88%, var(--surface) 12%)",
+                              borderColor:
+                                "color-mix(in srgb, var(--font-primary) 24%, var(--border-default) 76%)",
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontWeight: 800,
+                                color:
+                                  "color-mix(in srgb, var(--font-light) 78%, var(--font-tertiary) 22%)",
+                                display: "block",
+                                mb: 0.75,
+                              }}
+                            >
                               Submitted code
                             </Typography>
                             <Typography
@@ -721,7 +759,8 @@ export default function AdminSubmissionEvaluationPage() {
                                 fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                                 fontSize: 12.5,
                                 lineHeight: 1.55,
-                                color: "rgba(255,255,255,0.92)",
+                                color:
+                                  "color-mix(in srgb, var(--font-light) 92%, var(--font-secondary) 8%)",
                               }}
                             >
                               {q.submitted_code?.trim() ? String(q.submitted_code) : "—"}
@@ -772,11 +811,13 @@ export default function AdminSubmissionEvaluationPage() {
                     borderRadius: 1.5,
                     display: "grid",
                     placeItems: "center",
-                    bgcolor: "rgba(245, 158, 11, 0.14)",
-                    border: "1px solid rgba(245, 158, 11, 0.28)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--warning-500) 30%, var(--border-default) 70%)",
                   }}
                 >
-                  <IconWrapper icon="mdi:text-box-outline" size={22} color="#b45309" />
+                  <IconWrapper icon="mdi:text-box-outline" size={22} color="var(--warning-500)" />
                 </Box>
                 <Box>
                   <Typography sx={{ fontWeight: 800 }}>Written</Typography>
@@ -803,7 +844,7 @@ export default function AdminSubmissionEvaluationPage() {
                       <CardContent sx={{ p: { xs: 2, sm: 2.25 }, "&:last-child": { pb: { xs: 2, sm: 2.25 } } }}>
                         <Stack spacing={1.25}>
                           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2} flexWrap="wrap">
-                            <Typography sx={{ fontWeight: 800, color: "#0f172a", whiteSpace: "pre-wrap" }}>
+                            <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", whiteSpace: "pre-wrap" }}>
                               {q.question_text}
                             </Typography>
                             <Stack direction="row" spacing={0.75} flexWrap="wrap" justifyContent="flex-end">
@@ -812,11 +853,19 @@ export default function AdminSubmissionEvaluationPage() {
                             </Stack>
                           </Stack>
 
-                          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: "rgba(248, 250, 252, 0.95)" }}>
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 2,
+                              bgcolor:
+                                "color-mix(in srgb, var(--surface) 90%, var(--card-bg) 10%)",
+                            }}
+                          >
                             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, display: "block", mb: 0.75 }}>
                               Learner response
                             </Typography>
-                            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "#0f172a" }}>
+                            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "var(--font-primary)" }}>
                               {answer.trim() ? answer : "—"}
                             </Typography>
                           </Paper>
@@ -880,11 +929,10 @@ export default function AdminSubmissionEvaluationPage() {
               px: { xs: 2, sm: 3 },
               py: 1.5,
               bgcolor:
-                theme.palette.mode === "dark"
-                  ? "rgba(15, 23, 42, 0.92)"
-                  : "rgba(255, 255, 255, 0.94)",
+                "color-mix(in srgb, var(--background) 88%, var(--card-bg) 12%)",
               backdropFilter: "blur(12px)",
-              boxShadow: theme.palette.mode === "dark" ? "0 -8px 32px rgba(0,0,0,0.45)" : "0 -8px 32px rgba(15, 23, 42, 0.08)",
+              boxShadow:
+                "0 -8px 32px color-mix(in srgb, var(--font-primary) 20%, transparent)",
             }}
           >
             <Box sx={{ maxWidth: 1100, mx: "auto", display: "flex", gap: 1.25, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
@@ -905,7 +953,19 @@ export default function AdminSubmissionEvaluationPage() {
                   onClick={() => void handleSaveDraft()}
                   disabled={saving || invalidEntriesCount > 0}
                   startIcon={<IconWrapper icon="mdi:content-save-outline" size={18} />}
-                  sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                  sx={{
+                    bgcolor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
+                    "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                    "&.Mui-disabled": {
+                      bgcolor:
+                        "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                      color:
+                        "color-mix(in srgb, var(--font-light) 65%, var(--font-tertiary) 35%)",
+                      WebkitTextFillColor:
+                        "color-mix(in srgb, var(--font-light) 65%, var(--font-tertiary) 35%)",
+                    },
+                  }}
                 >
                   {saving ? "Saving..." : "Save evaluation"}
                 </Button>

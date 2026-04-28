@@ -124,7 +124,7 @@ export function AIGeneratedSection({
         AI Generated Questions
       </Typography>
 
-      <Paper sx={{ p: 3, bgcolor: "#f9fafb" }}>
+      <Paper sx={{ p: 3, bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Topic"
@@ -180,7 +180,16 @@ export function AIGeneratedSection({
                 <IconWrapper icon="mdi:robot" size={18} />
               )
             }
-            sx={{ bgcolor: "#6366f1" }}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {generating ? "Generating..." : "Generate Questions"}
           </Button>
@@ -213,11 +222,20 @@ export function AIGeneratedSection({
             </Button>
           </Box>
 
-          <Paper sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+          <Paper
+            sx={{
+              borderRadius: 2,
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
+              overflow: "hidden",
+            }}
+          >
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                  <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 48 }}>
                       #
                     </TableCell>
@@ -245,13 +263,13 @@ export function AIGeneratedSection({
                       <TableRow
                         key={globalIndex}
                         sx={{
-                          "&:hover": { backgroundColor: "#f9fafb" },
+                          "&:hover": { backgroundColor: "var(--surface)" },
                         }}
                       >
                         <TableCell>
                           <Typography
                             variant="body2"
-                            sx={{ color: "#6b7280", fontFamily: "monospace" }}
+                            sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}
                           >
                             #{globalIndex + 1}
                           </Typography>
@@ -277,12 +295,12 @@ export function AIGeneratedSection({
                               sx={{
                                 bgcolor:
                                   mcq.correct_option === "A"
-                                    ? "#d1fae5"
-                                    : "#f3f4f6",
+                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                    : "var(--surface)",
                                 color:
                                   mcq.correct_option === "A"
-                                    ? "#065f46"
-                                    : "#374151",
+                                    ? "var(--success-500)"
+                                    : "var(--font-primary)",
                                 fontWeight: mcq.correct_option === "A" ? 600 : 400,
                                 fontSize: "0.75rem",
                                 height: 24,
@@ -294,12 +312,12 @@ export function AIGeneratedSection({
                               sx={{
                                 bgcolor:
                                   mcq.correct_option === "B"
-                                    ? "#d1fae5"
-                                    : "#f3f4f6",
+                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                    : "var(--surface)",
                                 color:
                                   mcq.correct_option === "B"
-                                    ? "#065f46"
-                                    : "#374151",
+                                    ? "var(--success-500)"
+                                    : "var(--font-primary)",
                                 fontWeight: mcq.correct_option === "B" ? 600 : 400,
                                 fontSize: "0.75rem",
                                 height: 24,
@@ -311,12 +329,12 @@ export function AIGeneratedSection({
                               sx={{
                                 bgcolor:
                                   mcq.correct_option === "C"
-                                    ? "#d1fae5"
-                                    : "#f3f4f6",
+                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                    : "var(--surface)",
                                 color:
                                   mcq.correct_option === "C"
-                                    ? "#065f46"
-                                    : "#374151",
+                                    ? "var(--success-500)"
+                                    : "var(--font-primary)",
                                 fontWeight: mcq.correct_option === "C" ? 600 : 400,
                                 fontSize: "0.75rem",
                                 height: 24,
@@ -328,12 +346,12 @@ export function AIGeneratedSection({
                               sx={{
                                 bgcolor:
                                   mcq.correct_option === "D"
-                                    ? "#d1fae5"
-                                    : "#f3f4f6",
+                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                    : "var(--surface)",
                                 color:
                                   mcq.correct_option === "D"
-                                    ? "#065f46"
-                                    : "#374151",
+                                    ? "var(--success-500)"
+                                    : "var(--font-primary)",
                                 fontWeight: mcq.correct_option === "D" ? 600 : 400,
                                 fontSize: "0.75rem",
                                 height: 24,
@@ -346,8 +364,8 @@ export function AIGeneratedSection({
                             label={mcq.correct_option}
                             size="small"
                             sx={{
-                              bgcolor: "#10b981",
-                              color: "#ffffff",
+                              bgcolor: "var(--success-500)",
+                              color: "var(--font-light)",
                               fontWeight: 700,
                               fontSize: "0.875rem",
                               width: 32,
@@ -363,28 +381,28 @@ export function AIGeneratedSection({
                               sx={{
                                 bgcolor:
                                   mcq.difficulty_level === "Easy"
-                                    ? "#fef3c7"
+                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                                     : mcq.difficulty_level === "Medium"
-                                    ? "#fde68a"
-                                    : "#fed7aa",
+                                    ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                                    : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                                 color:
                                   mcq.difficulty_level === "Easy"
-                                    ? "#92400e"
+                                    ? "var(--success-500)"
                                     : mcq.difficulty_level === "Medium"
-                                    ? "#78350f"
-                                    : "#7c2d12",
+                                    ? "var(--warning-500)"
+                                    : "var(--warning-500)",
                                 fontWeight: 600,
                                 fontSize: "0.75rem",
                               }}
                             />
                           ) : (
-                            <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                            <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                               -
                             </Typography>
                           )}
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                             {mcq.topic || "-"}
                           </Typography>
                         </TableCell>
@@ -392,7 +410,7 @@ export function AIGeneratedSection({
                           <IconButton
                             size="small"
                             onClick={() => handleDelete(index)}
-                            sx={{ color: "#ef4444" }}
+                            sx={{ color: "var(--error-500)" }}
                           >
                             <IconWrapper icon="mdi:delete" size={16} />
                           </IconButton>
@@ -409,7 +427,7 @@ export function AIGeneratedSection({
               <Box
                 sx={{
                   p: { xs: 1.5, sm: 2 },
-                  borderTop: "1px solid #e5e7eb",
+                  borderTop: "1px solid var(--border-default)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
@@ -428,7 +446,7 @@ export function AIGeneratedSection({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >

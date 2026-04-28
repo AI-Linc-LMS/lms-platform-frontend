@@ -127,7 +127,13 @@ export function CodingProblemSelectionSection({
           Select from Existing Coding Problems
         </Typography>
         {selectedIds.length > 0 && (
-          <Paper sx={{ p: 1.5, bgcolor: "#d1fae5" }}>
+          <Paper
+            sx={{
+              p: 1.5,
+              bgcolor:
+                "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)",
+            }}
+          >
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               Selected: {selectedIds.length} Problem(s) | Showing: {filteredProblems.length} of {codingProblems.length} total
             </Typography>
@@ -152,7 +158,7 @@ export function CodingProblemSelectionSection({
       />
 
       {filteredProblems.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: "center", bgcolor: "#f9fafb" }}>
+        <Paper sx={{ p: 3, textAlign: "center", bgcolor: "var(--surface)" }}>
           <Typography variant="body2" color="text.secondary">
             {searchTerm
               ? "No coding problems found matching your search"
@@ -160,11 +166,20 @@ export function CodingProblemSelectionSection({
           </Typography>
         </Paper>
       ) : (
-        <Paper sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+        <Paper
+          sx={{
+            borderRadius: 2,
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            overflow: "hidden",
+          }}
+        >
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                   <TableCell padding="checkbox" sx={{ width: 48 }}>
                     <Checkbox
                       checked={isAllSelected}
@@ -196,10 +211,10 @@ export function CodingProblemSelectionSection({
                   <TableRow
                     key={problem.id}
                     sx={{
-                      "&:hover": { backgroundColor: "#f9fafb" },
+                      "&:hover": { backgroundColor: "var(--surface)" },
                       backgroundColor: selectedIds.includes(problem.id)
-                        ? "#d1fae5"
-                        : "white",
+                        ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                        : "var(--font-light)",
                     }}
                   >
                     <TableCell padding="checkbox">
@@ -211,7 +226,7 @@ export function CodingProblemSelectionSection({
                     <TableCell>
                       <Typography
                         variant="body2"
-                        sx={{ color: "#6b7280", fontFamily: "monospace" }}
+                        sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}
                       >
                         #{problem.id}
                       </Typography>
@@ -226,7 +241,7 @@ export function CodingProblemSelectionSection({
                       {problem.problem_statement && (
                         <Typography
                           variant="caption"
-                          sx={{ color: "#6b7280", display: "block" }}
+                          sx={{ color: "var(--font-secondary)", display: "block" }}
                         >
                           {problem.problem_statement.length > 100
                             ? problem.problem_statement.substring(0, 100) + "..."
@@ -242,37 +257,37 @@ export function CodingProblemSelectionSection({
                           sx={{
                             bgcolor:
                               problem.difficulty_level === "Easy"
-                                ? "#fef3c7"
+                                ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                                 : problem.difficulty_level === "Medium"
-                                ? "#fde68a"
-                                : "#fed7aa",
+                                ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                                : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                             color:
                               problem.difficulty_level === "Easy"
-                                ? "#92400e"
+                                ? "var(--success-500)"
                                 : problem.difficulty_level === "Medium"
-                                ? "#78350f"
-                                : "#7c2d12",
+                                ? "var(--warning-500)"
+                                : "var(--warning-500)",
                             fontWeight: 600,
                             fontSize: "0.75rem",
                           }}
                         />
                       ) : (
-                        <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                        <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                           -
                         </Typography>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {problem.tags || "-"}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       <IconButton
                             size="small"
                             onClick={() => setPreviewProblem(problem)}
-                            sx={{ color: "#6366f1" }}
+                            sx={{ color: "var(--accent-indigo)" }}
                             title="Preview"
                           >
                             <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -290,7 +305,7 @@ export function CodingProblemSelectionSection({
             <Box
               sx={{
                 p: { xs: 1.5, sm: 2 },
-                borderTop: "1px solid #e5e7eb",
+                borderTop: "1px solid var(--border-default)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -309,7 +324,7 @@ export function CodingProblemSelectionSection({
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   }}
                 >
