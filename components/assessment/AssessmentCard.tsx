@@ -304,7 +304,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               sx={{
                 flex: 1,
                 minWidth: 0,
-                color: showResults ? "#1f2937" : "#ffffff",
+                color: showResults ? "var(--font-primary)" : "#ffffff",
                 fontWeight: 700,
                 fontSize: "1.0625rem",
                 lineHeight: 1.35,
@@ -334,13 +334,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                     label={t("assessments.proctored")}
                     size="small"
                     sx={{
-                      backgroundColor: showResults ? "#fef3c7" : "rgba(255, 255, 255, 0.25)",
-                      color: showResults ? "#92400e" : "#ffffff",
+                      backgroundColor: showResults
+                        ? "color-mix(in srgb, var(--warning-500) 18%, transparent)"
+                        : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "var(--font-primary)" : "#ffffff",
                       fontWeight: 600,
                       fontSize: "0.7rem",
                       height: 24,
                       flexDirection: isRtl ? "row-reverse" : "row",
-                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      border: showResults
+                        ? "1px solid color-mix(in srgb, var(--warning-500) 36%, transparent)"
+                        : "1px solid rgba(255, 255, 255, 0.4)",
                       "& .MuiChip-icon": {
                         color: "inherit",
                         marginInlineStart: isRtl ? "4px" : 0,
@@ -355,13 +359,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                     label={t("assessments.completed")}
                     size="small"
                     sx={{
-                      backgroundColor: showResults ? "#d1fae5" : "rgba(255, 255, 255, 0.25)",
-                      color: showResults ? "#065f46" : "#ffffff",
+                      backgroundColor: showResults
+                        ? "color-mix(in srgb, var(--success-500) 18%, transparent)"
+                        : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "var(--font-primary)" : "#ffffff",
                       fontWeight: 600,
                       fontSize: "0.7rem",
                       height: 24,
                       flexDirection: isRtl ? "row-reverse" : "row",
-                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      border: showResults
+                        ? "1px solid color-mix(in srgb, var(--success-500) 36%, transparent)"
+                        : "1px solid rgba(255, 255, 255, 0.4)",
                       "& .MuiChip-icon": {
                         color: "inherit",
                         marginInlineStart: isRtl ? "4px" : 0,
@@ -378,7 +386,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           <Typography
             variant="body2"
             sx={{
-              color: showResults ? "#6b7280" : "rgba(255, 255, 255, 0.9)",
+              color: showResults ? "var(--font-secondary)" : "rgba(255, 255, 255, 0.9)",
               fontSize: "0.8125rem",
               minHeight: 18,
               display: "-webkit-box",
@@ -464,7 +472,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         <Typography
           variant="body2"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: "0.8125rem",
             lineHeight: 1.5,
             mb: 2,
@@ -497,16 +505,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 1.5,
             }}
           >
-            <IconWrapper icon="mdi:clock-outline" size={18} color="#6366f1" />
+            <IconWrapper icon="mdi:clock-outline" size={18} color="var(--accent-indigo)" />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.65rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -520,7 +529,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
                   lineHeight: 1.2,
@@ -539,20 +548,21 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 1.5,
             }}
           >
             <IconWrapper
               icon="mdi:help-circle-outline"
               size={18}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.65rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -566,7 +576,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
                   lineHeight: 1.2,

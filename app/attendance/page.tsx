@@ -200,14 +200,14 @@ export default function AttendancePage() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               mb: 1,
             }}
           >
-            {t("attendance.title")}
+            {t("nav.attendance")}
           </Typography>
-          <Typography variant="body1" sx={{ color: "#6b7280" }}>
-            {t("attendance.subtitle")}
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
+            {t("nav.liveSessions")}
           </Typography>
         </Box>
 
@@ -217,18 +217,19 @@ export default function AttendancePage() {
               p: 4,
               textAlign: "center",
               borderRadius: 2,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <IconWrapper
               icon="mdi:calendar-check-outline"
               size={64}
-              color="#9ca3af"
+              color="var(--font-tertiary)"
             />
-            <Typography variant="h6" sx={{ color: "#6b7280", mt: 2, mb: 1 }}>
+            <Typography variant="h6" sx={{ color: "var(--font-secondary)", mt: 2, mb: 1 }}>
               No Attendance Activities
             </Typography>
-            <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
               There are no live attendance activities available at the moment.
             </Typography>
           </Paper>
@@ -236,18 +237,19 @@ export default function AttendancePage() {
           <Paper
             sx={{
               borderRadius: 2,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
               overflow: "hidden",
             }}
           >
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                  <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                     <TableCell
                       sx={{
                         fontWeight: 600,
-                        color: "#374151",
+                        color: "var(--font-primary)",
                         fontSize: "0.875rem",
                       }}
                     >
@@ -256,7 +258,7 @@ export default function AttendancePage() {
                     <TableCell
                       sx={{
                         fontWeight: 600,
-                        color: "#374151",
+                        color: "var(--font-primary)",
                         fontSize: "0.875rem",
                       }}
                     >
@@ -265,7 +267,7 @@ export default function AttendancePage() {
                     <TableCell
                       sx={{
                         fontWeight: 600,
-                        color: "#374151",
+                        color: "var(--font-primary)",
                         fontSize: "0.875rem",
                       }}
                     >
@@ -274,7 +276,7 @@ export default function AttendancePage() {
                     <TableCell
                       sx={{
                         fontWeight: 600,
-                        color: "#374151",
+                        color: "var(--font-primary)",
                         fontSize: "0.875rem",
                       }}
                       align="right"
@@ -293,7 +295,7 @@ export default function AttendancePage() {
                         key={activity.id}
                         sx={{
                           "&:hover": {
-                            backgroundColor: "#f9fafb",
+                            backgroundColor: "var(--surface)",
                           },
                         }}
                       >
@@ -302,14 +304,14 @@ export default function AttendancePage() {
                             variant="body2"
                             sx={{
                               fontWeight: 600,
-                              color: "#111827",
+                              color: "var(--font-primary)",
                             }}
                           >
                             {activity.topic_name ?? activity.name ?? "—"}
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ color: "#374151" }}>
+                          <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
                             {(activity.expires_at ?? activity.class_datetime)
                               ? formatDateTime(
                                   activity.expires_at ?? activity.class_datetime ?? ""
@@ -323,8 +325,8 @@ export default function AttendancePage() {
                               label="Expired"
                               size="small"
                               sx={{
-                                backgroundColor: "#ed4545",
-                                color: "#ffffff",
+                                backgroundColor: "var(--error-500)",
+                                color: "var(--font-light)",
                                 fontWeight: 600,
                                 fontSize: "0.75rem",
                               }}
@@ -333,7 +335,7 @@ export default function AttendancePage() {
                             <Typography
                               variant="body2"
                               sx={{
-                                color: "#374151",
+                                color: "var(--font-primary)",
                               }}
                             >
                               {formatTimeRemaining(
@@ -362,18 +364,20 @@ export default function AttendancePage() {
                                 )
                               }
                               sx={{
-                                backgroundColor: "#10b981",
-                                color: "#ffffff",
+                                backgroundColor: "var(--success-500)",
+                                color: "var(--font-light)",
                                 textTransform: "none",
                                 fontWeight: 600,
                                 fontSize: "0.875rem",
                                 px: 2,
                                 "&:hover": {
-                                  backgroundColor: "#059669",
+                                  backgroundColor:
+                                    "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
                                 },
                                 "&:disabled": {
-                                  backgroundColor: "#d1d5db",
-                                  color: "#9ca3af",
+                                  backgroundColor:
+                                    "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+                                  color: "var(--font-secondary)",
                                 },
                               }}
                             >
@@ -384,8 +388,9 @@ export default function AttendancePage() {
                               label={t("attendance.marked")}
                               size="small"
                               sx={{
-                                backgroundColor: "#dbeafe",
-                                color: "#1e40af",
+                                backgroundColor:
+                                  "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                                color: "var(--accent-indigo)",
                                 fontWeight: 600,
                                 fontSize: "0.75rem",
                               }}
@@ -393,7 +398,7 @@ export default function AttendancePage() {
                                 <IconWrapper
                                   icon="mdi:check-circle"
                                   size={14}
-                                  color="#2563eb"
+                                  color="var(--accent-indigo)"
                                 />
                               }
                             />
@@ -402,8 +407,8 @@ export default function AttendancePage() {
                               label={t("attendance.absent")}
                               size="small"
                               sx={{
-                                backgroundColor: "#ed4545",
-                                color: "#ffffff",
+                                backgroundColor: "var(--error-500)",
+                                color: "var(--font-light)",
                                 fontWeight: 600,
                                 fontSize: "0.75rem",
                               }}
@@ -428,17 +433,17 @@ export default function AttendancePage() {
               }}
               rowsPerPageOptions={[5, 10, 25, 50]}
               sx={{
-                borderTop: "1px solid #e5e7eb",
+                borderTop: "1px solid var(--border-default)",
                 "& .MuiTablePagination-toolbar": {
                   px: 2,
                 },
                 "& .MuiTablePagination-selectLabel": {
                   fontSize: "0.875rem",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                 },
                 "& .MuiTablePagination-displayedRows": {
                   fontSize: "0.875rem",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                 },
                 "& .MuiTablePagination-select": {
                   fontSize: "0.875rem",
@@ -463,7 +468,7 @@ export default function AttendancePage() {
           <DialogTitle
             sx={{
               fontWeight: 600,
-              color: "#111827",
+              color: "var(--font-primary)",
               pb: 1,
             }}
           >
@@ -472,7 +477,7 @@ export default function AttendancePage() {
           <DialogContent>
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", mb: 3, textAlign: "center" }}
+              sx={{ color: "var(--font-secondary)", mb: 3, textAlign: "center" }}
             >
               Please enter the 6-digit attendance code to mark your attendance.
             </Typography>
@@ -509,17 +514,17 @@ export default function AttendancePage() {
                       borderRadius: 2,
                       "& fieldset": {
                         borderColor: attendanceCode[index]
-                          ? "#10b981"
-                          : "#e5e7eb",
+                          ? "var(--success-500)"
+                          : "var(--border-default)",
                         borderWidth: 2,
                       },
                       "&:hover fieldset": {
                         borderColor: attendanceCode[index]
-                          ? "#059669"
-                          : "#d1d5db",
+                          ? "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))"
+                          : "color-mix(in srgb, var(--font-secondary) 35%, var(--border-default) 65%)",
                       },
                       "&.Mui-focused fieldset": {
-                        borderColor: "#10b981",
+                        borderColor: "var(--success-500)",
                         borderWidth: 2,
                       },
                     },
@@ -543,11 +548,12 @@ export default function AttendancePage() {
                 textTransform: "none",
                 borderRadius: 2,
                 px: 3,
-                borderColor: "#e5e7eb",
-                color: "#6b7280",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
                 "&:hover": {
-                  borderColor: "#d1d5db",
-                  backgroundColor: "#f9fafb",
+                  borderColor:
+                    "color-mix(in srgb, var(--font-secondary) 35%, var(--border-default) 65%)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -561,18 +567,20 @@ export default function AttendancePage() {
                 attendanceCode.join("").length !== 6
               }
               sx={{
-                backgroundColor: "#10b981",
-                color: "#ffffff",
+                backgroundColor: "var(--success-500)",
+                color: "var(--font-light)",
                 textTransform: "none",
                 borderRadius: 2,
                 px: 3,
                 fontWeight: 600,
                 "&:hover": {
-                  backgroundColor: "#059669",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
                 },
                 "&:disabled": {
-                  backgroundColor: "#d1d5db",
-                  color: "#9ca3af",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+                  color: "var(--font-secondary)",
                 },
               }}
               startIcon={

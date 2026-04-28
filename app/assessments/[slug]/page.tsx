@@ -172,12 +172,13 @@ export default function AssessmentDetailPage({
           onClick={() => router.push("/assessments")}
           sx={{
             mb: 3,
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             textTransform: "none",
             fontWeight: 600,
             "&:hover": {
-              backgroundColor: "rgba(99, 102, 241, 0.08)",
-              color: "#6366f1",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+              color: "var(--accent-indigo)",
             },
           }}
         >
@@ -196,19 +197,24 @@ export default function AssessmentDetailPage({
           <Box
             sx={{
               p: 2,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
               display: "flex",
               alignItems: "center",
               gap: 1.5,
             }}
           >
-            <IconWrapper icon="mdi:clock-outline" size={24} color="#6366f1" />
+            <IconWrapper
+              icon="mdi:clock-outline"
+              size={24}
+              color="var(--accent-indigo)"
+            />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -221,7 +227,7 @@ export default function AssessmentDetailPage({
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                 }}
               >
@@ -233,7 +239,8 @@ export default function AssessmentDetailPage({
           <Box
             sx={{
               p: 2,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
               display: "flex",
               alignItems: "center",
@@ -243,13 +250,13 @@ export default function AssessmentDetailPage({
             <IconWrapper
               icon="mdi:help-circle-outline"
               size={24}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -262,7 +269,7 @@ export default function AssessmentDetailPage({
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                 }}
               >
@@ -278,15 +285,16 @@ export default function AssessmentDetailPage({
           elevation={0}
           sx={{
             p: 4,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 3,
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Typography
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 2,
             }}
           >
@@ -295,7 +303,7 @@ export default function AssessmentDetailPage({
           <Typography
             variant="body1"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               mb: 3,
               lineHeight: 1.6,
             }}
@@ -474,7 +482,7 @@ export default function AssessmentDetailPage({
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   mb: 2,
                 }}
               >
@@ -487,8 +495,8 @@ export default function AssessmentDetailPage({
                   sx={{
                     p: 2,
                     mb: 2,
-                    backgroundColor: "#f9fafb",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--border-default)",
                     borderRadius: 2,
                   }}
                 >
@@ -496,7 +504,7 @@ export default function AssessmentDetailPage({
                     variant="subtitle1"
                     sx={{
                       fontWeight: 600,
-                      color: "#374151",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {section.title || `Section ${index + 1}`}
@@ -505,7 +513,7 @@ export default function AssessmentDetailPage({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         mt: 0.5,
                       }}
                     >

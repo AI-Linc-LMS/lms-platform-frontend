@@ -36,13 +36,15 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
       elevation={0}
       sx={{
         p: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 2,
-        background: "#ffffff",
+        background: "var(--card-bg)",
         transition: "all 0.2s",
         "&:hover": {
-          borderColor: "#cbd5e1",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          borderColor:
+            "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
+          boxShadow:
+            "0 2px 8px color-mix(in srgb, var(--font-primary) 18%, transparent)",
         },
       }}
     >
@@ -75,9 +77,9 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
             sx={{
               mb: 1,
               cursor: "pointer",
-              color: "#1f2937",
+              color: "var(--font-primary)",
               "&:hover": {
-                color: "#2563eb",
+                color: "var(--accent-indigo)",
               },
             }}
             onClick={handleThreadClick}
@@ -88,7 +90,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
           {/* Body Preview */}
           <Typography
             variant="body2"
-            color="text.secondary"
+            color="var(--font-secondary)"
             sx={{
               mb: 1.5,
               display: "-webkit-box",
@@ -109,14 +111,16 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                 label={tag.name}
                 size="small"
                 sx={{
-                  backgroundColor: "#dbeafe",
-                  color: "#1e40af",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)",
+                  color: "var(--accent-indigo)",
                   fontWeight: 600,
                   fontSize: "0.75rem",
                   height: 26,
                   borderRadius: "6px",
                   "&:hover": {
-                    backgroundColor: "#bfdbfe",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 26%, var(--surface) 74%)",
                   },
                 }}
               />
@@ -140,7 +144,7 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
               >
                 {thread.author.name.charAt(0)}
               </Avatar>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="var(--font-secondary)">
                 {thread.author.name}
               </Typography>
               <Chip
@@ -149,7 +153,9 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                 sx={{
                   height: 18,
                   fontSize: "0.65rem",
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: "var(--surface)",
+                  border: "1px solid var(--border-default)",
+                  color: "var(--font-secondary)",
                 }}
               />
             </Box>
@@ -168,9 +174,9 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                   <IconWrapper
                     icon="mdi:comment-outline"
                     size={16}
-                    color="#6b7280"
+                    color="var(--font-secondary)"
                   />
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="var(--font-secondary)">
                     {thread.comments_count}
                   </Typography>
                 </Box>
@@ -181,15 +187,15 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                   <IconWrapper
                     icon="mdi:bookmark-outline"
                     size={16}
-                    color="#6b7280"
+                    color="var(--font-secondary)"
                   />
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="var(--font-secondary)">
                     {thread.bookmarks_count}
                   </Typography>
                 </Box>
               </Tooltip>
 
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="var(--font-secondary)">
                 {formatDistanceToNow(thread.created_at)}
               </Typography>
             </Box>
@@ -202,10 +208,11 @@ export function ThreadCard({ thread, onVote, onBookmark }: ThreadCardProps) {
                     size="small"
                     onClick={() => onBookmark(thread.id)}
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       backgroundColor: "transparent",
                       "&:hover": {
-                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--font-primary) 8%, transparent)",
                       },
                     }}
                   >

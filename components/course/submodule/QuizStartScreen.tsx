@@ -31,9 +31,9 @@ export function QuizStartScreen({
       elevation={0}
       sx={{
         p: { xs: 3, sm: 4 },
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         mb: 2,
       }}
     >
@@ -44,7 +44,7 @@ export function QuizStartScreen({
             variant="h5"
             sx={{
               fontWeight: 700,
-              color: "#1a1f2e",
+              color: "var(--font-primary)",
               mb: 1.5,
               fontSize: { xs: "1.5rem", sm: "1.75rem" },
             }}
@@ -56,7 +56,7 @@ export function QuizStartScreen({
           <Typography
             variant="body1"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               lineHeight: 1.7,
               mb: 1,
             }}
@@ -70,7 +70,7 @@ export function QuizStartScreen({
               __html: content.details.description,
             }}
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               lineHeight: 1.7,
               "& p": {
                 mb: 1,
@@ -108,10 +108,10 @@ export function QuizStartScreen({
           <Grid key={idx} size={{ xs: 6, sm: 3 }}>
             <Box
               sx={{
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--surface)",
                 borderRadius: 2,
                 p: 2,
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--border-default)",
                 textAlign: "center",
                 height: "100%",
                 display: "flex",
@@ -121,13 +121,17 @@ export function QuizStartScreen({
               }}
             >
               <Box sx={{ mb: 1, display: "flex", justifyContent: "center" }}>
-                <IconWrapper icon={item.icon} size={24} color="#6366f1" />
+                <IconWrapper
+                  icon={item.icon}
+                  size={24}
+                  color="var(--accent-indigo)"
+                />
               </Box>
               <Typography
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                   fontSize: "1.5rem",
                   mb: 0.5,
                   ...(item.capitalize && { textTransform: "capitalize" }),
@@ -138,7 +142,7 @@ export function QuizStartScreen({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
@@ -157,17 +161,21 @@ export function QuizStartScreen({
         fullWidth
         onClick={onStartQuiz}
         sx={{
-          background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-          color: "#ffffff",
+          background:
+            "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+          color: "var(--font-light)",
           py: 1.5,
           fontSize: "1rem",
           fontWeight: 600,
           borderRadius: 2,
           textTransform: "none",
-          boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+          boxShadow:
+            "0 4px 12px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
           "&:hover": {
-            background: "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)",
-            boxShadow: "0 6px 16px rgba(99, 102, 241, 0.4)",
+            background:
+              "linear-gradient(135deg, var(--accent-indigo-dark) 0%, color-mix(in srgb, var(--accent-indigo-dark) 80%, black 20%) 100%)",
+            boxShadow:
+              "0 6px 16px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
             transform: "translateY(-1px)",
           },
           "&:active": {
@@ -180,7 +188,7 @@ export function QuizStartScreen({
           gap: 1,
         }}
       >
-        <IconWrapper icon="mdi:play-circle" size={20} color="#ffffff" />
+        <IconWrapper icon="mdi:play-circle" size={20} color="var(--font-light)" />
         {t("courses.startQuiz")}
       </Button>
     </Paper>

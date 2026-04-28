@@ -92,9 +92,9 @@ export function EnhancedStatsBar({
           elevation={0}
           sx={{
             p: 3,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 3,
-            background: "#ffffff",
+            background: "var(--card-bg)",
             transition: "all 0.3s ease",
             "&:hover": {
               transform: "translateY(-4px)",
@@ -129,7 +129,7 @@ export function EnhancedStatsBar({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -145,7 +145,7 @@ export function EnhancedStatsBar({
                   variant="h5"
                   sx={{
                     fontWeight: 700,
-                    color: "#1f2937",
+                    color: "var(--font-primary)",
                     fontSize: "1.5rem",
                   }}
                 >
@@ -155,7 +155,7 @@ export function EnhancedStatsBar({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#9ca3af",
+                      color: "var(--font-tertiary)",
                       fontWeight: 500,
                     }}
                   >
@@ -179,7 +179,7 @@ export function EnhancedStatsBar({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontSize: "0.6875rem",
                   fontWeight: 600,
                 }}
@@ -213,7 +213,7 @@ export function EnhancedStatsBar({
               sx={{
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: "#f3f4f6",
+                backgroundColor: "var(--surface)",
                 "& .MuiLinearProgress-bar": {
                   borderRadius: 4,
                   backgroundColor: stat.isTime && timeTakenMinutes > totalTimeMinutes ? "#ef4444" : stat.color,

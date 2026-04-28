@@ -102,7 +102,9 @@ export function CommentItem({
                 sx={{
                   height: 18,
                   fontSize: "0.65rem",
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: "var(--surface)",
+                  border: "1px solid var(--border-default)",
+                  color: "var(--font-secondary)",
                 }}
               />
               <Typography variant="caption" color="text.secondary">
@@ -126,7 +128,7 @@ export function CommentItem({
           }}
           sx={{
             mb: 1.5,
-            color: "#374151",
+            color: "var(--font-secondary)",
             fontSize: "0.875rem",
             lineHeight: 1.6,
             wordBreak: "break-word",
@@ -157,7 +159,7 @@ export function CommentItem({
               objectFit: "contain",
             },
             "& a": {
-              color: "#2563eb",
+              color: "var(--accent-indigo)",
               textDecoration: "none",
               wordBreak: "break-all",
               "&:hover": {

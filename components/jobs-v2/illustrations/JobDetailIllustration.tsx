@@ -12,7 +12,7 @@ interface JobDetailIllustrationProps {
 const JobDetailIllustrationComponent = ({
   width = 220,
   height = 180,
-  primaryColor = "#6366f1",
+  primaryColor = "var(--accent-indigo)",
 }: JobDetailIllustrationProps) => (
   <Box
     component="svg"
@@ -33,7 +33,7 @@ const JobDetailIllustrationComponent = ({
       </linearGradient>
     </defs>
     {/* Large document/card */}
-    <rect x="25" y="30" width="170" height="130" rx="8" fill="#fff" stroke={primaryColor} strokeWidth="2" opacity={0.98} />
+    <rect x="25" y="30" width="170" height="130" rx="8" fill="var(--font-light)" stroke={primaryColor} strokeWidth="2" opacity={0.98} />
     <rect x="35" y="45" width="150" height="100" rx="4" fill="url(#jobDetailSoft)" />
     {/* Document header bar */}
     <rect x="35" y="45" width="150" height="12" rx="2" fill="url(#jobDetailGrad)" />

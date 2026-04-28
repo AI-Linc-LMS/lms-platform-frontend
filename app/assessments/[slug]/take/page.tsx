@@ -2010,11 +2010,15 @@ export default function TakeAssessmentPage({
           alignItems: "center",
           justifyContent: "center",
           gap: 2,
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--background)",
         }}
       >
-        <CircularProgress size={40} sx={{ color: "#6366f1" }} aria-label={t("assessments.initializing")} />
-        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+        <CircularProgress
+          size={40}
+          sx={{ color: "var(--accent-indigo)" }}
+          aria-label={t("assessments.initializing")}
+        />
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           {t("assessments.initializing")}
         </Typography>
       </Box>
@@ -2031,13 +2035,17 @@ export default function TakeAssessmentPage({
           alignItems: "center",
           justifyContent: "center",
           gap: 2,
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--background)",
           px: 2,
           textAlign: "center",
         }}
       >
-        <CircularProgress size={40} sx={{ color: "#6366f1" }} aria-label={t("assessments.starting")} />
-        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+        <CircularProgress
+          size={40}
+          sx={{ color: "var(--accent-indigo)" }}
+          aria-label={t("assessments.starting")}
+        />
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           {t("assessments.starting")}
         </Typography>
       </Box>
@@ -2058,10 +2066,10 @@ export default function TakeAssessmentPage({
           p: 4,
         }}
       >
-        <Typography variant="h5" sx={{ color: "#ef4444", fontWeight: 600 }}>
+        <Typography variant="h5" sx={{ color: "var(--error-500)", fontWeight: 600 }}>
           No Questions Available
         </Typography>
-        <Typography variant="body1" sx={{ color: "#6b7280", textAlign: "center" }}>
+        <Typography variant="body1" sx={{ color: "var(--font-secondary)", textAlign: "center" }}>
           This assessment does not have any questions configured. Please contact the administrator.
         </Typography>
         <Button
@@ -2079,7 +2087,7 @@ export default function TakeAssessmentPage({
     <Box
       sx={{
         minHeight: "100vh",
-        backgroundColor: "#f9fafb",
+        backgroundColor: "var(--background)",
         position: "relative",
         overflow: "hidden",
         pb: 0.5,
@@ -2130,7 +2138,8 @@ export default function TakeAssessmentPage({
                   position: "fixed",
                   inset: 0,
                   zIndex: 1999,
-                  bgcolor: "rgba(15, 23, 42, 0.78)",
+                  bgcolor:
+                    "color-mix(in srgb, var(--font-primary) 78%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -2151,7 +2160,7 @@ export default function TakeAssessmentPage({
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ color: "#6b7280", mb: 2, lineHeight: 1.6 }}
+                    sx={{ color: "var(--font-secondary)", mb: 2, lineHeight: 1.6 }}
                   >
                     Your session requires an active camera and microphone.
                     Restore permissions or reconnect your devices to continue.
@@ -2191,7 +2200,8 @@ export default function TakeAssessmentPage({
                 position: "fixed",
                 inset: 0,
                 zIndex: 2000,
-                bgcolor: "rgba(15, 23, 42, 0.82)",
+                bgcolor:
+                  "color-mix(in srgb, var(--font-primary) 82%, transparent)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -2212,7 +2222,7 @@ export default function TakeAssessmentPage({
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "#6b7280", lineHeight: 1.65 }}
+                  sx={{ color: "var(--font-secondary)", lineHeight: 1.65 }}
                 >
                   {t("assessments.take.devtoolsBlockedBody")}
                 </Typography>
@@ -2291,7 +2301,7 @@ export default function TakeAssessmentPage({
               <Button
                 variant="contained"
                 onClick={handleConfirmAdvanceSection}
-                sx={{ bgcolor: "#6366f1" }}
+                sx={{ bgcolor: "var(--accent-indigo)" }}
               >
                 {t("assessments.take.nextSectionConfirm")}
               </Button>
@@ -2431,10 +2441,10 @@ export default function TakeAssessmentPage({
                       gap: 2,
                     }}
                   >
-                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                    <Typography variant="h6" sx={{ color: "var(--font-secondary)" }}>
                       No questions available in this section
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                       This section does not contain any questions.
                     </Typography>
                   </Box>
@@ -2451,10 +2461,10 @@ export default function TakeAssessmentPage({
                       gap: 2,
                     }}
                   >
-                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                    <Typography variant="h6" sx={{ color: "var(--font-secondary)" }}>
                       No coding problems available in this section
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                       This section does not contain any coding problems.
                     </Typography>
                   </Box>
@@ -2471,10 +2481,10 @@ export default function TakeAssessmentPage({
                       gap: 2,
                     }}
                   >
-                    <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                    <Typography variant="h6" sx={{ color: "var(--font-secondary)" }}>
                       No subjective questions in this section
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                       This section does not contain any subjective questions.
                     </Typography>
                   </Box>
@@ -2491,10 +2501,10 @@ export default function TakeAssessmentPage({
                   gap: 2,
                 }}
               >
-                <Typography variant="h6" sx={{ color: "#6b7280" }}>
+                <Typography variant="h6" sx={{ color: "var(--font-secondary)" }}>
                   No section available
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                   Unable to load assessment sections. Please refresh the page.
                 </Typography>
               </Box>

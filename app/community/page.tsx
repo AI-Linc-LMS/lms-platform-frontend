@@ -488,7 +488,14 @@ export default function CommunityPage() {
           </Box>
 
           {/* Search and Filters */}
-          <Paper elevation={0} sx={{ p: 2, border: "1px solid #e5e7eb" }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
             <Box
               sx={{
                 display: "flex",
@@ -545,13 +552,14 @@ export default function CommunityPage() {
             sx={{
               p: 8,
               textAlign: "center",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <IconWrapper
               icon="mdi:forum-outline"
               size={64}
-              color="#d1d5db"
+              color="var(--font-tertiary)"
               style={{ marginBottom: 16 }}
             />
             <Typography variant="h6" color="text.secondary" gutterBottom>

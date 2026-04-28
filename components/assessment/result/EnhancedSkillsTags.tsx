@@ -102,9 +102,9 @@ export function EnhancedSkillsTags({
         elevation={0}
         sx={{
           p: 3.5,
-          border: "1px solid #d1fae5",
+          border: "1px solid color-mix(in srgb, var(--success-500) 35%, var(--border-default))",
           borderRadius: 3,
-          background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
+          background: "linear-gradient(135deg, var(--card-bg) 0%, color-mix(in srgb, var(--success-500) 8%, var(--surface)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-2px)",
@@ -127,7 +127,7 @@ export function EnhancedSkillsTags({
               variant="h6"
               sx={{
                 fontWeight: 700,
-                color: "#1f2937",
+                color: "var(--font-primary)",
                 mb: 0.25,
               }}
             >
@@ -136,7 +136,7 @@ export function EnhancedSkillsTags({
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.75rem",
               }}
             >
@@ -225,7 +225,7 @@ export function EnhancedSkillsTags({
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontStyle: "italic",
               }}
             >
@@ -240,9 +240,9 @@ export function EnhancedSkillsTags({
         elevation={0}
         sx={{
           p: 3.5,
-          border: "1px solid #fef3c7",
+          border: "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default))",
           borderRadius: 3,
-          background: "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)",
+          background: "linear-gradient(135deg, var(--card-bg) 0%, color-mix(in srgb, var(--warning-500) 10%, var(--surface)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-2px)",
@@ -265,7 +265,7 @@ export function EnhancedSkillsTags({
               variant="h6"
               sx={{
                 fontWeight: 700,
-                color: "#1f2937",
+                color: "var(--font-primary)",
                 mb: 0.25,
               }}
             >
@@ -274,7 +274,7 @@ export function EnhancedSkillsTags({
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.75rem",
               }}
             >
@@ -363,7 +363,7 @@ export function EnhancedSkillsTags({
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontStyle: "italic",
               }}
             >

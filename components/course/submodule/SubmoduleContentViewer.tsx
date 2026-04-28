@@ -71,7 +71,7 @@ export function SubmoduleContentViewer({
             variant="h5"
             sx={{
               fontWeight: 700,
-              color: "#1a1f2e",
+              color: "var(--font-primary)",
               mb: 1,
               fontSize: { xs: "1.25rem", sm: "1.5rem", md: "1.75rem" },
             }}
