@@ -23,7 +23,7 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
           py: { xs: 4, md: 0 },
           overflow: "auto",
           background:
-            "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%)",
+            "linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--surface) 92%, var(--background)) 45%, color-mix(in srgb, var(--card-bg) 88%, var(--background)) 100%)",
         }}
       >
         <Box
@@ -33,10 +33,12 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
             borderRadius: 2,
             px: { xs: 2.5, sm: 3.5 },
             py: { xs: 3, sm: 3.5 },
-            backgroundColor: "rgba(255,255,255,0.72)",
+            backgroundColor:
+              "color-mix(in srgb, var(--surface) 78%, var(--background))",
             backdropFilter: "blur(12px)",
-            border: "1px solid rgba(15, 23, 42, 0.06)",
-            boxShadow: "0 4px 24px rgba(15, 23, 42, 0.06)",
+            border: "1px solid var(--border-default)",
+            boxShadow:
+              "0 4px 24px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           {children}
@@ -54,7 +56,7 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
         justifyContent: "center",
         px: { xs: 3, sm: 4, md: 6 },
         py: { xs: 4, md: 0 },
-        backgroundColor: "background.default",
+        backgroundColor: "var(--background)",
         overflow: "auto",
       }}
     >

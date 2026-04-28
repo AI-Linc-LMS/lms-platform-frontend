@@ -44,7 +44,7 @@ export function AuthRightPanelDefault({
           position: "relative",
           overflow: "hidden",
           height: "100vh",
-          backgroundColor: "#f1f5f9",
+          backgroundColor: "var(--background)",
         }}
       >
         <Box
@@ -55,7 +55,7 @@ export function AuthRightPanelDefault({
             zIndex: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "var(--background)",
           }}
         >
           <Image
@@ -100,7 +100,8 @@ export function AuthRightPanelDefault({
               <Skeleton
                 variant="rounded"
                 sx={{
-                  bgcolor: "rgba(15,23,42,0.08)",
+                  bgcolor:
+                    "color-mix(in srgb, var(--font-primary) 12%, transparent)",
                   width: 320,
                   height: 120,
                   borderRadius: 2,
@@ -108,11 +109,21 @@ export function AuthRightPanelDefault({
               />
               <Skeleton
                 variant="text"
-                sx={{ bgcolor: "rgba(15,23,42,0.08)", width: "85%", height: 48 }}
+                sx={{
+                  bgcolor:
+                    "color-mix(in srgb, var(--font-primary) 12%, transparent)",
+                  width: "85%",
+                  height: 48,
+                }}
               />
               <Skeleton
                 variant="text"
-                sx={{ bgcolor: "rgba(15,23,42,0.06)", width: "70%", height: 22 }}
+                sx={{
+                  bgcolor:
+                    "color-mix(in srgb, var(--font-primary) 9%, transparent)",
+                  width: "70%",
+                  height: 22,
+                }}
               />
             </Box>
           ) : (
@@ -172,7 +183,7 @@ export function AuthRightPanelDefault({
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: "#f8fafc",
+        backgroundColor: "var(--background)",
         overflow: "hidden",
         height: "100vh",
       }}
@@ -207,7 +218,8 @@ export function AuthRightPanelDefault({
             width: 350,
             height: 350,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-orange) 0%, color-mix(in srgb, var(--accent-orange) 65%, var(--font-light)) 100%)",
             opacity: 0.25,
             filter: "blur(70px)",
           }}
@@ -220,7 +232,8 @@ export function AuthRightPanelDefault({
             width: 500,
             height: 500,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #ec4899 0%, #ef4444 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-pink) 0%, var(--accent-red) 100%)",
             opacity: 0.2,
             filter: "blur(100px)",
           }}
@@ -233,7 +246,8 @@ export function AuthRightPanelDefault({
             width: 300,
             height: 300,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-blue-light) 0%, color-mix(in srgb, var(--accent-blue-light) 62%, var(--font-light)) 100%)",
             opacity: 0.25,
             filter: "blur(60px)",
           }}
@@ -246,7 +260,8 @@ export function AuthRightPanelDefault({
             width: 200,
             height: 200,
             borderRadius: "30%",
-            background: "linear-gradient(135deg, #c084fc 0%, #d8b4fe 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-purple) 0%, color-mix(in srgb, var(--accent-purple) 62%, var(--font-light)) 100%)",
             opacity: 0.3,
             filter: "blur(50px)",
           }}
@@ -364,7 +379,7 @@ export function AuthRightPanelDefault({
                           right: 0,
                           height: "40%",
                           background:
-                            "linear-gradient(135deg, #f97316 0%, #ec4899 100%)",
+                            "linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-pink) 100%)",
                           borderRadius: "20px",
                           opacity: 0.3,
                           zIndex: -1,
