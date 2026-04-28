@@ -189,7 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       labelKey: "nav.branding",
       path: "/admin/branding",
       icon: "mdi:palette-outline",
-      featureName: "admin_dashboard",
+      featureName: "admin_branding",
       orgAdminOnly: true,
     },
     {
@@ -538,7 +538,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         backgroundColor: isActive
                           ? shell.activeBg
                           : "transparent",
-                        color: isActive ? shell.p300 : shell.navMuted,
+                        color: isActive ? shell.activeText : shell.navMuted,
                         py: 1,
                         px: collapsed ? 1.25 : 1.5,
                         justifyContent: collapsed ? "center" : rtl ? "flex-end" : "flex-start",
@@ -562,7 +562,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           backgroundColor: isActive
                             ? shell.activeBgHover
                             : shell.navHoverBg,
-                          color: isActive ? shell.p300 : shell.nav,
+                          color: isActive ? shell.activeText : shell.nav,
                           "& .MuiListItemIcon-root svg": {
                             transform: "translateY(-2px) scale(1.1)",
                             filter: shell.dropHover,
@@ -691,7 +691,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     borderColor: isAdminMode
                       ? shell.p500
                       : shell.navBorderMid,
-                    color: isAdminMode ? shell.p300 : shell.navMuted,
+                    color: isAdminMode ? shell.activeText : shell.navMuted,
                     "&:hover": {
                       backgroundColor: isAdminMode
                         ? shell.activeBgHover

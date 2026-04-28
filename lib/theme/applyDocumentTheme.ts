@@ -19,6 +19,44 @@ function hexToRgbSpaceSeparated(hex: string): string | undefined {
   return undefined;
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const raw = (hex || "").trim().replace(/^#/, "");
+  if (raw.length === 6 && /^[0-9a-fA-F]{6}$/.test(raw)) {
+    return {
+      r: parseInt(raw.slice(0, 2), 16),
+      g: parseInt(raw.slice(2, 4), 16),
+      b: parseInt(raw.slice(4, 6), 16),
+    };
+  }
+  if (raw.length === 3 && /^[0-9a-fA-F]{3}$/.test(raw)) {
+    return {
+      r: parseInt(raw[0] + raw[0], 16),
+      g: parseInt(raw[1] + raw[1], 16),
+      b: parseInt(raw[2] + raw[2], 16),
+    };
+  }
+  return null;
+}
+
+function relLuma(rgb: { r: number; g: number; b: number }): number {
+  const f = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * f(rgb.r) + 0.7152 * f(rgb.g) + 0.0722 * f(rgb.b);
+}
+
+function contrast(a: string, b: string): number {
+  const aa = hexToRgb(a);
+  const bb = hexToRgb(b);
+  if (!aa || !bb) return 0;
+  const l1 = relLuma(aa);
+  const l2 = relLuma(bb);
+  const hi = Math.max(l1, l2);
+  const lo = Math.min(l1, l2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 /** Sidebar / bottom-nav chrome derived from tenant secondary + primary palette. */
 function applyShellThemeVars(
   el: HTMLElement,
@@ -133,7 +171,45 @@ export function applyDocumentTheme(theme: NormalizedTheme): void {
   const body = document.body;
   setCssVariablesOnElement(body, theme);
 
-  body.style.setProperty("--main-background", "#ffffff");
-  body.style.setProperty("--background", "#ffffff");
-  body.style.setProperty("--foreground", "#171717");
+  // Keep page-level background/foreground aligned with tenant tokens.
+  const background =
+    theme.navBackground ||
+    theme.surfaceBlueLight ||
+    theme.neutral50 ||
+    "#ffffff";
+  const foreground =
+    theme.fontPrimary ||
+    theme.fontDark ||
+    "#171717";
+  const safeForeground =
+    contrast(foreground, background) >= 4.5
+      ? foreground
+      : contrast("#ffffff", background) > contrast("#111827", background)
+        ? "#ffffff"
+        : "#111827";
+  const isLightOnDark = safeForeground.toLowerCase() === "#ffffff";
+  const safeSecondary = isLightOnDark
+    ? "#cbd5e1"
+    : (theme.fontSecondary || "#6b7280");
+  const safeTertiary = isLightOnDark
+    ? "#94a3b8"
+    : (theme.fontTertiary || "#9ca3af");
+  const surface =
+    theme.surfaceBlueLight ||
+    theme.neutral50 ||
+    background;
+  const cardBg =
+    theme.surfaceBlueLight ||
+    theme.neutral100 ||
+    "#ffffff";
+
+  body.style.setProperty("--main-background", background);
+  body.style.setProperty("--background", background);
+  body.style.setProperty("--foreground", safeForeground);
+  body.style.setProperty("--font-primary", safeForeground);
+  body.style.setProperty("--font-primary-dark", safeForeground);
+  body.style.setProperty("--font-secondary", safeSecondary);
+  body.style.setProperty("--font-tertiary", safeTertiary);
+  body.style.setProperty("--surface", surface);
+  body.style.setProperty("--card-bg", cardBg);
 }
