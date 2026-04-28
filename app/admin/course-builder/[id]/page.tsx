@@ -110,13 +110,22 @@ export default function CourseViewPage() {
   const getDifficultyColor = (level: string) => {
     switch (level?.toLowerCase()) {
       case "easy":
-        return { bg: "#d1fae5", color: "#065f46" };
+        return {
+          bg: "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)",
+          color: "var(--success-500)",
+        };
       case "medium":
-        return { bg: "#fef3c7", color: "#92400e" };
+        return {
+          bg: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+          color: "var(--warning-500)",
+        };
       case "hard":
-        return { bg: "#fee2e2", color: "#991b1b" };
+        return {
+          bg: "color-mix(in srgb, var(--error-500) 16%, var(--surface) 84%)",
+          color: "var(--error-500)",
+        };
       default:
-        return { bg: "#f3f4f6", color: "#374151" };
+        return { bg: "var(--surface)", color: "var(--font-secondary)" };
     }
   };
 
@@ -188,7 +197,7 @@ export default function CourseViewPage() {
               variant="h4"
               sx={{
                 fontWeight: 700,
-                color: "#111827",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1.5rem", sm: "2rem" },
                 mb: 1,
               }}
@@ -207,8 +216,10 @@ export default function CourseViewPage() {
                 label={isPublished ? t("adminCourseBuilder.published") : t("adminCourseBuilder.draft")}
                 size="small"
                 sx={{
-                  bgcolor: isPublished ? "#d1fae5" : "#fee2e2",
-                  color: isPublished ? "#065f46" : "#991b1b",
+                  bgcolor: isPublished
+                    ? "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)"
+                    : "color-mix(in srgb, var(--error-500) 16%, var(--surface) 84%)",
+                  color: isPublished ? "var(--success-500)" : "var(--error-500)",
                   fontWeight: 600,
                   fontSize: "0.75rem",
                 }}
@@ -218,8 +229,12 @@ export default function CourseViewPage() {
                   label={courseDetails.is_free ? t("adminCourseBuilder.free") : t("adminCourseBuilder.paid")}
                   size="small"
                   sx={{
-                    bgcolor: courseDetails.is_free ? "#dbeafe" : "#fef3c7",
-                    color: courseDetails.is_free ? "#1e40af" : "#92400e",
+                    bgcolor: courseDetails.is_free
+                      ? "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)"
+                      : "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                    color: courseDetails.is_free
+                      ? "var(--accent-indigo)"
+                      : "var(--warning-500)",
                     fontWeight: 600,
                     fontSize: "0.75rem",
                   }}
@@ -242,11 +257,15 @@ export default function CourseViewPage() {
                     )
                   }
                   sx={{
-                    borderColor: isPublished ? "#d97706" : "#059669",
-                    color: isPublished ? "#d97706" : "#059669",
+                    borderColor: isPublished ? "var(--warning-500)" : "var(--success-500)",
+                    color: isPublished ? "var(--warning-500)" : "var(--success-500)",
                     "&:hover": {
-                      borderColor: isPublished ? "#b45309" : "#047857",
-                      bgcolor: isPublished ? "#fffbeb" : "#ecfdf5",
+                      borderColor: isPublished
+                        ? "color-mix(in srgb, var(--warning-500) 75%, black 25%)"
+                        : "color-mix(in srgb, var(--success-500) 75%, black 25%)",
+                      bgcolor: isPublished
+                        ? "color-mix(in srgb, var(--warning-500) 12%, var(--surface) 88%)"
+                        : "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
                     },
                   }}
                 >
@@ -265,7 +284,11 @@ export default function CourseViewPage() {
                 variant="contained"
                 startIcon={<IconWrapper icon="mdi:pencil" size={18} />}
                 onClick={() => router.push(`/admin/course-builder/${courseId}/edit`)}
-                sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                sx={{
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                }}
               >
                 {t("adminCourseBuilder.editCourse")}
               </Button>
@@ -278,7 +301,10 @@ export default function CourseViewPage() {
           sx={{
             p: { xs: 2, sm: 3 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             mb: 3,
           }}
         >
@@ -288,10 +314,10 @@ export default function CourseViewPage() {
 
           {/* Description */}
           <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5, fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 0.5, fontWeight: 500 }}>
               {t("adminCourseBuilder.description")}
             </Typography>
-            <Typography variant="body1" sx={{ color: "#374151" }}>
+            <Typography variant="body1" sx={{ color: "var(--font-primary)" }}>
               {courseDetails.course_description || t("adminCourseBuilder.noDescriptionAvailable")}
             </Typography>
           </Box>
@@ -307,40 +333,40 @@ export default function CourseViewPage() {
           >
             {courseDetails.difficulty_level && (
               <Box>
-                <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 500 }}>
                   {t("adminCourseBuilder.difficulty")}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mt: 0.25 }}>
                   {courseDetails.difficulty_level}
                 </Typography>
               </Box>
             )}
             {courseDetails.language && (
               <Box>
-                <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 500 }}>
                   {t("adminCourseBuilder.language")}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mt: 0.25 }}>
                   {courseDetails.language}
                 </Typography>
               </Box>
             )}
             {courseDetails.enrolled_students_count !== undefined && (
               <Box>
-                <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 500 }}>
                   {t("adminCourseBuilder.enrolledStudents")}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mt: 0.25 }}>
                   {courseDetails.enrolled_students_count ?? courseDetails.enrolled_students?.total ?? 0}
                 </Typography>
               </Box>
             )}
             {courseDetails.slug && (
               <Box>
-                <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 500 }}>
                   {t("adminCourseBuilder.slug")}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", mt: 0.25, wordBreak: "break-all" }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mt: 0.25, wordBreak: "break-all" }}>
                   {courseDetails.slug}
                 </Typography>
               </Box>
@@ -352,7 +378,7 @@ export default function CourseViewPage() {
             <>
               <Divider sx={{ my: 2 }} />
               <Box>
-                <Typography variant="caption" sx={{ color: "#9ca3af", fontWeight: 500, mb: 1, display: "block" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 500, mb: 1, display: "block" }}>
                   {t("adminCourseBuilder.tags")}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
@@ -361,7 +387,13 @@ export default function CourseViewPage() {
                       key={i}
                       label={tag}
                       size="small"
-                      sx={{ bgcolor: "#eef2ff", color: "#6366f1", fontWeight: 500, fontSize: "0.75rem" }}
+                      sx={{
+                        bgcolor:
+                          "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                        color: "var(--accent-indigo)",
+                        fontWeight: 500,
+                        fontSize: "0.75rem",
+                      }}
                     />
                   ))}
                 </Box>
@@ -375,7 +407,10 @@ export default function CourseViewPage() {
           sx={{
             p: { xs: 2, sm: 3 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -385,7 +420,12 @@ export default function CourseViewPage() {
             <Chip
               label={t("adminCourseBuilder.moduleCount", { count: modules.length })}
               size="small"
-              sx={{ bgcolor: "#f3f4f6", color: "#6b7280", fontWeight: 600, fontSize: "0.75rem" }}
+              sx={{
+                bgcolor: "var(--surface)",
+                color: "var(--font-secondary)",
+                fontWeight: 600,
+                fontSize: "0.75rem",
+              }}
             />
           </Box>
           {modulesLoading && modules.length === 0 ? (

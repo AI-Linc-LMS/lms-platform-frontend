@@ -175,7 +175,10 @@ export default function AICourseBuilderPage() {
           sx={{
             p: { xs: 2, sm: 3, md: 4 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           <Box
@@ -193,14 +196,14 @@ export default function AICourseBuilderPage() {
                 variant="h5"
                 sx={{
                   fontWeight: 700,
-                  color: "#111827",
+                  color: "var(--font-primary)",
                   fontSize: { xs: "1.25rem", sm: "1.5rem" },
                   mb: 1,
                 }}
               >
                 {t("adminAICourseBuilder.generationJobs")}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
                 {t("adminAICourseBuilder.glimpseProgress")}
               </Typography>
               {jobs.length > 0 && (
@@ -211,13 +214,13 @@ export default function AICourseBuilderPage() {
                         width: 12,
                         height: 12,
                         borderRadius: "50%",
-                        bgcolor: "#3b82f6",
+                        bgcolor: "var(--accent-indigo)",
                       }}
                     />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       <Typography
                         component="span"
-                        sx={{ fontWeight: 600, color: "#3b82f6" }}
+                        sx={{ fontWeight: 600, color: "var(--accent-indigo)" }}
                       >
                         {outlineReadyCount}
                       </Typography>{" "}
@@ -230,13 +233,13 @@ export default function AICourseBuilderPage() {
                         width: 12,
                         height: 12,
                         borderRadius: "50%",
-                        bgcolor: "#f59e0b",
+                        bgcolor: "var(--warning-500)",
                       }}
                     />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       <Typography
                         component="span"
-                        sx={{ fontWeight: 600, color: "#f59e0b" }}
+                        sx={{ fontWeight: 600, color: "var(--warning-500)" }}
                       >
                         {generatingCount}
                       </Typography>{" "}
@@ -249,13 +252,13 @@ export default function AICourseBuilderPage() {
                         width: 12,
                         height: 12,
                         borderRadius: "50%",
-                        bgcolor: "#10b981",
+                        bgcolor: "var(--success-500)",
                       }}
                     />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       <Typography
                         component="span"
-                        sx={{ fontWeight: 600, color: "#10b981" }}
+                        sx={{ fontWeight: 600, color: "var(--success-500)" }}
                       >
                         {completedCount}
                       </Typography>{" "}
@@ -268,13 +271,13 @@ export default function AICourseBuilderPage() {
                         width: 12,
                         height: 12,
                         borderRadius: "50%",
-                        bgcolor: "#6b7280",
+                        bgcolor: "var(--font-secondary)",
                       }}
                     />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       <Typography
                         component="span"
-                        sx={{ fontWeight: 600, color: "#6b7280" }}
+                        sx={{ fontWeight: 600, color: "var(--font-secondary)" }}
                       >
                         {jobs.length}
                       </Typography>{" "}
@@ -295,12 +298,14 @@ export default function AICourseBuilderPage() {
                     px: 1.5,
                     py: 0.5,
                     borderRadius: 1,
-                    bgcolor: "#ecfdf5",
-                    border: "1px solid #a7f3d0",
+                    bgcolor:
+                      "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--success-500) 35%, var(--border-default) 65%)",
                   }}
                 >
-                  <CircularProgress size={14} sx={{ color: "#059669" }} />
-                  <Typography variant="caption" sx={{ color: "#047857", fontWeight: 500 }}>
+                  <CircularProgress size={14} sx={{ color: "var(--success-500)" }} />
+                  <Typography variant="caption" sx={{ color: "var(--success-500)", fontWeight: 500 }}>
                     {t("adminAICourseBuilder.liveUpdating")}
                   </Typography>
                 </Box>
@@ -340,7 +345,7 @@ export default function AICourseBuilderPage() {
               onSearchChange={handleSearchChange}
             />
             {(searchQuery || statusFilter || inputTypeFilter) && (
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminAICourseBuilder.jobsMatch", { count: filteredJobs.length })}
                 {(searchQuery || statusFilter || inputTypeFilter) && ` ${t("adminAICourseBuilder.filters")}`}
               </Typography>
@@ -352,7 +357,7 @@ export default function AICourseBuilderPage() {
               <Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
                 {t("adminAICourseBuilder.noGenerationJobsYet")}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
                 {t("adminAICourseBuilder.getStartedDescription")}
               </Typography>
               <AICourseBuilderActions buttonsOnly />
@@ -386,7 +391,7 @@ export default function AICourseBuilderPage() {
                   gap: 2,
                 }}
               >
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {t("adminAICourseBuilder.showingJobs", {
                     start: (pageSafe - 1) * rowsPerPage + 1,
                     end: Math.min(pageSafe * rowsPerPage, totalFiltered),

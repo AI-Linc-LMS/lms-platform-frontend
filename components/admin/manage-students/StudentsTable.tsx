@@ -81,7 +81,10 @@ export function StudentsTable({
       <Paper
         sx={{
           borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow:
+            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           overflow: "hidden",
         }}
       >
@@ -96,9 +99,11 @@ export function StudentsTable({
     <Paper
       sx={{
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         overflow: "hidden",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <TableContainer
@@ -110,14 +115,15 @@ export function StudentsTable({
             width: { xs: 6, sm: 8 },
           },
           "&::-webkit-scrollbar-track": {
-            backgroundColor: "#f1f1f1",
+            backgroundColor: "var(--surface)",
             borderRadius: 4,
           },
           "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "#c1c1c1",
+            backgroundColor: "var(--border-default)",
             borderRadius: 4,
             "&:hover": {
-              backgroundColor: "#a8a8a8",
+              backgroundColor:
+                "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
             },
           },
         }}
@@ -130,9 +136,9 @@ export function StudentsTable({
           <TableHead>
             <TableRow
               sx={{
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--surface)",
                 "& .MuiTableCell-head": {
-                  borderBottom: "2px solid #e5e7eb",
+                  borderBottom: "2px solid var(--border-default)",
                   py: 2,
                 },
               }}
@@ -140,7 +146,7 @@ export function StudentsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   whiteSpace: "nowrap",
                 }}
@@ -151,7 +157,7 @@ export function StudentsTable({
                     alignItems: "center",
                     gap: 1,
                     cursor: "pointer",
-                    "&:hover": { color: "#6366f1" },
+                    "&:hover": { color: "var(--accent-indigo)" },
                     transition: "color 0.2s",
                   }}
                   onClick={() => onSort("name")}
@@ -159,7 +165,7 @@ export function StudentsTable({
                   <IconWrapper
                     icon="mdi:account-outline"
                     size={18}
-                    color="#6b7280"
+                    color="var(--font-secondary)"
                   />
                   <Box
                     component="span"
@@ -179,7 +185,7 @@ export function StudentsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   whiteSpace: "nowrap",
                 }}
@@ -194,7 +200,7 @@ export function StudentsTable({
                   <IconWrapper
                     icon="mdi:book-open-outline"
                     size={18}
-                    color="#6b7280"
+                    color="var(--font-secondary)"
                   />
                   <Box
                     component="span"
@@ -207,7 +213,7 @@ export function StudentsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   whiteSpace: "nowrap",
                   display: { xs: "none", md: "table-cell" },

@@ -12,21 +12,22 @@ export function AdminLiveSessionsEmptyState() {
         p: 5,
         textAlign: "center",
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <IconWrapper
         icon="mdi:video-off-outline"
         size={72}
-        color="#9ca3af"
+        color="var(--font-tertiary)"
       />
-      <Typography variant="h6" sx={{ color: "#374151", mt: 2, mb: 1 }}>
+      <Typography variant="h6" sx={{ color: "var(--font-primary)", mt: 2, mb: 1 }}>
         {t("adminLiveSessions.emptyStateTitle")}
       </Typography>
-      <Typography variant="body2" sx={{ color: "#6b7280", mb: 1 }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1 }}>
         {t("adminLiveSessions.emptyStateDesc")}
       </Typography>
-      <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+      <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
         {t("adminLiveSessions.emptyStateAction")}
       </Typography>
     </Paper>

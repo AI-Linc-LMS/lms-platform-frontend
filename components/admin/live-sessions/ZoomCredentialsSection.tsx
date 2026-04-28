@@ -97,7 +97,8 @@ export function ZoomCredentialsSection() {
           p: 3,
           mb: 4,
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -116,16 +117,17 @@ export function ZoomCredentialsSection() {
         p: 3,
         mb: 4,
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-        <IconWrapper icon="mdi:video-account" size={24} color="#6366f1" />
-        <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+        <IconWrapper icon="mdi:video-account" size={24} color="var(--accent-indigo)" />
+        <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
           Zoom credentials
         </Typography>
       </Box>
-      <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
         Configure Zoom account and API credentials for this client. Used for
         creating and managing live sessions.
       </Typography>
@@ -209,8 +211,14 @@ export function ZoomCredentialsSection() {
           )
         }
         sx={{
-          bgcolor: "#6366f1",
-          "&:hover": { bgcolor: "#4f46e5" },
+          bgcolor: "var(--accent-indigo)",
+          color: "var(--font-light)",
+          "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+          "&.Mui-disabled": {
+            color: "var(--font-secondary)",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+          },
         }}
       >
         {saving ? "Saving…" : "Save"}

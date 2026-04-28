@@ -65,7 +65,10 @@ export function StudentsTableCard({
     <Paper
       sx={{
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <Box sx={{ p: { xs: 2, sm: 3 }, pb: 2 }}>
@@ -73,7 +76,7 @@ export function StudentsTableCard({
           variant="h6" 
           sx={{ 
             fontWeight: 600, 
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1rem", sm: "1.25rem" },
           }}
         >
@@ -94,15 +97,15 @@ export function StudentsTableCard({
           <IconWrapper
             icon="mdi:account-off-outline"
             size={48}
-            color="#d1d5db"
+            color="var(--font-tertiary)"
           />
           <Typography
             variant="body1"
-            sx={{ color: "#6b7280", fontWeight: 500 }}
+            sx={{ color: "var(--font-secondary)", fontWeight: 500 }}
           >
             {t("adminAttendance.noAttendeesYet")}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
             {t("adminAttendance.studentsAppearWhenMarked")}
           </Typography>
         </Box>
@@ -115,25 +118,26 @@ export function StudentsTableCard({
                 height: 8,
               },
               "&::-webkit-scrollbar-track": {
-                backgroundColor: "#f1f1f1",
+                backgroundColor: "var(--surface)",
                 borderRadius: 4,
               },
               "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#c1c1c1",
+                backgroundColor: "color-mix(in srgb, var(--font-tertiary) 55%, transparent)",
                 borderRadius: 4,
                 "&:hover": {
-                  backgroundColor: "#a8a8a8",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--font-secondary) 60%, transparent)",
                 },
               },
             }}
           >
             <Table>
               <TableHead>
-                <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                   <TableCell 
                     sx={{ 
                       fontWeight: 600, 
-                      color: "#374151",
+                      color: "var(--font-primary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       py: { xs: 1, sm: 1.5 },
                     }}
@@ -143,7 +147,7 @@ export function StudentsTableCard({
                   <TableCell 
                     sx={{ 
                       fontWeight: 600, 
-                      color: "#374151",
+                      color: "var(--font-primary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       py: { xs: 1, sm: 1.5 },
                       display: { xs: "none", sm: "table-cell" },
@@ -154,7 +158,7 @@ export function StudentsTableCard({
                   <TableCell 
                     sx={{ 
                       fontWeight: 600, 
-                      color: "#374151",
+                      color: "var(--font-primary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       py: { xs: 1, sm: 1.5 },
                     }}
@@ -164,7 +168,7 @@ export function StudentsTableCard({
                   <TableCell 
                     sx={{ 
                       fontWeight: 600, 
-                      color: "#374151",
+                      color: "var(--font-primary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       py: { xs: 1, sm: 1.5 },
                       display: { xs: "none", md: "table-cell" },
@@ -179,7 +183,7 @@ export function StudentsTableCard({
                   <TableRow
                     key={student.id}
                     sx={{
-                      "&:hover": { backgroundColor: "#f9fafb" },
+                      "&:hover": { backgroundColor: "var(--surface)" },
                     }}
                   >
                     <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
@@ -192,7 +196,7 @@ export function StudentsTableCard({
                       >
                         <Avatar
                           sx={{
-                            bgcolor: "#6366f1",
+                            bgcolor: "var(--accent-indigo)",
                             width: { xs: 28, sm: 32 },
                             height: { xs: 28, sm: 32 },
                             fontSize: { xs: "0.75rem", sm: "0.875rem" },
@@ -213,7 +217,7 @@ export function StudentsTableCard({
                           <Typography
                             variant="caption"
                             sx={{ 
-                              color: "#6b7280",
+                              color: "var(--font-secondary)",
                               fontSize: { xs: "0.7rem", sm: "0.75rem" },
                               display: { xs: "block", sm: "none" },
                             }}
@@ -223,7 +227,7 @@ export function StudentsTableCard({
                           <Typography
                             variant="caption"
                             sx={{ 
-                              color: "#6b7280",
+                              color: "var(--font-secondary)",
                               fontSize: { xs: "0.7rem", sm: "0.75rem" },
                               display: { xs: "block", md: "none" },
                               mt: { xs: 0.5, md: 0 },
@@ -243,7 +247,7 @@ export function StudentsTableCard({
                       <Typography 
                         variant="body2" 
                         sx={{ 
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                         }}
                       >
@@ -255,8 +259,9 @@ export function StudentsTableCard({
                         label={t("adminAttendance.present")}
                         size="small"
                         sx={{
-                          bgcolor: "#d1fae5",
-                          color: "#065f46",
+                          bgcolor:
+                            "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)",
+                          color: "var(--success-500)",
                           fontWeight: 600,
                           fontSize: { xs: "0.7rem", sm: "0.75rem" },
                           height: { xs: 20, sm: 24 },
@@ -272,7 +277,7 @@ export function StudentsTableCard({
                       <Typography 
                         variant="body2" 
                         sx={{ 
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                         }}
                       >
@@ -289,7 +294,7 @@ export function StudentsTableCard({
             sx={{
               p: { xs: 1.5, sm: 2 },
               pt: 2,
-              borderTop: "1px solid #e5e7eb",
+              borderTop: "1px solid var(--border-default)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -310,7 +315,7 @@ export function StudentsTableCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontSize: { xs: "0.7rem", sm: "0.875rem" },
                 }}
               >

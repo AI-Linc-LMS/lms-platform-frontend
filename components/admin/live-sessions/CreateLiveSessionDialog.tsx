@@ -432,7 +432,7 @@ export function CreateLiveSessionDialog({
 
         {step === "create-zoom" && (
           <Box sx={{ py: 2 }}>
-            <Typography variant="body1" sx={{ color: "#6b7280", mb: 2 }}>
+            <Typography variant="body1" sx={{ color: "var(--font-secondary)", mb: 2 }}>
               {t("adminLiveSessions.sessionCreatedPrompt", { topic: createdSession?.topic_name ?? createdSession?.title ?? "—" })}
             </Typography>
             <Button
@@ -447,8 +447,14 @@ export function CreateLiveSessionDialog({
                 )
               }
               sx={{
-                bgcolor: "#6366f1",
-                "&:hover": { bgcolor: "#4f46e5" },
+                bgcolor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                "&.Mui-disabled": {
+                  color: "var(--font-secondary)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                },
               }}
             >
               {creatingZoom ? t("adminLiveSessions.creating") : t("adminLiveSessions.createZoomMeeting")}
@@ -465,7 +471,7 @@ export function CreateLiveSessionDialog({
               py: 2,
             }}
           >
-            <Typography variant="body1" sx={{ color: "#6b7280" }}>
+            <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
               {isMeetSuccess
                 ? t("adminLiveSessions.meetReadyPrompt")
                 : t("adminLiveSessions.zoomReadyPrompt")}
@@ -478,8 +484,12 @@ export function CreateLiveSessionDialog({
                     onClick={() => window.open(meetLinkForSuccess, "_blank")}
                     startIcon={<IconWrapper icon="mdi:video" size={20} />}
                     sx={{
-                      bgcolor: "#0f9d58",
-                      "&:hover": { bgcolor: "#0c7c45" },
+                      bgcolor: "var(--success-500)",
+                      color: "var(--font-light)",
+                      "&:hover": {
+                        bgcolor:
+                          "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark))",
+                      },
                     }}
                   >
                     {t("adminLiveSessions.openGoogleMeet")}
@@ -505,8 +515,9 @@ export function CreateLiveSessionDialog({
                   onClick={() => window.open(zoomStartUrl!, "_blank")}
                   startIcon={<IconWrapper icon="mdi:video" size={20} />}
                   sx={{
-                    bgcolor: "#6366f1",
-                    "&:hover": { bgcolor: "#4f46e5" },
+                    bgcolor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
+                    "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                   }}
                 >
                   {t("adminLiveSessions.startMeeting")}
@@ -515,7 +526,12 @@ export function CreateLiveSessionDialog({
               {!isMeetSuccess && zoomPassword && (
                 <Typography
                   variant="body2"
-                  sx={{ color: "#6b7280", display: "flex", alignItems: "center", gap: 1 }}
+                  sx={{
+                    color: "var(--font-secondary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
                 >
                   {t("liveSessions.password")}: {zoomPassword}
                   <Button
@@ -552,7 +568,16 @@ export function CreateLiveSessionDialog({
               (instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1)) ||
               (sessionType === "meet" && (!meetLink.trim() || !isValidHttpUrl(meetLink)))
             }
-            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {creating ? (
               <CircularProgress size={20} color="inherit" />
@@ -569,7 +594,15 @@ export function CreateLiveSessionDialog({
       )}
       {step === "success" && (
         <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
-          <Button variant="contained" onClick={handleDone}>
+          <Button
+            variant="contained"
+            onClick={handleDone}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+            }}
+          >
             {t("adminLiveSessions.done")}
           </Button>
         </DialogActions>

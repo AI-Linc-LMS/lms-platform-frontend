@@ -194,7 +194,10 @@ export default function CourseBuilderPage() {
           sx={{
             p: { xs: 2, sm: 3, md: 4 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           {/* Controls Section */}
@@ -310,7 +313,7 @@ export default function CourseBuilderPage() {
             <Button
               onClick={handleDuplicateDialogClose}
               disabled={!!duplicatingId}
-              color="inherit"
+              sx={{ color: "var(--font-secondary)" }}
             >
               {t("adminCourseBuilder.cancel")}
             </Button>
@@ -318,7 +321,16 @@ export default function CourseBuilderPage() {
               onClick={handleDuplicateConfirm}
               disabled={!!duplicatingId}
               variant="contained"
-              sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+              sx={{
+                bgcolor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                "&.Mui-disabled": {
+                  color: "var(--font-secondary)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                },
+              }}
               autoFocus
               startIcon={
                 duplicatingId ? (

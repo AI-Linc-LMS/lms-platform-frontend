@@ -162,13 +162,13 @@ export default function CourseEditPage() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.5rem", sm: "2rem" },
             }}
           >
             Edit Course
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280", mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
             Update course details, settings, and metadata
           </Typography>
         </Box>
@@ -178,12 +178,15 @@ export default function CourseEditPage() {
           sx={{
             p: { xs: 3, sm: 4 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {/* Basic Info Section */}
-            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <Typography variant="subtitle2" sx={{ color: "var(--font-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Basic Information
             </Typography>
 
@@ -229,7 +232,7 @@ export default function CourseEditPage() {
             </Box>
 
             {/* Settings Section */}
-            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ color: "var(--font-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mt: 1 }}>
               Settings
             </Typography>
 
@@ -245,7 +248,7 @@ export default function CourseEditPage() {
                 label={
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>Free Course</Typography>
-                    <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                       {formData.is_free ? "This course is free for all students" : "This is a paid course"}
                     </Typography>
                   </Box>
@@ -257,7 +260,7 @@ export default function CourseEditPage() {
             </Box>
 
             {/* Tags Section */}
-            <Typography variant="subtitle2" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ color: "var(--font-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mt: 1 }}>
               Tags
             </Typography>
 
@@ -283,9 +286,10 @@ export default function CourseEditPage() {
                     label={option}
                     size="small"
                     sx={{
-                      bgcolor: "#eef2ff",
-                      color: "#6366f1",
-                      "& .MuiChip-deleteIcon": { color: "#6366f1" },
+                      bgcolor:
+                        "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                      color: "var(--accent-indigo)",
+                      "& .MuiChip-deleteIcon": { color: "var(--accent-indigo)" },
                     }}
                   />
                 ))
@@ -293,12 +297,23 @@ export default function CourseEditPage() {
             />
 
             {/* Actions */}
-            <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", pt: 2, borderTop: "1px solid #e5e7eb" }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "flex-end",
+                pt: 2,
+                borderTop: "1px solid var(--border-default)",
+              }}
+            >
               <Button
                 variant="outlined"
                 onClick={goToViewPage}
                 disabled={saving}
-                sx={{ color: "#6b7280", borderColor: "#d1d5db" }}
+                sx={{
+                  color: "var(--font-secondary)",
+                  borderColor: "var(--border-default)",
+                }}
               >
                 Cancel
               </Button>
@@ -313,7 +328,11 @@ export default function CourseEditPage() {
                     <IconWrapper icon="mdi:check" size={18} />
                   )
                 }
-                sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                sx={{
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                }}
               >
                 {saving ? "Saving..." : "Save Changes"}
               </Button>

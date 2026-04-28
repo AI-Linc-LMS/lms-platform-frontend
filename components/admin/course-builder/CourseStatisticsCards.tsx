@@ -28,9 +28,10 @@ export function CourseStatisticsCards({
       <Paper
         sx={{
           p: 3,
-          bgcolor: "linear-gradient(to right, #eff6ff, #dbeafe)",
-          background: "linear-gradient(to right, #eff6ff, #dbeafe)",
-          border: "1px solid #bfdbfe",
+          background:
+            "linear-gradient(to right, color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%), color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%))",
+          border:
+            "1px solid color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
           borderRadius: 2,
         }}
       >
@@ -44,11 +45,11 @@ export function CourseStatisticsCards({
           <Box>
             <Typography
               variant="body2"
-              sx={{ fontWeight: 500, color: "#3b82f6", mb: 0.5 }}
+              sx={{ fontWeight: 500, color: "var(--accent-indigo)", mb: 0.5 }}
             >
               {t("adminCourseBuilder.draftCourses")}
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: "#1e40af" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "var(--accent-indigo)" }}>
               {draftCount}
             </Typography>
           </Box>
@@ -57,22 +58,24 @@ export function CourseStatisticsCards({
               width: 48,
               height: 48,
               borderRadius: "50%",
-              bgcolor: "#bfdbfe",
+              bgcolor:
+                "color-mix(in srgb, var(--accent-indigo) 25%, var(--surface) 75%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:pencil" size={24} color="#3b82f6" />
+            <IconWrapper icon="mdi:pencil" size={24} color="var(--accent-indigo)" />
           </Box>
         </Box>
       </Paper>
       <Paper
         sx={{
           p: 3,
-          bgcolor: "linear-gradient(to right, #f0fdf4, #dcfce7)",
-          background: "linear-gradient(to right, #f0fdf4, #dcfce7)",
-          border: "1px solid #bbf7d0",
+          background:
+            "linear-gradient(to right, color-mix(in srgb, var(--success-500) 10%, var(--surface) 90%), color-mix(in srgb, var(--success-500) 18%, var(--surface) 82%))",
+          border:
+            "1px solid color-mix(in srgb, var(--success-500) 35%, var(--border-default) 65%)",
           borderRadius: 2,
         }}
       >
@@ -86,11 +89,11 @@ export function CourseStatisticsCards({
           <Box>
             <Typography
               variant="body2"
-              sx={{ fontWeight: 500, color: "#10b981", mb: 0.5 }}
+              sx={{ fontWeight: 500, color: "var(--success-500)", mb: 0.5 }}
             >
               {t("adminCourseBuilder.publishedCourses")}
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: "#065f46" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "var(--success-500)" }}>
               {publishedCount}
             </Typography>
           </Box>
@@ -99,22 +102,23 @@ export function CourseStatisticsCards({
               width: 48,
               height: 48,
               borderRadius: "50%",
-              bgcolor: "#bbf7d0",
+              bgcolor:
+                "color-mix(in srgb, var(--success-500) 25%, var(--surface) 75%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:check-circle" size={24} color="#10b981" />
+            <IconWrapper icon="mdi:check-circle" size={24} color="var(--success-500)" />
           </Box>
         </Box>
       </Paper>
       <Paper
         sx={{
           p: 3,
-          bgcolor: "linear-gradient(to right, #f9fafb, #f3f4f6)",
-          background: "linear-gradient(to right, #f9fafb, #f3f4f6)",
-          border: "1px solid #e5e7eb",
+          background:
+            "linear-gradient(to right, color-mix(in srgb, var(--surface) 85%, var(--background) 15%), var(--surface))",
+          border: "1px solid var(--border-default)",
           borderRadius: 2,
         }}
       >
@@ -128,11 +132,11 @@ export function CourseStatisticsCards({
           <Box>
             <Typography
               variant="body2"
-              sx={{ fontWeight: 500, color: "#6b7280", mb: 0.5 }}
+              sx={{ fontWeight: 500, color: "var(--font-secondary)", mb: 0.5 }}
             >
               {t("adminCourseBuilder.totalCourses")}
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: "#374151" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               {totalCount}
             </Typography>
           </Box>
@@ -141,13 +145,13 @@ export function CourseStatisticsCards({
               width: 48,
               height: 48,
               borderRadius: "50%",
-              bgcolor: "#e5e7eb",
+              bgcolor: "var(--border-default)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:book-open-variant" size={24} color="#6b7280" />
+            <IconWrapper icon="mdi:book-open-variant" size={24} color="var(--font-secondary)" />
           </Box>
         </Box>
       </Paper>

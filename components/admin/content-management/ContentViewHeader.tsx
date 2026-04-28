@@ -25,14 +25,14 @@ export function ContentViewHeader({
   const { t } = useTranslation("common");
   const getTypeColor = (contentType: ContentType) => {
     const colors: Record<ContentType, { bg: string; text: string }> = {
-      Quiz: { bg: "#eef2ff", text: "#6366f1" },
-      Article: { bg: "#d1fae5", text: "#10b981" },
-      Assignment: { bg: "#fef3c7", text: "#f59e0b" },
-      CodingProblem: { bg: "#ede9fe", text: "#8b5cf6" },
-      DevCodingProblem: { bg: "#fce7f3", text: "#ec4899" },
-      VideoTutorial: { bg: "#fee2e2", text: "#ef4444" },
+      Quiz: { bg: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)", text: "var(--accent-indigo)" },
+      Article: { bg: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)", text: "var(--success-500)" },
+      Assignment: { bg: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)", text: "var(--warning-500)" },
+      CodingProblem: { bg: "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)", text: "var(--accent-purple)" },
+      DevCodingProblem: { bg: "color-mix(in srgb, var(--accent-purple) 10%, var(--surface) 90%)", text: "var(--accent-purple)" },
+      VideoTutorial: { bg: "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)", text: "var(--error-500)" },
     };
-    return colors[contentType] || { bg: "#f3f4f6", text: "#6b7280" };
+    return colors[contentType] || { bg: "var(--surface)", text: "var(--font-secondary)" };
   };
 
   const typeColor = getTypeColor(type);
@@ -50,8 +50,8 @@ export function ContentViewHeader({
       elevation={0}
       sx={{
         p: 2,
-        borderBottom: "1px solid #e5e7eb",
-        backgroundColor: "#ffffff",
+        borderBottom: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
         zIndex: 1,
       }}
     >
@@ -68,12 +68,12 @@ export function ContentViewHeader({
           <Button
             startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
             onClick={onBack}
-            sx={{ color: "#6b7280" }}
+            sx={{ color: "var(--font-secondary)" }}
           >
             {t("adminContentManagement.back")}
           </Button>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               {title}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
@@ -90,8 +90,10 @@ export function ContentViewHeader({
                 label={isVerified ? t("adminContentManagement.verified") : t("adminContentManagement.unverified")}
                 size="small"
                 sx={{
-                  bgcolor: isVerified ? "#d1fae5" : "#fee2e2",
-                  color: isVerified ? "#065f46" : "#991b1b",
+                  bgcolor: isVerified
+                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                    : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                  color: isVerified ? "var(--success-500)" : "var(--error-500)",
                   fontWeight: 600,
                 }}
               />
@@ -109,12 +111,20 @@ export function ContentViewHeader({
             />
           }
           sx={{
-            bgcolor: isVerified ? undefined : "#10b981",
-            color: isVerified ? "#10b981" : "#ffffff",
-            borderColor: isVerified ? "#10b981" : undefined,
+            bgcolor: isVerified ? undefined : "var(--success-500)",
+            color: isVerified ? "var(--success-500)" : "var(--font-light)",
+            borderColor: isVerified ? "var(--success-500)" : undefined,
             "&:hover": {
-              bgcolor: isVerified ? "#f0fdf4" : "#059669",
-              borderColor: isVerified ? "#10b981" : undefined,
+              bgcolor: isVerified
+                ? "color-mix(in srgb, var(--success-500) 10%, var(--surface) 90%)"
+                : "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
+              borderColor: isVerified ? "var(--success-500)" : undefined,
+            },
+            "&.Mui-disabled": {
+              color: "var(--font-secondary)",
+              backgroundColor:
+                "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+              borderColor: "var(--border-default)",
             },
           }}
         >
