@@ -94,8 +94,19 @@ export default function AdminScorecardPage() {
   const loadStudents = useCallback(async () => {
     setLoadingStudents(true);
     try {
-      const res = await adminStudentService.getManageStudents({ limit: 200, page: 1 });
-      setStudents(res.students);
+      const pageSize = 200;
+      let page = 1;
+      let hasNext = true;
+      const allStudents: Student[] = [];
+
+      while (hasNext) {
+        const res = await adminStudentService.getManageStudents({ limit: pageSize, page });
+        allStudents.push(...res.students);
+        hasNext = res.pagination.has_next;
+        page += 1;
+      }
+
+      setStudents(allStudents);
     } catch {
       showToast("Failed to load students", "error");
     } finally {
