@@ -285,6 +285,19 @@ export function BulkEnrollmentDialog({
     }
   };
 
+  const handleDownloadSampleCsv = () => {
+    const csvContent = "name,email\nJohn Doe,john.doe@example.com\nJane Smith,jane.smith@example.com\n";
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "bulk_enrollment_sample.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleJobComplete = () => {
     setShowJobStatus(false);
     if (onSuccess) {
@@ -304,6 +317,16 @@ export function BulkEnrollmentDialog({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               {t("adminManageStudents.uploadStudentCsvDesc")}
             </Typography>
+            <Box sx={{ mb: 2 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleDownloadSampleCsv}
+                startIcon={<IconWrapper icon="mdi:download" size={18} />}
+              >
+                {t("adminManageStudents.downloadSampleCsv")}
+              </Button>
+            </Box>
 
             <Box
               sx={{
