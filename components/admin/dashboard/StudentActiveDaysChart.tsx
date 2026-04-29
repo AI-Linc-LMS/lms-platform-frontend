@@ -38,7 +38,10 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         height: "100%",
       }}
     >
@@ -54,7 +57,7 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1rem", sm: "1.25rem" },
           }}
         >
@@ -63,7 +66,7 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
         <Typography
           variant="body2"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >
@@ -78,27 +81,27 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
               : [{ name: "", "Active Days": 0, "Present Streak": 0 }]
           }
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
           <XAxis
             dataKey="name"
-            stroke="#6b7280"
+            stroke="var(--font-secondary)"
             fontSize={10}
-            tick={{ fill: "#6b7280" }}
+            tick={{ fill: "var(--font-secondary)" }}
             angle={-45}
             textAnchor="end"
             height={120}
           />
           <YAxis
-            stroke="#6b7280"
+            stroke="var(--font-secondary)"
             fontSize={12}
-            tick={{ fill: "#6b7280" }}
+            tick={{ fill: "var(--font-secondary)" }}
             label={{ value: "Days", angle: -90, position: "insideLeft" }}
             domain={[0, "auto"]}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#ffffff",
-              border: "1px solid #e5e7eb",
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
               borderRadius: "8px",
             }}
           />
@@ -107,13 +110,13 @@ export function StudentActiveDaysChart({ data }: StudentActiveDaysChartProps) {
             <>
               <Bar
                 dataKey="Active Days"
-                fill="#10b981"
+                fill="var(--success-500)"
                 name="Active Days"
                 radius={[4, 4, 0, 0]}
               />
               <Bar
                 dataKey="Present Streak"
-                fill="#6366f1"
+                fill="var(--accent-indigo)"
                 name="Present Streak"
                 radius={[4, 4, 0, 0]}
               />

@@ -36,13 +36,29 @@ const InterviewTableComponent = ({
   const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case "completed":
-        return { bg: "#d1fae5", color: "#065f46", border: "#10b981" };
+        return {
+          bg: "color-mix(in srgb, var(--success-500) 16%, transparent)",
+          color: "var(--success-500)",
+          border: "var(--success-500)",
+        };
       case "in_progress":
-        return { bg: "#dbeafe", color: "#1e40af", border: "#3b82f6" };
+        return {
+          bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+          color: "var(--accent-indigo)",
+          border: "var(--accent-indigo)",
+        };
       case "scheduled":
-        return { bg: "#fef3c7", color: "#92400e", border: "#f59e0b" };
+        return {
+          bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+          color: "var(--warning-500)",
+          border: "var(--warning-500)",
+        };
       default:
-        return { bg: "#f3f4f6", color: "#374151", border: "#9ca3af" };
+        return {
+          bg: "var(--surface)",
+          color: "var(--font-secondary)",
+          border: "var(--border-default)",
+        };
     }
   }, []);
 
@@ -79,19 +95,19 @@ const InterviewTableComponent = ({
           p: 6,
           textAlign: "center",
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
         }}
       >
         <IconWrapper
           icon="mdi:calendar-remove"
           size={64}
-          color="#9ca3af"
+          color="var(--font-tertiary)"
           style={{ marginBottom: 16 }}
         />
-        <Typography variant="h6" sx={{ color: "#6b7280", mb: 1 }}>
+        <Typography variant="h6" sx={{ color: "var(--font-secondary)", mb: 1 }}>
           No interviews found
         </Typography>
-        <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
           Start a new interview to see it here
         </Typography>
       </Paper>
@@ -102,30 +118,30 @@ const InterviewTableComponent = ({
     <TableContainer
       component={Paper}
       elevation={0}
-      sx={{ border: "1px solid #e5e7eb", borderRadius: 2 }}
+      sx={{ border: "1px solid var(--border-default)", borderRadius: 2, backgroundColor: "var(--card-bg)" }}
     >
       <Table>
         <TableHead>
-          <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-            <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+          <TableRow sx={{ backgroundColor: "var(--surface)" }}>
+            <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Job Role
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+            <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Experience Level
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+            <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Interview Type
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+            <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Status
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+            <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Date
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: "#374151" }}>
+            <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Score
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: "#374151" }} align="right">
+            <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }} align="right">
               Actions
             </TableCell>
           </TableRow>
@@ -137,7 +153,7 @@ const InterviewTableComponent = ({
               <TableRow
                 key={interview.id}
                 sx={{
-                  "&:hover": { backgroundColor: "#f9fafb" },
+                  "&:hover": { backgroundColor: "var(--surface)" },
                   transition: "background-color 0.2s ease",
                 }}
               >
@@ -147,7 +163,7 @@ const InterviewTableComponent = ({
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {interview.experience_level}
                   </Typography>
                 </TableCell>
@@ -157,8 +173,8 @@ const InterviewTableComponent = ({
                     size="small"
                     variant="outlined"
                     sx={{
-                      borderColor: "#6366f1",
-                      color: "#6366f1",
+                      borderColor: "var(--accent-indigo)",
+                      color: "var(--accent-indigo)",
                       fontWeight: 500,
                       fontSize: "0.75rem",
                     }}
@@ -180,7 +196,7 @@ const InterviewTableComponent = ({
                 <TableCell>
                   <Typography
                     variant="body2"
-                    sx={{ color: "#6b7280", fontSize: "0.875rem" }}
+                    sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
                   >
                     {formatDate(
                       interview.scheduled_date_time || interview.created_at
@@ -192,13 +208,13 @@ const InterviewTableComponent = ({
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography
                         variant="body2"
-                        sx={{ fontWeight: 700, color: "#10b981" }}
+                        sx={{ fontWeight: 700, color: "var(--success-500)" }}
                       >
                         {interview.score}%
                       </Typography>
                     </Box>
                   ) : (
-                    <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                       -
                     </Typography>
                   )}
@@ -217,9 +233,10 @@ const InterviewTableComponent = ({
                           size="small"
                           onClick={() => handleViewResult(interview.id)}
                           sx={{
-                            color: "#6366f1",
+                            color: "var(--accent-indigo)",
                             "&:hover": {
-                              backgroundColor: "rgba(99, 102, 241, 0.08)",
+                              backgroundColor:
+                                "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                             },
                           }}
                         >
@@ -237,9 +254,10 @@ const InterviewTableComponent = ({
                           size="small"
                           onClick={() => handleTakeInterview(interview.id)}
                           sx={{
-                            color: "#10b981",
+                            color: "var(--success-500)",
                             "&:hover": {
-                              backgroundColor: "rgba(16, 185, 129, 0.08)",
+                              backgroundColor:
+                                "color-mix(in srgb, var(--success-500) 10%, transparent)",
                             },
                           }}
                         >
@@ -252,9 +270,10 @@ const InterviewTableComponent = ({
                         size="small"
                         onClick={() => onViewDetails(interview.id)}
                         sx={{
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           "&:hover": {
-                            backgroundColor: "rgba(107, 114, 128, 0.08)",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--font-secondary) 10%, transparent)",
                           },
                         }}
                       >
@@ -267,9 +286,10 @@ const InterviewTableComponent = ({
                           size="small"
                           onClick={() => onDelete(interview.id)}
                           sx={{
-                            color: "#ef4444",
+                            color: "var(--error-500)",
                             "&:hover": {
-                              backgroundColor: "rgba(239, 68, 68, 0.08)",
+                              backgroundColor:
+                                "color-mix(in srgb, var(--error-500) 10%, transparent)",
                             },
                           }}
                         >

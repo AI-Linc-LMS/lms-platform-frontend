@@ -45,7 +45,7 @@ export default function ScorecardPage() {
         <Box
           sx={{
             width: "100%",
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--background)",
             minHeight: "100vh",
             pb: 4,
           }}
@@ -100,7 +100,7 @@ export default function ScorecardPage() {
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1 }}>
                 <CircularProgress size={18} sx={{ color: "primary.main" }} />
-                <Typography variant="body2" sx={{ color: "#6b7280", fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                   Loading your scorecard...
                 </Typography>
               </Box>
@@ -115,7 +115,7 @@ export default function ScorecardPage() {
     return (
       <MainLayout>
         <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Typography variant="body1" sx={{ color: "#666666" }}>
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
             Failed to load scorecard data.
           </Typography>
         </Container>
@@ -137,7 +137,7 @@ export default function ScorecardPage() {
       <Box
         sx={{
           width: "100%",
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--background)",
           minHeight: "100vh",
           pb: 4,
         }}
@@ -159,7 +159,7 @@ export default function ScorecardPage() {
                 variant="h4"
                 sx={{
                   fontWeight: 700,
-                  color: "#000000",
+                  color: "var(--font-primary)",
                   fontSize: { xs: "1.75rem", sm: "2rem" },
                   mb: 0.5,
                 }}
@@ -169,7 +169,7 @@ export default function ScorecardPage() {
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.9375rem",
                 }}
               >
@@ -184,14 +184,14 @@ export default function ScorecardPage() {
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                color: "#0a66c2",
-                borderColor: "#0a66c2",
+                color: "var(--accent-indigo)",
+                borderColor: "var(--accent-indigo)",
                 borderRadius: "24px",
                 px: 2.5,
                 py: 1,
                 "&:hover": {
-                  borderColor: "#004182",
-                  backgroundColor: "rgba(10, 102, 194, 0.05)",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
                 display: { xs: "none", sm: "flex" },
               }}

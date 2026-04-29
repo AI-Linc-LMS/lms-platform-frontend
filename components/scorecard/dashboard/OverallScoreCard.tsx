@@ -46,7 +46,7 @@ export function OverallScoreCard({ score, grade }: OverallScoreCardProps) {
         gap: 2.5,
         p: 4,
         borderRadius: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         border: `2px solid ${getGradeColor()}30`,
         background: `linear-gradient(135deg, ${getGradeColor()}08 0%, ${getGradeColor()}02 100%)`,
         boxShadow: "0 0 0 1px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04)",
@@ -74,7 +74,7 @@ export function OverallScoreCard({ score, grade }: OverallScoreCardProps) {
         <Typography
           variant="body2"
           sx={{
-            color: "#666666",
+            color: "var(--font-secondary)",
             fontSize: "0.875rem",
             mb: 1.5,
             fontWeight: 500,

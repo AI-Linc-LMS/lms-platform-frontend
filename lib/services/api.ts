@@ -1,6 +1,7 @@
 import axios, {
   AxiosInstance,
   AxiosError,
+  AxiosHeaders,
   InternalAxiosRequestConfig,
 } from "axios";
 import Cookies from "js-cookie";
@@ -31,12 +32,20 @@ apiClient.interceptors.request.use(
     }
     // When sending FormData, remove Content-Type so the browser sets it with the correct boundary.
     if (config.data instanceof FormData && config.headers) {
-      delete config.headers["Content-Type"];
+      const h = config.headers;
+      if (h instanceof AxiosHeaders) {
+        h.delete("Content-Type");
+        h.delete("content-type");
+      } else {
+        const rec = h as Record<string, unknown>;
+        delete rec["Content-Type"];
+        delete rec["content-type"];
+      }
     }
     const path = `${config.baseURL ?? ""}${config.url ?? ""}`;
     if (
       typeof window !== "undefined" &&
-      path.includes("/assessment") &&
+      path.includes("/assessment/api/client/") &&
       !path.includes("/active-assessments/") &&
       config.headers
     ) {

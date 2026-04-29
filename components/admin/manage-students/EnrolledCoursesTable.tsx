@@ -44,30 +44,30 @@ interface EnrolledCoursesTableProps {
 }
 
 const getStatusColor = (status?: string) => {
-  if (!status) return "#6b7280";
+  if (!status) return "var(--font-secondary)";
   switch (status.toLowerCase()) {
     case "completed":
-      return "#10b981";
+      return "var(--success-500)";
     case "ongoing":
-      return "#f59e0b";
+      return "var(--warning-500)";
     case "not started":
-      return "#6b7280";
+      return "var(--font-secondary)";
     default:
-      return "#6b7280";
+      return "var(--font-secondary)";
   }
 };
 
 const getStatusBgColor = (status?: string) => {
-  if (!status) return "#f3f4f6";
+  if (!status) return "var(--surface)";
   switch (status.toLowerCase()) {
     case "completed":
-      return "#d1fae5";
+      return "color-mix(in srgb, var(--success-500) 18%, var(--surface) 82%)";
     case "ongoing":
-      return "#fef3c7";
+      return "color-mix(in srgb, var(--warning-500) 18%, var(--surface) 82%)";
     case "not started":
-      return "#f3f4f6";
+      return "var(--surface)";
     default:
-      return "#f3f4f6";
+      return "var(--surface)";
   }
 };
 
@@ -119,7 +119,10 @@ export function EnrolledCoursesTable({
       sx={{
         p: 3,
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
       }}
     >
       <Box
@@ -130,10 +133,10 @@ export function EnrolledCoursesTable({
           mb: 3,
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
           {t("manageStudents.enrolledCourses")}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           {t("manageStudents.courseCount", { count: courses.length })}
         </Typography>
       </Box>
@@ -149,11 +152,11 @@ export function EnrolledCoursesTable({
             gap: 1,
           }}
         >
-          <IconWrapper icon="mdi:book-off-outline" size={48} color="#d1d5db" />
-          <Typography variant="body1" sx={{ color: "#6b7280", fontWeight: 500 }}>
+          <IconWrapper icon="mdi:book-off-outline" size={48} color="var(--font-tertiary)" />
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
             {t("manageStudents.noEnrolledCourses")}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
             {t("manageStudents.noEnrolledCoursesDesc")}
           </Typography>
         </Box>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useRef, type MouseEvent } from "react";
+import { useRouter, useParams, usePathname, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
   Paper,
+  Avatar,
   Button,
   Tabs,
   Tab,
@@ -19,13 +20,17 @@ import {
   TableRow,
   CircularProgress,
   Pagination,
-  Divider,
   IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
   Chip,
   Tooltip,
+  TextField,
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -47,6 +52,7 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
+import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
@@ -65,6 +71,20 @@ import {
 
 type TabValue = "details" | "questions" | "submissions" | "analytics";
 type QuestionsSubTab = "mcq" | "coding";
+
+const ASSESSMENT_EDIT_TAB_VALUES: TabValue[] = [
+  "details",
+  "questions",
+  "submissions",
+  "analytics",
+];
+
+function parseAssessmentEditTabParam(value: string | null): TabValue | null {
+  if (!value) return null;
+  return ASSESSMENT_EDIT_TAB_VALUES.includes(value as TabValue)
+    ? (value as TabValue)
+    : null;
+}
 
 function escapeCsv(val: unknown): string {
   if (val == null || val === undefined) return "";
@@ -121,6 +141,85 @@ function formatSubmissionDate(iso: string | null | undefined): string {
   } catch {
     return "—";
   }
+}
+
+function humanizeAnalyticsStatus(raw: string | null | undefined): string {
+  if (raw == null || !String(raw).trim()) return "—";
+  return String(raw)
+    .trim()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function analyticsStatusChipColor(
+  raw: string | null | undefined,
+): "default" | "success" | "warning" | "error" | "info" {
+  const s = String(raw ?? "")
+    .toLowerCase()
+    .replace(/-/g, "_");
+  if (
+    s === "submitted" ||
+    s === "completed" ||
+    s === "graded" ||
+    s === "passed"
+  ) {
+    return "success";
+  }
+  if (s === "in_progress" || s === "started" || s === "ongoing") {
+    return "warning";
+  }
+  if (
+    s === "failed" ||
+    s === "expired" ||
+    s === "abandoned" ||
+    s === "cancelled"
+  ) {
+    return "error";
+  }
+  if (s === "pending" || s === "draft" || s === "scheduled") {
+    return "info";
+  }
+  return "default";
+}
+
+function humanizeReviewStatus(raw: string | null | undefined): string {
+  if (!raw || !String(raw).trim()) return "Pending evaluation";
+  return String(raw)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function reviewStatusChipColor(
+  raw: string | null | undefined,
+): "default" | "success" | "warning" | "info" {
+  const normalized = String(raw || "").toLowerCase();
+  if (normalized === "published") return "success";
+  if (normalized === "evaluated") return "info";
+  if (normalized === "pending_evaluation") return "warning";
+  return "default";
+}
+
+function buildInitials(name: string | null | undefined): string {
+  const safe = String(name || "").trim();
+  if (!safe) return "U";
+  const words = safe.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 1).toUpperCase();
+  return `${words[0][0] || ""}${words[1][0] || ""}`.toUpperCase();
+}
+
+function clampPercentDisplay(n: number | null | undefined): number {
+  if (n == null || !Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, n));
+}
+
+function toAssessmentApiDecimalString(
+  raw: string | undefined
+): string | undefined {
+  if (raw == null || !String(raw).trim()) return undefined;
+  const s = String(raw).trim().replace(",", ".");
+  const n = Number(s);
+  if (!Number.isFinite(n)) return undefined;
+  return n.toFixed(2);
 }
 
 function submissionHasProctoringPayload(
@@ -247,6 +346,7 @@ export default function AssessmentEditPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -257,7 +357,19 @@ export default function AssessmentEditPage() {
   const readOnly =
     hideAdminQuestions || searchParams.get("readonly") === "1";
   const assessmentId = Number(params.id);
-  const [tab, setTab] = useState<TabValue>("details");
+  const [tab, setTab] = useState<TabValue>(
+    () => parseAssessmentEditTabParam(searchParams.get("tab")) ?? "details",
+  );
+
+  useEffect(() => {
+    const parsed = parseAssessmentEditTabParam(searchParams.get("tab"));
+    if (!parsed) return;
+    if (hideAdminQuestions && parsed === "questions") {
+      setTab("details");
+      return;
+    }
+    setTab(parsed);
+  }, [searchParams, hideAdminQuestions]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
@@ -285,6 +397,12 @@ export default function AssessmentEditPage() {
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
+  const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
+  const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
+    useState(true);
+  const [certificateAvailable, setCertificateAvailable] = useState(false);
+  const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
+  const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
   const [allowDesktop, setAllowDesktop] = useState(true);
   const [allowMobile, setAllowMobile] = useState(true);
   const [allowTablet, setAllowTablet] = useState(true);
@@ -297,6 +415,14 @@ export default function AssessmentEditPage() {
   const [submissionsLimit, setSubmissionsLimit] = useState(10);
   const [downloadingAllSubmissionPdfs, setDownloadingAllSubmissionPdfs] =
     useState(false);
+  const [submissionActionsAnchorEl, setSubmissionActionsAnchorEl] = useState<null | HTMLElement>(null);
+  const [submissionActionsTarget, setSubmissionActionsTarget] = useState<SubmissionsExportSubmission | null>(null);
+  useEffect(() => {
+    if (evaluationMode === "manual" && showResult) {
+      setShowResult(false);
+    }
+  }, [evaluationMode, showResult]);
+
   const [previewMCQ, setPreviewMCQ] = useState<{
     section: { section_title: string };
     question: QuestionsExportMCQQuestion;
@@ -312,6 +438,25 @@ export default function AssessmentEditPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsTopNApplied, setAnalyticsTopNApplied] = useState(10);
   const [analyticsTopNDraft, setAnalyticsTopNDraft] = useState("10");
+  const [analyticsStudentsPage, setAnalyticsStudentsPage] = useState(1);
+  const [analyticsStudentsLimit, setAnalyticsStudentsLimit] = useState(12);
+  const [analyticsSectionPage, setAnalyticsSectionPage] = useState(1);
+  const [analyticsSectionLimit, setAnalyticsSectionLimit] = useState(10);
+  const [analyticsTopPerformersTablePage, setAnalyticsTopPerformersTablePage] =
+    useState(1);
+  const [analyticsTopPerformersTableLimit, setAnalyticsTopPerformersTableLimit] =
+    useState(10);
+
+  const passBandFieldErrors = useMemo(
+    () =>
+      getPassBandFieldErrors(
+        passBandLowerPercent,
+        passBandUpperPercent,
+        certificateAvailable
+      ),
+    [passBandLowerPercent, passBandUpperPercent, certificateAvailable]
+  );
+
   const analyticsTopNAppliedRef = useRef(analyticsTopNApplied);
   useEffect(() => {
     analyticsTopNAppliedRef.current = analyticsTopNApplied;
@@ -352,6 +497,21 @@ export default function AssessmentEditPage() {
       setLiveStreaming((data as any).live_streaming ?? false);
       setSendCommunication((data as any).send_communication ?? false);
       setShowResult((data as any).show_result ?? true);
+      setEvaluationMode((data as any).evaluation_mode === "manual" ? "manual" : "auto");
+      setAllowMovementAcrossSections(anyData.allow_movement !== false);
+      setCertificateAvailable(Boolean(anyData.certificate_available));
+      setPassBandLowerPercent(
+        anyData.pass_band_lower_min_percent != null &&
+          String(anyData.pass_band_lower_min_percent).trim() !== ""
+          ? String(anyData.pass_band_lower_min_percent)
+          : ""
+      );
+      setPassBandUpperPercent(
+        anyData.pass_band_upper_min_percent != null &&
+          String(anyData.pass_band_upper_min_percent).trim() !== ""
+          ? String(anyData.pass_band_upper_min_percent)
+          : ""
+      );
       setAllowDesktop((data as any).allow_desktop ?? true);
       setAllowMobile((data as any).allow_mobile ?? true);
       setAllowTablet((data as any).allow_tablet ?? true);
@@ -499,6 +659,13 @@ export default function AssessmentEditPage() {
       showToast("Please enter a valid price for paid assessment", "error");
       return;
     }
+    if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
+      const passMsgs = [passBandFieldErrors.lower, passBandFieldErrors.upper].filter(
+        (m): m is string => Boolean(m)
+      );
+      showToast(passMsgs.join(" "), "error");
+      return;
+    }
     if (!allowDesktop && !allowMobile && !allowTablet) {
       showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
@@ -519,13 +686,26 @@ export default function AssessmentEditPage() {
         proctoring_enabled: proctoringEnabled,
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
-        show_result: showResult,
+        show_result: evaluationMode === "manual" ? false : showResult,
+        evaluation_mode: evaluationMode,
+        certificate_available: certificateAvailable,
+        allow_movement: allowMovementAcrossSections,
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
         course_ids: courseIds,
         colleges: colleges.length ? colleges : undefined,
       };
+      const passLower = toAssessmentApiDecimalString(passBandLowerPercent);
+      const passUpper = toAssessmentApiDecimalString(passBandUpperPercent);
+      if (passLower != null) {
+        (payload as CreateAssessmentPayload).pass_band_lower_min_percent =
+          passLower;
+      }
+      if (passUpper != null) {
+        (payload as CreateAssessmentPayload).pass_band_upper_min_percent =
+          passUpper;
+      }
       Object.keys(payload).forEach((k) => {
         if ((payload as any)[k] === undefined) delete (payload as any)[k];
       });
@@ -540,6 +720,45 @@ export default function AssessmentEditPage() {
       showToast(e?.message || "Failed to update assessment", "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePublishSubmission = async (submission: SubmissionsExportSubmission) => {
+    if (!assessmentId || !config.clientId) return;
+    const submissionId = Number((submission as any).submission_id);
+    if (!submissionId) return;
+    try {
+      await adminAssessmentService.publishSubmissionResult(config.clientId, assessmentId, submissionId);
+      showToast("Result published", "success");
+      await loadSubmissions();
+      await loadAssessment();
+    } catch (e: any) {
+      showToast(e?.message || "Failed to publish result", "error");
+    }
+  };
+
+  const handleOpenSubmissionActionsMenu = (
+    event: MouseEvent<HTMLElement>,
+    submission: SubmissionsExportSubmission,
+  ) => {
+    setSubmissionActionsAnchorEl(event.currentTarget);
+    setSubmissionActionsTarget(submission);
+  };
+
+  const handleCloseSubmissionActionsMenu = () => {
+    setSubmissionActionsAnchorEl(null);
+    setSubmissionActionsTarget(null);
+  };
+
+  const handleBulkPublish = async () => {
+    if (!assessmentId || !config.clientId) return;
+    try {
+      const result = await adminAssessmentService.publishAssessmentResultsBulk(config.clientId, assessmentId);
+      showToast(`Published ${result.published_count ?? 0} submissions`, "success");
+      await loadSubmissions();
+      await loadAssessment();
+    } catch (e: any) {
+      showToast(e?.message || "Failed to bulk publish results", "error");
     }
   };
 
@@ -789,6 +1008,20 @@ export default function AssessmentEditPage() {
 
   const totalSubmissions = submissionsData?.submissions?.length ?? 0;
 
+  const manualReviewStats = useMemo(() => {
+    const rows = submissionsData?.submissions || [];
+    let pending = 0;
+    let evaluated = 0;
+    let published = 0;
+    rows.forEach((row) => {
+      const status = String((row as any).review_status || "pending_evaluation").toLowerCase();
+      if (status === "published") published += 1;
+      else if (status === "evaluated") evaluated += 1;
+      else pending += 1;
+    });
+    return { pending, evaluated, published };
+  }, [submissionsData]);
+
   const submissionsIncludeProctoring = useMemo(() => {
     if (!submissionsData?.submissions?.length) return false;
     return submissionsData.submissions.some((s) =>
@@ -951,7 +1184,7 @@ export default function AssessmentEditPage() {
 
   if (loading) {
     return (
-      <MainLayout>
+      <MainLayout fullWidthContent>
         <Box
           sx={{
             display: "flex",
@@ -968,7 +1201,7 @@ export default function AssessmentEditPage() {
 
   if (!assessment) {
     return (
-      <MainLayout>
+      <MainLayout fullWidthContent>
         <Box sx={{ p: 3 }}>
           <Typography color="text.secondary">Assessment not found</Typography>
           <Button
@@ -986,7 +1219,7 @@ export default function AssessmentEditPage() {
   const displayTitle = assessment.title || (readOnly ? "View Assessment" : "Edit Assessment");
 
   return (
-    <MainLayout>
+    <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
@@ -999,7 +1232,7 @@ export default function AssessmentEditPage() {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1.5rem", sm: "2rem" },
             mb: 1,
           }}
@@ -1017,7 +1250,12 @@ export default function AssessmentEditPage() {
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Tabs
             value={tab}
-            onChange={(_, v: TabValue) => setTab(v)}
+            onChange={(_, v: TabValue) => {
+              setTab(v);
+              const next = new URLSearchParams(searchParams.toString());
+              next.set("tab", v);
+              router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+            }}
             sx={{
               borderBottom: 1,
               borderColor: "divider",
@@ -1035,7 +1273,7 @@ export default function AssessmentEditPage() {
 
           <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {tab === "details" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <BasicInfoSection
                   title={title}
                   instructions={instructions}
@@ -1045,7 +1283,6 @@ export default function AssessmentEditPage() {
                   onDescriptionChange={setDescription}
                   readOnly={readOnly}
                 />
-                <Divider />
                 <AssessmentSettingsSection
                   durationMinutes={durationMinutes}
                   startTime={startTime}
@@ -1063,6 +1300,13 @@ export default function AssessmentEditPage() {
                   showLiveStreamingToggle={canConfigureLiveStreaming}
                   sendCommunication={sendCommunication}
                   showResult={showResult}
+                  evaluationMode={evaluationMode}
+                  allowMovementAcrossSections={allowMovementAcrossSections}
+                  certificateAvailable={certificateAvailable}
+                  passBandLowerPercent={passBandLowerPercent}
+                  passBandUpperPercent={passBandUpperPercent}
+                  passBandLowerError={passBandFieldErrors.lower}
+                  passBandUpperError={passBandFieldErrors.upper}
                   allowDesktop={allowDesktop}
                   allowMobile={allowMobile}
                   allowTablet={allowTablet}
@@ -1079,6 +1323,13 @@ export default function AssessmentEditPage() {
                   onLiveStreamingChange={setLiveStreaming}
                   onSendCommunicationChange={setSendCommunication}
                   onShowResultChange={setShowResult}
+                  onEvaluationModeChange={setEvaluationMode}
+                  onAllowMovementAcrossSectionsChange={
+                    setAllowMovementAcrossSections
+                  }
+                  onCertificateAvailableChange={setCertificateAvailable}
+                  onPassBandLowerPercentChange={setPassBandLowerPercent}
+                  onPassBandUpperPercentChange={setPassBandUpperPercent}
                   onAllowDesktopChange={setAllowDesktop}
                   onAllowMobileChange={setAllowMobile}
                   onAllowTabletChange={setAllowTablet}
@@ -1089,7 +1340,12 @@ export default function AssessmentEditPage() {
                     <Button
                       variant="contained"
                       onClick={handleSave}
-                      disabled={saving}
+                      disabled={
+                        saving ||
+                        Boolean(
+                          passBandFieldErrors.lower || passBandFieldErrors.upper
+                        )
+                      }
                       startIcon={
                         saving ? (
                           <CircularProgress size={18} color="inherit" />
@@ -1097,7 +1353,10 @@ export default function AssessmentEditPage() {
                           <IconWrapper icon="mdi:content-save" size={18} />
                         )
                       }
-                      sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                      sx={{
+                        bgcolor: "var(--accent-indigo)",
+                        "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                      }}
                     >
                       {saving ? "Saving…" : "Save"}
                     </Button>
@@ -1173,21 +1432,21 @@ export default function AssessmentEditPage() {
                         sx={{
                           borderRadius: 2,
                           overflow: "hidden",
-                          borderColor: "#e5e7eb",
-                          bgcolor: "#fafafa",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
                         }}
                       >
                         <Box
                           sx={{
                             px: 2,
                             py: 1.5,
-                            borderBottom: "1px solid #e5e7eb",
+                            borderBottom: "1px solid var(--border-default)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
                             flexWrap: "wrap",
                             gap: 1,
-                            bgcolor: "#fff",
+                            bgcolor: "var(--card-bg)",
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
@@ -1199,7 +1458,10 @@ export default function AssessmentEditPage() {
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadMCQQuestions}
                             disabled={readOnly || totalQuizQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            sx={{
+                              bgcolor: "var(--accent-indigo)",
+                              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                            }}
                           >
                             Download MCQ CSV
                           </Button>
@@ -1213,7 +1475,7 @@ export default function AssessmentEditPage() {
                             <TableContainer sx={{ maxHeight: 440 }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
-                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
@@ -1225,7 +1487,7 @@ export default function AssessmentEditPage() {
                                 </TableHead>
                                 <TableBody>
                                   {paginatedQuizQuestions.map(({ section: sec, question: q }) => (
-                                    <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                    <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
                                       <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
                                       <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
                                       <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
@@ -1250,7 +1512,7 @@ export default function AssessmentEditPage() {
                                         <IconButton
                                           size="small"
                                           onClick={() => setPreviewMCQ({ section: sec, question: q })}
-                                          sx={{ color: "#6366f1" }}
+                                          sx={{ color: "var(--accent-indigo)" }}
                                           title="Preview"
                                         >
                                           <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -1280,21 +1542,21 @@ export default function AssessmentEditPage() {
                         sx={{
                           borderRadius: 2,
                           overflow: "hidden",
-                          borderColor: "#e5e7eb",
-                          bgcolor: "#fafafa",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
                         }}
                       >
                         <Box
                           sx={{
                             px: 2,
                             py: 1.5,
-                            borderBottom: "1px solid #e5e7eb",
+                            borderBottom: "1px solid var(--border-default)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
                             flexWrap: "wrap",
                             gap: 1,
-                            bgcolor: "#fff",
+                            bgcolor: "var(--card-bg)",
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
@@ -1306,7 +1568,10 @@ export default function AssessmentEditPage() {
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadCodingQuestions}
                             disabled={readOnly || totalCodingQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            sx={{
+                              bgcolor: "var(--accent-indigo)",
+                              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                            }}
                           >
                             Download Coding CSV
                           </Button>
@@ -1320,7 +1585,7 @@ export default function AssessmentEditPage() {
                             <TableContainer sx={{ maxHeight: 440 }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
-                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
@@ -1332,7 +1597,7 @@ export default function AssessmentEditPage() {
                                 </TableHead>
                                 <TableBody>
                                   {paginatedCodingQuestions.map(({ section: sec, question: q }) => (
-                                    <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                    <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
                                       <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
                                       <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
                                       <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
@@ -1343,7 +1608,7 @@ export default function AssessmentEditPage() {
                                         {q.problem_statement && (
                                           <Typography
                                             variant="caption"
-                                            sx={{ color: "#6b7280", display: "block", mt: 0.25 }}
+                                            sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}
                                           >
                                             {(() => {
                                               const text = htmlToPlainText(String(q.problem_statement));
@@ -1360,16 +1625,16 @@ export default function AssessmentEditPage() {
                                             sx={{
                                               bgcolor:
                                                 q.difficulty_level === "Easy"
-                                                  ? "#d1fae5"
+                                                  ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                                                   : q.difficulty_level === "Medium"
-                                                  ? "#fde68a"
-                                                  : "#fed7aa",
+                                                  ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                                                  : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                                               color:
                                                 q.difficulty_level === "Easy"
-                                                  ? "#065f46"
+                                                  ? "var(--success-500)"
                                                   : q.difficulty_level === "Medium"
-                                                  ? "#92400e"
-                                                  : "#7c2d12",
+                                                  ? "var(--warning-500)"
+                                                  : "var(--warning-500)",
                                               fontWeight: 600,
                                               fontSize: "0.7rem",
                                             }}
@@ -1383,7 +1648,7 @@ export default function AssessmentEditPage() {
                                         <IconButton
                                           size="small"
                                           onClick={() => setPreviewCoding({ section: sec, question: q })}
-                                          sx={{ color: "#6366f1" }}
+                                          sx={{ color: "var(--accent-indigo)" }}
                                           title="Preview"
                                         >
                                           <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -1472,105 +1737,161 @@ export default function AssessmentEditPage() {
 
             {tab === "submissions" && (
               <>
-                <Box
+                <Paper
+                  elevation={0}
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: 2,
                     mb: 2,
+                    p: { xs: 1.5, sm: 2 },
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    background:
+                      "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 46%)",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary">
-                    Export submissions · View and download table
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<IconWrapper icon="mdi:download" size={18} />}
-                      onClick={handleDownloadSubmissions}
-                      disabled={
-                        !submissionsData?.submissions?.length ||
-                        (readOnly && !hideAdminQuestions)
-                      }
-                      sx={{
-                        bgcolor: "#6366f1",
-                        "&:hover": { bgcolor: "#4f46e5" },
-                      }}
-                    >
-                      Download table
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={
-                        downloadingAllSubmissionPdfs ? (
-                          <CircularProgress size={16} color="inherit" />
-                        ) : (
-                          <IconWrapper icon="mdi:folder-zip-outline" size={18} />
-                        )
-                      }
-                      onClick={() => void handleDownloadAllSubmissionPdfsZip()}
-                      disabled={
-                        downloadingAllSubmissionPdfs ||
-                        !submissionsData?.submissions?.length ||
-                        (readOnly && !hideAdminQuestions)
-                      }
-                      sx={{
-                        bgcolor: "#e11d48",
-                        "&:hover": { bgcolor: "#be123c" },
-                        textTransform: "none",
-                      }}
-                    >
-                      {downloadingAllSubmissionPdfs
-                        ? "Preparing ZIP..."
-                        : "Download all PDFs (ZIP)"}
-                    </Button>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      gap: 1.5,
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+                        Submissions workspace
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Review attempts, evaluate responses, and export learner reports.
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      {evaluationMode === "manual" && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<IconWrapper icon="mdi:publish" size={18} />}
+                          onClick={() => void handleBulkPublish()}
+                        >
+                          Publish evaluated
+                        </Button>
+                      )}
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                        onClick={handleDownloadSubmissions}
+                        disabled={
+                          !submissionsData?.submissions?.length ||
+                          (readOnly && !hideAdminQuestions)
+                        }
+                        sx={{
+                          bgcolor: "var(--accent-indigo)",
+                          "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                          textTransform: "none",
+                        }}
+                      >
+                        Download table
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={
+                          downloadingAllSubmissionPdfs ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <IconWrapper icon="mdi:folder-zip-outline" size={18} />
+                          )
+                        }
+                        onClick={() => void handleDownloadAllSubmissionPdfsZip()}
+                        disabled={
+                          downloadingAllSubmissionPdfs ||
+                          !submissionsData?.submissions?.length ||
+                          (readOnly && !hideAdminQuestions)
+                        }
+                        sx={{
+                          bgcolor: "var(--error-500)",
+                          "&:hover": {
+                            bgcolor:
+                              "color-mix(in srgb, var(--error-500) 86%, var(--accent-indigo-dark))",
+                          },
+                          textTransform: "none",
+                        }}
+                      >
+                        {downloadingAllSubmissionPdfs
+                          ? "Preparing ZIP..."
+                          : "Download all PDFs"}
+                      </Button>
+                    </Box>
                   </Box>
-                </Box>
+
+                  <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <Chip size="small" label={`Total ${totalSubmissions}`} sx={{ fontWeight: 700 }} />
+                    {evaluationMode === "manual" ? (
+                      <>
+                        <Chip size="small" color="warning" variant="outlined" label={`Pending ${manualReviewStats.pending}`} />
+                        <Chip size="small" color="info" variant="outlined" label={`Evaluated ${manualReviewStats.evaluated}`} />
+                        <Chip size="small" color="success" variant="outlined" label={`Published ${manualReviewStats.published}`} />
+                      </>
+                    ) : (
+                      <Chip size="small" color="info" variant="outlined" label="Auto evaluation mode" />
+                    )}
+                  </Box>
+                </Paper>
                 {!submissionsData?.submissions?.length ? (
                   <Typography color="text.secondary">
                     No submissions to display.
                   </Typography>
                 ) : (
                   <>
-                    <TableContainer sx={{ maxHeight: 480, overflow: "auto" }}>
+                    <Alert severity="info" sx={{ mb: 1.5 }}>
+                      Tip: Use the Evaluate action for detailed per-question grading. Scroll horizontally to view all columns.
+                    </Alert>
+                    <TableContainer
+                      sx={{
+                        maxHeight: 560,
+                        overflow: "auto",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 2,
+                        bgcolor: "background.paper",
+                      }}
+                    >
                       <Table size="small" stickyHeader>
                         <TableHead>
-                          <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                          <TableRow sx={{ bgcolor: "var(--surface)" }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 210 }}>
                               Name
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 240 }}>
                               Email
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Phone
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Started At
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Submitted At
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Max Marks
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 150 }}>
                               Score
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              Percentage
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Attempted
                             </TableCell>
-                           
-                            <TableCell sx={{ fontWeight: 600, py: 1.5, minWidth: 140 }}>
-                              Report
-                            </TableCell>
+                            {evaluationMode === "manual" && (
+                              <>
+                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Review</TableCell>
+                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Evaluated score</TableCell>
+                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Actions</TableCell>
+                              </>
+                            )}
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -1578,9 +1899,39 @@ export default function AssessmentEditPage() {
                             <TableRow
                               key={`${s.email}-${s.submitted_at ?? idx}-${(submissionsPage - 1) * submissionsLimit + idx}`}
                               hover
+                              sx={{
+                                "&:nth-of-type(even)": {
+                                  bgcolor:
+                                    "color-mix(in srgb, var(--font-secondary) 8%, transparent)",
+                                },
+                              }}
                             >
-                              <TableCell sx={{ py: 1.5 }}>{s.name}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{s.email}</TableCell>
+                              <TableCell sx={{ py: 1.25 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                  <Avatar
+                                    src={(s as any).profile_pic_url || undefined}
+                                    sx={{
+                                      width: 30,
+                                      height: 30,
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      bgcolor:
+                                        "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                                      color: "var(--accent-indigo-dark)",
+                                    }}
+                                  >
+                                    {buildInitials(s.name)}
+                                  </Avatar>
+                                  <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+                                    {s.name || "Unknown learner"}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell sx={{ py: 1.25 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  {s.email || "—"}
+                                </Typography>
+                              </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.phone ?? "—"}
                               </TableCell>
@@ -1593,66 +1944,120 @@ export default function AssessmentEditPage() {
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.maximum_marks ?? "—"}
                               </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.overall_score ?? "—"}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.percentage ?? "—"}
+                              <TableCell sx={{ py: 1.25 }}>
+                                <Chip
+                                  size="small"
+                                  label={
+                                    s.overall_score != null
+                                      ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
+                                      : "Not graded"
+                                  }
+                                  color={s.overall_score != null ? "primary" : "default"}
+                                  variant={s.overall_score != null ? "filled" : "outlined"}
+                                  sx={{ fontWeight: 700 }}
+                                />
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.attempted_questions ?? "—"}
                               </TableCell>
-                           
-                              <TableCell sx={{ py: 0.5, pr: 1, verticalAlign: "middle" }}>
-                                <Tooltip title={`Download performance report (PDF) for ${s.name}`} placement="top">
-                                  <span>
-                                    <Button
+                              {evaluationMode === "manual" && (
+                                <>
+                                  <TableCell sx={{ py: 1.5 }}>
+                                    <Chip
                                       size="small"
-                                      variant="text"
-                                      aria-label={`Download PDF for ${s.name}`}
-                                      onClick={() => handleDownloadSubmissionPdf(s)}
-                                      disabled={readOnly && !hideAdminQuestions}
-                                      startIcon={
-                                        <IconWrapper
-                                          icon="mdi:file-download-outline"
-                                          size={18}
-                                          color="#e11d48"
-                                        />
+                                      label={humanizeReviewStatus((s as any).review_status)}
+                                      color={reviewStatusChipColor((s as any).review_status)}
+                                      variant={(s as any).review_status === "published" ? "filled" : "outlined"}
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ py: 1.25 }}>
+                                    <Chip
+                                      size="small"
+                                      label={
+                                        s.overall_score != null
+                                          ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
+                                          : "Not evaluated"
                                       }
-                                      sx={{
-                                        color: "#e11d48",
-                                        textTransform: "none",
-                                        fontWeight: 400,
-                                        fontSize: "0.7125rem",
-                                        px: 0.45,
-                                        minWidth: 0,
-                                        "&:hover": {
-                                          bgcolor: "rgba(225, 29, 72, 0.08)",
-                                          color: "#be123c",
-                                        },
-                                        "& .MuiButton-startIcon": {
-                                          marginRight: "6px",
-                                        },
-                                        "&:disabled .MuiButton-startIcon": {
-                                          opacity: 0.5,
-                                        },
-                                      }}
+                                      color={s.overall_score != null ? "primary" : "default"}
+                                      variant={s.overall_score != null ? "filled" : "outlined"}
+                                      sx={{ fontWeight: 700 }}
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ py: 1.5 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={(event) =>
+                                        handleOpenSubmissionActionsMenu(event, s)
+                                      }
+                                      aria-label={`Open actions for ${s.name || "submission"}`}
                                     >
-                                      Download PDF
-                                    </Button>
-                                  </span>
-                                </Tooltip>
-                              </TableCell>
+                                      <IconWrapper icon="mdi:dots-vertical" size={20} />
+                                    </IconButton>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                     </TableContainer>
+                    <Menu
+                      anchorEl={submissionActionsAnchorEl}
+                      open={Boolean(submissionActionsAnchorEl) && Boolean(submissionActionsTarget)}
+                      onClose={handleCloseSubmissionActionsMenu}
+                      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                      transformOrigin={{ vertical: "top", horizontal: "left" }}
+                    >
+                      <MenuItem
+                        onClick={() => {
+                          if (submissionActionsTarget) {
+                            router.push(
+                              `/admin/assessment/${assessmentId}/submissions/${Number(
+                                (submissionActionsTarget as any).submission_id,
+                              )}`,
+                            );
+                          }
+                          handleCloseSubmissionActionsMenu();
+                        }}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:file-document-edit-outline" size={18} />
+                        </ListItemIcon>
+                        <ListItemText primary="Evaluate" />
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          if (submissionActionsTarget) {
+                            handleDownloadSubmissionPdf(submissionActionsTarget);
+                          }
+                          handleCloseSubmissionActionsMenu();
+                        }}
+                        disabled={readOnly && !hideAdminQuestions}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:file-download-outline" size={18} />
+                        </ListItemIcon>
+                        <ListItemText primary="Download PDF" />
+                      </MenuItem>
+                      <MenuItem
+                        onClick={async () => {
+                          if (submissionActionsTarget) {
+                            await handlePublishSubmission(submissionActionsTarget);
+                          }
+                          handleCloseSubmissionActionsMenu();
+                        }}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:publish" size={18} />
+                        </ListItemIcon>
+                        <ListItemText primary="Publish" />
+                      </MenuItem>
+                    </Menu>
                     {totalSubmissions > 0 && (
                       <Box
                         sx={{
                           pt: 2,
-                          borderTop: "1px solid #e5e7eb",
+                          borderTop: "1px solid var(--border-default)",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",

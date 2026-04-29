@@ -78,8 +78,9 @@ export function ViewActivityPanel({
           borderRadius: { xs: 0, sm: 2.5 },
           boxShadow: {
             xs: "none",
-            sm: "0 20px 40px rgba(0,0,0,0.12)",
+            sm: "0 20px 40px color-mix(in srgb, var(--font-primary) 20%, transparent)",
           },
+          backgroundColor: "var(--card-bg)",
 
           display: "flex",
           flexDirection: "column",
@@ -107,9 +108,10 @@ export function ViewActivityPanel({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            backgroundColor: "#ffffff",
-            borderBottom: "2px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            backgroundColor: "var(--card-bg)",
+            borderBottom: "2px solid var(--border-default)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             flexShrink: 0,
           }}
         >
@@ -118,7 +120,7 @@ export function ViewActivityPanel({
             sx={{
               fontWeight: 700,
               fontSize: { xs: "1.125rem", sm: "1.5rem" },
-              color: "#111827",
+              color: "var(--font-primary)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -132,10 +134,10 @@ export function ViewActivityPanel({
           <IconButton
             onClick={onClose}
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               "&:hover": {
-                backgroundColor: "#f3f4f6",
-                color: "#111827",
+                backgroundColor: "var(--surface)",
+                color: "var(--font-primary)",
               },
             }}
           >
@@ -147,8 +149,8 @@ export function ViewActivityPanel({
         <Box
           sx={{
             p: { xs: 2, sm: 3 },
-            backgroundColor: "#ffffff",
-            borderBottom: "1px solid #e5e7eb",
+            backgroundColor: "var(--card-bg)",
+            borderBottom: "1px solid var(--border-default)",
             flexShrink: 0,
           }}
         >
@@ -161,8 +163,8 @@ export function ViewActivityPanel({
             position: "sticky",
             top: { xs: 56, sm: 64 },
             zIndex: 2,
-            backgroundColor: "#ffffff",
-            borderBottom: "1px solid #e5e7eb",
+            backgroundColor: "var(--card-bg)",
+            borderBottom: "1px solid var(--border-default)",
             flexShrink: 0,
           }}
         >

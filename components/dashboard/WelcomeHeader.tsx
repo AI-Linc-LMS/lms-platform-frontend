@@ -35,7 +35,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ courseId }) => {
           sx={{
             fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.5rem" },
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             mb: 1,
           }}
         >
@@ -59,7 +59,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ courseId }) => {
           variant="body1"
           sx={{
             fontSize: "1rem",
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             maxWidth: "600px",
           }}
         >

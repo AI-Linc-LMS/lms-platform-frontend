@@ -91,6 +91,9 @@ export function CreateActivityDialog({
         sx: {
           m: { xs: 1, sm: 2 },
           maxHeight: { xs: "calc(100% - 16px)", sm: "calc(100% - 32px)" },
+          backgroundColor: "var(--card-bg)",
+          color: "var(--font-primary)",
+          border: "1px solid var(--border-default)",
         },
       }}
     >
@@ -169,8 +172,17 @@ export function CreateActivityDialog({
           onClick={handleCreate}
           disabled={creating || !name.trim()}
           sx={{
-            bgcolor: "#10b981",
-            "&:hover": { bgcolor: "#059669" },
+            bgcolor: "var(--success-500)",
+            color: "var(--font-light)",
+            "&:hover": {
+              bgcolor:
+                "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
+            },
+            "&.Mui-disabled": {
+              color: "var(--font-secondary)",
+              backgroundColor:
+                "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+            },
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >

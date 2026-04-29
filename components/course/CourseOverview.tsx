@@ -32,7 +32,8 @@ export function CourseOverview({
           submodule.quiz_count +
           submodule.article_count +
           submodule.coding_problem_count +
-          submodule.assignment_count;
+          submodule.assignment_count +
+          (submodule.subjective_question_count ?? 0);
       });
     });
 
@@ -48,7 +49,8 @@ export function CourseOverview({
       submodule.quiz_count +
       submodule.article_count +
       submodule.coding_problem_count +
-      submodule.assignment_count
+      submodule.assignment_count +
+      (submodule.subjective_question_count ?? 0)
     );
   };
 
@@ -71,10 +73,11 @@ export function CourseOverview({
     <Paper
       elevation={0}
       sx={{
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 2,
         p: 3,
-        background: "linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%)",
+        background:
+          "linear-gradient(to bottom, var(--card-bg) 0%, var(--surface) 100%)",
       }}
     >
       {/* Course Overview Header */}
@@ -84,7 +87,8 @@ export function CourseOverview({
             width: 40,
             height: 40,
             borderRadius: 2,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -93,19 +97,23 @@ export function CourseOverview({
           <IconWrapper
             icon="mdi:book-open-page-variant"
             size={22}
-            color="#ffffff"
+            color="var(--font-light)"
           />
         </Box>
         <Box>
           <Typography
             variant="h6"
-            sx={{ fontWeight: 700, color: "#1a1f2e", fontSize: "1.125rem" }}
+            sx={{
+              fontWeight: 700,
+              color: "var(--font-primary)",
+              fontSize: "1.125rem",
+            }}
           >
             {t("courses.coursesOverview")}
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {stats.sections} {t("courses.sections")} • {stats.lectures} {t("courses.items")}
           </Typography>
@@ -127,19 +135,19 @@ export function CourseOverview({
                     gap: 1,
                     mb: 2,
                     pb: 1,
-                    borderBottom: "2px solid #e5e7eb",
+                    borderBottom: "2px solid var(--border-default)",
                   }}
                 >
                   <IconWrapper
                     icon="mdi:calendar-week"
                     size={20}
-                    color="#6366f1"
+                    color="var(--accent-indigo)"
                   />
                   <Typography
                     variant="subtitle2"
                     sx={{
                       fontWeight: 600,
-                      color: "#374151",
+                      color: "var(--font-primary)",
                       fontSize: "0.875rem",
                     }}
                   >
@@ -148,7 +156,7 @@ export function CourseOverview({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#9ca3af",
+                      color: "var(--font-tertiary)",
                       fontSize: "0.75rem",
                       ml: 0.5,
                     }}
@@ -188,7 +196,7 @@ export function CourseOverview({
           })}
         </Box>
       ) : (
-        <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
           {t("courses.noModulesAvailable")}
         </Typography>
       )}

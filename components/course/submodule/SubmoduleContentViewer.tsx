@@ -12,6 +12,7 @@ import { CodingProblemLayout } from "@/components/coding/CodingProblemLayout";
 import { AssignmentContent } from "./AssignmentContent";
 import { ArticleContent } from "./ArticleContent";
 import { VideoTabs } from "./VideoTabs";
+import { SubjectiveQuestionContent } from "./SubjectiveQuestionContent";
 
 interface SubmoduleContentViewerProps {
   content: ContentDetail;
@@ -70,7 +71,7 @@ export function SubmoduleContentViewer({
             variant="h5"
             sx={{
               fontWeight: 700,
-              color: "#1a1f2e",
+              color: "var(--font-primary)",
               mb: 1,
               fontSize: { xs: "1.25rem", sm: "1.5rem", md: "1.75rem" },
             }}
@@ -145,6 +146,18 @@ export function SubmoduleContentViewer({
           marks={currentItem?.marks}
           obtainedMarks={currentItem?.obtainedMarks}
           allowResize={true}
+        />
+      )}
+
+      {/* Subjective Question (written / AI-graded) */}
+      {content.content_type === "SubjectiveQuestion" && (
+        <SubjectiveQuestionContent
+          content={content}
+          courseId={courseId}
+          currentItem={currentItem}
+          pastSubmissions={pastSubmissions}
+          loadingSubmissions={loadingSubmissions}
+          onComplete={onQuizComplete}
         />
       )}
 

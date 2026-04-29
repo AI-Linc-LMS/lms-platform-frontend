@@ -20,7 +20,7 @@ export function ProfileCompletionCard({
   const { percentage, missingFields } = completion;
 
   const getCompletionColor = () => {
-    return "#0a66c2"; // LinkedIn blue for all states
+    return "var(--accent-indigo)"; // LinkedIn blue for all states
   };
 
   const getCompletionMessage = () => {
@@ -35,14 +35,14 @@ export function ProfileCompletionCard({
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
         borderRadius: { xs: 1, sm: 2 },
         mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
-        backgroundColor: "#ffffff",
+        boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        backgroundColor: "var(--background)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
@@ -53,7 +53,7 @@ export function ProfileCompletionCard({
               variant="h6"
               sx={{
                 fontWeight: 600,
-                color: "#000000",
+                color: "var(--font-primary)",
                 fontSize: "1.25rem",
               }}
             >
@@ -81,7 +81,7 @@ export function ProfileCompletionCard({
           <Typography
             variant="body2"
             sx={{
-              color: "#666666",
+              color: "var(--font-secondary)",
               fontSize: "0.9375rem",
               mb: 2,
               lineHeight: 1.5,
@@ -98,7 +98,7 @@ export function ProfileCompletionCard({
               sx={{
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: "#e0e0e0",
+                backgroundColor: "var(--border-default)",
                 "& .MuiLinearProgress-bar": {
                   borderRadius: 4,
                   backgroundColor: getCompletionColor(),
@@ -121,7 +121,7 @@ export function ProfileCompletionCard({
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#000000",
+                  color: "var(--font-primary)",
                   fontSize: "1.5rem",
                   mb: 0.25,
                 }}
@@ -131,7 +131,7 @@ export function ProfileCompletionCard({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.8125rem",
                 }}
               >
@@ -143,7 +143,7 @@ export function ProfileCompletionCard({
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#000000",
+                  color: "var(--font-primary)",
                   fontSize: "1.5rem",
                   mb: 0.25,
                 }}
@@ -153,7 +153,7 @@ export function ProfileCompletionCard({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.8125rem",
                 }}
               >
@@ -165,7 +165,7 @@ export function ProfileCompletionCard({
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#000000",
+                  color: "var(--font-primary)",
                   fontSize: "1.5rem",
                   mb: 0.25,
                 }}
@@ -175,7 +175,7 @@ export function ProfileCompletionCard({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.8125rem",
                 }}
               >
@@ -190,7 +190,7 @@ export function ProfileCompletionCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#000000",
+                  color: "var(--font-primary)",
                   fontSize: "0.9375rem",
                   fontWeight: 600,
                   display: "block",
@@ -213,18 +213,18 @@ export function ProfileCompletionCard({
                       px: 1.5,
                       py: 0.75,
                       borderRadius: "16px",
-                      backgroundColor: "#f3f2ef",
-                      border: "1px solid rgba(0,0,0,0.08)",
+                      backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
+                      border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
                       transition: "all 0.2s ease",
                       "&:hover": {
-                        backgroundColor: "#e9e7e3",
+                        backgroundColor: "color-mix(in srgb, var(--surface) 72%, var(--background))",
                       },
                     }}
                   >
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "#000000",
+                        color: "var(--font-primary)",
                         fontSize: "0.8125rem",
                         fontWeight: 500,
                       }}
@@ -239,14 +239,14 @@ export function ProfileCompletionCard({
                       px: 1.5,
                       py: 0.75,
                       borderRadius: "16px",
-                      backgroundColor: "#f3f2ef",
-                      border: "1px solid rgba(0,0,0,0.08)",
+                      backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
+                      border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
                     }}
                   >
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "#666666",
+                        color: "var(--font-secondary)",
                         fontSize: "0.8125rem",
                         fontWeight: 500,
                       }}
@@ -263,7 +263,7 @@ export function ProfileCompletionCard({
 
       {/* Action Button */}
       {percentage < 100 && onCompleteProfile && (
-        <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+        <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)" }}>
           <Button
             variant="contained"
             size="medium"
@@ -278,7 +278,7 @@ export function ProfileCompletionCard({
               px: 3,
               py: 1,
               "&:hover": {
-                backgroundColor: "#004182",
+                backgroundColor: "var(--accent-indigo-dark)",
               },
               transition: "all 0.2s ease",
             }}

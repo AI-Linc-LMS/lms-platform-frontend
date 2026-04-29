@@ -4,7 +4,7 @@ import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
 
-const ACCENT = "#0d9488";
+const ACCENT = "var(--success-500)";
 
 interface AccentBarTemplateProps {
   data: ResumeData;
@@ -18,7 +18,7 @@ function SectionTitle({ children }: { children: string }) {
         fontSize: "0.7rem",
         fontWeight: 700,
         letterSpacing: "0.08em",
-        color: "#0f172a",
+        color: "var(--font-primary)",
         textTransform: "uppercase",
         mb: 1.25,
         pb: 0.5,
@@ -47,18 +47,18 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
       sx={{
         minHeight: "297mm",
         width: "100%",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
         colorAdjust: "exact !important",
       }}
     >
       <Box sx={{ px: 2.5, pt: 2, pb: 1 }}>
-        <Typography sx={{ fontSize: "1.4rem", fontWeight: 700, color: "#0f172a" }}>
+        <Typography sx={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--font-primary)" }}>
           {data.basicInfo.firstName} {data.basicInfo.lastName}
         </Typography>
         {data.basicInfo.professionalTitle && (
-          <Typography sx={{ fontSize: "0.85rem", color: "#475569", mt: 0.25 }}>
+          <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", mt: 0.25 }}>
             {data.basicInfo.professionalTitle}
           </Typography>
         )}
@@ -79,7 +79,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             flexWrap: "wrap",
             gap: 1,
             mb: 1.5,
-            color: "#64748b",
+            color: "var(--font-secondary)",
           }}
         >
           {[
@@ -123,7 +123,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         </Box>
 
         {data.basicInfo.summary && (
-          <Typography sx={{ fontSize: "0.65rem", color: "#475569", lineHeight: 1.6, mb: 2 }}>
+          <Typography sx={{ fontSize: "0.65rem", color: "var(--font-secondary)", lineHeight: 1.6, mb: 2 }}>
             {data.basicInfo.summary}
           </Typography>
         )}
@@ -135,22 +135,22 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
               <Box key={exp.id} sx={{ mb: 1.5 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 0.5 }}>
                   <Box>
-                    <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>
+                    <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--font-primary)" }}>
                       {exp.position}
                     </Typography>
                     <Typography sx={{ fontSize: "0.65rem", color: ACCENT }}>{exp.company}</Typography>
                   </Box>
-                  <Typography sx={{ fontSize: "0.6rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(exp.startDate, exp.endDate, exp.current)}
                   </Typography>
                 </Box>
                 {exp.location && (
-                  <Typography sx={{ fontSize: "0.6rem", color: "#64748b", mb: 0.5 }}>{exp.location}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", mb: 0.5 }}>{exp.location}</Typography>
                 )}
                 {exp.description.filter((d) => d.trim()).length > 0 && (
                   <Box component="ul" sx={{ m: 0, pl: 2 }}>
                     {exp.description.filter((d) => d.trim()).map((d, i) => (
-                      <Typography key={i} component="li" sx={{ fontSize: "0.6rem", color: "#475569", lineHeight: 1.6, mb: 0.5 }}>
+                      <Typography key={i} component="li" sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.6, mb: 0.5 }}>
                         {d}
                       </Typography>
                     ))}
@@ -167,17 +167,17 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             {data.education.map((edu) => (
               <Box key={edu.id} sx={{ mb: 1.25 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{edu.degree}</Typography>
-                  <Typography sx={{ fontSize: "0.6rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--font-primary)" }}>{edu.degree}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(edu.startDate, edu.endDate)}
                   </Typography>
                 </Box>
                 <Typography sx={{ fontSize: "0.65rem", color: ACCENT }}>{edu.institution}</Typography>
                 {edu.gpa && (
-                  <Typography sx={{ fontSize: "0.6rem", color: "#475569", whiteSpace: "nowrap" }}>GPA: {edu.gpa}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", whiteSpace: "nowrap" }}>GPA: {edu.gpa}</Typography>
                 )}
                 {edu.description && (
-                  <Typography sx={{ fontSize: "0.6rem", color: "#475569", lineHeight: 1.45 }}>{edu.description}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.45 }}>{edu.description}</Typography>
                 )}
               </Box>
             ))}
@@ -187,7 +187,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         {data.skills.length > 0 && (
           <Box sx={{ mb: 2 }}>
             <SectionTitle>Skills</SectionTitle>
-            <Typography sx={{ fontSize: "0.65rem", color: "#475569" }}>
+            <Typography sx={{ fontSize: "0.65rem", color: "var(--font-secondary)" }}>
               {data.skills.map((s) => s.name).join(" \u2022 ")}
             </Typography>
           </Box>
@@ -199,7 +199,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             {data.projects.map((proj) => (
               <Box key={proj.id} sx={{ mb: 1.25 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
-                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#0f172a" }}>{proj.name}</Typography>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--font-primary)" }}>{proj.name}</Typography>
                   {proj.link && (
                     <Typography
                       component="a"
@@ -213,10 +213,10 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                   )}
                 </Box>
                 {proj.description && (
-                  <Typography sx={{ fontSize: "0.6rem", color: "#475569", lineHeight: 1.45 }}>{proj.description}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.45 }}>{proj.description}</Typography>
                 )}
                 {proj.technologies.filter((t) => t.trim()).length > 0 && (
-                  <Typography sx={{ fontSize: "0.58rem", color: "#64748b", mt: 0.25 }}>
+                  <Typography sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", mt: 0.25 }}>
                     {proj.technologies.filter((t) => t.trim()).join(", ")}
                   </Typography>
                 )}
@@ -231,7 +231,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 0.75 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <Typography sx={{ fontSize: "0.68rem", fontWeight: 600, color: "#0f172a", flex: 1, minWidth: 0 }}>{cert.name}</Typography>
+                  <Typography sx={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--font-primary)", flex: 1, minWidth: 0 }}>{cert.name}</Typography>
                   {cert.link && (
                     <Typography
                       component="a"
@@ -244,7 +244,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                     </Typography>
                   )}
                 </Box>
-                <Typography sx={{ fontSize: "0.6rem", color: "#64748b" }}>
+                <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)" }}>
                   {cert.issuer}
                   {cert.date ? ` \u2022 ${cert.date.split("-")[0]}` : ""}
                 </Typography>

@@ -39,7 +39,7 @@ export const DashboardSidebar = ({
                   width: "100%",
                   height: 24,
                   borderRadius: 1,
-                  backgroundColor: "#F3F4F6",
+                backgroundColor: "var(--surface)",
                 }}
               />
             </Box>
@@ -54,8 +54,8 @@ export const DashboardSidebar = ({
               sx={{
                 borderRadius: 2,
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                border: "1px solid #e5e7eb",
-                backgroundColor: "#ffffff",
+                border: "1px solid var(--border-default)",
+                backgroundColor: "var(--card-bg)",
                 minHeight: 200,
                 display: "flex",
                 alignItems: "center",

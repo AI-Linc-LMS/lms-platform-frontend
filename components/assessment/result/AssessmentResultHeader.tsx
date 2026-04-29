@@ -33,7 +33,8 @@ export function AssessmentResultHeader({
             width: 56,
             height: 56,
             borderRadius: 2,
-            background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -48,7 +49,7 @@ export function AssessmentResultHeader({
             sx={{
               fontWeight: 800,
               fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.5rem" },
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 1,
               lineHeight: 1.2,
             }}
@@ -68,20 +69,22 @@ export function AssessmentResultHeader({
               label={status === "submitted" ? t("assessments.assessmentCompleted") : status}
               size="small"
               sx={{
-                backgroundColor: "#d1fae5",
-                color: "#065f46",
+                backgroundColor:
+                  "color-mix(in srgb, var(--success-500) 18%, transparent)",
+                color: "var(--font-primary)",
                 fontWeight: 600,
                 fontSize: "0.8125rem",
                 height: 28,
+                border: "1px solid color-mix(in srgb, var(--success-500) 36%, transparent)",
                 "& .MuiChip-icon": {
-                  color: "#10b981",
+                  color: "var(--success-500)",
                 },
               }}
             />
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 fontWeight: 500,
               }}

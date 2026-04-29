@@ -14,6 +14,7 @@ interface ContentProgressItem {
   value: number | undefined;
   icon: string;
   color: string;
+  tint: string;
 }
 
 export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
@@ -21,11 +22,18 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
   const overallProgressPercentage = dashboard.total_progress ?? 0;
 
   const contentProgressItems: ContentProgressItem[] = [
-    { label: t("courses.videos"), value: dashboard.video_progress, icon: "mdi:video-outline", color: "#ef4444" },
-    { label: t("courses.quizzes"), value: dashboard.quiz_progress, icon: "mdi:star-outline", color: "#f59e0b" },
-    { label: t("courses.articles"), value: dashboard.article_progress, icon: "mdi:file-document-outline", color: "#3b82f6" },
-    { label: t("courses.assignments"), value: dashboard.assignment_progress, icon: "mdi:file-check-outline", color: "#8b5cf6" },
-    { label: t("courses.coding"), value: dashboard.coding_problem_progress, icon: "mdi:code-tags", color: "#10b981" },
+    { label: t("courses.videos"), value: dashboard.video_progress, icon: "mdi:video-outline", color: "var(--error-500)", tint: "color-mix(in srgb, var(--error-500) 16%, transparent)" },
+    { label: t("courses.quizzes"), value: dashboard.quiz_progress, icon: "mdi:star-outline", color: "var(--warning-500)", tint: "color-mix(in srgb, var(--warning-500) 16%, transparent)" },
+    { label: t("courses.articles"), value: dashboard.article_progress, icon: "mdi:file-document-outline", color: "var(--accent-indigo)", tint: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)" },
+    { label: t("courses.assignments"), value: dashboard.assignment_progress, icon: "mdi:file-check-outline", color: "var(--accent-purple)", tint: "color-mix(in srgb, var(--accent-purple) 16%, transparent)" },
+    { label: t("courses.coding"), value: dashboard.coding_problem_progress, icon: "mdi:code-tags", color: "var(--success-500)", tint: "color-mix(in srgb, var(--success-500) 16%, transparent)" },
+    {
+      label: t("courses.subjectiveProgressShort"),
+      value: dashboard.subjective_question_progress,
+      icon: "mdi:text-box-outline",
+      color: "var(--accent-indigo-dark)",
+      tint: "color-mix(in srgb, var(--accent-indigo-dark) 16%, transparent)",
+    },
   ].filter((item) => item.value !== undefined && item.value > 0);
 
   const hasContentProgress = contentProgressItems.length > 0;
@@ -34,10 +42,11 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
     <Paper
       elevation={0}
       sx={{
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 2,
         p: 3,
-        background: "linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%)",
+        background:
+          "linear-gradient(to bottom, var(--card-bg) 0%, var(--surface) 100%)",
       }}
     >
       {/* Header */}
@@ -54,7 +63,8 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
             width: 40,
             height: 40,
             borderRadius: 2,
-            background: "linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-indigo) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -63,19 +73,23 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
           <IconWrapper
             icon="mdi:chart-line-variant"
             size={32}
-            color="#ffffff"
+            color="var(--font-light)"
           />
         </Box>
         <Box>
           <Typography
             variant="h6"
-            sx={{ fontWeight: 700, color: "#1a1f2e", fontSize: "1.125rem" }}
+            sx={{
+              fontWeight: 700,
+              color: "var(--font-primary)",
+              fontSize: "1.125rem",
+            }}
           >
             {t("courses.yourProgress")}
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("courses.trackYourLearning")}
           </Typography>
@@ -85,11 +99,12 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
       {/* Overall Progress Card */}
       <Box
         sx={{
-          background: "linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)",
+          background:
+            "linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-indigo) 100%)",
           borderRadius: 2,
           p: 2.5,
           mb: 3,
-          color: "#ffffff",
+          color: "var(--font-light)",
         }}
       >
         <Box
@@ -103,7 +118,8 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
           <Typography
             variant="body2"
             sx={{
-              color: "rgba(255, 255, 255, 0.9)",
+              color:
+                "color-mix(in srgb, var(--font-light) 90%, transparent 10%)",
               fontSize: "0.875rem",
               fontWeight: 500,
             }}
@@ -113,7 +129,7 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
           <Typography
             variant="h5"
             sx={{
-              color: "#ffffff",
+              color: "var(--font-light)",
               fontSize: "1.75rem",
               fontWeight: 700,
             }}
@@ -127,10 +143,11 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
           sx={{
             height: 10,
             borderRadius: 5,
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
+            backgroundColor:
+              "color-mix(in srgb, var(--font-light) 22%, transparent)",
             "& .MuiLinearProgress-bar": {
               borderRadius: 5,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--font-light)",
             },
           }}
         />
@@ -138,11 +155,11 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
 
       {/* Content Type Progress */}
       {hasContentProgress && (
-        <Box sx={{ mt: 3, pt: 3, borderTop: "1px solid #e5e7eb" }}>
+        <Box sx={{ mt: 3, pt: 3, borderTop: "1px solid var(--border-default)" }}>
           <Typography
             variant="body2"
             sx={{
-              color: "#1a1f2e",
+              color: "var(--font-primary)",
               fontSize: "0.875rem",
               fontWeight: 600,
               mb: 2,
@@ -160,12 +177,14 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
                   gap: 1.5,
                   p: 1.5,
                   borderRadius: 1.5,
-                  backgroundColor: "#f9fafb",
-                  border: "1px solid #e5e7eb",
+                  backgroundColor: "var(--surface)",
+                  border: "1px solid var(--border-default)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#f3f4f6",
-                    borderColor: "#d1d5db",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
+                    borderColor:
+                      "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
                   },
                 }}
               >
@@ -174,7 +193,7 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
                     width: 36,
                     height: 36,
                     borderRadius: 1,
-                    backgroundColor: `${item.color}15`,
+                    backgroundColor: item.tint,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -191,7 +210,7 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#1a1f2e",
+                      color: "var(--font-primary)",
                       fontSize: "0.8125rem",
                       fontWeight: 500,
                       mb: 0.25,
@@ -204,7 +223,7 @@ export function ProgressDashboard({ dashboard }: ProgressDashboardProps) {
                   label={`${item.value}%`}
                   size="small"
                   sx={{
-                    backgroundColor: `${item.color}15`,
+                    backgroundColor: item.tint,
                     color: item.color,
                     fontWeight: 600,
                     fontSize: "0.75rem",

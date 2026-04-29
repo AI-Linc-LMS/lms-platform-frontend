@@ -46,6 +46,7 @@ export interface Course {
     quiz: { total: number };
     assignment: { total: number };
     coding_problem: { total: number };
+    subjective_question?: { total: number };
   };
   thumbnail: string | null;
 }
@@ -83,13 +84,22 @@ export function CourseCard({
   const getDifficultyColor = (level: string) => {
     switch (level.toLowerCase()) {
       case "easy":
-        return { bg: "#d1fae5", color: "#065f46" };
+        return {
+          bg: "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)",
+          color: "var(--success-500)",
+        };
       case "medium":
-        return { bg: "#fef3c7", color: "#92400e" };
+        return {
+          bg: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+          color: "var(--warning-500)",
+        };
       case "hard":
-        return { bg: "#fee2e2", color: "#991b1b" };
+        return {
+          bg: "color-mix(in srgb, var(--error-500) 16%, var(--surface) 84%)",
+          color: "var(--error-500)",
+        };
       default:
-        return { bg: "#f3f4f6", color: "#374151" };
+        return { bg: "var(--surface)", color: "var(--font-secondary)" };
     }
   };
 
@@ -100,7 +110,8 @@ export function CourseCard({
     (course.stats?.article?.total || 0) +
     (course.stats?.quiz?.total || 0) +
     (course.stats?.assignment?.total || 0) +
-    (course.stats?.coding_problem?.total || 0);
+    (course.stats?.coding_problem?.total || 0) +
+    (course.stats?.subjective_question?.total || 0);
 
   const handleViewCourse = () => {
     router.push(`/admin/course-builder/${course.id}`);
@@ -169,16 +180,22 @@ export function CourseCard({
     <Paper
       sx={{
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         overflow: "hidden",
         transition: "all 0.2s",
         cursor: editing ? "default" : "pointer",
         "&:hover": {
-          boxShadow: editing ? "0 1px 3px rgba(0,0,0,0.1)" : "0 4px 12px rgba(0,0,0,0.15)",
+          boxShadow: editing
+            ? "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)"
+            : "0 4px 12px color-mix(in srgb, var(--font-primary) 16%, transparent)",
           transform: editing ? "none" : "translateY(-2px)",
         },
         maxWidth: 500,
-        border: editing ? "2px solid #6366f1" : "1px solid transparent",
+        border: editing
+          ? "2px solid var(--accent-indigo)"
+          : "1px solid var(--border-default)",
       }}
       onClick={editing ? undefined : handleViewCourse}
     >
@@ -209,7 +226,7 @@ export function CourseCard({
                   variant="h6"
                   sx={{
                     fontWeight: 600,
-                    color: "#111827",
+                    color: "var(--font-primary)",
                     fontSize: { xs: "1rem", sm: "1.125rem" },
                     mb: 0.5,
                     overflow: "hidden",
@@ -223,7 +240,7 @@ export function CourseCard({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -244,8 +261,11 @@ export function CourseCard({
                   onClick={handleSave}
                   disabled={saving}
                   sx={{
-                    color: "#10b981",
-                    "&:hover": { bgcolor: "#d1fae5" },
+                    color: "var(--success-500)",
+                    "&:hover": {
+                      bgcolor:
+                        "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)",
+                    },
                   }}
                 >
                   {saving ? (
@@ -259,8 +279,11 @@ export function CourseCard({
                   onClick={handleCancel}
                   disabled={saving}
                   sx={{
-                    color: "#ef4444",
-                    "&:hover": { bgcolor: "#fee2e2" },
+                    color: "var(--error-500)",
+                    "&:hover": {
+                      bgcolor:
+                        "color-mix(in srgb, var(--error-500) 16%, var(--surface) 84%)",
+                    },
                   }}
                 >
                   <IconWrapper icon="mdi:close" size={18} />
@@ -273,8 +296,11 @@ export function CourseCard({
                     size="small"
                     onClick={() => setEditing(true)}
                     sx={{
-                      color: "#6366f1",
-                      "&:hover": { bgcolor: "#eef2ff" },
+                      color: "var(--accent-indigo)",
+                      "&:hover": {
+                        bgcolor:
+                          "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                      },
                     }}
                   >
                     <IconWrapper icon="mdi:pencil" size={18} />
@@ -286,8 +312,8 @@ export function CourseCard({
                       size="small"
                       onClick={onDuplicate}
                       sx={{
-                        color: "#6b7280",
-                        "&:hover": { bgcolor: "#f3f4f6" },
+                        color: "var(--font-secondary)",
+                        "&:hover": { bgcolor: "var(--surface)" },
                       }}
                     >
                       <IconWrapper icon="mdi:content-copy" size={18} />
@@ -301,8 +327,11 @@ export function CourseCard({
                       onClick={handlePublish}
                       disabled={publishing}
                       sx={{
-                        color: "#059669",
-                        "&:hover": { bgcolor: "#d1fae5" },
+                        color: "var(--success-500)",
+                        "&:hover": {
+                          bgcolor:
+                            "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)",
+                        },
                       }}
                     >
                       {publishing ? (
@@ -319,8 +348,11 @@ export function CourseCard({
                       onClick={handleUnpublish}
                       disabled={publishing}
                       sx={{
-                        color: "#b45309",
-                        "&:hover": { bgcolor: "#fef3c7" },
+                        color: "var(--warning-500)",
+                        "&:hover": {
+                          bgcolor:
+                            "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                        },
                       }}
                     >
                       {publishing ? (
@@ -352,7 +384,7 @@ export function CourseCard({
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.75rem", sm: "0.875rem" },
               mb: 2,
               display: "-webkit-box",
@@ -369,7 +401,7 @@ export function CourseCard({
         {/* Rating */}
         {editing ? (
           <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
-            <Typography variant="caption" sx={{ color: "#6b7280", mb: 0.5, display: "block" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}>
               {t("adminCourseBuilder.rating")}
             </Typography>
             <Rating
@@ -385,7 +417,7 @@ export function CourseCard({
           course.rating !== undefined && (
             <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
               <Rating value={course.rating} readOnly precision={0.5} size="small" />
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {course.rating.toFixed(1)}
               </Typography>
             </Box>
@@ -414,8 +446,10 @@ export function CourseCard({
               label={course.is_free ? t("adminCourseBuilder.free") : t("adminCourseBuilder.paid")}
               size="small"
               sx={{
-                bgcolor: course.is_free ? "#d1fae5" : "#fef3c7",
-                color: course.is_free ? "#065f46" : "#92400e",
+                bgcolor: course.is_free
+                  ? "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)"
+                  : "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                color: course.is_free ? "var(--success-500)" : "var(--warning-500)",
                 fontSize: "0.75rem",
               }}
             />
@@ -449,10 +483,11 @@ export function CourseCard({
                     label={option}
                     size="small"
                     sx={{
-                      bgcolor: "#eef2ff",
-                      color: "#6366f1",
+                      bgcolor:
+                        "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                      color: "var(--accent-indigo)",
                       "& .MuiChip-deleteIcon": {
-                        color: "#6366f1",
+                        color: "var(--accent-indigo)",
                       },
                     }}
                   />
@@ -469,8 +504,9 @@ export function CourseCard({
                   label={tag}
                   size="small"
                   sx={{
-                    bgcolor: "#eef2ff",
-                    color: "#6366f1",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                    color: "var(--accent-indigo)",
                     fontSize: { xs: "0.7rem", sm: "0.75rem" },
                     height: { xs: 20, sm: 24 },
                   }}
@@ -484,7 +520,11 @@ export function CourseCard({
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
+            gridTemplateColumns: {
+              xs: "repeat(2, 1fr)",
+              sm: "repeat(4, 1fr)",
+              md: "repeat(7, 1fr)",
+            },
             gap: 1,
             mb: 2,
           }}
@@ -495,6 +535,11 @@ export function CourseCard({
             { icon: "mdi:help-circle", label: course.stats?.quiz?.total || 0, name: t("adminCourseBuilder.quiz") },
             { icon: "mdi:assignment", label: course.stats?.assignment?.total || 0, name: t("adminCourseBuilder.assignment") },
             { icon: "mdi:code-tags", label: course.stats?.coding_problem?.total || 0, name: t("adminCourseBuilder.coding") },
+            {
+              icon: "mdi:text-box-outline",
+              label: course.stats?.subjective_question?.total || 0,
+              name: t("adminCourseBuilder.subjective"),
+            },
             { icon: "mdi:file-multiple", label: totalContent, name: t("adminCourseBuilder.total") },
           ].map((stat, index) => (
             <Box
@@ -506,22 +551,25 @@ export function CourseCard({
                 justifyContent: "center",
                 p: 1,
                 borderRadius: 1,
-                bgcolor: "#f9fafb",
+                bgcolor: "var(--surface)",
                 transition: "all 0.2s",
-                "&:hover": { bgcolor: "#f3f4f6" },
+                "&:hover": {
+                  bgcolor:
+                    "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
+                },
               }}
             >
               <IconWrapper
                 icon={stat.icon}
                 size={20}
-                color="#6366f1"
+                color="var(--accent-indigo)"
                 style={{ marginBottom: 4 }}
               />
               <Typography
                 variant="caption"
                 sx={{
                   fontWeight: 600,
-                  color: "#111827",
+                  color: "var(--font-primary)",
                   fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 }}
               >
@@ -537,7 +585,7 @@ export function CourseCard({
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 mb: 0.5,
                 display: "block",
@@ -554,7 +602,7 @@ export function CourseCard({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 }}
               >
@@ -571,7 +619,7 @@ export function CourseCard({
             justifyContent: "space-between",
             alignItems: "center",
             pt: 2,
-            borderTop: "1px solid #e5e7eb",
+            borderTop: "1px solid var(--border-default)",
           }}
         >
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -590,8 +638,10 @@ export function CourseCard({
               label={course.published ? t("adminCourseBuilder.published") : t("adminCourseBuilder.draft")}
               size="small"
               sx={{
-                bgcolor: course.published ? "#d1fae5" : "#fee2e2",
-                color: course.published ? "#065f46" : "#991b1b",
+                bgcolor: course.published
+                  ? "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)"
+                  : "color-mix(in srgb, var(--error-500) 16%, var(--surface) 84%)",
+                color: course.published ? "var(--success-500)" : "var(--error-500)",
                 fontWeight: 600,
                 fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 height: { xs: 20, sm: 24 },
@@ -607,7 +657,7 @@ export function CourseCard({
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
                 fontSize: "0.8rem",
               }}
             >

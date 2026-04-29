@@ -635,7 +635,7 @@ export default function AssessmentPage() {
     paidFilter !== "all";
 
   return (
-    <MainLayout>
+    <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header */}
         <Box
@@ -653,10 +653,11 @@ export default function AssessmentPage() {
               variant="h4"
               sx={{
                 fontWeight: 700,
-                color: "#0f172a",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1.5rem", sm: "2rem" },
                 mb: 0.5,
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background:
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -667,7 +668,7 @@ export default function AssessmentPage() {
             <Typography
               variant="body2"
               sx={{
-                color: "#64748b",
+                color: "var(--font-secondary)",
                 fontSize: "0.875rem",
                 mt: 0.5,
               }}
@@ -689,17 +690,19 @@ export default function AssessmentPage() {
             }
             fullWidth={false}
             sx={{
-              bgcolor: "#6366f1",
-              color: "#ffffff",
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
               fontWeight: 600,
               px: { xs: 2, sm: 3 },
               py: 1.25,
               borderRadius: 2,
               width: { xs: "100%", sm: "auto" },
-              boxShadow: "0 4px 6px -1px rgba(99, 102, 241, 0.3)",
+              boxShadow:
+                "0 4px 6px -1px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
               "&:hover": {
-                bgcolor: "#4f46e5",
-                boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.4)",
+                bgcolor: "var(--accent-indigo-dark)",
+                boxShadow:
+                  "0 10px 15px -3px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
                 transform: { xs: "none", sm: "translateY(-1px)" },
               },
               transition: "all 0.2s ease",
@@ -715,8 +718,10 @@ export default function AssessmentPage() {
             p: { xs: 2, sm: 2.5 },
             mb: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            border: "1px solid #e2e8f0",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Box
@@ -739,13 +744,13 @@ export default function AssessmentPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <IconWrapper icon="mdi:magnify" size={20} color="#9ca3af" />
+                    <IconWrapper icon="mdi:magnify" size={20} color="var(--font-tertiary)" />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--card-bg)",
                 },
               }}
               fullWidth
@@ -804,12 +809,13 @@ export default function AssessmentPage() {
                 onClick={handleClearFilters}
                 startIcon={<IconWrapper icon="mdi:close" size={18} />}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#6b7280",
+                  borderColor: "var(--border-default)",
+                  color: "var(--font-secondary)",
                   whiteSpace: "nowrap",
                   "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "#f9fafb",
+                    borderColor:
+                      "color-mix(in srgb, var(--font-secondary) 34%, var(--border-default) 66%)",
+                    backgroundColor: "var(--surface)",
                   },
                 }}
               >
@@ -821,7 +827,7 @@ export default function AssessmentPage() {
           {/* Active filters display */}
           {hasActiveFilters && (
             <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-              <Typography variant="caption" sx={{ color: "#64748b", mr: 1, alignSelf: "center" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", mr: 1, alignSelf: "center" }}>
                 Active filters:
               </Typography>
               {searchQuery && (
@@ -829,7 +835,11 @@ export default function AssessmentPage() {
                   label={`Search: "${searchQuery}"`}
                   size="small"
                   onDelete={() => setSearchQuery("")}
-                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                  sx={{
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    color: "var(--accent-indigo)",
+                  }}
                 />
               )}
               {statusFilter !== "all" && (
@@ -837,7 +847,11 @@ export default function AssessmentPage() {
                   label={`Status: ${statusFilter}`}
                   size="small"
                   onDelete={() => setStatusFilter("all")}
-                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                  sx={{
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    color: "var(--accent-indigo)",
+                  }}
                 />
               )}
               {proctoringFilter !== "all" && (
@@ -845,7 +859,11 @@ export default function AssessmentPage() {
                   label={`Proctoring: ${proctoringFilter}`}
                   size="small"
                   onDelete={() => setProctoringFilter("all")}
-                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                  sx={{
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    color: "var(--accent-indigo)",
+                  }}
                 />
               )}
               {paidFilter !== "all" && (
@@ -853,7 +871,11 @@ export default function AssessmentPage() {
                   label={`Payment: ${paidFilter}`}
                   size="small"
                   onDelete={() => setPaidFilter("all")}
-                  sx={{ bgcolor: "#eef2ff", color: "#6366f1" }}
+                  sx={{
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    color: "var(--accent-indigo)",
+                  }}
                 />
               )}
             </Box>
@@ -862,7 +884,7 @@ export default function AssessmentPage() {
           {/* Results count */}
           {hasActiveFilters && (
             <Box sx={{ mt: 1.5 }}>
-              <Typography variant="caption" sx={{ color: "#64748b" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 Showing {filteredAssessments.length} of {assessments.length} assessments
               </Typography>
             </Box>
@@ -879,15 +901,17 @@ export default function AssessmentPage() {
               minHeight: 400,
             }}
           >
-            <CircularProgress size={48} sx={{ color: "#6366f1" }} />
+            <CircularProgress size={48} sx={{ color: "var(--accent-indigo)" }} />
           </Box>
         ) : (
           <Paper
             sx={{
               borderRadius: 3,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent), 0 1px 2px color-mix(in srgb, var(--font-primary) 10%, transparent)",
               overflow: "hidden",
-              border: "1px solid #e2e8f0",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <AssessmentTable
@@ -994,27 +1018,27 @@ export default function AssessmentPage() {
                   Send notification emails to students for this assessment. Review the details below.
                 </DialogContentText>
                 <Box>
-                  <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
                     Subject
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: "#f9fafb", borderRadius: 1 }}>
+                  <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: "var(--surface)", borderRadius: 1 }}>
                     {buildEmailSubject(assessmentToTriggerEmail)}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
                     Email content preview
                   </Typography>
                   <Box
                     sx={{
                       mt: 0.5,
                       p: 2,
-                      bgcolor: "#f9fafb",
+                      bgcolor: "var(--surface)",
                       borderRadius: 1,
                       maxHeight: 200,
                       overflow: "auto",
                       fontSize: "0.875rem",
-                      "& a": { color: "#6366f1" },
+                      "& a": { color: "var(--accent-indigo)" },
                     }}
                     dangerouslySetInnerHTML={{
                       __html: buildEmailBody(assessmentToTriggerEmail).replace(/\{name\}/g, "[Recipient Name]"),
@@ -1044,7 +1068,13 @@ export default function AssessmentPage() {
                   <CircularProgress size={16} color="inherit" />
                 ) : null
               }
-              sx={{ bgcolor: "#059669", "&:hover": { bgcolor: "#047857" } }}
+              sx={{
+                bgcolor: "var(--success-500)",
+                "&:hover": {
+                  bgcolor:
+                    "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
+                },
+              }}
             >
               {triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id
                 ? "Sending…"
@@ -1090,8 +1120,11 @@ export default function AssessmentPage() {
               disabled={!!duplicatingId}
               variant="contained"
               sx={{
-                bgcolor: "#7c3aed",
-                "&:hover": { bgcolor: "#6d28d9" },
+                bgcolor: "var(--accent-purple)",
+                "&:hover": {
+                  bgcolor:
+                    "color-mix(in srgb, var(--accent-purple) 86%, var(--accent-indigo-dark))",
+                },
               }}
               autoFocus
               startIcon={duplicatingId ? <CircularProgress size={16} color="inherit" /> : null}

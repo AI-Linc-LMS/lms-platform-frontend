@@ -12,6 +12,7 @@ import {
   Alert,
   CircularProgress,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -20,6 +21,8 @@ import {
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
 import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 
@@ -41,6 +44,7 @@ export default function AssessmentDetailPage({
   const router = useRouter();
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
   const { showToast } = useToast();
   const [startTimeTick, setStartTimeTick] = useState(0);
 
@@ -69,13 +73,6 @@ export default function AssessmentDetailPage({
     return () => clearInterval(id);
   }, [assessmentStartAt]);
 
-  const assessmentAvailableFromLabel = useMemo(() => {
-    if (!assessmentStartAt) return "";
-    return assessmentStartAt.toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  }, [assessmentStartAt]);
 
   useEffect(() => {
     if (!slug) return;
@@ -107,17 +104,22 @@ export default function AssessmentDetailPage({
   };
 
   const handleStart = () => {
+
+    if (isMobileOrTabletForAssessment()) {
+      setDesktopOnlyOpen(true);
     if (assessment && !isCurrentDeviceAllowedForAssessment(assessment)) {
       showToast(t("assessmentDevice.toastBlocked"), "warning");
       return;
     }
     // Skip device-check if proctoring is disabled
-    if (assessment && assessment.proctoring_enabled === false) {
-      router.push(`/assessments/${slug}/take`);
-    } else {
-      router.push(`/assessments/${slug}/device-check`);
-    }
-  };
+  
+  }
+  if (assessment && assessment.proctoring_enabled === false) {
+    router.push(`/assessments/${slug}/take`);
+  } else {
+    router.push(`/assessments/${slug}/device-check`);
+  }
+}
 
   if (loading) {
     return (
@@ -151,6 +153,10 @@ export default function AssessmentDetailPage({
 
   return (
     <MainLayout>
+      <AssessmentDesktopOnlyDialog
+        open={desktopOnlyOpen}
+        onClose={() => setDesktopOnlyOpen(false)}
+      />
       <Box
         sx={{
           width: "100%",
@@ -166,12 +172,13 @@ export default function AssessmentDetailPage({
           onClick={() => router.push("/assessments")}
           sx={{
             mb: 3,
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             textTransform: "none",
             fontWeight: 600,
             "&:hover": {
-              backgroundColor: "rgba(99, 102, 241, 0.08)",
-              color: "#6366f1",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+              color: "var(--accent-indigo)",
             },
           }}
         >
@@ -190,19 +197,24 @@ export default function AssessmentDetailPage({
           <Box
             sx={{
               p: 2,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
               display: "flex",
               alignItems: "center",
               gap: 1.5,
             }}
           >
-            <IconWrapper icon="mdi:clock-outline" size={24} color="#6366f1" />
+            <IconWrapper
+              icon="mdi:clock-outline"
+              size={24}
+              color="var(--accent-indigo)"
+            />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -215,7 +227,7 @@ export default function AssessmentDetailPage({
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                 }}
               >
@@ -227,7 +239,8 @@ export default function AssessmentDetailPage({
           <Box
             sx={{
               p: 2,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
               display: "flex",
               alignItems: "center",
@@ -237,13 +250,13 @@ export default function AssessmentDetailPage({
             <IconWrapper
               icon="mdi:help-circle-outline"
               size={24}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -256,7 +269,7 @@ export default function AssessmentDetailPage({
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                 }}
               >
@@ -272,15 +285,16 @@ export default function AssessmentDetailPage({
           elevation={0}
           sx={{
             p: 4,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 3,
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Typography
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 2,
             }}
           >
@@ -289,7 +303,7 @@ export default function AssessmentDetailPage({
           <Typography
             variant="body1"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               mb: 3,
               lineHeight: 1.6,
             }}
@@ -468,7 +482,7 @@ export default function AssessmentDetailPage({
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   mb: 2,
                 }}
               >
@@ -481,8 +495,8 @@ export default function AssessmentDetailPage({
                   sx={{
                     p: 2,
                     mb: 2,
-                    backgroundColor: "#f9fafb",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--border-default)",
                     borderRadius: 2,
                   }}
                 >
@@ -490,7 +504,7 @@ export default function AssessmentDetailPage({
                     variant="subtitle1"
                     sx={{
                       fontWeight: 600,
-                      color: "#374151",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {section.title || `Section ${index + 1}`}
@@ -499,7 +513,7 @@ export default function AssessmentDetailPage({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         mt: 0.5,
                       }}
                     >
@@ -511,68 +525,114 @@ export default function AssessmentDetailPage({
             </Box>
           )}
 
-          {!canStartAssessment && assessmentStartAt && (
-            <Typography
-              variant="body2"
+          {assessment.allow_movement === false && (
+            <Paper
+              elevation={0}
               sx={{
-                mb: 2,
-                color: "#6b7280",
-                textAlign: "center",
-                lineHeight: 1.6,
+                mb: 3,
+                p: 2.5,
+                borderRadius: 2,
+                border: "2px solid #6366f1",
+                background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
+                boxShadow: "0 4px 20px rgba(99, 102, 241, 0.15)",
               }}
             >
-              {t("assessments.availableFrom", {
-                date: assessmentAvailableFromLabel,
-              })}
-            </Typography>
-          )}
-
-          <Tooltip
-            title={
-              !deviceAllowed
-                ? t("assessmentDevice.startDisabledHint")
-                : !canStartAssessment && assessmentStartAt
-                  ? t("assessments.availableFrom", {
-                      date: assessmentAvailableFromLabel,
-                    })
-                  : ""
-            }
-            placement="top"
-            arrow
-          >
-            <span style={{ width: "100%", display: "block" }}>
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={!deviceAllowed || !canStartAssessment}
-                startIcon={
-                  <IconWrapper icon="mdi:play-circle-outline" size={24} />
-                }
-                onClick={handleStart}
+              <Box
                 sx={{
-                  backgroundColor: "#6366f1",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  py: 1.5,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
-                  "&:hover": {
-                    backgroundColor: "#4f46e5",
-                    boxShadow: "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
-                  },
-                  "&.Mui-disabled": {
-                    backgroundColor: "#c7c9f5",
-                    color: "#f3f4f6",
-                  },
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 2,
+                  mb: 1.5,
                 }}
               >
-                {t("assessments.startAssessment")}
-              </Button>
-            </span>
-          </Tooltip>
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 2,
+                    bgcolor: "#4338ca",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IconWrapper icon="mdi:routes" size={26} color="#ffffff" />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Chip
+                    label={t("assessments.take.strictNavImportantBadge")}
+                    size="small"
+                    sx={{
+                      mb: 1,
+                      fontWeight: 700,
+                      bgcolor: "#4338ca",
+                      color: "#ffffff",
+                      "& .MuiChip-label": { px: 1.25 },
+                    }}
+                  />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 800,
+                      color: "#312e81",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {t("assessments.take.strictNavTitle")}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "#4338ca",
+                  fontWeight: 700,
+                  mb: 1.5,
+                  lineHeight: 1.5,
+                }}
+              >
+                {t("assessments.take.strictNavReadBeforeStart")}
+              </Typography>
+              <Typography
+                variant="body2"
+                component="div"
+                sx={{
+                  color: "#1e1b4b",
+                  whiteSpace: "pre-line",
+                  lineHeight: 1.75,
+                  fontWeight: 500,
+                }}
+              >
+                {t("assessments.take.strictNavInstructions")}
+              </Typography>
+            </Paper>
+          )}
+
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            startIcon={<IconWrapper icon="mdi:play-circle-outline" size={24} />}
+            onClick={handleStart}
+            disabled={!deviceAllowed || !canStartAssessment}
+            sx={{
+              backgroundColor: "#6366f1",
+              color: "#ffffff",
+              fontWeight: 600,
+              py: 1.5,
+              borderRadius: 2,
+              textTransform: "none",
+              fontSize: "1rem",
+              boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+              "&:hover": {
+                backgroundColor: "#4f46e5",
+                boxShadow: "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+              },
+            }}
+          >
+            {t("assessments.startAssessment")}
+          </Button>
         </Paper>
       </Box>
     </MainLayout>

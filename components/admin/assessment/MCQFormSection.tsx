@@ -107,7 +107,7 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
       </Typography>
 
       {/* MCQ Form */}
-      <Paper sx={{ p: 3, bgcolor: "#f9fafb" }}>
+      <Paper sx={{ p: 3, bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Question Text"
@@ -256,7 +256,7 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
                 !formData.option_d.trim()
               }
               startIcon={<IconWrapper icon="mdi:plus" size={18} />}
-              sx={{ bgcolor: "#6366f1" }}
+              sx={{ bgcolor: "var(--accent-indigo)" }}
             >
               {editingIndex !== null ? "Update Question" : "Add Question"}
             </Button>
@@ -276,7 +276,7 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
               sx={{
                 p: 2,
                 mb: 2,
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--border-default)",
                 position: "relative",
               }}
             >
@@ -295,14 +295,14 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
                   <IconButton
                     size="small"
                     onClick={() => handleEdit(index)}
-                    sx={{ color: "#6366f1" }}
+                    sx={{ color: "var(--accent-indigo)" }}
                   >
                     <IconWrapper icon="mdi:pencil" size={16} />
                   </IconButton>
                   <IconButton
                     size="small"
                     onClick={() => handleDelete(index)}
-                    sx={{ color: "#ef4444" }}
+                    sx={{ color: "var(--error-500)" }}
                   >
                     <IconWrapper icon="mdi:delete" size={16} />
                   </IconButton>
@@ -318,7 +318,7 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
                     <IconWrapper
                       icon="mdi:check-circle"
                       size={14}
-                      color="#10b981"
+                      color="var(--success-500)"
                       style={{ marginLeft: 8, verticalAlign: "middle" }}
                     />
                   )}
@@ -329,7 +329,7 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
                     <IconWrapper
                       icon="mdi:check-circle"
                       size={14}
-                      color="#10b981"
+                      color="var(--success-500)"
                       style={{ marginLeft: 8, verticalAlign: "middle" }}
                     />
                   )}
@@ -340,7 +340,7 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
                     <IconWrapper
                       icon="mdi:check-circle"
                       size={14}
-                      color="#10b981"
+                      color="var(--success-500)"
                       style={{ marginLeft: 8, verticalAlign: "middle" }}
                     />
                   )}
@@ -351,14 +351,14 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
                     <IconWrapper
                       icon="mdi:check-circle"
                       size={14}
-                      color="#10b981"
+                      color="var(--success-500)"
                       style={{ marginLeft: 8, verticalAlign: "middle" }}
                     />
                   )}
                 </Typography>
               </Box>
               {mcq.difficulty_level && (
-                <Typography variant="caption" sx={{ color: "#6b7280", mt: 1 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", mt: 1 }}>
                   Difficulty: {mcq.difficulty_level}
                 </Typography>
               )}

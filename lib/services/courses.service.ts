@@ -51,6 +51,7 @@ export interface Course {
     article: { total: number };
     assignment: { total: number };
     coding_problem: { total: number };
+    subjective_question?: { total: number };
   };
   rating?: number; // Average rating (0-5)
   rating_count?: number; // Number of ratings
@@ -74,6 +75,7 @@ export interface SubModule {
   article_count: number;
   coding_problem_count: number;
   assignment_count: number;
+  subjective_question_count?: number;
 }
 
 export interface CourseDetail {
@@ -103,6 +105,7 @@ export interface CourseDashboard {
   video_progress?: number;
   assignment_progress?: number;
   coding_problem_progress?: number;
+  subjective_question_progress?: number;
   total_progress?: number;
 }
 
@@ -122,7 +125,8 @@ export interface SubModuleContentItem {
   order: number;
   duration_in_minutes: number;
   marks: number;
-  status: "complete" | "incomplete" | "pending";
+  /** Submodule outline uses `complete` | `non-complete` (ContentDetailSerializer). */
+  status: "complete" | "non-complete" | "incomplete" | "pending";
   submissions: number | null;
   obtainedMarks: number | null;
 }
@@ -153,13 +157,31 @@ export interface VideoTutorialDetail {
   difficulty_level: string;
 }
 
+/** Learner-facing subjective question payload from content detail (no rubric). */
+export interface SubjectiveQuestionDetails {
+  id: number;
+  question_text: string;
+  max_marks: number;
+  question_type?: string;
+}
+
+export interface SubjectiveSubmitResult {
+  answer: string;
+  awarded_marks: number;
+  max_marks_question: number;
+  maximum_marks: number;
+  feedback: string;
+  status: string;
+}
+
 export interface ContentDetail {
   id: number;
   content_type: string;
   content_title: string;
   duration_in_minutes: number;
   order: number;
-  status: "complete" | "incomplete" | "pending";
+  /** LMS content detail API uses `complete` | `non-complete` (see ContentDetailView). */
+  status: "complete" | "non-complete" | "incomplete" | "pending";
   marks: number;
   details: VideoTutorialDetail | any;
   next_content?: {
@@ -407,6 +429,24 @@ export const coursesService = {
       language_id: languageId,
     });
 
+    return response.data;
+  },
+
+  // Subjective question: AI grading (course content)
+  // API: POST ...?sub_type=submitAnswer with body { "answer" } or { "text" } (same semantics).
+  submitSubjectiveAnswer: async (
+    courseId: number,
+    contentId: number,
+    answerOrPayload: string | { answer?: string; text?: string }
+  ): Promise<SubjectiveSubmitResult> => {
+    const endpoint = `/activity/clients/${config.clientId}/courses/${courseId}/content/${contentId}/?sub_type=submitAnswer`;
+    const body =
+      typeof answerOrPayload === "string"
+        ? { answer: answerOrPayload }
+        : answerOrPayload.answer !== undefined
+          ? { answer: answerOrPayload.answer ?? "" }
+          : { text: answerOrPayload.text ?? "" };
+    const response = await apiClient.post<SubjectiveSubmitResult>(endpoint, body);
     return response.data;
   },
 

@@ -65,12 +65,12 @@ export function CodingProblemView({ content }: CodingProblemViewProps) {
         sx={{
           width: { xs: "100%", md: "50%" },
           height: { xs: "50%", md: "100%" },
-          borderRight: { md: "1px solid #e5e7eb" },
-          borderBottom: { xs: "1px solid #e5e7eb", md: "none" },
+          borderRight: { md: "1px solid var(--border-default)" },
+          borderBottom: { xs: "1px solid var(--border-default)", md: "none" },
           overflow: "auto",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--card-bg)",
         }}
       >
         <CodingProblemDescription

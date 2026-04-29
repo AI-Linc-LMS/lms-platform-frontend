@@ -41,11 +41,11 @@ import { EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
 import { Users, CheckSquare, X } from "lucide-react";
 
 const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  active: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
-  inactive: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
-  closed: { bg: "rgba(100, 116, 139, 0.12)", color: "#64748b" },
-  completed: { bg: "rgba(34, 197, 94, 0.08)", color: "#15803d" },
-  on_hold: { bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" },
+  active: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
+  inactive: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
+  closed: { bg: "color-mix(in srgb, var(--font-secondary) 16%, transparent)", color: "var(--font-secondary)" },
+  completed: { bg: "color-mix(in srgb, var(--success-500) 10%, transparent)", color: "var(--success-500)" },
+  on_hold: { bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)", color: "var(--warning-500)" },
 };
 
 export default function AdminJobsV2Page() {
@@ -237,7 +237,7 @@ export default function AdminJobsV2Page() {
       <Box
         sx={{
           minHeight: "100%",
-          background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+          background: "linear-gradient(180deg, var(--background) 0%, var(--surface) 100%)",
           p: { xs: 2, md: 3 },
         }}
       >
@@ -253,7 +253,7 @@ export default function AdminJobsV2Page() {
             gap: 2,
             pb: 2,
             borderBottom: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
+            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
           }}
         >
           <Box sx={{ minWidth: 0 }}>
@@ -264,7 +264,7 @@ export default function AdminJobsV2Page() {
                   fontWeight: 700,
                   fontSize: { xs: "1.5rem", sm: "1.75rem" },
                   letterSpacing: "-0.025em",
-                  color: "#0f172a",
+                  color: "var(--font-primary)",
                   lineHeight: 1.2,
                 }}
               >
@@ -278,9 +278,9 @@ export default function AdminJobsV2Page() {
                     height: 24,
                     fontWeight: 600,
                     fontSize: "0.75rem",
-                    backgroundColor: "rgba(99, 102, 241, 0.1)",
-                    color: "#6366f1",
-                    border: "1px solid rgba(99, 102, 241, 0.2)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                    color: "var(--accent-indigo)",
+                    border: "1px solid color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
                   }}
                 />
               )}
@@ -288,7 +288,7 @@ export default function AdminJobsV2Page() {
             <Typography
               variant="body2"
               sx={{
-                color: "#64748b",
+                color: "var(--font-secondary)",
                 mt: 0.5,
                 fontSize: "0.9375rem",
               }}
@@ -302,10 +302,10 @@ export default function AdminJobsV2Page() {
               sx={{
                 minWidth: 140,
                 "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#fff",
+                  backgroundColor: "var(--card-bg)",
                   borderRadius: 2,
                   fontSize: "0.875rem",
-                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.5)" },
+                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)" },
                 },
               }}
             >
@@ -335,9 +335,9 @@ export default function AdminJobsV2Page() {
                 textTransform: "none",
                 fontWeight: 600,
                 borderRadius: 2,
-                borderColor: "rgba(99, 102, 241, 0.4)",
-                color: "#6366f1",
-                "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.06)" },
+                borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                color: "var(--accent-indigo)",
+                "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
               }}
             >
               Reports
@@ -351,9 +351,9 @@ export default function AdminJobsV2Page() {
                 textTransform: "none",
                 fontWeight: 600,
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
-                "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
+                backgroundColor: "var(--accent-indigo)",
+                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
               }}
             >
               Create Job
@@ -374,10 +374,10 @@ export default function AdminJobsV2Page() {
               flexWrap: "wrap",
               gap: 2,
               border: "2px solid",
-              borderColor: "rgba(99, 102, 241, 0.4)",
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0.02) 100%)",
+              borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 4%, transparent) 100%)",
               borderRadius: 2,
-              boxShadow: "0 2px 8px rgba(99, 102, 241, 0.08)",
+              boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -386,16 +386,16 @@ export default function AdminJobsV2Page() {
                   width: 40,
                   height: 40,
                   borderRadius: 2,
-                  backgroundColor: "rgba(99, 102, 241, 0.12)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <CheckSquare size={20} style={{ color: "#6366f1" }} />
+                <CheckSquare size={20} style={{ color: "var(--accent-indigo)" }} />
               </Box>
               <Box>
-                <Typography variant="body1" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                   {selectedIds.size} job{selectedIds.size !== 1 ? "s" : ""} selected
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -410,7 +410,7 @@ export default function AdminJobsV2Page() {
                   textTransform: "none",
                   fontWeight: 600,
                   color: "text.secondary",
-                  "&:hover": { backgroundColor: "rgba(0,0,0,0.04)", color: "text.primary" },
+                  "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)", color: "text.primary" },
                 }}
               >
                 Clear
@@ -424,11 +424,11 @@ export default function AdminJobsV2Page() {
                   label="Status"
                   onChange={(e) => setBulkStatus(e.target.value)}
                   sx={{
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--card-bg)",
                     borderRadius: 2,
                     fontWeight: 600,
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
+                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                   }}
                 >
                   <MenuItem value="">—</MenuItem>
@@ -456,11 +456,11 @@ export default function AdminJobsV2Page() {
                   label="Visibility"
                   onChange={(e) => setBulkVisibility(e.target.value)}
                   sx={{
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--card-bg)",
                     borderRadius: 2,
                     fontWeight: 600,
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
+                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                   }}
                 >
                   <MenuItem value="">—</MenuItem>
@@ -475,18 +475,18 @@ export default function AdminJobsV2Page() {
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  backgroundColor: "#6366f1",
+                  backgroundColor: "var(--accent-indigo)",
                   px: 3,
                   py: 1.25,
                   borderRadius: 2,
-                  boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
-                  "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
-                  "&:disabled": { backgroundColor: "rgba(99, 102, 241, 0.5)" },
+                  boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
+                  "&:disabled": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)" },
                 }}
               >
                 {updating ? (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CircularProgress size={16} sx={{ color: "#fff" }} />
+                    <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
                     Updating...
                   </Box>
                 ) : (
@@ -501,11 +501,11 @@ export default function AdminJobsV2Page() {
           elevation={0}
           sx={{
             border: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
+            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
             borderRadius: 2,
             overflow: "hidden",
-            backgroundColor: "#fff",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 7%, transparent)",
           }}
         >
           {loading ? (
@@ -516,11 +516,11 @@ export default function AdminJobsV2Page() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 2,
-                backgroundColor: "#fff",
+                backgroundColor: "var(--card-bg)",
               }}
             >
-              <CircularProgress sx={{ color: "#6366f1" }} size={44} thickness={3} />
-              <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500 }}>
+              <CircularProgress sx={{ color: "var(--accent-indigo)" }} size={44} thickness={3} />
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                 Loading jobs...
               </Typography>
             </Box>
@@ -532,23 +532,23 @@ export default function AdminJobsV2Page() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                backgroundColor: "#fff",
+                backgroundColor: "var(--card-bg)",
               }}
             >
               <Box
                 sx={{
                   p: 2,
                   borderRadius: 3,
-                  backgroundColor: "rgba(99, 102, 241, 0.04)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   display: "inline-flex",
                 }}
               >
                 <EmptyJobsIllustration width={120} height={100} />
               </Box>
-              <Typography variant="h6" sx={{ mt: 3, fontWeight: 700, color: "#0f172a" }}>
+              <Typography variant="h6" sx={{ mt: 3, fontWeight: 700, color: "var(--font-primary)" }}>
                 No jobs yet
               </Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: "#64748b", maxWidth: 320 }}>
+              <Typography variant="body2" sx={{ mt: 1, color: "var(--font-secondary)", maxWidth: 320 }}>
                 Create your first job to start receiving applications from students.
               </Typography>
               <Button
@@ -561,8 +561,8 @@ export default function AdminJobsV2Page() {
                   textTransform: "none",
                   fontWeight: 600,
                   borderRadius: 2,
-                  backgroundColor: "#6366f1",
-                  "&:hover": { backgroundColor: "#4f46e5" },
+                  backgroundColor: "var(--accent-indigo)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
                 }}
               >
                 Create Job
@@ -587,20 +587,21 @@ export default function AdminJobsV2Page() {
                   gap: 1.5,
                   p: 1.5,
                   borderRadius: 2,
-                  backgroundColor: "rgba(99, 102, 241, 0.05)",
-                  border: "1px solid rgba(99, 102, 241, 0.12)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 7%, transparent)",
+                  border: "1px solid color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                 }}
               >
                 <Checkbox
                   checked={jobs.length > 0 && jobs.every((j) => selectedIds.has(j.id))}
                   indeterminate={selectedIds.size > 0 && selectedIds.size < jobs.length}
                   onChange={toggleSelectAll}
-                  sx={{ color: "#64748b", "&.Mui-checked": { color: "#6366f1" } }}
+                  sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                 />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#0f172a" }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                   Select all
                 </Typography>
-                <Typography variant="caption" sx={{ color: "#64748b" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                   {jobs.length} jobs
                 </Typography>
               </Box>
@@ -616,15 +617,15 @@ export default function AdminJobsV2Page() {
                       p: 2.5,
                       cursor: "pointer",
                       border: "1px solid",
-                      borderColor: "rgba(0,0,0,0.06)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
                       borderRadius: 2,
                       transition: "all 0.2s ease",
-                      backgroundColor: "#fff",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                      backgroundColor: "var(--card-bg)",
+                      boxShadow: "0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent)",
                       "&:hover": {
-                        borderColor: "rgba(99, 102, 241, 0.35)",
-                        backgroundColor: "rgba(99, 102, 241, 0.02)",
-                        boxShadow: "0 4px 12px rgba(99, 102, 241, 0.1)",
+                        borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
+                        boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                       },
                     }}
                   >
@@ -632,7 +633,7 @@ export default function AdminJobsV2Page() {
                       <Checkbox
                         checked={selectedIds.has(job.id)}
                         onChange={(e) => { e.stopPropagation(); toggleSelect(job.id); }}
-                        sx={{ color: "#64748b", "&.Mui-checked": { color: "#6366f1" }, p: 0, mt: 0.5 }}
+                        sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" }, p: 0, mt: 0.5 }}
                         onClick={(e) => e.stopPropagation()}
                       />
                       <Avatar
@@ -642,21 +643,21 @@ export default function AdminJobsV2Page() {
                           width: 48,
                           height: 48,
                           borderRadius: 1.5,
-                          backgroundColor: "#eef2ff",
-                          color: "#6366f1",
+                          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface))",
+                          color: "var(--accent-indigo)",
                           fontSize: "1rem",
                           fontWeight: 600,
                           flexShrink: 0,
-                          border: "1px solid rgba(99, 102, 241, 0.12)",
+                          border: "1px solid color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                         }}
                       >
                         {job.company_name?.[0]?.toUpperCase() || "C"}
                       </Avatar>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: "#0f172a", mb: 0.25, lineHeight: 1.3 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.25, lineHeight: 1.3 }}>
                           {job.job_title}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: "#64748b", display: "block", mb: 1.5 }}>
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}>
                           {job.company_name}
                           {job.location && ` • ${job.location}`}
                         </Typography>
@@ -691,9 +692,11 @@ export default function AdminJobsV2Page() {
                               height: 26,
                               fontSize: "0.7rem",
                               fontWeight: 600,
-                              borderColor: job.is_published ? "rgba(34, 197, 94, 0.5)" : "rgba(100, 116, 139, 0.5)",
-                              color: job.is_published ? "#16a34a" : "#64748b",
-                              backgroundColor: job.is_published ? "rgba(34, 197, 94, 0.08)" : "rgba(100, 116, 139, 0.08)",
+                              borderColor: job.is_published
+                                ? "color-mix(in srgb, var(--success-500) 55%, transparent)"
+                                : "color-mix(in srgb, var(--font-secondary) 55%, transparent)",
+                              color: job.is_published ? "var(--success-500)" : "var(--font-secondary)",
+                              backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 10%, transparent)" : "color-mix(in srgb, var(--font-secondary) 10%, transparent)",
                             }}
                           />
                           <Box
@@ -707,12 +710,12 @@ export default function AdminJobsV2Page() {
                               px: 1.25,
                               py: 0.5,
                               borderRadius: 1.5,
-                              backgroundColor: "rgba(99, 102, 241, 0.08)",
-                              color: "#6366f1",
+                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                              color: "var(--accent-indigo)",
                               textDecoration: "none",
                               fontSize: "0.8rem",
                               fontWeight: 600,
-                              "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.15)" },
+                              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)" },
                             }}
                           >
                             <Users size={14} />
@@ -720,11 +723,11 @@ export default function AdminJobsV2Page() {
                           </Box>
                         </Box>
                         <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
-                          <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
                             Created {formatDate(job.created_at)}
                           </Typography>
                           {job.application_deadline && (
-                            <Typography variant="caption" sx={{ color: isUrgent ? "#d97706" : "#94a3b8", fontWeight: isUrgent ? 600 : 400 }}>
+                            <Typography variant="caption" sx={{ color: isUrgent ? "var(--warning-500)" : "var(--font-tertiary)", fontWeight: isUrgent ? 600 : 400 }}>
                               Closes {formatDate(job.application_deadline)}
                               {isUrgent && days !== null && ` • ${days === 0 ? "Today" : days === 1 ? "1 day" : `${days} days`} left`}
                             </Typography>
@@ -737,7 +740,7 @@ export default function AdminJobsV2Page() {
                           e.stopPropagation();
                           handleMenuOpen(e, job);
                         }}
-                        sx={{ color: "#94a3b8", flexShrink: 0, "&:hover": { color: "#64748b" } }}
+                        sx={{ color: "var(--font-tertiary)", flexShrink: 0, "&:hover": { color: "var(--font-secondary)" } }}
                         aria-label="Actions"
                       >
                         <IconWrapper icon="mdi:dots-vertical" size={20} />
@@ -753,7 +756,7 @@ export default function AdminJobsV2Page() {
                 stickyHeader
                 size="small"
                 sx={{
-                  "& .MuiTableCell-root": { py: 1.75, px: 2, borderBottom: "1px solid rgba(0,0,0,0.05)" },
+                  "& .MuiTableCell-root": { py: 1.75, px: 2, borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 7%, transparent)" },
                   "& .MuiTableRow-root:last-child td": { borderBottom: 0 },
                 }}
               >
@@ -763,9 +766,9 @@ export default function AdminJobsV2Page() {
                       padding="checkbox"
                       sx={{
                         fontWeight: 600,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         width: 48,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
                         py: 2,
                       }}
                     >
@@ -773,16 +776,16 @@ export default function AdminJobsV2Page() {
                         checked={jobs.length > 0 && jobs.every((j) => selectedIds.has(j.id))}
                         indeterminate={selectedIds.size > 0 && selectedIds.size < jobs.length}
                         onChange={toggleSelectAll}
-                        sx={{ color: "#64748b", "&.Mui-checked": { color: "#6366f1" } }}
+                        sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                       />
                     </TableCell>
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         minWidth: 200,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -795,10 +798,10 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         minWidth: 120,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -811,10 +814,10 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         minWidth: 100,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -828,11 +831,11 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         width: 100,
                         minWidth: 100,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -846,10 +849,10 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         minWidth: 140,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -862,11 +865,11 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         width: 100,
                         minWidth: 90,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -880,10 +883,10 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         minWidth: 95,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -896,10 +899,10 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         minWidth: 110,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -912,11 +915,11 @@ export default function AdminJobsV2Page() {
                     <TableCell
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
+                        backgroundColor: "var(--surface)",
                         width: 80,
                         minWidth: 80,
-                        borderBottom: "1px solid rgba(0,0,0,0.08)",
-                        color: "#334155",
+                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
@@ -937,14 +940,14 @@ export default function AdminJobsV2Page() {
                       onClick={() => handleRowClick(job)}
                       sx={{
                         cursor: "pointer",
-                        "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.04)" },
+                        "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" },
                       }}
                     >
                       <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedIds.has(job.id)}
                           onChange={() => toggleSelect(job.id)}
-                          sx={{ color: "#64748b", "&.Mui-checked": { color: "#6366f1" } }}
+                          sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                         />
                       </TableCell>
                       <TableCell>
@@ -956,20 +959,20 @@ export default function AdminJobsV2Page() {
                               width: 40,
                               height: 40,
                               borderRadius: 1.5,
-                              backgroundColor: "#eef2ff",
-                              color: "#6366f1",
+                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface))",
+                              color: "var(--accent-indigo)",
                               fontSize: "0.9375rem",
                               fontWeight: 600,
-                              border: "1px solid rgba(99, 102, 241, 0.12)",
+                              border: "1px solid color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                             }}
                           >
                             {job.company_name?.[0]?.toUpperCase() || "C"}
                           </Avatar>
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: "#0f172a", lineHeight: 1.3 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}>
                               {job.job_title}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
                               {job.company_name}
                               {job.location && ` • ${job.location}`}
                             </Typography>
@@ -977,7 +980,7 @@ export default function AdminJobsV2Page() {
                         </Box>
                       </TableCell>
                       <TableCell sx={{ maxWidth: 160 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, color: "#334155" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: "var(--font-secondary)" }}>
                           {job.company_name}
                         </Typography>
                       </TableCell>
@@ -1014,9 +1017,11 @@ export default function AdminJobsV2Page() {
                             height: 24,
                             fontSize: "0.7rem",
                             fontWeight: 600,
-                            borderColor: job.is_published ? "rgba(34, 197, 94, 0.5)" : "rgba(100, 116, 139, 0.5)",
-                            color: job.is_published ? "#16a34a" : "#64748b",
-                            backgroundColor: job.is_published ? "rgba(34, 197, 94, 0.08)" : "rgba(100, 116, 139, 0.08)",
+                            borderColor: job.is_published
+                              ? "color-mix(in srgb, var(--success-500) 55%, transparent)"
+                              : "color-mix(in srgb, var(--font-secondary) 55%, transparent)",
+                            color: job.is_published ? "var(--success-500)" : "var(--font-secondary)",
+                            backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 10%, transparent)" : "color-mix(in srgb, var(--font-secondary) 10%, transparent)",
                           }}
                         />
                       </TableCell>
@@ -1025,7 +1030,7 @@ export default function AdminJobsV2Page() {
                           <Typography
                             variant="body2"
                             sx={{
-                              color: "#64748b",
+                              color: "var(--font-secondary)",
                               fontSize: "0.8125rem",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -1050,15 +1055,15 @@ export default function AdminJobsV2Page() {
                               px: 1.25,
                               py: 0.5,
                               borderRadius: 1.5,
-                              backgroundColor: "rgba(99, 102, 241, 0.08)",
-                              color: "#6366f1",
+                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                              color: "var(--accent-indigo)",
                               textDecoration: "none",
                               fontWeight: 600,
                               fontSize: "0.8rem",
                               transition: "all 0.2s",
                               "&:hover": {
-                                backgroundColor: "rgba(99, 102, 241, 0.15)",
-                                color: "#4f46e5",
+                                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+                                color: "var(--accent-indigo-dark)",
                               },
                             }}
                           >
@@ -1068,21 +1073,21 @@ export default function AdminJobsV2Page() {
                         </Tooltip>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ color: "#64748b", fontSize: "0.8125rem" }}>
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
                           {formatDate(job.created_at)}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         {job.application_deadline ? (
                           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
-                            <Typography variant="body2" sx={{ color: "#64748b", fontSize: "0.8125rem" }}>
+                            <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
                               {formatDate(job.application_deadline)}
                             </Typography>
                             {(() => {
                               const days = daysUntilDeadline(job.application_deadline);
                               if (days !== null && days >= 0 && days <= 7) {
                                 return (
-                                  <Typography variant="caption" sx={{ color: "#d97706", fontWeight: 600 }}>
+                                  <Typography variant="caption" sx={{ color: "var(--warning-500)", fontWeight: 600 }}>
                                     {days === 0 ? "Today" : days === 1 ? "1 day left" : `${days} days left`}
                                   </Typography>
                                 );
@@ -1091,7 +1096,7 @@ export default function AdminJobsV2Page() {
                             })()}
                           </Box>
                         ) : (
-                          <Typography variant="body2" sx={{ color: "#94a3b8" }}>—</Typography>
+                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>—</Typography>
                         )}
                       </TableCell>
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
@@ -1125,7 +1130,7 @@ export default function AdminJobsV2Page() {
               sx: {
                 minWidth: 180,
                 borderRadius: 2,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                boxShadow: "0 4px 20px color-mix(in srgb, var(--font-primary) 15%, transparent)",
                 mt: 1.5,
               },
             },

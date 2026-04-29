@@ -83,7 +83,7 @@ export function ImageUrlDialog({
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 2 },
-          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+          boxShadow: "0 8px 24px color-mix(in srgb, var(--font-primary) 16%, transparent)",
           m: { xs: 0, sm: 2 },
           maxHeight: { xs: "100vh", sm: "90vh" },
           display: "flex",
@@ -97,8 +97,8 @@ export function ImageUrlDialog({
           pb: 1.5,
           px: { xs: 2.5, sm: 3 },
           pt: { xs: 2.5, sm: 3 },
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          backgroundColor: "#f9fafb",
+          borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          backgroundColor: "var(--surface)",
           display: "flex",
           alignItems: "center",
           gap: 1.5,
@@ -109,21 +109,21 @@ export function ImageUrlDialog({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: "rgba(10, 102, 194, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:link-variant" size={20} color="#0a66c2" />
+          <IconWrapper icon="mdi:link-variant" size={20} color="var(--accent-indigo)" />
         </Box>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#000000", fontSize: "1.25rem", mb: 0.25 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: "1.25rem", mb: 0.25 }}>
             {title}
           </Typography>
           {subtitle && (
-            <Typography variant="caption" sx={{ color: "#666666", fontSize: "0.8125rem" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
               {subtitle}
             </Typography>
           )}
@@ -154,10 +154,10 @@ export function ImageUrlDialog({
         sx={{
           px: { xs: 2.5, sm: 3 },
           py: 2,
-          borderTop: "1px solid rgba(0,0,0,0.08)",
+          borderTop: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
           gap: 1,
           flexDirection: { xs: "column-reverse", sm: "row" },
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--background)",
         }}
       >
         <Button
@@ -166,12 +166,12 @@ export function ImageUrlDialog({
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            color: "#666666",
+            color: "var(--font-secondary)",
             borderRadius: "24px",
             px: 3,
             py: 1,
-            border: "1px solid rgba(0,0,0,0.12)",
-            "&:hover": { backgroundColor: "#f3f2ef" },
+            border: "1px solid color-mix(in srgb, var(--font-primary) 14%, transparent)",
+            "&:hover": { backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))" },
           }}
         >
           {t("profile.cancel")}
@@ -183,11 +183,11 @@ export function ImageUrlDialog({
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            backgroundColor: "#0a66c2",
+            backgroundColor: "var(--accent-indigo)",
             borderRadius: "24px",
             px: 3,
             py: 1,
-            "&:hover": { backgroundColor: "#004182" },
+            "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
           {saving ? t("profile.saving") : t("profile.save")}

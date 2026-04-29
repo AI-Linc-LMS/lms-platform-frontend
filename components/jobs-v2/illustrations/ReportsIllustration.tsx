@@ -12,7 +12,7 @@ interface ReportsIllustrationProps {
 const ReportsIllustrationComponent = ({
   width = 140,
   height = 110,
-  primaryColor = "#6366f1",
+  primaryColor = "var(--accent-indigo)",
 }: ReportsIllustrationProps) => (
   <Box
     component="svg"
@@ -28,7 +28,7 @@ const ReportsIllustrationComponent = ({
     <rect x="80" y="35" width="18" height="60" rx="2" fill={primaryColor} />
     <rect x="105" y="50" width="18" height="45" rx="2" fill={primaryColor} opacity={0.7} />
     {/* Document/CSV icon */}
-    <rect x="70" y="5" width="45" height="25" rx="2" fill="#fff" stroke={primaryColor} strokeWidth="2" />
+    <rect x="70" y="5" width="45" height="25" rx="2" fill="var(--font-light)" stroke={primaryColor} strokeWidth="2" />
     <line x1="75" y1="12" x2="105" y2="12" stroke={primaryColor} strokeWidth="1.5" strokeLinecap="round" />
     <line x1="75" y1="17" x2="100" y2="17" stroke={primaryColor} strokeWidth="1.5" strokeLinecap="round" />
     <line x1="75" y1="22" x2="95" y2="22" stroke={primaryColor} strokeWidth="1.5" strokeLinecap="round" />

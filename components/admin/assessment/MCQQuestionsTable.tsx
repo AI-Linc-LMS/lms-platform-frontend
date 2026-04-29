@@ -46,11 +46,12 @@ export function MCQQuestionsTable({
         sx={{
           p: 4,
           textAlign: "center",
-          bgcolor: "#fef3c7",
-          border: "1px solid #fde68a",
+          bgcolor: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+          border:
+            "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default) 65%)",
         }}
       >
-        <Typography variant="body1" sx={{ color: "#78350f", fontWeight: 600 }}>
+        <Typography variant="body1" sx={{ color: "var(--warning-500)", fontWeight: 600 }}>
           No questions found{sectionName ? ` in ${sectionName}` : ""}
         </Typography>
       </Paper>
@@ -61,7 +62,10 @@ export function MCQQuestionsTable({
     <Paper
       sx={{
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
         overflow: "hidden",
         width: "100%",
       }}
@@ -69,7 +73,7 @@ export function MCQQuestionsTable({
       <TableContainer sx={{ width: "100%" }}>
         <Table sx={{ width: "100%" }}>
           <TableHead>
-            <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+            <TableRow sx={{ backgroundColor: "var(--surface)" }}>
               <TableCell
                 sx={{ fontWeight: 600, fontSize: "0.875rem", width: 60 }}
               >
@@ -98,13 +102,13 @@ export function MCQQuestionsTable({
               return (
                 <TableRow
                   key={globalIndex}
-                  sx={{ "&:hover": { backgroundColor: "#f9fafb" } }}
+                  sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}
                 >
                   <TableCell>
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         fontFamily: "monospace",
                         fontWeight: 600,
                       }}
@@ -145,8 +149,10 @@ export function MCQQuestionsTable({
                             }`}
                             size="small"
                             sx={{
-                              bgcolor: isCorrect ? "#d1fae5" : "#f3f4f6",
-                              color: isCorrect ? "#065f46" : "#374151",
+                              bgcolor: isCorrect
+                                ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                : "var(--surface)",
+                              color: isCorrect ? "var(--success-500)" : "var(--font-primary)",
                               fontWeight: isCorrect ? 600 : 400,
                               fontSize: "0.75rem",
                               height: 24,
@@ -161,8 +167,8 @@ export function MCQQuestionsTable({
                       label={mcq.correct_option}
                       size="small"
                       sx={{
-                        bgcolor: "#10b981",
-                        color: "#ffffff",
+                        bgcolor: "var(--success-500)",
+                        color: "var(--font-light)",
                         fontWeight: 700,
                         fontSize: "0.875rem",
                         width: 36,
@@ -178,22 +184,22 @@ export function MCQQuestionsTable({
                         sx={{
                           bgcolor:
                             mcq.difficulty_level === "Easy"
-                              ? "#fef3c7"
+                              ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                               : mcq.difficulty_level === "Medium"
-                              ? "#fde68a"
-                              : "#fed7aa",
+                              ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                              : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                           color:
                             mcq.difficulty_level === "Easy"
-                              ? "#92400e"
+                              ? "var(--success-500)"
                               : mcq.difficulty_level === "Medium"
-                              ? "#78350f"
-                              : "#7c2d12",
+                              ? "var(--warning-500)"
+                              : "var(--warning-500)",
                           fontWeight: 600,
                           fontSize: "0.75rem",
                         }}
                       />
                     ) : (
-                      <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                         -
                       </Typography>
                     )}

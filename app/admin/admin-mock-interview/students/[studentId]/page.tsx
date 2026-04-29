@@ -55,9 +55,21 @@ const getStatCards = (t: (key: string) => string) =>
   ] as const;
 
 const DIFFICULTY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  Easy: { bg: "rgba(34, 197, 94, 0.12)", border: "#22c55e", text: "#166534" },
-  Medium: { bg: "rgba(245, 158, 11, 0.12)", border: "#f59e0b", text: "#92400e" },
-  Hard: { bg: "rgba(239, 68, 68, 0.12)", border: "#ef4444", text: "#991b1b" },
+  Easy: {
+    bg: "color-mix(in srgb, var(--success-500) 12%, transparent)",
+    border: "var(--success-500)",
+    text: "var(--success-500)",
+  },
+  Medium: {
+    bg: "color-mix(in srgb, var(--warning-500) 12%, transparent)",
+    border: "var(--warning-500)",
+    text: "var(--warning-500)",
+  },
+  Hard: {
+    bg: "color-mix(in srgb, var(--error-500) 12%, transparent)",
+    border: "var(--error-500)",
+    text: "var(--error-500)",
+  },
 };
 
 export default function AdminMockInterviewStudentDetailPage() {
@@ -112,7 +124,7 @@ export default function AdminMockInterviewStudentDetailPage() {
             minHeight: 400,
           }}
         >
-          <CircularProgress sx={{ color: "#6366f1" }} />
+          <CircularProgress sx={{ color: "var(--accent-indigo)" }} />
         </Box>
       </MainLayout>
     );
@@ -142,9 +154,9 @@ export default function AdminMockInterviewStudentDetailPage() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 70) return "#16a34a";
-    if (score >= 50) return "#d97706";
-    return "#dc2626";
+    if (score >= 70) return "var(--success-500)";
+    if (score >= 50) return "var(--warning-500)";
+    return "var(--error-500)";
   };
 
   return (
@@ -152,7 +164,8 @@ export default function AdminMockInterviewStudentDetailPage() {
       <Box
         sx={{
           minHeight: "100%",
-          background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 24rem, #fff 24rem)",
+          background:
+            "linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--surface) 60%, var(--background) 40%) 24rem, var(--background) 24rem)",
         }}
       >
         <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1200, mx: "auto" }}>
@@ -161,8 +174,12 @@ export default function AdminMockInterviewStudentDetailPage() {
             onClick={handleBack}
             sx={{
               mb: 2,
-              color: "#64748b",
-              "&:hover": { bgcolor: "rgba(99, 102, 241, 0.08)", color: "#6366f1" },
+              color: "var(--font-secondary)",
+              "&:hover": {
+                bgcolor:
+                  "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+                color: "var(--accent-indigo)",
+              },
             }}
           >
             {t("adminMockInterview.backToMockInterviewAdmin")}
@@ -175,7 +192,7 @@ export default function AdminMockInterviewStudentDetailPage() {
               p: 3,
               mb: 3,
               borderRadius: 3,
-              border: "1px solid #e2e8f0",
+              border: "1px solid var(--border-default)",
               overflow: "hidden",
               position: "relative",
             }}
@@ -187,7 +204,8 @@ export default function AdminMockInterviewStudentDetailPage() {
                 left: 0,
                 right: 0,
                 height: 4,
-                background: "linear-gradient(90deg, #6366f1, #8b5cf6)",
+                background:
+                  "linear-gradient(90deg, var(--accent-indigo), var(--accent-purple))",
               }}
             />
             <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
@@ -197,7 +215,7 @@ export default function AdminMockInterviewStudentDetailPage() {
                 sx={{
                   width: 72,
                   height: 72,
-                  bgcolor: "#6366f1",
+                  bgcolor: "var(--accent-indigo)",
                   fontSize: "1.5rem",
                   fontWeight: 700,
                 }}
@@ -205,14 +223,14 @@ export default function AdminMockInterviewStudentDetailPage() {
                 {student.name?.charAt(0)?.toUpperCase() ?? "?"}
               </Avatar>
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                   {student.name}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#64748b", mt: 0.25 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.25 }}>
                   {student.email}
                 </Typography>
                 {student.phone_number && (
-                  <Typography variant="body2" sx={{ color: "#64748b" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {student.phone_number}
                   </Typography>
                 )}
@@ -237,17 +255,17 @@ export default function AdminMockInterviewStudentDetailPage() {
                   p: 2,
                   textAlign: "center",
                   borderRadius: 2,
-                  border: "1px solid #e2e8f0",
-                  bgcolor: "#fff",
+                  border: "1px solid var(--border-default)",
+                  bgcolor: "var(--card-bg)",
                 }}
               >
                 <Box sx={{ mb: 0.5, display: "flex", justifyContent: "center" }}>
-                  <IconWrapper icon={icon} size={24} color="#6366f1" />
+                  <IconWrapper icon={icon} size={24} color="var(--accent-indigo)" />
                 </Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: key === "avgScore" ? getScoreColor(summary.average_score ?? 0) : "#0f172a" }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: key === "avgScore" ? getScoreColor(summary.average_score ?? 0) : "var(--font-primary)" }}>
                   {getStatValue(key)}
                 </Typography>
-                <Typography variant="caption" sx={{ color: "#64748b" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                   {label}
                 </Typography>
               </Paper>
@@ -262,22 +280,27 @@ export default function AdminMockInterviewStudentDetailPage() {
                 p: 3,
                 mb: 3,
                 borderRadius: 3,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-default)",
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
                 {t("adminMockInterview.scoreTrend")}
               </Typography>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#64748b" }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#64748b" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: "var(--font-secondary)" }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "var(--font-secondary)" }} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0" }}
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid var(--border-default)",
+                      background: "var(--card-bg)",
+                      color: "var(--font-primary)",
+                    }}
                     formatter={(value: number | undefined) => [`${value ?? 0}%`, "Score"]}
                   />
-                  <Bar dataKey="score" name="Score" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="score" name="Score" fill="var(--accent-indigo)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Paper>
@@ -291,10 +314,10 @@ export default function AdminMockInterviewStudentDetailPage() {
                 p: 3,
                 mb: 3,
                 borderRadius: 3,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-default)",
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
                 {t("adminMockInterview.topicPerformance")}
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
@@ -304,26 +327,33 @@ export default function AdminMockInterviewStudentDetailPage() {
                     sx={{
                       p: 2,
                       borderRadius: 2,
-                      border: "1px solid #e2e8f0",
-                      bgcolor: "#f8fafc",
+                      border: "1px solid var(--border-default)",
+                      bgcolor: "var(--surface)",
                       transition: "border-color 0.2s, box-shadow 0.2s",
                       "&:hover": {
-                        borderColor: "#c7d2fe",
-                        boxShadow: "0 2px 8px rgba(99, 102, 241, 0.08)",
+                        borderColor:
+                          "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
+                        boxShadow:
+                          "0 2px 8px color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                       },
                     }}
                   >
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: "#0f172a" }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                         {topicItem.topic}
                       </Typography>
                       <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
                         <Chip
                           label={`${t("adminMockInterview.avg")} ${topicItem.average_score?.toFixed(1) ?? 0}%`}
                           size="small"
-                          sx={{ fontWeight: 600, bgcolor: "#e0e7ff", color: "#4338ca" }}
+                          sx={{
+                            fontWeight: 600,
+                            bgcolor:
+                              "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                            color: "var(--accent-indigo)",
+                          }}
                         />
-                        <Typography variant="body2" sx={{ color: "#64748b" }}>
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                           {t("adminMockInterview.best")}: {topicItem.highest_score ?? 0}%
                         </Typography>
                       </Box>
@@ -336,11 +366,11 @@ export default function AdminMockInterviewStudentDetailPage() {
                           flex: 1,
                           height: 6,
                           borderRadius: 3,
-                          bgcolor: "#e2e8f0",
-                          "& .MuiLinearProgress-bar": { borderRadius: 3, bgcolor: "#6366f1" },
+                          bgcolor: "color-mix(in srgb, var(--font-secondary) 16%, transparent)",
+                          "& .MuiLinearProgress-bar": { borderRadius: 3, bgcolor: "var(--accent-indigo)" },
                         }}
                       />
-                      <Typography variant="caption" sx={{ color: "#64748b", minWidth: 72 }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", minWidth: 72 }}>
                         {t("adminMockInterview.completedCount", { completed: topicItem.completed, total: topicItem.total_interviews })}
                       </Typography>
                     </Box>
@@ -358,10 +388,10 @@ export default function AdminMockInterviewStudentDetailPage() {
                 p: 3,
                 mb: 3,
                 borderRadius: 3,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-default)",
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
                 {t("adminMockInterview.difficultyPerformance")}
               </Typography>
               <Box
@@ -372,7 +402,11 @@ export default function AdminMockInterviewStudentDetailPage() {
                 }}
               >
                 {Object.entries(difficulty_performance).map(([diff, stats]) => {
-                  const theme = DIFFICULTY_COLORS[diff] ?? { bg: "#f1f5f9", border: "#94a3b8", text: "#475569" };
+                  const theme = DIFFICULTY_COLORS[diff] ?? {
+                    bg: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+                    border: "var(--border-default)",
+                    text: "var(--font-secondary)",
+                  };
                   return (
                     <Box
                       key={diff}
@@ -386,10 +420,10 @@ export default function AdminMockInterviewStudentDetailPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 600, color: theme.text }}>
                         {diff}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {t("adminMockInterview.completedCount", { completed: stats.completed, total: stats.total })}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {t("adminMockInterview.avg")}: {stats.average_score?.toFixed(1) ?? 0}%
                       </Typography>
                     </Box>
@@ -406,23 +440,23 @@ export default function AdminMockInterviewStudentDetailPage() {
               sx={{
                 p: 3,
                 borderRadius: 3,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border-default)",
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#0f172a" }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
                 {t("adminMockInterview.recentInterviews")}
               </Typography>
               <TableContainer>
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: "#f8fafc" }}>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.titleColumn")}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.topic")}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.difficulty")}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.status")}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.score")}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>{t("adminMockInterview.date")}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: "#475569" }} align="right">{t("adminMockInterview.action")}</TableCell>
+                    <TableRow sx={{ bgcolor: "var(--surface)" }}>
+                      <TableCell sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>{t("adminMockInterview.titleColumn")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>{t("adminMockInterview.topic")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>{t("adminMockInterview.difficulty")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>{t("adminMockInterview.status")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>{t("adminMockInterview.score")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>{t("adminMockInterview.date")}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "var(--font-secondary)" }} align="right">{t("adminMockInterview.action")}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -430,36 +464,51 @@ export default function AdminMockInterviewStudentDetailPage() {
                       <TableRow
                         key={i.id}
                         sx={{
-                          "&:hover": { bgcolor: "#f8fafc" },
+                          "&:hover": { bgcolor: "var(--surface)" },
                         }}
                       >
-                        <TableCell sx={{ color: "#0f172a" }}>{i.title}</TableCell>
-                        <TableCell sx={{ color: "#64748b" }}>{i.topic}</TableCell>
-                        <TableCell sx={{ color: "#64748b" }}>{i.difficulty}</TableCell>
+                        <TableCell sx={{ color: "var(--font-primary)" }}>{i.title}</TableCell>
+                        <TableCell sx={{ color: "var(--font-secondary)" }}>{i.topic}</TableCell>
+                        <TableCell sx={{ color: "var(--font-secondary)" }}>{i.difficulty}</TableCell>
                         <TableCell>
                           <Chip
                             label={i.status.replace("_", " ")}
                             size="small"
                             sx={{
                               fontWeight: 500,
-                              ...(i.status === "completed" && { bgcolor: "#d1fae5", color: "#065f46" }),
-                              ...(i.status === "in_progress" && { bgcolor: "#dbeafe", color: "#1e40af" }),
-                              ...(i.status === "scheduled" && { bgcolor: "#fef3c7", color: "#92400e" }),
+                              ...(i.status === "completed" && {
+                                bgcolor:
+                                  "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                                color: "var(--success-500)",
+                              }),
+                              ...(i.status === "in_progress" && {
+                                bgcolor:
+                                  "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                                color: "var(--accent-indigo)",
+                              }),
+                              ...(i.status === "scheduled" && {
+                                bgcolor:
+                                  "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+                                color: "var(--warning-500)",
+                              }),
                             }}
                           />
                         </TableCell>
-                        <TableCell sx={{ color: "#64748b" }}>
+                        <TableCell sx={{ color: "var(--font-secondary)" }}>
                           {i.overall_score != null ? `${i.overall_score}%` : "—"}
                         </TableCell>
-                        <TableCell sx={{ color: "#64748b" }}>{formatDate(i.created_at)}</TableCell>
+                        <TableCell sx={{ color: "var(--font-secondary)" }}>{formatDate(i.created_at)}</TableCell>
                         <TableCell align="right">
                           <Button
                             size="small"
                             onClick={() => handleViewInterview(i.id)}
                             sx={{
-                              color: "#6366f1",
+                              color: "var(--accent-indigo)",
                               fontWeight: 600,
-                              "&:hover": { bgcolor: "rgba(99, 102, 241, 0.08)" },
+                              "&:hover": {
+                                bgcolor:
+                                  "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                              },
                             }}
                           >
                             {t("adminMockInterview.view")}

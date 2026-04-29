@@ -20,6 +20,8 @@ import {
 } from "@/lib/utils/psychometric-utils";
 import { stripHtmlTags } from "@/lib/utils/html-utils";
 import { useTranslation } from "react-i18next";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 interface AssessmentCardProps {
   assessment: Assessment;
@@ -73,10 +75,14 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const theme = useTheme();
   const isRtl = theme.direction === "rtl";
   const router = useRouter();
-  const showResults = assessment.status === "submitted";
+  const showResults =
+    assessment.status === "submitted" &&
+    assessment.show_result !== false &&
+    (assessment.evaluation_mode !== "manual" || assessment.review_status === "published");
   const isPsychometric = isPsychometricAssessment(assessment);
   const psychometricTags = isPsychometric ? getPsychometricTags(assessment) : [];
   const [remainingTime, setRemainingTime] = useState<string>("");
+  const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
   
   // Calculate remaining time for hover tooltip
   const startDate = useMemo(() => parseDateTime(assessment.start_time), [assessment.start_time]);
@@ -172,11 +178,20 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     if (showResults) {
       router.push(`/assessments/result/${assessment.slug}`);
     } else {
+      if (isMobileOrTabletForAssessment()) {
+        setDesktopOnlyOpen(true);
+        return;
+      }
       router.push(`/assessments/${assessment.slug}`);
     }
   };
 
   return (
+    <>
+    <AssessmentDesktopOnlyDialog
+      open={desktopOnlyOpen}
+      onClose={() => setDesktopOnlyOpen(false)}
+    />
     <Card
       sx={{
         height: "100%",
@@ -289,7 +304,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               sx={{
                 flex: 1,
                 minWidth: 0,
-                color: showResults ? "#1f2937" : "#ffffff",
+                color: showResults ? "var(--font-primary)" : "#ffffff",
                 fontWeight: 700,
                 fontSize: "1.0625rem",
                 lineHeight: 1.35,
@@ -319,13 +334,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                     label={t("assessments.proctored")}
                     size="small"
                     sx={{
-                      backgroundColor: showResults ? "#fef3c7" : "rgba(255, 255, 255, 0.25)",
-                      color: showResults ? "#92400e" : "#ffffff",
+                      backgroundColor: showResults
+                        ? "color-mix(in srgb, var(--warning-500) 18%, transparent)"
+                        : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "var(--font-primary)" : "#ffffff",
                       fontWeight: 600,
                       fontSize: "0.7rem",
                       height: 24,
                       flexDirection: isRtl ? "row-reverse" : "row",
-                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      border: showResults
+                        ? "1px solid color-mix(in srgb, var(--warning-500) 36%, transparent)"
+                        : "1px solid rgba(255, 255, 255, 0.4)",
                       "& .MuiChip-icon": {
                         color: "inherit",
                         marginInlineStart: isRtl ? "4px" : 0,
@@ -340,13 +359,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                     label={t("assessments.completed")}
                     size="small"
                     sx={{
-                      backgroundColor: showResults ? "#d1fae5" : "rgba(255, 255, 255, 0.25)",
-                      color: showResults ? "#065f46" : "#ffffff",
+                      backgroundColor: showResults
+                        ? "color-mix(in srgb, var(--success-500) 18%, transparent)"
+                        : "rgba(255, 255, 255, 0.25)",
+                      color: showResults ? "var(--font-primary)" : "#ffffff",
                       fontWeight: 600,
                       fontSize: "0.7rem",
                       height: 24,
                       flexDirection: isRtl ? "row-reverse" : "row",
-                      border: showResults ? "none" : "1px solid rgba(255, 255, 255, 0.4)",
+                      border: showResults
+                        ? "1px solid color-mix(in srgb, var(--success-500) 36%, transparent)"
+                        : "1px solid rgba(255, 255, 255, 0.4)",
                       "& .MuiChip-icon": {
                         color: "inherit",
                         marginInlineStart: isRtl ? "4px" : 0,
@@ -363,7 +386,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           <Typography
             variant="body2"
             sx={{
-              color: showResults ? "#6b7280" : "rgba(255, 255, 255, 0.9)",
+              color: showResults ? "var(--font-secondary)" : "rgba(255, 255, 255, 0.9)",
               fontSize: "0.8125rem",
               minHeight: 18,
               display: "-webkit-box",
@@ -449,7 +472,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         <Typography
           variant="body2"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: "0.8125rem",
             lineHeight: 1.5,
             mb: 2,
@@ -482,16 +505,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 1.5,
             }}
           >
-            <IconWrapper icon="mdi:clock-outline" size={18} color="#6366f1" />
+            <IconWrapper icon="mdi:clock-outline" size={18} color="var(--accent-indigo)" />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.65rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -505,7 +529,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
                   lineHeight: 1.2,
@@ -524,20 +548,21 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               alignItems: "center",
               gap: 0.75,
               p: 1.25,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 1.5,
             }}
           >
             <IconWrapper
               icon="mdi:help-circle-outline"
               size={18}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.65rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -551,7 +576,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
                   lineHeight: 1.2,
@@ -721,5 +746,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         </Box>
       </CardContent>
     </Card>
+    </>
   );
 };

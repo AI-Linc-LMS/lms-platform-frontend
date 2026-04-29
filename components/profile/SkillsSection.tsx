@@ -84,13 +84,15 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid var(--border-default)",
         borderRadius: { xs: 1, sm: 2 },
         mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+        boxShadow:
+          "0 0 0 1px color-mix(in srgb, var(--border-default) 85%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+          boxShadow:
+            "0 0 0 1px color-mix(in srgb, var(--border-default) 85%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
@@ -104,7 +106,7 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
       >
         <Typography
           variant="h6"
-          sx={{ fontWeight: 600, color: "#000000", fontSize: "1.25rem" }}
+          sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: "1.25rem" }}
         >
           {t("profile.skills")}
         </Typography>
@@ -117,10 +119,13 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
             onClick={onRemoveSection}
             sx={{
               textTransform: "none",
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontWeight: 500,
               fontSize: "0.8125rem",
-              "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+              "&:hover": {
+                backgroundColor: "color-mix(in srgb, var(--error-500) 10%, transparent)",
+                color: "var(--error-500)",
+              },
             }}
           >
             Remove
@@ -134,10 +139,12 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
             onClick={() => setEditing(true)}
             sx={{
               textTransform: "none",
-              color: "#0a66c2",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               fontSize: "0.9375rem",
-              "&:hover": { backgroundColor: "rgba(10, 102, 194, 0.08)" },
+              "&:hover": {
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+              },
               transition: "all 0.2s ease",
             }}
           >
@@ -153,10 +160,13 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                borderColor: "#e5e7eb",
-                color: "#6b7280",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
                 borderRadius: 1.5,
-                "&:hover": { borderColor: "#d1d5db", backgroundColor: "#f9fafb" },
+                "&:hover": {
+                  borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
+                  backgroundColor: "color-mix(in srgb, var(--surface) 80%, var(--background))",
+                },
               }}
             >
               {t("profile.cancel")}
@@ -169,10 +179,10 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: "#0a66c2",
+                backgroundColor: "var(--accent-indigo)",
                 borderRadius: "24px",
                 px: 2,
-                "&:hover": { backgroundColor: "#004182" },
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
                 transition: "all 0.2s ease",
               }}
             >
@@ -194,17 +204,19 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
                   onDelete={() => handleRemoveSkill(skill)}
                   sx={{
                     borderRadius: "16px",
-                    backgroundColor: "#f3f2ef",
-                    color: "#000000",
+                    backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
+                    color: "var(--font-primary)",
                     fontWeight: 500,
                     fontSize: "0.9375rem",
                     height: 36,
-                    border: "1px solid rgba(0,0,0,0.08)",
+                    border: "1px solid var(--border-default)",
                     "& .MuiChip-deleteIcon": {
-                      color: "#666666",
-                      "&:hover": { color: "#000000" },
+                      color: "var(--font-secondary)",
+                      "&:hover": { color: "var(--font-primary)" },
                     },
-                    "&:hover": { backgroundColor: "#e9e7e3" },
+                    "&:hover": {
+                      backgroundColor: "color-mix(in srgb, var(--surface) 72%, var(--background))",
+                    },
                   }}
                 />
               ))}
@@ -228,10 +240,12 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
                 textTransform: "none",
                 fontWeight: 600,
                 minWidth: 70,
-                borderColor: "#0a66c2",
-                color: "#0a66c2",
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
                 borderRadius: 1.5,
-                "&:hover": { backgroundColor: "rgba(10,102,194,0.08)" },
+                "&:hover": {
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                },
               }}
             >
               {t("profile.add")}
@@ -239,7 +253,7 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
           </Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("profile.pressEnterToAddSkill")}
           </Typography>
@@ -254,19 +268,19 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
                   label={skill}
                   sx={{
                     borderRadius: "16px",
-                    backgroundColor: "#f3f2ef",
-                    color: "#000000",
+                    backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
+                    color: "var(--font-primary)",
                     fontWeight: 500,
                     fontSize: "0.9375rem",
                     height: 36,
                     px: 1.5,
-                    border: "1px solid rgba(0,0,0,0.08)",
+                    border: "1px solid var(--border-default)",
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      backgroundColor: "#e9e7e3",
-                      borderColor: "rgba(0,0,0,0.12)",
+                      backgroundColor: "color-mix(in srgb, var(--surface) 72%, var(--background))",
+                      borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
                       transform: "translateY(-1px)",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                      boxShadow: "0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
                     },
                   }}
                 />
@@ -278,21 +292,31 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
                 textAlign: "center",
                 py: 4,
                 px: 2,
-                border: "1px dashed rgba(0,0,0,0.12)",
+                border: "1px dashed color-mix(in srgb, var(--border-default) 80%, var(--font-secondary))",
                 borderRadius: 2,
-                backgroundColor: "#f9fafb",
+                backgroundColor: "color-mix(in srgb, var(--surface) 80%, var(--background))",
               }}
             >
-              <IconWrapper icon="mdi:code-tags" size={48} color="#9ca3af" />
+              <IconWrapper icon="mdi:code-tags" size={48} color="var(--font-tertiary)" />
               <Typography
                 variant="body2"
-                sx={{ color: "#666666", mt: 2, fontSize: "0.9375rem", fontWeight: 500 }}
+                sx={{
+                  color: "var(--font-secondary)",
+                  mt: 2,
+                  fontSize: "0.9375rem",
+                  fontWeight: 500,
+                }}
               >
                 {t("profile.noSkillsYet")}
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: "#9ca3af", mt: 0.5, fontSize: "0.8125rem", display: "block" }}
+                sx={{
+                  color: "var(--font-tertiary)",
+                  mt: 0.5,
+                  fontSize: "0.8125rem",
+                  display: "block",
+                }}
               >
                 {t("profile.clickEditToAddSkills")}
               </Typography>
@@ -307,11 +331,11 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
                   mt: 2,
                   textTransform: "none",
                   fontWeight: 600,
-                  backgroundColor: "#0a66c2",
+                  backgroundColor: "var(--accent-indigo)",
                   borderRadius: 2,
                   px: 2.5,
                   py: 1,
-                  "&:hover": { backgroundColor: "#004182" },
+                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
                 }}
               >
                 {t("profile.add")} {t("profile.skills")}

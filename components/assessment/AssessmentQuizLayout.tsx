@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Paper, Typography, Button } from "@mui/material";
+import { Box, Paper, Typography, Button, useTheme } from "@mui/material";
 import { memo, useMemo, useRef } from "react";
 import {
   QuizQuestionList,
@@ -50,6 +50,7 @@ export const AssessmentQuizLayout = memo(
     onPreviousQuestion,
     onQuestionClick,
   }: AssessmentQuizLayoutProps) {
+    const theme = useTheme();
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
     const isFirstQuestion = currentQuestionIndex === 0;
 
@@ -82,6 +83,7 @@ export const AssessmentQuizLayout = memo(
         sx={{
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
+          alignItems: { md: "stretch" },
           gap: { xs: 2, md: 3 },
           maxWidth: "100%",
         }}
@@ -93,8 +95,16 @@ export const AssessmentQuizLayout = memo(
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
-            gap: 2,
+            gap: 0,
             order: { xs: 1, md: 0 },
+            alignSelf: { xs: "stretch", md: "flex-start" },
+            minHeight: { md: 0 },
+            position: { md: "sticky" },
+            top: { md: theme.spacing(18.5) },
+            maxHeight: {
+              md: `calc(100vh - ${theme.spacing(18.5)} - 16px)`,
+            },
+            zIndex: { md: 1 },
           }}
         >
           {/* Question List */}
@@ -123,9 +133,12 @@ export const AssessmentQuizLayout = memo(
               p: { xs: 2, sm: 3, md: 4 },
               backgroundColor: "#ffffff",
               borderRadius: 2,
-              border: "1px solid #e5e7eb",
+              border: "1px solid #e8ecf1",
               display: "flex",
               flexDirection: "column",
+              minHeight: { md: "min(520px, 70vh)" },
+              boxShadow:
+                "0 10px 40px rgba(15, 23, 42, 0.07), 0 1px 0 rgba(15, 23, 42, 0.04)",
             }}
           >
             {/* Question Title */}

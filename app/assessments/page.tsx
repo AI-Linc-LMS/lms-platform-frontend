@@ -244,9 +244,9 @@ export default function AssessmentsPage() {
             elevation={0}
             sx={{
               p: { xs: 2, sm: 2.5 },
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
@@ -255,7 +255,7 @@ export default function AssessmentsPage() {
                   width: { xs: 40, sm: 48 },
                   height: { xs: 40, sm: 48 },
                   borderRadius: 2,
-                  backgroundColor: "#eef2ff",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -265,14 +265,14 @@ export default function AssessmentsPage() {
                 <IconWrapper
                   icon="mdi:clipboard-text"
                   size={24}
-                  color="#6366f1"
+                  color="var(--accent-indigo)"
                 />
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography 
                   variant="h4" 
                   fontWeight={700} 
-                  color="#1f2937"
+                  color="var(--font-primary)"
                   sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
                 >
                   {totalCount}
@@ -291,9 +291,9 @@ export default function AssessmentsPage() {
             elevation={0}
             sx={{
               p: { xs: 2, sm: 2.5 },
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
@@ -302,7 +302,7 @@ export default function AssessmentsPage() {
                   width: { xs: 40, sm: 48 },
                   height: { xs: 40, sm: 48 },
                   borderRadius: 2,
-                  backgroundColor: "#f3e8ff",
+                  backgroundColor: "color-mix(in srgb, var(--accent-purple) 16%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -312,14 +312,14 @@ export default function AssessmentsPage() {
                 <IconWrapper
                   icon="mdi:brain"
                   size={24}
-                  color="#7c3aed"
+                  color="var(--accent-purple)"
                 />
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography 
                   variant="h4" 
                   fontWeight={700} 
-                  color="#1f2937"
+                  color="var(--font-primary)"
                   sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
                 >
                   {psychometricCount}
@@ -338,9 +338,9 @@ export default function AssessmentsPage() {
             elevation={0}
             sx={{
               p: { xs: 2, sm: 2.5 },
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
@@ -349,7 +349,7 @@ export default function AssessmentsPage() {
                   width: { xs: 40, sm: 48 },
                   height: { xs: 40, sm: 48 },
                   borderRadius: 2,
-                  backgroundColor: "#dbeafe",
+                  backgroundColor: "color-mix(in srgb, var(--accent-blue-light) 16%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -359,14 +359,14 @@ export default function AssessmentsPage() {
                 <IconWrapper
                   icon="mdi:play-circle"
                   size={24}
-                  color="#3b82f6"
+                  color="var(--accent-blue-light)"
                 />
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography 
                   variant="h4" 
                   fontWeight={700} 
-                  color="#1f2937"
+                  color="var(--font-primary)"
                   sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
                 >
                   {availableCount}
@@ -385,9 +385,9 @@ export default function AssessmentsPage() {
             elevation={0}
             sx={{
               p: { xs: 2, sm: 2.5 },
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
@@ -396,7 +396,7 @@ export default function AssessmentsPage() {
                   width: { xs: 40, sm: 48 },
                   height: { xs: 40, sm: 48 },
                   borderRadius: 2,
-                  backgroundColor: "#d1fae5",
+                  backgroundColor: "color-mix(in srgb, var(--success-500) 16%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -406,14 +406,14 @@ export default function AssessmentsPage() {
                 <IconWrapper
                   icon="mdi:check-circle"
                   size={24}
-                  color="#10b981"
+                  color="var(--success-500)"
                 />
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography 
                   variant="h4" 
                   fontWeight={700} 
-                  color="#1f2937"
+                  color="var(--font-primary)"
                   sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
                 >
                   {completedCount}
@@ -434,10 +434,11 @@ export default function AssessmentsPage() {
         <Paper
           elevation={0}
           sx={{
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             mb: 3,
             overflow: "hidden",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           {/* Tabs */}
@@ -448,19 +449,19 @@ export default function AssessmentsPage() {
               setPage(1);
             }}
             sx={{
-              borderBottom: "1px solid #e5e7eb",
+              borderBottom: "1px solid var(--border-default)",
               px: 2,
               "& .MuiTab-root": {
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.9375rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 "&.Mui-selected": {
-                  color: "#6366f1",
+                  color: "var(--accent-indigo)",
                 },
               },
               "& .MuiTabs-indicator": {
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
                 height: 3,
               },
             }}
@@ -500,23 +501,28 @@ export default function AssessmentsPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <IconWrapper icon="mdi:magnify" size={20} color="#6b7280" />
+                    <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--font-primary)",
                   borderRadius: 2,
                   "& fieldset": {
-                    borderColor: "transparent",
+                    borderColor: "var(--border-default)",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                   },
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "var(--font-secondary)",
+                  opacity: 1,
                 },
               }}
             />
@@ -526,16 +532,20 @@ export default function AssessmentsPage() {
                 onChange={(e) => setSortBy(e.target.value as SortType)}
                 displayEmpty
                 sx={{
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--font-primary)",
                   borderRadius: 2,
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "transparent",
+                    borderColor: "var(--border-default)",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
+                  },
+                  "& .MuiSelect-icon": {
+                    color: "var(--font-secondary)",
                   },
                 }}
               >

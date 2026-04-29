@@ -25,21 +25,29 @@ export function ContentMarksInfo({
         gap: 2,
         flexWrap: "wrap",
         p: 1.5,
-        backgroundColor: "#f9fafb",
+        backgroundColor: "var(--surface)",
         borderRadius: 1,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Typography
           variant="body2"
-          sx={{ color: "#6b7280", fontWeight: 500, fontSize: "0.875rem" }}
+          sx={{
+            color: "var(--font-secondary)",
+            fontWeight: 500,
+            fontSize: "0.875rem",
+          }}
         >
           {t("courses.totalMarks")}:
         </Typography>
         <Typography
           variant="body2"
-          sx={{ color: "#1a1f2e", fontWeight: 600, fontSize: "0.875rem" }}
+          sx={{
+            color: "var(--font-primary)",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+          }}
         >
           {marks}
         </Typography>
@@ -50,13 +58,17 @@ export function ContentMarksInfo({
             sx={{
               width: "1px",
               height: "20px",
-              backgroundColor: "#e5e7eb",
+              backgroundColor: "var(--border-default)",
             }}
           />
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", fontWeight: 500, fontSize: "0.875rem" }}
+              sx={{
+                color: "var(--font-secondary)",
+                fontWeight: 500,
+                fontSize: "0.875rem",
+              }}
             >
               {t("courses.obtainedMarks")}:
             </Typography>
@@ -65,10 +77,10 @@ export function ContentMarksInfo({
               sx={{
                 color:
                   obtainedMarks >= marks * 0.8
-                    ? "#065f46"
+                    ? "var(--success-500)"
                     : obtainedMarks >= marks * 0.6
-                    ? "#92400e"
-                    : "#991b1b",
+                    ? "var(--warning-500)"
+                    : "var(--error-500)",
                 fontWeight: 600,
                 fontSize: "0.875rem",
               }}
@@ -84,19 +96,27 @@ export function ContentMarksInfo({
             sx={{
               width: "1px",
               height: "20px",
-              backgroundColor: "#e5e7eb",
+              backgroundColor: "var(--border-default)",
             }}
           />
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", fontWeight: 500, fontSize: "0.875rem" }}
+              sx={{
+                color: "var(--font-secondary)",
+                fontWeight: 500,
+                fontSize: "0.875rem",
+              }}
             >
               {t("courses.submissions")}:
             </Typography>
             <Typography
               variant="body2"
-              sx={{ color: "#1a1f2e", fontWeight: 600, fontSize: "0.875rem" }}
+              sx={{
+                color: "var(--font-primary)",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+              }}
             >
               {submissions}
             </Typography>

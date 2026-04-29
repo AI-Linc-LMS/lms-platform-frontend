@@ -168,7 +168,7 @@ export function AIGeneratedCodingSection({
         AI Generated Coding Problems
       </Typography>
 
-      <Paper sx={{ p: 3, bgcolor: "#f9fafb" }}>
+      <Paper sx={{ p: 3, bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Topic"
@@ -229,7 +229,19 @@ export function AIGeneratedCodingSection({
                 <IconWrapper icon="mdi:robot" size={18} />
               )
             }
-            sx={{ bgcolor: "#10b981" }}
+            sx={{
+              bgcolor: "var(--success-500)",
+              color: "var(--font-light)",
+              "&:hover": {
+                bgcolor:
+                  "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
+              },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {generating ? "Generating..." : "Generate Coding Problems"}
           </Button>
@@ -265,14 +277,17 @@ export function AIGeneratedCodingSection({
           <Paper
             sx={{
               borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
               overflow: "hidden",
             }}
           >
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                  <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                     <TableCell
                       sx={{ fontWeight: 600, fontSize: "0.875rem", width: 48 }}
                     >
@@ -301,13 +316,13 @@ export function AIGeneratedCodingSection({
                       <TableRow
                         key={problem.id}
                         sx={{
-                          "&:hover": { backgroundColor: "#f9fafb" },
+                          "&:hover": { backgroundColor: "var(--surface)" },
                         }}
                       >
                         <TableCell>
                           <Typography
                             variant="body2"
-                            sx={{ color: "#6b7280", fontFamily: "monospace" }}
+                            sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}
                           >
                             #{globalIndex + 1}
                           </Typography>
@@ -322,7 +337,7 @@ export function AIGeneratedCodingSection({
                           {problem.problem_statement && (
                             <Typography
                               variant="caption"
-                              sx={{ color: "#6b7280", display: "block" }}
+                              sx={{ color: "var(--font-secondary)", display: "block" }}
                             >
                               {problem.problem_statement.length > 100
                                 ? problem.problem_statement.substring(0, 100) +
@@ -339,16 +354,16 @@ export function AIGeneratedCodingSection({
                               sx={{
                                 bgcolor:
                                   problem.difficulty_level === "Easy"
-                                    ? "#fef3c7"
+                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                                     : problem.difficulty_level === "Medium"
-                                    ? "#fde68a"
-                                    : "#fed7aa",
+                                    ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                                    : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                                 color:
                                   problem.difficulty_level === "Easy"
-                                    ? "#92400e"
+                                    ? "var(--success-500)"
                                     : problem.difficulty_level === "Medium"
-                                    ? "#78350f"
-                                    : "#7c2d12",
+                                    ? "var(--warning-500)"
+                                    : "var(--warning-500)",
                                 fontWeight: 600,
                                 fontSize: "0.75rem",
                               }}
@@ -356,14 +371,14 @@ export function AIGeneratedCodingSection({
                           ) : (
                             <Typography
                               variant="body2"
-                              sx={{ color: "#9ca3af" }}
+                              sx={{ color: "var(--font-tertiary)" }}
                             >
                               -
                             </Typography>
                           )}
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                             {problem.tags || "-"}
                           </Typography>
                         </TableCell>
@@ -371,7 +386,7 @@ export function AIGeneratedCodingSection({
                           <IconButton
                             size="small"
                             onClick={() => setPreviewProblem(problem)}
-                            sx={{ color: "#6366f1" }}
+                            sx={{ color: "var(--accent-indigo)" }}
                             title="Preview"
                           >
                             <IconWrapper icon="mdi:eye-outline" size={16} />
@@ -379,7 +394,7 @@ export function AIGeneratedCodingSection({
                           <IconButton
                             size="small"
                             onClick={() => handleRemove(problem.id)}
-                            sx={{ color: "#ef4444" }}
+                            sx={{ color: "var(--error-500)" }}
                             title="Remove"
                           >
                             <IconWrapper icon="mdi:delete" size={16} />
@@ -397,7 +412,7 @@ export function AIGeneratedCodingSection({
               <Box
                 sx={{
                   p: { xs: 1.5, sm: 2 },
-                  borderTop: "1px solid #e5e7eb",
+                  borderTop: "1px solid var(--border-default)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
@@ -416,7 +431,7 @@ export function AIGeneratedCodingSection({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     }}
                   >

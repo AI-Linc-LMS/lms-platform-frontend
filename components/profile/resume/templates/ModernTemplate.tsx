@@ -46,7 +46,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         minHeight: "297mm",
         height: "297mm",
         width: "100%",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
         colorAdjust: "exact !important",
@@ -56,8 +56,8 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
       <Box
         sx={{
           width: "35%",
-          backgroundColor: "#1e293b !important",
-          color: "#ffffff",
+          backgroundColor: "var(--font-primary) !important",
+          color: "var(--background)",
           p: 4,
           WebkitPrintColorAdjust: "exact !important",
           printColorAdjust: "exact !important",
@@ -72,7 +72,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
               fontWeight: 700,
               letterSpacing: "0.1em",
               mb: 2,
-              color: "#94a3b8",
+              color: "var(--font-tertiary)",
               whiteSpace: "nowrap",
             }}
           >
@@ -99,7 +99,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                 sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, textDecoration: "none", color: "inherit" }}
               >
                 <Box sx={{ flexShrink: 0, display: "flex" }}>
-                  <IconWrapper icon={item.icon} size={16} color="#94a3b8" />
+                  <IconWrapper icon={item.icon} size={16} color="var(--font-tertiary)" />
                 </Box>
                 <Typography
                   data-resume-contact-item
@@ -129,7 +129,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 mb: 2,
-                color: "#94a3b8",
+                color: "var(--font-tertiary)",
               }}
             >
               SKILLS
@@ -151,8 +151,8 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                         height: 6,
                         backgroundColor:
                           index < (skill.level || 3)
-                            ? "#6366f1 !important"
-                            : "#334155 !important",
+                            ? "var(--accent-purple) !important"
+                            : "color-mix(in srgb, var(--font-primary) 80%, var(--surface)) !important",
                         borderRadius: 2,
                         WebkitPrintColorAdjust: "exact !important",
                         printColorAdjust: "exact !important",
@@ -176,7 +176,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 mb: 2,
-                color: "#94a3b8",
+                color: "var(--font-tertiary)",
               }}
             >
               CERTIFICATIONS
@@ -196,7 +196,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{
                         fontSize: "0.55rem",
-                        color: "#6366f1",
+                        color: "var(--accent-purple)",
                         fontWeight: 600,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
@@ -206,11 +206,11 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                     </Typography>
                   )}
                 </Box>
-                <Typography sx={{ fontSize: "0.625rem", color: "#94a3b8" }}>
+                <Typography sx={{ fontSize: "0.625rem", color: "var(--font-tertiary)" }}>
                   {cert.issuer}
                 </Typography>
                 {cert.date && (
-                  <Typography sx={{ fontSize: "0.625rem", color: "#94a3b8" }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-tertiary)" }}>
                     {formatDate(cert.date, "", false)}
                   </Typography>
                 )}
@@ -225,7 +225,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
         sx={{
           width: "65%",
           p: 4,
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--background)",
         }}
       >
         {/* Header */}
@@ -234,7 +234,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
             sx={{
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#1e293b",
+              color: "var(--font-primary)",
               mb: 0.5,
             }}
           >
@@ -244,7 +244,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
             <Typography
               sx={{
                 fontSize: "0.875rem",
-                color: "#6366f1",
+                color: "var(--accent-purple)",
                 fontWeight: 600,
                 mb: 2,
               }}
@@ -257,7 +257,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
             <Typography
               sx={{
                 fontSize: "0.625rem",
-                color: "#475569",
+                color: "var(--font-secondary)",
                 lineHeight: 1.6,
               }}
             >
@@ -274,10 +274,10 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 mb: 2,
                 pb: 0.5,
-                borderBottom: "2px solid #6366f1",
+                borderBottom: "2px solid var(--accent-purple)",
               }}
             >
               WORK EXPERIENCE
@@ -303,7 +303,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                       sx={{
                         fontSize: "0.75rem",
                         fontWeight: 600,
-                        color: "#1e293b",
+                        color: "var(--font-primary)",
                         backgroundColor: "transparent",
                       }}
                     >
@@ -312,7 +312,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                     <Typography
                       sx={{
                         fontSize: "0.625rem",
-                        color: "#6366f1",
+                        color: "var(--accent-purple)",
                         fontWeight: 500,
                         backgroundColor: "transparent",
                       }}
@@ -320,14 +320,14 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                       {exp.company}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(exp.startDate, exp.endDate, exp.current)}
                   </Typography>
                 </Box>
 
                 {exp.location && (
                   <Typography
-                    sx={{ fontSize: "0.625rem", color: "#64748b", mb: 1 }}
+                    sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mb: 1 }}
                   >
                     {exp.location}
                   </Typography>
@@ -343,7 +343,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                           key={index}
                           sx={{
                             fontSize: "0.625rem",
-                            color: "#475569",
+                            color: "var(--font-secondary)",
                             lineHeight: 1.5,
                             mb: 0.5,
                           }}
@@ -366,10 +366,10 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 mb: 2,
                 pb: 0.5,
-                borderBottom: "2px solid #6366f1",
+                borderBottom: "2px solid var(--accent-purple)",
               }}
             >
               EDUCATION
@@ -390,30 +390,30 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                       sx={{
                         fontSize: "0.75rem",
                         fontWeight: 600,
-                        color: "#1e293b",
+                        color: "var(--font-primary)",
                       }}
                     >
                       {edu.degree}
                     </Typography>
-                    <Typography sx={{ fontSize: "0.625rem", color: "#6366f1" }}>
+                    <Typography sx={{ fontSize: "0.625rem", color: "var(--accent-purple)" }}>
                       {edu.institution}
                     </Typography>
                     {edu.location && (
                       <Typography
-                        sx={{ fontSize: "0.625rem", color: "#64748b" }}
+                        sx={{ fontSize: "0.625rem", color: "var(--font-secondary)" }}
                       >
                         {edu.location}
                       </Typography>
                     )}
                   </Box>
-                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(edu.startDate, edu.endDate)}
                   </Typography>
                 </Box>
 
                 {edu.gpa && (
                   <Typography
-                    sx={{ fontSize: "0.625rem", color: "#475569", mt: 0.5, whiteSpace: "nowrap" }}
+                    sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mt: 0.5, whiteSpace: "nowrap" }}
                   >
                     GPA: {edu.gpa}
                   </Typography>
@@ -423,7 +423,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.625rem",
-                      color: "#475569",
+                      color: "var(--font-secondary)",
                       mt: 0.5,
                       lineHeight: 1.5,
                     }}
@@ -444,10 +444,10 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 mb: 2,
                 pb: 0.5,
-                borderBottom: "2px solid #6366f1",
+                borderBottom: "2px solid var(--accent-purple)",
               }}
             >
               PROJECTS
@@ -469,7 +469,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                     sx={{
                       fontSize: "0.75rem",
                       fontWeight: 600,
-                      color: "#1e293b",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {project.name}
@@ -482,7 +482,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{
                         fontSize: "0.625rem",
-                        color: "#6366f1",
+                        color: "var(--accent-purple)",
                         fontWeight: 600,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
@@ -498,7 +498,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.625rem",
-                      color: "#475569",
+                      color: "var(--font-secondary)",
                       lineHeight: 1.5,
                       mb: 0.5,
                     }}
@@ -524,8 +524,9 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                           sx={{
                             px: 1,
                             py: 0.25,
-                            backgroundColor: "#f1f5f9 !important",
-                            color: "#475569",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--surface) 85%, var(--background)) !important",
+                            color: "var(--font-secondary)",
                             fontSize: "0.625rem",
                             borderRadius: 1,
                             fontWeight: 500,

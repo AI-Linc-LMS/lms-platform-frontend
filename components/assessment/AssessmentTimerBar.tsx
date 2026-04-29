@@ -3,6 +3,7 @@
 import { Box, Paper, Typography, Button, Chip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import type { LiveStreamStatus } from "@/lib/hooks/useLiveProctoringPublisher";
 
 interface AssessmentTimerBarProps {

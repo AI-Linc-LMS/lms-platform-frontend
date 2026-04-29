@@ -22,12 +22,13 @@ export function SearchResultsInfo({
       sx={{
         mb: 3,
         p: 2,
-        bgcolor: "#eff6ff",
-        border: "1px solid #bfdbfe",
+        bgcolor:
+          "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+        border: "1px solid color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
         borderRadius: 1,
       }}
     >
-      <Typography variant="body2" sx={{ color: "#1e40af" }}>
+      <Typography variant="body2" sx={{ color: "var(--accent-indigo)" }}>
         {filteredCount === 0 ? (
           <>
             {t("adminCourseBuilder.noCoursesFoundFor", { query: searchQuery })}

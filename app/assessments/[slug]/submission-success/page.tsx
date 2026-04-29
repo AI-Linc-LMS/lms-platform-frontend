@@ -82,7 +82,11 @@ export default function SubmissionSuccessPage() {
         <Paper sx={{ p: 4, textAlign: "center" }}>
           <Box sx={{ mb: 4 }}>
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-              <IconWrapper icon="mdi:check-circle" size={80} color="#10b981" />
+              <IconWrapper
+                icon="mdi:check-circle"
+                size={80}
+                color="var(--success-500)"
+              />
             </Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               {t("assessments.submittedSuccess")}
@@ -121,7 +125,8 @@ export default function SubmissionSuccessPage() {
                       variant="h6"
                       sx={{
                         fontFamily: "monospace",
-                        backgroundColor: "#f3f4f6",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--font-primary)",
                         p: 2,
                         borderRadius: 1,
                         fontWeight: 600,
@@ -135,7 +140,9 @@ export default function SubmissionSuccessPage() {
           )}
 
           <Typography variant="body1" color="text.secondary" paragraph>
-            {t("assessments.submittedReview")}
+            {assessment.evaluation_mode === "manual"
+              ? "Your submission is pending manual evaluation. You will be notified once published."
+              : t("assessments.submittedReview")}
           </Typography>
 
           <Box

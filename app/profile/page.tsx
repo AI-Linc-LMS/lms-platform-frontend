@@ -151,7 +151,7 @@ export default function ProfilePage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <CircularProgress size={48} sx={{ color: "#0a66c2" }} />
+            <CircularProgress size={48} sx={{ color: "var(--accent-indigo)" }} />
           </motion.div>
         </Box>
       </MainLayout>
@@ -162,7 +162,7 @@ export default function ProfilePage() {
     return (
       <MainLayout fullWidthContent>
         <Box sx={{ py: 12, textAlign: "center", px: 2 }}>
-          <Box sx={{ color: "#6b7280", fontSize: "1rem" }}>{t("profile.notFound")}</Box>
+          <Box sx={{ color: "var(--font-secondary)", fontSize: "1rem" }}>{t("profile.notFound")}</Box>
         </Box>
       </MainLayout>
     );
@@ -178,7 +178,8 @@ export default function ProfilePage() {
         sx={{
           width: "100%",
           minHeight: "100vh",
-          background: "linear-gradient(180deg, #f1f5f9 0%, #f8fafc 24%, #ffffff 100%)",
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--surface) 80%, var(--background)) 0%, color-mix(in srgb, var(--card-bg) 70%, var(--background)) 24%, var(--background) 100%)",
           pb: 6,
         }}
       >
@@ -197,8 +198,8 @@ export default function ProfilePage() {
               px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
               pt: 0,
               pb: 3,
-              backgroundColor: "#ffffff",
-              borderBottom: "1px solid rgba(0,0,0,0.06)",
+              backgroundColor: "var(--card-bg)",
+              borderBottom: "1px solid color-mix(in srgb, var(--border-default) 85%, transparent)",
             }}
           >
             <ProfileHeader
@@ -235,10 +236,10 @@ export default function ProfilePage() {
               minWidth: 320,
               mb: 2,
               p: 0.5,
-              backgroundColor: "#f1f5f9",
+              backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
               borderRadius: "12px",
-              border: "1px solid rgba(148, 163, 184, 0.2)",
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.04)",
+              border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+              boxShadow: "inset 0 1px 2px color-mix(in srgb, var(--font-primary) 12%, transparent)",
             }}
           >
             <Box
@@ -259,8 +260,8 @@ export default function ProfilePage() {
                   left: 4,
                   width: "calc(33.333% - 6px)",
                   borderRadius: "8px",
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                  backgroundColor: "var(--card-bg)",
+                  boxShadow: "0 1px 4px color-mix(in srgb, var(--font-primary) 20%, transparent)",
                 }}
                 animate={{
                   left:
@@ -298,11 +299,14 @@ export default function ProfilePage() {
                     minWidth: 0,
                     whiteSpace: "nowrap",
                     transition: "color 0.2s ease",
-                    color: activeTab === tab.id ? "#0a66c2" : "#64748b",
+                    color: activeTab === tab.id ? "var(--accent-indigo)" : "var(--font-secondary)",
                     fontWeight: 600,
                     fontSize: "0.8125rem",
                     "&:hover": {
-                      color: activeTab === tab.id ? "#0a66c2" : "#475569",
+                      color:
+                        activeTab === tab.id
+                          ? "var(--accent-indigo)"
+                          : "color-mix(in srgb, var(--font-secondary) 80%, var(--font-primary))",
                     },
                     "&:active": {
                       transform: "scale(0.99)",
@@ -312,7 +316,7 @@ export default function ProfilePage() {
                   <IconWrapper
                     icon={tab.icon}
                     size={18}
-                    color={activeTab === tab.id ? "#0a66c2" : "#64748b"}
+                    color={activeTab === tab.id ? "var(--accent-indigo)" : "var(--font-secondary)"}
                   />
                   <span>{tab.label}</span>
                 </Box>

@@ -77,10 +77,10 @@ const NaukriJobSearchBarComponent = ({
         alignItems: "stretch",
         borderRadius: 3,
         overflow: "hidden",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--card-bg)",
         border: "1px solid",
-        borderColor: "#fcfcfd",
-        boxShadow: "0 4px 14px rgba(0, 0, 0, 0.06)",
+        borderColor: "var(--card-bg)",
+        boxShadow: "0 4px 14px color-mix(in srgb, var(--font-primary) 8%, transparent)",
         flexDirection: { xs: "column", sm: "row" },
       }}
     >
@@ -93,13 +93,13 @@ const NaukriJobSearchBarComponent = ({
           alignItems: "center",
           borderRight: { xs: "none", sm: "1px solid" },
           borderBottom: { xs: "1px solid", sm: "none" },
-          borderColor: "#fcfcfd",
+          borderColor: "var(--card-bg)",
           pl: 2,
           pr: 1,
           py: { xs: 1, sm: 0 },
         }}
       >
-        <Search size={20} style={{ color: "#94a3b8", flexShrink: 0, marginRight: 12 }} />
+        <Search size={20} style={{ color: "var(--font-tertiary)", flexShrink: 0, marginRight: 12 }} />
         <TextField
           fullWidth
           placeholder={placeholder}
@@ -122,8 +122,8 @@ const NaukriJobSearchBarComponent = ({
             "& .MuiInputBase-input": {
               fontSize: size === "small" ? "0.9rem" : "0.95rem",
               py: 1.5,
-              color: "#1e293b",
-              "&::placeholder": { color: "#94a3b8", opacity: 1 },
+              color: "var(--font-primary)",
+              "&::placeholder": { color: "var(--font-tertiary)", opacity: 1 },
             },
           }}
         />
@@ -139,7 +139,7 @@ const NaukriJobSearchBarComponent = ({
             alignItems: "center",
             borderRight: { xs: "none", sm: "1px solid" },
             borderBottom: { xs: "1px solid", sm: "none" },
-            borderColor: "#fcfcfd",
+            borderColor: "var(--card-bg)",
           }}
         >
           <TextField
@@ -159,11 +159,11 @@ const NaukriJobSearchBarComponent = ({
                 px: 2,
                 py: 1.5,
                 fontSize: size === "small" ? "0.9rem" : "0.95rem",
-                color: experience ? "#1e293b" : "#94a3b8",
+                color: experience ? "var(--font-primary)" : "var(--font-tertiary)",
               },
               endAdornment: (
                 <InputAdornment position="end" sx={{ mr: 0.5 }}>
-                  <ChevronDown size={18} style={{ color: "#94a3b8" }} />
+                  <ChevronDown size={18} style={{ color: "var(--font-tertiary)" }} />
                 </InputAdornment>
               ),
             }}
@@ -191,7 +191,7 @@ const NaukriJobSearchBarComponent = ({
           display: "flex",
           alignItems: "center",
           borderRight: { xs: "none", sm: "1px solid" },
-          borderColor: "#fcfcfd",
+          borderColor: "var(--card-bg)",
         }}
       >
         {locationOptions.length > 0 ? (
@@ -210,12 +210,12 @@ const NaukriJobSearchBarComponent = ({
               disableUnderline: true,
               startAdornment: (
                 <InputAdornment position="start" sx={{ ml: 1.5 }}>
-                  <MapPin size={18} style={{ color: "#94a3b8" }} />
+                  <MapPin size={18} style={{ color: "var(--font-tertiary)" }} />
                 </InputAdornment>
               ),
               endAdornment: (
                 <InputAdornment position="end" sx={{ mr: 0.5 }}>
-                  <ChevronDown size={18} style={{ color: "#94a3b8" }} />
+                  <ChevronDown size={18} style={{ color: "var(--font-tertiary)" }} />
                 </InputAdornment>
               ),
             }}
@@ -226,7 +226,7 @@ const NaukriJobSearchBarComponent = ({
                 fontSize: size === "small" ? "0.9rem" : "0.95rem",
                 py: 1.5,
                 pl: 0.5,
-                color: location ? "#1e293b" : "#94a3b8",
+                color: location ? "var(--font-primary)" : "var(--font-tertiary)",
               },
             }}
           >
@@ -248,7 +248,7 @@ const NaukriJobSearchBarComponent = ({
               disableUnderline: true,
               startAdornment: (
                 <InputAdornment position="start" sx={{ ml: 1.5 }}>
-                  <MapPin size={18} style={{ color: "#94a3b8" }} />
+                  <MapPin size={18} style={{ color: "var(--font-tertiary)" }} />
                 </InputAdornment>
               ),
             }}
@@ -258,8 +258,8 @@ const NaukriJobSearchBarComponent = ({
                 fontSize: size === "small" ? "0.9rem" : "0.95rem",
                 py: 1.5,
                 pl: 0.5,
-                color: location ? "#1e293b" : "#94a3b8",
-                "&::placeholder": { color: "#94a3b8", opacity: 1 },
+                color: location ? "var(--font-primary)" : "var(--font-tertiary)",
+                "&::placeholder": { color: "var(--font-tertiary)", opacity: 1 },
               },
             }}
           />
@@ -274,8 +274,8 @@ const NaukriJobSearchBarComponent = ({
           minWidth: { xs: "100%", sm: 120 },
           height: { xs: 48, sm: "auto" },
           borderRadius: 0,
-          backgroundColor: "#6366f1",
-          color: "#fff",
+          backgroundColor: "var(--accent-indigo)",
+          color: "var(--font-light)",
           fontWeight: 600,
           fontSize: "1rem",
           textTransform: "none",
@@ -283,7 +283,7 @@ const NaukriJobSearchBarComponent = ({
           py: 1.5,
           boxShadow: "none",
           "&:hover": {
-            backgroundColor: "#4f46e5",
+            backgroundColor: "var(--accent-indigo-dark)",
             boxShadow: "none",
           },
         }}

@@ -14,9 +14,10 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
       sx={{
         p: 3.5,
         mb: 3,
-        border: "2px solid #c4b5fd",
+        border: "1px solid color-mix(in srgb, var(--accent-purple) 35%, var(--border-default))",
         borderRadius: 3,
-        background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+        background:
+          "linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 10%, var(--card-bg)) 0%, color-mix(in srgb, var(--accent-purple) 16%, var(--surface)) 100%)",
         transition: "all 0.3s ease",
         "&:hover": {
           transform: "translateY(-2px)",
@@ -49,7 +50,7 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
           variant="h6"
           sx={{
             fontWeight: 700,
-            color: "#5b21b6",
+            color: "var(--font-primary)",
           }}
         >
           Overall Feedback
@@ -77,7 +78,7 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#5b21b6",
+                  color: "var(--font-primary)",
                   lineHeight: 1.6,
                   fontWeight: 500,
                 }}
@@ -90,7 +91,7 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontStyle: "italic",
             }}
           >
