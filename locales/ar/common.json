@@ -136,6 +136,7 @@
     "presetCategoryLight": "فاتح",
     "presetCategoryDark": "داكن",
     "presetCategoryMinimal": "بسيط",
+    "presetCategoryWhiteBg": "خلفية بيضاء",
     "presetCategoryVibrant": "زاهٍ",
     "presetCategoryHighContrast": "تباين عالٍ",
     "presetSectionFeatured": "اختيارات شائعة",
@@ -144,6 +145,7 @@
     "presetGroupBlurb_light": "واجهات ساطعة مع أشرطة جانبية ناعمة ووضوح عالٍ.",
     "presetGroupBlurb_dark": "مظاهر داكنة للتركيز وتقليل إجهاد العين.",
     "presetGroupBlurb_minimal": "ألوان هادئة وبسيطة لواجهات نظيفة واحترافية.",
+    "presetGroupBlurb_white_bg": "خلفية صفحة وشريط علوي أبيضان مع قوائم جانبية ملوّنة ومميزة.",
     "presetGroupBlurb_vibrant": "لمسات مشبّعة تناسب المواقع التسويقية والجمهور الأصغر.",
     "presetGroupBlurb_high_contrast": "فصل قوي بين الشريط والنص والأزرار لتحسين الوصول."
   },

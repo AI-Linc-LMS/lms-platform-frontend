@@ -20,9 +20,11 @@ type ExtendedCategoryKey =
   | CategoryKey
   | "light"
   | "dark"
-  | "minimal";
+  | "minimal"
+  | "white_bg";
 
 const CATEGORY_ORDER: ExtendedCategoryKey[] = [
+  "white_bg",
   "light",
   "classic",
   "vibrant",
@@ -40,6 +42,8 @@ const FALLBACK_PREVIEW = {
 
 function categoryLabelKey(cat: string): string {
   switch (cat) {
+    case "white_bg":
+      return "branding.presetCategoryWhiteBg";
     case "light":
       return "branding.presetCategoryLight";
     case "dark":
@@ -57,6 +61,8 @@ function categoryLabelKey(cat: string): string {
 
 function categoryBlurbKey(cat: string): string {
   switch (cat) {
+    case "white_bg":
+      return "branding.presetGroupBlurb_white_bg";
     case "light":
       return "branding.presetGroupBlurb_light";
     case "dark":
@@ -74,6 +80,8 @@ function categoryBlurbKey(cat: string): string {
 
 function categoryIcon(cat: string): string {
   switch (cat) {
+    case "white_bg":
+      return "mdi:monitor-shimmer";
     case "light":
       return "mdi:white-balance-sunny";
     case "dark":
@@ -93,6 +101,8 @@ function categoryChipColor(
   cat: string
 ): "default" | "primary" | "secondary" | "warning" | "success" | "info" {
   switch (cat) {
+    case "white_bg":
+      return "info";
     case "light":
       return "info";
     case "dark":
@@ -238,6 +248,7 @@ export function BrandingPresetGallery({
       baseId: string;
       defaultPreset: BrandingPresetSummary;
       whiteBgPreset?: BrandingPresetSummary;
+      whiteCanvasPreset?: BrandingPresetSummary;
     }>;
   }[] => {
     const pairMap = new Map<
@@ -247,10 +258,21 @@ export function BrandingPresetGallery({
         category: ExtendedCategoryKey;
         defaultPreset?: BrandingPresetSummary;
         whiteBgPreset?: BrandingPresetSummary;
+        whiteCanvasPreset?: BrandingPresetSummary;
       }
     >();
 
     for (const p of presets) {
+      if (p.variant === "white_canvas") {
+        pairMap.set(`white:${p.id}`, {
+          baseId: p.id,
+          category: "white_bg",
+          defaultPreset: p,
+          whiteCanvasPreset: p,
+        });
+        continue;
+      }
+
       const baseId = p.base_id || p.id;
       const c = (p.category || "classic") as ExtendedCategoryKey;
       const existing = pairMap.get(baseId) || {
@@ -259,6 +281,8 @@ export function BrandingPresetGallery({
       };
       if (p.variant === "white_bg") {
         existing.whiteBgPreset = p;
+      } else if (p.variant === "white_canvas") {
+        existing.whiteCanvasPreset = p;
       } else {
         existing.defaultPreset = p;
       }
@@ -270,7 +294,12 @@ export function BrandingPresetGallery({
 
     const groupedMap = new Map<
       ExtendedCategoryKey,
-      Array<{ baseId: string; defaultPreset: BrandingPresetSummary; whiteBgPreset?: BrandingPresetSummary }>
+      Array<{
+        baseId: string;
+        defaultPreset: BrandingPresetSummary;
+        whiteBgPreset?: BrandingPresetSummary;
+        whiteCanvasPreset?: BrandingPresetSummary;
+      }>
     >();
     for (const entry of pairMap.values()) {
       if (!entry.defaultPreset) continue;
@@ -279,6 +308,7 @@ export function BrandingPresetGallery({
         baseId: entry.baseId,
         defaultPreset: entry.defaultPreset,
         whiteBgPreset: entry.whiteBgPreset,
+        whiteCanvasPreset: entry.whiteCanvasPreset,
       });
     }
 
@@ -387,13 +417,18 @@ export function BrandingPresetGallery({
             {items.map((pair) => {
               const currentPreset = pair.defaultPreset;
               const whiteBgPreset = pair.whiteBgPreset;
-              const selectedUsesWhite = selectedId === whiteBgPreset?.id;
-              const activePreset = selectedUsesWhite ? whiteBgPreset! : currentPreset;
+              const whiteCanvasPreset = pair.whiteCanvasPreset;
+              const selectedUsesWhiteCanvas = selectedId === whiteCanvasPreset?.id;
+      const activePreset = selectedUsesWhiteCanvas
+                ? whiteCanvasPreset!
+                : currentPreset;
               const preview = activePreset.preview ?? FALLBACK_PREVIEW;
               const selected =
-                selectedId === currentPreset.id || (whiteBgPreset ? selectedId === whiteBgPreset.id : false);
+                selectedId === currentPreset.id ||
+                (whiteCanvasPreset ? selectedId === whiteCanvasPreset.id : false);
               const loading =
-                applyingId === currentPreset.id || (whiteBgPreset ? applyingId === whiteBgPreset.id : false);
+                applyingId === currentPreset.id ||
+                (whiteCanvasPreset ? applyingId === whiteCanvasPreset.id : false);
               return (
                 <ButtonBase
                   key={pair.baseId}
@@ -465,8 +500,8 @@ export function BrandingPresetGallery({
                           size="small"
                           clickable
                           label="Current"
-                          color={!selectedUsesWhite ? "primary" : "default"}
-                          variant={!selectedUsesWhite ? "filled" : "outlined"}
+                          color={!selectedUsesWhiteCanvas ? "primary" : "default"}
+                          variant={!selectedUsesWhiteCanvas ? "filled" : "outlined"}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -474,20 +509,21 @@ export function BrandingPresetGallery({
                           }}
                           sx={{ fontWeight: 600, fontSize: "0.68rem" }}
                         />
-                        <Chip
-                          size="small"
-                          clickable
-                          disabled={!whiteBgPreset}
-                          label="White BG"
-                          color={selectedUsesWhite ? "primary" : "default"}
-                          variant={selectedUsesWhite ? "filled" : "outlined"}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (whiteBgPreset) onSelectPreset(whiteBgPreset.id);
-                          }}
-                          sx={{ fontWeight: 600, fontSize: "0.68rem" }}
-                        />
+                        {whiteCanvasPreset ? (
+                          <Chip
+                            size="small"
+                            clickable
+                            label="White BG"
+                            color={selectedUsesWhiteCanvas ? "primary" : "default"}
+                            variant={selectedUsesWhiteCanvas ? "filled" : "outlined"}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onSelectPreset(whiteCanvasPreset.id);
+                            }}
+                            sx={{ fontWeight: 600, fontSize: "0.68rem" }}
+                          />
+                        ) : null}
                       </Stack>
                       {activePreset.tagline ? (
                         <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35 }}>

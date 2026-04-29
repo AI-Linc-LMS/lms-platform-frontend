@@ -136,6 +136,7 @@
     "presetCategoryLight": "Light",
     "presetCategoryDark": "Dark",
     "presetCategoryMinimal": "Minimal",
+    "presetCategoryWhiteBg": "White background",
     "presetCategoryVibrant": "Vibrant",
     "presetCategoryHighContrast": "High contrast",
     "presetSectionFeatured": "Popular picks",
@@ -144,6 +145,7 @@
     "presetGroupBlurb_light": "Bright interfaces with soft sidebars and high readability.",
     "presetGroupBlurb_dark": "Dark-first shells for focused sessions and low-glare usage.",
     "presetGroupBlurb_minimal": "Simple, low-noise palettes for clean professional screens.",
+    "presetGroupBlurb_white_bg": "White page canvas and top bar with distinct colored side menus.",
     "presetGroupBlurb_vibrant": "Saturated accents that pop on marketing and youth-facing sites.",
     "presetGroupBlurb_high_contrast": "Strong separation between shell, text, and CTAs for accessibility."
   },

@@ -17,7 +17,7 @@ export interface BrandingPresetSummary {
   tagline?: string;
   /** Shared id between default and white-bg variants of the same theme. */
   base_id?: string;
-  /** default | white_bg */
+  /** default | white_bg | white_canvas */
   variant?: string;
   preview?: BrandingPresetPreview;
 }
