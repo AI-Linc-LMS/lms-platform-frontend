@@ -26,6 +26,10 @@ export interface CertificateLearnerToolbarProps {
   /** When false, only PNG is offered */
   showPdf?: boolean;
   dense?: boolean;
+  /** Overrides default "Download certificate (PNG)" when multiple certificates are on one page */
+  pngButtonLabel?: string;
+  /** Overrides default "Download PDF" for the certificate export */
+  pdfButtonLabel?: string;
 }
 
 /**
@@ -36,6 +40,8 @@ export function CertificateLearnerToolbar({
   fileNameBase,
   showPdf = true,
   dense = false,
+  pngButtonLabel,
+  pdfButtonLabel,
 }: CertificateLearnerToolbarProps) {
   const certRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
@@ -98,10 +104,13 @@ export function CertificateLearnerToolbar({
 
       <Box
         sx={{
+          position: "relative",
+          zIndex: 1,
           display: "flex",
           gap: dense ? 1 : 1.5,
           flexWrap: "wrap",
           justifyContent: dense ? "flex-start" : "center",
+          alignItems: "flex-start",
         }}
       >
         <Button
@@ -109,11 +118,12 @@ export function CertificateLearnerToolbar({
           size={dense ? "small" : "medium"}
           disabled={pngBusy}
           onClick={handlePng}
+          sx={{ whiteSpace: "normal", textAlign: "center", maxWidth: "100%" }}
           startIcon={
             pngBusy ? <CircularProgress size={16} color="inherit" /> : <IconWrapper icon="mdi:download" size={20} />
           }
         >
-          {pngBusy ? "Preparing…" : "Download certificate (PNG)"}
+          {pngBusy ? "Preparing…" : (pngButtonLabel ?? "Download certificate (PNG)")}
         </Button>
         {showPdf ? (
           <Button
@@ -121,6 +131,7 @@ export function CertificateLearnerToolbar({
             size={dense ? "small" : "medium"}
             disabled={pdfBusy}
             onClick={handlePdf}
+            sx={{ whiteSpace: "normal", textAlign: "center", maxWidth: "100%" }}
             startIcon={
               pdfBusy ? (
                 <CircularProgress size={16} color="inherit" />
@@ -129,7 +140,7 @@ export function CertificateLearnerToolbar({
               )
             }
           >
-            {pdfBusy ? "Preparing…" : "Download PDF"}
+            {pdfBusy ? "Preparing…" : (pdfButtonLabel ?? "Download PDF")}
           </Button>
         ) : null}
       </Box>

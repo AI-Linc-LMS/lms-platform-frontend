@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Same file + family name as `app/api/certificate/generate/route.ts` (student name on canvas). */
+@font-face {
+  font-family: "Alex Brush";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/AlexBrush-Regular.ttf") format("truetype");
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

@@ -38,7 +38,8 @@ export function ClientInfoProvider({
   const refreshClientInfo = useCallback(async () => {
     const clientId = Number(config.clientId);
     const info = await initApp(clientId);
-    setClientInfo(info);
+    // Merge so a partial client-info response cannot wipe SSR fields (e.g. logos) before re-fetch.
+    setClientInfo((prev) => (prev ? { ...prev, ...info } : info));
   }, []);
 
   useEffect(() => {

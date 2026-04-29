@@ -24,14 +24,30 @@ export interface DynamicCertificateProps {
 }
 
 /**
- * Fixed-size landscape certificate (1200×675). Uses explicit light palette so
- * capture matches a printed document in dark app mode.
+ * Classic landscape certificate (1200×675): light main panel + dark sidebar,
+ * org block (logo, name, tagline, slug) from branding, body narrative + optional score/credential lines.
+ * Logos use referrerPolicy (no crossOrigin) so external URLs such as GitHub raw typically render.
  */
 export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateProps>(
   function DynamicCertificate({ content }, ref) {
+    if (content == null) {
+      return (
+        <Box
+          ref={ref}
+          className="certificate-export-root"
+          data-certificate-root=""
+          sx={{ width: CERT_WIDTH, height: CERT_HEIGHT, bgcolor: "#faf8ff" }}
+        />
+      );
+    }
+
     const { branding, dateLabelPrefix = "DATE:" } = content;
-    const accent = branding.accentColor || "#6d28d9";
-    const dateStr = formatCertificateDate(content.issuedOn);
+    const accent = branding?.accentColor || "#6d28d9";
+    const dateStr = formatCertificateDate(content?.issuedOn || new Date());
+    const logoUrl = (branding?.logoUrl || "").trim();
+    const nameLen = (content.recipientName || "").length;
+    /** Aligns with server canvas sizing in `app/api/certificate/generate/route.ts`. */
+    const recipientFontSize = nameLen > 30 ? 44 : nameLen > 20 ? 50 : 58;
 
     const dotPattern =
       "radial-gradient(circle at 1px 1px, rgba(90,70,160,0.07) 1px, transparent 0)";
@@ -66,27 +82,93 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
           sx={{
             position: "relative",
             px: 5,
-            py: 3.5,
+            pt: 3.5,
+            pb: content?.credentialLines?.length ? 16 : 3.5,
             backgroundColor: "#f7f4ff",
             backgroundImage: `${lineMask}, ${dotPattern}`,
             backgroundSize: "28px 28px, 22px 22px",
             backgroundPosition: "0 0, 0 0",
           }}
         >
-          <Typography
+          <Box
             sx={{
-              fontSize: 13,
-              letterSpacing: "0.08em",
-              color: "rgba(26,16,51,0.55)",
-              fontWeight: 600,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 2,
               mb: 2,
             }}
           >
-            {dateLabelPrefix}{" "}
-            <Box component="span" sx={{ color: "#1a1033", fontWeight: 700 }}>
-              {dateStr}
+            <Typography
+              sx={{
+                fontSize: 13,
+                letterSpacing: "0.08em",
+                color: "rgba(26,16,51,0.55)",
+                fontWeight: 600,
+              }}
+            >
+              {dateLabelPrefix}{" "}
+              <Box component="span" sx={{ color: "#1a1033", fontWeight: 700 }}>
+                {dateStr}
+              </Box>
+            </Typography>
+            <Box sx={{ textAlign: "right", maxWidth: 320, flexShrink: 0 }}>
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  style={{
+                    maxHeight: 56,
+                    maxWidth: 220,
+                    objectFit: "contain",
+                    display: "block",
+                    marginLeft: "auto",
+                  }}
+                />
+              ) : null}
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: "#1a1033",
+                  letterSpacing: "0.04em",
+                  mt: logoUrl ? 0.75 : 0,
+                  lineHeight: 1.3,
+                }}
+              >
+                {branding?.issuerDisplayName || "Organization"}
+              </Typography>
+              {branding?.issuerTagline ? (
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    fontStyle: "italic",
+                    color: "rgba(26,16,51,0.65)",
+                    mt: 0.25,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {branding.issuerTagline}
+                </Typography>
+              ) : null}
+              {branding?.issuerSubtitle ? (
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "rgba(26,16,51,0.5)",
+                    letterSpacing: "0.06em",
+                    mt: 0.25,
+                  }}
+                >
+                  {branding.issuerSubtitle}
+                </Typography>
+              ) : null}
             </Box>
-          </Typography>
+          </Box>
 
           <Typography
             sx={{
@@ -116,9 +198,10 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
           <Typography
             sx={{
               textAlign: "center",
-              fontSize: 56,
-              fontWeight: 800,
-              lineHeight: 1.1,
+              fontFamily: '"Alex Brush", "Brush Script MT", "Segoe Script", cursive',
+              fontSize: recipientFontSize,
+              fontWeight: 400,
+              lineHeight: 1.15,
               color: accent,
               mb: 2,
               px: 2,
@@ -168,6 +251,31 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
             </Typography>
           ) : null}
 
+          {content.credentialLines && content.credentialLines.length > 0 ? (
+            <Box
+              sx={{
+                textAlign: "center",
+                mt: 1.5,
+                mb: 1,
+                px: 2,
+              }}
+            >
+              {content.credentialLines.map((line, i) => (
+                <Typography
+                  key={i}
+                  sx={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "rgba(26,16,51,0.68)",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {line}
+                </Typography>
+              ))}
+            </Box>
+          ) : null}
+
           <Box
             sx={{
               position: "absolute",
@@ -181,12 +289,12 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
             }}
           >
             <Box sx={{ minWidth: 200, maxWidth: 360 }}>
-              {branding.signatureImageUrl ? (
+              {branding?.signatureImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={branding.signatureImageUrl}
                   alt=""
-                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
                   style={{
                     maxHeight: 56,
                     maxWidth: 220,
@@ -199,10 +307,10 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
                 <Box sx={{ height: 40, borderBottom: "2px solid rgba(26,16,51,0.35)", mb: 1, width: 180 }} />
               )}
               <Typography sx={{ fontWeight: 800, fontSize: 15, color: "#1a1033" }}>
-                {branding.signatoryName || "Authorized representative"}
+                {branding?.signatoryName || "Authorized representative"}
               </Typography>
               <Typography sx={{ fontSize: 13, color: "rgba(26,16,51,0.65)" }}>
-                {branding.signatoryTitle || ""}
+                {branding?.signatoryTitle || ""}
               </Typography>
             </Box>
 
@@ -243,27 +351,45 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
               alignItems: "center",
               justifyContent: "center",
               mb: 2,
-              background: "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.12), transparent 55%)",
+              background: logoUrl
+                ? "rgba(255,255,255,0.96)"
+                : "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.12), transparent 55%)",
+              p: logoUrl ? 1.5 : 0,
             }}
           >
-            <Box
-              component="svg"
-              viewBox="0 0 48 48"
-              sx={{ width: 56, height: 56, opacity: 0.95 }}
-              fill="none"
-            >
-              <path
-                d="M24 4L42 14V34L24 44L6 34V14L24 4Z"
-                stroke={accent}
-                strokeWidth="2"
-                fill={`${accent}33`}
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  borderRadius: "50%",
+                }}
               />
-              <path
-                d="M24 14c-4 0-7 3-7 7s3 7 7 7 7-3 7-7-3-7-7-7z"
-                fill={accent}
-                opacity={0.9}
-              />
-            </Box>
+            ) : (
+              <Box
+                component="svg"
+                viewBox="0 0 48 48"
+                sx={{ width: 56, height: 56, opacity: 0.95 }}
+                fill="none"
+              >
+                <path
+                  d="M24 4L42 14V34L24 44L6 34V14L24 4Z"
+                  stroke={accent}
+                  strokeWidth="2"
+                  fill={`${accent}33`}
+                />
+                <path
+                  d="M24 14c-4 0-7 3-7 7s3 7 7 7 7-3 7-7-3-7-7-7z"
+                  fill={accent}
+                  opacity={0.9}
+                />
+              </Box>
+            )}
           </Box>
 
           <Typography
@@ -285,36 +411,68 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
             Credential
           </Typography>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, mt: 2 }}>
-            {branding.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={branding.logoUrl}
-                alt=""
-                crossOrigin="anonymous"
-                style={{ width: 36, height: 36, objectFit: "contain" }}
-              />
-            ) : (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.2,
+              mt: 2,
+              flexDirection: logoUrl ? "column" : "row",
+              textAlign: "center",
+            }}
+          >
+            {!logoUrl ? (
               <Box
                 sx={{
                   width: 36,
                   height: 36,
                   borderRadius: 1,
                   background: `linear-gradient(135deg, ${accent}, #312e81)`,
+                  flexShrink: 0,
                 }}
               />
-            )}
-            <Typography
-              sx={{
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                lineHeight: 1.25,
-              }}
-            >
-              {(branding.issuerDisplayName || "ORGANIZATION").toUpperCase()}
-            </Typography>
+            ) : null}
+            <Box>
+              <Typography
+                sx={{
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: 11,
+                  letterSpacing: "0.14em",
+                  lineHeight: 1.25,
+                }}
+              >
+                {(branding?.issuerDisplayName || "ORGANIZATION").toUpperCase()}
+              </Typography>
+              {branding?.issuerTagline ? (
+                <Typography
+                  sx={{
+                    color: "rgba(255,255,255,0.75)",
+                    fontSize: 9,
+                    fontWeight: 500,
+                    fontStyle: "italic",
+                    mt: 0.35,
+                    lineHeight: 1.35,
+                    px: 0.5,
+                  }}
+                >
+                  {branding.issuerTagline}
+                </Typography>
+              ) : null}
+              {branding?.issuerSubtitle ? (
+                <Typography
+                  sx={{
+                    color: "rgba(255,255,255,0.72)",
+                    fontWeight: 600,
+                    fontSize: 10,
+                    letterSpacing: "0.08em",
+                    mt: 0.35,
+                  }}
+                >
+                  {branding.issuerSubtitle}
+                </Typography>
+              ) : null}
+            </Box>
           </Box>
         </Box>
 

@@ -28,7 +28,10 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { getMockPsychometricData } from "@/lib/mock-data/assessment-mock-data";
-import { buildAssessmentAppreciationCertificate } from "@/lib/certificate/copy";
+import {
+  buildAssessmentAppreciationCertificate,
+  buildAssessmentResultCertificate,
+} from "@/lib/certificate/copy";
 import {
   buildCertificateBranding,
   finalizeBranding,
@@ -36,6 +39,15 @@ import {
 import { isScoreInAppreciationBand, scoreToPercent } from "@/lib/certificate/pass-band";
 import { getLearnerDisplayNameFromResult } from "@/lib/certificate/learner-name";
 import { CertificateLearnerToolbar } from "@/components/certificate/CertificateLearnerToolbar";
+import { DynamicCertificate } from "@/components/certificate/DynamicCertificate";
+
+function sanitizeCertificateFileSegment(raw: string, fallback: string): string {
+  const s = raw
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 72);
+  return s || fallback;
+}
 
 export default function AssessmentResultPage() {
   const params = useParams();
@@ -54,6 +66,19 @@ export default function AssessmentResultPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const { clientInfo } = useClientInfo();
+
+  /** Remount certificate export when tenant branding loads or changes */
+  const certificateBrandingKey = useMemo(() => {
+    if (!clientInfo) return "client-pending";
+    return [
+      clientInfo.id ?? "",
+      clientInfo.name ?? "",
+      clientInfo.slug ?? "",
+      clientInfo.app_logo_url ?? "",
+      clientInfo.login_logo_url ?? "",
+      clientInfo.app_icon_url ?? "",
+    ].join("|");
+  }, [clientInfo]);
 
   const forcePsychometric = searchParams?.get("type") === "psychometric";
 
@@ -78,28 +103,80 @@ export default function AssessmentResultPage() {
     };
   }, [slug]);
 
-  const appreciationCertificateContent = useMemo(() => {
-    if (!assessmentResult || !user || !assessmentDetail?.certificate_available) return null;
+  const inAppreciationBand = useMemo(() => {
+    if (!assessmentResult || !assessmentDetail?.certificate_available) return false;
     const s = assessmentResult.stats;
     const pct = scoreToPercent(s.score, s.maximum_marks);
-    if (
-      !isScoreInAppreciationBand(
-        pct,
-        assessmentDetail.pass_band_lower_min_percent,
-        assessmentDetail.pass_band_upper_min_percent
-      )
-    ) {
+    return isScoreInAppreciationBand(
+      pct,
+      assessmentDetail.pass_band_lower_min_percent,
+      assessmentDetail.pass_band_upper_min_percent
+    );
+  }, [assessmentResult, assessmentDetail]);
+
+  /** Classic achievement wording (no credential lines). Shown only when score is in the appreciation band. */
+  const appreciationCertificateContent = useMemo(() => {
+    if (!assessmentResult || !user || !assessmentDetail?.certificate_available || !inAppreciationBand) {
       return null;
     }
-    const name = getLearnerDisplayNameFromResult(assessmentResult, user);
+    const s = assessmentResult.stats;
+    const pct = scoreToPercent(s.score, s.maximum_marks);
     const scorePct = Math.round(pct);
+    const max = Number(s.maximum_marks) || 0;
+    const scoreText =
+      max > 0 ? `${s.score} / ${max} (${scorePct}%)` : `${scorePct}%`;
+    const name = getLearnerDisplayNameFromResult(assessmentResult, user);
     return buildAssessmentAppreciationCertificate({
       recipientName: name,
       assessmentTitle: assessmentResult.assessment_name || slug,
       branding: finalizeBranding(buildCertificateBranding(clientInfo)),
-      scoreText: `${scorePct}%`,
+      scoreText,
+    });
+  }, [assessmentResult, assessmentDetail, clientInfo, user, slug, inAppreciationBand]);
+
+  /**
+   * Result record with metric lines. Always completion-style so it does not duplicate the achievement
+   * headline when both certificates are shown.
+   * Must return `null` when not ready — `return true` makes this a boolean and breaks certificate + PNG.
+   */
+  const resultCertificateContent = useMemo(() => {
+    // if (!assessmentResult || !user) return null;
+    // if (!assessmentDetail) return null;
+    // if (!assessmentDetail.certificate_available) return null;
+    const s:any = assessmentResult?.stats || {};
+    const name = getLearnerDisplayNameFromResult(assessmentResult, user);
+    return buildAssessmentResultCertificate({
+      recipientName: name,
+      assessmentTitle: assessmentResult?.assessment_name || slug,
+      branding: finalizeBranding(buildCertificateBranding(clientInfo)),
+      score: s.score,
+      maximumMarks: s.maximum_marks,
+      accuracyPercent: s.accuracy_percent,
+      percentile: s.percentile,
+      attemptedQuestions: s.attempted_questions,
+      totalQuestions: s.total_questions,
+      timeTakenMinutes: s.time_taken_minutes,
+      inAppreciationBand: false,
     });
   }, [assessmentResult, assessmentDetail, clientInfo, user, slug]);
+
+  const certificateDownloadFileStem = useMemo(() => {
+    if (!assessmentResult || !user) {
+      return {
+        assessment: sanitizeCertificateFileSegment(slug || "", "assessment"),
+        learner: "learner",
+      };
+    }
+    const assessment = sanitizeCertificateFileSegment(
+      assessmentResult.assessment_name || slug || "assessment",
+      "assessment"
+    );
+    const learner = sanitizeCertificateFileSegment(
+      getLearnerDisplayNameFromResult(assessmentResult, user),
+      "learner"
+    );
+    return { assessment, learner };
+  }, [assessmentResult, user, slug]);
 
   const loadAssessmentResult = async () => {
     try {
@@ -245,8 +322,8 @@ export default function AssessmentResultPage() {
           accuracy={stats?.accuracy_percent||0}
           percentile={stats.percentile}
         />
-
-        {appreciationCertificateContent && user ? (
+  {JSON.stringify(resultCertificateContent)}
+        {resultCertificateContent && user ? (
           <Paper
             className="exclude-from-pdf"
             elevation={0}
@@ -260,16 +337,80 @@ export default function AssessmentResultPage() {
             }}
           >
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Certificate of achievement
+              {appreciationCertificateContent ? "Certificates" : "Your certificate"}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Your score is within the configured appreciation band. Download your certificate below.
+              {appreciationCertificateContent
+                ? "Each row has its own download buttons. The top bar \"Download PDF\" is your full result report, not a certificate."
+                : "Download buttons below match this certificate. The top bar \"Download PDF\" is your full result report, not a certificate."}
             </Typography>
-            <CertificateLearnerToolbar
-              content={appreciationCertificateContent}
-              fileNameBase={`certificate-achievement-${slug}`}
-              dense
-            />
+
+            <Box
+              sx={{
+                mb: 2.5,
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: "action.hover",
+                overflow: "hidden",
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, py: 1, display: "block" }}>
+                Certificate preview (same layout as PNG/PDF)
+              </Typography>
+              <Box sx={{ height: 210, position: "relative", overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    transform: "scale(0.3)",
+                    transformOrigin: "top left",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <DynamicCertificate content={resultCertificateContent} />
+                </Box>
+              </Box>
+            </Box>
+
+            {appreciationCertificateContent ? (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                  Certificate of achievement
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                  For scores in your organization&apos;s appreciation band.
+                </Typography>
+                <CertificateLearnerToolbar
+                  key={`ach-${certificateBrandingKey}`}
+                  content={appreciationCertificateContent}
+                  fileNameBase={`certificate-achievement-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`}
+                  dense
+                  pngButtonLabel="Download achievement certificate (PNG)"
+                  pdfButtonLabel="Download achievement certificate (PDF)"
+                />
+              </Box>
+            ) : null}
+
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                Certificate with result summary
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Includes score, accuracy, percentile, attempts, and time. Signatory image uses client
+                branding when configured.
+              </Typography>
+              {JSON.stringify(resultCertificateContent)}
+              <CertificateLearnerToolbar
+                key={`res-${certificateBrandingKey}`}
+                content={resultCertificateContent}
+                fileNameBase={`certificate-result-summary-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`}
+                dense
+                pngButtonLabel="Download result-summary certificate (PNG)"
+                pdfButtonLabel="Download result-summary certificate (PDF)"
+              />
+            </Box>
           </Paper>
         ) : null}
 

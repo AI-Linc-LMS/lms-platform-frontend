@@ -1,10 +1,15 @@
 export type CertificateVariant =
   | "course_completion"
   | "assessment_participation"
-  | "assessment_appreciation";
+  | "assessment_appreciation"
+  | "assessment_result";
 
 export interface CertificateBranding {
   issuerDisplayName: string;
+  /** Optional second line (e.g. client slug) under the issuing organization name. */
+  issuerSubtitle?: string;
+  /** Optional tagline under org name (e.g. client theme login hero slogan). */
+  issuerTagline?: string;
   logoUrl: string;
   signatureImageUrl: string;
   signatoryName: string;
@@ -33,6 +38,8 @@ export interface CertificateContent {
   /** Shown top-left, e.g. "DATE: 29 May, 2024" */
   dateLabelPrefix?: string;
   branding: CertificateBranding;
-  /** e.g. "92%" for appreciation variant */
+  /** e.g. "92%" or "45 / 50 (90%)" for result variants */
   scoreText?: string;
+  /** Optional result metrics shown under the score (assessment result certificate). */
+  credentialLines?: string[];
 }
