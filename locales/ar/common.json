@@ -1361,6 +1361,7 @@
     "bulkStudentEnrollment": "التسجيل الجماعي للطلاب",
     "uploadStudentCsvTitle": "رفع ملف CSV للطلاب",
     "uploadStudentCsvDesc": "ارفع ملف CSV بالأعمدة: الاسم، البريد الإلكتروني، الهاتف (اختياري)",
+    "downloadSampleCsv": "تحميل نموذج CSV (الاسم، البريد الإلكتروني)",
     "clickToUpload": "انقر للرفع أو اسحب وأفلت",
     "csvFilesOnly": "ملفات CSV فقط (يدعم ملفات متعددة)",
     "uploadedFiles": "الملفات المرفوعة ({{count}}):",

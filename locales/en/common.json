@@ -1492,6 +1492,7 @@
     "bulkStudentEnrollment": "Bulk Student Enrollment",
     "uploadStudentCsvTitle": "Upload Student CSV File",
     "uploadStudentCsvDesc": "Upload a CSV file with columns: name, email, phone (optional)",
+    "downloadSampleCsv": "Download sample CSV (name, email)",
     "clickToUpload": "Click to upload or drag and drop",
     "csvFilesOnly": "CSV files only (multiple files supported)",
     "uploadedFiles": "Uploaded Files ({{count}}):",
