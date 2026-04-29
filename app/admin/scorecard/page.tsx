@@ -106,7 +106,10 @@ export default function AdminScorecardPage() {
         page += 1;
       }
 
-      setStudents(allStudents);
+      const uniqueStudents = Array.from(
+        new Map(allStudents.map((student) => [student.id, student])).values()
+      );
+      setStudents(uniqueStudents);
     } catch {
       showToast("Failed to load students", "error");
     } finally {
@@ -529,9 +532,15 @@ export default function AdminScorecardPage() {
                     <Autocomplete
                       options={students}
                       getOptionLabel={(opt) => `${opt.name} (${opt.email})`}
+                      isOptionEqualToValue={(option, value) => option.id === value.id}
                       value={selectedStudent}
                       onChange={(_, v) => setSelectedStudent(v)}
                       loading={loadingStudents}
+                      renderOption={(props, option) => (
+                        <li {...props} key={option.id}>
+                          {`${option.name} (${option.email})`}
+                        </li>
+                      )}
                       renderInput={(params) => (
                         <TextField
                           {...params}
