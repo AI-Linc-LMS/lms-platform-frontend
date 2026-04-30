@@ -58,6 +58,8 @@ interface AssessmentResponse {
   proctoring_enabled?: boolean;
   /** When false, learners follow strict section order (no tab jumps, no Previous into prior sections). */
   allow_movement?: boolean;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
 }
 
 export function useAssessmentData(slug: string) {

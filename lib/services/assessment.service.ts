@@ -34,6 +34,8 @@ export interface Assessment {
   show_result?: boolean;
   evaluation_mode?: "auto" | "manual";
   review_status?: "not_required" | "pending_evaluation" | "evaluated" | "published";
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
 }
 
 export interface AssessmentDetail extends Assessment {
@@ -85,6 +87,9 @@ export interface FinalSubmissionResponse {
   review_status?: string;
   show_result?: boolean;
   message?: string;
+  auto_submitted_reason?: string | null;
+  auto_submitted_meta?: Record<string, any>;
+  auto_submit_message?: string;
 }
 
 export interface ScholarshipStatus {
@@ -151,6 +156,9 @@ export interface AssessmentResult {
   /** When false, show evaluation-in-progress message instead of full result */
   show_result?: boolean;
   review_status?: string;
+  auto_submitted_reason?: string | null;
+  auto_submitted_meta?: Record<string, any>;
+  auto_submit_message?: string;
   /** Optional server-provided feedback lines for the report */
   feedback_points?: string[];
   stats: {
@@ -386,12 +394,16 @@ export const assessmentService = {
       quizSectionId: Array<Record<string, any>>;
       codingProblemSectionId: Array<Record<string, any>>;
       subjectiveQuestionSectionId?: Array<Record<string, any>>;
+      auto_submitted_reason?: string;
+      auto_submitted_meta?: Record<string, any>;
     },
   ): Promise<FinalSubmissionResponse> => {
     const response = await apiClient.put<FinalSubmissionResponse>(
       `/assessment/api/client/${config.clientId}/assessment-submission/${assessmentId}/final/`,
       {
         response_sheet: payload,
+        auto_submitted_reason: payload.auto_submitted_reason,
+        auto_submitted_meta: payload.auto_submitted_meta,
       },
     );
     return response.data;

@@ -37,6 +37,8 @@ interface AssessmentSettingsSectionProps {
 
   /** Assessment-wide: learners may move between section blocks (quiz, coding, etc.). */
   allowMovementAcrossSections: boolean;
+  tabSwitchLimitEnabled: boolean;
+  tabSwitchLimitCount: number;
   certificateAvailable: boolean;
   passBandLowerPercent: string;
   passBandUpperPercent: string;
@@ -65,6 +67,8 @@ interface AssessmentSettingsSectionProps {
   onShowResultChange: (value: boolean) => void;
   onEvaluationModeChange: (value: "auto" | "manual") => void;
   onAllowMovementAcrossSectionsChange: (value: boolean) => void;
+  onTabSwitchLimitEnabledChange: (value: boolean) => void;
+  onTabSwitchLimitCountChange: (value: number) => void;
   onCertificateAvailableChange: (value: boolean) => void;
   onPassBandLowerPercentChange: (value: string) => void;
   onPassBandUpperPercentChange: (value: string) => void;
@@ -243,6 +247,8 @@ export function AssessmentSettingsSection({
   liveStreaming = false,
   showLiveStreamingToggle = false,
   allowMovementAcrossSections,
+  tabSwitchLimitEnabled,
+  tabSwitchLimitCount,
   certificateAvailable,
   passBandLowerPercent,
   passBandUpperPercent,
@@ -271,6 +277,8 @@ export function AssessmentSettingsSection({
   onShowResultChange,
   onEvaluationModeChange,
   onAllowMovementAcrossSectionsChange,
+  onTabSwitchLimitEnabledChange,
+  onTabSwitchLimitCountChange,
   onCertificateAvailableChange,
   onPassBandLowerPercentChange,
   onPassBandUpperPercentChange,
@@ -753,6 +761,39 @@ export function AssessmentSettingsSection({
               onChange={onAllowMovementAcrossSectionsChange}
               disabled={readOnly}
             />
+            <PolicySwitchRow
+              icon="mdi:tab"
+              title="Auto-submit on tab switches"
+              subtitle="When enabled, attempt is auto-submitted once tab switch count reaches the configured limit."
+              checked={tabSwitchLimitEnabled}
+              onChange={onTabSwitchLimitEnabledChange}
+              disabled={readOnly}
+            />
+            <Collapse in={tabSwitchLimitEnabled} timeout="auto" unmountOnExit>
+              <ListItem
+                sx={{
+                  display: "block",
+                  px: 2,
+                  py: 2,
+                  bgcolor: "var(--surface)",
+                  borderBottom: "1px solid",
+                  borderColor: "var(--border-default)",
+                }}
+              >
+                <TextField
+                  label="Allowed tab switches"
+                  type="number"
+                  value={tabSwitchLimitCount > 0 ? tabSwitchLimitCount : ""}
+                  onChange={(e) => onTabSwitchLimitCountChange(Number(e.target.value || 0))}
+                  fullWidth
+                  required
+                  inputProps={{ min: 1 }}
+                  helperText="Attempt auto-submits immediately when this count is reached."
+                  FormHelperTextProps={helperFormProps}
+                  disabled={readOnly}
+                />
+              </ListItem>
+            </Collapse>
 
             <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
               Certificates
