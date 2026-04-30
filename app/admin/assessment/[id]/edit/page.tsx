@@ -400,6 +400,8 @@ export default function AssessmentEditPage() {
   const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
+  const [tabSwitchLimitEnabled, setTabSwitchLimitEnabled] = useState(false);
+  const [tabSwitchLimitCount, setTabSwitchLimitCount] = useState(2);
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
   const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
@@ -499,6 +501,12 @@ export default function AssessmentEditPage() {
       setShowResult((data as any).show_result ?? true);
       setEvaluationMode((data as any).evaluation_mode === "manual" ? "manual" : "auto");
       setAllowMovementAcrossSections(anyData.allow_movement !== false);
+      setTabSwitchLimitEnabled(Boolean(anyData.tab_switch_limit_enabled));
+      setTabSwitchLimitCount(
+        Number(anyData.tab_switch_limit_count) > 0
+          ? Number(anyData.tab_switch_limit_count)
+          : 2
+      );
       setCertificateAvailable(Boolean(anyData.certificate_available));
       setPassBandLowerPercent(
         anyData.pass_band_lower_min_percent != null &&
@@ -670,6 +678,10 @@ export default function AssessmentEditPage() {
       showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
     }
+    if (tabSwitchLimitEnabled && tabSwitchLimitCount < 1) {
+      showToast("Allowed tab switches must be at least 1", "error");
+      return;
+    }
     try {
       setSaving(true);
       const payload: Partial<CreateAssessmentPayload> = {
@@ -690,6 +702,8 @@ export default function AssessmentEditPage() {
         evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
+        tab_switch_limit_enabled: tabSwitchLimitEnabled,
+        tab_switch_limit_count: tabSwitchLimitEnabled ? tabSwitchLimitCount : null,
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
@@ -1302,6 +1316,8 @@ export default function AssessmentEditPage() {
                   showResult={showResult}
                   evaluationMode={evaluationMode}
                   allowMovementAcrossSections={allowMovementAcrossSections}
+                  tabSwitchLimitEnabled={tabSwitchLimitEnabled}
+                  tabSwitchLimitCount={tabSwitchLimitCount}
                   certificateAvailable={certificateAvailable}
                   passBandLowerPercent={passBandLowerPercent}
                   passBandUpperPercent={passBandUpperPercent}
@@ -1327,6 +1343,8 @@ export default function AssessmentEditPage() {
                   onAllowMovementAcrossSectionsChange={
                     setAllowMovementAcrossSections
                   }
+                  onTabSwitchLimitEnabledChange={setTabSwitchLimitEnabled}
+                  onTabSwitchLimitCountChange={setTabSwitchLimitCount}
                   onCertificateAvailableChange={setCertificateAvailable}
                   onPassBandLowerPercentChange={setPassBandLowerPercent}
                   onPassBandUpperPercentChange={setPassBandUpperPercent}

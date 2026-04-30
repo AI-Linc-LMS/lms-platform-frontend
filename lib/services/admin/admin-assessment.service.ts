@@ -172,6 +172,8 @@ export interface CreateAssessmentPayload {
    * move between section blocks (e.g. quiz ↔ coding). Do not send per-section.
    */
   allow_movement?: boolean;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
   /** API: camelCase array of quiz sections */
   quizSection?: AssessmentQuizSectionWrite[];
   /** API: camelCase array of coding problem sections */
@@ -223,6 +225,8 @@ export interface Assessment {
   live_streaming?: boolean;
   /** Allow navigation across section blocks (assessment-wide). */
   allow_movement?: boolean;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
   start_time?: string | null;
   end_time?: string | null;
   created_at: string;
@@ -252,6 +256,8 @@ export interface AssessmentDetail extends Assessment {
   certificate_available?: boolean;
   pass_band_lower_min_percent?: string;
   pass_band_upper_min_percent?: string;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
   /** API: camelCase quiz sections (detail GET) */
   quizSection?: Array<{
     id: number;

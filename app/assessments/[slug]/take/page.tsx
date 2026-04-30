@@ -99,6 +99,7 @@ const MAX_VIOLATION_CAPTURE_RETRIES = 6;
 const MAX_SESSION_START_PROOF_ATTEMPTS = 6;
 
 const SECTION_COMPLETELY_ATTEMPTED_KEY = "section_completely_attempted";
+const AUTO_SUBMIT_REASON_TAB_SWITCH_LIMIT = "tab_switch_limit";
 
 /** First section index the learner may enter: skips timed sections already marked complete on the response sheet. */
 function firstTimedSectionEntryIndex(
@@ -247,6 +248,9 @@ export default function TakeAssessmentPage({
   const latestViolationTypeRef = useRef<string | null>(null);
   const lastTabSwitchCountAtScreenshotRef = useRef(-1);
   const handleFinalSubmitRef = useRef<() => void>(() => {});
+  const tabSwitchLimitAutoSubmitTriggeredRef = useRef(false);
+  const autoSubmitReasonRef = useRef<string | null>(null);
+  const autoSubmitMetaRef = useRef<Record<string, any> | null>(null);
   const mediaGraceUntilRef = useRef(0);
   const timedSectionsCompleteRef = useRef<Set<string>>(new Set());
   const prevSectionIndexMarkRef = useRef<number | null>(null);
@@ -722,6 +726,34 @@ export default function TakeAssessmentPage({
     );
   }, [tabSwitchCount, assessmentStarted, submitting, showToast]);
 
+  useEffect(() => {
+    if (!assessmentStarted || submitting) return;
+    if (!assessment?.tab_switch_limit_enabled) return;
+    const limit = Number(assessment?.tab_switch_limit_count || 0);
+    if (!Number.isFinite(limit) || limit <= 0) return;
+    if (tabSwitchCount < limit) return;
+    if (tabSwitchLimitAutoSubmitTriggeredRef.current) return;
+    tabSwitchLimitAutoSubmitTriggeredRef.current = true;
+    autoSubmitReasonRef.current = AUTO_SUBMIT_REASON_TAB_SWITCH_LIMIT;
+    autoSubmitMetaRef.current = {
+      limit,
+      current_count: tabSwitchCount,
+      triggered_at: new Date().toISOString(),
+    };
+    showToast(
+      "Tab-switch limit reached. Submitting your assessment automatically.",
+      "warning"
+    );
+    handleFinalSubmitRef.current();
+  }, [
+    assessmentStarted,
+    submitting,
+    assessment?.tab_switch_limit_enabled,
+    assessment?.tab_switch_limit_count,
+    tabSwitchCount,
+    showToast,
+  ]);
+
   // Show toast notifications for proctoring violations
   useEffect(() => {
     if (!assessmentStarted || submitting || !latestViolation) return;
@@ -1188,6 +1220,8 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog,
     violationScreenshotSamplesRef: violationScreenshotEvidenceRef,
     timedSectionsCompleteRef,
+    autoSubmitReasonRef,
+    autoSubmitMetaRef,
   });
 
   useEffect(() => {

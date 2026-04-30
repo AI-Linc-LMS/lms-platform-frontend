@@ -93,6 +93,8 @@ export default function AssessmentResultPage() {
 
   const stats = assessmentResult?.stats || ({} as AssessmentResult["stats"]);
   const resultHidden = assessmentResult?.show_result === false;
+  const tabSwitchAutoSubmit =
+    assessmentResult?.auto_submitted_reason === "tab_switch_limit";
 
   const quizResponses = assessmentResult?.user_responses?.quiz_responses || [];
 
@@ -194,6 +196,15 @@ export default function AssessmentResultPage() {
               {assessmentResult?.review_status === "published"
                 ? "Result visibility is currently disabled."
                 : "Your assessment is under manual evaluation. Results will appear after publish."}
+            </Typography>
+          </Alert>
+        )}
+
+        {tabSwitchAutoSubmit && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              {assessmentResult?.auto_submit_message ||
+                "This assessment was auto-submitted because the tab-switch limit was reached."}
             </Typography>
           </Alert>
         )}

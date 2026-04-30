@@ -99,6 +99,8 @@ export default function CreateAssessmentPage() {
 
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
+  const [tabSwitchLimitEnabled, setTabSwitchLimitEnabled] = useState(false);
+  const [tabSwitchLimitCount, setTabSwitchLimitCount] = useState(2);
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
   const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
@@ -235,6 +237,10 @@ export default function CreateAssessmentPage() {
       if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
         return;
       }
+      if (tabSwitchLimitEnabled && tabSwitchLimitCount < 1) {
+        showToast("Allowed tab switches must be at least 1", "error");
+        return;
+      }
     }
     if (activeStep === 1) {
       // Validate questions for each section
@@ -320,6 +326,9 @@ export default function CreateAssessmentPage() {
         return true;
       }
       if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
+        return true;
+      }
+      if (tabSwitchLimitEnabled && tabSwitchLimitCount < 1) {
         return true;
       }
       return false;
@@ -742,6 +751,8 @@ export default function CreateAssessmentPage() {
         evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
+        tab_switch_limit_enabled: tabSwitchLimitEnabled,
+        tab_switch_limit_count: tabSwitchLimitEnabled ? tabSwitchLimitCount : null,
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
@@ -933,6 +944,8 @@ export default function CreateAssessmentPage() {
               showResult={showResult}
               evaluationMode={evaluationMode}
               allowMovementAcrossSections={allowMovementAcrossSections}
+              tabSwitchLimitEnabled={tabSwitchLimitEnabled}
+              tabSwitchLimitCount={tabSwitchLimitCount}
               certificateAvailable={certificateAvailable}
               passBandLowerPercent={passBandLowerPercent}
               passBandUpperPercent={passBandUpperPercent}
@@ -956,6 +969,8 @@ export default function CreateAssessmentPage() {
               onShowResultChange={setShowResult}
               onEvaluationModeChange={setEvaluationMode}
               onAllowMovementAcrossSectionsChange={setAllowMovementAcrossSections}
+              onTabSwitchLimitEnabledChange={setTabSwitchLimitEnabled}
+              onTabSwitchLimitCountChange={setTabSwitchLimitCount}
               onCertificateAvailableChange={setCertificateAvailable}
               onPassBandLowerPercentChange={setPassBandLowerPercent}
               onPassBandUpperPercentChange={setPassBandUpperPercent}
