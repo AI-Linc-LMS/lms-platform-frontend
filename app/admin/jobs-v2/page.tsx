@@ -47,7 +47,7 @@ function AdminJobsV2PageInner() {
       <Box
         sx={{
           minHeight: "100%",
-          background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+          background: "linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 88%, var(--border-default) 12%) 100%)",
           px: { xs: 2, md: 3 },
           py: { xs: 1.5, md: 2 },
           maxWidth: "100%",
@@ -66,7 +66,7 @@ function AdminJobsV2PageInner() {
             gap: 2,
             pb: 2,
             borderBottom: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
+            borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
           }}
         >
           <Box sx={{ minWidth: 0 }}>
@@ -77,7 +77,7 @@ function AdminJobsV2PageInner() {
                   fontWeight: 700,
                   fontSize: { xs: "1.5rem", sm: "1.75rem" },
                   letterSpacing: "-0.025em",
-                  color: "#0f172a",
+                  color: "var(--font-primary-dark)",
                   lineHeight: 1.2,
                 }}
               >
@@ -91,14 +91,14 @@ function AdminJobsV2PageInner() {
                     height: 24,
                     fontWeight: 600,
                     fontSize: "0.75rem",
-                    backgroundColor: "rgba(99, 102, 241, 0.1)",
-                    color: "#6366f1",
-                    border: "1px solid rgba(99, 102, 241, 0.2)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                    color: "var(--accent-indigo)",
+                    border: "1px solid color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
                   }}
                 />
               )}
             </Box>
-            <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5, fontSize: "0.9375rem" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5, fontSize: "0.9375rem" }}>
               Manage job postings and applications
             </Typography>
             <Tabs
@@ -121,10 +121,10 @@ function AdminJobsV2PageInner() {
                 sx={{
                   minWidth: 140,
                   "& .MuiOutlinedInput-root": {
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--card-bg)",
                     borderRadius: 2,
                     fontSize: "0.875rem",
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.5)" },
+                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 50%, transparent)" },
                   },
                 }}
               >
@@ -166,11 +166,11 @@ function AdminJobsV2PageInner() {
                       : "Sort created date: switch to newest first"
                   }
                   sx={{
-                    border: "1px solid rgba(99, 102, 241, 0.35)",
+                    border: "1px solid color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                     borderRadius: 2,
-                    backgroundColor: "#fff",
-                    color: "#6366f1",
-                    "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                    backgroundColor: "var(--card-bg)",
+                    color: "var(--accent-indigo)",
+                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                   }}
                 >
                   {s.createdSortOrder === "desc" ? (
@@ -192,16 +192,16 @@ function AdminJobsV2PageInner() {
                     minWidth: { xs: "100%", sm: 220 },
                     flex: { xs: 1, sm: "none" },
                     "& .MuiOutlinedInput-root": {
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--card-bg)",
                       borderRadius: 2,
                       fontSize: "0.875rem",
-                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.5)" },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 50%, transparent)" },
                     },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <IconWrapper icon="mdi:magnify" size={18} style={{ color: "#94a3b8" }} />
+                        <IconWrapper icon="mdi:magnify" size={18} style={{ color: "var(--font-tertiary)" }} />
                       </InputAdornment>
                     ),
                   }}
@@ -221,10 +221,10 @@ function AdminJobsV2PageInner() {
                     minWidth: { xs: "100%", sm: 200 },
                     flex: { xs: 1, sm: "none" },
                     "& .MuiOutlinedInput-root": {
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--card-bg)",
                       borderRadius: 2,
                       fontSize: "0.875rem",
-                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.5)" },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 50%, transparent)" },
                     },
                   }}
                 >
@@ -242,9 +242,9 @@ function AdminJobsV2PageInner() {
                 textTransform: "none",
                 fontWeight: 600,
                 borderRadius: 2,
-                borderColor: "rgba(99, 102, 241, 0.4)",
-                color: "#6366f1",
-                "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.06)" },
+                borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                color: "var(--accent-indigo)",
+                "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" },
               }}
             >
               Reports
@@ -258,9 +258,9 @@ function AdminJobsV2PageInner() {
                 textTransform: "none",
                 fontWeight: 600,
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
-                "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
+                backgroundColor: "var(--accent-indigo)",
+                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
               }}
             >
               Create Job
@@ -281,10 +281,10 @@ function AdminJobsV2PageInner() {
               flexWrap: "wrap",
               gap: 2,
               border: "2px solid",
-              borderColor: "rgba(99, 102, 241, 0.4)",
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0.02) 100%)",
+              borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 6%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 2%, transparent) 100%)",
               borderRadius: 2,
-              boxShadow: "0 2px 8px rgba(99, 102, 241, 0.08)",
+              boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -293,16 +293,16 @@ function AdminJobsV2PageInner() {
                   width: 40,
                   height: 40,
                   borderRadius: 2,
-                  backgroundColor: "rgba(99, 102, 241, 0.12)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <CheckSquare size={20} style={{ color: "#6366f1" }} />
+                <CheckSquare size={20} style={{ color: "var(--accent-indigo)" }} />
               </Box>
               <Box>
-                <Typography variant="body1" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary-dark)" }}>
                   {s.selectedIds.size} job{s.selectedIds.size !== 1 ? "s" : ""} selected
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -323,7 +323,7 @@ function AdminJobsV2PageInner() {
                   textTransform: "none",
                   fontWeight: 600,
                   color: "text.secondary",
-                  "&:hover": { backgroundColor: "rgba(0,0,0,0.04)", color: "text.primary" },
+                  "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 4%, transparent)", color: "text.primary" },
                 }}
               >
                 Clear
@@ -347,11 +347,11 @@ function AdminJobsV2PageInner() {
                       label="Status"
                       onChange={(e) => s.setBulkStatus(e.target.value)}
                       sx={{
-                        backgroundColor: "#fff",
+                        backgroundColor: "var(--card-bg)",
                         borderRadius: 2,
                         fontWeight: 600,
-                        "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
-                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                        "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
+                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                       }}
                     >
                       <MenuItem value="">—</MenuItem>
@@ -379,11 +379,11 @@ function AdminJobsV2PageInner() {
                       label="Visibility"
                       onChange={(e) => s.setBulkVisibility(e.target.value)}
                       sx={{
-                        backgroundColor: "#fff",
+                        backgroundColor: "var(--card-bg)",
                         borderRadius: 2,
                         fontWeight: 600,
-                        "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
-                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                        "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
+                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                       }}
                     >
                       <MenuItem value="">—</MenuItem>
@@ -398,18 +398,18 @@ function AdminJobsV2PageInner() {
                     sx={{
                       textTransform: "none",
                       fontWeight: 600,
-                      backgroundColor: "#6366f1",
+                      backgroundColor: "var(--accent-indigo)",
                       px: 3,
                       py: 1.25,
                       borderRadius: 2,
-                      boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
-                      "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
-                      "&:disabled": { backgroundColor: "rgba(99, 102, 241, 0.5)" },
+                      boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+                      "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
+                      "&:disabled": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 50%, transparent)" },
                     }}
                   >
                     {s.updating ? (
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <CircularProgress size={16} sx={{ color: "#fff" }} />
+                        <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
                         Updating...
                       </Box>
                     ) : (
@@ -497,7 +497,7 @@ function AdminJobsV2PageInner() {
               sx: {
                 minWidth: 180,
                 borderRadius: 2,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                boxShadow: "0 4px 20px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                 mt: 1.5,
               },
             },

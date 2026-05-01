@@ -9,9 +9,9 @@ type Props = Omit<AvatarProps, "src" | "children"> & {
 };
 
 const logoAvatarBaseSx = {
-  bgcolor: "#fff",
-  color: "#6366f1",
-  border: "1px solid rgba(99, 102, 241, 0.12)",
+  bgcolor: "var(--card-bg)",
+  color: "var(--accent-indigo)",
+  border: "1px solid color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
   fontWeight: 600,
   boxSizing: "border-box" as const,
   p: 0.75,

@@ -87,10 +87,10 @@ const NaukriJobSearchBarComponent = ({
         alignItems: "stretch",
         borderRadius: 3,
         overflow: "hidden",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--card-bg)",
         border: "1px solid",
-        borderColor: "#e2e8f0",
-        boxShadow: "0 4px 14px rgba(0, 0, 0, 0.06)",
+        borderColor: "var(--border-default)",
+        boxShadow: "0 4px 14px color-mix(in srgb, var(--font-primary) 6%, transparent)",
         flexDirection: { xs: "column", sm: "row" },
       }}
     >
@@ -103,13 +103,13 @@ const NaukriJobSearchBarComponent = ({
           alignItems: "center",
           borderRight: { xs: "none", sm: "1px solid" },
           borderBottom: { xs: "1px solid", sm: "none" },
-          borderColor: "#e2e8f0",
+          borderColor: "var(--border-default)",
           pl: 2,
           pr: 1,
           py: { xs: 1, sm: 0 },
         }}
       >
-        <Search size={20} style={{ color: "#94a3b8", flexShrink: 0, marginRight: 12 }} />
+        <Search size={20} style={{ color: "var(--font-tertiary)", flexShrink: 0, marginRight: 12 }} />
         <TextField
           fullWidth
           placeholder={placeholder}
@@ -132,8 +132,8 @@ const NaukriJobSearchBarComponent = ({
             "& .MuiInputBase-input": {
               fontSize: size === "small" ? "0.9rem" : "0.95rem",
               py: 1.5,
-              color: "#1e293b",
-              "&::placeholder": { color: "#94a3b8", opacity: 1 },
+              color: "var(--font-primary-dark)",
+              "&::placeholder": { color: "var(--font-tertiary)", opacity: 1 },
             },
           }}
         />
@@ -149,7 +149,7 @@ const NaukriJobSearchBarComponent = ({
             alignItems: "center",
             borderRight: { xs: "none", sm: "1px solid" },
             borderBottom: { xs: "1px solid", sm: "none" },
-            borderColor: "#e2e8f0",
+            borderColor: "var(--border-default)",
           }}
         >
           <TextField
@@ -169,11 +169,11 @@ const NaukriJobSearchBarComponent = ({
                 px: 2,
                 py: 1.5,
                 fontSize: size === "small" ? "0.9rem" : "0.95rem",
-                color: experience ? "#1e293b" : "#94a3b8",
+                color: experience ? "var(--font-primary-dark)" : "var(--font-tertiary)",
               },
               endAdornment: (
                 <InputAdornment position="end" sx={{ mr: 0.5 }}>
-                  <ChevronDown size={18} style={{ color: "#94a3b8" }} />
+                  <ChevronDown size={18} style={{ color: "var(--font-tertiary)" }} />
                 </InputAdornment>
               ),
             }}
@@ -201,11 +201,11 @@ const NaukriJobSearchBarComponent = ({
           display: "flex",
           alignItems: "center",
           borderRight: { xs: "none", sm: "1px solid" },
-          borderColor: "#e2e8f0",
+          borderColor: "var(--border-default)",
           px: 1,
         }}
       >
-        <MapPin size={18} style={{ color: "#94a3b8", flexShrink: 0, marginLeft: 8 }} />
+        <MapPin size={18} style={{ color: "var(--font-tertiary)", flexShrink: 0, marginLeft: 8 }} />
         <Autocomplete
           freeSolo
           fullWidth
@@ -225,7 +225,7 @@ const NaukriJobSearchBarComponent = ({
             "& .MuiAutocomplete-inputRoot": {
               py: 1,
               fontSize: size === "small" ? "0.9rem" : "0.95rem",
-              color: location ? "#1e293b" : "#94a3b8",
+              color: location ? "var(--font-primary-dark)" : "var(--font-tertiary)",
             },
           }}
           renderInput={(params) => (
@@ -260,8 +260,8 @@ const NaukriJobSearchBarComponent = ({
           minWidth: { xs: "100%", sm: 120 },
           height: { xs: 48, sm: "auto" },
           borderRadius: 0,
-          borderColor: "rgba(99, 102, 241, 0.45)",
-          color: "#6366f1",
+          borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+          color: "var(--accent-indigo)",
           fontWeight: 600,
           fontSize: "1rem",
           textTransform: "none",
@@ -269,8 +269,8 @@ const NaukriJobSearchBarComponent = ({
           py: 1.5,
           boxShadow: "none",
           "&:hover": {
-            borderColor: "#6366f1",
-            backgroundColor: "rgba(99, 102, 241, 0.06)",
+            borderColor: "var(--accent-indigo)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
             boxShadow: "none",
           },
         }}
