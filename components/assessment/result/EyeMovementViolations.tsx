@@ -28,8 +28,8 @@ export function EyeMovementViolations({
         p: 3,
         mb: 3,
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
-        backgroundColor: "#fff",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
@@ -86,7 +86,8 @@ export function EyeMovementViolations({
                   alignItems: "center",
                   gap: 1.5,
                   p: 1.5,
-                  backgroundColor: "#fef3c7",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--warning-500) 16%, var(--surface))",
                   borderRadius: 1,
                 }}
               >

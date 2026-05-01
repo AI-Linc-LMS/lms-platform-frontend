@@ -37,8 +37,8 @@ export function MockInterviewTopicsView({
           p: 6,
           textAlign: "center",
           borderRadius: 2,
-          border: "1px dashed #e5e7eb",
-          backgroundColor: "#f9fafb",
+          border: "1px dashed var(--border-default)",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box
@@ -46,7 +46,8 @@ export function MockInterviewTopicsView({
             width: 72,
             height: 72,
             borderRadius: "50%",
-            backgroundColor: "#eef2ff",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -54,12 +55,12 @@ export function MockInterviewTopicsView({
             mb: 2,
           }}
         >
-          <IconWrapper icon="mdi:book-open-variant" size={36} color="#6366f1" />
+          <IconWrapper icon="mdi:book-open-variant" size={36} color="var(--accent-indigo)" />
         </Box>
-        <Typography variant="body1" sx={{ fontWeight: 500, color: "#374151", mb: 0.5 }}>
+        <Typography variant="body1" sx={{ fontWeight: 500, color: "var(--font-primary)", mb: 0.5 }}>
           {t("adminMockInterview.noTopicAnalytics")}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           {t("adminMockInterview.topicDataWillAppear")}
         </Typography>
       </Paper>
@@ -68,7 +69,7 @@ export function MockInterviewTopicsView({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
         {t("adminMockInterview.topicsCount", { count: data.total_topics })}
       </Typography>
       <Box
@@ -84,18 +85,22 @@ export function MockInterviewTopicsView({
             sx={{
               p: 3,
               borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-              border: "1px solid #e5e7eb",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
               transition: "all 0.2s",
               "&:hover": {
-                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.12)",
-                borderColor: "#c7d2fe",
+                boxShadow:
+                  "0 4px 12px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+                borderColor:
+                  "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-              <IconWrapper icon="mdi:book-outline" size={22} color="#6366f1" />
-              <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+              <IconWrapper icon="mdi:book-outline" size={22} color="var(--accent-indigo)" />
+              <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 {topic.topic}
               </Typography>
             </Box>
@@ -108,7 +113,7 @@ export function MockInterviewTopicsView({
               }}
             >
               <Box>
-                <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                   {t("adminMockInterview.interviewsColumn")}
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -116,7 +121,7 @@ export function MockInterviewTopicsView({
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                   {t("adminMockInterview.uniqueStudentsColumn")}
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -124,7 +129,7 @@ export function MockInterviewTopicsView({
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                   {t("adminMockInterview.avgScore")}
                 </Typography>
                 <Typography
@@ -133,10 +138,10 @@ export function MockInterviewTopicsView({
                     fontWeight: 600,
                     color:
                       topic.average_score >= 70
-                        ? "#16a34a"
+                        ? "var(--success-500)"
                         : topic.average_score >= 50
-                        ? "#d97706"
-                        : "#dc2626",
+                        ? "var(--warning-500)"
+                        : "var(--error-500)",
                   }}
                 >
                   {topic.average_score?.toFixed(1)}%
@@ -146,7 +151,7 @@ export function MockInterviewTopicsView({
             {topic.difficulty_breakdown &&
               Object.keys(topic.difficulty_breakdown).length > 0 && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mb: 1 }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1 }}>
                     {t("adminMockInterview.difficulty")}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -158,8 +163,9 @@ export function MockInterviewTopicsView({
                           size="small"
                           sx={{
                             fontSize: "0.7rem",
-                            backgroundColor: "#f3f4f6",
-                            color: "#374151",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+                            color: "var(--font-primary)",
                           }}
                         />
                       )
@@ -169,7 +175,7 @@ export function MockInterviewTopicsView({
               )}
             {topic.subtopics && topic.subtopics.length > 0 && (
               <Box>
-                <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mb: 1 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1 }}>
                   {t("adminMockInterview.subtopics")}
                 </Typography>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -182,11 +188,11 @@ export function MockInterviewTopicsView({
                         alignItems: "center",
                         p: 1,
                         borderRadius: 1,
-                        backgroundColor: "#f9fafb",
+                        backgroundColor: "var(--surface)",
                       }}
                     >
                       <Typography variant="body2">{st.subtopic}</Typography>
-                      <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                         {st.completed}/{st.total_interviews} · {t("adminMockInterview.avg")} {st.average_score?.toFixed(1)}%
                       </Typography>
                     </Box>

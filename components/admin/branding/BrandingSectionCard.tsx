@@ -42,8 +42,8 @@ export function BrandingSectionCard({
           borderColor: "divider",
           background: (theme) =>
             theme.palette.mode === "dark"
-              ? "rgba(255,255,255,0.04)"
-              : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+              ? "color-mix(in srgb, var(--font-light) 4%, transparent)"
+              : "linear-gradient(180deg, var(--background) 0%, var(--surface) 100%)",
           display: "flex",
           alignItems: "flex-start",
           gap: 1.5,

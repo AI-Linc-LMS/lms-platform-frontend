@@ -310,7 +310,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
 
     const dataUrl = await toPng(clone, {
       pixelRatio: 3,
-      backgroundColor: "#ffffff",
+      backgroundColor: "var(--background)",
       cacheBust: true,
     });
     document.body.removeChild(wrapper);
@@ -486,7 +486,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
         sx={{
           p: 2,
           mb: 3,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           borderRadius: 2,
           display: "flex",
           alignItems: "center",
@@ -503,11 +503,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={handleSave}
               sx={{
                 textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#1f2937",
+                borderColor: "var(--border-default)",
+                color: "var(--font-primary)",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--accent-purple)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -522,11 +522,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={handleClearData}
               sx={{
                 textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#dc2626",
+                borderColor: "var(--border-default)",
+                color: "var(--error-500)",
                 "&:hover": {
-                  borderColor: "#dc2626",
-                  backgroundColor: "#fef2f2",
+                  borderColor: "var(--error-500)",
+                  backgroundColor: "color-mix(in srgb, var(--error-500) 10%, var(--surface))",
                 },
               }}
             >
@@ -541,12 +541,12 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={handleToggleSource}
               sx={{
                 textTransform: "none",
-                borderColor: isProfileMode ? "#6366f1" : "#e5e7eb",
-                color: "#6366f1",
-                backgroundColor: isProfileMode ? "#eef2ff" : "transparent",
+                borderColor: isProfileMode ? "var(--accent-purple)" : "var(--border-default)",
+                color: "var(--accent-purple)",
+                backgroundColor: isProfileMode ? "color-mix(in srgb, var(--accent-purple) 12%, var(--surface))" : "transparent",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: isProfileMode ? "#e0e7ff" : "#eef2ff",
+                  borderColor: "var(--accent-purple)",
+                  backgroundColor: isProfileMode ? "color-mix(in srgb, var(--accent-purple) 18%, var(--surface))" : "color-mix(in srgb, var(--accent-purple) 12%, var(--surface))",
                 },
               }}
             >
@@ -561,11 +561,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={handleTemplateMenuOpen}
               sx={{
                 textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#1f2937",
+                borderColor: "var(--border-default)",
+                color: "var(--font-primary)",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--accent-purple)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -580,11 +580,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={() => setAtsDialogOpen(true)}
               sx={{
                 textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#1f2937",
+                borderColor: "var(--border-default)",
+                color: "var(--font-primary)",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--accent-purple)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -599,7 +599,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                   sx={{
                     ml: 1,
                     fontWeight: 700,
-                    color: atsScoreLive >= 80 ? "#16a34a" : atsScoreLive >= 50 ? "#ca8a04" : "#dc2626",
+                    color: atsScoreLive >= 80 ? "var(--success-500)" : atsScoreLive >= 50 ? "var(--warning-500)" : "var(--error-500)",
                   }}
                 >
                   {atsScoreLive}
@@ -661,11 +661,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               disabled={saveResumeLoading}
               sx={{
                 textTransform: "none",
-                backgroundColor: "#6366f1",
-                color: "#ffffff",
+                backgroundColor: "var(--accent-purple)",
+                color: "var(--background)",
                 px: 3,
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
               }}
             >
@@ -678,11 +678,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             onClick={handleDownloadPDF}
             sx={{
               textTransform: "none",
-              backgroundColor: "#6366f1",
-              color: "#ffffff",
+              backgroundColor: "var(--accent-purple)",
+              color: "var(--background)",
               px: 3,
               "&:hover": {
-                backgroundColor: "#4f46e5",
+                backgroundColor: "var(--accent-indigo-dark)",
               },
             }}
           >

@@ -20,12 +20,13 @@ import { AIGeneratedSection } from "./AIGeneratedSection";
 import { CodingProblemSelectionSection } from "./CodingProblemSelectionSection";
 import { AIGeneratedCodingSection } from "./AIGeneratedCodingSection";
 import { RawCodingProblemSection } from "./RawCodingProblemSection";
+import { CodingCSVUploadSection } from "./CodingCSVUploadSection";
 import { MCQ, MCQListItem, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { Section } from "./MultipleSectionsSection";
 import { SectionQuestionsSidenav } from "./SectionQuestionsSidenav";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
-type CodingInputMethod = "existing" | "ai" | "raw";
+type CodingInputMethod = "existing" | "ai" | "raw" | "csv";
 
 interface SectionBasedQuestionsInputProps {
   sections: Section[];
@@ -264,15 +265,15 @@ export function SectionBasedQuestionsInput({
           >
           {selectedSectionId && currentSection && currentSection.type === "quiz" && (
         <>
-          <Paper sx={{ p: 2, bgcolor: "#eef2ff" }}>
+          <Paper sx={{ p: 2, bgcolor: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)" }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Adding questions to: {currentSection.title}
             </Typography>
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               {currentSection.description || "No description"}
             </Typography>
             {currentSection.number_of_questions_to_show && (
-              <Typography variant="body2" sx={{ color: "#6366f1", mt: 1, fontWeight: 500 }}>
+              <Typography variant="body2" sx={{ color: "var(--accent-indigo)", mt: 1, fontWeight: 500 }}>
                 Required: {currentSection.number_of_questions_to_show} questions
                 {sectionQuestionCounts[currentSection.id] !== undefined && (
                   <span style={{ marginLeft: 8 }}>
@@ -363,15 +364,15 @@ export function SectionBasedQuestionsInput({
 
             return currentCodingSection ? (
               <>
-                <Paper sx={{ p: 2, bgcolor: "#d1fae5" }}>
+                <Paper sx={{ p: 2, bgcolor: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)" }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     Adding coding problems to: {currentCodingSection.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {currentCodingSection.description || "No description"}
                   </Typography>
                   {currentCodingSection.number_of_questions_to_show && (
-                    <Typography variant="body2" sx={{ color: "#10b981", mt: 1, fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ color: "var(--success-500)", mt: 1, fontWeight: 500 }}>
                       Required: {currentCodingSection.number_of_questions_to_show} problems
                       {sectionCodingCounts[currentCodingSection.id] !== undefined && (
                         <span style={{ marginLeft: 8 }}>
@@ -402,6 +403,7 @@ export function SectionBasedQuestionsInput({
                     <MenuItem value="existing">Choose from Existing</MenuItem>
                     <MenuItem value="ai">AI Generated</MenuItem>
                     <MenuItem value="raw">Add Your Problem</MenuItem>
+                    <MenuItem value="csv">Bulk Upload (CSV)</MenuItem>
                   </Select>
                 </FormControl>
                 {isCodingFormatLocked && (
@@ -447,6 +449,19 @@ export function SectionBasedQuestionsInput({
                     }
                   />
                 )}
+
+                {currentCodingInputMethod === "csv" && (
+                  <CodingCSVUploadSection
+                    codingProblemIds={currentCodingProblemIds}
+                    onCodingProblemIdsChange={(ids) =>
+                      onSectionCodingProblemIdsChange(selectedCodingSectionId, ids)
+                    }
+                    generatedProblems={selectedCodingSectionId ? (aiCodingProblems[selectedCodingSectionId] || []) : []}
+                    onGeneratedProblemsChange={(problems) =>
+                      onAiCodingProblemsChange(selectedCodingSectionId, problems)
+                    }
+                  />
+                )}
               </>
             ) : null;
           })()}
@@ -454,11 +469,11 @@ export function SectionBasedQuestionsInput({
       )}
 
           {!currentSelectedId && (
-            <Paper sx={{ p: 4, textAlign: "center", bgcolor: "#f9fafb" }}>
-              <Typography variant="h6" sx={{ color: "#6b7280", mb: 1 }}>
+            <Paper sx={{ p: 4, textAlign: "center", bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
+              <Typography variant="h6" sx={{ color: "var(--font-secondary)", mb: 1 }}>
                 Select a section to add questions
               </Typography>
-              <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                 Choose a section from the sidebar to start adding questions or
                 coding problems.
               </Typography>

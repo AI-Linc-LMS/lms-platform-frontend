@@ -85,7 +85,7 @@ export default function ScheduledInterviewsPage() {
                 width: 56,
                 height: 56,
                 borderRadius: 2,
-                backgroundColor: "#f59e0b",
+                backgroundColor: "var(--warning-500)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -94,7 +94,7 @@ export default function ScheduledInterviewsPage() {
               <IconWrapper
                 icon="mdi:calendar-clock"
                 size={32}
-                color="#ffffff"
+                color="var(--font-light)"
               />
             </Box>
             <Box>
@@ -104,7 +104,7 @@ export default function ScheduledInterviewsPage() {
               >
                 Scheduled Interviews
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 {interviews.length} interview
                 {interviews.length !== 1 ? "s" : ""} scheduled
               </Typography>
@@ -119,7 +119,7 @@ export default function ScheduledInterviewsPage() {
             gap: 2,
             mb: 4,
             p: 1,
-            backgroundColor: "#f3f4f6",
+            backgroundColor: "var(--surface)",
             borderRadius: 3,
             width: "fit-content",
           }}
@@ -137,17 +137,18 @@ export default function ScheduledInterviewsPage() {
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
               "&:hover": {
-                backgroundColor: "#e5e7eb",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
               },
             }}
           >
-            <IconWrapper icon="mdi:lightning-bolt" size={20} color="#6b7280" />
+            <IconWrapper icon="mdi:lightning-bolt" size={20} color="var(--font-secondary)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               {t("mockInterview.newInterview")}
@@ -167,17 +168,18 @@ export default function ScheduledInterviewsPage() {
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
               "&:hover": {
-                backgroundColor: "#e5e7eb",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
               },
             }}
           >
-            <IconWrapper icon="mdi:history" size={20} color="#6b7280" />
+            <IconWrapper icon="mdi:history" size={20} color="var(--font-secondary)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               {t("mockInterview.previous")}
@@ -194,17 +196,18 @@ export default function ScheduledInterviewsPage() {
               borderRadius: 2.5,
               cursor: "pointer",
               transition: "all 0.3s ease",
-              backgroundColor: "#ffffff",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              backgroundColor: "var(--card-bg)",
+              boxShadow:
+                "0 2px 8px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             }}
           >
-            <IconWrapper icon="mdi:calendar-clock" size={20} color="#6366f1" />
+            <IconWrapper icon="mdi:calendar-clock" size={20} color="var(--accent-indigo)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#1f2937",
+                color: "var(--font-primary)",
               }}
             >
               Scheduled

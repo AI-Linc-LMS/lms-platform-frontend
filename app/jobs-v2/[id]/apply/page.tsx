@@ -81,7 +81,7 @@ export default function ApplyJobRoutePage() {
   if (loading || !job) {
     return (
       <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
+        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
             <Button
               component={Link}
@@ -90,9 +90,9 @@ export default function ApplyJobRoutePage() {
               sx={{
                 mb: 2,
                 textTransform: "none",
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
                 fontWeight: 500,
-                "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
               }}
             >
               Back to Jobs
@@ -105,8 +105,8 @@ export default function ApplyJobRoutePage() {
               </Box>
             ) : (
               <Box sx={{ textAlign: "center", py: 8 }}>
-                <JobDetailIllustration width={140} height={115} primaryColor="#94a3b8" />
-                <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "#1e293b" }}>
+                <JobDetailIllustration width={140} height={115} primaryColor="var(--font-tertiary)" />
+                <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary)" }}>
                   Job not found
                 </Typography>
                 <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
@@ -118,8 +118,8 @@ export default function ApplyJobRoutePage() {
                   startIcon={<ArrowLeft size={18} />}
                   sx={{
                     textTransform: "none",
-                    backgroundColor: "#6366f1",
-                    "&:hover": { backgroundColor: "#4f46e5" },
+                    backgroundColor: "var(--accent-indigo)",
+                    "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
                   }}
                 >
                   Back to Jobs
@@ -135,9 +135,9 @@ export default function ApplyJobRoutePage() {
   if (job.has_applied) {
     return (
       <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
+        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1e293b" }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               You have already applied for this role
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
@@ -149,8 +149,8 @@ export default function ApplyJobRoutePage() {
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
-                backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               Back to Job
@@ -164,9 +164,9 @@ export default function ApplyJobRoutePage() {
   if (job.apply_link?.trim()) {
     return (
       <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
+        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1e293b" }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Apply externally
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
@@ -180,8 +180,8 @@ export default function ApplyJobRoutePage() {
               variant="contained"
               sx={{
                 textTransform: "none",
-                backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               Open Application Link
@@ -191,7 +191,7 @@ export default function ApplyJobRoutePage() {
                 component={Link}
                 href={jobDetailHref}
                 startIcon={<ArrowLeft size={18} />}
-                sx={{ textTransform: "none", color: "#64748b" }}
+                sx={{ textTransform: "none", color: "var(--font-secondary)" }}
               >
                 Back to Job
               </Button>
@@ -213,9 +213,9 @@ export default function ApplyJobRoutePage() {
             : "Applications are not open for this job.";
     return (
       <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
+        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1e293b" }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Applications closed
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
@@ -227,8 +227,8 @@ export default function ApplyJobRoutePage() {
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
-                backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               Back to Job
@@ -242,9 +242,9 @@ export default function ApplyJobRoutePage() {
   if (job.eligible_to_apply === false) {
     return (
       <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
+        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1e293b" }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               Not eligible to apply
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
@@ -256,8 +256,8 @@ export default function ApplyJobRoutePage() {
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 textTransform: "none",
-                backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               Back to Job
@@ -270,7 +270,7 @@ export default function ApplyJobRoutePage() {
 
   return (
     <MainLayout>
-      <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f8fafc" }}>
+      <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
         <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
           <Button
             component={Link}
@@ -279,10 +279,10 @@ export default function ApplyJobRoutePage() {
             sx={{
               mb: 2,
               textTransform: "none",
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               borderRadius: 2,
-              "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
             }}
           >
             Back to Job

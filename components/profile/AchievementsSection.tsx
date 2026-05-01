@@ -146,13 +146,15 @@ export function AchievementsSection({
         elevation={0}
         sx={{
           p: { xs: 2, sm: 3 },
-          border: "1px solid rgba(0,0,0,0.08)",
+          border: "1px solid var(--border-default)",
           borderRadius: { xs: 1, sm: 2 },
           mb: { xs: 2, sm: 3 },
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+          boxShadow:
+            "0 0 0 1px color-mix(in srgb, var(--border-default) 85%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           transition: "box-shadow 0.2s ease",
           "&:hover": {
-            boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+            boxShadow:
+              "0 0 0 1px color-mix(in srgb, var(--border-default) 85%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
           },
         }}
       >
@@ -168,7 +170,7 @@ export function AchievementsSection({
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#000000",
+              color: "var(--font-primary)",
               fontSize: "1.25rem",
             }}
           >
@@ -183,10 +185,13 @@ export function AchievementsSection({
               onClick={onRemoveSection}
               sx={{
                 textTransform: "none",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontWeight: 500,
                 fontSize: "0.8125rem",
-                "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+                "&:hover": {
+                  backgroundColor: "color-mix(in srgb, var(--error-500) 10%, transparent)",
+                  color: "var(--error-500)",
+                },
               }}
             >
               Remove
@@ -200,10 +205,10 @@ export function AchievementsSection({
               onClick={() => setEditing(true)}
               sx={{
                 textTransform: "none",
-                color: "#0a66c2",
+                color: "var(--accent-indigo)",
                 fontWeight: 600,
                 "&:hover": {
-                  backgroundColor: "rgba(99, 102, 241, 0.08)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
               }}
             >
@@ -219,12 +224,12 @@ export function AchievementsSection({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  borderColor: "#6366f1",
-                  color: "#0a66c2",
+                  borderColor: "var(--accent-purple)",
+                  color: "var(--accent-indigo)",
                   borderRadius: 1.5,
                   "&:hover": {
-                    borderColor: "#4f46e5",
-                    backgroundColor: "rgba(99, 102, 241, 0.08)",
+                    borderColor: "var(--accent-indigo-dark)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-purple) 10%, transparent)",
                   },
                 }}
               >
@@ -238,12 +243,12 @@ export function AchievementsSection({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  borderColor: "#e5e7eb",
-                  color: "#6b7280",
+                  borderColor: "var(--border-default)",
+                  color: "var(--font-secondary)",
                   borderRadius: 1.5,
                   "&:hover": {
-                    borderColor: "#d1d5db",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
+                    backgroundColor: "color-mix(in srgb, var(--surface) 80%, var(--background))",
                   },
                 }}
               >
@@ -257,10 +262,10 @@ export function AchievementsSection({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  backgroundColor: "#6366f1",
+                  backgroundColor: "var(--accent-purple)",
                   borderRadius: 1.5,
                   "&:hover": {
-                    backgroundColor: "#4f46e5",
+                    backgroundColor: "var(--accent-indigo-dark)",
                   },
                 }}
               >
@@ -278,9 +283,9 @@ export function AchievementsSection({
                 key={achievement.id || index}
                 sx={{
                   p: 2,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   borderRadius: 1.5,
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
                 }}
               >
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", mb: 1 }}>
@@ -289,7 +294,7 @@ export function AchievementsSection({
                       variant="subtitle1"
                       sx={{
                         fontWeight: 700,
-                        color: "#1f2937",
+                        color: "var(--font-primary)",
                         mb: 0.5,
                       }}
                     >
@@ -299,7 +304,7 @@ export function AchievementsSection({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#0a66c2",
+                          color: "var(--accent-indigo)",
                           fontWeight: 600,
                           mb: 0.5,
                         }}
@@ -311,7 +316,7 @@ export function AchievementsSection({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: "0.875rem",
                           mb: 1,
                         }}
@@ -323,7 +328,7 @@ export function AchievementsSection({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#1f2937",
+                          color: "var(--font-primary)",
                           whiteSpace: "pre-wrap",
                         }}
                       >
@@ -337,9 +342,9 @@ export function AchievementsSection({
                         size="small"
                         onClick={() => handleEdit(index)}
                         sx={{
-                          color: "#0a66c2",
+                          color: "var(--accent-indigo)",
                           "&:hover": {
-                            backgroundColor: "rgba(99, 102, 241, 0.08)",
+                            backgroundColor: "color-mix(in srgb, var(--accent-purple) 10%, transparent)",
                           },
                         }}
                       >
@@ -349,9 +354,9 @@ export function AchievementsSection({
                         size="small"
                         onClick={() => handleDelete(index)}
                         sx={{
-                          color: "#ef4444",
+                          color: "var(--error-500)",
                           "&:hover": {
-                            backgroundColor: "rgba(239, 68, 68, 0.08)",
+                            backgroundColor: "color-mix(in srgb, var(--error-500) 10%, transparent)",
                           },
                         }}
                       >
@@ -369,16 +374,16 @@ export function AchievementsSection({
               textAlign: "center",
               py: 4,
               px: 2,
-              border: "1px dashed rgba(0,0,0,0.12)",
+              border: "1px dashed color-mix(in srgb, var(--border-default) 80%, var(--font-secondary))",
               borderRadius: 2,
-              backgroundColor: "#f9fafb",
+              backgroundColor: "color-mix(in srgb, var(--surface) 80%, var(--background))",
             }}
           >
-            <IconWrapper icon="mdi:trophy" size={48} color="#9ca3af" />
+            <IconWrapper icon="mdi:trophy" size={48} color="var(--font-tertiary)" />
             <Typography
               variant="body2"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 mt: 2,
                 fontSize: "0.9375rem",
                 fontWeight: 500,
@@ -389,7 +394,7 @@ export function AchievementsSection({
             <Typography
               variant="caption"
               sx={{
-                color: "#9ca3af",
+                color: "var(--font-tertiary)",
                 mt: 0.5,
                 fontSize: "0.8125rem",
                 display: "block",
@@ -406,11 +411,11 @@ export function AchievementsSection({
                 mt: 2,
                 textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: "#0a66c2",
+                backgroundColor: "var(--accent-indigo)",
                 borderRadius: 2,
                 px: 2.5,
                 py: 1,
-                "&:hover": { backgroundColor: "#004182" },
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               {t("profile.add")} {t("profile.achievements")}
@@ -427,7 +432,7 @@ export function AchievementsSection({
         PaperProps={{
           sx: {
             borderRadius: { xs: 0, sm: 2 },
-            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+            boxShadow: "0 4px 16px color-mix(in srgb, var(--font-primary) 14%, transparent)",
             m: { xs: 0, sm: 2 },
             maxHeight: { xs: "100vh", sm: "90vh" },
           },
@@ -439,7 +444,7 @@ export function AchievementsSection({
             pb: { xs: 1.5, sm: 1 },
             px: { xs: 2, sm: 3 },
             pt: { xs: 2, sm: 3 },
-            borderBottom: "1px solid rgba(0,0,0,0.08)",
+            borderBottom: "1px solid var(--border-default)",
             display: "flex",
             alignItems: "center",
             gap: { xs: 1, sm: 1.5 },
@@ -448,14 +453,14 @@ export function AchievementsSection({
           <IconWrapper 
             icon="mdi:trophy" 
             size={20} 
-            color="#0a66c2" 
+            color="var(--accent-indigo)"
           />
           <Typography
             component="span"
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#000000",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
             }}
           >
@@ -528,7 +533,7 @@ export function AchievementsSection({
           sx={{
             px: { xs: 2, sm: 3 },
             py: { xs: 1.5, sm: 2 },
-            borderTop: "1px solid rgba(0,0,0,0.08)",
+            borderTop: "1px solid var(--border-default)",
             gap: { xs: 0.75, sm: 1 },
             flexDirection: { xs: "column-reverse", sm: "row" },
           }}
@@ -538,13 +543,13 @@ export function AchievementsSection({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              color: "#666666",
+              color: "var(--font-secondary)",
               borderRadius: { xs: 1.5, sm: 1.5 },
               px: { xs: 2, sm: 2 },
               py: { xs: 1, sm: 0.75 },
               width: { xs: "100%", sm: "auto" },
               "&:hover": {
-                backgroundColor: "#f3f2ef",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
@@ -557,17 +562,17 @@ export function AchievementsSection({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              backgroundColor: "#0a66c2",
+              backgroundColor: "var(--accent-indigo)",
               borderRadius: "24px",
               px: { xs: 3, sm: 3 },
               py: { xs: 1, sm: 0.75 },
               width: { xs: "100%", sm: "auto" },
               "&:hover": {
-                backgroundColor: "#004182",
+                backgroundColor: "var(--accent-indigo-dark)",
               },
               "&:disabled": {
-                backgroundColor: "#e5e7eb",
-                color: "#9ca3af",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--border-default))",
+                color: "var(--font-tertiary)",
               },
               transition: "all 0.2s ease",
             }}

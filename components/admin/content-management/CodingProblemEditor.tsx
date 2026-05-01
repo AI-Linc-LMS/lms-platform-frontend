@@ -26,14 +26,14 @@ export function CodingProblemEditor({
         height: { xs: "50%", md: "100%" },
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <Paper
         elevation={0}
         sx={{
           p: 2,
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--border-default)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",

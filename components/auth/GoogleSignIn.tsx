@@ -226,7 +226,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           py: 1.25,
           borderColor: "#e2e8f0",
           borderWidth: 1.5,
-          color: "text.primary",
+          color: "#0f172a",
           textTransform: "none",
           backgroundColor: "white",
           fontWeight: 500,
@@ -266,7 +266,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           </svg>
           <Typography
             variant="body2"
-            sx={{ fontWeight: 500, fontSize: "0.9375rem" }}
+            sx={{ fontWeight: 500, fontSize: "0.9375rem", color: "#0f172a" }}
           >
             {t("auth.signInWithGoogle")}
           </Typography>

@@ -37,13 +37,13 @@ export function CodingProblemDescription({
           width: "6px",
         },
         "&::-webkit-scrollbar-track": {
-          backgroundColor: "#f1f1f1",
+          backgroundColor: "var(--surface)",
         },
         "&::-webkit-scrollbar-thumb": {
-          backgroundColor: "#888",
+          backgroundColor: "var(--font-tertiary)",
           borderRadius: "4px",
           "&:hover": {
-            backgroundColor: "#555",
+            backgroundColor: "var(--font-secondary)",
           },
         },
       }}
@@ -54,7 +54,7 @@ export function CodingProblemDescription({
         sx={{
           fontWeight: 600,
           mb: 2,
-          color: "#1a1f2e",
+          color: "var(--font-primary)",
           fontSize: { xs: "1.1rem", md: "1.25rem" },
         }}
       >
@@ -69,16 +69,16 @@ export function CodingProblemDescription({
             sx={{
               bgcolor:
                 difficultyLevel === "Easy"
-                  ? "#d1fae5"
+                  ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                   : difficultyLevel === "Medium"
-                  ? "#fef3c7"
-                  : "#fee2e2",
+                  ? "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)"
+                  : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
               color:
                 difficultyLevel === "Easy"
-                  ? "#065f46"
+                  ? "var(--success-500)"
                   : difficultyLevel === "Medium"
-                  ? "#92400e"
-                  : "#991b1b",
+                  ? "var(--warning-500)"
+                  : "var(--error-500)",
               fontWeight: 600,
             }}
           />
@@ -87,8 +87,8 @@ export function CodingProblemDescription({
               label={tags}
               size="small"
               sx={{
-                bgcolor: "#f3f4f6",
-                color: "#6b7280",
+                bgcolor: "var(--surface)",
+                color: "var(--font-secondary)",
                 fontWeight: 500,
               }}
             />
@@ -104,7 +104,7 @@ export function CodingProblemDescription({
             sx={{
               fontWeight: 600,
               mb: 1.5,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
@@ -115,7 +115,7 @@ export function CodingProblemDescription({
               "& p": {
                 mb: 1.5,
                 lineHeight: 1.8,
-                color: "#374151",
+                color: "var(--font-secondary)",
                 fontSize: "0.9375rem",
               },
               "& br": {
@@ -139,7 +139,7 @@ export function CodingProblemDescription({
             sx={{
               fontWeight: 600,
               mb: 1.5,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
@@ -150,7 +150,7 @@ export function CodingProblemDescription({
               "& p": {
                 mb: 1.5,
                 lineHeight: 1.8,
-                color: "#374151",
+                color: "var(--font-secondary)",
                 fontSize: "0.9375rem",
               },
             }}
@@ -167,7 +167,7 @@ export function CodingProblemDescription({
             sx={{
               fontWeight: 600,
               mb: 1.5,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
@@ -178,7 +178,7 @@ export function CodingProblemDescription({
               "& p": {
                 mb: 1.5,
                 lineHeight: 1.8,
-                color: "#374151",
+                color: "var(--font-secondary)",
                 fontSize: "0.9375rem",
               },
             }}
@@ -195,7 +195,7 @@ export function CodingProblemDescription({
             sx={{
               fontWeight: 600,
               mb: 1.5,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
@@ -206,7 +206,7 @@ export function CodingProblemDescription({
               "& p": {
                 mb: 1.5,
                 lineHeight: 1.8,
-                color: "#374151",
+                color: "var(--font-secondary)",
                 fontSize: "0.9375rem",
               },
             }}
@@ -223,7 +223,7 @@ export function CodingProblemDescription({
             sx={{
               fontWeight: 600,
               mb: 1.5,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
@@ -233,8 +233,8 @@ export function CodingProblemDescription({
             elevation={0}
             sx={{
               p: 2,
-              backgroundColor: "#f9fafb",
-              border: "1px solid #e5e7eb",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 1,
             }}
           >
@@ -244,7 +244,7 @@ export function CodingProblemDescription({
                   variant="caption"
                   sx={{
                     fontWeight: 600,
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     textTransform: "uppercase",
                     fontSize: "0.75rem",
                   }}
@@ -256,12 +256,12 @@ export function CodingProblemDescription({
                   sx={{
                     mt: 1,
                     p: 1.5,
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--card-bg)",
+                    border: "1px solid var(--border-default)",
                     borderRadius: 1,
                     fontSize: "0.875rem",
                     fontFamily: "monospace",
-                    color: "#111827",
+                    color: "var(--font-primary)",
                     overflow: "auto",
                     mb: 0,
                   }}
@@ -276,7 +276,7 @@ export function CodingProblemDescription({
                   variant="caption"
                   sx={{
                     fontWeight: 600,
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     textTransform: "uppercase",
                     fontSize: "0.75rem",
                   }}
@@ -288,12 +288,12 @@ export function CodingProblemDescription({
                   sx={{
                     mt: 1,
                     p: 1.5,
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--card-bg)",
+                    border: "1px solid var(--border-default)",
                     borderRadius: 1,
                     fontSize: "0.875rem",
                     fontFamily: "monospace",
-                    color: "#111827",
+                    color: "var(--font-primary)",
                     overflow: "auto",
                     mb: 0,
                   }}
@@ -314,7 +314,7 @@ export function CodingProblemDescription({
             sx={{
               fontWeight: 600,
               mb: 1.5,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1rem", md: "1.125rem" },
             }}
           >
@@ -327,8 +327,8 @@ export function CodingProblemDescription({
                 elevation={0}
                 sx={{
                   p: 2,
-                  backgroundColor: "#f9fafb",
-                  border: "1px solid #e5e7eb",
+                  backgroundColor: "var(--surface)",
+                  border: "1px solid var(--border-default)",
                   borderRadius: 1,
                 }}
               >
@@ -336,7 +336,7 @@ export function CodingProblemDescription({
                   variant="caption"
                   sx={{
                     fontWeight: 600,
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     textTransform: "uppercase",
                     fontSize: "0.75rem",
                     mb: 1,
@@ -352,7 +352,7 @@ export function CodingProblemDescription({
                         variant="caption"
                         sx={{
                           fontWeight: 600,
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: "0.75rem",
                         }}
                       >
@@ -363,12 +363,12 @@ export function CodingProblemDescription({
                         sx={{
                           mt: 0.5,
                           p: 1.5,
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e5e7eb",
+                          backgroundColor: "var(--card-bg)",
+                          border: "1px solid var(--border-default)",
                           borderRadius: 1,
                           fontSize: "0.875rem",
                           fontFamily: "monospace",
-                          color: "#111827",
+                          color: "var(--font-primary)",
                           overflow: "auto",
                           mb: 0,
                         }}
@@ -383,7 +383,7 @@ export function CodingProblemDescription({
                         variant="caption"
                         sx={{
                           fontWeight: 600,
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: "0.75rem",
                         }}
                       >
@@ -394,12 +394,12 @@ export function CodingProblemDescription({
                         sx={{
                           mt: 0.5,
                           p: 1.5,
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e5e7eb",
+                          backgroundColor: "var(--card-bg)",
+                          border: "1px solid var(--border-default)",
                           borderRadius: 1,
                           fontSize: "0.875rem",
                           fontFamily: "monospace",
-                          color: "#111827",
+                          color: "var(--font-primary)",
                           overflow: "auto",
                           mb: 0,
                         }}

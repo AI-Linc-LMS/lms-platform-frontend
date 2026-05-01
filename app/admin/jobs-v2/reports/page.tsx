@@ -39,11 +39,11 @@ const SectionCard = ({
       borderRadius: 2,
       border: "1px solid",
       borderColor: "divider",
-      backgroundColor: "#fff",
+      backgroundColor: "var(--card-bg)",
       transition: "box-shadow 0.2s, border-color 0.2s",
       "&:hover": {
-        borderColor: "rgba(99, 102, 241, 0.3)",
-        boxShadow: "0 4px 12px rgba(99, 102, 241, 0.08)",
+        borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+        boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
       },
     }}
   >
@@ -54,16 +54,16 @@ const SectionCard = ({
             width: 36,
             height: 36,
             borderRadius: 1.5,
-            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon={icon} size={20} style={{ color: "#6366f1" }} />
+          <IconWrapper icon={icon} size={20} style={{ color: "var(--accent-indigo)" }} />
         </Box>
       )}
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#0f172a" }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
         {title}
       </Typography>
     </Box>
@@ -128,7 +128,7 @@ export default function AdminJobsV2ReportsPage() {
             textTransform: "none",
             color: "text.secondary",
             fontWeight: 500,
-            "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.04)", color: "#6366f1" },
+            "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", color: "var(--accent-indigo)" },
           }}
         >
           Back to Jobs
@@ -143,11 +143,12 @@ export default function AdminJobsV2ReportsPage() {
             gap: { xs: 2, md: 4 },
             p: { xs: 2.5, md: 4 },
             mb: 3,
-            background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%)",
+            background:
+              "linear-gradient(135deg, var(--background) 0%, var(--surface) 40%, var(--border-default) 100%)",
             borderRadius: 3,
             border: "1px solid",
-            borderColor: "rgba(99, 102, 241, 0.08)",
-            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.04)",
+            borderColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+            boxShadow: "0 4px 24px color-mix(in srgb, var(--font-primary) 6%, transparent)",
           }}
         >
           <Box
@@ -160,10 +161,10 @@ export default function AdminJobsV2ReportsPage() {
               height: { xs: 100, md: 140 },
             }}
           >
-            <ReportsIllustration width={160} height={125} primaryColor="#6366f1" />
+            <ReportsIllustration width={160} height={125} primaryColor="var(--accent-indigo)" />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.75, color: "#0f172a", letterSpacing: "-0.02em" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.75, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
               Job Reports
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6, maxWidth: 480 }}>
@@ -178,14 +179,14 @@ export default function AdminJobsV2ReportsPage() {
                   px: 2,
                   py: 1,
                   borderRadius: 2,
-                  backgroundColor: "#fff",
+                  backgroundColor: "var(--card-bg)",
                   border: "1px solid",
-                  borderColor: "rgba(99, 102, 241, 0.2)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+                  boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 6%, transparent)",
                 }}
               >
-                <FileSpreadsheet size={20} style={{ color: "#6366f1" }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#0f172a" }}>
+                <FileSpreadsheet size={20} style={{ color: "var(--accent-indigo)" }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                   CSV format
                 </Typography>
               </Box>
@@ -197,13 +198,13 @@ export default function AdminJobsV2ReportsPage() {
                   px: 2,
                   py: 1,
                   borderRadius: 2,
-                  backgroundColor: "rgba(99, 102, 241, 0.06)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                   border: "1px solid",
-                  borderColor: "rgba(99, 102, 241, 0.15)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
                 }}
               >
-                <Briefcase size={18} style={{ color: "#6366f1" }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#6366f1" }}>
+                <Briefcase size={18} style={{ color: "var(--accent-indigo)" }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--accent-indigo)" }}>
                   {loading ? "—" : `${jobs.length} job${jobs.length !== 1 ? "s" : ""}`}
                 </Typography>
               </Box>
@@ -231,9 +232,9 @@ export default function AdminJobsV2ReportsPage() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
-                      backgroundColor: "#fafafa",
-                      "&:hover": { backgroundColor: "#f8fafc" },
-                      "&.Mui-focused": { backgroundColor: "#fff" },
+                      backgroundColor: "var(--surface)",
+                      "&:hover": { backgroundColor: "var(--background)" },
+                      "&.Mui-focused": { backgroundColor: "var(--card-bg)" },
                     },
                   }}
                 >
@@ -257,9 +258,9 @@ export default function AdminJobsV2ReportsPage() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
-                      backgroundColor: "#fafafa",
-                      "&:hover": { backgroundColor: "#f8fafc" },
-                      "&.Mui-focused": { backgroundColor: "#fff" },
+                      backgroundColor: "var(--surface)",
+                      "&:hover": { backgroundColor: "var(--background)" },
+                      "&.Mui-focused": { backgroundColor: "var(--card-bg)" },
                     },
                   }}
                 >
@@ -287,15 +288,15 @@ export default function AdminJobsV2ReportsPage() {
                     textTransform: "none",
                     fontWeight: 600,
                     fontSize: "0.95rem",
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "var(--accent-indigo)",
                     alignSelf: "flex-start",
                     px: 2.5,
                     py: 1.25,
                     borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(99, 102, 241, 0.25)",
+                    boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
                     "&:hover": {
-                      backgroundColor: "#4f46e5",
-                      boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                      backgroundColor: "var(--accent-indigo-dark)",
+                      boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                     },
                   }}
                 >
@@ -320,12 +321,12 @@ export default function AdminJobsV2ReportsPage() {
                   px: 2,
                   textAlign: "center",
                   borderRadius: 2,
-                  backgroundColor: "#f8fafc",
+                  backgroundColor: "var(--background)",
                   border: "1px dashed",
-                  borderColor: "rgba(99, 102, 241, 0.2)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
                 }}
               >
-                <Briefcase size={40} style={{ color: "#cbd5e1", marginBottom: 12 }} />
+                <Briefcase size={40} style={{ color: "var(--border-default)", marginBottom: 12 }} />
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   No jobs yet. Create a job to see applications here.
                 </Typography>
@@ -338,9 +339,9 @@ export default function AdminJobsV2ReportsPage() {
                     mt: 1,
                     textTransform: "none",
                     borderRadius: 2,
-                    borderColor: "#6366f1",
-                    color: "#6366f1",
-                    "&:hover": { borderColor: "#4f46e5", backgroundColor: "rgba(99, 102, 241, 0.04)" },
+                    borderColor: "var(--accent-indigo)",
+                    color: "var(--accent-indigo)",
+                    "&:hover": { borderColor: "var(--accent-indigo-dark)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" },
                   }}
                 >
                   Go to Jobs
@@ -356,7 +357,7 @@ export default function AdminJobsV2ReportsPage() {
                   overflowY: "auto",
                   "&::-webkit-scrollbar": { width: 6 },
                   "&::-webkit-scrollbar-thumb": {
-                    backgroundColor: "rgba(99, 102, 241, 0.2)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
                     borderRadius: 3,
                   },
                 }}
@@ -374,13 +375,13 @@ export default function AdminJobsV2ReportsPage() {
                       px: 2,
                       borderRadius: 2,
                       color: "text.primary",
-                      backgroundColor: "#fafafa",
+                      backgroundColor: "var(--surface)",
                       border: "1px solid",
                       borderColor: "transparent",
                       "&:hover": {
-                        backgroundColor: "rgba(99, 102, 241, 0.06)",
-                        borderColor: "rgba(99, 102, 241, 0.2)",
-                        color: "#6366f1",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                        borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+                        color: "var(--accent-indigo)",
                       },
                     }}
                   >
@@ -389,7 +390,7 @@ export default function AdminJobsV2ReportsPage() {
                         width: 36,
                         height: 36,
                         borderRadius: 1.5,
-                        backgroundColor: "rgba(99, 102, 241, 0.1)",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -397,7 +398,7 @@ export default function AdminJobsV2ReportsPage() {
                         mr: 1.5,
                       }}
                     >
-                      <Briefcase size={18} style={{ color: "#6366f1" }} />
+                      <Briefcase size={18} style={{ color: "var(--accent-indigo)" }} />
                     </Box>
                     <Box sx={{ textAlign: "left", minWidth: 0, flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
@@ -407,7 +408,7 @@ export default function AdminJobsV2ReportsPage() {
                         {job.company_name}
                       </Typography>
                     </Box>
-                    <ChevronRight size={20} style={{ color: "#94a3b8", flexShrink: 0 }} />
+                    <ChevronRight size={20} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
                   </Button>
                 ))}
                 {jobs.length > 12 && (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, memo, useMemo } from "react";
+import React, { useState, useCallback, useEffect, memo } from "react";
 import Link from "next/link";
 import {
   Paper,
@@ -9,11 +9,13 @@ import {
   Box,
   IconButton,
   Chip,
+  Avatar,
   Tooltip,
 } from "@mui/material";
 import { JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 import { jobsV2Service } from "@/lib/services/jobs-v2.service";
+import { getJobsV2JobDetailHref } from "@/lib/utils/jobs-v2-navigation";
 import { useToast } from "@/components/common/Toast";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import {
@@ -25,13 +27,11 @@ import {
   Banknote,
   GraduationCap,
 } from "lucide-react";
-import { formatJobDescriptionBody } from "@/lib/utils/format-job-description";
-import { CompanyLogoAvatar } from "@/components/jobs-v2/CompanyLogoAvatar";
 
 interface JobCardV2Props {
   job: JobV2;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
-  /** Query string without `?` — e.g. `page=2&page_size=20` to preserve list state on detail/back. */
+  /** Query string (no `?`) for page / page_size — preserved on detail navigation. */
   jobsListQuery?: string;
 }
 
@@ -81,30 +81,9 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
     }
   };
 
-  const chipLabels = useMemo(() => {
-    const dedupe = (items: unknown[], max: number): string[] => {
-      const seen = new Set<string>();
-      const out: string[] = [];
-      for (const x of items) {
-        const s = String(x ?? "").trim();
-        if (!s) continue;
-        const k = s.toLowerCase();
-        if (seen.has(k)) continue;
-        seen.add(k);
-        out.push(s);
-        if (out.length >= max) break;
-      }
-      return out;
-    };
-    const fromSkills = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])];
-    if (fromSkills.length > 0) return dedupe(fromSkills, 5);
-    return dedupe(job.tags ?? [], 5);
-  }, [job.mandatory_skills, job.key_skills, job.tags]);
+  const tags = job.tags ?? [];
+  const skillsDisplay = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])].slice(0, 5);
   const passoutYear = formatJobPassoutYear(job.applicable_passout_year);
-  const descriptionPreview = useMemo(
-    () => formatJobDescriptionBody(job.job_description),
-    [job.job_description]
-  );
 
   return (
     <Paper
@@ -114,30 +93,40 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
         borderRadius: 2.5,
         marginBottom: 2,
         border: "1px solid",
-        borderColor: "rgba(99, 102, 241, 0.12)",
-        backgroundColor: "#ffffff",
+        borderColor:
+          "color-mix(in srgb, var(--accent-indigo) 18%, var(--border-default))",
+        backgroundColor: "var(--card-bg)",
         transition: "all 0.2s ease",
         width: "100%",
         maxWidth: "100%",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 6%, transparent)",
         "&:hover": {
-          borderColor: "rgba(99, 102, 241, 0.35)",
-          boxShadow: "0 8px 24px rgba(99, 102, 241, 0.12)",
+          borderColor:
+            "color-mix(in srgb, var(--accent-indigo) 40%, var(--border-default))",
+          boxShadow:
+            "0 8px 24px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
         },
       }}
     >
       <Box sx={{ display: "flex", gap: { xs: 1.5, md: 2 }, width: "100%" }}>
-        <CompanyLogoAvatar
-          logoUrl={job.company_logo}
-          companyName={job.company_name}
+        <Avatar
+          src={job.company_logo}
+          alt={job.company_name}
           sx={{
-            width: { xs: 48, md: 48 },
-            height: { xs: 48, md: 48 },
+            width: { xs: 48, md: 56 },
+            height: { xs: 48, md: 56 },
             borderRadius: 1.5,
-            fontSize: { xs: "1rem", md: "1rem" },
+            border: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "var(--accent-indigo)",
+            color: "var(--font-light)",
+            fontSize: { xs: "1rem", md: "1.25rem" },
+            fontWeight: 600,
             flexShrink: 0,
           }}
-        />
+        >
+          {job.company_name?.[0]?.toUpperCase() || "C"}
+        </Avatar>
 
         <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           <Box
@@ -155,7 +144,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
                   fontWeight: 600,
                   fontSize: { xs: "1rem", sm: "1.1rem" },
                   mb: 0.5,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                   lineHeight: 1.3,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -185,13 +174,13 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
                   size="small"
                   disabled={favoriteLoading}
                   sx={{
-                    color: isFavorite ? "#6366f1" : "text.secondary",
+                    color: isFavorite ? "var(--accent-indigo)" : "text.secondary",
                     "&:hover": {
-                      backgroundColor: "rgba(99, 102, 241, 0.08)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                     },
                   }}
                 >
-                  <Heart size={18} fill={isFavorite ? "#6366f1" : "none"} />
+                  <Heart size={18} fill={isFavorite ? "var(--accent-indigo)" : "none"} />
                 </IconButton>
               </Tooltip>
             )}
@@ -208,7 +197,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
           >
             {job.location && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <MapPin size={14} style={{ color: "#6b7280" }} />
+                <MapPin size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -219,7 +208,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
             )}
             {job.years_of_experience && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Briefcase size={14} style={{ color: "#6b7280" }} />
+                <Briefcase size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -230,7 +219,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
             )}
             {passoutYear && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <GraduationCap size={14} style={{ color: "#6b7280" }} />
+                <GraduationCap size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -241,7 +230,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
             )}
             {job.salary && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Banknote size={14} style={{ color: "#6b7280" }} />
+                <Banknote size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{
@@ -256,7 +245,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
             )}
             {job.created_at && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Clock size={14} style={{ color: "#6b7280" }} />
+                <Clock size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -267,7 +256,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
             )}
           </Box>
 
-          {descriptionPreview && (
+          {job.job_description && (
             <Typography
               variant="body2"
               sx={{
@@ -281,28 +270,28 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
                 overflow: "hidden",
               }}
             >
-              {descriptionPreview}
+              {job.job_description}
             </Typography>
           )}
 
-          {chipLabels.length > 0 && (
+          {(skillsDisplay.length > 0 || tags.length > 0) && (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5 }}>
-                {chipLabels.map((tag, index) => (
+                {(skillsDisplay.length > 0 ? skillsDisplay : tags).slice(0, 5).map((tag, index) => (
                 <Chip
-                  key={`${tag}-${index}`}
-                  label={tag}
+                  key={index}
+                  label={String(tag || "")}
                   size="small"
                   variant="outlined"
                   sx={{
                     height: 26,
                     fontSize: "0.75rem",
-                    backgroundColor: "rgba(99, 102, 241, 0.04)",
-                    color: "#6366f1",
-                    borderColor: "rgba(99, 102, 241, 0.3)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                    color: "var(--accent-indigo)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                     fontWeight: 500,
                     "&:hover": {
-                      backgroundColor: "rgba(99, 102, 241, 0.1)",
-                      borderColor: "#6366f1",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                      borderColor: "var(--accent-indigo)",
                     },
                   }}
                 />
@@ -320,17 +309,13 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
           >
             <Button
               component={Link}
-              href={
-                jobsListQuery
-                  ? `/jobs-v2/${job.id}?${jobsListQuery}`
-                  : `/jobs-v2/${job.id}`
-              }
+              href={getJobsV2JobDetailHref(job.id, jobsListQuery ?? "")}
               variant="contained"
               endIcon={<ChevronRight size={16} />}
               sx={{
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                color: "#ffffff",
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
                 textTransform: "none",
                 px: { xs: 2, md: 2.5 },
                 py: 0.75,
@@ -340,8 +325,8 @@ const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2P
                 flex: { xs: "1 1 auto", sm: "0 0 auto" },
                 minWidth: { xs: "auto", sm: 140 },
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
-                  boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)",
+                  backgroundColor: "var(--accent-indigo-dark)",
+                  boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
                 },
               }}
             >

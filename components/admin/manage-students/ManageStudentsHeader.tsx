@@ -40,7 +40,7 @@ export function ManageStudentsHeader({
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.5rem", sm: "2rem" },
             }}
           >
@@ -50,8 +50,9 @@ export function ManageStudentsHeader({
             <Chip
               label={t("adminManageStudents.studentCount", { count: totalCount })}
               sx={{
-                backgroundColor: "#eef2ff",
-                color: "#6366f1",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                color: "var(--accent-indigo)",
                 fontWeight: 600,
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 height: { xs: 28, sm: 32 },
@@ -66,11 +67,12 @@ export function ManageStudentsHeader({
               startIcon={<IconWrapper icon="mdi:download" size={20} />}
               onClick={onDownloadCsv}
               sx={{
-                borderColor: "#6366f1",
-                color: "#6366f1",
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
                 "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "#eef2ff",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
                 },
               }}
             >
@@ -83,9 +85,10 @@ export function ManageStudentsHeader({
               startIcon={<IconWrapper icon="mdi:account-plus" size={20} />}
               onClick={onBulkEnrollClick}
               sx={{
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
               }}
             >
@@ -97,7 +100,7 @@ export function ManageStudentsHeader({
       <Typography
         variant="body2"
         sx={{
-          color: "#6b7280",
+          color: "var(--font-secondary)",
           fontSize: { xs: "0.75rem", sm: "0.875rem" },
         }}
       >

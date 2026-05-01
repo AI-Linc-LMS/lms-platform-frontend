@@ -24,20 +24,20 @@ export function LiveMonitorGrid({
           py: 10,
           px: 3,
           textAlign: "center",
-          color: "#64748b",
-          border: "1px dashed #d1d5db",
+          color: "var(--font-secondary)",
+          border: "1px dashed var(--border-default)",
           borderRadius: 3,
           background:
-            "linear-gradient(180deg, rgba(248,250,252,0.8) 0%, rgba(255,255,255,0.95) 100%)",
+            "linear-gradient(180deg, color-mix(in srgb, var(--surface) 80%, transparent) 0%, color-mix(in srgb, var(--card-bg) 95%, transparent) 100%)",
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
-          <IconWrapper icon="mdi:account-clock-outline" size={28} color="#94a3b8" />
+          <IconWrapper icon="mdi:account-clock-outline" size={28} color="var(--font-tertiary)" />
         </Box>
-        <Typography sx={{ fontWeight: 700, color: "#334155", mb: 0.5 }}>
+        <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}>
           No students connected yet
         </Typography>
-        <Typography variant="body2" sx={{ color: "#64748b" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           Waiting for participants to join this live room.
         </Typography>
       </Box>

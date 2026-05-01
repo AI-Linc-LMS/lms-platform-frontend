@@ -58,10 +58,10 @@ const JobPaginationComponent = ({
           '& .MuiPaginationItem-root': {
             fontSize: { xs: '0.75rem', sm: '0.875rem' },
             '&.Mui-selected': {
-              backgroundColor: '#6366f1',
-              color: '#ffffff',
+              backgroundColor: 'var(--accent-indigo)',
+              color: 'var(--font-light)',
               '&:hover': {
-                backgroundColor: '#4f46e5',
+                backgroundColor: 'var(--accent-indigo-dark)',
               },
             },
           },

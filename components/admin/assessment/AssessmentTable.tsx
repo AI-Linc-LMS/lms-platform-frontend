@@ -149,14 +149,14 @@ export function AssessmentTable({
               p: 4,
               textAlign: "center",
               borderRadius: 2,
-              bgcolor: "#f8fafc",
+              bgcolor: "var(--surface)",
             }}
           >
-            <IconWrapper icon="mdi:file-document-outline" size={48} color="#94a3b8" />
-            <Typography variant="body1" sx={{ color: "#64748b", fontWeight: 500, mt: 2 }}>
+            <IconWrapper icon="mdi:file-document-outline" size={48} color="var(--font-tertiary)" />
+            <Typography variant="body1" sx={{ color: "var(--font-secondary)", fontWeight: 500, mt: 2 }}>
               No assessments found
             </Typography>
-            <Typography variant="body2" sx={{ color: "#94a3b8", mt: 1 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-tertiary)", mt: 1 }}>
               Create your first assessment to get started
             </Typography>
           </Paper>
@@ -167,10 +167,12 @@ export function AssessmentTable({
               sx={{
                 p: 2,
                 borderRadius: 2,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                border: "1px solid #e2e8f0",
+                boxShadow:
+                  "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+                border: "1px solid var(--border-default)",
                 "&:hover": {
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                  boxShadow:
+                    "0 4px 6px color-mix(in srgb, var(--font-primary) 16%, transparent)",
                   transition: "box-shadow 0.2s ease",
                 },
               }}
@@ -182,7 +184,7 @@ export function AssessmentTable({
                     variant="h6"
                     sx={{
                       fontWeight: 700,
-                      color: "#0f172a",
+                      color: "var(--font-primary)",
                       fontSize: "1rem",
                       mb: 0.5,
                       lineHeight: 1.3,
@@ -197,8 +199,9 @@ export function AssessmentTable({
                         label={`₹${assessment.price}`}
                         size="small"
                         sx={{
-                          bgcolor: "#fef3c7",
-                          color: "#92400e",
+                          bgcolor:
+                            "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                          color: "var(--warning-500)",
                           fontSize: "0.7rem",
                           height: 22,
                           fontWeight: 600,
@@ -211,8 +214,9 @@ export function AssessmentTable({
                         label="Proctored"
                         size="small"
                         sx={{
-                          bgcolor: "#dbeafe",
-                          color: "#1e40af",
+                          bgcolor:
+                            "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                          color: "var(--accent-indigo)",
                           fontSize: "0.7rem",
                           height: 22,
                           fontWeight: 600,
@@ -229,8 +233,9 @@ export function AssessmentTable({
                         size="small"
                         clickable
                         sx={{
-                          bgcolor: "#fce7f3",
-                          color: "#9d174d",
+                          bgcolor:
+                            "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
+                          color: "var(--accent-purple)",
                           fontSize: "0.7rem",
                           height: 22,
                           fontWeight: 600,
@@ -248,8 +253,10 @@ export function AssessmentTable({
                         />
                       }
                       sx={{
-                        bgcolor: assessment.is_active ? "#d1fae5" : "#fee2e2",
-                        color: assessment.is_active ? "#065f46" : "#991b1b",
+                        bgcolor: assessment.is_active
+                          ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                          : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                        color: assessment.is_active ? "var(--success-500)" : "var(--error-500)",
                         fontSize: "0.7rem",
                         height: 22,
                         fontWeight: 600,
@@ -263,8 +270,8 @@ export function AssessmentTable({
                     label={assessment.submissions_count}
                     size="small"
                     sx={{
-                      bgcolor: "#f1f5f9",
-                      color: "#475569",
+                      bgcolor: "var(--surface)",
+                      color: "var(--font-secondary)",
                       fontSize: "0.7rem",
                       height: 24,
                       fontWeight: 600,
@@ -285,37 +292,37 @@ export function AssessmentTable({
                 }}
               >
                 <Box>
-                  <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
                     Duration
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
-                    <IconWrapper icon="mdi:timer-outline" size={14} color="#64748b" />
-                    <Typography variant="body2" sx={{ color: "#475569", fontSize: "0.8125rem", fontWeight: 500 }}>
+                    <IconWrapper icon="mdi:timer-outline" size={14} color="var(--font-secondary)" />
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", fontWeight: 500 }}>
                       {formatDuration(assessment.duration_minutes)}
                     </Typography>
                   </Box>
                 </Box>
                 <Box>
-                  <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
                     Questions
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
-                    <IconWrapper icon="mdi:help-circle-outline" size={14} color="#64748b" />
-                    <Typography variant="body2" sx={{ color: "#475569", fontSize: "0.8125rem", fontWeight: 600 }}>
+                    <IconWrapper icon="mdi:help-circle-outline" size={14} color="var(--font-secondary)" />
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", fontWeight: 600 }}>
                       {assessment.total_questions}
                     </Typography>
                   </Box>
                 </Box>
                 {assessment.courses && assessment.courses.length > 0 && (
                   <Box sx={{ gridColumn: "span 2" }}>
-                    <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem" }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
                       Courses
                     </Typography>
                     <Tooltip title={formatCourses(assessment.courses).full || ""} arrow>
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#475569",
+                          color: "var(--font-secondary)",
                           fontSize: "0.8125rem",
                           mt: 0.25,
                           fontWeight: 500,
@@ -327,10 +334,10 @@ export function AssessmentTable({
                   </Box>
                 )}
                 <Box sx={{ gridColumn: "span 2" }}>
-                  <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
                     Created
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#64748b", fontSize: "0.8125rem", mt: 0.25 }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", mt: 0.25 }}>
                     {formatDate(assessment.created_at)}
                   </Typography>
                 </Box>
@@ -351,20 +358,21 @@ export function AssessmentTable({
                             width: 20,
                             height: 20,
                             borderRadius: "50%",
-                            bgcolor: "#dbeafe",
-                            color: "#1e40af",
+                            bgcolor:
+                              "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                            color: "var(--accent-indigo)",
                           }}
                         >
                           <IconWrapper icon="mdi:play-circle" size={12} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem" }}>
+                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
                             Start
                           </Typography>
                           <Typography
                             variant="body2"
                             sx={{
-                              color: "#475569",
+                              color: "var(--font-secondary)",
                               fontSize: "0.75rem",
                               fontWeight: 500,
                             }}
@@ -384,20 +392,21 @@ export function AssessmentTable({
                             width: 20,
                             height: 20,
                             borderRadius: "50%",
-                            bgcolor: "#fee2e2",
-                            color: "#991b1b",
+                            bgcolor:
+                              "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                            color: "var(--error-500)",
                           }}
                         >
                           <IconWrapper icon="mdi:stop-circle" size={12} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem" }}>
+                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
                             End
                           </Typography>
                           <Typography
                             variant="body2"
                             sx={{
-                              color: "#475569",
+                              color: "var(--font-secondary)",
                               fontSize: "0.75rem",
                               fontWeight: 500,
                             }}
@@ -418,8 +427,8 @@ export function AssessmentTable({
                   size="small"
                   onClick={(e) => handleMenuOpen(e, assessment.id)}
                   sx={{
-                    color: "#6b7280",
-                    "&:hover": { bgcolor: "#f3f4f6", color: "#111827" },
+                    color: "var(--font-secondary)",
+                    "&:hover": { bgcolor: "var(--surface)", color: "var(--font-primary)" },
                   }}
                 >
                   <IconWrapper icon="mdi:dots-vertical" size={20} />
@@ -440,8 +449,22 @@ export function AssessmentTable({
                     sx: {
                       mt: 1,
                       minWidth: 200,
-                      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+                      bgcolor: "var(--card-bg)",
+                      color: "var(--font-primary)",
+                      border: "1px solid var(--border-default)",
+                      boxShadow:
+                        "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                       borderRadius: 2,
+                      "& .MuiMenuItem-root": {
+                        color: "var(--font-primary)",
+                      },
+                      "& .MuiListItemIcon-root": {
+                        color: "var(--font-secondary)",
+                      },
+                      "& .MuiMenuItem-root.Mui-disabled": {
+                        color: "var(--font-secondary)",
+                        opacity: 0.78,
+                      },
                     },
                   }}
                 >
@@ -453,7 +476,7 @@ export function AssessmentTable({
                       }}
                     >
                       <ListItemIcon>
-                        <IconWrapper icon="mdi:eye-outline" size={18} color="#6366f1" />
+                        <IconWrapper icon="mdi:eye-outline" size={18} color="var(--accent-indigo)" />
                       </ListItemIcon>
                       <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
                     </MenuItem>
@@ -465,7 +488,7 @@ export function AssessmentTable({
                       onClick={() => handleMenuClose(assessment.id)}
                     >
                       <ListItemIcon>
-                        <IconWrapper icon="mdi:video-account" size={18} color="#db2777" />
+                        <IconWrapper icon="mdi:video-account" size={18} color="var(--accent-purple)" />
                       </ListItemIcon>
                       <ListItemText>Live monitor</ListItemText>
                     </MenuItem>
@@ -482,7 +505,7 @@ export function AssessmentTable({
                             onClick={() => handleMenuClose(assessment.id)}
                           >
                             <ListItemIcon>
-                              <IconWrapper icon="mdi:alert-circle" size={18} color="#f59e0b" />
+                              <IconWrapper icon="mdi:alert-circle" size={18} color="var(--warning-500)" />
                             </ListItemIcon>
                             <ListItemText>Retry Email Job</ListItemText>
                           </MenuItem>
@@ -495,7 +518,7 @@ export function AssessmentTable({
                           onClick={() => handleMenuClose(assessment.id)}
                         >
                           <ListItemIcon>
-                            <IconWrapper icon="mdi:email-check" size={18} color="#059669" />
+                            <IconWrapper icon="mdi:email-check" size={18} color="var(--success-500)" />
                           </ListItemIcon>
                           <ListItemText>View Email Job</ListItemText>
                         </MenuItem>
@@ -513,7 +536,7 @@ export function AssessmentTable({
                           {isTriggering ? (
                             <CircularProgress size={18} />
                           ) : (
-                            <IconWrapper icon="mdi:email-send-outline" size={18} color="#059669" />
+                            <IconWrapper icon="mdi:email-send-outline" size={18} color="var(--success-500)" />
                           )}
                         </ListItemIcon>
                         <ListItemText>
@@ -534,7 +557,7 @@ export function AssessmentTable({
                         {exportingQuestionsId === assessment.id ? (
                           <CircularProgress size={18} />
                         ) : (
-                          <IconWrapper icon="mdi:help-circle-outline" size={18} color="#6366f1" />
+                          <IconWrapper icon="mdi:help-circle-outline" size={18} color="var(--accent-indigo)" />
                         )}
                       </ListItemIcon>
                       <ListItemText>
@@ -553,7 +576,7 @@ export function AssessmentTable({
                       {exportingSubmissionsId === assessment.id ? (
                         <CircularProgress size={18} />
                       ) : (
-                        <IconWrapper icon="mdi:file-delimited-outline" size={18} color="#059669" />
+                        <IconWrapper icon="mdi:file-delimited-outline" size={18} color="var(--success-500)" />
                       )}
                     </ListItemIcon>
                     <ListItemText>
@@ -572,7 +595,7 @@ export function AssessmentTable({
                         {duplicatingId === assessment.id ? (
                           <CircularProgress size={18} />
                         ) : (
-                          <IconWrapper icon="mdi:content-copy" size={18} color="#7c3aed" />
+                          <IconWrapper icon="mdi:content-copy" size={18} color="var(--accent-purple)" />
                         )}
                       </ListItemIcon>
                       <ListItemText>
@@ -588,15 +611,18 @@ export function AssessmentTable({
                       }}
                       disabled={deletingId === assessment.id}
                       sx={{
-                        color: "#dc2626",
-                        "&:hover": { bgcolor: "#fee2e2" },
+                        color: "var(--error-500)",
+                        "&:hover": {
+                          bgcolor:
+                            "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                        },
                       }}
                     >
                       <ListItemIcon>
                         {deletingId === assessment.id ? (
                           <CircularProgress size={18} />
                         ) : (
-                          <IconWrapper icon="mdi:delete-outline" size={18} color="#dc2626" />
+                          <IconWrapper icon="mdi:delete-outline" size={18} color="var(--error-500)" />
                         )}
                       </ListItemIcon>
                       <ListItemText>
@@ -616,19 +642,31 @@ export function AssessmentTable({
   // Desktop Table View
   return (
     <>
-    <TableContainer sx={{ overflowX: "auto", maxWidth: "100%" }}>
+    <TableContainer
+      sx={{
+        overflowX: "auto",
+        maxWidth: "100%",
+        bgcolor: "var(--card-bg)",
+        color: "var(--font-primary)",
+        "& .MuiTableCell-root": {
+          color: "var(--font-primary)",
+          borderColor: "var(--border-default)",
+        },
+      }}
+    >
       <Table sx={{ minWidth: { md: 1000, lg: 1200 } }}>
         <TableHead>
           <TableRow
             sx={{
-              backgroundColor: "#f8fafc",
-              borderBottom: "2px solid #e2e8f0",
+              backgroundColor:
+                "color-mix(in srgb, var(--surface) 74%, var(--card-bg) 26%)",
+              borderBottom: "2px solid var(--border-default)",
             }}
           >
             <TableCell
               sx={{
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -641,7 +679,7 @@ export function AssessmentTable({
             <TableCell
               sx={{
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -655,7 +693,7 @@ export function AssessmentTable({
             <TableCell
               sx={{
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -669,7 +707,7 @@ export function AssessmentTable({
             <TableCell
               sx={{
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -683,7 +721,7 @@ export function AssessmentTable({
             <TableCell
               sx={{
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -697,7 +735,7 @@ export function AssessmentTable({
             <TableCell
               sx={{
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -712,7 +750,7 @@ export function AssessmentTable({
             <TableCell
               sx={{
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 fontSize: "0.875rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
@@ -741,15 +779,15 @@ export function AssessmentTable({
                   <IconWrapper
                     icon="mdi:file-document-outline"
                     size={48}
-                    color="#94a3b8"
+                    color="var(--font-tertiary)"
                   />
                   <Typography
                     variant="body1"
-                    sx={{ color: "#64748b", fontWeight: 500 }}
+                    sx={{ color: "var(--font-secondary)", fontWeight: 500 }}
                   >
                     No assessments found
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                     Create your first assessment to get started
                   </Typography>
                 </Box>
@@ -761,10 +799,11 @@ export function AssessmentTable({
                 key={assessment.id}
                 sx={{
                   "&:hover": {
-                    backgroundColor: "#f8fafc",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--surface) 72%, var(--card-bg) 28%)",
                     transition: "background-color 0.2s ease",
                   },
-                  borderBottom: "1px solid #e2e8f0",
+                  borderBottom: "1px solid var(--border-default)",
                   transition: "all 0.2s ease",
                 }}
               >
@@ -777,7 +816,7 @@ export function AssessmentTable({
                           variant="body1"
                           sx={{
                             fontWeight: 700,
-                            color: "#0f172a",
+                            color: "var(--font-primary)",
                             fontSize: "1rem",
                             lineHeight: 1.4,
                             mb: 0.25,
@@ -796,12 +835,13 @@ export function AssessmentTable({
                           label={assessment.submissions_count}
                           size="small"
                           sx={{
-                            bgcolor: "#f1f5f9",
-                            color: "#475569",
+                            bgcolor:
+                              "color-mix(in srgb, var(--surface) 85%, var(--card-bg) 15%)",
+                            color: "var(--font-secondary)",
                             fontSize: "0.7rem",
                             height: 24,
                             fontWeight: 600,
-                            border: "1px solid #e2e8f0",
+                            border: "1px solid var(--border-default)",
                           }}
                         />
                       )}
@@ -815,12 +855,14 @@ export function AssessmentTable({
                           label={`₹${assessment.price}`}
                           size="small"
                           sx={{
-                            bgcolor: "#fef3c7",
-                            color: "#92400e",
+                            bgcolor:
+                              "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                            color: "var(--warning-500)",
                             fontSize: "0.7rem",
                             height: 24,
                             fontWeight: 600,
-                            border: "1px solid #fde68a",
+                            border:
+                              "1px solid color-mix(in srgb, var(--warning-500) 36%, var(--border-default) 64%)",
                           }}
                         />
                       )}
@@ -830,12 +872,14 @@ export function AssessmentTable({
                           label="Proctored"
                           size="small"
                           sx={{
-                            bgcolor: "#dbeafe",
-                            color: "#1e40af",
+                            bgcolor:
+                              "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                            color: "var(--accent-indigo)",
                             fontSize: "0.7rem",
                             height: 24,
                             fontWeight: 600,
-                            border: "1px solid #bfdbfe",
+                            border:
+                              "1px solid color-mix(in srgb, var(--accent-indigo) 32%, var(--border-default) 68%)",
                           }}
                         />
                       )}
@@ -849,12 +893,14 @@ export function AssessmentTable({
                           size="small"
                           clickable
                           sx={{
-                            bgcolor: "#fce7f3",
-                            color: "#9d174d",
+                            bgcolor:
+                              "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
+                            color: "var(--accent-purple)",
                             fontSize: "0.7rem",
                             height: 24,
                             fontWeight: 600,
-                            border: "1px solid #fbcfe8",
+                            border:
+                              "1px solid color-mix(in srgb, var(--accent-purple) 32%, var(--border-default) 68%)",
                             textDecoration: "none",
                           }}
                         />
@@ -867,7 +913,7 @@ export function AssessmentTable({
                         sx={{
                           mt: 1,
                           pt: 1,
-                          borderTop: "1px solid #e2e8f0",
+                          borderTop: "1px solid var(--border-default)",
                           display: "flex",
                           flexDirection: "column",
                           gap: 0.5,
@@ -889,8 +935,9 @@ export function AssessmentTable({
                                 width: 20,
                                 height: 20,
                                 borderRadius: "50%",
-                                bgcolor: "#dbeafe",
-                                color: "#1e40af",
+                                bgcolor:
+                                  "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                                color: "var(--accent-indigo)",
                               }}
                             >
                               <IconWrapper icon="mdi:play-circle" size={12} />
@@ -898,7 +945,7 @@ export function AssessmentTable({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "#475569",
+                                color: "var(--font-secondary)",
                                 fontSize: "0.75rem",
                                 fontWeight: 500,
                               }}
@@ -923,8 +970,9 @@ export function AssessmentTable({
                                 width: 20,
                                 height: 20,
                                 borderRadius: "50%",
-                                bgcolor: "#fee2e2",
-                                color: "#991b1b",
+                                bgcolor:
+                                  "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                                color: "var(--error-500)",
                               }}
                             >
                               <IconWrapper icon="mdi:stop-circle" size={12} />
@@ -932,7 +980,7 @@ export function AssessmentTable({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "#475569",
+                                color: "var(--font-secondary)",
                                 fontSize: "0.75rem",
                                 fontWeight: 500,
                               }}
@@ -959,7 +1007,7 @@ export function AssessmentTable({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#94a3b8",
+                            color: "var(--font-tertiary)",
                             fontSize: "0.8125rem",
                             fontStyle: "italic",
                           }}
@@ -973,7 +1021,7 @@ export function AssessmentTable({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#475569",
+                            color: "var(--font-secondary)",
                             fontSize: "0.8125rem",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -996,11 +1044,11 @@ export function AssessmentTable({
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <IconWrapper icon="mdi:timer-outline" size={16} color="#64748b" />
+                    <IconWrapper icon="mdi:timer-outline" size={16} color="var(--font-secondary)" />
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#475569",
+                        color: "var(--font-secondary)",
                         fontSize: "0.8125rem",
                         fontWeight: 500,
                       }}
@@ -1017,11 +1065,11 @@ export function AssessmentTable({
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <IconWrapper icon="mdi:help-circle-outline" size={16} color="#64748b" />
+                    <IconWrapper icon="mdi:help-circle-outline" size={16} color="var(--font-secondary)" />
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#475569",
+                        color: "var(--font-secondary)",
                         fontSize: "0.8125rem",
                         fontWeight: 600,
                       }}
@@ -1045,13 +1093,17 @@ export function AssessmentTable({
                       />
                     }
                     sx={{
-                      bgcolor: assessment.is_active ? "#d1fae5" : "#fee2e2",
-                      color: assessment.is_active ? "#065f46" : "#991b1b",
+                      bgcolor: assessment.is_active
+                        ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                        : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                      color: assessment.is_active ? "var(--success-500)" : "var(--error-500)",
                       fontWeight: 600,
                       fontSize: "0.75rem",
                       height: 26,
                       border: `1px solid ${
-                        assessment.is_active ? "#a7f3d0" : "#fecaca"
+                        assessment.is_active
+                          ? "color-mix(in srgb, var(--success-500) 34%, var(--border-default) 66%)"
+                          : "color-mix(in srgb, var(--error-500) 34%, var(--border-default) 66%)"
                       }`,
                     }}
                   />
@@ -1066,7 +1118,7 @@ export function AssessmentTable({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#64748b",
+                      color: "var(--font-secondary)",
                       fontSize: "0.8125rem",
                     }}
                   >
@@ -1084,10 +1136,11 @@ export function AssessmentTable({
                       size="small"
                       onClick={(e) => handleMenuOpen(e, assessment.id)}
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         "&:hover": {
-                          bgcolor: "#f3f4f6",
-                          color: "#111827",
+                          bgcolor:
+                            "color-mix(in srgb, var(--surface) 82%, var(--card-bg) 18%)",
+                          color: "var(--font-primary)",
                         },
                         transition: "all 0.2s ease",
                       }}
@@ -1111,8 +1164,22 @@ export function AssessmentTable({
                         sx: {
                           mt: 1,
                           minWidth: 200,
-                          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+                          bgcolor: "var(--card-bg)",
+                          color: "var(--font-primary)",
+                          border: "1px solid var(--border-default)",
+                          boxShadow:
+                            "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                           borderRadius: 2,
+                          "& .MuiMenuItem-root": {
+                            color: "var(--font-primary)",
+                          },
+                          "& .MuiListItemIcon-root": {
+                            color: "var(--font-secondary)",
+                          },
+                          "& .MuiMenuItem-root.Mui-disabled": {
+                            color: "var(--font-secondary)",
+                            opacity: 0.78,
+                          },
                         },
                       }}
                     >
@@ -1124,7 +1191,7 @@ export function AssessmentTable({
                           }}
                         >
                           <ListItemIcon>
-                            <IconWrapper icon="mdi:eye-outline" size={18} color="#6366f1" />
+                            <IconWrapper icon="mdi:eye-outline" size={18} color="var(--accent-indigo)" />
                           </ListItemIcon>
                           <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
                         </MenuItem>
@@ -1136,7 +1203,7 @@ export function AssessmentTable({
                           onClick={() => handleMenuClose(assessment.id)}
                         >
                           <ListItemIcon>
-                            <IconWrapper icon="mdi:video-account" size={18} color="#db2777" />
+                            <IconWrapper icon="mdi:video-account" size={18} color="var(--accent-purple)" />
                           </ListItemIcon>
                           <ListItemText>Live monitor</ListItemText>
                         </MenuItem>
@@ -1153,7 +1220,7 @@ export function AssessmentTable({
                                 onClick={() => handleMenuClose(assessment.id)}
                               >
                                 <ListItemIcon>
-                                  <IconWrapper icon="mdi:alert-circle" size={18} color="#f59e0b" />
+                              <IconWrapper icon="mdi:alert-circle" size={18} color="var(--warning-500)" />
                                 </ListItemIcon>
                                 <ListItemText>Retry Email Job</ListItemText>
                               </MenuItem>
@@ -1166,7 +1233,7 @@ export function AssessmentTable({
                               onClick={() => handleMenuClose(assessment.id)}
                             >
                               <ListItemIcon>
-                                <IconWrapper icon="mdi:email-check" size={18} color="#059669" />
+                            <IconWrapper icon="mdi:email-check" size={18} color="var(--success-500)" />
                               </ListItemIcon>
                               <ListItemText>View Email Job</ListItemText>
                             </MenuItem>
@@ -1184,7 +1251,7 @@ export function AssessmentTable({
                               {isTriggering ? (
                                 <CircularProgress size={18} />
                               ) : (
-                                <IconWrapper icon="mdi:email-send-outline" size={18} color="#059669" />
+                            <IconWrapper icon="mdi:email-send-outline" size={18} color="var(--success-500)" />
                               )}
                             </ListItemIcon>
                             <ListItemText>
@@ -1205,7 +1272,7 @@ export function AssessmentTable({
                             {exportingQuestionsId === assessment.id ? (
                               <CircularProgress size={18} />
                             ) : (
-                              <IconWrapper icon="mdi:help-circle-outline" size={18} color="#6366f1" />
+                          <IconWrapper icon="mdi:help-circle-outline" size={18} color="var(--accent-indigo)" />
                             )}
                           </ListItemIcon>
                           <ListItemText>
@@ -1224,7 +1291,7 @@ export function AssessmentTable({
                           {exportingSubmissionsId === assessment.id ? (
                             <CircularProgress size={18} />
                           ) : (
-                            <IconWrapper icon="mdi:file-delimited-outline" size={18} color="#059669" />
+                        <IconWrapper icon="mdi:file-delimited-outline" size={18} color="var(--success-500)" />
                           )}
                         </ListItemIcon>
                         <ListItemText>
@@ -1243,7 +1310,7 @@ export function AssessmentTable({
                             {duplicatingId === assessment.id ? (
                               <CircularProgress size={18} />
                             ) : (
-                              <IconWrapper icon="mdi:content-copy" size={18} color="#7c3aed" />
+                          <IconWrapper icon="mdi:content-copy" size={18} color="var(--accent-purple)" />
                             )}
                           </ListItemIcon>
                           <ListItemText>
@@ -1259,15 +1326,18 @@ export function AssessmentTable({
                           }}
                           disabled={deletingId === assessment.id}
                           sx={{
-                            color: "#dc2626",
-                            "&:hover": { bgcolor: "#fee2e2" },
+                        color: "var(--error-500)",
+                        "&:hover": {
+                          bgcolor:
+                            "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                        },
                           }}
                         >
                           <ListItemIcon>
                             {deletingId === assessment.id ? (
                               <CircularProgress size={18} />
                             ) : (
-                              <IconWrapper icon="mdi:delete-outline" size={18} color="#dc2626" />
+                          <IconWrapper icon="mdi:delete-outline" size={18} color="var(--error-500)" />
                             )}
                           </ListItemIcon>
                           <ListItemText>

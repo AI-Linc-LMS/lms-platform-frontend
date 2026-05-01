@@ -44,7 +44,7 @@ export function StudentFocusView({
       elevation={0}
       sx={{
         borderRadius: 2,
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--border-default)",
         overflow: "hidden",
       }}
     >
@@ -55,8 +55,8 @@ export function StudentFocusView({
           justifyContent: "space-between",
           px: 2,
           py: 1.5,
-          borderBottom: "1px solid #e2e8f0",
-          bgcolor: "#f8fafc",
+          borderBottom: "1px solid var(--border-default)",
+          bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)",
         }}
       >
         <Box sx={{ minWidth: 0 }}>
@@ -102,7 +102,7 @@ export function StudentFocusView({
       <Box
         sx={{
           position: "relative",
-          bgcolor: "#000",
+          bgcolor: "color-mix(in srgb, var(--font-primary) 95%, transparent)",
           minHeight: { xs: 240, sm: 400, md: 520 },
           display: "flex",
           alignItems: "center",

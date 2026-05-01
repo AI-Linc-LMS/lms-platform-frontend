@@ -37,6 +37,8 @@ interface AssessmentSettingsSectionProps {
 
   /** Assessment-wide: learners may move between section blocks (quiz, coding, etc.). */
   allowMovementAcrossSections: boolean;
+  tabSwitchLimitEnabled: boolean;
+  tabSwitchLimitCount: number;
   certificateAvailable: boolean;
   passBandLowerPercent: string;
   passBandUpperPercent: string;
@@ -65,6 +67,8 @@ interface AssessmentSettingsSectionProps {
   onShowResultChange: (value: boolean) => void;
   onEvaluationModeChange: (value: "auto" | "manual") => void;
   onAllowMovementAcrossSectionsChange: (value: boolean) => void;
+  onTabSwitchLimitEnabledChange: (value: boolean) => void;
+  onTabSwitchLimitCountChange: (value: number) => void;
   onCertificateAvailableChange: (value: boolean) => void;
   onPassBandLowerPercentChange: (value: string) => void;
   onPassBandUpperPercentChange: (value: string) => void;
@@ -78,10 +82,10 @@ interface AssessmentSettingsSectionProps {
 
 const switchSx = {
   "& .MuiSwitch-switchBase.Mui-checked": {
-    color: "#6366f1",
+    color: "var(--accent-indigo)",
   },
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-    backgroundColor: "#818cf8",
+    backgroundColor: "var(--accent-indigo-dark)",
   },
 };
 
@@ -93,10 +97,10 @@ const listSubheaderSx = {
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#64748b",
-  bgcolor: "rgba(248, 250, 252, 0.95)",
+  color: "var(--font-secondary)",
+  bgcolor: "var(--surface)",
   borderTop: "1px solid",
-  borderColor: "rgba(15, 23, 42, 0.06)",
+  borderColor: "var(--border-default)",
   "&:first-of-type": {
     borderTop: "none",
   },
@@ -106,7 +110,7 @@ const helperFormProps = {
   sx: {
     fontSize: "0.8125rem",
     lineHeight: 1.45,
-    color: "#475569",
+    color: "var(--font-secondary)",
     mt: 0.5,
   },
 };
@@ -116,7 +120,7 @@ const groupTitleSx = {
   fontWeight: 700,
   letterSpacing: "0.06em",
   textTransform: "uppercase" as const,
-  color: "#64748b",
+  color: "var(--font-secondary)",
   mb: 0.25,
 };
 
@@ -135,7 +139,7 @@ function FieldGroup({
         {title}
       </Typography>
       {hint ? (
-        <Typography variant="caption" sx={{ color: "#64748b", display: "block", mb: 1.25 }}>
+        <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.25 }}>
           {hint}
         </Typography>
       ) : (
@@ -181,10 +185,13 @@ function PolicySwitchRow({
         py: 1.35,
         px: 2,
         borderBottom: "1px solid",
-        borderColor: "rgba(15, 23, 42, 0.06)",
+        borderColor: "var(--border-default)",
         transition: "background-color 0.15s ease",
         "&:hover": {
-          bgcolor: disabled ? undefined : "rgba(99, 102, 241, 0.04)",
+          bgcolor:
+            disabled
+              ? undefined
+              : "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
         },
       }}
     >
@@ -197,11 +204,13 @@ function PolicySwitchRow({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "rgba(99, 102, 241, 0.1)",
-            border: "1px solid rgba(99, 102, 241, 0.18)",
+            bgcolor:
+              "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent-indigo) 24%, var(--border-default) 76%)",
           }}
         >
-          <IconWrapper icon={icon} size={22} color="#4f46e5" />
+          <IconWrapper icon={icon} size={22} color="var(--accent-indigo)" />
         </Box>
       </ListItemIcon>
       <ListItemText
@@ -209,7 +218,7 @@ function PolicySwitchRow({
         secondary={subtitle}
         primaryTypographyProps={{
           variant: "body2",
-          sx: { fontWeight: 600, color: "#0f172a", pr: 1 },
+          sx: { fontWeight: 600, color: "var(--font-primary)", pr: 1 },
         }}
         secondaryTypographyProps={{
           variant: "caption",
@@ -238,6 +247,8 @@ export function AssessmentSettingsSection({
   liveStreaming = false,
   showLiveStreamingToggle = false,
   allowMovementAcrossSections,
+  tabSwitchLimitEnabled,
+  tabSwitchLimitCount,
   certificateAvailable,
   passBandLowerPercent,
   passBandUpperPercent,
@@ -266,6 +277,8 @@ export function AssessmentSettingsSection({
   onShowResultChange,
   onEvaluationModeChange,
   onAllowMovementAcrossSectionsChange,
+  onTabSwitchLimitEnabledChange,
+  onTabSwitchLimitCountChange,
   onCertificateAvailableChange,
   onPassBandLowerPercentChange,
   onPassBandUpperPercentChange,
@@ -285,11 +298,13 @@ export function AssessmentSettingsSection({
       sx={{
         borderRadius: 2,
         border: "1px solid",
-        borderColor: "rgba(99, 102, 241, 0.2)",
+        borderColor:
+          "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
         overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         background:
-          "linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, #ffffff 56px)",
+          "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 56px)",
         opacity: readOnly ? 0.96 : 1,
       }}
     >
@@ -301,7 +316,8 @@ export function AssessmentSettingsSection({
           alignItems: "flex-start",
           gap: 1.5,
           borderBottom: "1px solid",
-          borderColor: "rgba(99, 102, 241, 0.12)",
+          borderColor:
+            "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
         }}
       >
         <Box
@@ -312,18 +328,20 @@ export function AssessmentSettingsSection({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "rgba(99, 102, 241, 0.12)",
-            border: "1px solid rgba(99, 102, 241, 0.2)",
+            bgcolor:
+              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:tune-vertical" size={24} color="#4f46e5" />
+          <IconWrapper icon="mdi:tune-vertical" size={24} color="var(--accent-indigo)" />
         </Box>
         <Box>
           <Typography
             id="assessment-settings-heading"
             variant="subtitle1"
-            sx={{ fontWeight: 700, color: "#1e1b4b" }}
+            sx={{ fontWeight: 700, color: "var(--font-primary)" }}
           >
             Assessment settings
           </Typography>
@@ -395,7 +413,12 @@ export function AssessmentSettingsSection({
                   key={option?.id ?? index}
                   size="small"
                   variant="outlined"
-                  sx={{ borderColor: "rgba(99, 102, 241, 0.35)", bgcolor: "rgba(99, 102, 241, 0.04)" }}
+                  sx={{
+                    borderColor:
+                      "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+                  }}
                   onDelete={getTagProps({ index }).onDelete}
                 />
               ))
@@ -433,7 +456,12 @@ export function AssessmentSettingsSection({
                   key={index}
                   size="small"
                   variant="outlined"
-                  sx={{ borderColor: "rgba(99, 102, 241, 0.35)", bgcolor: "rgba(99, 102, 241, 0.04)" }}
+                  sx={{
+                    borderColor:
+                      "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+                  }}
                 />
               ))
             }
@@ -482,8 +510,9 @@ export function AssessmentSettingsSection({
       <Box
         sx={{
           borderTop: "1px solid",
-          borderColor: "rgba(99, 102, 241, 0.14)",
-          bgcolor: "rgba(248, 250, 252, 0.65)",
+          borderColor:
+            "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
+          bgcolor: "color-mix(in srgb, var(--surface) 76%, var(--card-bg) 24%)",
         }}
       >
         <Box
@@ -491,14 +520,14 @@ export function AssessmentSettingsSection({
             px: 2.25,
             py: 1.75,
             borderBottom: "1px solid",
-            borderColor: "rgba(15, 23, 42, 0.06)",
-            bgcolor: "rgba(255, 255, 255, 0.9)",
+            borderColor: "var(--border-default)",
+            bgcolor: "var(--card-bg)",
           }}
         >
           <Typography
             id="assessment-policies-heading"
             variant="subtitle2"
-            sx={{ fontWeight: 700, color: "#312e81", letterSpacing: 0.02 }}
+            sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: 0.02 }}
           >
             Policies & learner experience
           </Typography>
@@ -512,7 +541,7 @@ export function AssessmentSettingsSection({
           </Typography>
         </Box>
 
-        <List dense disablePadding sx={{ py: 0, bgcolor: "rgba(255, 255, 255, 0.65)" }}>
+        <List dense disablePadding sx={{ py: 0, bgcolor: "color-mix(in srgb, var(--card-bg) 65%, var(--surface) 35%)" }}>
             <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
               Billing
             </ListSubheader>
@@ -530,9 +559,9 @@ export function AssessmentSettingsSection({
                   display: "block",
                   px: 2,
                   py: 2,
-                  bgcolor: "rgba(248, 250, 252, 0.98)",
+                  bgcolor: "var(--surface)",
                   borderBottom: "1px solid",
-                  borderColor: "rgba(15, 23, 42, 0.06)",
+                  borderColor: "var(--border-default)",
                 }}
               >
                 <Box
@@ -582,9 +611,9 @@ export function AssessmentSettingsSection({
                 display: "block",
                 py: 1.35,
                 px: 2,
-                bgcolor: "rgba(248, 250, 252, 0.98)",
+                bgcolor: "var(--surface)",
                 borderBottom: "1px solid",
-                borderColor: "rgba(15, 23, 42, 0.06)",
+                borderColor: "var(--border-default)",
               }}
             >
               <Typography
@@ -678,7 +707,7 @@ export function AssessmentSettingsSection({
                 py: 1.35,
                 px: 2,
                 borderBottom: "1px solid",
-                borderColor: "rgba(15, 23, 42, 0.06)",
+                borderColor: "var(--border-default)",
               }}
             >
               <ListItemIcon sx={{ minWidth: 48, mt: 0.15 }}>
@@ -690,17 +719,19 @@ export function AssessmentSettingsSection({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    bgcolor: "rgba(99, 102, 241, 0.1)",
-                    border: "1px solid rgba(99, 102, 241, 0.18)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--accent-indigo) 24%, var(--border-default) 76%)",
                   }}
                 >
-                  <IconWrapper icon="mdi:clipboard-check-outline" size={22} color="#4f46e5" />
+                  <IconWrapper icon="mdi:clipboard-check-outline" size={22} color="var(--accent-indigo)" />
                 </Box>
               </ListItemIcon>
               <ListItemText
                 primary="Evaluation mode"
                 secondary="Manual mode requires admins to evaluate and publish results."
-                primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, color: "#0f172a", pr: 1 } }}
+                primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, color: "var(--font-primary)", pr: 1 } }}
                 secondaryTypographyProps={{ variant: "caption", sx: { display: "block", mt: 0.35, color: "text.secondary", lineHeight: 1.45 } }}
               />
               <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -730,6 +761,39 @@ export function AssessmentSettingsSection({
               onChange={onAllowMovementAcrossSectionsChange}
               disabled={readOnly}
             />
+            <PolicySwitchRow
+              icon="mdi:tab"
+              title="Auto-submit on tab switches"
+              subtitle="When enabled, attempt is auto-submitted once tab switch count reaches the configured limit."
+              checked={tabSwitchLimitEnabled}
+              onChange={onTabSwitchLimitEnabledChange}
+              disabled={readOnly}
+            />
+            <Collapse in={tabSwitchLimitEnabled} timeout="auto" unmountOnExit>
+              <ListItem
+                sx={{
+                  display: "block",
+                  px: 2,
+                  py: 2,
+                  bgcolor: "var(--surface)",
+                  borderBottom: "1px solid",
+                  borderColor: "var(--border-default)",
+                }}
+              >
+                <TextField
+                  label="Allowed tab switches"
+                  type="number"
+                  value={tabSwitchLimitCount > 0 ? tabSwitchLimitCount : ""}
+                  onChange={(e) => onTabSwitchLimitCountChange(Number(e.target.value || 0))}
+                  fullWidth
+                  required
+                  inputProps={{ min: 1 }}
+                  helperText="Attempt auto-submits immediately when this count is reached."
+                  FormHelperTextProps={helperFormProps}
+                  disabled={readOnly}
+                />
+              </ListItem>
+            </Collapse>
 
             <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
               Certificates
@@ -749,9 +813,11 @@ export function AssessmentSettingsSection({
                   alignItems: "stretch",
                   py: 2,
                   px: 2,
-                  bgcolor: "rgba(99, 102, 241, 0.06)",
+                  bgcolor:
+                    "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
                   borderTop: "1px solid",
-                  borderColor: "rgba(99, 102, 241, 0.12)",
+                  borderColor:
+                    "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
                 }}
               >
                 <Box
@@ -762,10 +828,10 @@ export function AssessmentSettingsSection({
                     mb: 1.5,
                   }}
                 >
-                  <IconWrapper icon="mdi:percent" size={20} color="#4338ca" />
+                  <IconWrapper icon="mdi:percent" size={20} color="var(--accent-indigo-dark)" />
                   <Typography
                     variant="subtitle2"
-                    sx={{ fontWeight: 700, color: "#312e81" }}
+                    sx={{ fontWeight: 700, color: "var(--font-primary)" }}
                   >
                     Pass band thresholds
                   </Typography>

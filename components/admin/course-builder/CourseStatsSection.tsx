@@ -22,14 +22,14 @@ export function CourseStatsSection({
         variant="h5"
         sx={{
           fontWeight: 700,
-          color: "#111827",
+          color: "var(--font-primary)",
           fontSize: { xs: "1.25rem", sm: "1.5rem" },
           mb: 1,
         }}
       >
         {t("adminCourseBuilder.allCourses")}
       </Typography>
-      <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
         {t("adminCourseBuilder.glimpseProgress")}
       </Typography>
 
@@ -42,13 +42,13 @@ export function CourseStatsSection({
                 width: 12,
                 height: 12,
                 borderRadius: "50%",
-                bgcolor: "#3b82f6",
+                bgcolor: "var(--accent-indigo)",
               }}
             />
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               <Typography
                 component="span"
-                sx={{ fontWeight: 600, color: "#3b82f6" }}
+                sx={{ fontWeight: 600, color: "var(--accent-indigo)" }}
               >
                 {draftCount}
               </Typography>{" "}
@@ -61,13 +61,13 @@ export function CourseStatsSection({
                 width: 12,
                 height: 12,
                 borderRadius: "50%",
-                bgcolor: "#10b981",
+                bgcolor: "var(--success-500)",
               }}
             />
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               <Typography
                 component="span"
-                sx={{ fontWeight: 600, color: "#10b981" }}
+                sx={{ fontWeight: 600, color: "var(--success-500)" }}
               >
                 {publishedCount}
               </Typography>{" "}
@@ -80,13 +80,13 @@ export function CourseStatsSection({
                 width: 12,
                 height: 12,
                 borderRadius: "50%",
-                bgcolor: "#6b7280",
+                bgcolor: "var(--font-secondary)",
               }}
             />
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               <Typography
                 component="span"
-                sx={{ fontWeight: 600, color: "#6b7280" }}
+                sx={{ fontWeight: 600, color: "var(--font-secondary)" }}
               >
                 {totalCount}
               </Typography>{" "}

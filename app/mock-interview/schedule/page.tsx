@@ -47,10 +47,11 @@ export default function ScheduleInterviewPage() {
             onClick={() => router.push("/mock-interview")}
             sx={{
               textTransform: "none",
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontWeight: 500,
               "&:hover": {
-                backgroundColor: "#f3f4f6",
+                backgroundColor:
+                  "color-mix(in srgb, var(--surface) 75%, var(--background) 25%)",
               },
             }}
           >
@@ -72,7 +73,7 @@ export default function ScheduleInterviewPage() {
           </Typography>
           <Typography
             variant="body1"
-            sx={{ color: "#6b7280", maxWidth: 600, mx: "auto" }}
+            sx={{ color: "var(--font-secondary)", maxWidth: 600, mx: "auto" }}
           >
             Choose a convenient time and prepare in advance for your mock interview
             with detailed configuration options.

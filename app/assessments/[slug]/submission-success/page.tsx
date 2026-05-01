@@ -19,6 +19,7 @@ import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
 import {
   assessmentService,
   AssessmentDetail,
+  AssessmentResult,
   ScholarshipStatus,
 } from "@/lib/services/assessment.service";
 
@@ -31,6 +32,7 @@ export default function SubmissionSuccessPage() {
   const [scholarshipStatus, setScholarshipStatus] =
     useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [autoSubmitMessage, setAutoSubmitMessage] = useState<string | null>(null);
   const { showToast } = useToast();
 
   // Stop any active camera and audio streams on this page
@@ -51,6 +53,20 @@ export default function SubmissionSuccessPage() {
           setScholarshipStatus(status);
         } catch (error) {
           // Scholarship status might not be available yet - silently fail
+        }
+        try {
+          const result = await assessmentService.getAssessmentResult(slug);
+          const reason = (result as AssessmentResult).auto_submitted_reason;
+          if (reason === "tab_switch_limit") {
+            setAutoSubmitMessage(
+              (result as AssessmentResult).auto_submit_message ||
+                "This assessment was auto-submitted because the tab-switch limit was reached."
+            );
+          } else {
+            setAutoSubmitMessage(null);
+          }
+        } catch {
+          setAutoSubmitMessage(null);
         }
       } catch (error: any) {
         showToast(t("assessments.failedToLoadDetails"), "error");
@@ -82,7 +98,11 @@ export default function SubmissionSuccessPage() {
         <Paper sx={{ p: 4, textAlign: "center" }}>
           <Box sx={{ mb: 4 }}>
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-              <IconWrapper icon="mdi:check-circle" size={80} color="#10b981" />
+              <IconWrapper
+                icon="mdi:check-circle"
+                size={80}
+                color="var(--success-500)"
+              />
             </Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               {t("assessments.submittedSuccess")}
@@ -93,6 +113,12 @@ export default function SubmissionSuccessPage() {
           </Box>
 
           <Divider sx={{ my: 4 }} />
+
+          {autoSubmitMessage ? (
+            <Alert severity="warning" sx={{ mb: 3, textAlign: "left" }}>
+              <Typography variant="body2">{autoSubmitMessage}</Typography>
+            </Alert>
+          ) : null}
 
           {scholarshipStatus && scholarshipStatus.has_submitted && (
             <Box sx={{ mb: 4 }}>
@@ -121,7 +147,8 @@ export default function SubmissionSuccessPage() {
                       variant="h6"
                       sx={{
                         fontFamily: "monospace",
-                        backgroundColor: "#f3f4f6",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--font-primary)",
                         p: 2,
                         borderRadius: 1,
                         fontWeight: 600,

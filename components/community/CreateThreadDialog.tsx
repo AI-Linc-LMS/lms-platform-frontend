@@ -66,7 +66,11 @@ export function CreateThreadDialog({
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="mdi:forum" size={24} color="#2563eb" />
+          <IconWrapper
+            icon="mdi:forum"
+            size={24}
+            color="var(--accent-indigo)"
+          />
           <Typography variant="h6" fontWeight={600}>
             {t("community.createNewThread")}
           </Typography>
@@ -120,7 +124,7 @@ export function CreateThreadDialog({
                   size="small"
                   sx={{
                     backgroundColor: "#dbeafe",
-                    color: "#1e40af",
+                    color: "var(--accent-indigo)",
                   }}
                 />
               ))

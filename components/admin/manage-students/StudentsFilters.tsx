@@ -54,8 +54,10 @@ export function StudentsFilters({
         p: { xs: 2, sm: 3 },
         mb: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        backgroundColor: "#ffffff",
+        border: "1px solid var(--border-default)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <Box
@@ -158,7 +160,7 @@ export function StudentsFilters({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <IconWrapper icon="mdi:magnify" size={20} color="#6b7280" />
+                <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
               </InputAdornment>
             ),
           }}

@@ -48,13 +48,25 @@ const ScheduledInterviewsTableComponent = ({
   const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty?.toLowerCase()) {
       case "easy":
-        return { bg: "#fef3c7", color: "#92400e" };
+        return {
+          bg: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+          color: "var(--warning-500)",
+        };
       case "medium":
-        return { bg: "#fed7aa", color: "#9a3412" };
+        return {
+          bg: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+          color: "var(--warning-500)",
+        };
       case "hard":
-        return { bg: "#fecaca", color: "#991b1b" };
+        return {
+          bg: "color-mix(in srgb, var(--error-500) 16%, transparent)",
+          color: "var(--error-500)",
+        };
       default:
-        return { bg: "#fef3c7", color: "#92400e" };
+        return {
+          bg: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+          color: "var(--warning-500)",
+        };
     }
   }, []);
 
@@ -100,22 +112,23 @@ const ScheduledInterviewsTableComponent = ({
             width: 80,
             height: 80,
             borderRadius: "50%",
-            backgroundColor: "#fef3c7",
+            backgroundColor:
+              "color-mix(in srgb, var(--warning-500) 16%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             mb: 2,
           }}
         >
-          <IconWrapper icon="mdi:calendar-clock" size={40} color="#f59e0b" />
+          <IconWrapper icon="mdi:calendar-clock" size={40} color="var(--warning-500)" />
         </Box>
         <Typography
           variant="h6"
-          sx={{ color: "#6b7280", mb: 1, fontWeight: 600 }}
+          sx={{ color: "var(--font-secondary)", mb: 1, fontWeight: 600 }}
         >
           No Scheduled Interviews
         </Typography>
-        <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
           Schedule your first interview to see it here
         </Typography>
       </Box>
@@ -138,12 +151,15 @@ const ScheduledInterviewsTableComponent = ({
               sx={{
                 p: 3,
                 borderRadius: 3,
-                border: "1px solid #fde68a",
-                backgroundColor: "#fffbeb",
+                border:
+                  "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default))",
+                backgroundColor:
+                  "color-mix(in srgb, var(--warning-500) 10%, var(--surface))",
                 transition: "all 0.3s ease",
                 "&:hover": {
-                  boxShadow: "0 4px 12px rgba(245, 158, 11, 0.15)",
-                  borderColor: "#f59e0b",
+                  boxShadow:
+                    "0 4px 12px color-mix(in srgb, var(--warning-500) 25%, transparent)",
+                  borderColor: "var(--warning-500)",
                   transform: "translateY(-2px)",
                 },
               }}
@@ -156,18 +172,19 @@ const ScheduledInterviewsTableComponent = ({
                     height: 80,
                     borderRadius: 2,
                     background:
-                      "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                      "linear-gradient(135deg, var(--warning-500) 0%, color-mix(in srgb, var(--warning-500) 84%, var(--accent-indigo-dark)) 100%)",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                    boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                    boxShadow:
+                      "0 4px 12px color-mix(in srgb, var(--warning-500) 35%, transparent)",
                   }}
                 >
                   <Typography
                     variant="h5"
-                    sx={{ color: "#ffffff", fontWeight: 700, lineHeight: 1 }}
+                    sx={{ color: "var(--font-light)", fontWeight: 700, lineHeight: 1 }}
                   >
                     {new Date(
                       interview.scheduled_date_time || interview.created_at
@@ -176,7 +193,7 @@ const ScheduledInterviewsTableComponent = ({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#ffffff",
+                      color: "var(--font-light)",
                       fontSize: "0.7rem",
                       textTransform: "uppercase",
                     }}
@@ -204,7 +221,7 @@ const ScheduledInterviewsTableComponent = ({
                           fontWeight: 700,
                           fontSize: "1.1rem",
                           mb: 0.5,
-                          color: "#78350f",
+                          color: "var(--font-primary)",
                         }}
                       >
                         {interview.title}
@@ -221,11 +238,13 @@ const ScheduledInterviewsTableComponent = ({
                           label={interview.topic}
                           size="small"
                           sx={{
-                            backgroundColor: "#fef3c7",
-                            color: "#92400e",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+                            color: "var(--warning-500)",
                             fontSize: "0.75rem",
                             height: 24,
-                            border: "1px solid #fde68a",
+                            border:
+                              "1px solid color-mix(in srgb, var(--warning-500) 30%, var(--border-default))",
                           }}
                         />
                         {interview.subtopic && (
@@ -233,11 +252,13 @@ const ScheduledInterviewsTableComponent = ({
                             label={interview.subtopic}
                             size="small"
                             sx={{
-                              backgroundColor: "#fef3c7",
-                              color: "#92400e",
+                              backgroundColor:
+                                "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+                              color: "var(--warning-500)",
                               fontSize: "0.75rem",
                               height: 24,
-                              border: "1px solid #fde68a",
+                              border:
+                                "1px solid color-mix(in srgb, var(--warning-500) 30%, var(--border-default))",
                             }}
                           />
                         )}
@@ -249,7 +270,7 @@ const ScheduledInterviewsTableComponent = ({
                             color: difficultyColor.color,
                             fontSize: "0.75rem",
                             height: 24,
-                            border: `1px solid ${difficultyColor.bg}`,
+                            border: "1px solid var(--border-default)",
                             fontWeight: 600,
                           }}
                         />
@@ -260,11 +281,13 @@ const ScheduledInterviewsTableComponent = ({
                           label={`${interview.duration_minutes} mins`}
                           size="small"
                           sx={{
-                            backgroundColor: "#fef3c7",
-                            color: "#92400e",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+                            color: "var(--warning-500)",
                             fontSize: "0.75rem",
                             height: 24,
-                            border: "1px solid #fde68a",
+                            border:
+                              "1px solid color-mix(in srgb, var(--warning-500) 30%, var(--border-default))",
                           }}
                         />
                       </Box>
@@ -275,12 +298,14 @@ const ScheduledInterviewsTableComponent = ({
                       label="Scheduled"
                       size="small"
                       sx={{
-                        backgroundColor: "#fef3c7",
-                        color: "#92400e",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+                        color: "var(--warning-500)",
                         fontWeight: 600,
                         fontSize: "0.75rem",
                         height: 26,
-                        border: "1px solid #f59e0b",
+                        border:
+                          "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default))",
                       }}
                     />
                   </Box>
@@ -300,12 +325,12 @@ const ScheduledInterviewsTableComponent = ({
                         <IconWrapper
                           icon="mdi:calendar"
                           size={16}
-                          color="#92400e"
+                          color="var(--warning-500)"
                         />
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#92400e",
+                            color: "var(--warning-500)",
                             fontSize: "0.875rem",
                             fontWeight: 500,
                           }}
@@ -319,12 +344,12 @@ const ScheduledInterviewsTableComponent = ({
                         <IconWrapper
                           icon="mdi:clock-outline"
                           size={16}
-                          color="#92400e"
+                          color="var(--warning-500)"
                         />
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#92400e",
+                            color: "var(--warning-500)",
                             fontSize: "0.875rem",
                             fontWeight: 500,
                           }}
@@ -343,13 +368,14 @@ const ScheduledInterviewsTableComponent = ({
                         }
                         onClick={() => handleTakeInterview(interview.id)}
                         sx={{
-                          backgroundColor: "#f59e0b",
-                          color: "#ffffff",
+                          backgroundColor: "var(--warning-500)",
+                          color: "var(--font-light)",
                           fontWeight: 600,
                           textTransform: "none",
                           px: 2,
                           "&:hover": {
-                            backgroundColor: "#d97706",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--warning-500) 84%, var(--accent-indigo-dark))",
                           },
                         }}
                       >
@@ -388,10 +414,11 @@ const ScheduledInterviewsTableComponent = ({
                 fontWeight: 600,
               },
               "& .Mui-selected": {
-                backgroundColor: "#f59e0b !important",
-                color: "#ffffff",
+                backgroundColor: "var(--warning-500) !important",
+                color: "var(--font-light)",
                 "&:hover": {
-                  backgroundColor: "#d97706 !important",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--warning-500) 84%, var(--accent-indigo-dark)) !important",
                 },
               },
             }}

@@ -91,9 +91,9 @@ export function SectionQuestionsSidenav({
   const displaySections = sectionType === "quiz" ? quizSections : codingSections;
   const displayCounts =
     sectionType === "quiz" ? sectionQuestionCounts : sectionCodingCounts;
-  const sectionColor = sectionType === "quiz" ? "#6366f1" : "#10b981";
-  const sectionBgColor = sectionType === "quiz" ? "#eef2ff" : "#d1fae5";
-  const sectionHoverColor = sectionType === "quiz" ? "#e0e7ff" : "#a7f3d0";
+  const sectionColor = sectionType === "quiz" ? "var(--accent-indigo)" : "var(--success-500)";
+  const sectionBgColor = sectionType === "quiz" ? "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)" : "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)";
+  const sectionHoverColor = sectionType === "quiz" ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)" : "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)";
 
   return (
     <Paper
@@ -108,7 +108,7 @@ export function SectionQuestionsSidenav({
         flexDirection: "column",
       }}
     >
-      <Box sx={{ p: 2, bgcolor: "#6366f1", color: "white" }}>
+      <Box sx={{ p: 2, bgcolor: "var(--accent-indigo)", color: "var(--font-light)" }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Sections
         </Typography>
@@ -118,7 +118,7 @@ export function SectionQuestionsSidenav({
       </Box>
 
       {/* Type Selector */}
-      <Box sx={{ p: 2, borderBottom: "1px solid #e5e7eb" }}>
+      <Box sx={{ p: 2, borderBottom: "1px solid var(--border-default)" }}>
         <ToggleButtonGroup
           value={sectionType}
           exclusive
@@ -133,12 +133,12 @@ export function SectionQuestionsSidenav({
             disabled={quizSections.length === 0}
             sx={{
               flex: 1,
-              borderColor: "#e5e7eb",
+              borderColor: "var(--border-default)",
               "&.Mui-selected": {
-                bgcolor: "#6366f1",
-                color: "white",
+                bgcolor: "var(--accent-indigo)",
+                color: "var(--font-light)",
                 "&:hover": {
-                  bgcolor: "#4f46e5",
+                  bgcolor: "var(--accent-indigo-dark)",
                 },
               },
             }}
@@ -151,12 +151,12 @@ export function SectionQuestionsSidenav({
             disabled={codingSections.length === 0}
             sx={{
               flex: 1,
-              borderColor: "#e5e7eb",
+              borderColor: "var(--border-default)",
               "&.Mui-selected": {
-                bgcolor: "#10b981",
-                color: "white",
+                bgcolor: "var(--success-500)",
+                color: "var(--font-light)",
                 "&:hover": {
-                  bgcolor: "#059669",
+                  bgcolor: "var(--success-500)",
                 },
               },
             }}
@@ -220,7 +220,7 @@ export function SectionQuestionsSidenav({
                         : "4px solid transparent",
                       bgcolor: isSelected ? sectionBgColor : "transparent",
                       "&:hover": {
-                        bgcolor: isSelected ? sectionHoverColor : "#f3f4f6",
+                        bgcolor: isSelected ? sectionHoverColor : "color-mix(in srgb, var(--surface) 84%, var(--card-bg) 16%)",
                         borderLeft: `4px solid ${sectionColor}`,
                         transform: "translateX(2px)",
                       },
@@ -251,7 +251,7 @@ export function SectionQuestionsSidenav({
                             variant="body2"
                             sx={{
                               fontWeight: isSelected ? 600 : 500,
-                              color: isSelected ? sectionColor : "#111827",
+                              color: isSelected ? sectionColor : "var(--font-primary)",
                               fontSize: "0.875rem",
                             }}
                           >
@@ -265,7 +265,7 @@ export function SectionQuestionsSidenav({
                                 height: 22,
                                 minWidth: 22,
                                 bgcolor: sectionColor,
-                                color: "white",
+                                color: "var(--font-light)",
                                 fontSize: "0.7rem",
                                 fontWeight: 600,
                                 "& .MuiChip-label": {
@@ -279,7 +279,7 @@ export function SectionQuestionsSidenav({
                       secondary={
                         <Typography
                           variant="caption"
-                          sx={{ color: "#6b7280", mt: 0.5, display: "block" }}
+                          sx={{ color: "var(--font-secondary)", mt: 0.5, display: "block" }}
                         >
                           Order: {section.order}
                         </Typography>

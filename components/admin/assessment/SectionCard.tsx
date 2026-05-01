@@ -51,19 +51,19 @@ export function SectionCard({
 
   const bgColor = isQuiz
     ? isSelected
-      ? "#e0e7ff"
-      : "#eef2ff"
+      ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)"
+      : "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)"
     : isSelected
-    ? "#a7f3d0"
-    : "#d1fae5";
+    ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
+    : "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)";
   const borderColor = isQuiz
     ? isSelected
-      ? "#4f46e5"
-      : "#6366f1"
+      ? "var(--accent-indigo-dark)"
+      : "var(--accent-indigo)"
     : isSelected
-    ? "#059669"
-    : "#10b981";
-  const chipColor = isQuiz ? "#6366f1" : "#10b981";
+    ? "var(--success-500)"
+    : "var(--success-500)";
+  const chipColor = isQuiz ? "var(--accent-indigo)" : "var(--success-500)";
 
   return (
     <Paper
@@ -77,7 +77,7 @@ export function SectionCard({
         cursor: "pointer",
         transition: "all 0.2s",
         "&:hover": {
-          bgcolor: isQuiz ? "#e0e7ff" : "#a7f3d0",
+          bgcolor: isQuiz ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)" : "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)",
           transform: "translateX(2px)",
         },
       }}
@@ -95,7 +95,7 @@ export function SectionCard({
             {section.title}
           </Typography>
           {section.description && (
-            <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
               {section.description}
             </Typography>
           )}
@@ -103,7 +103,7 @@ export function SectionCard({
         <Chip
           label={`Order ${section.order}`}
           size="small"
-          sx={{ bgcolor: chipColor, color: "white", fontWeight: 600 }}
+          sx={{ bgcolor: chipColor, color: "var(--font-light)", fontWeight: 600 }}
         />
       </Box>
       <Divider sx={{ my: 1.5 }} />
@@ -120,7 +120,7 @@ export function SectionCard({
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", display: "block", mb: 0.5 }}
+            sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}
           >
             {isQuiz ? "Questions" : "Problems"}
           </Typography>
@@ -128,15 +128,15 @@ export function SectionCard({
             <Chip
               label={`Total: ${items.length}`}
               size="small"
-              sx={{ bgcolor: "white", fontWeight: 600 }}
+              sx={{ bgcolor: "var(--font-light)", fontWeight: 600 }}
             />
             {section.number_of_questions_to_show && (
               <Chip
                 label={`Showing: ${itemsToShow}`}
                 size="small"
                 sx={{
-                  bgcolor: isQuiz ? "#dbeafe" : "#a7f3d0",
-                  color: isQuiz ? "#1e40af" : "#065f46",
+                  bgcolor: isQuiz ? "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)" : "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)",
+                  color: isQuiz ? "var(--accent-indigo)" : "var(--success-500)",
                   fontWeight: 600,
                 }}
               />
@@ -154,16 +154,16 @@ export function SectionCard({
                     sx={{
                       bgcolor:
                         level === "Easy"
-                          ? "#d1fae5"
+                          ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                           : level === "Medium"
-                          ? "#fef3c7"
-                          : "#fed7aa",
+                          ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                          : "color-mix(in srgb, var(--warning-500) 24%, var(--surface) 76%)",
                       color:
                         level === "Easy"
-                          ? "#065f46"
+                          ? "var(--success-500)"
                           : level === "Medium"
-                          ? "#92400e"
-                          : "#7c2d12",
+                          ? "var(--warning-500)"
+                          : "var(--error-500)",
                       fontSize: "0.7rem",
                     }}
                   />
@@ -174,7 +174,7 @@ export function SectionCard({
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", display: "block", mb: 0.5 }}
+            sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}
           >
             Scoring Configuration
           </Typography>
@@ -185,23 +185,23 @@ export function SectionCard({
                   <Chip
                     label={`Easy: ${section.easyScore || 1} pts`}
                     size="small"
-                    sx={{ bgcolor: "#d1fae5", color: "#065f46", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)", color: "var(--success-500)", fontWeight: 600 }}
                   />
                   <Chip
                     label={`Medium: ${section.mediumScore || 2} pts`}
                     size="small"
-                    sx={{ bgcolor: "#fef3c7", color: "#92400e", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)", color: "var(--warning-500)", fontWeight: 600 }}
                   />
                   <Chip
                     label={`Hard: ${section.hardScore || 3} pts`}
                     size="small"
-                    sx={{ bgcolor: "#fed7aa", color: "#7c2d12", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 24%, var(--surface) 76%)", color: "var(--error-500)", fontWeight: 600 }}
                   />
                 </Box>
                 {sectionMCQs.length > 0 && (
                   <Typography
                     variant="caption"
-                    sx={{ color: "#6366f1", fontWeight: 600, mt: 0.5 }}
+                    sx={{ color: "var(--accent-indigo)", fontWeight: 600, mt: 0.5 }}
                   >
                     Max Possible Score: {maxPossibleScore} points
                   </Typography>
@@ -213,23 +213,23 @@ export function SectionCard({
                   <Chip
                     label={`Easy: ${section.easyScore || 1} pts`}
                     size="small"
-                    sx={{ bgcolor: "#d1fae5", color: "#065f46", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)", color: "var(--success-500)", fontWeight: 600 }}
                   />
                   <Chip
                     label={`Medium: ${section.mediumScore || 2} pts`}
                     size="small"
-                    sx={{ bgcolor: "#fef3c7", color: "#92400e", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)", color: "var(--warning-500)", fontWeight: 600 }}
                   />
                   <Chip
                     label={`Hard: ${section.hardScore || 3} pts`}
                     size="small"
-                    sx={{ bgcolor: "#fed7aa", color: "#7c2d12", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 24%, var(--surface) 76%)", color: "var(--error-500)", fontWeight: 600 }}
                   />
                 </Box>
                 {sectionProblems.length > 0 && (
                   <Typography
                     variant="caption"
-                    sx={{ color: "#10b981", fontWeight: 600, mt: 0.5 }}
+                    sx={{ color: "var(--success-500)", fontWeight: 600, mt: 0.5 }}
                   >
                     Max Possible Score: {maxPossibleScore} points
                   </Typography>

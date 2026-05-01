@@ -99,7 +99,7 @@ export default function GenerateDescriptionPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               textDecoration: "none",
               fontSize: "0.875rem",
             }}
@@ -111,11 +111,11 @@ export default function GenerateDescriptionPage() {
 
         <Typography
           variant="h5"
-          sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
+          sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 1 }}
         >
           {t("adminAICourseBuilder.generateFromDescriptionTitle")}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
           {t("adminAICourseBuilder.generateFromDescriptionSubtitle")}
         </Typography>
 
@@ -123,7 +123,10 @@ export default function GenerateDescriptionPage() {
           sx={{
             p: { xs: 2, sm: 3 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             maxWidth: 720,
           }}
         >
@@ -196,8 +199,9 @@ export default function GenerateDescriptionPage() {
                 variant="contained"
                 disabled={submitting}
                 sx={{
-                  bgcolor: "#6366f1",
-                  "&:hover": { bgcolor: "#4f46e5" },
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                 }}
               >
                 {submitting ? (

@@ -208,7 +208,7 @@ export function AssessmentPreviewSection({
       <Box>
         <Typography
           variant="h5"
-          sx={{ fontWeight: 700, mb: 3, color: "#111827" }}
+          sx={{ fontWeight: 700, mb: 3, color: "var(--font-primary)" }}
         >
           Assessment Overview
         </Typography>
@@ -222,7 +222,7 @@ export function AssessmentPreviewSection({
             gap: 2,
           }}
         >
-          <Card sx={{ height: "100%", border: "1px solid #e5e7eb" }}>
+          <Card sx={{ height: "100%", border: "1px solid var(--border-default)" }}>
             <CardContent>
               <Box
                 sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
@@ -230,7 +230,7 @@ export function AssessmentPreviewSection({
                 <IconWrapper
                   icon="mdi:file-document"
                   size={24}
-                  color="#6366f1"
+                  color="var(--accent-indigo)"
                 />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   {title || "Untitled Assessment"}
@@ -245,7 +245,7 @@ export function AssessmentPreviewSection({
                     alignItems: "center",
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     Duration
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -259,15 +259,15 @@ export function AssessmentPreviewSection({
                     alignItems: "center",
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     Status
                   </Typography>
                   <Chip
                     label={isActive ? "Active" : "Inactive"}
                     size="small"
                     sx={{
-                      bgcolor: isActive ? "#d1fae5" : "#fee2e2",
-                      color: isActive ? "#065f46" : "#991b1b",
+                      bgcolor: isActive ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)" : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                      color: isActive ? "var(--success-500)" : "var(--error-500)",
                       fontWeight: 600,
                     }}
                   />
@@ -280,7 +280,7 @@ export function AssessmentPreviewSection({
                       alignItems: "center",
                     }}
                   >
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       Price
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -296,7 +296,7 @@ export function AssessmentPreviewSection({
                     alignItems: "center",
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     Total Questions
                   </Typography>
                   <Typography
@@ -313,7 +313,7 @@ export function AssessmentPreviewSection({
                     alignItems: "center",
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     MCQ Questions
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -327,7 +327,7 @@ export function AssessmentPreviewSection({
                     alignItems: "center",
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     Coding Problems
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -341,7 +341,7 @@ export function AssessmentPreviewSection({
                     alignItems: "center",
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     Total Sections
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -351,12 +351,12 @@ export function AssessmentPreviewSection({
               </Box>
             </CardContent>
           </Card>
-          <Card sx={{ height: "100%", border: "1px solid #e5e7eb" }}>
+          <Card sx={{ height: "100%", border: "1px solid var(--border-default)" }}>
             <CardContent>
               <Box
                 sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
               >
-                <IconWrapper icon="mdi:view-list" size={24} color="#6366f1" />
+                <IconWrapper icon="mdi:view-list" size={24} color="var(--accent-indigo)" />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Sections Summary
                 </Typography>
@@ -367,7 +367,7 @@ export function AssessmentPreviewSection({
                   <Box>
                     <Typography
                       variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 1.5, color: "#6366f1" }}
+                      sx={{ fontWeight: 600, mb: 1.5, color: "var(--accent-indigo)" }}
                     >
                       Quiz Sections ({quizSections.length})
                     </Typography>
@@ -393,7 +393,7 @@ export function AssessmentPreviewSection({
                   <Box>
                     <Typography
                       variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 1.5, color: "#10b981" }}
+                      sx={{ fontWeight: 600, mb: 1.5, color: "var(--success-500)" }}
                     >
                       Coding Sections ({codingSections.length})
                     </Typography>
@@ -435,7 +435,7 @@ export function AssessmentPreviewSection({
               gap: 2,
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "#111827" }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               {selectedSection.type === "quiz"
                 ? "MCQ Questions"
                 : "Coding Problems"}{" "}
@@ -459,8 +459,8 @@ export function AssessmentPreviewSection({
                 }`}
                 sx={{
                   bgcolor:
-                    selectedSection.type === "quiz" ? "#6366f1" : "#10b981",
-                  color: "white",
+                    selectedSection.type === "quiz" ? "var(--accent-indigo)" : "var(--success-500)",
+                  color: "var(--font-light)",
                   fontWeight: 600,
                 }}
               />
@@ -519,24 +519,24 @@ export function AssessmentPreviewSection({
           sx={{
             p: 4,
             textAlign: "center",
-            bgcolor: "#f9fafb",
-            border: "2px dashed #e5e7eb",
+            bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)",
+            border: "2px dashed var(--border-default)",
           }}
         >
           <Box sx={{ mb: 2 }}>
             <IconWrapper
               icon="mdi:hand-pointing-up"
               size={48}
-              color="#9ca3af"
+              color="var(--font-tertiary)"
             />
           </Box>
           <Typography
             variant="h6"
-            sx={{ color: "#6b7280", mb: 1, fontWeight: 600 }}
+            sx={{ color: "var(--font-secondary)", mb: 1, fontWeight: 600 }}
           >
             Select a Section to View Questions
           </Typography>
-          <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
             Click on any section card above to view its questions or problems
           </Typography>
         </Paper>
@@ -544,18 +544,18 @@ export function AssessmentPreviewSection({
 
       {/* Empty State */}
       {totalMCQs.length === 0 && allCodingProblems.length === 0 && (
-        <Paper sx={{ p: 4, textAlign: "center", bgcolor: "#f9fafb" }}>
+        <Paper sx={{ p: 4, textAlign: "center", bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
           <Box sx={{ mb: 2 }}>
             <IconWrapper
               icon="mdi:alert-circle-outline"
               size={48}
-              color="#9ca3af"
+              color="var(--font-tertiary)"
             />
           </Box>
-          <Typography variant="h6" sx={{ color: "#6b7280", mb: 1 }}>
+          <Typography variant="h6" sx={{ color: "var(--font-secondary)", mb: 1 }}>
             No Questions Added
           </Typography>
-          <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
             Please go back and add questions to your assessment sections.
           </Typography>
         </Paper>

@@ -50,39 +50,51 @@ import {
 } from "@/lib/utils/assessment-section-performance.utils";
 
 const C = {
-  sky: "#0284c7",
-  skyLight: "#38bdf8",
-  indigo: "#6366f1",
-  slate: "#64748b",
-  grid: "#e2e8f0",
-  pass: "#059669",
-  warn: "#d97706",
-  muted: "#94a3b8",
+  sky: "var(--accent-indigo)",
+  skyLight: "var(--accent-indigo-dark)",
+  indigo: "var(--accent-indigo)",
+  slate: "var(--font-secondary)",
+  grid: "var(--border-default)",
+  pass: "var(--success-500)",
+  warn: "var(--warning-500)",
+  muted: "var(--font-tertiary)",
 };
 
 /** Score bands low → high (matches common “traffic light” histograms). */
-const SCORE_BUCKET_COLORS = ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#10b981"];
+const SCORE_BUCKET_COLORS = [
+  "var(--error-500)",
+  "var(--warning-500)",
+  "var(--warning-500)",
+  "var(--accent-indigo)",
+  "var(--success-500)",
+];
 
-const TIME_BUCKET_COLOR = "#7c3aed";
+const TIME_BUCKET_COLOR = "var(--accent-purple)";
 
-const STATUS_PIE_COLORS = ["#f59e0b", "#3b82f6", "#10b981"];
+const STATUS_PIE_COLORS = [
+  "var(--warning-500)",
+  "var(--accent-indigo)",
+  "var(--success-500)",
+];
 
 const REPORT = {
   radius: 3,
-  shadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 16px rgba(15, 23, 42, 0.06)",
-  chartWell: "rgba(248, 250, 252, 0.75)",
+  shadow:
+    "0 1px 2px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 6px 16px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+  chartWell: "color-mix(in srgb, var(--surface) 75%, transparent)",
 } as const;
 
 const tooltipSx = {
-  backgroundColor: "#fff",
-  border: "1px solid #e2e8f0",
+  backgroundColor: "var(--card-bg)",
+  border: "1px solid var(--border-default)",
   borderRadius: 10,
   fontSize: 12,
-  boxShadow: "0 4px 14px rgba(15, 23, 42, 0.08)",
+  boxShadow:
+    "0 4px 14px color-mix(in srgb, var(--font-primary) 16%, transparent)",
 };
 
 const barCountLabelStyle = {
-  fill: "#475569",
+  fill: "var(--font-secondary)",
   fontSize: 12,
   fontWeight: 700,
 } as const;
@@ -124,7 +136,7 @@ const tableHeadCellSx = {
 const sectionWiseHeadCellSx = {
   ...tableHeadCellSx,
   bgcolor: "transparent",
-  color: "#475569",
+  color: "var(--font-secondary)",
   borderBottom: "1px solid",
   borderColor: "divider",
   letterSpacing: "0.04em",
@@ -362,8 +374,11 @@ function AnalyticsToolbarPaper(toolbar: AssessmentAnalyticsToolbarProps) {
             textTransform: "none",
             fontWeight: 700,
             px: 2,
-            bgcolor: "#e11d48",
-            "&:hover": { bgcolor: "#be123c" },
+            bgcolor: "var(--error-500)",
+            "&:hover": {
+              bgcolor:
+                "color-mix(in srgb, var(--error-500) 86%, var(--accent-indigo-dark))",
+            },
             boxShadow: "none",
             "&:disabled": { bgcolor: "action.disabledBackground" },
           }}
@@ -832,7 +847,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                     <Cell
                       key={i}
                       fill={STATUS_PIE_COLORS[i % STATUS_PIE_COLORS.length]}
-                      stroke="#fff"
+                      stroke="var(--card-bg)"
                       strokeWidth={1}
                     />
                   ))}
@@ -1046,8 +1061,8 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                 name="Submissions"
                 stroke={C.indigo}
                 strokeWidth={3}
-                dot={{ r: 4, fill: "#fff", stroke: C.indigo, strokeWidth: 2 }}
-                activeDot={{ r: 6, fill: C.indigo, stroke: "#fff", strokeWidth: 2 }}
+                dot={{ r: 4, fill: "var(--card-bg)", stroke: C.indigo, strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: C.indigo, stroke: "var(--card-bg)", strokeWidth: 2 }}
                 connectNulls
                 isAnimationActive={false}
               >
@@ -1069,7 +1084,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           <TableContainer>
             <Table size="small" stickyHeader>
               <TableHead>
-                <TableRow sx={{ bgcolor: "#faf8f5" }}>
+                <TableRow sx={{ bgcolor: "var(--surface)" }}>
                   <TableCell sx={sectionWiseHeadCellSx}>Section</TableCell>
                   <TableCell sx={sectionWiseHeadCellSx} align="center">
                     Max
@@ -1157,7 +1172,8 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           sx={{
                             height: 10,
                             borderRadius: 999,
-                            bgcolor: alpha("#64748b", 0.14),
+                            bgcolor:
+                              "color-mix(in srgb, var(--font-secondary) 14%, transparent)",
                             maxWidth: 200,
                             "& .MuiLinearProgress-bar": {
                               borderRadius: 999,

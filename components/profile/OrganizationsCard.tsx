@@ -22,14 +22,14 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
         borderRadius: { xs: 1, sm: 2 },
         mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
-        backgroundColor: "#ffffff",
+        boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        backgroundColor: "var(--background)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
@@ -45,7 +45,7 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#000000",
+            color: "var(--font-primary)",
             fontSize: "1.25rem",
           }}
         >
@@ -63,13 +63,13 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
                 alignItems: "center",
                 justifyContent: "space-between",
                 p: 2,
-                border: "1px solid rgba(0,0,0,0.08)",
+                border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
                 borderRadius: 1.5,
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--surface)",
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  backgroundColor: "#f3f2ef",
-                  borderColor: "rgba(0,0,0,0.12)",
+                  backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
+                  borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
                   transform: "translateX(4px)",
                 },
               }}
@@ -80,24 +80,24 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
                     width: 48,
                     height: 48,
                     borderRadius: "50%",
-                    backgroundColor: "#f3f2ef",
+                    backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      backgroundColor: "#e9e7e3",
+                      backgroundColor: "color-mix(in srgb, var(--surface) 72%, var(--background))",
                     },
                   }}
                 >
-                  <IconWrapper icon="mdi:domain" size={22} color="#0a66c2" />
+                  <IconWrapper icon="mdi:domain" size={22} color="var(--accent-indigo)" />
                 </Box>
                 <Box>
                   <Typography
                     variant="body2"
                     sx={{
                       fontWeight: 600,
-                      color: "#000000",
+                      color: "var(--font-primary)",
                       fontSize: "0.9375rem",
                       mb: 0.25,
                     }}
@@ -107,7 +107,7 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#666666",
+                      color: "var(--font-secondary)",
                       fontSize: "0.8125rem",
                     }}
                   >
@@ -124,14 +124,14 @@ export function OrganizationsCard({ organizations }: OrganizationsCardProps) {
             textAlign: "center",
             py: 3,
             px: 2,
-            border: "1px dashed #e5e7eb",
+            border: "1px dashed var(--border-default)",
             borderRadius: 1.5,
           }}
         >
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               mb: 1,
             }}
           >

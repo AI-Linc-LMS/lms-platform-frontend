@@ -142,16 +142,17 @@ export default function EditJobPage() {
               width: 80,
               height: 80,
               borderRadius: 2,
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              backgroundColor:
+                "color-mix(in srgb, var(--error-500) 12%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               mb: 2,
             }}
           >
-            <IconWrapper icon="mdi:alert-circle-outline" size={40} style={{ color: "#dc2626" }} />
+            <IconWrapper icon="mdi:alert-circle-outline" size={40} style={{ color: "var(--error-500)" }} />
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#0f172a", mb: 0.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.5 }}>
             Job not found
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -164,8 +165,8 @@ export default function EditJobPage() {
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              backgroundColor: "#6366f1",
-              "&:hover": { backgroundColor: "#4f46e5" },
+              backgroundColor: "var(--accent-indigo)",
+              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
             }}
           >
             Back to Jobs
@@ -186,7 +187,7 @@ export default function EditJobPage() {
           <Link
             href={adminJobsListBackHref}
             style={{
-              color: "#64748b",
+              color: "var(--font-secondary)",
               textDecoration: "none",
               fontSize: "0.875rem",
               fontWeight: 500,
@@ -213,7 +214,7 @@ export default function EditJobPage() {
             mb: 3,
             p: 2,
             borderRadius: 2,
-            backgroundColor: "#f8fafc",
+            backgroundColor: "var(--background)",
             border: "1px solid",
             borderColor: "divider",
           }}
@@ -225,8 +226,8 @@ export default function EditJobPage() {
               sx={{
                 textTransform: "none",
                 fontWeight: 500,
-                color: "#64748b",
-                "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+                color: "var(--font-secondary)",
+                "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
               }}
             >
               Back
@@ -239,15 +240,15 @@ export default function EditJobPage() {
                   width: 40,
                   height: 40,
                   borderRadius: 1.5,
-                  backgroundColor: "#6366f1",
-                  color: "#fff",
+                  backgroundColor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
                   fontSize: "0.875rem",
                 }}
               >
                 {job.company_name?.[0]?.toUpperCase() || "C"}
               </Avatar>
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#0f172a" }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                   {job.job_title}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -262,8 +263,8 @@ export default function EditJobPage() {
                   height: 22,
                   fontSize: "0.7rem",
                   fontWeight: 600,
-                  backgroundColor: job.is_published ? "rgba(34, 197, 94, 0.12)" : "rgba(99, 102, 241, 0.12)",
-                  color: job.is_published ? "#16a34a" : "#6366f1",
+                  backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 16%, transparent)" : "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                  color: job.is_published ? "var(--success-500)" : "var(--accent-indigo)",
                   border: "none",
                 }}
               />
@@ -278,11 +279,11 @@ export default function EditJobPage() {
               textTransform: "none",
               fontWeight: 600,
               borderRadius: 2,
-              borderColor: "#6366f1",
-              color: "#6366f1",
+              borderColor: "var(--accent-indigo)",
+              color: "var(--accent-indigo)",
               "&:hover": {
-                borderColor: "#4f46e5",
-                backgroundColor: "rgba(99, 102, 241, 0.08)",
+                borderColor: "var(--accent-indigo-dark)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
               },
             }}
           >

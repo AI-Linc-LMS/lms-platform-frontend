@@ -136,13 +136,13 @@ export function PersonalInformationCard({
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
         borderRadius: { xs: 1, sm: 2 },
         mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+        boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
@@ -158,7 +158,7 @@ export function PersonalInformationCard({
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#000000",
+            color: "var(--font-primary)",
             fontSize: "1.25rem",
           }}
         >
@@ -175,11 +175,11 @@ export function PersonalInformationCard({
             }}
             sx={{
               textTransform: "none",
-              color: "#0a66c2",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               fontSize: "0.9375rem",
               "&:hover": {
-                backgroundColor: "rgba(10, 102, 194, 0.08)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
               },
               transition: "all 0.2s ease",
             }}
@@ -196,12 +196,12 @@ export function PersonalInformationCard({
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                borderColor: "#e5e7eb",
-                color: "#6b7280",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
                 borderRadius: 1.5,
                 "&:hover": {
-                  borderColor: "#d1d5db",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -215,11 +215,11 @@ export function PersonalInformationCard({
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: "#0a66c2",
+                backgroundColor: "var(--accent-indigo)",
                 borderRadius: "24px",
                 px: 2,
                 "&:hover": {
-                  backgroundColor: "#004182",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
                 transition: "all 0.2s ease",
               }}
@@ -244,21 +244,21 @@ export function PersonalInformationCard({
             sx={{
               p: { xs: 1.5, sm: 2 },
               borderRadius: { xs: 1, sm: 1.5 },
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.first_name ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.first_name ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:account" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:account" size={16} color="var(--accent-indigo)" />
             <Typography
               variant="caption"
               sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: { xs: "0.6875rem", sm: "0.75rem" },
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -286,7 +286,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.first_name ? "#000000" : "#9ca3af",
+                  color: profile.first_name ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.first_name ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.first_name ? "normal" : "italic",
@@ -301,21 +301,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.last_name ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.last_name ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <IconWrapper icon="mdi:account" size={18} color="#0a66c2" />
+              <IconWrapper icon="mdi:account" size={18} color="var(--accent-indigo)" />
             <Typography
               variant="caption"
               sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -343,7 +343,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.last_name ? "#000000" : "#9ca3af",
+                  color: profile.last_name ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.last_name ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.last_name ? "normal" : "italic",
@@ -367,21 +367,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.phone_number ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.phone_number ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:phone" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:phone" size={16} color="var(--accent-indigo)" />
             <Typography
               variant="caption"
               sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -410,7 +410,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.phone_number ? "#000000" : "#9ca3af",
+                  color: profile.phone_number ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.phone_number ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.phone_number ? "normal" : "italic",
@@ -425,21 +425,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.date_of_birth ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.date_of_birth ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:calendar" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:calendar" size={16} color="var(--accent-indigo)" />
             <Typography
               variant="caption"
               sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -470,7 +470,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.date_of_birth ? "#000000" : "#9ca3af",
+                  color: profile.date_of_birth ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.date_of_birth ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.date_of_birth ? "normal" : "italic",
@@ -503,21 +503,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.gender ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.gender ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:gender-male-female" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:gender-male-female" size={16} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -550,7 +550,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.gender ? "#000000" : "#9ca3af",
+                  color: profile.gender ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.gender ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.gender ? "normal" : "italic",
@@ -569,21 +569,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.country ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.country ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:earth" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:earth" size={16} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -611,7 +611,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.country ? "#000000" : "#9ca3af",
+                  color: profile.country ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.country ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.country ? "normal" : "italic",
@@ -635,21 +635,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.social_links?.github ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.social_links?.github ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:github" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:github" size={16} color="var(--accent-indigo)" />
             <Typography
               variant="caption"
               sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -671,7 +671,7 @@ export function PersonalInformationCard({
                     <Box
                       component="span"
                       sx={{
-                        color: "#9ca3af",
+                        color: "var(--font-tertiary)",
                         fontSize: "0.875rem",
                         mr: 0.5,
                       }}
@@ -691,7 +691,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.social_links?.github ? "#0a66c2" : "#9ca3af",
+                  color: profile.social_links?.github ? "var(--accent-indigo)" : "var(--font-tertiary)",
                   fontWeight: profile.social_links?.github ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.social_links?.github ? "normal" : "italic",
@@ -707,16 +707,16 @@ export function PersonalInformationCard({
                       display: "flex",
                       alignItems: "center",
                       gap: 0.5,
-                      color: "#0a66c2",
+                      color: "var(--accent-indigo)",
                       textDecoration: "none",
                       "&:hover": {
                         textDecoration: "underline",
-                        color: "#004182",
+                        color: "var(--accent-indigo-dark)",
                       },
                       transition: "all 0.2s ease",
                     }}
                   >
-                    <Box component="span" sx={{ color: "#9ca3af" }}>
+                    <Box component="span" sx={{ color: "var(--font-tertiary)" }}>
                       github.com/
                     </Box>
                     {profile.social_links.github}
@@ -732,21 +732,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.social_links?.linkedin ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.social_links?.linkedin ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:linkedin" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:linkedin" size={16} color="var(--accent-indigo)" />
             <Typography
               variant="caption"
               sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -768,7 +768,7 @@ export function PersonalInformationCard({
                     <Box
                       component="span"
                       sx={{
-                        color: "#9ca3af",
+                        color: "var(--font-tertiary)",
                         fontSize: "0.875rem",
                         mr: 0.5,
                       }}
@@ -788,7 +788,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.social_links?.linkedin ? "#0a66c2" : "#9ca3af",
+                  color: profile.social_links?.linkedin ? "var(--accent-indigo)" : "var(--font-tertiary)",
                   fontWeight: profile.social_links?.linkedin ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.social_links?.linkedin ? "normal" : "italic",
@@ -804,16 +804,16 @@ export function PersonalInformationCard({
                       display: "flex",
                       alignItems: "center",
                       gap: 0.5,
-                      color: "#0a66c2",
+                      color: "var(--accent-indigo)",
                       textDecoration: "none",
                       "&:hover": {
                         textDecoration: "underline",
-                        color: "#004182",
+                        color: "var(--accent-indigo-dark)",
                       },
                       transition: "all 0.2s ease",
                     }}
                   >
-                    <Box component="span" sx={{ color: "#9ca3af" }}>
+                    <Box component="span" sx={{ color: "var(--font-tertiary)" }}>
                       linkedin.com/in/
                     </Box>
                     {profile.social_links.linkedin}
@@ -838,21 +838,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.college_name ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.college_name ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:school" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:school" size={16} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -880,7 +880,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.college_name ? "#000000" : "#9ca3af",
+                  color: profile.college_name ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.college_name ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.college_name ? "normal" : "italic",
@@ -895,21 +895,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.degree_type ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.degree_type ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:certificate" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:certificate" size={16} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -943,7 +943,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.degree_type ? "#000000" : "#9ca3af",
+                  color: profile.degree_type ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.degree_type ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.degree_type ? "normal" : "italic",
@@ -967,21 +967,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.branch ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.branch ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:book-open-page-variant" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:book-open-page-variant" size={16} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -1009,7 +1009,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.branch ? "#000000" : "#9ca3af",
+                  color: profile.branch ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.branch ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.branch ? "normal" : "italic",
@@ -1024,21 +1024,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.graduation_year ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.graduation_year ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:calendar-check" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:calendar-check" size={16} color="var(--accent-indigo)" />
           <Typography
             variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -1068,7 +1068,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.graduation_year ? "#000000" : "#9ca3af",
+                  color: profile.graduation_year ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.graduation_year ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.graduation_year ? "normal" : "italic",
@@ -1092,21 +1092,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.city ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.city ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:map-marker" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:map-marker" size={16} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
               fontSize: "0.75rem",
               fontWeight: 600,
               textTransform: "uppercase",
@@ -1134,7 +1134,7 @@ export function PersonalInformationCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profile.city ? "#000000" : "#9ca3af",
+                  color: profile.city ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.city ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.city ? "normal" : "italic",
@@ -1149,21 +1149,21 @@ export function PersonalInformationCard({
             sx={{
               p: 2,
               borderRadius: 1.5,
-              border: "1px solid rgba(0,0,0,0.08)",
-              backgroundColor: profile.state ? "#ffffff" : "#f9fafb",
+              border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+              backgroundColor: profile.state ? "var(--background)" : "var(--surface)",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#f3f2ef",
+                borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
               },
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:map-marker-outline" size={16} color="#0a66c2" />
+              <IconWrapper icon="mdi:map-marker-outline" size={16} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -1191,7 +1191,7 @@ export function PersonalInformationCard({
             <Typography
               variant="body2"
               sx={{
-                  color: profile.state ? "#000000" : "#9ca3af",
+                  color: profile.state ? "var(--font-primary)" : "var(--font-tertiary)",
                   fontWeight: profile.state ? 500 : 400,
                   fontSize: "0.9375rem",
                   fontStyle: profile.state ? "normal" : "italic",

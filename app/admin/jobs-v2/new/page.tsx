@@ -126,7 +126,7 @@ export default function NewJobPage() {
             gap: 2,
           }}
         >
-          <CircularProgress sx={{ color: "#6366f1" }} />
+          <CircularProgress sx={{ color: "var(--accent-indigo)" }} />
           <Typography color="text.secondary">Loading...</Typography>
         </Box>
       </MainLayout>
@@ -143,8 +143,8 @@ export default function NewJobPage() {
             mb: 2,
             textTransform: "none",
             fontWeight: 500,
-            color: "#64748b",
-            "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+            color: "var(--font-secondary)",
+            "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
           }}
         >
           Back to Jobs

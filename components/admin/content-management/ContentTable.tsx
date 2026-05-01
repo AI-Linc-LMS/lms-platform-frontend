@@ -30,14 +30,32 @@ interface ContentTableProps {
 
 const getTypeColor = (type: ContentType) => {
   const colors: Record<ContentType, { bg: string; text: string }> = {
-    Quiz: { bg: "#eef2ff", text: "#6366f1" },
-    Article: { bg: "#d1fae5", text: "#10b981" },
-    Assignment: { bg: "#fef3c7", text: "#f59e0b" },
-    CodingProblem: { bg: "#ede9fe", text: "#8b5cf6" },
-    DevCodingProblem: { bg: "#fce7f3", text: "#ec4899" },
-    VideoTutorial: { bg: "#fee2e2", text: "#ef4444" },
+    Quiz: {
+      bg: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+      text: "var(--accent-indigo)",
+    },
+    Article: {
+      bg: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)",
+      text: "var(--success-500)",
+    },
+    Assignment: {
+      bg: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+      text: "var(--warning-500)",
+    },
+    CodingProblem: {
+      bg: "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
+      text: "var(--accent-purple)",
+    },
+    DevCodingProblem: {
+      bg: "color-mix(in srgb, var(--accent-purple) 10%, var(--surface) 90%)",
+      text: "var(--accent-purple)",
+    },
+    VideoTutorial: {
+      bg: "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+      text: "var(--error-500)",
+    },
   };
-  return colors[type] || { bg: "#f3f4f6", text: "#6b7280" };
+  return colors[type] || { bg: "var(--surface)", text: "var(--font-secondary)" };
 };
 
 const typeToLabelKey: Record<ContentType, string> = {
@@ -60,11 +78,11 @@ export function ContentTable({
     <TableContainer sx={{ width: "100%" }}>
       <Table sx={{ width: "100%" }}>
         <TableHead>
-          <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+          <TableRow sx={{ backgroundColor: "var(--surface)" }}>
             <TableCell
               sx={{
                 fontWeight: 600,
-                color: "#374151",
+                color: "var(--font-primary)",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
               }}
             >
@@ -73,7 +91,7 @@ export function ContentTable({
             <TableCell
               sx={{
                 fontWeight: 600,
-                color: "#374151",
+                color: "var(--font-primary)",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 display: { xs: "none", sm: "table-cell" },
               }}
@@ -83,7 +101,7 @@ export function ContentTable({
             <TableCell
               sx={{
                 fontWeight: 600,
-                color: "#374151",
+                color: "var(--font-primary)",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 display: { xs: "none", md: "table-cell" },
               }}
@@ -93,7 +111,7 @@ export function ContentTable({
             <TableCell
               sx={{
                 fontWeight: 600,
-                color: "#374151",
+                color: "var(--font-primary)",
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 textAlign: "center",
               }}
@@ -120,7 +138,7 @@ export function ContentTable({
                 <TableRow
                   key={content.id}
                   sx={{
-                    "&:hover": { backgroundColor: "#f9fafb" },
+                    "&:hover": { backgroundColor: "var(--surface)" },
                   }}
                 >
                   <TableCell>
@@ -128,7 +146,7 @@ export function ContentTable({
                       variant="body2"
                       sx={{
                         fontWeight: 500,
-                        color: "#111827",
+                        color: "var(--font-primary)",
                         fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                       }}
                     >
@@ -153,8 +171,12 @@ export function ContentTable({
                       label={content.is_verified ? t("adminContentManagement.verified") : t("adminContentManagement.unverified")}
                       size="small"
                       sx={{
-                        bgcolor: content.is_verified ? "#d1fae5" : "#fee2e2",
-                        color: content.is_verified ? "#065f46" : "#991b1b",
+                        bgcolor: content.is_verified
+                          ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                          : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                        color: content.is_verified
+                          ? "var(--success-500)"
+                          : "var(--error-500)",
                         fontWeight: 600,
                         fontSize: { xs: "0.7rem", sm: "0.75rem" },
                         height: { xs: 20, sm: 24 },
@@ -189,11 +211,11 @@ export function ContentTable({
                           size="small"
                           sx={{
                             "& .MuiSwitch-switchBase.Mui-checked": {
-                              color: "#10b981",
+                              color: "var(--success-500)",
                             },
                             "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                               {
-                                backgroundColor: "#10b981",
+                                backgroundColor: "var(--success-500)",
                               },
                           }}
                         />
@@ -202,7 +224,7 @@ export function ContentTable({
                         <IconButton
                           size="small"
                           onClick={() => onViewDetails(content.id)}
-                          sx={{ color: "#6366f1" }}
+                          sx={{ color: "var(--accent-indigo)" }}
                         >
                           <IconWrapper icon="mdi:eye" size={18} />
                         </IconButton>

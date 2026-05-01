@@ -120,12 +120,12 @@ type PipelineField =
   | "offered";
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  applying: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
-  applied: { bg: "rgba(59, 130, 246, 0.12)", color: "#2563eb" },
-  shortlisted: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
-  interview_stage: { bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" },
-  rejected: { bg: "rgba(239, 68, 68, 0.12)", color: "#dc2626" },
-  selected: { bg: "rgba(34, 197, 94, 0.2)", color: "#15803d" },
+  applying: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
+  applied: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
+  shortlisted: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
+  interview_stage: { bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)", color: "var(--warning-500)" },
+  rejected: { bg: "color-mix(in srgb, var(--error-500) 16%, transparent)", color: "var(--error-500)" },
+  selected: { bg: "color-mix(in srgb, var(--success-500) 25%, transparent)", color: "var(--success-500)" },
 };
 
 function getInitials(name: string): string {
@@ -141,7 +141,7 @@ function DetailRow({ label, value }: { label: string; value?: string | number | 
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.7rem" }}>{label}</Typography>
-      <Typography variant="body2" sx={{ display: "block", fontWeight: 500, mt: 0.25, color: "#0f172a" }}>{value !== undefined && value !== null && value !== "" ? String(value) : "—"}</Typography>
+      <Typography variant="body2" sx={{ display: "block", fontWeight: 500, mt: 0.25, color: "var(--font-primary)" }}>{value !== undefined && value !== null && value !== "" ? String(value) : "—"}</Typography>
     </Box>
   );
 }
@@ -384,7 +384,7 @@ export default function JobApplicationsPage() {
               textTransform: "none",
               color: "text.secondary",
               fontWeight: 500,
-              "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.04)", color: "#6366f1" },
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", color: "var(--accent-indigo)" },
             }}
           >
             Back to Jobs
@@ -397,13 +397,13 @@ export default function JobApplicationsPage() {
               textTransform: "none",
               color: "text.secondary",
               fontWeight: 500,
-              "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.04)", color: "#6366f1" },
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", color: "var(--accent-indigo)" },
             }}
           >
             {jobTitle}
           </Button>
           <Typography variant="body2" color="text.secondary">/</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#0f172a" }}>Applications</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>Applications</Typography>
         </Box>
 
         {/* Job header: title, company, location type, openings, salary | status, created on, view JD */}
@@ -415,7 +415,7 @@ export default function JobApplicationsPage() {
             border: "1px solid",
             borderColor: "divider",
             borderRadius: 2,
-            backgroundColor: "#fff",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Box
@@ -428,7 +428,7 @@ export default function JobApplicationsPage() {
             }}
           >
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: "#0f172a", mb: 0.5 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}>
                 {jobTitle}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
@@ -456,14 +456,14 @@ export default function JobApplicationsPage() {
                   label={job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                   sx={{
                     fontWeight: 600,
-                    backgroundColor: job.status === "active" ? "rgba(34, 197, 94, 0.12)" : "rgba(148, 163, 184, 0.2)",
-                    color: job.status === "active" ? "#16a34a" : "#64748b",
+                    backgroundColor: job.status === "active" ? "color-mix(in srgb, var(--success-500) 16%, transparent)" : "color-mix(in srgb, var(--font-tertiary) 25%, transparent)",
+                    color: job.status === "active" ? "var(--success-500)" : "var(--font-secondary)",
                   }}
                 />
               )}
               {job?.created_at && (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <Calendar size={14} color="#64748b" />
+                  <Calendar size={14} color="var(--font-secondary)" />
                   <Typography variant="caption" color="text.secondary">
                     Created {formatDate(job.created_at)}
                   </Typography>
@@ -480,8 +480,8 @@ export default function JobApplicationsPage() {
                   sx={{
                     textTransform: "none",
                     fontWeight: 600,
-                    color: "#6366f1",
-                    "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                    color: "var(--accent-indigo)",
+                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
                   }}
                 >
                   View JD
@@ -501,9 +501,9 @@ export default function JobApplicationsPage() {
             gap: 1.5,
             p: 2,
             borderRadius: 2,
-            backgroundColor: "#fafbff",
+            backgroundColor: "var(--surface)",
             border: "1px solid",
-            borderColor: "rgba(99, 102, 241, 0.12)",
+            borderColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
           }}
         >
           <Box
@@ -514,13 +514,13 @@ export default function JobApplicationsPage() {
               px: 2,
               py: 1,
               borderRadius: 2,
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.06) 100%)",
+              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 16%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 100%)",
               border: "1px solid",
-              borderColor: "rgba(99, 102, 241, 0.25)",
+              borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
             }}
           >
-            <Users size={20} style={{ color: "#6366f1" }} />
-            <Typography variant="body1" sx={{ fontWeight: 700, color: "#0f172a" }}>
+            <Users size={20} style={{ color: "var(--accent-indigo)" }} />
+            <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               {loading ? "—" : `${applications.length} applicant${applications.length !== 1 ? "s" : ""}`}
             </Typography>
           </Box>
@@ -540,14 +540,14 @@ export default function JobApplicationsPage() {
                   px: 1.25,
                   py: 0.5,
                   borderRadius: 1.5,
-                  backgroundColor: isActive ? (style?.bg ?? "#f1f5f9") : "#fff",
+                  backgroundColor: isActive ? (style?.bg ?? "var(--surface)") : "var(--font-light)",
                   border: "1px solid",
-                  borderColor: isActive ? (style?.color ?? "#6366f1") : "divider",
-                  color: isActive ? (style?.color ?? "#6366f1") : "text.secondary",
+                  borderColor: isActive ? (style?.color ?? "var(--accent-indigo)") : "divider",
+                  color: isActive ? (style?.color ?? "var(--accent-indigo)") : "text.secondary",
                   "&:hover": {
-                    backgroundColor: style?.bg ?? "rgba(99, 102, 241, 0.08)",
-                    borderColor: style?.color ?? "#6366f1",
-                    color: style?.color ?? "#6366f1",
+                    backgroundColor: style?.bg ?? "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                    borderColor: style?.color ?? "var(--accent-indigo)",
+                    color: style?.color ?? "var(--accent-indigo)",
                   },
                 }}
               >
@@ -563,7 +563,7 @@ export default function JobApplicationsPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search size={18} color="#94a3b8" />
+                  <Search size={18} color="var(--font-tertiary)" />
                 </InputAdornment>
               ),
               endAdornment: searchQuery ? (
@@ -576,7 +576,7 @@ export default function JobApplicationsPage() {
             }}
             sx={{
               width: { xs: "100%", sm: 260 },
-              "& .MuiOutlinedInput-root": { backgroundColor: "#fff", borderRadius: 1.5, fontSize: "0.875rem" },
+              "& .MuiOutlinedInput-root": { backgroundColor: "var(--card-bg)", borderRadius: 1.5, fontSize: "0.875rem" },
             }}
           />
           <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -585,7 +585,7 @@ export default function JobApplicationsPage() {
               value={statusFilter}
               label="Status"
               onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{ backgroundColor: "#fff", borderRadius: 1.5 }}
+              sx={{ backgroundColor: "var(--card-bg)", borderRadius: 1.5 }}
             >
               <MenuItem value="">All</MenuItem>
               {STATUS_OPTIONS.map((o) => (
@@ -599,7 +599,7 @@ export default function JobApplicationsPage() {
             onClick={handleExportCsv}
             disabled={exporting}
             startIcon={<FileDown size={16} />}
-            sx={{ textTransform: "none", fontWeight: 600, borderColor: "rgba(99, 102, 241, 0.5)", color: "#6366f1", "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.04)" } }}
+            sx={{ textTransform: "none", fontWeight: 600, borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)", color: "var(--accent-indigo)", "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" } }}
           >
             {exporting ? "Exporting..." : "Export CSV"}
           </Button>
@@ -619,10 +619,10 @@ export default function JobApplicationsPage() {
               flexWrap: "wrap",
               gap: 2,
               border: "2px solid",
-              borderColor: "rgba(99, 102, 241, 0.4)",
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0.02) 100%)",
+              borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 4%, transparent) 100%)",
               borderRadius: 2,
-              boxShadow: "0 2px 8px rgba(99, 102, 241, 0.08)",
+              boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -631,16 +631,16 @@ export default function JobApplicationsPage() {
                   width: 40,
                   height: 40,
                   borderRadius: 2,
-                  backgroundColor: "rgba(99, 102, 241, 0.12)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <CheckSquare size={20} style={{ color: "#6366f1" }} />
+                <CheckSquare size={20} style={{ color: "var(--accent-indigo)" }} />
               </Box>
               <Box>
-                <Typography variant="body1" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                   {selectedIds.size} application{selectedIds.size !== 1 ? "s" : ""} selected
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -656,7 +656,7 @@ export default function JobApplicationsPage() {
                   fontWeight: 600,
                   color: "text.secondary",
                   ml: 1,
-                  "&:hover": { backgroundColor: "rgba(0,0,0,0.04)", color: "text.primary" },
+                  "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)", color: "text.primary" },
                 }}
               >
                 Clear
@@ -670,11 +670,11 @@ export default function JobApplicationsPage() {
                   label="New Status"
                   onChange={(e) => setBulkStatus(e.target.value)}
                   sx={{
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--card-bg)",
                     borderRadius: 2,
                     fontWeight: 600,
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
+                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                   }}
                 >
                   {STATUS_OPTIONS.map((o) => (
@@ -701,18 +701,18 @@ export default function JobApplicationsPage() {
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  backgroundColor: "#6366f1",
+                  backgroundColor: "var(--accent-indigo)",
                   px: 3,
                   py: 1.25,
                   borderRadius: 2,
-                  boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
-                  "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
-                  "&:disabled": { backgroundColor: "rgba(99, 102, 241, 0.5)" },
+                  boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
+                  "&:disabled": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)" },
                 }}
               >
                 {updating ? (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CircularProgress size={16} sx={{ color: "#fff" }} />
+                    <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
                     Updating...
                   </Box>
                 ) : (
@@ -730,7 +730,7 @@ export default function JobApplicationsPage() {
             borderColor: "divider",
             borderRadius: 2,
             overflow: "hidden",
-            backgroundColor: "#fff",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           {loading ? (
@@ -756,11 +756,11 @@ export default function JobApplicationsPage() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                backgroundColor: "#fafafa",
+                backgroundColor: "var(--surface)",
               }}
             >
-              <ApplicationsIllustration width={140} height={110} primaryColor="#cbd5e1" />
-              <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "#0f172a" }}>
+              <ApplicationsIllustration width={140} height={110} primaryColor="var(--border-default)" />
+              <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary)" }}>
                 No applications yet
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 320 }}>
@@ -784,11 +784,11 @@ export default function JobApplicationsPage() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                backgroundColor: "#fafafa",
+                backgroundColor: "var(--surface)",
               }}
             >
-              <Search size={48} color="#cbd5e1" style={{ marginBottom: 8 }} />
-              <Typography variant="h6" sx={{ fontWeight: 600, color: "#0f172a" }}>
+              <Search size={48} color="var(--border-default)" style={{ marginBottom: 8 }} />
+              <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 No applications match your search
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 320 }}>
@@ -826,7 +826,7 @@ export default function JobApplicationsPage() {
                     selectedIds.size < filteredAndSortedApplications.length
                   }
                   onChange={toggleSelectAll}
-                  sx={{ color: "#64748b", "&.Mui-checked": { color: "#6366f1" } }}
+                  sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                 />
                 <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                   Select all ({filteredAndSortedApplications.length} shown)
@@ -843,14 +843,14 @@ export default function JobApplicationsPage() {
                       border: "1px solid",
                       borderColor: "divider",
                       borderRadius: 2,
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--card-bg)",
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
                       <Checkbox
                         checked={selectedIds.has(app.id)}
                         onChange={() => toggleSelect(app.id)}
-                        sx={{ color: "#64748b", "&.Mui-checked": { color: "#6366f1" }, p: 0, mt: 0.5 }}
+                        sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" }, p: 0, mt: 0.5 }}
                       />
                       <Avatar
                         src={app.student_profile_pic_url ?? undefined}
@@ -859,8 +859,8 @@ export default function JobApplicationsPage() {
                           height: 40,
                           fontSize: "0.875rem",
                           fontWeight: 600,
-                          backgroundColor: "rgba(99, 102, 241, 0.15)",
-                          color: "#6366f1",
+                          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+                          color: "var(--accent-indigo)",
                           flexShrink: 0,
                         }}
                       >
@@ -873,7 +873,7 @@ export default function JobApplicationsPage() {
                         <Typography
                           variant="caption"
                           sx={{
-                            color: "#64748b",
+                            color: "var(--font-secondary)",
                             fontFamily: "monospace",
                             display: "block",
                             overflow: "hidden",
@@ -958,11 +958,11 @@ export default function JobApplicationsPage() {
             <TableContainer sx={{ overflowX: "auto" }}>
               <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f8fafc" }}>
-                    <TableCell padding="checkbox" sx={{ borderColor: "divider", fontWeight: 600, color: "#0f172a", minWidth: 48 }} />
-                    <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider", minWidth: 48 }}>#</TableCell>
+                  <TableRow sx={{ backgroundColor: "var(--background)" }}>
+                    <TableCell padding="checkbox" sx={{ borderColor: "divider", fontWeight: 600, color: "var(--font-primary)", minWidth: 48 }} />
+                    <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 48 }}>#</TableCell>
                     <TableCell
-                      sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider", minWidth: 200, cursor: "pointer" }}
+                      sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 200, cursor: "pointer" }}
                       onClick={() => toggleSort("name")}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -970,7 +970,7 @@ export default function JobApplicationsPage() {
                       </Box>
                     </TableCell>
                     <TableCell
-                      sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider", minWidth: 120, cursor: "pointer" }}
+                      sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 120, cursor: "pointer" }}
                       onClick={() => toggleSort("status")}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -978,14 +978,14 @@ export default function JobApplicationsPage() {
                       </Box>
                     </TableCell>
                     <TableCell
-                      sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider", minWidth: 120, cursor: "pointer" }}
+                      sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 120, cursor: "pointer" }}
                       onClick={() => toggleSort("applied_at")}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                         Applied At {sortBy === "applied_at" && (sortOrder === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "#0f172a", borderColor: "divider", minWidth: 180 }}>Action</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 180 }}>Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -995,13 +995,13 @@ export default function JobApplicationsPage() {
                       <TableRow
                         key={app.id}
                         hover
-                        sx={{ "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.02)" }, borderColor: "divider" }}
+                        sx={{ "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)" }, borderColor: "divider" }}
                       >
                         <TableCell padding="checkbox" sx={{ borderColor: "divider" }}>
                           <Checkbox
                             checked={selectedIds.has(app.id)}
                             onChange={() => toggleSelect(app.id)}
-                            sx={{ color: "#64748b", "&.Mui-checked": { color: "#6366f1" } }}
+                            sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                           />
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider", color: "text.secondary", fontSize: "0.8rem" }}>
@@ -1011,7 +1011,7 @@ export default function JobApplicationsPage() {
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                             <Avatar
                               src={app.student_profile_pic_url ?? undefined}
-                              sx={{ width: 32, height: 32, fontSize: "0.75rem", fontWeight: 600, backgroundColor: "rgba(99, 102, 241, 0.15)", color: "#6366f1" }}
+                              sx={{ width: 32, height: 32, fontSize: "0.75rem", fontWeight: 600, backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)", color: "var(--accent-indigo)" }}
                             >
                               {getInitials(app.student_name ?? "")}
                             </Avatar>
@@ -1037,7 +1037,7 @@ export default function JobApplicationsPage() {
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider" }}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
-                            <Button size="small" onClick={() => setDetailApp(app)} sx={{ textTransform: "none", fontSize: "0.75rem", minWidth: 0, px: 1, color: "#6366f1" }}>
+                            <Button size="small" onClick={() => setDetailApp(app)} sx={{ textTransform: "none", fontSize: "0.75rem", minWidth: 0, px: 1, color: "var(--accent-indigo)" }}>
                               View
                             </Button>
                             <Button component={NextLink} href={`/admin/profile/${app.student}`} size="small" sx={{ textTransform: "none", fontSize: "0.75rem", minWidth: 0, px: 1 }}>
@@ -1074,7 +1074,7 @@ export default function JobApplicationsPage() {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            boxShadow: "0 25px 50px -12px color-mix(in srgb, var(--font-primary) 30%, transparent)",
             overflow: "hidden",
           },
         }}
@@ -1085,9 +1085,9 @@ export default function JobApplicationsPage() {
             alignItems: "center",
             justifyContent: "space-between",
             p: 2.5,
-            background: "linear-gradient(135deg, #fafbff 0%, #f1f5f9 100%)",
+            background: "linear-gradient(135deg, var(--surface) 0%, var(--surface) 100%)",
             borderBottom: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
+            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -1098,16 +1098,16 @@ export default function JobApplicationsPage() {
                 height: 52,
                 fontSize: "1.1rem",
                 fontWeight: 700,
-                backgroundColor: "rgba(99, 102, 241, 0.15)",
-                color: "#6366f1",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+                color: "var(--accent-indigo)",
                 border: "2px solid",
-                borderColor: "rgba(99, 102, 241, 0.2)",
+                borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
               }}
             >
               {detailApp ? getInitials(detailApp.student_name ?? "") : ""}
             </Avatar>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3, color: "#0f172a", letterSpacing: "-0.02em" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
                 {detailApp?.student_name ?? "-"}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "monospace", fontSize: "0.8rem", mt: 0.25 }}>
@@ -1134,14 +1134,14 @@ export default function JobApplicationsPage() {
             onClick={() => setDetailApp(null)}
             size="small"
             sx={{
-              "&:hover": { backgroundColor: "rgba(0,0,0,0.06)" },
-              color: "#64748b",
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" },
+              color: "var(--font-secondary)",
             }}
           >
             <X size={22} />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 0, backgroundColor: "#fafafa" }}>
+        <DialogContent sx={{ p: 0, backgroundColor: "var(--surface)" }}>
           {detailApp && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
               <Box sx={{ p: 2.5, display: "flex", flexWrap: "wrap", gap: 1 }}>
@@ -1154,9 +1154,9 @@ export default function JobApplicationsPage() {
                     textTransform: "none",
                     fontWeight: 600,
                     borderRadius: 2,
-                    backgroundColor: "#6366f1",
-                    boxShadow: "0 1px 3px rgba(99, 102, 241, 0.3)",
-                    "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.35)" },
+                    backgroundColor: "var(--accent-indigo)",
+                    boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                    "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
                   }}
                 >
                   View Profile
@@ -1171,9 +1171,9 @@ export default function JobApplicationsPage() {
                       textTransform: "none",
                       fontWeight: 600,
                       borderRadius: 2,
-                      borderColor: "rgba(99, 102, 241, 0.5)",
-                      color: "#6366f1",
-                      "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.06)" },
+                      borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
+                      color: "var(--accent-indigo)",
+                      "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                     }}
                   >
                     View Resume
@@ -1181,7 +1181,7 @@ export default function JobApplicationsPage() {
                 )}
               </Box>
 
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "#fff", border: "1px solid", borderColor: "rgba(0,0,0,0.06)" }}>
+              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>Application Status</Typography>
                 <FormControl size="small" fullWidth sx={{ maxWidth: 220 }}>
                   <Select
@@ -1191,11 +1191,11 @@ export default function JobApplicationsPage() {
                     sx={{
                       fontSize: "0.875rem",
                       fontWeight: 600,
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--card-bg)",
                       borderRadius: 2,
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                      "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.3)" },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1", borderWidth: 2 },
+                      boxShadow: "0 1px 2px color-mix(in srgb, var(--font-primary) 7%, transparent)",
+                      "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)" },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)", borderWidth: 2 },
                     }}
                   >
                     {STATUS_OPTIONS.map((o) => (
@@ -1205,7 +1205,7 @@ export default function JobApplicationsPage() {
                 </FormControl>
               </Paper>
 
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "#fff", border: "1px solid", borderColor: "rgba(0,0,0,0.06)" }}>
+              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>Candidate Info</Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
                   <DetailRow label="Phone" value={detailApp.student_phone} />
@@ -1219,24 +1219,24 @@ export default function JobApplicationsPage() {
               </Paper>
 
               {(detailApp.student_skills || detailApp.student_experience) && (
-                <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "#fff", border: "1px solid", borderColor: "rgba(0,0,0,0.06)" }}>
+                <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
                   {detailApp.student_skills && (
                     <Box sx={{ mb: detailApp.student_experience ? 1.5 : 0 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 0.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>Skills</Typography>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem", color: "#334155", lineHeight: 1.6 }}>{detailApp.student_skills}</Typography>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>{detailApp.student_skills}</Typography>
                     </Box>
                   )}
                   {detailApp.student_experience && (
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 0.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>Experience</Typography>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem", color: "#334155", lineHeight: 1.6 }}>{detailApp.student_experience}</Typography>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>{detailApp.student_experience}</Typography>
                     </Box>
                   )}
                 </Paper>
               )}
 
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "#fff", border: "1px solid", borderColor: "rgba(99, 102, 241, 0.2)" }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: "0.05em", color: "#6366f1" }}>Pipeline</Typography>
+              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)" }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--accent-indigo)" }}>Pipeline</Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
                   <Box sx={{ gridColumn: "1 / -1" }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Drive</Typography>
@@ -1247,7 +1247,7 @@ export default function JobApplicationsPage() {
                       onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, drive: e.target.value } : null))}
                       disabled={updating}
                       fullWidth
-                      sx={{ fontSize: "0.8rem", "& .MuiInputBase-input": { fontSize: "0.8rem" }, "& .MuiOutlinedInput-root": { backgroundColor: "#fff", height: 36 } }}
+                      sx={{ fontSize: "0.8rem", "& .MuiInputBase-input": { fontSize: "0.8rem" }, "& .MuiOutlinedInput-root": { backgroundColor: "var(--card-bg)", height: 36 } }}
                     />
                   </Box>
                   <Box>
@@ -1259,7 +1259,7 @@ export default function JobApplicationsPage() {
                       disabled={updating}
                       fullWidth
                       displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "#fff" }}
+                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
                     >
                       {INTERNAL_SHORTLISTING_OPTIONS.map((o) => (
                         <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
@@ -1275,7 +1275,7 @@ export default function JobApplicationsPage() {
                       disabled={updating}
                       fullWidth
                       displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "#fff" }}
+                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
                     >
                       {SHORTLISTED_BY_HR_OPTIONS.map((o) => (
                         <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
@@ -1291,7 +1291,7 @@ export default function JobApplicationsPage() {
                       disabled={updating}
                       fullWidth
                       displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "#fff" }}
+                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
                     >
                       {ROUND_1_OPTIONS.map((o) => (
                         <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
@@ -1307,7 +1307,7 @@ export default function JobApplicationsPage() {
                       disabled={updating}
                       fullWidth
                       displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "#fff" }}
+                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
                     >
                       {ROUND_2_3_4_OPTIONS.map((o) => (
                         <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
@@ -1323,7 +1323,7 @@ export default function JobApplicationsPage() {
                       disabled={updating}
                       fullWidth
                       displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "#fff" }}
+                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
                     >
                       {ROUND_2_3_4_OPTIONS.map((o) => (
                         <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
@@ -1339,7 +1339,7 @@ export default function JobApplicationsPage() {
                       disabled={updating}
                       fullWidth
                       displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "#fff" }}
+                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
                     >
                       {ROUND_2_3_4_OPTIONS.map((o) => (
                         <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
@@ -1355,7 +1355,7 @@ export default function JobApplicationsPage() {
                       disabled={updating}
                       fullWidth
                       displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "#fff" }}
+                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
                     >
                       {OFFERED_OPTIONS.map((o) => (
                         <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
@@ -1365,7 +1365,7 @@ export default function JobApplicationsPage() {
                 </Box>
               </Paper>
 
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "#fff", border: "1px solid", borderColor: "rgba(0,0,0,0.06)" }}>
+              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>Reason Not Shortlisted</Typography>
                 <TextField
                   size="small"
@@ -1376,7 +1376,7 @@ export default function JobApplicationsPage() {
                   fullWidth
                   multiline
                   rows={2}
-                  sx={{ "& .MuiInputBase-input": { fontSize: "0.875rem" }, "& .MuiOutlinedInput-root": { backgroundColor: "#fff" } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: "0.875rem" }, "& .MuiOutlinedInput-root": { backgroundColor: "var(--card-bg)" } }}
                 />
               </Paper>
 
@@ -1386,7 +1386,7 @@ export default function JobApplicationsPage() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, gap: 1, borderTop: "1px solid", borderColor: "rgba(0,0,0,0.06)", backgroundColor: "#fff" }}>
+        <DialogActions sx={{ px: 3, py: 2, gap: 1, borderTop: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)", backgroundColor: "var(--card-bg)" }}>
           <Button onClick={() => setDetailApp(null)} sx={{ textTransform: "none", fontWeight: 600 }}>
             Cancel
           </Button>
@@ -1398,9 +1398,9 @@ export default function JobApplicationsPage() {
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              backgroundColor: "#6366f1",
+              backgroundColor: "var(--accent-indigo)",
               px: 2.5,
-              "&:hover": { backgroundColor: "#4f46e5" },
+              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
             }}
           >
             {updating ? "Saving..." : "Save"}

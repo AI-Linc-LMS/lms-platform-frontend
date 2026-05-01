@@ -55,7 +55,7 @@ const AdminQuestionPerformanceComponent = ({
       sx={{
         p: 3,
         borderRadius: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         mb: 4,
       }}
     >
@@ -75,14 +75,14 @@ const AdminQuestionPerformanceComponent = ({
                 onChange={() => onQuestionToggle(q.question_number)}
                 sx={{
                   borderRadius: 2,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   "&:before": { display: "none" },
                   boxShadow: "none",
                 }}
               >
               <AccordionSummary
                 expandIcon={<IconWrapper icon="mdi:chevron-down" size={24} />}
-                sx={{ "&:hover": { backgroundColor: "#f9fafb" } }}
+                sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
                   <Box
@@ -90,8 +90,9 @@ const AdminQuestionPerformanceComponent = ({
                       width: 40,
                       height: 40,
                       borderRadius: "50%",
-                      backgroundColor: "#e0e7ff",
-                      color: "#4338ca",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                      color: "var(--accent-indigo)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -111,7 +112,7 @@ const AdminQuestionPerformanceComponent = ({
                 <Box sx={{ mb: 2 }}>
                   <Typography
                     variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 1, color: "#1f2937" }}
+                    sx={{ fontWeight: 700, mb: 1, color: "var(--font-primary)" }}
                   >
                     {t("adminMockInterview.studentResponse")}
                   </Typography>
@@ -119,12 +120,15 @@ const AdminQuestionPerformanceComponent = ({
                     elevation={0}
                     sx={{
                       p: 2,
-                      backgroundColor: "#f9fafb",
-                      border: "1px solid #e5e7eb",
+                      backgroundColor: "var(--surface)",
+                      border: "1px solid var(--border-default)",
                       borderRadius: 2,
                     }}
                   >
-                    <Typography variant="body2" sx={{ color: "#4b5563", whiteSpace: "pre-wrap" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "var(--font-secondary)", whiteSpace: "pre-wrap" }}
+                    >
                       {response || t("adminMockInterview.noResponseRecorded")}
                     </Typography>
                   </Paper>
@@ -139,7 +143,7 @@ const AdminQuestionPerformanceComponent = ({
       {/* Criteria breakdown - show once for the whole interview */}
       {evaluationScore && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: "#1f2937" }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: "var(--font-primary)" }}>
             {t("adminMockInterview.evaluationCriteria")}
           </Typography>
           <Box
@@ -159,14 +163,16 @@ const AdminQuestionPerformanceComponent = ({
                     sx={{
                       p: 2,
                       borderRadius: 2,
-                      backgroundColor: "#f0fdf4",
-                      border: "1px solid #bbf7d0",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--success-500) 10%, var(--surface) 90%)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)",
                     }}
                   >
-                    <Typography variant="caption" sx={{ color: "#16a34a", fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ color: "var(--success-500)", fontWeight: 600 }}>
                       {criteriaLabels[key]}
                     </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: "#15803d" }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--success-500)" }}>
                       {value}
                     </Typography>
                   </Box>
