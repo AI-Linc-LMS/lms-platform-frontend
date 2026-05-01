@@ -32,8 +32,10 @@ export function ProfileCompletionCard({
 
   return (
     <Paper
+      id="profile-strength"
       elevation={0}
       sx={{
+        scrollMarginTop: "120px",
         p: { xs: 2, sm: 3 },
         border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
         borderRadius: { xs: 1, sm: 2 },
@@ -208,6 +210,8 @@ export function ProfileCompletionCard({
               >
                 {missingFields.slice(0, 6).map((field, index) => (
                   <Box
+                    component="button"
+                    onClick={onCompleteProfile}
                     key={index}
                     sx={{
                       px: 1.5,
@@ -216,6 +220,8 @@ export function ProfileCompletionCard({
                       backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
                       border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
                       transition: "all 0.2s ease",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
                       "&:hover": {
                         backgroundColor: "color-mix(in srgb, var(--surface) 72%, var(--background))",
                       },
@@ -235,12 +241,20 @@ export function ProfileCompletionCard({
                 ))}
                 {missingFields.length > 6 && (
                   <Box
+                    component="button"
+                    onClick={onCompleteProfile}
                     sx={{
                       px: 1.5,
                       py: 0.75,
                       borderRadius: "16px",
                       backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
                       border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        backgroundColor: "color-mix(in srgb, var(--surface) 70%, var(--font-primary) 8%)",
+                      },
                     }}
                   >
                     <Typography
