@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import { Box, LinearProgress } from "@mui/material";
 import { StreakHolders } from "./StreakHolders";
 import { StreakTable } from "./StreakTable";
+import { ProfileCompletionReminder } from "./ProfileCompletionReminder";
 const Leaderboard = lazy(() => import("./Leaderboard").then((module) => ({ default: module.Leaderboard })));
 
 interface DashboardSidebarProps {
@@ -23,6 +24,7 @@ export const DashboardSidebar = ({
         gap: 3,
       }}
     >
+      <ProfileCompletionReminder />
       <Suspense
         fallback={
           <Box>

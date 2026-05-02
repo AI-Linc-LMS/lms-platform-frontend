@@ -87,6 +87,16 @@ export default function ProfilePage() {
     loadProfileData();
   }, []);
 
+  useEffect(() => {
+    if (!loading && typeof window !== "undefined" && window.location.hash) {
+      setTimeout(() => {
+        const id = window.location.hash.substring(1);
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 500);
+    }
+  }, [loading]);
+
   const loadProfileData = async () => {
     try {
       setLoading(true);
