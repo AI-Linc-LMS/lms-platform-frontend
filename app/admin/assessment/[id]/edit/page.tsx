@@ -1338,6 +1338,28 @@ export default function AssessmentEditPage() {
               : "You can view this assessment but cannot change settings or content."}
           </Alert>
         )}
+        {!readOnly &&
+          assessment.is_draft &&
+          !(assessment.submissions_count && assessment.submissions_count > 0) && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 3 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() =>
+                    router.push(`/admin/assessment/${assessmentId}/build`)
+                  }
+                >
+                  Continue editing
+                </Button>
+              }
+            >
+              This assessment is still a draft. Open the full editor to change sections, questions, and
+              AI-generated content. Publish from the editor when you are ready to make it visible to learners.
+            </Alert>
+          )}
 
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Tabs

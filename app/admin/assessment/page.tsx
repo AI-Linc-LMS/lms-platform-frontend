@@ -78,6 +78,7 @@ export default function AssessmentPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "live">("all");
   const [proctoringFilter, setProctoringFilter] = useState<"all" | "enabled" | "disabled">("all");
   const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
   const [evaluationFilter, setEvaluationFilter] = useState<"all" | "manual" | "auto">("all");
@@ -626,6 +627,9 @@ export default function AssessmentPage() {
         if (statusFilter === "inactive" && assessment.is_active) return false;
       }
 
+      if (draftFilter === "draft" && !assessment.is_draft) return false;
+      if (draftFilter === "live" && assessment.is_draft) return false;
+
       // Proctoring filter
       if (proctoringFilter !== "all") {
         if (proctoringFilter === "enabled" && !assessment.proctoring_enabled) return false;
@@ -647,7 +651,7 @@ export default function AssessmentPage() {
 
       return true;
     });
-  }, [assessments, searchQuery, statusFilter, proctoringFilter, paidFilter, evaluationFilter]);
+  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
 
   // Client-side pagination
   const paginatedAssessments = useMemo(() => {
@@ -659,12 +663,13 @@ export default function AssessmentPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, proctoringFilter, paidFilter, evaluationFilter]);
+  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
 
   // Clear all filters
   const handleClearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
+    setDraftFilter("all");
     setProctoringFilter("all");
     setPaidFilter("all");
     setEvaluationFilter("all");
@@ -673,6 +678,7 @@ export default function AssessmentPage() {
   const hasActiveFilters =
     searchQuery !== "" ||
     statusFilter !== "all" ||
+    draftFilter !== "all" ||
     proctoringFilter !== "all" ||
     paidFilter !== "all" ||
     evaluationFilter !== "all";
@@ -813,6 +819,21 @@ export default function AssessmentPage() {
             </FormControl>
 
             <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
+              <InputLabel>Authoring</InputLabel>
+              <Select
+                value={draftFilter}
+                label="Authoring"
+                onChange={(e) =>
+                  setDraftFilter(e.target.value as "all" | "draft" | "live")
+                }
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="draft">Draft only</MenuItem>
+                <MenuItem value="live">Published only</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
               <InputLabel>Proctoring</InputLabel>
               <Select
                 value={proctoringFilter}
@@ -915,6 +936,18 @@ export default function AssessmentPage() {
                   }}
                 />
               )}
+              {draftFilter !== "all" && (
+                <Chip
+                  label={draftFilter === "draft" ? "Authoring: draft" : "Authoring: published"}
+                  size="small"
+                  onDelete={() => setDraftFilter("all")}
+                  sx={{
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    color: "var(--accent-indigo)",
+                  }}
+                />
+              )}
               {proctoringFilter !== "all" && (
                 <Chip
                   label={`Proctoring: ${proctoringFilter}`}
@@ -995,13 +1028,18 @@ export default function AssessmentPage() {
               assessments={paginatedAssessments}
               assessmentEmailJobMap={assessmentEmailJobMap}
               actionsReadOnly={isCourseManager}
-              onEdit={(id) =>
+              onEdit={(id) => {
+                const row = paginatedAssessments.find((a) => a.id === id);
+                if (!isCourseManager && row?.is_draft) {
+                  router.push(`/admin/assessment/${id}/build`);
+                  return;
+                }
                 router.push(
                   isCourseManager
                     ? `/admin/assessment/${id}/edit?readonly=1`
                     : `/admin/assessment/${id}/edit`
-                )
-              }
+                );
+              }}
               onDelete={isCourseManager ? undefined : handleDeleteClick}
               onTriggerEmailJob={
                 isCourseManager ? undefined : handleOpenEmailTriggerDialog

@@ -194,6 +194,8 @@ export interface CreateAssessmentPayload {
   price?: string | number | null;
   currency?: string;
   is_active?: boolean;
+  /** When true, server keeps assessment inactive and hidden from learners until published. */
+  is_draft?: boolean;
   proctoring_enabled?: boolean;
   live_streaming?: boolean;
   /** Whether to send notification email to students */
@@ -261,6 +263,8 @@ export interface Assessment {
   is_paid: boolean;
   price: string | number | null;
   is_active: boolean;
+  /** Authoring draft; learners must not see this assessment. */
+  is_draft?: boolean;
   /** Instructor-led scoring vs auto (quiz/coding rules). */
   evaluation_mode?: "auto" | "manual";
   proctoring_enabled?: boolean;
@@ -417,6 +421,31 @@ export const createAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to create assessment";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Publish assessment (clear draft, optionally activate). POST .../publish/
+ */
+export const publishAssessment = async (
+  clientId: string | number,
+  assessmentId: number,
+  body?: { is_active?: boolean }
+): Promise<Assessment> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/publish/`,
+      body ?? {}
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to publish assessment";
     throw new Error(message);
   }
 };
@@ -1227,6 +1256,7 @@ export const adminAssessmentService = {
   getAssessments,
   getAssessmentById,
   createAssessment,
+  publishAssessment,
   updateAssessment,
   deleteAssessment,
   duplicateAssessment,

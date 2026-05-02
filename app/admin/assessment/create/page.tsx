@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
@@ -15,6 +15,8 @@ import {
   Step,
   StepLabel,
   CircularProgress,
+  Tooltip,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -43,6 +45,10 @@ import { AssessmentPreviewSection } from "@/components/admin/assessment/Assessme
 import type { WrittenPromptPreview } from "@/components/admin/assessment/SectionCard";
 import type { SubjectiveQuestionDraft } from "@/components/admin/assessment/SubjectiveQuestionsFormSection";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
+import {
+  applyAssessmentDetailToBasicFields,
+  mapQuestionsExportToAuthoringState,
+} from "@/lib/utils/assessment-authoring-from-export.utils";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 
@@ -58,10 +64,11 @@ function toAssessmentApiDecimalString(
 
 const steps = ["Assessment Details", "Add Questions", "Review & Create"];
 
-export default function CreateAssessmentPage() {
+function CreateAssessmentPageContent() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { clientInfo } = useClientInfo();
   const canConfigureLiveStreaming =
@@ -76,6 +83,10 @@ export default function CreateAssessmentPage() {
 
   const [activeStep, setActiveStep] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [editingAssessmentId, setEditingAssessmentId] = useState<number | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(false);
+  const [loadedIsDraft, setLoadedIsDraft] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   // Assessment basic info
   const [title, setTitle] = useState("");
@@ -182,6 +193,86 @@ export default function CreateAssessmentPage() {
     loadExistingSubjectiveQuestions();
     loadCourses();
   }, []);
+
+  useEffect(() => {
+    const v = searchParams.get("fromDraft");
+    if (v && /^\d+$/.test(v)) {
+      setEditingAssessmentId(Number(v));
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!editingAssessmentId || !config.clientId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingDraft(true);
+        const [detail, exportJson] = await Promise.all([
+          adminAssessmentService.getAssessmentById(config.clientId, editingAssessmentId),
+          adminAssessmentService.getQuestionsExportJson(config.clientId, editingAssessmentId),
+        ]);
+        if (cancelled) return;
+        const d = detail as { is_draft?: boolean; submissions_count?: number };
+        setLoadedIsDraft(Boolean(d.is_draft));
+        if (d.submissions_count && d.submissions_count > 0) {
+          showToast("This assessment already has attempts; sections cannot be edited here.", "error");
+          router.replace(`/admin/assessment/${editingAssessmentId}/edit`);
+          return;
+        }
+        applyAssessmentDetailToBasicFields(detail, {
+          setTitle,
+          setInstructions,
+          setDescription,
+          setDurationMinutes,
+          setStartTime,
+          setEndTime,
+          setIsPaid,
+          setPrice,
+          setCurrency,
+          setIsActive,
+          setCourseIds,
+          setColleges,
+          setProctoringEnabled,
+          setLiveStreaming,
+          setSendCommunication,
+          setShowResult,
+          setEvaluationMode,
+          setAllowMovementAcrossSections,
+          setTabSwitchLimitEnabled,
+          setTabSwitchLimitCount,
+          setCertificateAvailable,
+          setPassBandLowerPercent,
+          setPassBandUpperPercent,
+          setAllowDesktop,
+          setAllowMobile,
+          setAllowTablet,
+        });
+        const mapped = mapQuestionsExportToAuthoringState(exportJson);
+        setSections(mapped.sections);
+        setMcqInputMethodBySection(mapped.mcqInputMethodBySection);
+        setCodingInputMethodBySection(mapped.codingInputMethodBySection);
+        setSubjectiveInputMethodBySection(mapped.subjectiveInputMethodBySection);
+        setSectionMcqIds(mapped.sectionMcqIds);
+        setSectionCodingProblemIds(mapped.sectionCodingProblemIds);
+        setSectionSubjectiveQuestionIds(mapped.sectionSubjectiveQuestionIds);
+        setManualMCQs({});
+        setCsvMCQs({});
+        setAiMCQs({});
+        setManualSubjectiveQuestions({});
+        setAiCodingProblems({});
+      } catch (e: unknown) {
+        if (!cancelled) {
+          showToast(e instanceof Error ? e.message : "Failed to load draft assessment", "error");
+          router.replace("/admin/assessment");
+        }
+      } finally {
+        if (!cancelled) setLoadingDraft(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editingAssessmentId, router, showToast]);
 
   const loadCourses = async () => {
     try {
@@ -710,7 +801,10 @@ export default function CreateAssessmentPage() {
     return getAllMCQsWithSections().map(({ sectionId, ...mcq }) => mcq);
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (options?: {
+    skipSectionValidation?: boolean;
+    forceDraft?: boolean;
+  }) => {
     try {
       setCreating(true);
 
@@ -730,8 +824,10 @@ export default function CreateAssessmentPage() {
         .filter((s) => s.type === "subjective")
         .sort((a, b) => a.order - b.order);
 
-      // Need at least one quiz, coding, or written section block
+      const skipSectionValidation = Boolean(options?.skipSectionValidation);
+      // Need at least one quiz, coding, or written section block (relaxed for draft save)
       if (
+        !skipSectionValidation &&
         quizSections.length === 0 &&
         codingSections.length === 0 &&
         subjectiveSections.length === 0
@@ -745,6 +841,7 @@ export default function CreateAssessmentPage() {
       }
 
       if (
+        !skipSectionValidation &&
         durationMinutes >= 1 &&
         sections.some((s) =>
           sectionTimeLimitExceedsOverallMessage(durationMinutes, s.timeLimitMinutes)
@@ -759,7 +856,7 @@ export default function CreateAssessmentPage() {
       }
 
       // Validate that all quiz sections have at least 1 question
-      if (quizSections.length > 0) {
+      if (!skipSectionValidation && quizSections.length > 0) {
         const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
           [];
         quizSections.forEach((section) => {
@@ -788,7 +885,7 @@ export default function CreateAssessmentPage() {
 
       // Validate number_of_questions_to_show for quiz sections
       const invalidQuizSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
-      quizSections.forEach((section) => {
+      if (!skipSectionValidation) quizSections.forEach((section) => {
         if (section.number_of_questions_to_show !== undefined) {
           const totalQuestions = getTotalMCQCountForSection(section.id);
           if (totalQuestions < section.number_of_questions_to_show) {
@@ -802,7 +899,7 @@ export default function CreateAssessmentPage() {
         }
       });
 
-      if (invalidQuizSections.length > 0) {
+      if (!skipSectionValidation && invalidQuizSections.length > 0) {
         const errorMessages = invalidQuizSections
           .sort((a, b) => a.order - b.order)
           .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} questions, but only ${s.selected} selected`)
@@ -817,21 +914,23 @@ export default function CreateAssessmentPage() {
 
       // Validate number_of_questions_to_show for coding sections
       const invalidCodingSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
-      codingSections.forEach((section) => {
-        if (section.number_of_questions_to_show !== undefined) {
-          const totalProblems = getTotalCodingProblemCountForSection(section.id);
-          if (totalProblems < section.number_of_questions_to_show) {
-            invalidCodingSections.push({
-              title: section.title,
-              order: section.order,
-              required: section.number_of_questions_to_show,
-              selected: totalProblems,
-            });
+      if (!skipSectionValidation) {
+        codingSections.forEach((section) => {
+          if (section.number_of_questions_to_show !== undefined) {
+            const totalProblems = getTotalCodingProblemCountForSection(section.id);
+            if (totalProblems < section.number_of_questions_to_show) {
+              invalidCodingSections.push({
+                title: section.title,
+                order: section.order,
+                required: section.number_of_questions_to_show,
+                selected: totalProblems,
+              });
+            }
           }
-        }
-      });
+        });
+      }
 
-      if (invalidCodingSections.length > 0) {
+      if (!skipSectionValidation && invalidCodingSections.length > 0) {
         const errorMessages = invalidCodingSections
           .sort((a, b) => a.order - b.order)
           .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} problems, but only ${s.selected} selected`)
@@ -844,7 +943,7 @@ export default function CreateAssessmentPage() {
         return;
       }
 
-      if (subjectiveSections.length > 0) {
+      if (!skipSectionValidation && subjectiveSections.length > 0) {
         const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
           [];
         subjectiveSections.forEach((section) => {
@@ -877,21 +976,23 @@ export default function CreateAssessmentPage() {
         required: number;
         selected: number;
       }> = [];
-      subjectiveSections.forEach((section) => {
-        if (section.number_of_questions_to_show !== undefined) {
-          const totalWritten = getTotalSubjectiveCountForSection(section.id);
-          if (totalWritten < section.number_of_questions_to_show) {
-            invalidSubjectiveSections.push({
-              title: section.title,
-              order: section.order,
-              required: section.number_of_questions_to_show,
-              selected: totalWritten,
-            });
+      if (!skipSectionValidation) {
+        subjectiveSections.forEach((section) => {
+          if (section.number_of_questions_to_show !== undefined) {
+            const totalWritten = getTotalSubjectiveCountForSection(section.id);
+            if (totalWritten < section.number_of_questions_to_show) {
+              invalidSubjectiveSections.push({
+                title: section.title,
+                order: section.order,
+                required: section.number_of_questions_to_show,
+                selected: totalWritten,
+              });
+            }
           }
-        }
-      });
+        });
+      }
 
-      if (invalidSubjectiveSections.length > 0) {
+      if (!skipSectionValidation && invalidSubjectiveSections.length > 0) {
         const errorMessages = invalidSubjectiveSections
           .sort((a, b) => a.order - b.order)
           .map(
@@ -911,6 +1012,19 @@ export default function CreateAssessmentPage() {
         setActiveStep(0);
         setCreating(false);
         return;
+      }
+
+      if (skipSectionValidation) {
+        if (!title.trim() || !instructions.trim()) {
+          showToast("Title and instructions are required to save a draft.", "error");
+          setCreating(false);
+          return;
+        }
+        if (durationMinutes < 1) {
+          showToast("Duration must be at least 1 minute.", "error");
+          setCreating(false);
+          return;
+        }
       }
 
       // Convert datetime-local strings to IST ISO format (format: "2026-01-22T22:54:00+05:30")
@@ -999,9 +1113,19 @@ export default function CreateAssessmentPage() {
         }
       });
 
+      const quizSectionsForPayload = quizSections.filter(
+        (s) => getTotalMCQCountForSection(s.id) > 0
+      );
+      const codingSectionsForPayload = codingSections.filter(
+        (s) => getTotalCodingProblemCountForSection(s.id) > 0
+      );
+      const subjectiveSectionsForPayload = subjectiveSections.filter(
+        (s) => getTotalSubjectiveCountForSection(s.id) > 0
+      );
+
       // Prepare quiz sections (API: `quizSection` camelCase array)
-      if (quizSections.length > 0) {
-        payload.quizSection = quizSections.map((section) => {
+      if (quizSectionsForPayload.length > 0) {
+        payload.quizSection = quizSectionsForPayload.map((section) => {
           const sectionMCQs = getMCQsForSection(section.id);
           const sectionMcqIds = getMcqIdsForSection(section.id);
 
@@ -1067,8 +1191,8 @@ export default function CreateAssessmentPage() {
       }
 
       // Prepare coding sections (API: `codingProblemSection` camelCase array)
-      if (codingSections.length > 0) {
-        payload.codingProblemSection = codingSections.map((section) => {
+      if (codingSectionsForPayload.length > 0) {
+        payload.codingProblemSection = codingSectionsForPayload.map((section) => {
           const sectionCodingProblemIds = getCodingProblemIdsForSection(
             section.id
           );
@@ -1117,8 +1241,8 @@ export default function CreateAssessmentPage() {
         });
       }
 
-      if (subjectiveSections.length > 0) {
-        payload.subjectiveQuestionSection = subjectiveSections.map((section) => {
+      if (subjectiveSectionsForPayload.length > 0) {
+        payload.subjectiveQuestionSection = subjectiveSectionsForPayload.map((section) => {
           const method = subjectiveInputMethodBySection[section.id] ?? "manual";
           const totalCount = getTotalSubjectiveCountForSection(section.id);
 
@@ -1199,11 +1323,124 @@ export default function CreateAssessmentPage() {
       payload.codingProblemSection = payload.codingProblemSection ?? [];
       payload.subjectiveQuestionSection = payload.subjectiveQuestionSection ?? [];
 
-      await adminAssessmentService.createAssessment(config.clientId, payload);
-      showToast("Assessment created successfully", "success");
-      router.push("/admin/assessment");
+      if (options?.forceDraft) {
+        payload.is_draft = true;
+        payload.is_active = false;
+      }
+
+      if (editingAssessmentId) {
+        await adminAssessmentService.updateAssessment(
+          config.clientId,
+          editingAssessmentId,
+          payload
+        );
+        showToast(
+          options?.forceDraft ? "Draft saved successfully" : "Assessment updated successfully",
+          "success"
+        );
+        router.push(`/admin/assessment/${editingAssessmentId}/edit`);
+      } else {
+        const created = await adminAssessmentService.createAssessment(
+          config.clientId,
+          payload
+        );
+        showToast(
+          options?.forceDraft ? "Draft saved successfully" : "Assessment created successfully",
+          "success"
+        );
+        if (options?.forceDraft) {
+          router.push(`/admin/assessment/create?fromDraft=${created.id}`);
+        } else {
+          router.push("/admin/assessment");
+        }
+      }
     } catch (error: any) {
-      showToast(error?.message || "Failed to create assessment", "error");
+      showToast(
+        error?.message ||
+          (editingAssessmentId ? "Failed to update assessment" : "Failed to create assessment"),
+        "error"
+      );
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    setSavingDraft(true);
+    try {
+      await handleCreate({ skipSectionValidation: true, forceDraft: true });
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const saveDraftDisabled = creating || loadingDraft || savingDraft;
+
+  const renderSaveDraftButton = (opts?: { compact?: boolean }) => {
+    const compact = opts?.compact ?? false;
+    const label = savingDraft ? "Saving…" : "Save draft";
+    const btn = (
+      <Button
+        variant="outlined"
+        color="secondary"
+        size={compact ? "small" : "medium"}
+        onClick={() => void handleSaveDraft()}
+        disabled={saveDraftDisabled}
+        startIcon={
+          savingDraft ? (
+            <CircularProgress size={compact ? 14 : 16} color="inherit" aria-hidden />
+          ) : (
+            <IconWrapper icon="mdi:content-save-outline" size={compact ? 18 : 20} />
+          )
+        }
+        aria-busy={savingDraft}
+        sx={{
+          borderColor: "color-mix(in srgb, var(--font-secondary) 35%, var(--border-default) 65%)",
+          color: "var(--font-primary)",
+          fontWeight: 600,
+          textTransform: "none",
+          letterSpacing: "0.01em",
+          px: compact ? 1.5 : 2,
+          "&:hover": {
+            borderColor: "var(--accent-indigo)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)",
+          },
+          "&.Mui-disabled": {
+            borderColor: "var(--border-default)",
+          },
+        }}
+      >
+        {label}
+      </Button>
+    );
+    return (
+      <Tooltip
+        title={
+          editingAssessmentId
+            ? "Updates your draft on the server. Learners still cannot see it until you publish."
+            : "Saves progress as a draft (title, settings, and any sections you’ve started). You can leave and continue later—learners never see drafts until you publish."
+        }
+        placement="bottom"
+        arrow
+        enterDelay={400}
+      >
+        <span>{btn}</span>
+      </Tooltip>
+    );
+  };
+
+  const handlePublishAssessment = async () => {
+    if (!editingAssessmentId || !config.clientId) return;
+    try {
+      setCreating(true);
+      await adminAssessmentService.publishAssessment(config.clientId, editingAssessmentId, {
+        is_active: true,
+      });
+      showToast("Assessment published", "success");
+      setLoadedIsDraft(false);
+      router.push(`/admin/assessment/${editingAssessmentId}/edit`);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Failed to publish", "error");
     } finally {
       setCreating(false);
     }
@@ -1402,16 +1639,68 @@ export default function CreateAssessmentPage() {
           >
             Back to Assessments
           </Button>
-          <Typography
-            variant="h4"
+          <Box
             sx={{
-              fontWeight: 700,
-              color: "var(--font-primary)",
-              fontSize: { xs: "1.5rem", sm: "2rem" },
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 2.5,
             }}
           >
-            Create Assessment
-          </Typography>
+            <Box sx={{ flex: "1 1 240px", minWidth: 0 }}>
+              <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 0.75 }}>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: "var(--font-primary)",
+                    fontSize: { xs: "1.5rem", sm: "2rem" },
+                  }}
+                >
+                  {editingAssessmentId ? "Edit draft assessment" : "Create Assessment"}
+                </Typography>
+                {(Boolean(editingAssessmentId) || savingDraft) && (
+                  <Chip
+                    size="small"
+                    label={savingDraft ? "Saving draft…" : "Draft"}
+                    color="default"
+                    sx={{
+                      fontWeight: 600,
+                      height: 26,
+                      bgcolor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+                      color: "var(--font-secondary)",
+                      border: "1px solid var(--border-default)",
+                    }}
+                  />
+                )}
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "var(--font-secondary)",
+                  maxWidth: 560,
+                  lineHeight: 1.5,
+                }}
+              >
+                {editingAssessmentId
+                  ? "Changes are stored as a draft until you publish. Use Save draft anytime; use Save assessment when sections are ready."
+                  : "Use Save draft to keep work in progress without publishing. Learners only see the assessment after you publish from the final step or the edit screen."}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                flex: "0 0 auto",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: { xs: "stretch", sm: "flex-end" },
+                gap: 0.75,
+                width: { xs: "100%", sm: "auto" },
+              }}
+            >
+              {renderSaveDraftButton()}
+            </Box>
+          </Box>
         </Box>
 
         {/* Stepper */}
@@ -1479,7 +1768,13 @@ export default function CreateAssessmentPage() {
             border: "1px solid var(--border-default)",
           }}
         >
-          {renderStepContent()}
+          {loadingDraft ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            renderStepContent()
+          )}
         </Paper>
 
         {/* Navigation Buttons */}
@@ -1498,37 +1793,55 @@ export default function CreateAssessmentPage() {
           >
             Back
           </Button>
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+            {renderSaveDraftButton({ compact: true })}
             {activeStep === steps.length - 1 ? (
-              <Button
-                variant="contained"
-                onClick={handleCreate}
-                disabled={creating}
-                startIcon={
-                  creating ? (
-                    <CircularProgress size={18} color="inherit" />
-                  ) : (
-                    <IconWrapper icon="mdi:check" size={18} />
-                  )
-                }
-                sx={{
-                  bgcolor: "var(--accent-indigo)",
-                  color: "var(--font-light)",
-                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-                  "&.Mui-disabled": {
-                    color: "var(--font-secondary)",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
-                  },
-                }}
-              >
-                {creating ? "Creating..." : "Create Assessment"}
-              </Button>
+              <>
+                {editingAssessmentId && loadedIsDraft && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => void handlePublishAssessment()}
+                    disabled={saveDraftDisabled}
+                  >
+                    Publish assessment
+                  </Button>
+                )}
+                <Button
+                  variant="contained"
+                  onClick={() => void handleCreate()}
+                  disabled={creating || loadingDraft || savingDraft}
+                  startIcon={
+                    creating ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <IconWrapper icon="mdi:check" size={18} />
+                    )
+                  }
+                  sx={{
+                    bgcolor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
+                    "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                    "&.Mui-disabled": {
+                      color: "var(--font-secondary)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                    },
+                  }}
+                >
+                  {creating
+                    ? editingAssessmentId
+                      ? "Saving..."
+                      : "Creating..."
+                    : editingAssessmentId
+                      ? "Save assessment"
+                      : "Create Assessment"}
+                </Button>
+              </>
             ) : (
               <Button
                 variant="contained"
                 onClick={handleNext}
-                disabled={isNextButtonDisabled}
+                disabled={isNextButtonDisabled || savingDraft}
                 endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
                 sx={{
                   bgcolor: "var(--accent-indigo)",
@@ -1548,5 +1861,21 @@ export default function CreateAssessmentPage() {
         </Box>
       </Box>
     </MainLayout>
+  );
+}
+
+export default function CreateAssessmentPage() {
+  return (
+    <Suspense
+      fallback={
+        <MainLayout>
+          <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
+            <CircularProgress />
+          </Box>
+        </MainLayout>
+      }
+    >
+      <CreateAssessmentPageContent />
+    </Suspense>
   );
 }
