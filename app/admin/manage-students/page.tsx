@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Box, Collapse, IconButton, Paper, Typography } from "@mui/material";
+import { Box, Paper, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -89,7 +89,7 @@ export default function ManageStudentsPage() {
 
   // Bulk Enrollment
   const [bulkEnrollDialogOpen, setBulkEnrollDialogOpen] = useState(false);
-  const [showJobHistory, setShowJobHistory] = useState(false);
+  const enrollmentJobSectionRef = useRef<HTMLDivElement | null>(null);
   const loadStudentsSeqRef = useRef(0);
 
   // Load courses for filter
@@ -541,9 +541,13 @@ export default function ManageStudentsPage() {
   };
 
   const handleBulkEnrollSuccess = () => {
-    // Refresh student list after successful enrollment
     loadStudents();
-    setShowJobHistory(true); // Show job history after successful enrollment
+    requestAnimationFrame(() => {
+      enrollmentJobSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   };
 
   const escapeCsvValue = (value: string | number): string => {
@@ -630,102 +634,52 @@ export default function ManageStudentsPage() {
           onSearchChange={handleSearchChange}
         />
 
-        {showOrgAdminEnrollmentTools ? (
-          <Paper
-            elevation={0}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <Box
             sx={{
-              mb: 3,
-              borderRadius: 3,
-              overflow: "hidden",
-              border: "1px solid var(--border-default)",
-              boxShadow:
-                "0 2px 12px color-mix(in srgb, var(--font-primary) 6%, transparent)",
-              backgroundColor: "var(--card-bg)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 44,
+              height: 44,
+              borderRadius: 2,
+              flexShrink: 0,
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+              color: "var(--accent-indigo)",
             }}
+            aria-hidden
           >
-            <Box
-              role="button"
-              tabIndex={0}
-              onClick={() => setShowJobHistory(!showJobHistory)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setShowJobHistory(!showJobHistory);
-                }
-              }}
+            <IconWrapper icon="mdi:view-list-outline" size={24} />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="subtitle1"
+              component="h2"
+              sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+            >
+              {t("adminManageStudents.studentDirectoryTitle")}
+            </Typography>
+            <Typography
+              variant="body2"
               sx={{
-                p: { xs: 2, sm: 2.5 },
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                cursor: "pointer",
-                borderBottom: showJobHistory ? "1px solid var(--border-default)" : "none",
-                background:
-                  "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg)) 0%, var(--card-bg) 55%)",
-                transition: "background-color 0.2s ease",
-                "&:hover": {
-                  backgroundColor:
-                    "color-mix(in srgb, var(--font-primary) 4%, var(--card-bg))",
-                },
+                color: "var(--font-secondary)",
+                mt: 0.5,
+                maxWidth: 640,
+                lineHeight: 1.5,
               }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  flexShrink: 0,
-                  backgroundColor:
-                    "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
-                  color: "var(--accent-indigo)",
-                }}
-                aria-hidden
-              >
-                <IconWrapper icon="mdi:history" size={24} />
-              </Box>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: 700, color: "var(--font-primary)", lineHeight: 1.3 }}
-                >
-                  {t("adminManageStudents.enrollmentJobHistory")}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.25 }}>
-                  {t("adminManageStudents.enrollmentJobHistorySubtitle")}
-                </Typography>
-              </Box>
-              <IconButton
-                size="small"
-                aria-expanded={showJobHistory}
-                aria-label={t("adminManageStudents.enrollmentJobHistory")}
-                sx={{
-                  color: "var(--font-secondary)",
-                  backgroundColor: "color-mix(in srgb, var(--font-primary) 5%, transparent)",
-                }}
-              >
-                <IconWrapper
-                  icon={showJobHistory ? "mdi:chevron-up" : "mdi:chevron-down"}
-                  size={22}
-                />
-              </IconButton>
-            </Box>
-            <Collapse in={showJobHistory}>
-              <Box
-                sx={{
-                  px: { xs: 1.5, sm: 2 },
-                  pb: 2,
-                  pt: 1,
-                  backgroundColor: "color-mix(in srgb, var(--font-primary) 2%, var(--card-bg))",
-                }}
-              >
-                <EnrollmentJobHistory embedded />
-              </Box>
-            </Collapse>
-          </Paper>
-        ) : null}
+              {t("adminManageStudents.studentDirectoryHint")}
+            </Typography>
+          </Box>
+        </Box>
 
         <Paper
           elevation={0}
@@ -758,6 +712,78 @@ export default function ManageStudentsPage() {
             onLimitChange={handleLimitChange}
           />
         </Paper>
+
+        {showOrgAdminEnrollmentTools ? (
+          <Box
+            ref={enrollmentJobSectionRef}
+            id="enrollment-job-history-section"
+            component="section"
+            aria-labelledby="enrollment-job-history-heading"
+            sx={{ mt: { xs: 4, sm: 5 } }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 2,
+                mb: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  flexShrink: 0,
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                  color: "var(--accent-indigo)",
+                }}
+                aria-hidden
+              >
+                <IconWrapper icon="mdi:clipboard-flow-outline" size={24} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  id="enrollment-job-history-heading"
+                  variant="subtitle1"
+                  component="h2"
+                  sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+                >
+                  {t("adminManageStudents.enrollmentJobHistory")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    mt: 0.5,
+                    maxWidth: 640,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {t("adminManageStudents.enrollmentJobHistorySubtitle")}
+                </Typography>
+              </Box>
+            </Box>
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                overflow: "hidden",
+                border: "1px solid var(--border-default)",
+                boxShadow:
+                  "0 4px 24px color-mix(in srgb, var(--font-primary) 7%, transparent)",
+                backgroundColor: "var(--card-bg)",
+                p: { xs: 1.5, sm: 2 },
+              }}
+            >
+              <EnrollmentJobHistory embedded />
+            </Paper>
+          </Box>
+        ) : null}
 
         <BulkEnrollmentDialog
           open={bulkEnrollDialogOpen}

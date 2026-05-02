@@ -16,6 +16,7 @@ import {
   Avatar,
   CircularProgress,
   LinearProgress,
+  Tooltip,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
@@ -157,36 +158,38 @@ export function StudentsTable({
                   whiteSpace: "nowrap",
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    cursor: "pointer",
-                    "&:hover": { color: "var(--accent-indigo)" },
-                    transition: "color 0.2s",
-                  }}
-                  onClick={() => onSort("name")}
-                >
-                  <IconWrapper
-                    icon="mdi:account-outline"
-                    size={18}
-                    color="var(--font-secondary)"
-                  />
+                <Tooltip title={t("adminManageStudents.clickToSort")} enterDelay={400}>
                   <Box
-                    component="span"
-                    sx={{ display: { xs: "none", sm: "inline" } }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      cursor: "pointer",
+                      "&:hover": { color: "var(--accent-indigo)" },
+                      transition: "color 0.2s",
+                    }}
+                    onClick={() => onSort("name")}
                   >
-                    {t("adminManageStudents.name").toUpperCase()}
-                  </Box>
-                  {getSortIcon("name", sortBy, sortOrder) && (
                     <IconWrapper
-                      icon={getSortIcon("name", sortBy, sortOrder)!}
-                      size={16}
-                      color="inherit"
+                      icon="mdi:account-outline"
+                      size={18}
+                      color="var(--font-secondary)"
                     />
-                  )}
-                </Box>
+                    <Box
+                      component="span"
+                      sx={{ display: { xs: "none", sm: "inline" } }}
+                    >
+                      {t("adminManageStudents.name").toUpperCase()}
+                    </Box>
+                    {getSortIcon("name", sortBy, sortOrder) && (
+                      <IconWrapper
+                        icon={getSortIcon("name", sortBy, sortOrder)!}
+                        size={16}
+                        color="inherit"
+                      />
+                    )}
+                  </Box>
+                </Tooltip>
               </TableCell>
               <TableCell
                 sx={{
@@ -245,32 +248,34 @@ export function StudentsTable({
                   display: { xs: "none", sm: "table-cell" },
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    cursor: "pointer",
-                    "&:hover": { color: "#6366f1" },
-                    transition: "color 0.2s",
-                  }}
-                  onClick={() => onSort("saved_resume")}
-                >
-                  <IconWrapper icon="mdi:file-document-outline" size={18} color="#6b7280" />
+                <Tooltip title={t("adminManageStudents.clickToSort")} enterDelay={400}>
                   <Box
-                    component="span"
-                    sx={{ display: { xs: "none", md: "inline" } }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      cursor: "pointer",
+                      "&:hover": { color: "#6366f1" },
+                      transition: "color 0.2s",
+                    }}
+                    onClick={() => onSort("saved_resume")}
                   >
-                    {t("adminManageStudents.savedResume").toUpperCase()}
+                    <IconWrapper icon="mdi:file-document-outline" size={18} color="#6b7280" />
+                    <Box
+                      component="span"
+                      sx={{ display: { xs: "none", md: "inline" } }}
+                    >
+                      {t("adminManageStudents.savedResume").toUpperCase()}
+                    </Box>
+                    {getSortIcon("saved_resume", sortBy, sortOrder) && (
+                      <IconWrapper
+                        icon={getSortIcon("saved_resume", sortBy, sortOrder)!}
+                        size={16}
+                        color="inherit"
+                      />
+                    )}
                   </Box>
-                  {getSortIcon("saved_resume", sortBy, sortOrder) && (
-                    <IconWrapper
-                      icon={getSortIcon("saved_resume", sortBy, sortOrder)!}
-                      size={16}
-                      color="inherit"
-                    />
-                  )}
-                </Box>
+                </Tooltip>
               </TableCell>
               <TableCell
                 sx={{
@@ -280,32 +285,34 @@ export function StudentsTable({
                   whiteSpace: "nowrap",
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    cursor: "pointer",
-                    "&:hover": { color: "#6366f1" },
-                    transition: "color 0.2s",
-                  }}
-                  onClick={() => onSort("completion_pct")}
-                >
-                  <IconWrapper icon="mdi:chart-bar" size={18} color="#6b7280" />
+                <Tooltip title={t("adminManageStudents.clickToSort")} enterDelay={400}>
                   <Box
-                    component="span"
-                    sx={{ display: { xs: "none", sm: "inline" } }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      cursor: "pointer",
+                      "&:hover": { color: "#6366f1" },
+                      transition: "color 0.2s",
+                    }}
+                    onClick={() => onSort("completion_pct")}
                   >
-                    {t("adminManageStudents.completionPct").toUpperCase()}
+                    <IconWrapper icon="mdi:chart-bar" size={18} color="#6b7280" />
+                    <Box
+                      component="span"
+                      sx={{ display: { xs: "none", sm: "inline" } }}
+                    >
+                      {t("adminManageStudents.completionPct").toUpperCase()}
+                    </Box>
+                    {getSortIcon("completion_pct", sortBy, sortOrder) && (
+                      <IconWrapper
+                        icon={getSortIcon("completion_pct", sortBy, sortOrder)!}
+                        size={16}
+                        color="inherit"
+                      />
+                    )}
                   </Box>
-                  {getSortIcon("completion_pct", sortBy, sortOrder) && (
-                    <IconWrapper
-                      icon={getSortIcon("completion_pct", sortBy, sortOrder)!}
-                      size={16}
-                      color="inherit"
-                    />
-                  )}
-                </Box>
+                </Tooltip>
               </TableCell>
               <TableCell
                 sx={{
@@ -315,32 +322,34 @@ export function StudentsTable({
                   whiteSpace: "nowrap",
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    cursor: "pointer",
-                    "&:hover": { color: "#6366f1" },
-                    transition: "color 0.2s",
-                  }}
-                  onClick={() => onSort("attendance_pct")}
-                >
-                  <IconWrapper icon="mdi:chart-bar" size={18} color="#6b7280" />
+                <Tooltip title={t("adminManageStudents.clickToSort")} enterDelay={400}>
                   <Box
-                    component="span"
-                    sx={{ display: { xs: "none", sm: "inline" } }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      cursor: "pointer",
+                      "&:hover": { color: "#6366f1" },
+                      transition: "color 0.2s",
+                    }}
+                    onClick={() => onSort("attendance_pct")}
                   >
-                    {t("adminManageStudents.attendancePct").toUpperCase()}
+                    <IconWrapper icon="mdi:chart-bar" size={18} color="#6b7280" />
+                    <Box
+                      component="span"
+                      sx={{ display: { xs: "none", sm: "inline" } }}
+                    >
+                      {t("adminManageStudents.attendancePct").toUpperCase()}
+                    </Box>
+                    {getSortIcon("attendance_pct", sortBy, sortOrder) && (
+                      <IconWrapper
+                        icon={getSortIcon("attendance_pct", sortBy, sortOrder)!}
+                        size={16}
+                        color="inherit"
+                      />
+                    )}
                   </Box>
-                  {getSortIcon("attendance_pct", sortBy, sortOrder) && (
-                    <IconWrapper
-                      icon={getSortIcon("attendance_pct", sortBy, sortOrder)!}
-                      size={16}
-                      color="inherit"
-                    />
-                  )}
-                </Box>
+                </Tooltip>
               </TableCell>
               <TableCell
                 sx={{
@@ -715,6 +724,7 @@ export function StudentsTable({
                             router.push(`/admin/profile/${student.id}`)
                           }
                           title={t("profile.tabProfile")}
+                          aria-label={t("profile.tabProfile")}
                           sx={{
                             color: "#6366f1",
                             "&:hover": {
@@ -732,6 +742,7 @@ export function StudentsTable({
                             router.push(`/admin/manage-students/${student.id}`)
                           }
                           title={t("manageStudents.courseManagement")}
+                          aria-label={t("manageStudents.courseManagement")}
                           sx={{
                             color: "#6366f1",
                             "&:hover": {
