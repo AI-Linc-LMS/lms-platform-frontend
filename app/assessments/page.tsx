@@ -16,7 +16,7 @@ import {
   MenuItem,
   FormControl,
   Chip,
-  LinearProgress,
+  Skeleton,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -27,10 +27,16 @@ import { useToast } from "@/components/common/Toast";
 import { AssessmentsGrid } from "@/components/assessment/AssessmentsGrid";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { isPsychometricAssessment } from "@/lib/utils/psychometric-utils";
+import {
+  canViewLearnerAssessmentResults,
+  isLearnerAssessmentSubmissionComplete,
+  isLearnerAssessmentSubmittedForCatalog,
+  isLearnerAssessmentSubmittedUnderReview,
+} from "@/lib/utils/assessment-learner-status";
 
 const ITEMS_PER_PAGE = 12;
 
-type FilterType = "all" | "available" | "completed";
+type FilterType = "all" | "available" | "under_review" | "completed";
 type SortType = "recent" | "oldest" | "title";
 
 export default function AssessmentsPage() {
@@ -71,28 +77,30 @@ export default function AssessmentsPage() {
     (a) => !isPsychometricAssessment(a)
   );
 
+  const manualCount = useMemo(
+    () => assessments.filter((a) => a.evaluation_mode === "manual").length,
+    [assessments],
+  );
+
   // Calculate counts based on status
   const totalCount = assessments.length;
   const psychometricCount = psychometricAssessments.length;
   const regularCount = regularAssessments.length;
   
-  // Completed: status is "submitted" or "completed"
-  // If status is undefined/null, fallback to is_attempted/has_attempted for backward compatibility
-  const completedCount = assessments.filter(
-    (a) => {
-      if (a.status === "submitted" || a.status === "completed") return true;
-      // Fallback for backward compatibility
-      if (a.status === undefined || a.status === null) {
-        return a.is_attempted || a.has_attempted;
-      }
-      return false;
-    }
+  /** Submitted and learner can open results (excludes pending manual / hidden results). */
+  const completedCount = assessments.filter((a) =>
+    canViewLearnerAssessmentResults(a),
+  ).length;
+
+  const underReviewCount = assessments.filter((a) =>
+    isLearnerAssessmentSubmittedUnderReview(a),
   ).length;
   
   // Available: status is "not_started" or "in_progress"
   // If status is undefined/null, fallback to !is_attempted && !has_attempted for backward compatibility
   const availableCount = assessments.filter(
     (a) => {
+      if (isLearnerAssessmentSubmittedForCatalog(a)) return false;
       if (a.status === "not_started" || a.status === "in_progress") return true;
       // Fallback for backward compatibility
       if (a.status === undefined || a.status === null) {
@@ -102,25 +110,6 @@ export default function AssessmentsPage() {
     }
   ).length;
   
-  const psychometricCompletedCount = psychometricAssessments.filter(
-    (a) => {
-      if (a.status === "submitted" || a.status === "completed") return true;
-      if (a.status === undefined || a.status === null) {
-        return a.is_attempted || a.has_attempted;
-      }
-      return false;
-    }
-  ).length;
-  const regularCompletedCount = regularAssessments.filter(
-    (a) => {
-      if (a.status === "submitted" || a.status === "completed") return true;
-      if (a.status === undefined || a.status === null) {
-        return a.is_attempted || a.has_attempted;
-      }
-      return false;
-    }
-  ).length;
-
   // Combine all assessments (psychometric + regular)
   const allAssessments = useMemo(() => {
     return [...psychometricAssessments, ...regularAssessments];
@@ -134,22 +123,15 @@ export default function AssessmentsPage() {
         assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Apply filter based on status
     if (filter === "completed") {
-      // Completed: status is "submitted" or "completed"
-      // Fallback to is_attempted/has_attempted for backward compatibility
-      result = result.filter((a) => {
-        if (a.status === "submitted" || a.status === "completed") return true;
-        // Fallback for backward compatibility
-        if (a.status === undefined || a.status === null) {
-          return a.is_attempted || a.has_attempted;
-        }
-        return false;
-      });
+      result = result.filter((a) => canViewLearnerAssessmentResults(a));
+    } else if (filter === "under_review") {
+      result = result.filter((a) => isLearnerAssessmentSubmittedUnderReview(a));
     } else if (filter === "available") {
       // Available: status is "not_started" or "in_progress"
       // Fallback to !is_attempted && !has_attempted for backward compatibility
       result = result.filter((a) => {
+        if (isLearnerAssessmentSubmittedForCatalog(a)) return false;
         if (a.status === "not_started" || a.status === "in_progress") return true;
         // Fallback for backward compatibility
         if (a.status === undefined || a.status === null) {
@@ -188,6 +170,12 @@ export default function AssessmentsPage() {
   };
 
   const totalPages = Math.ceil(filteredAssessments.length / pageSize);
+  const pageStart =
+    filteredAssessments.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(
+    page * pageSize,
+    filteredAssessments.length,
+  );
 
   return (
     <MainLayout>
@@ -199,14 +187,14 @@ export default function AssessmentsPage() {
               width: { xs: 48, sm: 56 },
               height: { xs: 48, sm: 56 },
               borderRadius: 2,
-              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+              background: "var(--assessment-page-header-gradient)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <IconWrapper icon="mdi:clipboard-text" size={28} color="#ffffff" />
+            <IconWrapper icon="mdi:clipboard-text" size={28} color="var(--font-light)" />
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography 
@@ -233,7 +221,8 @@ export default function AssessmentsPage() {
             gridTemplateColumns: {
               xs: "1fr",
               sm: "repeat(2, 1fr)",
-              md: "repeat(4, 1fr)",
+              md: "repeat(3, 1fr)",
+              lg: "repeat(5, 1fr)",
             },
             gap: { xs: 1.5, sm: 2 },
             mb: { xs: 2, sm: 3 },
@@ -330,6 +319,60 @@ export default function AssessmentsPage() {
                   sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
                 >
                   {t("assessments.psychometric")}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 2.5 },
+              border: "1px solid var(--border-default)",
+              borderRadius: 2,
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
+              <Box
+                sx={{
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 },
+                  borderRadius: 2,
+                  backgroundColor: "var(--assessment-catalog-manual-list-stat-bg)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <IconWrapper
+                  icon="mdi:clipboard-account-outline"
+                  size={24}
+                  color="var(--assessment-catalog-stat-icon-manual)"
+                />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={700} 
+                  color="var(--font-primary)"
+                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+                >
+                  {manualCount}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" }, lineHeight: 1.3 }}
+                >
+                  {t("assessments.manualEvaluationStat")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: "0.65rem", sm: "0.7rem" }, opacity: 0.85 }}
+                >
+                  {t("assessments.manualEvaluationStatHint")}
                 </Typography>
               </Box>
             </Box>
@@ -448,6 +491,9 @@ export default function AssessmentsPage() {
               setFilter(newValue);
               setPage(1);
             }}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             sx={{
               borderBottom: "1px solid var(--border-default)",
               px: 2,
@@ -473,6 +519,10 @@ export default function AssessmentsPage() {
             <Tab
               label={`${t("assessments.available")} (${availableCount})`}
               value="available"
+            />
+            <Tab
+              label={`${t("assessments.submittedUnderReview")} (${underReviewCount})`}
+              value="under_review"
             />
             <Tab
               label={`${t("assessments.completed")} (${completedCount})`}
@@ -568,8 +618,29 @@ export default function AssessmentsPage() {
 
         {/* All Assessments Grid */}
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
-            <LinearProgress sx={{ width: "80%", height: 2, borderRadius: 1 }} />
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                lg: "repeat(3, 1fr)",
+              },
+              gap: { xs: 2, sm: 3 },
+              width: "100%",
+            }}
+          >
+            {Array.from({ length: Math.min(pageSize, 9) }).map((_, i) => (
+              <Skeleton
+                key={i}
+                variant="rounded"
+                height={336}
+                sx={{
+                  borderRadius: 3,
+                  bgcolor: "color-mix(in srgb, var(--surface) 92%, var(--accent-indigo) 8%)",
+                }}
+              />
+            ))}
           </Box>
         ) : filteredAssessments.length > 0 ? (
           <AssessmentsGrid
@@ -582,9 +653,9 @@ export default function AssessmentsPage() {
             sx={{
               p: 8,
               textAlign: "center",
-              border: "1px dashed #e5e7eb",
+              border: "1px dashed var(--border-default)",
               borderRadius: 3,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--card-bg)",
             }}
           >
             <Box
@@ -592,7 +663,7 @@ export default function AssessmentsPage() {
                 width: 80,
                 height: 80,
                 borderRadius: "50%",
-                backgroundColor: "rgba(99, 102, 241, 0.1)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -607,13 +678,13 @@ export default function AssessmentsPage() {
                     : "mdi:clipboard-text-outline"
                 }
                 size={40}
-                color="#6366f1"
+                color="var(--accent-indigo)"
               />
             </Box>
             <Typography
               variant="h6"
               sx={{
-                color: "#374151",
+                color: "var(--font-muted)",
                 fontWeight: 600,
                 mb: 1,
               }}
@@ -623,7 +694,7 @@ export default function AssessmentsPage() {
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 maxWidth: 400,
                 mx: "auto",
               }}
@@ -636,7 +707,7 @@ export default function AssessmentsPage() {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {filteredAssessments.length > 0 && (
           <Box
             sx={{
               display: "flex",
@@ -656,8 +727,17 @@ export default function AssessmentsPage() {
                 textAlign: { xs: "center", sm: "start" },
               }}
             >
-              {t("assessments.showingTotal", { count: filteredAssessments.length })}
+              {totalPages > 1
+                ? t("assessments.pageRange", {
+                    start: pageStart,
+                    end: pageEnd,
+                    total: filteredAssessments.length,
+                  })
+                : t("assessments.showingTotal", {
+                    count: filteredAssessments.length,
+                  })}
             </Typography>
+            {totalPages > 1 && (
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               <Button
                 variant="outlined"
@@ -666,8 +746,8 @@ export default function AssessmentsPage() {
                 onClick={() => handlePageChange(page - 1)}
                 startIcon={<IconWrapper icon="mdi:chevron-left" size={16} />}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#374151",
+                  borderColor: "var(--border-light)",
+                  color: "var(--font-muted)",
                   textTransform: "none",
                   minWidth: { xs: "auto", sm: "auto" },
                   px: { xs: 1, sm: 2 },
@@ -675,12 +755,12 @@ export default function AssessmentsPage() {
                     mr: { xs: 0, sm: 0.5 },
                   },
                   "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "var(--font-tertiary)",
+                    backgroundColor: "var(--surface)",
                   },
                   "&:disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-tertiary)",
                   },
                 }}
               >
@@ -697,15 +777,15 @@ export default function AssessmentsPage() {
                 size="small"
                 sx={{
                   "& .MuiPaginationItem-root": {
-                    color: "#374151",
+                    color: "var(--font-muted)",
                     minWidth: { xs: "32px", sm: "36px" },
                     height: { xs: "32px", sm: "36px" },
                     fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                     "&.Mui-selected": {
-                      backgroundColor: "#374151",
-                      color: "#ffffff",
+                      backgroundColor: "var(--font-muted)",
+                      color: "var(--font-light)",
                       "&:hover": {
-                        backgroundColor: "#1f2937",
+                        backgroundColor: "var(--font-primary-dark)",
                       },
                     },
                   },
@@ -718,8 +798,8 @@ export default function AssessmentsPage() {
                 onClick={() => handlePageChange(page + 1)}
                 endIcon={<IconWrapper icon="mdi:chevron-right" size={16} />}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#374151",
+                  borderColor: "var(--border-light)",
+                  color: "var(--font-muted)",
                   textTransform: "none",
                   minWidth: { xs: "auto", sm: "auto" },
                   px: { xs: 1, sm: 2 },
@@ -727,20 +807,21 @@ export default function AssessmentsPage() {
                     ml: { xs: 0, sm: 0.5 },
                   },
                   "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "#f9fafb",
+                    borderColor: "var(--font-tertiary)",
+                    backgroundColor: "var(--surface)",
                   },
                   "&:disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-tertiary)",
                   },
                 }}
               >
                 <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                  Next
+                  {t("assessments.next")}
                 </Box>
               </Button>
             </Box>
+            )}
           </Box>
         )}
       </Box>

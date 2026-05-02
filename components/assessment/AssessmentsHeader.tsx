@@ -23,17 +23,17 @@ export function AssessmentsHeader() {
             width: 48,
             height: 48,
             borderRadius: 2,
-            background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+            background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+            boxShadow: "var(--assessment-catalog-cta-auto-shadow)",
           }}
         >
           <IconWrapper
             icon="mdi:clipboard-text-outline"
             size={28}
-            color="#ffffff"
+            color="var(--font-light)"
           />
         </Box>
         <Box>
@@ -42,7 +42,7 @@ export function AssessmentsHeader() {
             sx={{
               fontSize: { xs: "1.75rem", sm: "2rem", md: "2.25rem" },
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               lineHeight: 1.2,
             }}
           >
@@ -51,7 +51,7 @@ export function AssessmentsHeader() {
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.9375rem",
               mt: 0.5,
             }}

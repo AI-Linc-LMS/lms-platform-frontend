@@ -600,30 +600,30 @@ export function AssessmentCodingLayout({
             }}
           >
             {remoteAutosave.status === "idle" && (
-              <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 500, textAlign: "right" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, textAlign: "right" }}>
                 {t("assessments.take.codingAutosaveHint")}
               </Typography>
             )}
             {remoteAutosave.status === "saving" && (
               <>
-                <CircularProgress size={14} thickness={5} sx={{ color: "#6366f1" }} />
-                <Typography variant="caption" sx={{ color: "#4b5563", fontWeight: 600 }}>
+                <CircularProgress size={14} thickness={5} sx={{ color: "var(--accent-indigo)" }} />
+                <Typography variant="caption" sx={{ color: "var(--neutral-500)", fontWeight: 600 }}>
                   {t("assessments.take.codingAutosaveSaving")}
                 </Typography>
               </>
             )}
             {remoteAutosave.status === "saved" && (
               <>
-                <IconWrapper icon="mdi:cloud-check-outline" size={16} color="#10b981" />
-                <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 500 }}>
+                <IconWrapper icon="mdi:cloud-check-outline" size={16} color="var(--course-cta)" />
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                   {t("assessments.take.codingAutosaveSaved")}
                 </Typography>
               </>
             )}
             {remoteAutosave.status === "error" && (
               <>
-                <IconWrapper icon="mdi:cloud-alert-outline" size={16} color="#d97706" />
-                <Typography variant="caption" sx={{ color: "#b45309", fontWeight: 600 }}>
+                <IconWrapper icon="mdi:cloud-alert-outline" size={16} color="var(--ats-warning-muted)" />
+                <Typography variant="caption" sx={{ color: "color-mix(in srgb, var(--accent-orange) 92%, var(--font-dark))", fontWeight: 600 }}>
                   {t("assessments.take.codingAutosaveError")}
                 </Typography>
               </>
@@ -637,8 +637,8 @@ export function AssessmentCodingLayout({
             maxHeight: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
             display: "flex",
             gap: 0,
-            backgroundColor: "#f9fafb",
-            border: "1px solid #e5e7eb",
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             overflow: "hidden",
             position: "relative",
@@ -652,9 +652,9 @@ export function AssessmentCodingLayout({
               height: "100%",
               display: "flex",
               flexDirection: "column",
-              borderRight: "2px solid #e5e7eb",
+              borderRight: "2px solid var(--border-default)",
               borderRadius: 0,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--font-light)",
               overflow: "hidden",
               flexShrink: 0,
             }}
@@ -679,7 +679,7 @@ export function AssessmentCodingLayout({
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--font-light)",
           overflow: "hidden",
           minWidth: 0,
         }}
@@ -718,8 +718,8 @@ export function AssessmentCodingLayout({
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            backgroundColor: "#fafafa",
-            borderTop: "2px solid #e5e7eb",
+            backgroundColor: "var(--neutral-50)",
+            borderTop: "2px solid var(--border-default)",
           }}
         >
           <TestResults

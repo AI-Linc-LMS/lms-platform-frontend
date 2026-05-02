@@ -23,7 +23,7 @@ export function StartScreen({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
       }}
     >
       <Paper
@@ -95,7 +95,7 @@ export function StartScreen({
           sx={{
             py: 1.5,
             fontSize: "1.1rem",
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
           }}
         >
           {isInitializing ? t("assessments.initializing") : t("assessments.startAssessment")}

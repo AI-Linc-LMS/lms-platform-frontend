@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
@@ -23,6 +23,13 @@ import {
   Stack,
   TextField,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  ButtonBase,
+  Tooltip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DRAWER_WIDTH } from "@/components/layout/Sidebar";
@@ -35,6 +42,11 @@ import {
   type ManualEvaluationPayload,
   type SubmissionManualEvaluationResponse,
 } from "@/lib/services/admin/admin-assessment.service";
+import {
+  mergeSubjectiveApiRowIntoPayload,
+  normalizeSubjectiveAnswer,
+  parseSubjectiveAnswerPayload,
+} from "@/utils/assessment.utils";
 
 type ScoreMap = Record<number, { awarded_marks: string; note: string }>;
 
@@ -59,9 +71,44 @@ function mergeScoreMaps(base: ScoreMap, overlay: ScoreMap): ScoreMap {
   return out;
 }
 
+const QUIZ_OPTION_LETTERS = new Set(["A", "B", "C", "D"]);
+
 function normalizeOptionLetter(value: unknown): string {
   if (value == null || value === "") return "";
   return String(value).trim().toUpperCase();
+}
+
+/** Matches backend `normalize_student_selection` (lms_core.mcq_utils) for MCQ + MSQ. */
+function normalizeQuizSelectionLetters(raw: unknown): string[] {
+  if (raw == null || raw === "") return [];
+  if (Array.isArray(raw)) {
+    const out: string[] = [];
+    for (const x of raw) {
+      if (x == null) continue;
+      const s = String(x).trim().toUpperCase();
+      if (QUIZ_OPTION_LETTERS.has(s)) out.push(s);
+    }
+    return [...new Set(out)].sort();
+  }
+  const s = String(raw).trim().toUpperCase();
+  if (QUIZ_OPTION_LETTERS.has(s)) return [s];
+  return [];
+}
+
+/** Canonical correct letters from API row (`correct_options` preferred). */
+function normalizeCorrectLettersFromRow(q: {
+  correct_options?: unknown;
+  correct_option?: unknown;
+}): string[] {
+  const co = q.correct_options;
+  if (Array.isArray(co) && co.length > 0) {
+    const out = co
+      .map((x: unknown) => String(x).trim().toUpperCase())
+      .filter((x) => QUIZ_OPTION_LETTERS.has(x));
+    return [...new Set(out)].sort();
+  }
+  const single = normalizeOptionLetter(q.correct_option);
+  return single && QUIZ_OPTION_LETTERS.has(single) ? [single] : [];
 }
 
 function looksLikeHtml(s: string): boolean {
@@ -111,7 +158,7 @@ function optionStateChipSx(kind: "selected" | "correct") {
 export default function AdminSubmissionEvaluationPage() {
   const params = useParams();
   const router = useRouter();
-  const { i18n } = useTranslation("common");
+  const { i18n, t } = useTranslation("common");
   const { showToast } = useToast();
   const rtl = isRtl(i18n.language || "en");
 
@@ -126,6 +173,22 @@ export default function AdminSubmissionEvaluationPage() {
   const [codingScores, setCodingScores] = useState<ScoreMap>({});
   const [subjectiveScores, setSubjectiveScores] = useState<ScoreMap>({});
   const [adminNotes, setAdminNotes] = useState("");
+  const mediaPreviewVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<{
+    open: boolean;
+    kind: "image" | "video" | "file";
+    url: string;
+    title: string;
+  }>({ open: false, kind: "image", url: "", title: "" });
+
+  const closeMediaPreview = () => {
+    mediaPreviewVideoRef.current?.pause();
+    setMediaPreview((s) => ({ ...s, open: false }));
+  };
+
+  const openMediaPreview = (kind: "image" | "video" | "file", url: string, title: string) => {
+    setMediaPreview({ open: true, kind, url, title });
+  };
 
   const quizMaxById = useMemo(() => {
     const map = new Map<number, number>();
@@ -502,8 +565,11 @@ export default function AdminSubmissionEvaluationPage() {
                 {(data.responses.quiz_responses || []).map((q: any) => {
                   const opts = (q.options || {}) as Record<string, string>;
                   const letters = ["A", "B", "C", "D"].filter((k) => opts[k] != null && String(opts[k]).trim() !== "");
-                  const selected = normalizeOptionLetter(q.selected_answer);
-                  const correct = normalizeOptionLetter(q.correct_option);
+                  const isMsq = String(q.question_style || "single").toLowerCase() === "multiple";
+                  const selectedLetters = normalizeQuizSelectionLetters(q.selected_answer);
+                  const correctLetters = normalizeCorrectLettersFromRow(q);
+                  const selectedSet = new Set(selectedLetters);
+                  const correctSet = new Set(correctLetters);
                   const marksInvalid = (() => {
                     const raw = quizScores[q.question_id]?.awarded_marks ?? "";
                     if (!raw.trim()) return false;
@@ -524,15 +590,42 @@ export default function AdminSubmissionEvaluationPage() {
                               {q.difficulty_level ? (
                                 <Chip size="small" label={String(q.difficulty_level)} variant="outlined" />
                               ) : null}
+                              {isMsq ? (
+                                <Chip
+                                  size="small"
+                                  variant="outlined"
+                                  label="MSQ"
+                                  sx={{
+                                    fontWeight: 800,
+                                    borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default))",
+                                    color: "var(--accent-indigo-dark)",
+                                  }}
+                                />
+                              ) : null}
                               <Chip size="small" color={q.is_correct ? "success" : "warning"} variant="outlined" label={q.is_correct ? "Auto: correct" : "Auto: incorrect"} />
                               <Chip size="small" variant="outlined" label={`Max ${Number(q.max_marks) || 0}`} />
                             </Stack>
                           </Stack>
 
+                          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ columnGap: 2, rowGap: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                              Selected:{" "}
+                              <Box component="span" sx={{ color: "var(--font-primary)", fontWeight: 800 }}>
+                                {selectedLetters.length ? selectedLetters.join(", ") : "—"}
+                              </Box>
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                              Correct:{" "}
+                              <Box component="span" sx={{ color: "var(--font-primary)", fontWeight: 800 }}>
+                                {correctLetters.length ? correctLetters.join(", ") : "—"}
+                              </Box>
+                            </Typography>
+                          </Stack>
+
                           <Stack spacing={1}>
                             {letters.map((letter) => {
-                              const isSelected = selected === letter;
-                              const isCorrect = correct === letter;
+                              const isSelected = selectedSet.has(letter);
+                              const isCorrect = correctSet.has(letter);
                               const border = isCorrect
                                 ? "1px solid color-mix(in srgb, var(--success-500) 48%, var(--border-default) 52%)"
                                 : isSelected
@@ -830,7 +923,9 @@ export default function AdminSubmissionEvaluationPage() {
             <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
               <Stack spacing={2}>
                 {(data.responses.subjective_responses || []).map((q: any) => {
-                  const answer = String(q.answer || "");
+                  const merged = mergeSubjectiveApiRowIntoPayload(q);
+                  const parsed = parseSubjectiveAnswerPayload(merged);
+                  const answer = normalizeSubjectiveAnswer(merged);
                   const marksInvalid = (() => {
                     const raw = subjectiveScores[q.question_id]?.awarded_marks ?? "";
                     if (!raw.trim()) return false;
@@ -849,6 +944,13 @@ export default function AdminSubmissionEvaluationPage() {
                             </Typography>
                             <Stack direction="row" spacing={0.75} flexWrap="wrap" justifyContent="flex-end">
                               {q.question_type ? <Chip size="small" label={String(q.question_type)} variant="outlined" /> : null}
+                              {q.answer_mode ? (
+                                <Chip
+                                  size="small"
+                                  label={String(q.answer_mode).replace(/_/g, " ")}
+                                  variant="outlined"
+                                />
+                              ) : null}
                               <Chip size="small" variant="outlined" label={`Max ${Number(q.max_marks) || 0}`} />
                             </Stack>
                           </Stack>
@@ -856,18 +958,280 @@ export default function AdminSubmissionEvaluationPage() {
                           <Paper
                             variant="outlined"
                             sx={{
-                              p: 1.5,
+                              p: { xs: 1.5, sm: 2 },
                               borderRadius: 2,
                               bgcolor:
                                 "color-mix(in srgb, var(--surface) 90%, var(--card-bg) 10%)",
+                              borderColor:
+                                "color-mix(in srgb, var(--accent-indigo) 12%, var(--border-default))",
                             }}
                           >
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, display: "block", mb: 0.75 }}>
-                              Learner response
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                fontWeight: 800,
+                                display: "block",
+                                mb: 1,
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase",
+                                fontSize: "0.68rem",
+                              }}
+                            >
+                              {t("admin.assessment.submissionLearnerResponse")}
                             </Typography>
-                            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "var(--font-primary)" }}>
-                              {answer.trim() ? answer : "—"}
-                            </Typography>
+                            <Paper
+                              variant="outlined"
+                              sx={{
+                                p: 1.5,
+                                borderRadius: 1.5,
+                                bgcolor: "var(--card-bg)",
+                                borderStyle: "dashed",
+                                borderColor: "var(--border-light)",
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ whiteSpace: "pre-wrap", color: "var(--font-primary)", lineHeight: 1.65 }}
+                              >
+                                {answer.trim() ? answer : "—"}
+                              </Typography>
+                            </Paper>
+
+                            {((parsed.images?.length ?? 0) > 0 ||
+                              (parsed.files?.length ?? 0) > 0 ||
+                              Boolean(parsed.video?.url)) && (
+                              <Box
+                                sx={{
+                                  mt: 2,
+                                  pt: 2,
+                                  borderTop: "1px solid",
+                                  borderColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--border-default))",
+                                  maxWidth: 720,
+                                }}
+                              >
+                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                                  <IconWrapper
+                                    icon="mdi:paperclip"
+                                    size={20}
+                                    color="var(--accent-indigo-dark)"
+                                  />
+                                  <Typography
+                                    variant="subtitle2"
+                                    sx={{ fontWeight: 800, color: "var(--font-primary)" }}
+                                  >
+                                    {t("admin.assessment.submissionAttachmentsHeading")}
+                                  </Typography>
+                                </Stack>
+
+                                {(parsed.images?.length ?? 0) > 0 && (
+                                  <Box sx={{ mb: 2.5 }}>
+                                    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1 }}>
+                                      <IconWrapper icon="mdi:image-multiple-outline" size={18} color="var(--font-secondary)" />
+                                      <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                                        {t("admin.assessment.submissionImagesLabel")}
+                                      </Typography>
+                                    </Stack>
+                                    <Box
+                                      sx={{
+                                        display: "grid",
+                                        gridTemplateColumns: {
+                                          xs: "repeat(2, minmax(0, 1fr))",
+                                          sm: "repeat(3, minmax(0, 1fr))",
+                                        },
+                                        gap: 1.25,
+                                      }}
+                                    >
+                                      {(parsed.images || []).map((im: { url: string; name?: string }, i: number) => {
+                                        const label = im.name || `Image ${i + 1}`;
+                                        return (
+                                          <Tooltip key={`${im.url}-${i}`} title={t("admin.assessment.submissionEnlargeImage")}>
+                                            <ButtonBase
+                                              onClick={() =>
+                                                openMediaPreview("image", im.url, label)
+                                              }
+                                              sx={{
+                                                display: "block",
+                                                width: "100%",
+                                                borderRadius: 2,
+                                                overflow: "hidden",
+                                                textAlign: "left",
+                                                border: "1px solid color-mix(in srgb, var(--accent-indigo) 18%, var(--border-default))",
+                                                bgcolor: "var(--card-bg)",
+                                                transition: "box-shadow 0.2s ease, transform 0.15s ease",
+                                                "&:hover": {
+                                                  boxShadow:
+                                                    "0 8px 24px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
+                                                  transform: "translateY(-2px)",
+                                                },
+                                              }}
+                                            >
+                                              <Box
+                                                component="img"
+                                                src={im.url}
+                                                alt=""
+                                                sx={{
+                                                  width: "100%",
+                                                  height: 112,
+                                                  objectFit: "cover",
+                                                  display: "block",
+                                                  bgcolor: "var(--surface)",
+                                                }}
+                                              />
+                                              <Box sx={{ px: 1, py: 0.85, borderTop: "1px solid var(--border-default)" }}>
+                                                <Typography
+                                                  variant="caption"
+                                                  sx={{
+                                                    fontWeight: 600,
+                                                    color: "var(--font-primary)",
+                                                    display: "block",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                  }}
+                                                  title={label}
+                                                >
+                                                  {label}
+                                                </Typography>
+                                              </Box>
+                                            </ButtonBase>
+                                          </Tooltip>
+                                        );
+                                      })}
+                                    </Box>
+                                  </Box>
+                                )}
+
+                                {parsed.video?.url ? (
+                                  <Paper
+                                    elevation={0}
+                                    sx={{
+                                      mb: (parsed.files?.length ?? 0) > 0 ? 2.5 : 0,
+                                      p: 1.5,
+                                      borderRadius: 2,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1.5,
+                                      flexWrap: "wrap",
+                                      border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, var(--border-default))",
+                                      bgcolor:
+                                        "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg))",
+                                      maxWidth: 560,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        width: 52,
+                                        height: 52,
+                                        borderRadius: 1.5,
+                                        flexShrink: 0,
+                                        display: "grid",
+                                        placeItems: "center",
+                                        bgcolor:
+                                          "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                                        border:
+                                          "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                                      }}
+                                    >
+                                      <IconWrapper icon="mdi:video-outline" size={26} color="var(--accent-indigo-dark)" />
+                                    </Box>
+                                    <Box sx={{ flex: 1, minWidth: 140 }}>
+                                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+                                        {t("admin.assessment.submissionVideoLabel")}
+                                      </Typography>
+                                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.35 }}>
+                                        {t("admin.assessment.submissionVideoCardSubtitle")}
+                                      </Typography>
+                                      {parsed.video.duration_seconds != null ? (
+                                        <Chip
+                                          size="small"
+                                          sx={{ mt: 0.75, fontWeight: 700, height: 24 }}
+                                          label={`${Math.round(parsed.video.duration_seconds)}s`}
+                                        />
+                                      ) : null}
+                                    </Box>
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      onClick={() =>
+                                        openMediaPreview(
+                                          "video",
+                                          parsed.video!.url,
+                                          t("admin.assessment.submissionPreviewVideoTitle"),
+                                        )
+                                      }
+                                      startIcon={<IconWrapper icon="mdi:play-circle" size={20} color="var(--font-light)" />}
+                                      sx={{
+                                        textTransform: "none",
+                                        fontWeight: 700,
+                                        flexShrink: 0,
+                                        bgcolor: "var(--accent-indigo)",
+                                        "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                                      }}
+                                    >
+                                      {t("admin.assessment.submissionPreviewOpenVideo")}
+                                    </Button>
+                                  </Paper>
+                                ) : null}
+
+                                {(parsed.files?.length ?? 0) > 0 && (
+                                  <Box>
+                                    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1 }}>
+                                      <IconWrapper icon="mdi:file-document-outline" size={18} color="var(--font-secondary)" />
+                                      <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                                        {t("admin.assessment.submissionFilesLabel")}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack spacing={1}>
+                                      {(parsed.files || []).map((f: { url: string; name?: string }, i: number) => {
+                                        const label = f.name || `File ${i + 1}`;
+                                        return (
+                                          <Button
+                                            key={`${f.url}-${i}`}
+                                            variant="outlined"
+                                            size="small"
+                                            onClick={() => openMediaPreview("file", f.url, label)}
+                                            startIcon={
+                                              <IconWrapper icon="mdi:file-eye-outline" size={20} color="var(--accent-indigo-dark)" />
+                                            }
+                                            sx={{
+                                              justifyContent: "flex-start",
+                                              textTransform: "none",
+                                              fontWeight: 600,
+                                              py: 1,
+                                              px: 1.25,
+                                              borderRadius: 1.5,
+                                              borderColor:
+                                                "color-mix(in srgb, var(--accent-indigo) 22%, var(--border-default))",
+                                              color: "var(--font-primary)",
+                                              maxWidth: 560,
+                                              "&:hover": {
+                                                borderColor: "var(--accent-indigo)",
+                                                bgcolor:
+                                                  "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg))",
+                                              },
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="body2"
+                                              sx={{
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap",
+                                                textAlign: "left",
+                                              }}
+                                              title={label}
+                                            >
+                                              {label}
+                                            </Typography>
+                                          </Button>
+                                        );
+                                      })}
+                                    </Stack>
+                                  </Box>
+                                )}
+                              </Box>
+                            )}
                           </Paper>
 
                           <Divider />
@@ -1004,6 +1368,113 @@ export default function AdminSubmissionEvaluationPage() {
           </Paper>
         )}
       </Box>
+
+      <Dialog
+        open={mediaPreview.open}
+        onClose={(_, reason) => {
+          if (reason === "backdropClick" || reason === "escapeKeyDown") {
+            closeMediaPreview();
+          }
+        }}
+        maxWidth="lg"
+        fullWidth
+        slotProps={{
+          backdrop: { sx: { zIndex: 1300 } },
+        }}
+        PaperProps={{ sx: { zIndex: 1301, borderRadius: 2 } }}
+        sx={{ zIndex: 1300 }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+            pr: 1,
+          }}
+        >
+          <Typography component="span" variant="h6" sx={{ fontWeight: 800 }}>
+            {mediaPreview.title}
+          </Typography>
+          <IconButton
+            type="button"
+            aria-label={t("tools.close")}
+            onClick={closeMediaPreview}
+            edge="end"
+            size="small"
+          >
+            <IconWrapper icon="mdi:close" size={22} color="var(--font-secondary)" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            pt: 0,
+            pb: 2,
+            bgcolor: "var(--neutral-900, #141414)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 200,
+          }}
+        >
+          {mediaPreview.kind === "image" && mediaPreview.url ? (
+            <Box
+              component="img"
+              src={mediaPreview.url}
+              alt={mediaPreview.title}
+              sx={{
+                maxWidth: "100%",
+                maxHeight: "min(78vh, 900px)",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+          ) : null}
+          {mediaPreview.kind === "video" && mediaPreview.url ? (
+            <Box sx={{ width: "100%", maxHeight: "min(78vh, 900px)" }}>
+              <video
+                key={mediaPreview.url}
+                ref={mediaPreviewVideoRef}
+                src={mediaPreview.url}
+                controls
+                playsInline
+                preload="metadata"
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  maxHeight: "min(78vh, 900px)",
+                  display: "block",
+                }}
+              />
+            </Box>
+          ) : null}
+          {mediaPreview.kind === "file" && mediaPreview.url ? (
+            <Stack spacing={1} sx={{ width: "100%" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                {t("admin.assessment.submissionPreviewFileHint")}
+              </Typography>
+              <Box
+                component="iframe"
+                src={mediaPreview.url}
+                title={mediaPreview.title}
+                sx={{
+                  width: "100%",
+                  height: "min(72vh, 820px)",
+                  border: 0,
+                  borderRadius: 1,
+                  bgcolor: "var(--card-bg)",
+                }}
+              />
+            </Stack>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2 }}>
+          <Button variant="contained" onClick={closeMediaPreview} sx={{ textTransform: "none", fontWeight: 600 }}>
+            {t("tools.close")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </MainLayout>
   );
 }

@@ -371,10 +371,10 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
                       transition: "opacity 0.15s ease-out",
                       pointerEvents: "none",
                       borderRadius: "inherit",
-                      backgroundColor: "rgba(248, 250, 252, 0.72)",
+                      backgroundColor: "color-mix(in srgb, var(--surface) 74%, transparent)",
                     }}
                   >
-                    <IconWrapper icon="mdi:cancel" size={22} color="#b91c1c" />
+                    <IconWrapper icon="mdi:cancel" size={22} color="var(--error-600)" />
                   </Box>
                 )}
               </Box>

@@ -50,13 +50,13 @@ export function SuitableCareerProfilesSection({ profiles }: SuitableCareerProfil
     name: profile.role.length > 12 ? profile.role.substring(0, 12) + "..." : profile.role,
     fullName: profile.role,
     score: profile.score,
-    fill: profile.score >= 80 ? "#10b981" : profile.score >= 65 ? "#3b82f6" : "#f59e0b"
+    fill: profile.score >= 80 ? "var(--course-cta)" : profile.score >= 65 ? "var(--accent-blue-light)" : "var(--warning-500)"
   }));
 
   const fitmentCategoryData = [
-    { name: "High Fit (80%+)", value: highFitProfiles, fill: "#10b981" },
-    { name: "Medium Fit (65-79%)", value: mediumFitProfiles, fill: "#3b82f6" },
-    { name: "Low Fit (<65%)", value: lowFitProfiles, fill: "#f59e0b" }
+    { name: "High Fit (80%+)", value: highFitProfiles, fill: "var(--course-cta)" },
+    { name: "Medium Fit (65-79%)", value: mediumFitProfiles, fill: "var(--accent-blue-light)" },
+    { name: "Low Fit (<65%)", value: lowFitProfiles, fill: "var(--warning-500)" }
   ];
 
   const getScoreColor = (score: number) => {
@@ -159,17 +159,17 @@ export function SuitableCareerProfilesSection({ profiles }: SuitableCareerProfil
           <div className="w-full h-[300px] sm:h-[350px]">
             <ResponsiveContainer>
               <BarChart data={scoreDistributionData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
                 <XAxis 
                   dataKey="name" 
-                  tick={{ fontSize: 11, fill: "#475569" }}
+                  tick={{ fontSize: 11, fill: "var(--font-muted)" }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis 
                   domain={[0, 100]}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
+                  tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
                   label={{ value: "Match %", angle: -90, position: "insideLeft" }}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -202,7 +202,7 @@ export function SuitableCareerProfilesSection({ profiles }: SuitableCareerProfil
                   labelLine={false}
                   label={({ name, value, percent }) => `${name}: ${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`}
                   outerRadius={100}
-                  fill="#8884d8"
+                  fill="var(--assessment-chart-secondary-fill)"
                   dataKey="value"
                 >
                   {fitmentCategoryData.map((entry, index) => (

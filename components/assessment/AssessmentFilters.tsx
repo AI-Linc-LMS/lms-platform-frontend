@@ -44,7 +44,7 @@ export function AssessmentFilters({
       elevation={0}
       sx={{
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 2,
         overflow: "hidden",
       }}
@@ -54,20 +54,20 @@ export function AssessmentFilters({
         value={activeTab}
         onChange={(e, newValue) => onTabChange(newValue)}
         sx={{
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--border-default)",
           px: 2,
           "& .MuiTab-root": {
             textTransform: "none",
             fontWeight: 600,
             fontSize: "0.9375rem",
             minHeight: 56,
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             "&.Mui-selected": {
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
             },
           },
           "& .MuiTabs-indicator": {
-            backgroundColor: "#6366f1",
+            backgroundColor: "var(--accent-indigo)",
             height: 3,
             borderRadius: "3px 3px 0 0",
           },
@@ -96,22 +96,22 @@ export function AssessmentFilters({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <IconWrapper icon="mdi:magnify" size={20} color="#9ca3af" />
+                <IconWrapper icon="mdi:magnify" size={20} color="var(--font-tertiary)" />
               </InputAdornment>
             ),
           }}
           sx={{
             "& .MuiOutlinedInput-root": {
               borderRadius: 2,
-              backgroundColor: "#f9fafb",
+              backgroundColor: "var(--surface)",
               "& fieldset": {
-                borderColor: "#e5e7eb",
+                borderColor: "var(--border-default)",
               },
               "&:hover fieldset": {
-                borderColor: "#d1d5db",
+                borderColor: "var(--border-light)",
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#6366f1",
+                borderColor: "var(--accent-indigo)",
               },
             },
           }}
@@ -129,15 +129,15 @@ export function AssessmentFilters({
             onChange={(e) => onSortChange(e.target.value as any)}
             sx={{
               borderRadius: 2,
-              backgroundColor: "#f9fafb",
+              backgroundColor: "var(--surface)",
               "& fieldset": {
-                borderColor: "#e5e7eb",
+                borderColor: "var(--border-default)",
               },
               "&:hover fieldset": {
-                borderColor: "#d1d5db",
+                borderColor: "var(--border-light)",
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#6366f1",
+                borderColor: "var(--accent-indigo)",
               },
             }}
           >

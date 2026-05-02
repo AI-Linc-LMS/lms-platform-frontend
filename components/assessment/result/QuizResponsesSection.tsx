@@ -20,6 +20,37 @@ function getOptionsArray(options: Record<string, string>): Array<{ id: string; l
   return keys.map((key) => ({ id: key, label: options[key] || "", value: key }));
 }
 
+function quizSelectedLetters(
+  raw: QuizResponseItem["selected_answer"],
+): Set<string> {
+  const s = new Set<string>();
+  if (raw == null || raw === "") return s;
+  if (Array.isArray(raw)) {
+    for (const x of raw) {
+      const u = String(x).toUpperCase().trim();
+      if (u) s.add(u);
+    }
+    return s;
+  }
+  const u = String(raw).toUpperCase().trim();
+  if (u) s.add(u);
+  return s;
+}
+
+function quizCorrectLetters(q: QuizResponseItem): Set<string> {
+  const s = new Set<string>();
+  if (q.question_style === "multiple" && q.correct_options?.length) {
+    for (const x of q.correct_options) {
+      const u = String(x).toUpperCase().trim();
+      if (u) s.add(u);
+    }
+    return s;
+  }
+  const u = String(q.correct_option ?? "").toUpperCase().trim();
+  if (u) s.add(u);
+  return s;
+}
+
 function getDifficultyColor(level?: string) {
   if (!level) return { bg: "var(--surface)", color: "var(--font-secondary)" };
   switch (level) {
@@ -47,18 +78,19 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
   const [currentIndex, setCurrentIndex] = useState(0);
   const total = quizResponses.length;
   const q = quizResponses[currentIndex];
-  const options = getOptionsArray(q?.options || {});
-  const selected = q?.selected_answer?.toUpperCase() ?? null;
-  const correct = q?.correct_option ?? "";
-  const feedbackText = typeof q?.feedback === "string" ? q.feedback.trim() : "";
-  const hasFeedback = feedbackText.length > 0;
-  const graded =
-    q?.awarded_marks != null && Number.isFinite(Number(q?.awarded_marks));
-  const diffStyle = getDifficultyColor(q?.difficulty_level);
-  const isFirst = currentIndex === 0;
-  const isLast = currentIndex === total - 1;
 
   if (!q) return null;
+
+  const options = getOptionsArray(q.options || {});
+  const selectedSet = quizSelectedLetters(q.selected_answer);
+  const correctSet = quizCorrectLetters(q);
+  const feedbackText = typeof q.feedback === "string" ? q.feedback.trim() : "";
+  const hasFeedback = feedbackText.length > 0;
+  const graded =
+    q.awarded_marks != null && Number.isFinite(Number(q.awarded_marks));
+  const diffStyle = getDifficultyColor(q.difficulty_level);
+  const isFirst = currentIndex === 0;
+  const isLast = currentIndex === total - 1;
 
   return (
     <Paper
@@ -241,8 +273,8 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, pl: { xs: 0, sm: 6 } }}>
           {options.map((opt) => {
-            const isSelected = opt.id === selected;
-            const isCorrectOpt = opt.id === correct;
+            const isSelected = selectedSet.has(opt.id);
+            const isCorrectOpt = correctSet.has(opt.id);
             return (
               <Paper
                 key={opt.id}

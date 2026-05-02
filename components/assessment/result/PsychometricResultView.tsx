@@ -271,7 +271,7 @@ export function PsychometricResultView({ data }: PsychometricResultViewProps) {
       await generatePdfFromElement({
         element: contentRef.current,
         fileName,
-        backgroundColor: "#f8fafc",
+        backgroundColor: "var(--surface)",
         quality: 0.92,
         pixelRatio: 1.5,
       });

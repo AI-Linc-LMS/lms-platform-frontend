@@ -31,9 +31,9 @@ export function ResponseQualityBarChart({ quality }: ResponseQualityBarChartProp
 
   const getQualityColor = (level: string) => {
     const levelLower = level.toLowerCase();
-    if (levelLower === "high" || levelLower === "low") return "#16A34A";
-    if (levelLower === "moderate") return "#D97706";
-    return "#EF4444";
+    if (levelLower === "high" || levelLower === "low") return "var(--assessment-chart-green)";
+    if (levelLower === "moderate") return "var(--ats-warning-muted)";
+    return "var(--error-500)";
   };
 
   const chartData = [
@@ -92,19 +92,19 @@ export function ResponseQualityBarChart({ quality }: ResponseQualityBarChartProp
       <div className="w-full h-[300px]">
         <ResponsiveContainer>
           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
             />
             <YAxis
               domain={[0, 100]}
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
               label={{
                 value: "Score (%)",
                 angle: -90,
                 position: "insideLeft",
-                style: { textAnchor: "middle", fill: "#6b7280" },
+                style: { textAnchor: "middle", fill: "var(--font-secondary)" },
               }}
             />
             <Tooltip content={<CustomTooltip />} />

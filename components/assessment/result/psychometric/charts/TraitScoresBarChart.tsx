@@ -37,10 +37,10 @@ export function TraitScoresBarChart({ traits }: TraitScoresBarChartProps) {
   }, []);
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#16A34A"; // Green - High
-    if (score >= 65) return "#2563EB"; // Blue - Good
-    if (score >= 50) return "#D97706"; // Amber/Orange - Moderate
-    return "#6b7280"; // Gray - Low
+    if (score >= 80) return "var(--assessment-chart-green)"; // Green - High
+    if (score >= 65) return "var(--assessment-chart-blue)"; // Blue - Good
+    if (score >= 50) return "var(--ats-warning-muted)"; // Amber/Orange - Moderate
+    return "var(--font-secondary)"; // Gray - Low
   };
 
   const chartData = traits.map((trait) => ({
@@ -99,16 +99,16 @@ export function TraitScoresBarChart({ traits }: TraitScoresBarChartProps) {
               bottom: 20 
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
             <XAxis
               type="number"
               domain={[0, 100]}
-              tick={{ fontSize: isMobile ? 10 : 12, fill: "#6b7280" }}
+              tick={{ fontSize: isMobile ? 10 : 12, fill: "var(--font-secondary)" }}
               label={!isMobile ? {
                 value: "Score",
                 position: "insideBottom",
                 offset: -5,
-                style: { textAnchor: "middle", fill: "#6b7280", fontSize: "12px" },
+                style: { textAnchor: "middle", fill: "var(--font-secondary)", fontSize: "12px" },
               } : undefined}
             />
             <YAxis
@@ -116,7 +116,7 @@ export function TraitScoresBarChart({ traits }: TraitScoresBarChartProps) {
               dataKey="trait"
               tick={{ 
                 fontSize: isMobile ? 9 : 11, 
-                fill: "#6b7280"
+                fill: "var(--font-secondary)"
               }}
               width={isMobile ? 70 : 90}
               interval={0}

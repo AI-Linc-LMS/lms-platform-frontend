@@ -24,6 +24,8 @@ import {
   CreateAssessmentPayload,
   AssessmentQuizSectionWrite,
   AssessmentCodingProblemSectionWrite,
+  AssessmentSubjectiveSectionWrite,
+  AssessmentSubjectiveQuestionListItem,
   MCQ,
   CodingProblemListItem,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -38,6 +40,8 @@ import {
 } from "@/components/admin/assessment/MultipleSectionsSection";
 import { SectionBasedQuestionsInput } from "@/components/admin/assessment/SectionBasedQuestionsInput";
 import { AssessmentPreviewSection } from "@/components/admin/assessment/AssessmentPreviewSection";
+import type { WrittenPromptPreview } from "@/components/admin/assessment/SectionCard";
+import type { SubjectiveQuestionDraft } from "@/components/admin/assessment/SubjectiveQuestionsFormSection";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
@@ -148,6 +152,19 @@ export default function CreateAssessmentPage() {
   >([]);
   const [loadingCodingProblems, setLoadingCodingProblems] = useState(false);
 
+  const [subjectiveInputMethodBySection, setSubjectiveInputMethodBySection] =
+    useState<Record<string, "manual" | "existing">>({});
+  const [manualSubjectiveQuestions, setManualSubjectiveQuestions] = useState<
+    Record<string, SubjectiveQuestionDraft[]>
+  >({});
+  const [sectionSubjectiveQuestionIds, setSectionSubjectiveQuestionIds] = useState<
+    Record<string, number[]>
+  >({});
+  const [existingSubjectiveQuestions, setExistingSubjectiveQuestions] = useState<
+    AssessmentSubjectiveQuestionListItem[]
+  >([]);
+  const [loadingSubjectiveQuestions, setLoadingSubjectiveQuestions] = useState(false);
+
   const passBandFieldErrors = useMemo(
     () =>
       getPassBandFieldErrors(
@@ -162,6 +179,7 @@ export default function CreateAssessmentPage() {
   useEffect(() => {
     loadExistingMCQs();
     loadExistingCodingProblems();
+    loadExistingSubjectiveQuestions();
     loadCourses();
   }, []);
 
@@ -202,6 +220,20 @@ export default function CreateAssessmentPage() {
       showToast(error?.message || "Failed to load coding problems", "error");
     } finally {
       setLoadingCodingProblems(false);
+    }
+  };
+
+  const loadExistingSubjectiveQuestions = async () => {
+    try {
+      setLoadingSubjectiveQuestions(true);
+      const data = await adminAssessmentService.listAssessmentSubjectiveQuestions(
+        config.clientId
+      );
+      setExistingSubjectiveQuestions(Array.isArray(data) ? data : []);
+    } catch (error: any) {
+      showToast(error?.message || "Failed to load written questions", "error");
+    } finally {
+      setLoadingSubjectiveQuestions(false);
     }
   };
 
@@ -246,9 +278,11 @@ export default function CreateAssessmentPage() {
       // Validate questions for each section
       const quizSections = sections.filter((s) => s.type === "quiz");
       const codingSections = sections.filter((s) => s.type === "coding");
-      
+      const subjectiveSections = sections.filter((s) => s.type === "subjective");
+
       let hasQuizQuestions = false;
       let hasCodingProblems = false;
+      let hasSubjectiveQuestions = false;
 
       // Check quiz sections (each section can have its own input method)
       if (quizSections.length > 0) {
@@ -286,8 +320,31 @@ export default function CreateAssessmentPage() {
         }
       }
 
+      if (subjectiveSections.length > 0) {
+        for (const section of subjectiveSections) {
+          const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+          if (method === "existing") {
+            if ((sectionSubjectiveQuestionIds[section.id] || []).length > 0) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          } else {
+            const rows = manualSubjectiveQuestions[section.id] || [];
+            const filled = rows.filter(
+              (r) =>
+                r.question_text.trim().length > 0 &&
+                r.evaluation_prompt.trim().length > 0
+            );
+            if (filled.length > 0) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          }
+        }
+      }
+
       // At least one section type must have questions
-      if (!hasQuizQuestions && !hasCodingProblems) {
+      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions) {
         showToast(
           "Please add at least one question to a section",
           "error"
@@ -338,7 +395,8 @@ export default function CreateAssessmentPage() {
       // Step 1: Validate questions for each section
       const quizSections = sections.filter((s) => s.type === "quiz");
       const codingSections = sections.filter((s) => s.type === "coding");
-      
+      const subjectiveSections = sections.filter((s) => s.type === "subjective");
+
       // Check quiz sections
       for (const section of quizSections) {
         // Calculate total MCQs for this section (inline logic)
@@ -370,10 +428,30 @@ export default function CreateAssessmentPage() {
           return true; // Not enough problems
         }
       }
+
+      for (const section of subjectiveSections) {
+        const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+        let totalWritten = 0;
+        if (method === "existing") {
+          totalWritten = (sectionSubjectiveQuestionIds[section.id] || []).length;
+        } else {
+          const rows = manualSubjectiveQuestions[section.id] || [];
+          totalWritten = rows.filter(
+            (r) =>
+              r.question_text.trim().length > 0 &&
+              r.evaluation_prompt.trim().length > 0
+          ).length;
+        }
+        const requiredWritten = section.number_of_questions_to_show ?? 1;
+        if (totalWritten < requiredWritten) {
+          return true;
+        }
+      }
       
       // At least one section type must have questions
       let hasQuizQuestions = false;
       let hasCodingProblems = false;
+      let hasSubjectiveQuestions = false;
       
       if (quizSections.length > 0) {
         for (const section of quizSections) {
@@ -406,8 +484,32 @@ export default function CreateAssessmentPage() {
           }
         }
       }
+
+      if (subjectiveSections.length > 0) {
+        for (const section of subjectiveSections) {
+          const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+          if (method === "existing") {
+            if ((sectionSubjectiveQuestionIds[section.id] || []).length > 0) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          } else {
+            const rows = manualSubjectiveQuestions[section.id] || [];
+            if (
+              rows.some(
+                (r) =>
+                  r.question_text.trim().length > 0 &&
+                  r.evaluation_prompt.trim().length > 0
+              )
+            ) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          }
+        }
+      }
       
-      if (!hasQuizQuestions && !hasCodingProblems) {
+      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions) {
         return true; // No questions at all
       }
       
@@ -429,6 +531,9 @@ export default function CreateAssessmentPage() {
     aiMCQs,
     sectionCodingProblemIds,
     aiCodingProblems,
+    subjectiveInputMethodBySection,
+    manualSubjectiveQuestions,
+    sectionSubjectiveQuestionIds,
     passBandFieldErrors.lower,
     passBandFieldErrors.upper,
   ]);
@@ -546,6 +651,47 @@ export default function CreateAssessmentPage() {
     return problems;
   };
 
+  const getTotalSubjectiveCountForSection = (sectionId: string): number => {
+    const method = subjectiveInputMethodBySection[sectionId] ?? "manual";
+    if (method === "existing") {
+      return (sectionSubjectiveQuestionIds[sectionId] || []).length;
+    }
+    const rows = manualSubjectiveQuestions[sectionId] || [];
+    return rows.filter(
+      (r) =>
+        r.question_text.trim().length > 0 &&
+        r.evaluation_prompt.trim().length > 0
+    ).length;
+  };
+
+  const getWrittenPromptsForSection = (
+    sectionId: string
+  ): WrittenPromptPreview[] => {
+    const method = subjectiveInputMethodBySection[sectionId] ?? "manual";
+    if (method === "existing") {
+      const ids = sectionSubjectiveQuestionIds[sectionId] || [];
+      return existingSubjectiveQuestions
+        .filter((q) => ids.includes(q.id))
+        .map((q) => ({
+          question_text: q.question_text,
+          max_marks: q.max_marks,
+          answer_mode: q.answer_mode,
+        }));
+    }
+    const drafts = manualSubjectiveQuestions[sectionId] || [];
+    return drafts
+      .filter(
+        (r: SubjectiveQuestionDraft) =>
+          r.question_text.trim().length > 0 &&
+          r.evaluation_prompt.trim().length > 0
+      )
+      .map((r) => ({
+        question_text: r.question_text,
+        max_marks: r.max_marks,
+        answer_mode: r.answer_mode,
+      }));
+  };
+
   // Get all MCQs across all sections with section information
   const getAllMCQsWithSections = (): Array<MCQ & { sectionId: string }> => {
     const quizSections = sections.filter((s) => s.type === "quiz");
@@ -580,10 +726,20 @@ export default function CreateAssessmentPage() {
       const codingSections = sections
         .filter((s) => s.type === "coding")
         .sort((a, b) => a.order - b.order);
+      const subjectiveSections = sections
+        .filter((s) => s.type === "subjective")
+        .sort((a, b) => a.order - b.order);
 
-      // Validate that at least one section has questions
-      if (quizSections.length === 0 && codingSections.length === 0) {
-        showToast("Please add at least one section", "error");
+      // Need at least one quiz, coding, or written section block
+      if (
+        quizSections.length === 0 &&
+        codingSections.length === 0 &&
+        subjectiveSections.length === 0
+      ) {
+        showToast(
+          "Please add at least one quiz, coding, or written section",
+          "error"
+        );
         setCreating(false);
         return;
       }
@@ -682,6 +838,69 @@ export default function CreateAssessmentPage() {
           .join("; ");
         showToast(
           `Coding sections with insufficient problems: ${errorMessages}`,
+          "error"
+        );
+        setCreating(false);
+        return;
+      }
+
+      if (subjectiveSections.length > 0) {
+        const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
+          [];
+        subjectiveSections.forEach((section) => {
+          if (getTotalSubjectiveCountForSection(section.id) === 0) {
+            sectionsWithoutQuestions.push({
+              title: section.title,
+              order: section.order,
+            });
+          }
+        });
+
+        if (sectionsWithoutQuestions.length > 0) {
+          const sectionNames = sectionsWithoutQuestions
+            .sort((a, b) => a.order - b.order)
+            .map((s) => `"${s.title}" (Order: ${s.order})`)
+            .join(", ");
+          showToast(
+            `Please add at least 1 written prompt to the following sections: ${sectionNames}`,
+            "error"
+          );
+          setCreating(false);
+          return;
+        }
+      }
+
+      // Validate number_of_questions_to_show for subjective sections
+      const invalidSubjectiveSections: Array<{
+        title: string;
+        order: number;
+        required: number;
+        selected: number;
+      }> = [];
+      subjectiveSections.forEach((section) => {
+        if (section.number_of_questions_to_show !== undefined) {
+          const totalWritten = getTotalSubjectiveCountForSection(section.id);
+          if (totalWritten < section.number_of_questions_to_show) {
+            invalidSubjectiveSections.push({
+              title: section.title,
+              order: section.order,
+              required: section.number_of_questions_to_show,
+              selected: totalWritten,
+            });
+          }
+        }
+      });
+
+      if (invalidSubjectiveSections.length > 0) {
+        const errorMessages = invalidSubjectiveSections
+          .sort((a, b) => a.order - b.order)
+          .map(
+            (s) =>
+              `"${s.title}" (Order: ${s.order}): Need ${s.required} prompts, but only ${s.selected} added`
+          )
+          .join("; ");
+        showToast(
+          `Written sections with insufficient prompts: ${errorMessages}`,
           "error"
         );
         setCreating(false);
@@ -898,9 +1117,87 @@ export default function CreateAssessmentPage() {
         });
       }
 
+      if (subjectiveSections.length > 0) {
+        payload.subjectiveQuestionSection = subjectiveSections.map((section) => {
+          const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+          const totalCount = getTotalSubjectiveCountForSection(section.id);
+
+          const sectionPayload: AssessmentSubjectiveSectionWrite = {
+            title: section.title.trim(),
+            order: section.order,
+            number_of_questions:
+              section.number_of_questions_to_show !== undefined
+                ? section.number_of_questions_to_show
+                : totalCount,
+          };
+
+          if (section.description && section.description.trim()) {
+            sectionPayload.description = section.description.trim();
+          }
+
+          if (section.easyScore !== undefined) {
+            sectionPayload.easy_score = section.easyScore;
+          }
+          if (section.mediumScore !== undefined) {
+            sectionPayload.medium_score = section.mediumScore;
+          }
+          if (section.hardScore !== undefined) {
+            sectionPayload.hard_score = section.hardScore;
+          }
+
+          if (
+            section.timeLimitMinutes != null &&
+            Number.isFinite(section.timeLimitMinutes) &&
+            section.timeLimitMinutes > 0
+          ) {
+            sectionPayload.time_limit_minutes = Math.round(
+              section.timeLimitMinutes
+            );
+          }
+          const subjectiveCutoff = toAssessmentApiDecimalString(
+            section.sectionCutoffMarks
+          );
+          if (subjectiveCutoff != null) {
+            sectionPayload.section_cutoff_marks = subjectiveCutoff;
+          }
+
+          if (method === "existing") {
+            const ids = sectionSubjectiveQuestionIds[section.id] || [];
+            if (ids.length > 0) {
+              sectionPayload.subjective_question_ids = ids;
+            }
+          } else {
+            const drafts = manualSubjectiveQuestions[section.id] || [];
+            const filtered = drafts.filter(
+              (r) =>
+                r.question_text.trim().length > 0 &&
+                r.evaluation_prompt.trim().length > 0
+            );
+            if (filtered.length > 0) {
+              sectionPayload.subjective_questions = filtered.map((row) => ({
+                question_text: row.question_text.trim(),
+                evaluation_prompt: row.evaluation_prompt.trim(),
+                max_marks: row.max_marks,
+                ...(row.question_type?.trim()
+                  ? { question_type: row.question_type.trim() }
+                  : {}),
+                ...(row.answer_mode ? { answer_mode: row.answer_mode } : {}),
+              }));
+            }
+          }
+
+          if (section.number_of_questions_to_show !== undefined) {
+            sectionPayload.number_of_questions_to_show =
+              section.number_of_questions_to_show;
+          }
+
+          return sectionPayload;
+        });
+      }
+
       payload.quizSection = payload.quizSection ?? [];
       payload.codingProblemSection = payload.codingProblemSection ?? [];
-      payload.subjectiveQuestionSection = [];
+      payload.subjectiveQuestionSection = payload.subjectiveQuestionSection ?? [];
 
       await adminAssessmentService.createAssessment(config.clientId, payload);
       showToast("Assessment created successfully", "success");
@@ -989,6 +1286,7 @@ export default function CreateAssessmentPage() {
       case 1:
         return (
           <SectionBasedQuestionsInput
+            evaluationMode={evaluationMode}
             sections={sections}
             mcqInputMethodBySection={mcqInputMethodBySection}
             onMcqInputMethodChange={(sectionId, method) => {
@@ -1032,15 +1330,41 @@ export default function CreateAssessmentPage() {
             }}
             existingCodingProblems={existingCodingProblems}
             loadingCodingProblems={loadingCodingProblems}
+            subjectiveInputMethodBySection={subjectiveInputMethodBySection}
+            onSubjectiveInputMethodChange={(sectionId, method) => {
+              setSubjectiveInputMethodBySection((prev) => ({
+                ...prev,
+                [sectionId]: method,
+              }));
+            }}
+            manualSubjectiveQuestions={manualSubjectiveQuestions}
+            onManualSubjectiveQuestionsChange={(sectionId, rows) => {
+              setManualSubjectiveQuestions((prev) => ({
+                ...prev,
+                [sectionId]: rows,
+              }));
+            }}
+            sectionSubjectiveQuestionIds={sectionSubjectiveQuestionIds}
+            onSectionSubjectiveQuestionIdsChange={(sectionId, ids) => {
+              setSectionSubjectiveQuestionIds((prev) => ({
+                ...prev,
+                [sectionId]: ids,
+              }));
+            }}
+            existingSubjectiveQuestions={existingSubjectiveQuestions}
+            loadingSubjectiveQuestions={loadingSubjectiveQuestions}
           />
         );
 
       case 2:
         const totalMCQsWithSections = getAllMCQsWithSections();
         const totalMCQs = getAllMCQs();
-        const quizSections = sections.filter((s) => s.type === "quiz");
-        const codingSections = sections.filter((s) => s.type === "coding");
-        // Calculate total questions (MCQs + coding problems)
+        const orderedSections = [...sections].sort((a, b) => a.order - b.order);
+        const previewSectionTitle =
+          orderedSections.find((s) => s.type === "quiz")?.title ??
+          orderedSections.find((s) => s.type === "coding")?.title ??
+          orderedSections.find((s) => s.type === "subjective")?.title ??
+          "";
 
         return (
           <AssessmentPreviewSection
@@ -1050,13 +1374,14 @@ export default function CreateAssessmentPage() {
             isPaid={isPaid}
             price={price}
             currency={currency}
-            sectionTitle={quizSections.length > 0 ? quizSections[0].title : ""}
+            sectionTitle={previewSectionTitle}
             totalMCQs={totalMCQs}
             totalMCQsWithSections={totalMCQsWithSections}
             sections={sections}
             getMCQsForSection={getMCQsForSection}
             getCodingProblemIdsForSection={getCodingProblemIdsForSection}
             getCodingProblemsForSection={getCodingProblemsForSection}
+            getWrittenPromptsForSection={getWrittenPromptsForSection}
           />
         );
 

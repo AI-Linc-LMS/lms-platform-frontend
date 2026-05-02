@@ -53,9 +53,9 @@ export function SkillsRadarChart({ topSkills, lowSkills }: SkillsRadarChartProps
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
-        background: "#ffffff",
+        background: "var(--font-light)",
       }}
     >
       <Box
@@ -71,20 +71,20 @@ export function SkillsRadarChart({ topSkills, lowSkills }: SkillsRadarChartProps
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "rgba(59, 130, 246, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-blue-light) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:radar" size={24} color="#3b82f6" />
+          <IconWrapper icon="mdi:radar" size={24} color="var(--accent-blue-light)" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               mb: 0.25,
             }}
           >
@@ -93,7 +93,7 @@ export function SkillsRadarChart({ topSkills, lowSkills }: SkillsRadarChartProps
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
             }}
           >
@@ -105,33 +105,33 @@ export function SkillsRadarChart({ topSkills, lowSkills }: SkillsRadarChartProps
       <Box sx={{ width: "100%", height: 450 }}>
         <ResponsiveContainer>
           <RadarChart data={chartData}>
-            <PolarGrid stroke="#e5e7eb" />
+            <PolarGrid stroke="var(--border-default)" />
             <PolarAngleAxis
               dataKey="skill"
-              tick={{ fontSize: 11, fill: "#6b7280" }}
+              tick={{ fontSize: 11, fill: "var(--font-secondary)" }}
             />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 100]}
-              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              tick={{ fontSize: 10, fill: "var(--font-tertiary)" }}
             />
             <Radar
               name="Top Skills"
               dataKey="topSkills"
-              stroke="#10b981"
-              fill="#10b981"
+              stroke="var(--course-cta)"
+              fill="var(--course-cta)"
               fillOpacity={0.6}
             />
             <Radar
               name="Areas for Improvement"
               dataKey="lowSkills"
-              stroke="#ef4444"
-              fill="#ef4444"
+              stroke="var(--error-500)"
+              fill="var(--error-500)"
               fillOpacity={0.6}
             />
             <Legend
               formatter={(value) => (
-                <span style={{ color: value === "Top Skills" ? "#10b981" : "#ef4444", fontWeight: 600 }}>
+                <span style={{ color: value === "Top Skills" ? "var(--course-cta)" : "var(--error-500)", fontWeight: 600 }}>
                   {value}
                 </span>
               )}

@@ -25,29 +25,29 @@ export function AssessmentStatsBar({
       icon: "mdi:star",
       label: "Score",
       value: `${(score || 0).toFixed(1)}/${maximumMarks || totalQuestions * 10}`,
-      color: "#6366f1",
-      bgColor: "rgba(99, 102, 241, 0.1)",
+      color: "var(--accent-indigo)",
+      bgColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
     },
     {
       icon: "mdi:clock-outline",
       label: "Duration",
       value: duration < 60 ? `${duration || 0} min` : `${Math.floor((duration || 0) / 60)}h ${(duration || 0) % 60}m`,
-      color: "#8b5cf6",
-      bgColor: "rgba(139, 92, 246, 0.1)",
+      color: "var(--assessment-chart-violet)",
+      bgColor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
     },
     {
       icon: "mdi:help-circle-outline",
       label: "Questions",
       value: `${answeredQuestions || 0}/${totalQuestions || 0}`,
-      color: "#3b82f6",
-      bgColor: "rgba(59, 130, 246, 0.1)",
+      color: "var(--accent-blue-light)",
+      bgColor: "color-mix(in srgb, var(--accent-blue-light) 12%, transparent)",
     },
     {
       icon: "mdi:target",
       label: "Accuracy",
       value: `${(accuracy || 0).toFixed(1)}%`,
-      color: "#10b981",
-      bgColor: "rgba(16, 185, 129, 0.1)",
+      color: "var(--course-cta)",
+      bgColor: "color-mix(in srgb, var(--course-cta) 12%, transparent)",
     },
   ];
 
@@ -66,10 +66,10 @@ export function AssessmentStatsBar({
           elevation={0}
           sx={{
             p: 2.5,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             textAlign: "center",
-            background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+            background: "linear-gradient(135deg, var(--font-light) 0%, var(--surface) 100%)",
           }}
         >
           <Box
@@ -91,7 +91,7 @@ export function AssessmentStatsBar({
             variant="h5"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               mb: 0.5,
             }}
           >
@@ -100,7 +100,7 @@ export function AssessmentStatsBar({
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
               fontWeight: 500,
             }}
