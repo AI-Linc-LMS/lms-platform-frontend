@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, CircularProgress } from "@mui/material";
 import { motion } from "framer-motion";
@@ -61,13 +61,13 @@ function saveLocalProfile(data: Partial<UserProfileUpdate>) {
 
 function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
   const local = loadLocalProfile();
-  const merged = { ...apiProfile };
+  const merged = { ...apiProfile } as Record<string, unknown>;
   for (const [key, value] of Object.entries(local)) {
-    if (isEmptyValue((merged as any)[key]) && !isEmptyValue(value)) {
-      (merged as any)[key] = value;
+    if (isEmptyValue(merged[key]) && !isEmptyValue(value)) {
+      merged[key] = value;
     }
   }
-  return merged;
+  return merged as unknown as UserProfile;
 }
 
 export default function ProfilePage() {
@@ -85,21 +85,7 @@ export default function ProfilePage() {
     setActiveTab(newValue);
   };
 
-  useEffect(() => {
-    loadProfileData();
-  }, []);
-
-  useEffect(() => {
-    if (!loading && typeof window !== "undefined" && window.location.hash) {
-      setTimeout(() => {
-        const id = window.location.hash.substring(1);
-        const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 500);
-    }
-  }, [loading]);
-
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     try {
       setLoading(true);
       const profileData = await profileService.getUserProfile();
@@ -117,7 +103,21 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast, t]);
+
+  useEffect(() => {
+    void loadProfileData();
+  }, [loadProfileData]);
+
+  useEffect(() => {
+    if (!loading && typeof window !== "undefined" && window.location.hash) {
+      setTimeout(() => {
+        const id = window.location.hash.substring(1);
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 500);
+    }
+  }, [loading]);
 
   const handleSaveProfile = async (updatedProfile: UserProfileUpdate) => {
     saveLocalProfile(updatedProfile);
@@ -129,7 +129,7 @@ export default function ProfilePage() {
         const result = { ...base, ...updatedProfile } as UserProfile;
         for (const [key, val] of Object.entries(apiResponse)) {
           if (!isEmptyValue(val)) {
-            (result as Record<string, unknown>)[key] = val as never;
+            (result as unknown as Record<string, unknown>)[key] = val;
           }
         }
         result.profile_picture = result.profile_picture ?? "";
@@ -140,7 +140,7 @@ export default function ProfilePage() {
         const result = { ...prev, ...updatedProfile };
         for (const [key, val] of Object.entries(apiResponse)) {
           if (!isEmptyValue(val)) {
-            (result as any)[key] = val;
+            (result as unknown as Record<string, unknown>)[key] = val;
           }
         }
         result.profile_picture = result.profile_picture ?? "";
