@@ -291,6 +291,8 @@ export function AssessmentPreviewSection({
         return "€";
       case "GBP":
         return "£";
+      case "SAR":
+        return "﷼";
       default:
         return "";
     }

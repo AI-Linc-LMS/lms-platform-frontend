@@ -597,6 +597,7 @@ export function AssessmentSettingsSection({
                       <MenuItem value="USD">USD ($)</MenuItem>
                       <MenuItem value="EUR">EUR (€)</MenuItem>
                       <MenuItem value="GBP">GBP (£)</MenuItem>
+                      <MenuItem value="SAR">SAR (﷼)</MenuItem>
                     </Select>
                   </FormControl>
                 </Box>
