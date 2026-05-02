@@ -193,6 +193,20 @@ export function AssessmentTable({
                     {assessment.title}
                   </Typography>
                   <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", gap: 0.75 }}>
+                    {assessment.is_draft && (
+                      <Chip
+                        label="Draft"
+                        size="small"
+                        sx={{
+                          bgcolor:
+                            "color-mix(in srgb, var(--font-secondary) 18%, var(--surface) 82%)",
+                          color: "var(--font-secondary)",
+                          fontSize: "0.7rem",
+                          height: 22,
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
                     {assessment.is_paid && assessment.price && (
                       <Chip
                         icon={<IconWrapper icon="mdi:currency-inr" size={14} />}
@@ -849,6 +863,21 @@ export function AssessmentTable({
 
                     {/* Tags Row */}
                     <Stack direction="row" spacing={0.75} sx={{ mb: 1, flexWrap: "wrap", gap: 0.75 }}>
+                      {assessment.is_draft && (
+                        <Chip
+                          label="Draft"
+                          size="small"
+                          sx={{
+                            bgcolor:
+                              "color-mix(in srgb, var(--font-secondary) 16%, var(--surface) 84%)",
+                            color: "var(--font-secondary)",
+                            fontSize: "0.7rem",
+                            height: 24,
+                            fontWeight: 600,
+                            border: "1px solid var(--border-default)",
+                          }}
+                        />
+                      )}
                       {assessment.is_paid && assessment.price && (
                         <Chip
                           icon={<IconWrapper icon="mdi:currency-inr" size={14} />}
