@@ -49,6 +49,19 @@ export interface StudentEnrollmentJob {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  /** Maps user id (string) to display name from the API (see formatEnrollmentJobStudentLabel). */
+  user_labels?: Record<string, string>;
+}
+
+export function formatEnrollmentJobStudentLabel(
+  userId: number,
+  userLabels: Record<string, string> | undefined
+): string {
+  const name = userLabels?.[String(userId)]?.trim();
+  if (name) {
+    return `${name} (ID: ${userId})`;
+  }
+  return `User ID: ${userId}`;
 }
 
 export interface CreateEnrollmentJobRequest {

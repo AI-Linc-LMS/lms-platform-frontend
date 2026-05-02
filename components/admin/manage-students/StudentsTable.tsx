@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Box,
   Typography,
@@ -43,6 +44,8 @@ interface StudentsTableProps {
   sortBy: SortOption;
   sortOrder: SortOrder;
   onSort: (field: SortOption) => void;
+  /** When false, render table only (nest inside a parent Paper on the page). */
+  wrapInPaper?: boolean;
 }
 
 const getSortIcon = (
@@ -64,6 +67,14 @@ const getInitials = (name: string) => {
     .slice(0, 2);
 };
 
+const tablePaperSx = {
+  borderRadius: 2,
+  border: "1px solid var(--border-default)",
+  boxShadow: "0 2px 12px color-mix(in srgb, var(--font-primary) 6%, transparent)",
+  overflow: "hidden" as const,
+  backgroundColor: "var(--card-bg)",
+};
+
 export function StudentsTable({
   students,
   completionStats,
@@ -72,40 +83,33 @@ export function StudentsTable({
   sortBy,
   sortOrder,
   onSort,
+  wrapInPaper = true,
 }: StudentsTableProps) {
   const router = useRouter();
   const { t } = useTranslation("common");
 
+  const shell = (children: ReactNode) =>
+    wrapInPaper ? (
+      <Paper sx={tablePaperSx}>{children}</Paper>
+    ) : (
+      <Box sx={{ overflow: "hidden", backgroundColor: "var(--card-bg)" }}>{children}</Box>
+    );
+
   if (loading) {
-    return (
-      <Paper
-        sx={{
-          borderRadius: 2,
-          border: "1px solid var(--border-default)",
-          backgroundColor: "var(--card-bg)",
-          boxShadow:
-            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-          overflow: "hidden",
-        }}
-      >
-        <Box sx={{ p: 4, textAlign: "center" }}>
-          <CircularProgress />
-        </Box>
-      </Paper>
+    return shell(
+      <Box sx={{ py: 6, px: 2, textAlign: "center" }}>
+        <CircularProgress size={36} sx={{ color: "var(--accent-indigo)" }} />
+        <Typography
+          variant="body2"
+          sx={{ mt: 2, color: "var(--font-secondary)", fontWeight: 500 }}
+        >
+          {t("adminManageStudents.loadingStudents")}
+        </Typography>
+      </Box>
     );
   }
 
-  return (
-    <Paper
-      sx={{
-        borderRadius: 2,
-        border: "1px solid var(--border-default)",
-        boxShadow:
-          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-        overflow: "hidden",
-        backgroundColor: "var(--card-bg)",
-      }}
-    >
+  return shell(
       <TableContainer
         sx={{
           maxHeight: { xs: "70vh", sm: "none" },
@@ -129,6 +133,7 @@ export function StudentsTable({
         }}
       >
         <Table
+          stickyHeader
           sx={{
             minWidth: 920,
           }}
@@ -140,6 +145,7 @@ export function StudentsTable({
                 "& .MuiTableCell-head": {
                   borderBottom: "2px solid var(--border-default)",
                   py: 2,
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -372,7 +378,7 @@ export function StudentsTable({
             {!Array.isArray(students) || students.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   align="center"
                   sx={{
                     py: 6,
@@ -419,9 +425,14 @@ export function StudentsTable({
                   <TableRow
                     key={student.id}
                     sx={{
+                      "&:nth-of-type(even)": {
+                        backgroundColor:
+                          "color-mix(in srgb, var(--font-primary) 2.5%, var(--card-bg))",
+                      },
                       "&:hover": {
-                        backgroundColor: "#f9fafb",
-                        transition: "background-color 0.2s",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg))",
+                        transition: "background-color 0.15s ease",
                       },
                       "&:last-child td": {
                         borderBottom: "none",
@@ -741,6 +752,5 @@ export function StudentsTable({
           </TableBody>
         </Table>
       </TableContainer>
-    </Paper>
   );
 }
