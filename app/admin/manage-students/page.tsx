@@ -124,16 +124,8 @@ export default function ManageStudentsPage() {
     const seq = ++loadStudentsSeqRef.current;
     const courseManager = courseManagerUser;
 
-    // Course managers: empty course filter = load all students the API allows (scoped server-side).
-    // Admins: keep original behavior — require at least one selected course before loading.
+    // Empty course selection = all courses (load full student list; API scopes by role).
     if (selectedCourses.length === 0) {
-      if (!courseManager) {
-        setAllStudents([]);
-        setCompletionStats({});
-        setLoading(false);
-        setLoadingStats(false);
-        return;
-      }
       try {
         setLoading(true);
         const response = await adminStudentService.getManageStudents({
@@ -602,7 +594,17 @@ export default function ManageStudentsPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      <Box
+        sx={{
+          p: { xs: 2, sm: 3, md: 4 },
+          maxWidth: 1320,
+          mx: "auto",
+          width: "100%",
+          minHeight: "100%",
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 4%, var(--background)) 0%, var(--background) 220px, var(--background) 100%)",
+        }}
+      >
         <ManageStudentsHeader
           totalCount={totalCount}
           onBulkEnrollClick={
@@ -611,17 +613,14 @@ export default function ManageStudentsPage() {
               : undefined
           }
           onDownloadCsv={
-            allStudents.length > 0 &&
-            (courseManagerUser || selectedCourses.length > 0)
-              ? handleDownloadCsv
-              : undefined
+            allStudents.length > 0 ? handleDownloadCsv : undefined
           }
         />
 
         <StudentsFilters
           courses={courses}
           selectedCourses={selectedCourses}
-          emptySelectionMeansAllCourses={courseManagerUser}
+          emptySelectionMeansAllCourses
           status={status}
           resumeFilter={resumeFilter}
           searchTerm={searchTerm}
@@ -632,44 +631,114 @@ export default function ManageStudentsPage() {
         />
 
         {showOrgAdminEnrollmentTools ? (
-          <Box sx={{ mb: 4 }}>
-            <Paper
+          <Paper
+            elevation={0}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              overflow: "hidden",
+              border: "1px solid var(--border-default)",
+              boxShadow:
+                "0 2px 12px color-mix(in srgb, var(--font-primary) 6%, transparent)",
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
+            <Box
+              role="button"
+              tabIndex={0}
+              onClick={() => setShowJobHistory(!showJobHistory)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setShowJobHistory(!showJobHistory);
+                }
+              }}
               sx={{
-                p: 2,
-                mb: 2,
+                p: { xs: 2, sm: 2.5 },
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
                 cursor: "pointer",
+                borderBottom: showJobHistory ? "1px solid var(--border-default)" : "none",
+                background:
+                  "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg)) 0%, var(--card-bg) 55%)",
+                transition: "background-color 0.2s ease",
                 "&:hover": {
                   backgroundColor:
-                    "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
+                    "color-mix(in srgb, var(--font-primary) 4%, var(--card-bg))",
                 },
               }}
-              onClick={() => setShowJobHistory(!showJobHistory)}
             >
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
+                  justifyContent: "center",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  flexShrink: 0,
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                  color: "var(--accent-indigo)",
                 }}
+                aria-hidden
               >
-                <Typography variant="h6" fontWeight={600}>
+                <IconWrapper icon="mdi:history" size={24} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 700, color: "var(--font-primary)", lineHeight: 1.3 }}
+                >
                   {t("adminManageStudents.enrollmentJobHistory")}
                 </Typography>
-                <IconButton size="small">
-                  <IconWrapper
-                    icon={showJobHistory ? "mdi:chevron-up" : "mdi:chevron-down"}
-                    size={20}
-                  />
-                </IconButton>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.25 }}>
+                  {t("adminManageStudents.enrollmentJobHistorySubtitle")}
+                </Typography>
               </Box>
-            </Paper>
+              <IconButton
+                size="small"
+                aria-expanded={showJobHistory}
+                aria-label={t("adminManageStudents.enrollmentJobHistory")}
+                sx={{
+                  color: "var(--font-secondary)",
+                  backgroundColor: "color-mix(in srgb, var(--font-primary) 5%, transparent)",
+                }}
+              >
+                <IconWrapper
+                  icon={showJobHistory ? "mdi:chevron-up" : "mdi:chevron-down"}
+                  size={22}
+                />
+              </IconButton>
+            </Box>
             <Collapse in={showJobHistory}>
-              <EnrollmentJobHistory />
+              <Box
+                sx={{
+                  px: { xs: 1.5, sm: 2 },
+                  pb: 2,
+                  pt: 1,
+                  backgroundColor: "color-mix(in srgb, var(--font-primary) 2%, var(--card-bg))",
+                }}
+              >
+                <EnrollmentJobHistory embedded />
+              </Box>
             </Collapse>
-          </Box>
+          </Paper>
         ) : null}
 
-        <Box>
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            overflow: "hidden",
+            border: "1px solid var(--border-default)",
+            boxShadow:
+              "0 4px 24px color-mix(in srgb, var(--font-primary) 7%, transparent)",
+            backgroundColor: "var(--card-bg)",
+            mb: 2,
+          }}
+        >
           <StudentsTable
             students={paginatedStudents}
             completionStats={completionStats}
@@ -678,6 +747,7 @@ export default function ManageStudentsPage() {
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={handleSort}
+            wrapInPaper={false}
           />
           <StudentsPagination
             totalPages={totalPages}
@@ -687,7 +757,7 @@ export default function ManageStudentsPage() {
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
           />
-        </Box>
+        </Paper>
 
         <BulkEnrollmentDialog
           open={bulkEnrollDialogOpen}

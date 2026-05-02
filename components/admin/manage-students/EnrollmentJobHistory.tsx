@@ -31,9 +31,14 @@ import { EnrollmentJobStatus } from "./EnrollmentJobStatus";
 
 interface EnrollmentJobHistoryProps {
   onJobSelect?: (taskId: string) => void;
+  /** When true, omit the section title (e.g. parent panel already shows it). */
+  embedded?: boolean;
 }
 
-export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps) {
+export function EnrollmentJobHistory({
+  onJobSelect,
+  embedded = false,
+}: EnrollmentJobHistoryProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const { user, loading: authLoading } = useAuth();
@@ -125,15 +130,27 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-        <CircularProgress />
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 5, gap: 2 }}>
+        <CircularProgress size={32} sx={{ color: "var(--accent-indigo)" }} />
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+          {t("adminManageStudents.loadingStudents")}
+        </Typography>
       </Box>
     );
   }
 
   if (jobs.length === 0) {
     return (
-      <Alert severity="info">
+      <Alert
+        severity="info"
+        icon={<IconWrapper icon="mdi:information-outline" size={22} />}
+        sx={{
+          borderRadius: 2,
+          alignItems: "center",
+          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+          border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, var(--border-default))",
+        }}
+      >
         <Typography variant="body2">{t("adminManageStudents.noEnrollmentJobsFound")}</Typography>
       </Alert>
     );
@@ -141,19 +158,62 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
 
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-        <Typography variant="h6" fontWeight={600}>
-          {t("adminManageStudents.enrollmentJobHistory")}
-        </Typography>
-        <IconButton onClick={loadJobs} size="small" title={t("adminManageStudents.refresh")}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: embedded ? "flex-end" : "space-between",
+          mb: embedded ? 1.5 : 2,
+        }}
+      >
+        {!embedded && (
+          <Typography variant="h6" fontWeight={600} sx={{ color: "var(--font-primary)" }}>
+            {t("adminManageStudents.enrollmentJobHistory")}
+          </Typography>
+        )}
+        <IconButton
+          onClick={loadJobs}
+          size="small"
+          title={t("adminManageStudents.refresh")}
+          sx={{
+            color: "var(--accent-indigo)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+            "&:hover": {
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
+            },
+          }}
+        >
           <IconWrapper icon="mdi:refresh" size={20} />
         </IconButton>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          border: "1px solid var(--border-default)",
+          overflow: "hidden",
+          backgroundColor: "var(--card-bg)",
+          boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+        }}
+      >
+        <Table size="small" stickyHeader>
           <TableHead>
-            <TableRow>
+            <TableRow
+              sx={{
+                "& .MuiTableCell-head": {
+                  fontWeight: 700,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "var(--font-secondary)",
+                  backgroundColor: "var(--surface)",
+                  borderBottom: "2px solid var(--border-default)",
+                  py: 1.5,
+                },
+              }}
+            >
               <TableCell>{t("adminManageStudents.id")}</TableCell>
               <TableCell>{t("adminManageStudents.status")}</TableCell>
               <TableCell>{t("adminManageStudents.students")}</TableCell>
@@ -186,10 +246,19 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
               <Fragment key={job.id}>
                 <TableRow
                   hover
-                  sx={{ cursor: "pointer" }}
+                  sx={{
+                    cursor: "pointer",
+                    transition: "background-color 0.15s ease",
+                    "&:hover": {
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 8%, var(--card-bg))",
+                    },
+                  }}
                   onClick={() => handleRowClick(job.task_id)}
                 >
-                  <TableCell>#{job.id}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                    #{job.id}
+                  </TableCell>
                   <TableCell>
                     <Chip
                       label={getStatusLabel(job.status)}
@@ -290,7 +359,7 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
                 <TableRow>
                   <TableCell
                     style={{ paddingBottom: 0, paddingTop: 0 }}
-                    colSpan={6}
+                    colSpan={7}
                   >
                     <Collapse
                       in={expandedJobId === job.task_id}
