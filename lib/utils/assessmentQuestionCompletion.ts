@@ -1,4 +1,7 @@
-import { normalizeSubjectiveAnswer } from "@/utils/assessment.utils";
+import {
+  normalizeSubjectiveAnswer,
+  subjectivePayloadHasContent,
+} from "@/utils/assessment.utils";
 
 /**
  * Whether a single question counts as "addressed" for pre-submit checklist
@@ -7,9 +10,12 @@ import { normalizeSubjectiveAnswer } from "@/utils/assessment.utils";
 export function isAssessmentQuestionCompleted(
   sectionType: string,
   response: unknown,
+  question?: { answer_mode?: string },
 ): boolean {
   if (sectionType === "quiz") {
-    return response !== undefined && response !== null && response !== "";
+    if (response === undefined || response === null) return false;
+    if (Array.isArray(response)) return response.length > 0;
+    return response !== "";
   }
   if (sectionType === "coding") {
     if (!response || typeof response !== "object") return false;
@@ -24,11 +30,7 @@ export function isAssessmentQuestionCompleted(
     return false;
   }
   if (sectionType === "subjective") {
-    const text =
-      typeof response === "string"
-        ? response
-        : normalizeSubjectiveAnswer(response);
-    return text.trim().length > 0;
+    return subjectivePayloadHasContent(question?.answer_mode, response);
   }
   return false;
 }

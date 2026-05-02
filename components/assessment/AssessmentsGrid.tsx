@@ -4,6 +4,7 @@ import { Box, Paper, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AssessmentCard } from "./AssessmentCard";
 import { Assessment } from "@/lib/services/assessment.service";
+import { useTranslation } from "react-i18next";
 
 interface AssessmentsGridProps {
   assessments: Assessment[];
@@ -14,24 +15,26 @@ export function AssessmentsGrid({
   assessments,
   searchQuery,
 }: AssessmentsGridProps) {
+  const { t } = useTranslation("common");
+
   if (assessments.length === 0) {
     return (
       <Paper
         elevation={0}
         sx={{
-          p: 8,
+          p: { xs: 5, sm: 8 },
           textAlign: "center",
-          border: "1px dashed #e5e7eb",
+          border: "1px dashed var(--border-default)",
           borderRadius: 3,
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--card-bg)",
         }}
       >
         <Box
           sx={{
-            width: 80,
-            height: 80,
+            width: { xs: 72, sm: 80 },
+            height: { xs: 72, sm: 80 },
             borderRadius: "50%",
-            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -46,30 +49,31 @@ export function AssessmentsGrid({
                 : "mdi:clipboard-text-outline"
             }
             size={40}
-            color="#6366f1"
+            color="var(--accent-indigo)"
           />
         </Box>
         <Typography
           variant="h6"
           sx={{
-            color: "#374151",
+            color: "var(--font-primary)",
             fontWeight: 600,
             mb: 1,
           }}
         >
-          {searchQuery ? "No assessments found" : "No assessments available"}
+          {t("assessments.noAssessmentsFound")}
         </Typography>
         <Typography
           variant="body2"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             maxWidth: 400,
             mx: "auto",
+            lineHeight: 1.55,
           }}
         >
           {searchQuery
-            ? "Try adjusting your search or filter criteria"
-            : "Check back later for new assessments"}
+            ? t("assessments.adjustSearchFilter")
+            : t("assessments.checkBackLater")}
         </Typography>
       </Paper>
     );
@@ -84,7 +88,7 @@ export function AssessmentsGrid({
           sm: "repeat(2, 1fr)",
           lg: "repeat(3, 1fr)",
         },
-        gap: { xs: 2, sm: 3 },
+        gap: { xs: 2.25, sm: 3.25 },
         width: "100%",
         overflow: "visible",
       }}

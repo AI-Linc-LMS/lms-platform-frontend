@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import {
   Box,
+  Stack,
   Typography,
   TextField,
   Button,
@@ -21,7 +22,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 
 export interface Section {
   id: string;
-  type: "quiz" | "coding";
+  type: "quiz" | "coding" | "subjective";
   title: string;
   description: string;
   order: number;
@@ -70,9 +71,12 @@ interface MultipleSectionsSectionProps {
 const helperFormProps = {
   sx: {
     fontSize: "0.8125rem",
-    lineHeight: 1.45,
+    lineHeight: 1.5,
     color: "var(--font-secondary)",
-    mt: 0.5,
+    mt: 0.75,
+    /** Keeps helper copy clear of the next field’s outline / floating label */
+    mb: 0.25,
+    display: "block",
   },
 };
 
@@ -106,7 +110,9 @@ function FieldGroup({
       ) : (
         <Box sx={{ mb: 1 }} />
       )}
-      {children}
+      <Stack spacing={2.75} sx={{ width: "100%" }}>
+        {children}
+      </Stack>
     </Box>
   );
 }
@@ -313,7 +319,7 @@ export function MultipleSectionsSection({
                   onChange={(e) =>
                     setNewSection({
                       ...newSection,
-                      type: e.target.value as "quiz" | "coding",
+                      type: e.target.value as "quiz" | "coding" | "subjective",
                     })
                   }
                   label="Section type"
@@ -328,6 +334,12 @@ export function MultipleSectionsSection({
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
                       <IconWrapper icon="mdi:code-tags" size={20} color="var(--success-500)" />
                       Coding problems
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="subjective">
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                      <IconWrapper icon="mdi:text-box-outline" size={20} color="var(--warning-500)" />
+                      Written (subjective)
                     </Box>
                   </MenuItem>
                 </Select>
@@ -354,6 +366,7 @@ export function MultipleSectionsSection({
 
           <Divider sx={{ borderColor: "var(--border-default)" }} />
 
+          {newSection.type !== "subjective" ? (
           <FieldGroup title="Difficulty scoring" hint={scoreHelper}>
             <Box
               sx={{
@@ -412,6 +425,7 @@ export function MultipleSectionsSection({
               />
             </Box>
           </FieldGroup>
+          ) : null}
 
           <Divider sx={{ borderColor: "var(--border-default)" }} />
 
@@ -686,11 +700,18 @@ function SectionCard({
     setIsEditing(false);
   };
 
-  const accent = section.type === "quiz" ? "var(--accent-indigo)" : "var(--success-500)";
+  const accent =
+    section.type === "quiz"
+      ? "var(--accent-indigo)"
+      : section.type === "coding"
+        ? "var(--success-500)"
+        : "var(--warning-500)";
   const accentSoft =
     section.type === "quiz"
       ? "color-mix(in srgb, var(--accent-indigo) 8%, transparent)"
-      : "color-mix(in srgb, var(--success-500) 8%, transparent)";
+      : section.type === "coding"
+        ? "color-mix(in srgb, var(--success-500) 8%, transparent)"
+        : "color-mix(in srgb, var(--warning-500) 8%, transparent)";
 
   const editTimeLimitError = sectionTimeLimitExceedsOverallMessage(
     overallDurationMinutes,
@@ -739,38 +760,42 @@ function SectionCard({
                   onChange={(e) =>
                     setEditData({
                       ...editData,
-                      type: e.target.value as "quiz" | "coding",
+                      type: e.target.value as "quiz" | "coding" | "subjective",
                     })
                   }
                   label="Section type"
                 >
                   <MenuItem value="quiz">Quiz (MCQ)</MenuItem>
                   <MenuItem value="coding">Coding</MenuItem>
+                  <MenuItem value="subjective">Written (subjective)</MenuItem>
                 </Select>
               </FormControl>
             </Box>
           </FieldGroup>
-          <TextField
-            label="Title"
-            value={editData.title}
-            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-            fullWidth
-            required
-            FormHelperTextProps={helperFormProps}
-            helperText="Section title"
-          />
-          <TextField
-            label="Description"
-            value={editData.description}
-            onChange={(e) =>
-              setEditData({ ...editData, description: e.target.value })
-            }
-            fullWidth
-            multiline
-            minRows={2}
-            FormHelperTextProps={helperFormProps}
-            helperText="Optional"
-          />
+          <Stack spacing={2.75}>
+            <TextField
+              label="Title"
+              value={editData.title}
+              onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+              fullWidth
+              required
+              FormHelperTextProps={helperFormProps}
+              helperText="Section title"
+            />
+            <TextField
+              label="Description"
+              value={editData.description}
+              onChange={(e) =>
+                setEditData({ ...editData, description: e.target.value })
+              }
+              fullWidth
+              multiline
+              minRows={2}
+              FormHelperTextProps={helperFormProps}
+              helperText="Optional"
+            />
+          </Stack>
+          {editData.type !== "subjective" ? (
           <FieldGroup title="Scoring">
             <Box
               sx={{
@@ -829,6 +854,7 @@ function SectionCard({
               />
             </Box>
           </FieldGroup>
+          ) : null}
           <TextField
             label="Number of questions to show"
             type="number"
@@ -942,20 +968,34 @@ function SectionCard({
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
               <IconWrapper
-                icon={section.type === "quiz" ? "mdi:help-circle-outline" : "mdi:code-tags"}
+                icon={
+                  section.type === "quiz"
+                    ? "mdi:help-circle-outline"
+                    : section.type === "coding"
+                      ? "mdi:code-tags"
+                      : "mdi:text-box-outline"
+                }
                 size={22}
                 color={accent}
               />
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                   <Chip
-                    label={section.type === "quiz" ? "Quiz" : "Coding"}
+                    label={
+                      section.type === "quiz"
+                        ? "Quiz"
+                        : section.type === "coding"
+                          ? "Coding"
+                          : "Written"
+                    }
                     size="small"
                     sx={{
                       bgcolor:
                         section.type === "quiz"
                           ? "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)"
-                          : "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
+                          : section.type === "coding"
+                            ? "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)"
+                            : "color-mix(in srgb, var(--warning-500) 12%, var(--surface) 88%)",
                       color: accent,
                       fontWeight: 700,
                       height: 24,

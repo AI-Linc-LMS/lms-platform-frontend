@@ -35,9 +35,9 @@ export function ForceSubmitDialog({
           onClick={onSubmit} 
           variant="contained" 
           sx={{
-            backgroundColor: "#374151",
+            backgroundColor: "var(--font-muted)",
             "&:hover": {
-              backgroundColor: "#1f2937",
+              backgroundColor: "var(--font-primary-dark)",
             },
           }}
         >

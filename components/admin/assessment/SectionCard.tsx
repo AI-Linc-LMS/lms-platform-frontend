@@ -4,13 +4,20 @@ import { Box, Typography, Paper, Chip, Divider } from "@mui/material";
 import { Section } from "./MultipleSectionsSection";
 import { MCQ, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 
+export type WrittenPromptPreview = {
+  question_text: string;
+  max_marks: number;
+  answer_mode?: string;
+};
+
 interface SectionCardProps {
   section: Section;
   isSelected: boolean;
   onClick: () => void;
   sectionMCQs?: MCQ[];
   sectionProblems?: CodingProblemListItem[];
-  type: "quiz" | "coding";
+  sectionWrittenPrompts?: WrittenPromptPreview[];
+  type: "quiz" | "coding" | "subjective";
 }
 
 export function SectionCard({
@@ -19,15 +26,23 @@ export function SectionCard({
   onClick,
   sectionMCQs = [],
   sectionProblems = [],
+  sectionWrittenPrompts = [],
   type,
 }: SectionCardProps) {
   const isQuiz = type === "quiz";
-  const items = isQuiz ? sectionMCQs : sectionProblems;
+  const isCoding = type === "coding";
+  const isWritten = type === "subjective";
+  const items = isQuiz
+    ? sectionMCQs
+    : isCoding
+    ? sectionProblems
+    : sectionWrittenPrompts;
   const itemsToShow = section.number_of_questions_to_show || items.length;
 
   // Calculate scores and breakdowns
   let maxPossibleScore = 0;
   let difficultyBreakdown: Record<string, number> = {};
+  let answerModeBreakdown: Record<string, number> = {};
 
   if (isQuiz) {
     const easyCount = sectionMCQs.filter((q) => q.difficulty_level === "Easy").length;
@@ -38,7 +53,7 @@ export function SectionCard({
       mediumCount * (section.mediumScore || 2) +
       hardCount * (section.hardScore || 3);
     difficultyBreakdown = { Easy: easyCount, Medium: mediumCount, Hard: hardCount };
-  } else {
+  } else if (isCoding) {
     const easyCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "easy").length;
     const mediumCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "medium").length;
     const hardCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "hard").length;
@@ -47,23 +62,41 @@ export function SectionCard({
       mediumCount * (section.mediumScore || 2) +
       hardCount * (section.hardScore || 3);
     difficultyBreakdown = { Easy: easyCount, Medium: mediumCount, Hard: hardCount };
+  } else if (isWritten) {
+    maxPossibleScore = sectionWrittenPrompts.reduce((sum, p) => sum + (p.max_marks || 0), 0);
+    sectionWrittenPrompts.forEach((p) => {
+      const mode = (p.answer_mode || "text").trim() || "text";
+      answerModeBreakdown[mode] = (answerModeBreakdown[mode] || 0) + 1;
+    });
   }
 
   const bgColor = isQuiz
     ? isSelected
       ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)"
       : "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)"
+    : isCoding
+    ? isSelected
+      ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
+      : "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
     : isSelected
-    ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
-    : "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)";
+    ? "color-mix(in srgb, var(--warning-500) 28%, var(--border-default) 72%)"
+    : "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)";
   const borderColor = isQuiz
     ? isSelected
       ? "var(--accent-indigo-dark)"
       : "var(--accent-indigo)"
+    : isCoding
+    ? isSelected
+      ? "var(--success-500)"
+      : "var(--success-500)"
     : isSelected
+    ? "var(--warning-500)"
+    : "var(--warning-500)";
+  const chipColor = isQuiz
+    ? "var(--accent-indigo)"
+    : isCoding
     ? "var(--success-500)"
-    : "var(--success-500)";
-  const chipColor = isQuiz ? "var(--accent-indigo)" : "var(--success-500)";
+    : "var(--warning-500)";
 
   return (
     <Paper
@@ -77,7 +110,11 @@ export function SectionCard({
         cursor: "pointer",
         transition: "all 0.2s",
         "&:hover": {
-          bgcolor: isQuiz ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)" : "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)",
+          bgcolor: isQuiz
+            ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)"
+            : isCoding
+            ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
+            : "color-mix(in srgb, var(--warning-500) 22%, var(--border-default) 78%)",
           transform: "translateX(2px)",
         },
       }}
@@ -122,7 +159,7 @@ export function SectionCard({
             variant="caption"
             sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}
           >
-            {isQuiz ? "Questions" : "Problems"}
+            {isQuiz ? "Questions" : isCoding ? "Problems" : "Prompts"}
           </Typography>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             <Chip
@@ -135,8 +172,16 @@ export function SectionCard({
                 label={`Showing: ${itemsToShow}`}
                 size="small"
                 sx={{
-                  bgcolor: isQuiz ? "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)" : "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)",
-                  color: isQuiz ? "var(--accent-indigo)" : "var(--success-500)",
+                  bgcolor: isQuiz
+                    ? "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)"
+                    : isCoding
+                    ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
+                    : "color-mix(in srgb, var(--warning-500) 22%, var(--border-default) 78%)",
+                  color: isQuiz
+                    ? "var(--accent-indigo)"
+                    : isCoding
+                    ? "var(--success-500)"
+                    : "var(--warning-500)",
                   fontWeight: 600,
                 }}
               />
@@ -168,6 +213,22 @@ export function SectionCard({
                     }}
                   />
                 ))}
+            </Box>
+          )}
+          {isWritten && Object.keys(answerModeBreakdown).length > 0 && (
+            <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 1 }}>
+              {Object.entries(answerModeBreakdown).map(([mode, count]) => (
+                <Chip
+                  key={mode}
+                  label={`${mode}: ${count}`}
+                  size="small"
+                  sx={{
+                    bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                    color: "var(--warning-500)",
+                    fontSize: "0.7rem",
+                  }}
+                />
+              ))}
             </Box>
           )}
         </Box>
@@ -207,7 +268,7 @@ export function SectionCard({
                   </Typography>
                 )}
               </>
-            ) : (
+            ) : isCoding ? (
               <>
                 <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                   <Chip
@@ -232,6 +293,20 @@ export function SectionCard({
                     sx={{ color: "var(--success-500)", fontWeight: 600, mt: 0.5 }}
                   >
                     Max Possible Score: {maxPossibleScore} points
+                  </Typography>
+                )}
+              </>
+            ) : (
+              <>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
+                  Marks sum from each prompt (written sections).
+                </Typography>
+                {sectionWrittenPrompts.length > 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "var(--warning-500)", fontWeight: 600, mt: 0.5 }}
+                  >
+                    Total marks (prompts): {maxPossibleScore}
                   </Typography>
                 )}
               </>

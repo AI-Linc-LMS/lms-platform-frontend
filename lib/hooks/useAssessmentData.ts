@@ -39,6 +39,7 @@ interface SubjectiveSection {
     question_text: string;
     max_marks?: number;
     question_type?: string;
+    answer_mode?: string;
   }>;
 }
 

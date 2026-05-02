@@ -41,7 +41,7 @@ export function AssessmentResultHeader({
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:file-document-check" size={28} color="#ffffff" />
+          <IconWrapper icon="mdi:file-document-check" size={28} color="var(--font-light)" />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography

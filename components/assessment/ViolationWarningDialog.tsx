@@ -39,7 +39,7 @@ export function ViolationWarningDialog({
   };
 
   const getColor = () => {
-    return getSeverity() === "error" ? "#ef4444" : "#f59e0b";
+    return getSeverity() === "error" ? "var(--error-500)" : "var(--warning-500)";
   };
 
   return (
@@ -67,7 +67,7 @@ export function ViolationWarningDialog({
           sx={{
             mt: 2,
             p: 2,
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--surface)",
             borderRadius: 1,
           }}
         >

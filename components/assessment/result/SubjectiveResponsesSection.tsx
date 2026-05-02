@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Paper, Typography, Button, Chip } from "@mui/material";
+import { Box, Paper, Typography, Button, Chip, Link } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { SubjectiveResponseItem } from "@/lib/services/assessment.service";
+import {
+  mergeSubjectiveApiRowIntoPayload,
+  normalizeSubjectiveAnswer,
+  parseSubjectiveAnswerPayload,
+  subjectivePayloadHasContent,
+} from "@/utils/assessment.utils";
 
 interface SubjectiveResponsesSectionProps {
   subjectiveResponses: SubjectiveResponseItem[];
@@ -17,11 +23,6 @@ function formatQuestionTypeLabel(type: string) {
   return type.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
-function getSubjectiveAnswerText(q: SubjectiveResponseItem): string {
-  const raw = q.your_answer ?? q.answer ?? "";
-  return typeof raw === "string" ? raw : String(raw ?? "");
-}
-
 export function SubjectiveResponsesSection({
   subjectiveResponses,
 }: SubjectiveResponsesSectionProps) {
@@ -33,8 +34,10 @@ export function SubjectiveResponsesSection({
 
   if (!q) return null;
 
-  const answerText = getSubjectiveAnswerText(q);
-  const answered = Boolean(answerText.trim());
+  const mergedPayload = mergeSubjectiveApiRowIntoPayload(q);
+  const answerText = normalizeSubjectiveAnswer(mergedPayload);
+  const parsed = parseSubjectiveAnswerPayload(mergedPayload);
+  const answered = subjectivePayloadHasContent(q.answer_mode, mergedPayload);
   const feedbackText =
     typeof q.feedback === "string" ? q.feedback.trim() : "";
   const hasFeedback = feedbackText.length > 0;
@@ -286,20 +289,61 @@ export function SubjectiveResponsesSection({
             }}
           >
             {answered ? (
-              <Typography
-                component="pre"
-                sx={{
-                  m: 0,
-                  fontFamily: "var(--font-family-primary), system-ui, sans-serif",
-                  fontSize: "0.875rem",
-                  lineHeight: 1.65,
-                  color: "var(--font-primary)",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {answerText}
-              </Typography>
+              <>
+                {answerText.trim().length > 0 ? (
+                  <Typography
+                    component="pre"
+                    sx={{
+                      m: 0,
+                      fontFamily: "var(--font-family-primary), system-ui, sans-serif",
+                      fontSize: "0.875rem",
+                      lineHeight: 1.65,
+                      color: "var(--font-primary)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {answerText}
+                  </Typography>
+                ) : null}
+                {(parsed.images?.length ?? 0) > 0 && (
+                  <Box sx={{ mt: answerText.trim() ? 1.5 : 0 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+                      Images
+                    </Typography>
+                    {(parsed.images || []).map((im, i) => (
+                      <Link key={`${im.url}-${i}`} href={im.url} target="_blank" rel="noopener noreferrer" variant="body2" display="block" sx={{ mb: 0.5 }}>
+                        {im.name || `Image ${i + 1}`}
+                      </Link>
+                    ))}
+                  </Box>
+                )}
+                {(parsed.files?.length ?? 0) > 0 && (
+                  <Box sx={{ mt: 1.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+                      Files
+                    </Typography>
+                    {(parsed.files || []).map((f, i) => (
+                      <Link key={`${f.url}-${i}`} href={f.url} target="_blank" rel="noopener noreferrer" variant="body2" display="block" sx={{ mb: 0.5 }}>
+                        {f.name || `File ${i + 1}`}
+                      </Link>
+                    ))}
+                  </Box>
+                )}
+                {parsed.video?.url ? (
+                  <Box sx={{ mt: 1.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+                      Video response
+                    </Typography>
+                    <Link href={parsed.video.url} target="_blank" rel="noopener noreferrer" variant="body2">
+                      Open video
+                      {parsed.video.duration_seconds != null
+                        ? ` (${Math.round(parsed.video.duration_seconds)}s)`
+                        : ""}
+                    </Link>
+                  </Box>
+                ) : null}
+              </>
             ) : (
               <Typography variant="body2" sx={{ color: "var(--font-tertiary)", fontStyle: "italic" }}>
                 No response submitted for this question.

@@ -26,8 +26,14 @@ export interface Assessment {
   end_time?: string | null;
   has_attempted?: boolean; // For backward compatibility
   proctoring_enabled?: boolean;
-  /** "not_started" | "in_progress" | "submitted" | "completed" – when "submitted" or "completed", show results */
-  status?: "not_started" | "in_progress" | "submitted" | "completed";
+  /** Learner lifecycle; API may also send finalized/expired — normalize in UI helpers. */
+  status?:
+    | "not_started"
+    | "in_progress"
+    | "submitted"
+    | "completed"
+    | "finalized"
+    | "expired";
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
@@ -204,7 +210,10 @@ export interface QuizResponseItem {
   question_text: string;
   options: Record<string, string>;
   correct_option: string;
-  selected_answer: string | null;
+  /** Present for MSQ; exact set used for display / exports */
+  correct_options?: string[];
+  question_style?: "single" | "multiple" | string;
+  selected_answer: string | string[] | null;
   is_correct: boolean;
   explanation?: string | null;
   awarded_marks?: number | null;
@@ -220,11 +229,15 @@ export interface SubjectiveResponseItem {
   section_title?: string;
   question_text: string;
   question_type?: string;
+  answer_mode?: string;
   max_marks: number;
   /** Learner text from API (common key on result payloads) */
   answer?: string | null;
   /** Legacy / alternate key for the learner response */
   your_answer?: string | null;
+  images?: Array<{ url: string; name?: string; content_type?: string }>;
+  files?: Array<{ url: string; name?: string; content_type?: string }>;
+  video?: { url: string; duration_seconds?: number } | null;
   /** Present when an instructor or grader has awarded marks */
   awarded_marks?: number | null;
   feedback?: string | null;

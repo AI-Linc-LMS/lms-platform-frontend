@@ -26,13 +26,13 @@ export function StrengthsWeaknesses({
         elevation={0}
         sx={{
           p: 3.5,
-          border: "2px solid #d1fae5",
+          border: "2px solid color-mix(in srgb, var(--course-cta) 18%, transparent)",
           borderRadius: 3,
-          background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--course-cta) 10%, var(--card-bg)) 0%, color-mix(in srgb, var(--course-cta) 14%, transparent) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px rgba(16, 185, 129, 0.15)",
+            boxShadow: "0 8px 20px color-mix(in srgb, var(--course-cta) 18%, transparent)",
           },
         }}
       >
@@ -49,19 +49,19 @@ export function StrengthsWeaknesses({
               width: 40,
               height: 40,
               borderRadius: "50%",
-              backgroundColor: "#10b981",
+              backgroundColor: "var(--course-cta)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:thumb-up" size={22} color="#ffffff" />
+            <IconWrapper icon="mdi:thumb-up" size={22} color="var(--font-light)" />
           </Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#065f46",
+              color: "color-mix(in srgb, var(--course-cta) 75%, var(--font-dark))",
             }}
           >
             Strengths
@@ -83,13 +83,13 @@ export function StrengthsWeaknesses({
                 <IconWrapper
                   icon="mdi:check-circle"
                   size={18}
-                  color="#10b981"
+                  color="var(--course-cta)"
                   style={{ marginTop: "2px", flexShrink: 0 }}
                 />
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#065f46",
+                    color: "color-mix(in srgb, var(--course-cta) 75%, var(--font-dark))",
                     lineHeight: 1.6,
                   }}
                 >
@@ -101,7 +101,7 @@ export function StrengthsWeaknesses({
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontStyle: "italic",
               }}
             >
@@ -116,13 +116,13 @@ export function StrengthsWeaknesses({
         elevation={0}
         sx={{
           p: 3.5,
-          border: "2px solid #fecaca",
+          border: "2px solid color-mix(in srgb, var(--error-500) 26%, transparent)",
           borderRadius: 3,
-          background: "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)",
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--error-500) 10%, var(--card-bg)) 0%, color-mix(in srgb, var(--error-500) 12%, transparent) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px rgba(239, 68, 68, 0.15)",
+            boxShadow: "0 8px 20px color-mix(in srgb, var(--error-500) 18%, transparent)",
           },
         }}
       >
@@ -139,19 +139,19 @@ export function StrengthsWeaknesses({
               width: 40,
               height: 40,
               borderRadius: "50%",
-              backgroundColor: "#ef4444",
+              backgroundColor: "var(--error-500)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:lightbulb-on" size={22} color="#ffffff" />
+            <IconWrapper icon="mdi:lightbulb-on" size={22} color="var(--font-light)" />
           </Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#991b1b",
+              color: "color-mix(in srgb, var(--error-600) 88%, var(--font-dark))",
             }}
           >
             Areas for Improvement
@@ -173,13 +173,13 @@ export function StrengthsWeaknesses({
                 <IconWrapper
                   icon="mdi:alert-circle"
                   size={18}
-                  color="#ef4444"
+                  color="var(--error-500)"
                   style={{ marginTop: "2px", flexShrink: 0 }}
                 />
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#991b1b",
+                    color: "color-mix(in srgb, var(--error-600) 88%, var(--font-dark))",
                     lineHeight: 1.6,
                   }}
                 >
@@ -191,7 +191,7 @@ export function StrengthsWeaknesses({
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontStyle: "italic",
               }}
             >

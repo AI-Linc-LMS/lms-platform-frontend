@@ -33,10 +33,10 @@ export function TopicWiseBreakdown({
   };
 
   const getPerformanceColor = (accuracy: number) => {
-    if (accuracy >= 80) return "#10b981";
-    if (accuracy >= 60) return "#3b82f6";
-    if (accuracy >= 40) return "#f59e0b";
-    return "#ef4444";
+    if (accuracy >= 80) return "var(--course-cta)";
+    if (accuracy >= 60) return "var(--accent-blue-light)";
+    if (accuracy >= 40) return "var(--warning-500)";
+    return "var(--error-500)";
   };
 
   return (
@@ -157,12 +157,12 @@ export function TopicWiseBreakdown({
                       <IconWrapper
                         icon="mdi:check-circle"
                         size={18}
-                        color="#10b981"
+                        color="var(--course-cta)"
                       />
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#10b981",
+                          color: "var(--course-cta)",
                           fontWeight: 600,
                           fontSize: "0.875rem",
                         }}
@@ -180,12 +180,12 @@ export function TopicWiseBreakdown({
                       <IconWrapper
                         icon="mdi:close-circle"
                         size={18}
-                        color="#ef4444"
+                        color="var(--error-500)"
                       />
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#ef4444",
+                          color: "var(--error-500)",
                           fontWeight: 600,
                           fontSize: "0.875rem",
                         }}
@@ -263,14 +263,14 @@ export function TopicWiseBreakdown({
                     key={`full-${i}`}
                     icon="mdi:star"
                     size={16}
-                    color="#fbbf24"
+                    color="var(--accent-yellow)"
                   />
                 ))}
                 {hasHalfStar && (
                   <IconWrapper
                     icon="mdi:star-half-full"
                     size={16}
-                    color="#fbbf24"
+                    color="var(--accent-yellow)"
                   />
                 )}
                 {Array.from({ length: emptyStars }).map((_, i) => (
@@ -278,7 +278,7 @@ export function TopicWiseBreakdown({
                     key={`empty-${i}`}
                     icon="mdi:star-outline"
                     size={16}
-                    color="#d1d5db"
+                    color="var(--border-light)"
                   />
                 ))}
                 <Typography

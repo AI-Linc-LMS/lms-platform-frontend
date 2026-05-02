@@ -265,6 +265,135 @@ function ChartReportCard({
   );
 }
 
+/** Shared placeholder when a chart has no rows yet (keeps card rhythm consistent). */
+function AnalyticsChartEmptyState() {
+  const tips = [
+    {
+      icon: "mdi:account-arrow-right-outline" as const,
+      text: "More submissions will fill these charts automatically.",
+    },
+    {
+      icon: "mdi:reload" as const,
+      text: "Use Reload in Report controls after learners submit.",
+    },
+  ];
+
+  return (
+    <Box
+      role="status"
+      aria-live="polite"
+      sx={{
+        minHeight: { xs: 196, sm: 228 },
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 2,
+        px: { xs: 2, sm: 3 },
+        py: { xs: 3, sm: 3.5 },
+        borderRadius: REPORT.radius,
+        border: "1px dashed",
+        borderColor: "divider",
+        bgcolor: REPORT.chartWell,
+        backgroundImage: (theme: Theme) =>
+          `radial-gradient(ellipse 95% 80% at 50% -20%, ${alpha(theme.palette.primary.main, 0.09)} 0%, transparent 55%)`,
+        textAlign: "center",
+      }}
+    >
+      <Box
+        sx={{
+          width: { xs: 52, sm: 56 },
+          height: { xs: 52, sm: 56 },
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: (theme: Theme) => alpha(theme.palette.primary.main, 0.1),
+          border: "1px solid",
+          borderColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.22),
+          boxShadow:
+            "0 2px 8px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+        }}
+      >
+        <IconWrapper icon="mdi:chart-timeline-variant" size={28} color="var(--accent-indigo)" />
+      </Box>
+
+      <Box sx={{ maxWidth: 420, mx: "auto" }}>
+        <Typography
+          variant="subtitle1"
+          component="p"
+          fontWeight={800}
+          color="text.primary"
+          sx={{ letterSpacing: "-0.02em", mb: 0.75, lineHeight: 1.35 }}
+        >
+          Nothing to show here yet
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            lineHeight: 1.65,
+            mb: 2,
+            maxWidth: 380,
+            mx: "auto",
+          }}
+        >
+          There isn&apos;t enough data for this visualization right now. As activity picks up, you&apos;ll see
+          distributions and trends here—no extra setup required.
+        </Typography>
+
+        <Stack
+          component="ul"
+          spacing={1.25}
+          sx={{
+            m: 0,
+            p: 0,
+            listStyle: "none",
+            textAlign: "left",
+            width: "fit-content",
+            maxWidth: 380,
+            mx: "auto",
+          }}
+        >
+          {tips.map(({ icon, text }) => (
+            <Box
+              component="li"
+              key={text}
+              sx={{
+                display: "flex",
+                gap: 1.25,
+                alignItems: "flex-start",
+                py: 0.35,
+              }}
+            >
+              <Box
+                sx={{
+                  mt: 0.125,
+                  flexShrink: 0,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: (theme: Theme) => alpha(theme.palette.primary.main, 0.06),
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <IconWrapper icon={icon} size={16} color="var(--accent-indigo)" />
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55, pt: 0.125 }}>
+                {text}
+              </Typography>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
 export type AssessmentAnalyticsToolbarProps = {
   topNDraft: string;
   onTopNDraftChange: (value: string) => void;
@@ -574,6 +703,77 @@ function TablePaginationBar({
 }
 
 export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
+  const scoreChartData = useMemo(
+    () =>
+      (data?.charts?.score_distribution_percent ?? []).map((b) => ({
+        name: b.label,
+        count: b.count,
+      })),
+    [data?.charts?.score_distribution_percent],
+  );
+
+  const timeChartData = useMemo(
+    () =>
+      (data?.charts?.time_taken_minutes ?? []).map((b) => ({
+        name: b.label.replace(/\s*min\s*$/i, "").trim(),
+        count: b.count,
+      })),
+    [data?.charts?.time_taken_minutes],
+  );
+
+  const timelineData = useMemo(
+    () =>
+      (data?.charts?.submissions_timeline ?? []).map((d) => {
+        let short = d.date;
+        try {
+          const dt = new Date(d.date + "T12:00:00");
+          if (!isNaN(dt.getTime())) {
+            short = dt.toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            });
+          }
+        } catch {
+          /* keep raw */
+        }
+        return { date: d.date, label: short, submissions: d.count };
+      }),
+    [data?.charts?.submissions_timeline],
+  );
+
+  const statusPieData = useMemo(() => {
+    const sb = data?.status_breakdown ?? {};
+    return [
+      { name: "In progress", value: sb.in_progress ?? 0 },
+      { name: "Submitted", value: sb.submitted ?? 0 },
+      { name: "Finalized", value: sb.finalized ?? 0 },
+    ].filter((x) => x.value > 0);
+  }, [data?.status_breakdown]);
+
+  const sectionAverages = useMemo(
+    () => data?.section_averages ?? [],
+    [data?.section_averages],
+  );
+
+  const maxSectionPct = useMemo(
+    () => maxSectionAvgPct(sectionAverages),
+    [sectionAverages],
+  );
+
+  const topPerformers = data?.top_performers ?? [];
+  const students = data?.students ?? [];
+  const ql = data?.question_level_results;
+  const codingQuestions = ql?.coding ?? [];
+  const mcqQuestions = ql?.mcq ?? [];
+  const subjectiveQuestions = ql?.subjective ?? [];
+
+  const topPerformersPg = usePagedSlice(topPerformers, 10);
+  const studentsPg = usePagedSlice(students, 10);
+  const codingPg = usePagedSlice(codingQuestions, 10);
+  const mcqPg = usePagedSlice(mcqQuestions, 10);
+  const subjectivePg = usePagedSlice(subjectiveQuestions, 10);
+  const sectionAveragesPg = usePagedSlice(sectionAverages, 10);
+
   if (!data) {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -607,100 +807,6 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
   const completedWithScore = summary.completed_with_score ?? 0;
   const passCount = summary.pass_count ?? 0;
   const passRate = summary.pass_rate_percent;
-
-  const scoreChartData = useMemo(
-    () =>
-      (data.charts?.score_distribution_percent ?? []).map((b) => ({
-        name: b.label,
-        count: b.count,
-      })),
-    [data.charts?.score_distribution_percent],
-  );
-
-  const timeChartData = useMemo(
-    () =>
-      (data.charts?.time_taken_minutes ?? []).map((b) => ({
-        name: b.label.replace(/\s*min\s*$/i, "").trim(),
-        count: b.count,
-      })),
-    [data.charts?.time_taken_minutes],
-  );
-
-  const timelineData = useMemo(
-    () =>
-      (data.charts?.submissions_timeline ?? []).map((d) => {
-        let short = d.date;
-        try {
-          const dt = new Date(d.date + "T12:00:00");
-          if (!isNaN(dt.getTime())) {
-            short = dt.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-            });
-          }
-        } catch {
-          /* keep raw */
-        }
-        return { date: d.date, label: short, submissions: d.count };
-      }),
-    [data.charts?.submissions_timeline],
-  );
-
-  const statusPieData = useMemo(() => {
-    const sb = data.status_breakdown ?? {};
-    return [
-      { name: "In progress", value: sb.in_progress ?? 0 },
-      { name: "Submitted", value: sb.submitted ?? 0 },
-      { name: "Finalized", value: sb.finalized ?? 0 },
-    ].filter((x) => x.value > 0);
-  }, [data.status_breakdown]);
-
-  const sectionAverages = useMemo(
-    () => data.section_averages ?? [],
-    [data.section_averages],
-  );
-
-  const maxSectionPct = useMemo(
-    () => maxSectionAvgPct(sectionAverages),
-    [sectionAverages],
-  );
-
-  const topPerformers = data.top_performers ?? [];
-  const students = data.students ?? [];
-  const ql = data.question_level_results;
-  const codingQuestions = ql?.coding ?? [];
-  const mcqQuestions = ql?.mcq ?? [];
-  const subjectiveQuestions = ql?.subjective ?? [];
-
-  const topPerformersPg = usePagedSlice(topPerformers, 10);
-  const studentsPg = usePagedSlice(students, 10);
-  const codingPg = usePagedSlice(codingQuestions, 10);
-  const mcqPg = usePagedSlice(mcqQuestions, 10);
-  const subjectivePg = usePagedSlice(subjectiveQuestions, 10);
-  const sectionAveragesPg = usePagedSlice(sectionAverages, 10);
-
-  const emptyMsg = (
-    <Box
-      sx={{
-        minHeight: 220,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 1,
-        px: 2,
-        py: 4,
-        borderRadius: 2,
-        border: "1px dashed",
-        borderColor: "divider",
-        bgcolor: (theme: Theme) => alpha(theme.palette.action.hover, 0.5),
-      }}
-    >
-      <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ maxWidth: 280 }}>
-        Nothing to show here yet. Try another date range or reload after more submissions.
-      </Typography>
-    </Box>
-  );
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 2.5, md: 3.25 } }}>
@@ -822,7 +928,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             Still taking the test, finished but not finalized, or fully done.
           </Typography>
           {statusPieData.length === 0 ? (
-            emptyMsg
+            <AnalyticsChartEmptyState />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -935,7 +1041,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           description="Each bar is a score range. The number on top is how many students landed in that range."
         >
           {scoreChartData.length === 0 ? (
-            emptyMsg
+            <AnalyticsChartEmptyState />
           ) : (
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={scoreChartData} margin={{ top: 28, right: 12, left: 18, bottom: 32 }}>
@@ -976,7 +1082,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           description="Each bar is a time range in minutes. The number on top is how many students finished in that range."
         >
           {timeChartData.length === 0 ? (
-            emptyMsg
+            <AnalyticsChartEmptyState />
           ) : (
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={timeChartData} margin={{ top: 28, right: 12, left: 18, bottom: 32 }}>
@@ -1015,7 +1121,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
         description="Each dot is one calendar day. The line connects daily totals so you can see when activity went up or down."
       >
         {timelineData.length === 0 ? (
-          emptyMsg
+          <AnalyticsChartEmptyState />
         ) : (
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={timelineData} margin={{ top: 26, right: 16, left: 14, bottom: 28 }}>

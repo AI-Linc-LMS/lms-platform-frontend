@@ -27,9 +27,9 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
     <Paper
       elevation={0}
       sx={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--font-light)",
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         overflow: "hidden",
       }}
     >
@@ -42,9 +42,9 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
           alignItems: "center",
           justifyContent: "space-between",
           cursor: "pointer",
-          borderBottom: expanded ? "1px solid #e5e7eb" : "none",
+          borderBottom: expanded ? "1px solid var(--border-default)" : "none",
           "&:hover": {
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--surface)",
           },
         }}
       >
@@ -52,7 +52,7 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#1a1f2e",
+            color: "var(--font-primary-dark)",
             fontSize: "1rem",
           }}
         >
@@ -61,7 +61,7 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
         <IconWrapper
           icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"}
           size={20}
-          color="#6b7280"
+          color="var(--font-secondary)"
         />
       </Box>
 
@@ -76,14 +76,14 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
               width: "6px",
             },
             "&::-webkit-scrollbar-track": {
-              background: "#f1f1f1",
+              background: "var(--neutral-100)",
             },
             "&::-webkit-scrollbar-thumb": {
-              background: "#d1d5db",
+              background: "var(--border-light)",
               borderRadius: "3px",
             },
             "&::-webkit-scrollbar-thumb:hover": {
-              background: "#9ca3af",
+              background: "var(--font-tertiary)",
             },
           }}
         >
@@ -96,7 +96,7 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
                 key={question.id}
                 disablePadding
                 sx={{
-                  borderBottom: index < questions.length - 1 ? "1px solid #e5e7eb" : "none",
+                  borderBottom: index < questions.length - 1 ? "1px solid var(--border-default)" : "none",
                 }}
               >
                 <ListItemButton
@@ -104,9 +104,9 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
                   sx={{
                     py: 1.5,
                     px: 2,
-                    backgroundColor: isCurrent ? "#eff6ff" : "transparent",
+                    backgroundColor: isCurrent ? "color-mix(in srgb, var(--surface-blue-light) 90%, var(--card-bg))" : "transparent",
                     "&:hover": {
-                      backgroundColor: isCurrent ? "#dbeafe" : "#f9fafb",
+                      backgroundColor: isCurrent ? "var(--surface-blue-light)" : "var(--surface)",
                     },
                   }}
                 >
@@ -123,21 +123,21 @@ const CodingQuestionListComponent = memo(function CodingQuestionList({
                           <IconWrapper
                             icon="mdi:check-circle"
                             size={20}
-                            color="#10b981"
+                            color="var(--course-cta)"
                           />
                         ) : (
                           <IconWrapper
                             icon="mdi:code-braces"
                             size={20}
-                            color={isCurrent ? "#3b82f6" : "#d1d5db"}
+                            color={isCurrent ? "var(--accent-blue-light)" : "var(--border-light)"}
                           />
                         )}
                         <Typography
                           sx={{
                             fontWeight: isCurrent ? 600 : 400,
                             color: isCurrent
-                              ? "#1e40af"
-                              : "#6b7280",
+                              ? "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))"
+                              : "var(--font-secondary)",
                             fontSize: "0.875rem",
                             overflow: "hidden",
                             textOverflow: "ellipsis",

@@ -56,18 +56,23 @@ export function convertMCQToQuizQuestion(mcq: {
   option_b: string;
   option_c: string;
   option_d: string;
+  question_style?: string;
 }): {
   id: number;
   question: string;
+  question_style: "single" | "multiple";
   options: Array<{
     id: string;
     label: string;
     value: string;
   }>;
 } {
+  const style =
+    mcq.question_style === "multiple" ? "multiple" : "single";
   return {
     id: mcq.id,
     question: mcq.question_text,
+    question_style: style,
     options: [
       { id: "a", label: mcq.option_a, value: "a" },
       { id: "b", label: mcq.option_b, value: "b" },
@@ -117,6 +122,7 @@ export function convertQuizSectionsToSections(
       option_b: string;
       option_c: string;
       option_d: string;
+      question_style?: string;
     }>;
   }>
 ) {
@@ -170,6 +176,29 @@ export function convertCodingSectionsToSections(
   });
 }
 
+export type SubjectiveVideoMeta = {
+  url: string;
+  duration_seconds?: number;
+};
+
+export type SubjectiveFileMeta = {
+  url: string;
+  name?: string;
+  content_type?: string;
+};
+
+/** Learner / graded subjective payload stored in response_sheet. */
+export type SubjectiveAnswerPayload = {
+  answer?: string;
+  images?: SubjectiveFileMeta[];
+  files?: SubjectiveFileMeta[];
+  video?: SubjectiveVideoMeta | null;
+  /** Present after AI / manual grading; ignored when saving draft. */
+  awarded_marks?: number;
+  max_marks?: number;
+  feedback?: string;
+};
+
 /**
  * Normalize saved subjective answers: plain string, { answer }, or graded objects from server.
  */
@@ -181,6 +210,81 @@ export function normalizeSubjectiveAnswer(raw: unknown): string {
     return typeof a === "string" ? a : "";
   }
   return "";
+}
+
+/**
+ * API rows (admin manual evaluation, results) often store learner text in `answer` / `your_answer`
+ * while `images`, `files`, and `video` sit as sibling fields. Merge them before parsing.
+ */
+export function mergeSubjectiveApiRowIntoPayload(row: {
+  answer?: unknown;
+  your_answer?: unknown;
+  images?: unknown;
+  files?: unknown;
+  video?: unknown;
+}): unknown {
+  const raw = row.your_answer ?? row.answer ?? null;
+  if (raw == null || raw === "") {
+    const tail: Record<string, unknown> = {};
+    if (row.images != null) tail.images = row.images;
+    if (row.files != null) tail.files = row.files;
+    if (row.video != null) tail.video = row.video;
+    return Object.keys(tail).length ? tail : {};
+  }
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return {
+      ...(raw as Record<string, unknown>),
+      ...(row.images != null ? { images: row.images } : {}),
+      ...(row.files != null ? { files: row.files } : {}),
+      ...(row.video != null ? { video: row.video } : {}),
+    };
+  }
+  const out: Record<string, unknown> = {
+    answer: typeof raw === "string" ? raw : String(raw),
+  };
+  if (row.images != null) out.images = row.images;
+  if (row.files != null) out.files = row.files;
+  if (row.video != null) out.video = row.video;
+  return out;
+}
+
+export function parseSubjectiveAnswerPayload(raw: unknown): SubjectiveAnswerPayload {
+  if (raw == null || raw === "") return {};
+  if (typeof raw === "string") return { answer: raw };
+  if (typeof raw !== "object" || Array.isArray(raw)) return {};
+  const o = raw as Record<string, unknown>;
+  const answer =
+    typeof o.answer === "string"
+      ? o.answer
+      : typeof o.text === "string"
+        ? o.text
+        : "";
+  const images = Array.isArray(o.images) ? (o.images as SubjectiveFileMeta[]) : [];
+  const files = Array.isArray(o.files) ? (o.files as SubjectiveFileMeta[]) : [];
+  const video =
+    o.video && typeof o.video === "object" && !Array.isArray(o.video)
+      ? (o.video as SubjectiveVideoMeta)
+      : null;
+  const out: SubjectiveAnswerPayload = {};
+  if (answer) out.answer = answer;
+  if (images.length) out.images = images;
+  if (files.length) out.files = files;
+  if (video?.url) out.video = video;
+  return out;
+}
+
+export function subjectivePayloadHasContent(
+  mode: string | undefined,
+  raw: unknown,
+): boolean {
+  const m = mode || "text";
+  const p = parseSubjectiveAnswerPayload(raw);
+  const text = (p.answer ?? "").trim();
+  if (m === "video") return !!(p.video && typeof p.video.url === "string" && p.video.url);
+  if (m === "file_upload")
+    return (p.files?.length ?? 0) > 0 || text.length > 0;
+  if (m === "text_image") return text.length > 0 || (p.images?.length ?? 0) > 0;
+  return text.length > 0;
 }
 
 /**
@@ -199,6 +303,7 @@ export function convertSubjectiveSectionsToSections(
       question_text: string;
       max_marks?: number;
       question_type?: string;
+      answer_mode?: string;
     }>;
   }>
 ) {
@@ -217,6 +322,7 @@ export function convertSubjectiveSectionsToSections(
         question_text: q.question_text,
         max_marks: q.max_marks,
         question_type: q.question_type,
+        answer_mode: q.answer_mode ?? "text",
       })),
       ...(capSec != null
         ? { time_limit_minutes: timeLimitMinutes, section_time_cap_seconds: capSec }
@@ -321,15 +427,39 @@ export function formatAssessmentResponses(
           };
         }
       } else if (sectionType === "subjective") {
-        const text = normalizeSubjectiveAnswer(questionResponse);
-        sectionResponseData[String(questionId)] = text;
+        const q = question as { answer_mode?: string };
+        const mode = q.answer_mode || "text";
+        if (questionResponse === undefined || questionResponse === null) {
+          sectionResponseData[String(questionId)] = null;
+        } else if (typeof questionResponse === "object" && !Array.isArray(questionResponse)) {
+          sectionResponseData[String(questionId)] = questionResponse;
+        } else if (mode === "text") {
+          const t = normalizeSubjectiveAnswer(questionResponse);
+          sectionResponseData[String(questionId)] = t.length > 0 ? t : null;
+        } else {
+          const text = normalizeSubjectiveAnswer(questionResponse);
+          const base: Record<string, unknown> = {};
+          if (text) base.answer = text;
+          sectionResponseData[String(questionId)] =
+            Object.keys(base).length > 0 ? base : null;
+        }
       } else {
         // For quiz: include ALL questions, even if not attempted (for post-assessment analysis)
-        // Send null or empty string if not attempted
         if (questionResponse !== undefined && questionResponse !== null) {
-          sectionResponseData[String(questionId)] = questionResponse;
+          if (Array.isArray(questionResponse)) {
+            const letters = [
+              ...new Set(
+                questionResponse
+                  .map((x: unknown) => String(x).trim().toUpperCase())
+                  .filter((x: string) => ["A", "B", "C", "D"].includes(x)),
+              ),
+            ].sort();
+            sectionResponseData[String(questionId)] =
+              letters.length > 0 ? letters : null;
+          } else {
+            sectionResponseData[String(questionId)] = questionResponse;
+          }
         } else {
-          // Include unanswered questions with null value
           sectionResponseData[String(questionId)] = null;
         }
       }

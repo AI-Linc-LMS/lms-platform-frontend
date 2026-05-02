@@ -120,6 +120,140 @@
   --assessment-subjective-shadow: color-mix(in srgb, var(--accent-teal) 18%, transparent);
   --assessment-subjective-shadow-lg: color-mix(in srgb, var(--accent-teal) 26%, transparent);
   --assessment-subjective-count: var(--accent-teal);
+
+  /*
+   * Learner assessment UI (catalog cards, list chrome, shared CTAs).
+   * All values derive from tenant branding tokens — change accents in Admin Branding, not here.
+   */
+  --assessment-success-strong: color-mix(in srgb, var(--course-cta) 86%, var(--font-dark));
+  --assessment-catalog-on-media: var(--font-light);
+  --assessment-catalog-chip-on-dark: color-mix(in srgb, var(--font-light) 92%, transparent);
+  --accent-indigo-muted-fill: color-mix(in srgb, var(--accent-indigo) 9%, transparent);
+
+  --assessment-catalog-auto-header-active: linear-gradient(
+    135deg,
+    var(--accent-indigo) 0%,
+    var(--accent-indigo-dark) 100%
+  );
+  --assessment-catalog-auto-header-done: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--course-cta) 10%, transparent) 0%,
+    color-mix(in srgb, var(--success-500) 8%, transparent) 100%
+  );
+
+  --assessment-catalog-psychometric-header-done: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-purple) 12%, transparent) 0%,
+    color-mix(in srgb, var(--accent-indigo) 8%, transparent) 100%
+  );
+  --assessment-catalog-psychometric-overlay: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-purple) 85%, transparent) 0%,
+    color-mix(in srgb, var(--accent-indigo) 85%, transparent) 100%
+  );
+  --assessment-catalog-psychometric-cta-gradient: linear-gradient(
+    135deg,
+    var(--accent-purple) 0%,
+    var(--accent-indigo) 100%
+  );
+  --assessment-catalog-psychometric-cta-solid: var(--accent-purple);
+  --assessment-catalog-psychometric-cta-hover: color-mix(in srgb, var(--accent-purple) 88%, var(--font-dark));
+  --assessment-catalog-psychometric-border-done: color-mix(in srgb, var(--accent-purple) 22%, transparent);
+  --assessment-catalog-psychometric-border-active: color-mix(in srgb, var(--accent-purple) 32%, transparent);
+  --assessment-catalog-psychometric-border-hover-done: color-mix(in srgb, var(--accent-purple) 42%, transparent);
+  --assessment-catalog-psychometric-border-hover-active: color-mix(in srgb, var(--accent-purple) 52%, transparent);
+  --assessment-catalog-psychometric-shadow: 0 4px 12px color-mix(in srgb, var(--accent-purple) 18%, transparent);
+  --assessment-catalog-psychometric-shadow-hover: 0 12px 32px color-mix(in srgb, var(--accent-purple) 28%, transparent);
+  --assessment-catalog-psychometric-shadow-cta: 0 4px 14px color-mix(in srgb, var(--accent-purple) 42%, transparent);
+  --assessment-catalog-psychometric-shadow-cta-hover: 0 6px 20px color-mix(in srgb, var(--accent-purple) 52%, transparent);
+
+  /* Manual-review cards: teal + pink (not indigo / orange / warning — reads as “instructor” vs auto) */
+  --assessment-catalog-manual-stripe: var(--accent-teal);
+  --assessment-catalog-manual-accent: var(--accent-teal);
+  --assessment-catalog-manual-accent-secondary: var(--accent-pink);
+  --assessment-catalog-manual-header-active: linear-gradient(
+    148deg,
+    var(--secondary-700) 0%,
+    var(--primary-900) 42%,
+    color-mix(in srgb, var(--accent-pink) 58%, var(--primary-900)) 100%
+  );
+  --assessment-catalog-manual-header-done: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-teal) 14%, transparent) 0%,
+    color-mix(in srgb, var(--secondary-50) 52%, var(--card-bg)) 52%,
+    color-mix(in srgb, var(--accent-pink) 12%, transparent) 100%
+  );
+  --assessment-catalog-manual-border-done: color-mix(in srgb, var(--accent-pink) 34%, transparent);
+  --assessment-catalog-manual-border-active: color-mix(in srgb, var(--accent-teal) 48%, transparent);
+  --assessment-catalog-manual-shadow-done: 0 4px 14px color-mix(in srgb, var(--accent-pink) 14%, transparent);
+  --assessment-catalog-manual-shadow-active: 0 6px 20px color-mix(in srgb, var(--secondary-700) 22%, transparent);
+  --assessment-catalog-manual-shadow-hover-done: 0 12px 28px color-mix(in srgb, var(--accent-teal) 18%, transparent);
+  --assessment-catalog-manual-shadow-hover-active: 0 14px 36px color-mix(in srgb, var(--accent-pink) 20%, transparent);
+  --assessment-catalog-manual-border-hover-done: color-mix(in srgb, var(--accent-teal) 48%, transparent);
+  --assessment-catalog-manual-border-hover-active: color-mix(in srgb, var(--accent-pink) 55%, transparent);
+  --assessment-catalog-manual-stat-bg: color-mix(
+    in srgb,
+    var(--surface) 92%,
+    color-mix(in srgb, var(--accent-teal) 11%, transparent)
+  );
+  --assessment-catalog-manual-stat-border: color-mix(in srgb, var(--accent-teal) 28%, transparent);
+  --assessment-catalog-manual-chip-light-fg: color-mix(in srgb, var(--secondary-50) 96%, var(--font-light));
+  --assessment-catalog-manual-chip-light-border: color-mix(in srgb, var(--accent-teal) 42%, transparent);
+  --assessment-catalog-manual-chip-done-bg: color-mix(in srgb, var(--accent-teal) 20%, transparent);
+  --assessment-catalog-manual-chip-done-border: color-mix(in srgb, var(--accent-pink) 36%, transparent);
+  --assessment-catalog-manual-list-stat-bg: color-mix(in srgb, var(--accent-teal) 18%, transparent);
+
+  --assessment-catalog-cta-auto-solid: var(--accent-indigo);
+  --assessment-catalog-cta-auto-gradient: linear-gradient(
+    135deg,
+    var(--accent-indigo) 0%,
+    var(--accent-indigo-dark) 100%
+  );
+  --assessment-catalog-cta-auto-hover: var(--accent-indigo-dark);
+  --assessment-catalog-cta-auto-shadow: 0 4px 14px color-mix(in srgb, var(--accent-indigo) 40%, transparent);
+  --assessment-catalog-cta-auto-shadow-hover: 0 6px 20px color-mix(in srgb, var(--accent-indigo) 52%, transparent);
+
+  --assessment-catalog-cta-success-solid: var(--course-cta);
+  --assessment-catalog-cta-success-hover: var(--assessment-success-strong);
+  --assessment-catalog-cta-success-shadow: 0 4px 14px color-mix(in srgb, var(--course-cta) 40%, transparent);
+  --assessment-catalog-cta-success-shadow-hover: 0 6px 20px color-mix(in srgb, var(--course-cta) 52%, transparent);
+
+  --assessment-catalog-cta-manual-gradient: linear-gradient(
+    135deg,
+    var(--accent-teal) 0%,
+    color-mix(in srgb, var(--accent-pink) 72%, var(--font-dark)) 100%
+  );
+  --assessment-catalog-cta-manual-hover: color-mix(in srgb, var(--accent-teal) 68%, var(--font-dark));
+  --assessment-catalog-cta-manual-shadow: 0 4px 14px color-mix(in srgb, var(--accent-teal) 38%, transparent);
+  --assessment-catalog-cta-manual-shadow-hover: 0 6px 20px color-mix(in srgb, var(--accent-pink) 34%, transparent);
+
+  --assessment-catalog-cta-disabled: var(--font-tertiary);
+
+  --assessment-catalog-card-border-neutral: var(--border-default);
+  --assessment-catalog-card-border-auto-done: color-mix(in srgb, var(--course-cta) 22%, transparent);
+  --assessment-catalog-card-shadow-neutral: 0 2px 8px color-mix(in srgb, var(--font-dark) 10%, transparent);
+  --assessment-catalog-card-shadow-hover-neutral: 0 8px 24px color-mix(in srgb, var(--font-dark) 14%, transparent);
+  --assessment-catalog-card-border-hover-auto: var(--accent-indigo);
+  --assessment-catalog-card-border-hover-done: color-mix(in srgb, var(--course-cta) 42%, transparent);
+
+  --assessment-catalog-stat-icon-auto: var(--accent-indigo);
+  --assessment-catalog-stat-icon-manual: var(--accent-teal);
+
+  --assessment-page-header-gradient: linear-gradient(
+    135deg,
+    var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%
+  );
+
+  /** Letterbox / preview blacks — override in custom CSS if needed */
+  --assessment-video-letterbox-bg: #000000;
+
+  /** Chart fallbacks (Recharts); tie to branding accents */
+  --assessment-chart-grid-stroke: color-mix(in srgb, var(--neutral-300) 35%, transparent);
+  --assessment-chart-secondary-fill: color-mix(in srgb, var(--accent-indigo) 45%, transparent);
+  --assessment-chart-violet: var(--accent-purple);
+  --assessment-chart-blue: var(--accent-blue);
+  --assessment-chart-green: var(--course-cta);
+
   /* Subjective answer editor panel (nested surface inside card) */
   --assessment-subjective-answer-panel-bg: color-mix(
     in srgb,
