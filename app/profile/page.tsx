@@ -73,6 +73,8 @@ function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
 export default function ProfilePage() {
   const { t } = useTranslation("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  /** Same fields as GET user-profile; no localStorage merge — used for profile strength % to match dashboard. */
+  const [profileFromApi, setProfileFromApi] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -101,6 +103,7 @@ export default function ProfilePage() {
     try {
       setLoading(true);
       const profileData = await profileService.getUserProfile();
+      setProfileFromApi(profileData);
       setProfile(mergeWithLocalFallback(profileData));
 
       try {
@@ -121,6 +124,17 @@ export default function ProfilePage() {
 
     try {
       const apiResponse = await profileService.updateUserProfile(updatedProfile);
+      setProfileFromApi((prev) => {
+        const base = prev ?? ({} as UserProfile);
+        const result = { ...base, ...updatedProfile } as UserProfile;
+        for (const [key, val] of Object.entries(apiResponse)) {
+          if (!isEmptyValue(val)) {
+            (result as Record<string, unknown>)[key] = val as never;
+          }
+        }
+        result.profile_picture = result.profile_picture ?? "";
+        return result;
+      });
       setProfile((prev) => {
         if (!prev) return { ...updatedProfile, ...apiResponse } as UserProfile;
         const result = { ...prev, ...updatedProfile };
@@ -412,7 +426,7 @@ export default function ProfilePage() {
                   >
                     <ProfileSummary profile={profile} onSave={handleSaveProfile} />
                     <ProfileCompletionCard
-                      profile={profile}
+                      profile={profileFromApi ?? profile}
                       onCompleteProfile={() => {
                         const el = document.getElementById("personal-information");
                         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
