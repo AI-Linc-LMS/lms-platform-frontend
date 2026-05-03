@@ -121,26 +121,24 @@ export function EducationSection({
     setDialogOpen(false);
     setEditingIndex(null);
 
-    if (editingIndex === null && educations.length === 0) {
-      try {
-        setSaving(true);
-        await onSave({
-          education: updated.map((edu) => ({
-            id: edu.id,
-            institution: edu.institution,
-            degree: edu.degree,
-            field_of_study: edu.field_of_study || undefined,
-            start_date: edu.start_date || undefined,
-            end_date: edu.end_date || undefined,
-            gpa: edu.gpa || undefined,
-            description: edu.description || undefined,
-          })),
-        });
-      } catch {
-        // handled by parent
-      } finally {
-        setSaving(false);
-      }
+    try {
+      setSaving(true);
+      await onSave({
+        education: updated.map((edu) => ({
+          id: edu.id,
+          institution: edu.institution,
+          degree: edu.degree,
+          field_of_study: edu.field_of_study || undefined,
+          start_date: edu.start_date || undefined,
+          end_date: edu.end_date || undefined,
+          gpa: edu.gpa || undefined,
+          description: edu.description || undefined,
+        })),
+      });
+    } catch {
+      // handled by parent
+    } finally {
+      setSaving(false);
     }
   };
 

@@ -111,23 +111,21 @@ export function AchievementsSection({
     setDialogOpen(false);
     setEditingIndex(null);
 
-    if (editingIndex === null && achievements.length === 0) {
-      try {
-        setSaving(true);
-        await onSave({
-          achievements: updated.map((ach) => ({
-            id: ach.id,
-            title: ach.title,
-            description: ach.description || undefined,
-            date: ach.date || undefined,
-            organization: ach.organization || undefined,
-          })),
-        });
-      } catch {
-        // handled by parent
-      } finally {
-        setSaving(false);
-      }
+    try {
+      setSaving(true);
+      await onSave({
+        achievements: updated.map((ach) => ({
+          id: ach.id,
+          title: ach.title,
+          description: ach.description || undefined,
+          date: ach.date || undefined,
+          organization: ach.organization || undefined,
+        })),
+      });
+    } catch {
+      // handled by parent
+    } finally {
+      setSaving(false);
     }
   };
 
