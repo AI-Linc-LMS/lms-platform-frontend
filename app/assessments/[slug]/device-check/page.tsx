@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useRef, use, useCallback } from "react";
+import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,8 +25,6 @@ import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-devi
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { CheckCircle, XCircle, Video, Mic, AlertCircle } from "lucide-react";
-import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
-import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 interface DeviceStatus {
   camera: boolean;
@@ -63,7 +61,7 @@ export default function DeviceCheckPage({
     >(null);
 
   const [mobileAssessmentGate, setMobileAssessmentGate] = useState<
-    "pending" | "blocked" | "ok"
+    "pending" | "ok"
   >("pending");
 
   // ✅ FACE VALIDATION STATE
@@ -118,12 +116,6 @@ export default function DeviceCheckPage({
       // For count === 1, useEffect below will check status
     },
   });
-
-  useLayoutEffect(() => {
-    setMobileAssessmentGate(
-      isMobileOrTabletForAssessment() ? "blocked" : "ok"
-    );
-  }, []);
 
   // Update face validation status when faceCount or faceStatus changes
   useEffect(() => {
@@ -436,6 +428,7 @@ export default function DeviceCheckPage({
         showToast("Failed to load assessment details", "error");
       } finally {
         setLoading(false);
+        setMobileAssessmentGate("ok");
       }
     };
 
@@ -565,9 +558,6 @@ export default function DeviceCheckPage({
 
   // Don't show loading screen - render immediately for better UX
 
-  if (mobileAssessmentGate === "blocked") {
-    return <AssessmentDesktopOnlyFullPage slug={slug} />;
-  }
   if (mobileAssessmentGate === "pending") {
     return (
       <MainLayout>

@@ -57,6 +57,9 @@ interface AssessmentResponse {
   status: string;
   responseSheet: Record<string, any>;
   proctoring_enabled?: boolean;
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
   /** When false, learners follow strict section order (no tab jumps, no Previous into prior sections). */
   allow_movement?: boolean;
   tab_switch_limit_enabled?: boolean;

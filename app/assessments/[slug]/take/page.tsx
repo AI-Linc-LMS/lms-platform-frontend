@@ -73,7 +73,7 @@ import {
   type ViolationScreenshotSample,
 } from "@/lib/services/assessment.service";
 import { captureViolationScreenshotFile } from "@/lib/utils/assessment-violation-screenshot.utils";
-import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 /** Quiz section question row from merged assessment detail (MCQ / MSQ). */
@@ -273,11 +273,15 @@ export default function TakeAssessmentPage({
   // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    if (loading || !assessment) {
+      setMobileAssessmentGate("pending");
+      return;
+    }
     setMobileAssessmentGate(
-      isMobileOrTabletForAssessment() ? "blocked" : "ok"
+      !isCurrentDeviceAllowedForAssessment(assessment) ? "blocked" : "ok"
     );
-  }, []);
+  }, [loading, assessment]);
 
   // Preload proctoring model in background (non-blocking)
   useEffect(() => {

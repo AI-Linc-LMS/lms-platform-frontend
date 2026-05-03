@@ -104,22 +104,22 @@ export default function AssessmentDetailPage({
   };
 
   const handleStart = () => {
+    if (!assessment) return;
 
-    if (isMobileOrTabletForAssessment()) {
-      setDesktopOnlyOpen(true);
-    if (assessment && !isCurrentDeviceAllowedForAssessment(assessment)) {
+    if (!isCurrentDeviceAllowedForAssessment(assessment)) {
+      if (isMobileOrTabletForAssessment()) {
+        setDesktopOnlyOpen(true);
+      }
       showToast(t("assessmentDevice.toastBlocked"), "warning");
       return;
     }
-    // Skip device-check if proctoring is disabled
-  
-  }
-  if (assessment && assessment.proctoring_enabled === false) {
-    router.push(`/assessments/${slug}/take`);
-  } else {
-    router.push(`/assessments/${slug}/device-check`);
-  }
-}
+
+    if (assessment.proctoring_enabled === false) {
+      router.push(`/assessments/${slug}/take`);
+    } else {
+      router.push(`/assessments/${slug}/device-check`);
+    }
+  };
 
   if (loading) {
     return (

@@ -21,6 +21,7 @@ import {
 import { stripHtmlTags } from "@/lib/utils/html-utils";
 import { useTranslation } from "react-i18next";
 import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
 import {
   isLearnerAssessmentSubmissionComplete,
@@ -306,8 +307,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       router.push(`/assessments/${assessment.slug}/submission-success`);
       return;
     }
-    if (isMobileOrTabletForAssessment()) {
-      setDesktopOnlyOpen(true);
+    if (!isCurrentDeviceAllowedForAssessment(assessment)) {
+      if (isMobileOrTabletForAssessment()) {
+        setDesktopOnlyOpen(true);
+      }
       return;
     }
     router.push(`/assessments/${assessment.slug}`);
