@@ -121,26 +121,24 @@ export function ExperienceSection({
     setDialogOpen(false);
     setEditingIndex(null);
 
-    if (editingIndex === null && experiences.length === 0) {
-      try {
-        setSaving(true);
-        await onSave({
-          experience: updated.map((exp) => ({
-            id: exp.id,
-            company: exp.company,
-            position: exp.position,
-            current: exp.current,
-            start_date: exp.start_date ?? "",
-            end_date: exp.end_date || undefined,
-            location: exp.location || undefined,
-            description: exp.description || undefined,
-          })),
-        });
-      } catch {
-        // handled by parent
-      } finally {
-        setSaving(false);
-      }
+    try {
+      setSaving(true);
+      await onSave({
+        experience: updated.map((exp) => ({
+          id: exp.id,
+          company: exp.company,
+          position: exp.position,
+          current: exp.current,
+          start_date: exp.start_date ?? "",
+          end_date: exp.end_date || undefined,
+          location: exp.location || undefined,
+          description: exp.description || undefined,
+        })),
+      });
+    } catch {
+      // handled by parent
+    } finally {
+      setSaving(false);
     }
   };
 

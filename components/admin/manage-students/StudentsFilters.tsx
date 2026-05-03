@@ -2,6 +2,7 @@
 
 import {
   Box,
+  Typography,
   TextField,
   Select,
   MenuItem,
@@ -50,16 +51,51 @@ export function StudentsFilters({
   const { t } = useTranslation("common");
   return (
     <Paper
+      elevation={0}
       sx={{
-        p: { xs: 2, sm: 3 },
-        mb: { xs: 2, sm: 3 },
-        borderRadius: 2,
+        p: { xs: 2, sm: 2.5 },
+        mb: { xs: 2.5, sm: 3 },
+        borderRadius: 3,
         border: "1px solid var(--border-default)",
         boxShadow:
-          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          "0 2px 12px color-mix(in srgb, var(--font-primary) 6%, transparent)",
         backgroundColor: "var(--card-bg)",
       }}
     >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          mb: { xs: 2, sm: 2.5 },
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 36,
+            height: 36,
+            borderRadius: 1.5,
+            backgroundColor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+            color: "var(--font-secondary)",
+          }}
+          aria-hidden
+        >
+          <IconWrapper icon="mdi:tune-variant" size={22} />
+        </Box>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 700,
+            color: "var(--font-primary)",
+            fontSize: { xs: "0.9375rem", sm: "1rem" },
+          }}
+        >
+          {t("adminManageStudents.filterSectionTitle")}
+        </Typography>
+      </Box>
       <Box
         sx={{
           display: "grid",
@@ -69,7 +105,7 @@ export function StudentsFilters({
             md: "repeat(2, 1fr)",
             lg: "repeat(4, 1fr)",
           },
-          gap: { xs: 1.5, sm: 2 },
+          gap: { xs: 2, sm: 2 },
         }}
       >
         {/* Filter by Enrolled Course */}

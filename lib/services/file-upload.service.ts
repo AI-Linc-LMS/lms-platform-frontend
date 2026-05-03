@@ -118,6 +118,39 @@ function pickMetadataRecord(
   return top;
 }
 
+/** Flatten DRF / Django-style `{ field: ["msg", ...] }` into readable text. */
+function formatDrfErrorPayload(data: Record<string, unknown>): string | null {
+  const messages: string[] = [];
+
+  const pushVal = (v: unknown) => {
+    if (typeof v === "string" && v.trim()) messages.push(v.trim());
+    else if (Array.isArray(v)) {
+      for (const item of v) {
+        if (typeof item === "string" && item.trim()) messages.push(item.trim());
+        else if (item && typeof item === "object" && !Array.isArray(item)) {
+          const nested = formatDrfErrorPayload(item as Record<string, unknown>);
+          if (nested) messages.push(nested);
+        }
+      }
+    } else if (v && typeof v === "object" && !Array.isArray(v)) {
+      const nested = formatDrfErrorPayload(v as Record<string, unknown>);
+      if (nested) messages.push(nested);
+    }
+  };
+
+  for (const [key, val] of Object.entries(data)) {
+    if (key === "detail" || key === "message" || key === "error") {
+      pushVal(val);
+      continue;
+    }
+    pushVal(val);
+  }
+
+  if (!messages.length) return null;
+  const joined = messages.join(" ");
+  return joined.length > 500 ? `${joined.slice(0, 497)}…` : joined;
+}
+
 function formatUploadAxiosError(err: unknown): string {
   if (!axios.isAxiosError(err)) {
     return err instanceof Error ? err.message : String(err);
@@ -130,6 +163,8 @@ function formatUploadAxiosError(err: unknown): string {
     const o = data as Record<string, unknown>;
     const detail = o.detail ?? o.message ?? o.error;
     if (typeof detail === "string") return detail.slice(0, 400);
+    const flattened = formatDrfErrorPayload(o);
+    if (flattened) return flattened;
     try {
       return JSON.stringify(data).slice(0, 400);
     } catch {

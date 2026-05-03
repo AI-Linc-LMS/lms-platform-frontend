@@ -45,8 +45,10 @@ import {
   CreateAssessmentPayload,
   isMCQQuestion,
   isCodingQuestion,
+  isSubjectiveQuestion,
   QuestionsExportMCQQuestion,
   QuestionsExportCodingQuestion,
+  QuestionsExportSubjectiveQuestion,
   type AssessmentAnalyticsResponse,
   clampAssessmentAnalyticsTopPerformers,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -70,7 +72,7 @@ import {
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
 type TabValue = "details" | "questions" | "submissions" | "analytics";
-type QuestionsSubTab = "mcq" | "coding";
+type QuestionsSubTab = "mcq" | "coding" | "written";
 
 const ASSESSMENT_EDIT_TAB_VALUES: TabValue[] = [
   "details",
@@ -400,6 +402,8 @@ export default function AssessmentEditPage() {
   const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
+  const [tabSwitchLimitEnabled, setTabSwitchLimitEnabled] = useState(false);
+  const [tabSwitchLimitCount, setTabSwitchLimitCount] = useState(2);
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
   const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
@@ -411,6 +415,8 @@ export default function AssessmentEditPage() {
   const [questionsLimit, setQuestionsLimit] = useState(10);
   const [codingQuestionsPage, setCodingQuestionsPage] = useState(1);
   const [codingQuestionsLimit, setCodingQuestionsLimit] = useState(10);
+  const [writtenQuestionsPage, setWrittenQuestionsPage] = useState(1);
+  const [writtenQuestionsLimit, setWrittenQuestionsLimit] = useState(10);
   const [submissionsPage, setSubmissionsPage] = useState(1);
   const [submissionsLimit, setSubmissionsLimit] = useState(10);
   const [downloadingAllSubmissionPdfs, setDownloadingAllSubmissionPdfs] =
@@ -430,6 +436,10 @@ export default function AssessmentEditPage() {
   const [previewCoding, setPreviewCoding] = useState<{
     section: { section_title: string };
     question: QuestionsExportCodingQuestion;
+  } | null>(null);
+  const [previewWritten, setPreviewWritten] = useState<{
+    section: { section_title: string };
+    question: QuestionsExportSubjectiveQuestion;
   } | null>(null);
   const [questionsSubTab, setQuestionsSubTab] = useState<QuestionsSubTab>("mcq");
 
@@ -499,6 +509,12 @@ export default function AssessmentEditPage() {
       setShowResult((data as any).show_result ?? true);
       setEvaluationMode((data as any).evaluation_mode === "manual" ? "manual" : "auto");
       setAllowMovementAcrossSections(anyData.allow_movement !== false);
+      setTabSwitchLimitEnabled(Boolean(anyData.tab_switch_limit_enabled));
+      setTabSwitchLimitCount(
+        Number(anyData.tab_switch_limit_count) > 0
+          ? Number(anyData.tab_switch_limit_count)
+          : 2
+      );
       setCertificateAvailable(Boolean(anyData.certificate_available));
       setPassBandLowerPercent(
         anyData.pass_band_lower_min_percent != null &&
@@ -670,6 +686,10 @@ export default function AssessmentEditPage() {
       showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
     }
+    if (tabSwitchLimitEnabled && tabSwitchLimitCount < 1) {
+      showToast("Allowed tab switches must be at least 1", "error");
+      return;
+    }
     try {
       setSaving(true);
       const payload: Partial<CreateAssessmentPayload> = {
@@ -690,6 +710,8 @@ export default function AssessmentEditPage() {
         evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
+        tab_switch_limit_enabled: tabSwitchLimitEnabled,
+        tab_switch_limit_count: tabSwitchLimitEnabled ? tabSwitchLimitCount : null,
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
@@ -860,6 +882,42 @@ export default function AssessmentEditPage() {
     showToast("Coding questions exported", "success");
   };
 
+  const handleDownloadWrittenQuestions = () => {
+    if (!questionsData) return;
+    const flat: Record<string, unknown>[] = [];
+    for (const sec of subjectiveSections) {
+      for (const q of sec.questions) {
+        if (isSubjectiveQuestion(q)) {
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            evaluation_prompt: q.evaluation_prompt,
+            max_marks: q.max_marks,
+            question_type: q.question_type ?? "",
+            answer_mode: q.answer_mode ?? "text",
+          });
+        }
+      }
+    }
+    const columns: { key: string; header: string }[] = [
+      { key: "section_id", header: "Section ID" },
+      { key: "section_title", header: "Section Title" },
+      { key: "section_order", header: "Section Order" },
+      { key: "id", header: "Question ID" },
+      { key: "question_text", header: "Question Text" },
+      { key: "evaluation_prompt", header: "Evaluation Prompt" },
+      { key: "max_marks", header: "Max Marks" },
+      { key: "question_type", header: "Question Type" },
+      { key: "answer_mode", header: "Answer Mode" },
+    ];
+    const csv = jsonToCsvRows(flat, columns);
+    downloadCsv(csv, `assessment-${questionsData.assessment.slug || assessmentId}-written-questions.csv`);
+    showToast("Written questions exported", "success");
+  };
+
   function downloadCsv(csv: string, filename: string) {
     const BOM = "\uFEFF";
     const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
@@ -970,6 +1028,14 @@ export default function AssessmentEditPage() {
     );
   }, [questionsData]);
 
+  const subjectiveSections = useMemo(() => {
+    if (!questionsData?.sections) return [];
+    return questionsData.sections.filter((s) => {
+      const t = (s.section_type ?? "").toLowerCase();
+      return t === "subjective" || t === "written";
+    });
+  }, [questionsData]);
+
   const allQuizItems = useMemo(() => {
     return quizSections.flatMap((sec) =>
       sec.questions
@@ -986,6 +1052,14 @@ export default function AssessmentEditPage() {
     );
   }, [codingSections]);
 
+  const allWrittenItems = useMemo(() => {
+    return subjectiveSections.flatMap((sec) =>
+      sec.questions
+        .filter((q): q is QuestionsExportSubjectiveQuestion => isSubjectiveQuestion(q))
+        .map((q) => ({ section: sec, question: q }))
+    );
+  }, [subjectiveSections]);
+
   const paginatedQuizQuestions = useMemo(() => {
     const start = (questionsPage - 1) * questionsLimit;
     return allQuizItems.slice(start, start + questionsLimit);
@@ -996,9 +1070,14 @@ export default function AssessmentEditPage() {
     return allCodingItems.slice(start, start + codingQuestionsLimit);
   }, [allCodingItems, codingQuestionsPage, codingQuestionsLimit]);
 
+  const paginatedWrittenQuestions = useMemo(() => {
+    const start = (writtenQuestionsPage - 1) * writtenQuestionsLimit;
+    return allWrittenItems.slice(start, start + writtenQuestionsLimit);
+  }, [allWrittenItems, writtenQuestionsPage, writtenQuestionsLimit]);
+
   const totalQuizQuestions = allQuizItems.length;
   const totalCodingQuestions = allCodingItems.length;
-  const totalQuestions = totalQuizQuestions + totalCodingQuestions;
+  const totalWrittenQuestions = allWrittenItems.length;
 
   const paginatedSubmissions = useMemo(() => {
     if (!submissionsData?.submissions) return [];
@@ -1152,17 +1231,30 @@ export default function AssessmentEditPage() {
   useEffect(() => {
     setQuestionsPage(1);
     setCodingQuestionsPage(1);
+    setWrittenQuestionsPage(1);
     setSubmissionsPage(1);
   }, [tab]);
 
   useEffect(() => {
     if (tab !== "questions" || !questionsData) return;
-    if (questionsSubTab === "mcq" && totalQuizQuestions === 0 && totalCodingQuestions > 0) {
-      setQuestionsSubTab("coding");
-    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0 && totalQuizQuestions > 0) {
-      setQuestionsSubTab("mcq");
+    if (questionsSubTab === "mcq" && totalQuizQuestions === 0) {
+      if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
+      else if (totalWrittenQuestions > 0) setQuestionsSubTab("written");
+    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0) {
+      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
+      else if (totalWrittenQuestions > 0) setQuestionsSubTab("written");
+    } else if (questionsSubTab === "written" && totalWrittenQuestions === 0) {
+      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
+      else if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
     }
-  }, [tab, questionsData, questionsSubTab, totalQuizQuestions, totalCodingQuestions]);
+  }, [
+    tab,
+    questionsData,
+    questionsSubTab,
+    totalQuizQuestions,
+    totalCodingQuestions,
+    totalWrittenQuestions,
+  ]);
 
   const codingProblemDataForPreview = (q: QuestionsExportCodingQuestion) => ({
     content_title: q.title,
@@ -1246,6 +1338,28 @@ export default function AssessmentEditPage() {
               : "You can view this assessment but cannot change settings or content."}
           </Alert>
         )}
+        {!readOnly &&
+          assessment.is_draft &&
+          !(assessment.submissions_count && assessment.submissions_count > 0) && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 3 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() =>
+                    router.push(`/admin/assessment/${assessmentId}/build`)
+                  }
+                >
+                  Continue editing
+                </Button>
+              }
+            >
+              This assessment is still a draft. Open the full editor to change sections, questions, and
+              AI-generated content. Publish from the editor when you are ready to make it visible to learners.
+            </Alert>
+          )}
 
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Tabs
@@ -1302,6 +1416,8 @@ export default function AssessmentEditPage() {
                   showResult={showResult}
                   evaluationMode={evaluationMode}
                   allowMovementAcrossSections={allowMovementAcrossSections}
+                  tabSwitchLimitEnabled={tabSwitchLimitEnabled}
+                  tabSwitchLimitCount={tabSwitchLimitCount}
                   certificateAvailable={certificateAvailable}
                   passBandLowerPercent={passBandLowerPercent}
                   passBandUpperPercent={passBandUpperPercent}
@@ -1327,6 +1443,8 @@ export default function AssessmentEditPage() {
                   onAllowMovementAcrossSectionsChange={
                     setAllowMovementAcrossSections
                   }
+                  onTabSwitchLimitEnabledChange={setTabSwitchLimitEnabled}
+                  onTabSwitchLimitCountChange={setTabSwitchLimitCount}
                   onCertificateAvailableChange={setCertificateAvailable}
                   onPassBandLowerPercentChange={setPassBandLowerPercent}
                   onPassBandUpperPercentChange={setPassBandUpperPercent}
@@ -1418,6 +1536,32 @@ export default function AssessmentEditPage() {
                                   fontSize: "0.75rem",
                                   bgcolor: questionsSubTab === "coding" ? "primary.main" : "action.hover",
                                   color: questionsSubTab === "coding" ? "primary.contrastText" : "text.secondary",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        }
+                      />
+                      <Tab
+                        value="written"
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            Written
+                            {totalWrittenQuestions > 0 && (
+                              <Chip
+                                label={totalWrittenQuestions}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  bgcolor:
+                                    questionsSubTab === "written"
+                                      ? "warning.main"
+                                      : "action.hover",
+                                  color:
+                                    questionsSubTab === "written"
+                                      ? "primary.contrastText"
+                                      : "text.secondary",
                                 }}
                               />
                             )}
@@ -1671,6 +1815,160 @@ export default function AssessmentEditPage() {
                         )}
                       </Paper>
                     )}
+
+                    {questionsSubTab === "written" && (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 2,
+                          overflow: "hidden",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1.5,
+                            borderBottom: "1px solid var(--border-default)",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            bgcolor: "var(--card-bg)",
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {totalWrittenQuestions} written prompt
+                            {totalWrittenQuestions !== 1 ? "s" : ""}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                            onClick={handleDownloadWrittenQuestions}
+                            disabled={readOnly || totalWrittenQuestions === 0}
+                            sx={{
+                              bgcolor: "var(--warning-500)",
+                              "&:hover": { bgcolor: "color-mix(in srgb, var(--warning-500) 85%, var(--font-primary) 15%)" },
+                            }}
+                          >
+                            Download written CSV
+                          </Button>
+                        </Box>
+                        {totalWrittenQuestions === 0 ? (
+                          <Box sx={{ py: 6, textAlign: "center" }}>
+                            <Typography color="text.secondary">
+                              No written (subjective) questions.
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <>
+                            <TableContainer sx={{ maxHeight: 440 }}>
+                              <Table size="small" stickyHeader>
+                                <TableHead>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Section
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Order
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      ID
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem", minWidth: 220 }}>
+                                      Prompt
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Max marks
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Answer mode
+                                    </TableCell>
+                                    <TableCell
+                                      sx={{
+                                        fontWeight: 700,
+                                        py: 1.5,
+                                        width: 56,
+                                        textAlign: "center",
+                                        fontSize: "0.8rem",
+                                      }}
+                                    />
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {paginatedWrittenQuestions.map(({ section: sec, question: q }) => (
+                                    <TableRow
+                                      key={`written-${q.id}-${sec.section_id}`}
+                                      hover
+                                      sx={{ "&:hover": { bgcolor: "var(--surface)" } }}
+                                    >
+                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell sx={{ py: 1.5, maxWidth: 300 }}>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: "vertical",
+                                          }}
+                                          title={q.question_text}
+                                        >
+                                          {q.question_text}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5, fontWeight: 600 }}>{q.max_marks}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>
+                                        <Chip
+                                          label={q.answer_mode || "text"}
+                                          size="small"
+                                          sx={{
+                                            bgcolor:
+                                              "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                                            color: "var(--warning-500)",
+                                            fontWeight: 600,
+                                            fontSize: "0.7rem",
+                                          }}
+                                        />
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5, textAlign: "center" }}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            setPreviewWritten({ section: sec, question: q })
+                                          }
+                                          sx={{ color: "var(--warning-500)" }}
+                                          title="Preview"
+                                        >
+                                          <IconWrapper icon="mdi:eye-outline" size={18} />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                            <PaginationControls
+                              totalItems={totalWrittenQuestions}
+                              page={writtenQuestionsPage}
+                              limit={writtenQuestionsLimit}
+                              onPageChange={setWrittenQuestionsPage}
+                              onLimitChange={(l) => {
+                                setWrittenQuestionsLimit(l);
+                                setWrittenQuestionsPage(1);
+                              }}
+                              itemLabel="prompts"
+                            />
+                          </>
+                        )}
+                      </Paper>
+                    )}
                   </Box>
                 )}
 
@@ -1728,6 +2026,57 @@ export default function AssessmentEditPage() {
                     {previewCoding && (
                       <Box sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
                         <ProblemDescription problemData={codingProblemDataForPreview(previewCoding.question)} />
+                      </Box>
+                    )}
+                  </DialogContent>
+                </Dialog>
+
+                {/* Written / subjective preview dialog */}
+                <Dialog
+                  open={!!previewWritten}
+                  onClose={() => setPreviewWritten(null)}
+                  maxWidth="sm"
+                  fullWidth
+                  PaperProps={{ sx: { borderRadius: 2 } }}
+                >
+                  <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span>Written prompt · {previewWritten?.section.section_title}</span>
+                    <IconButton size="small" onClick={() => setPreviewWritten(null)} aria-label="Close">
+                      <IconWrapper icon="mdi:close" size={20} />
+                    </IconButton>
+                  </DialogTitle>
+                  <DialogContent dividers>
+                    {previewWritten && (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Question
+                        </Typography>
+                        <Typography variant="body1">{previewWritten.question.question_text}</Typography>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Evaluation prompt (rubric / AI)
+                        </Typography>
+                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                          {previewWritten.question.evaluation_prompt}
+                        </Typography>
+                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+                          <Chip
+                            label={`Max marks: ${previewWritten.question.max_marks}`}
+                            size="small"
+                            sx={{ fontWeight: 600 }}
+                          />
+                          <Chip
+                            label={previewWritten.question.answer_mode || "text"}
+                            size="small"
+                            sx={{
+                              bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                              color: "var(--warning-500)",
+                              fontWeight: 600,
+                            }}
+                          />
+                          {previewWritten.question.question_type ? (
+                            <Chip label={previewWritten.question.question_type} size="small" variant="outlined" />
+                          ) : null}
+                        </Box>
                       </Box>
                     )}
                   </DialogContent>

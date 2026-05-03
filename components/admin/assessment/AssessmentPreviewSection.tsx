@@ -9,6 +9,12 @@ import {
   Card,
   CardContent,
   Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 import {
   MCQ,
@@ -17,12 +23,115 @@ import {
 import { useMemo, useState } from "react";
 import { Section } from "./MultipleSectionsSection";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { SectionCard } from "./SectionCard";
+import { SectionCard, WrittenPromptPreview } from "./SectionCard";
 import { MCQQuestionsTable } from "./MCQQuestionsTable";
 import { CodingProblemsTable } from "./CodingProblemsTable";
+import { PaginationControls } from "./PaginationControls";
 
 interface MCQWithSection extends MCQ {
   sectionId: string;
+}
+
+function truncatePreview(text: string, maxLen: number): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (t.length <= maxLen) return t;
+  return `${t.slice(0, maxLen)}…`;
+}
+
+function WrittenPromptsPreviewTable({
+  prompts,
+  page,
+  limit,
+  onPageChange,
+  onLimitChange,
+  sectionName,
+}: {
+  prompts: WrittenPromptPreview[];
+  page: number;
+  limit: number;
+  onPageChange: (p: number) => void;
+  onLimitChange: (l: number) => void;
+  sectionName?: string;
+}) {
+  const startIndex = (page - 1) * limit;
+  const paginated = prompts.slice(startIndex, startIndex + limit);
+
+  if (prompts.length === 0) {
+    return (
+      <Paper
+        sx={{
+          p: 4,
+          textAlign: "center",
+          bgcolor: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+          border:
+            "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default) 65%)",
+        }}
+      >
+        <Typography variant="body1" sx={{ color: "var(--warning-500)", fontWeight: 600 }}>
+          No written prompts found{sectionName ? ` in ${sectionName}` : ""}
+        </Typography>
+      </Paper>
+    );
+  }
+
+  return (
+    <Paper
+      sx={{
+        borderRadius: 2,
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        overflow: "hidden",
+        width: "100%",
+      }}
+    >
+      <TableContainer sx={{ width: "100%" }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: "var(--surface)" }}>
+              <TableCell sx={{ fontWeight: 600, width: 56 }}>#</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Prompt</TableCell>
+              <TableCell sx={{ fontWeight: 600, width: 100 }}>Marks</TableCell>
+              <TableCell sx={{ fontWeight: 600, width: 140 }}>Answer mode</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginated.map((row, i) => (
+              <TableRow key={`${startIndex + i}-${row.question_text.slice(0, 24)}`}>
+                <TableCell>{startIndex + i + 1}</TableCell>
+                <TableCell sx={{ maxWidth: { xs: 200, sm: 480 } }}>
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                    {truncatePreview(row.question_text, 400)}
+                  </Typography>
+                </TableCell>
+                <TableCell>{row.max_marks}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={row.answer_mode || "text"}
+                    size="small"
+                    sx={{
+                      bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                      color: "var(--warning-500)",
+                      fontWeight: 600,
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <PaginationControls
+        totalItems={prompts.length}
+        page={page}
+        limit={limit}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+        itemLabel="prompts"
+      />
+    </Paper>
+  );
 }
 
 interface AssessmentPreviewSectionProps {
@@ -39,6 +148,7 @@ interface AssessmentPreviewSectionProps {
   getMCQsForSection?: (sectionId: string) => MCQ[];
   getCodingProblemIdsForSection?: (sectionId: string) => number[];
   getCodingProblemsForSection?: (sectionId: string) => CodingProblemListItem[];
+  getWrittenPromptsForSection?: (sectionId: string) => WrittenPromptPreview[];
 }
 
 export function AssessmentPreviewSection({
@@ -55,9 +165,11 @@ export function AssessmentPreviewSection({
   getMCQsForSection,
   getCodingProblemIdsForSection,
   getCodingProblemsForSection,
+  getWrittenPromptsForSection,
 }: AssessmentPreviewSectionProps) {
   const [mcqPage, setMcqPage] = useState(1);
   const [codingPage, setCodingPage] = useState(1);
+  const [writtenPage, setWrittenPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [selectedSectionId, setSelectedSectionId] = useState<string>("");
 
@@ -105,6 +217,17 @@ export function AssessmentPreviewSection({
     return grouped;
   }, [sections, getCodingProblemsForSection]);
 
+  const writtenPromptsBySection = useMemo(() => {
+    if (!sections || !getWrittenPromptsForSection) return {};
+    const grouped: Record<string, WrittenPromptPreview[]> = {};
+    sections
+      .filter((s) => s.type === "subjective")
+      .forEach((section) => {
+        grouped[section.id] = getWrittenPromptsForSection(section.id);
+      });
+    return grouped;
+  }, [sections, getWrittenPromptsForSection]);
+
   // Get selected section
   const selectedSection = useMemo(() => {
     if (!selectedSectionId || !sections) return null;
@@ -131,20 +254,23 @@ export function AssessmentPreviewSection({
     });
   }, [allCodingProblems, selectedSectionId, selectedSection]);
 
+  const filteredWrittenPrompts = useMemo((): WrittenPromptPreview[] => {
+    if (!selectedSectionId || selectedSection?.type !== "subjective") return [];
+    return writtenPromptsBySection[selectedSectionId] || [];
+  }, [writtenPromptsBySection, selectedSectionId, selectedSection]);
+
   // Handle section selection (mutually exclusive)
   const handleSectionSelect = (
     sectionId: string,
-    sectionType: "quiz" | "coding"
+    _sectionType: "quiz" | "coding" | "subjective"
   ) => {
     if (selectedSectionId === sectionId) {
       setSelectedSectionId("");
     } else {
       setSelectedSectionId(sectionId);
-      if (sectionType === "quiz") {
-        setMcqPage(1);
-      } else {
-        setCodingPage(1);
-      }
+      setMcqPage(1);
+      setCodingPage(1);
+      setWrittenPage(1);
     }
   };
 
@@ -165,6 +291,8 @@ export function AssessmentPreviewSection({
         return "€";
       case "GBP":
         return "£";
+      case "SAR":
+        return "﷼";
       default:
         return "";
     }
@@ -192,6 +320,18 @@ export function AssessmentPreviewSection({
     }
     return sorted;
   }, [sections, selectedSectionId, selectedSection]);
+
+  const subjectiveSections = useMemo(() => {
+    const filtered = sections?.filter((s) => s.type === "subjective") || [];
+    const sorted = [...filtered].sort((a, b) => a.order - b.order);
+    if (selectedSectionId && selectedSection?.type === "subjective") {
+      const selected = sorted.find((s) => s.id === selectedSectionId);
+      const others = sorted.filter((s) => s.id !== selectedSectionId);
+      return selected ? [selected, ...others] : sorted;
+    }
+    return sorted;
+  }, [sections, selectedSectionId, selectedSection]);
+
   const totalCodingProblemsCount = codingSections.reduce(
     (sum, section) =>
       sum +
@@ -200,7 +340,14 @@ export function AssessmentPreviewSection({
         : 0),
     0
   );
-  const totalQuestions = totalMCQs.length + totalCodingProblemsCount;
+
+  const totalWrittenPromptsCount = subjectiveSections.reduce((sum, section) => {
+    const prompts = writtenPromptsBySection[section.id];
+    return sum + (prompts?.length ?? 0);
+  }, 0);
+
+  const totalQuestions =
+    totalMCQs.length + totalCodingProblemsCount + totalWrittenPromptsCount;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -297,7 +444,7 @@ export function AssessmentPreviewSection({
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Total Questions
+                    Total items (MCQ + coding + written)
                   </Typography>
                   <Typography
                     variant="body2"
@@ -314,7 +461,7 @@ export function AssessmentPreviewSection({
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    MCQ Questions
+                    MCQ questions
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {totalMCQs.length}
@@ -328,7 +475,7 @@ export function AssessmentPreviewSection({
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Coding Problems
+                    Coding problems
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {totalCodingProblemsCount}
@@ -342,10 +489,26 @@ export function AssessmentPreviewSection({
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                    Written prompts
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {totalWrittenPromptsCount}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     Total Sections
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {quizSections.length + codingSections.length}
+                    {quizSections.length +
+                      codingSections.length +
+                      subjectiveSections.length}
                   </Typography>
                 </Box>
               </Box>
@@ -416,6 +579,32 @@ export function AssessmentPreviewSection({
                     })}
                   </Box>
                 )}
+                {subjectiveSections.length > 0 && (
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 600, mb: 1.5, color: "var(--warning-500)" }}
+                    >
+                      Written Sections ({subjectiveSections.length})
+                    </Typography>
+                    {subjectiveSections.map((section) => {
+                      const prompts = writtenPromptsBySection[section.id] || [];
+                      const isSelected = selectedSectionId === section.id;
+                      return (
+                        <SectionCard
+                          key={section.id}
+                          section={section}
+                          isSelected={isSelected}
+                          onClick={() =>
+                            handleSectionSelect(section.id, "subjective")
+                          }
+                          sectionWrittenPrompts={prompts}
+                          type="subjective"
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -437,9 +626,11 @@ export function AssessmentPreviewSection({
           >
             <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               {selectedSection.type === "quiz"
-                ? "MCQ Questions"
-                : "Coding Problems"}{" "}
-              Preview - {selectedSection.title}
+                ? "MCQ questions"
+                : selectedSection.type === "coding"
+                ? "Coding problems"
+                : "Written prompts"}{" "}
+              preview — {selectedSection.title}
             </Typography>
             <Box
               sx={{
@@ -453,13 +644,23 @@ export function AssessmentPreviewSection({
                 label={`${
                   selectedSection.type === "quiz"
                     ? filteredMCQs.length
-                    : filteredCodingProblems.length
+                    : selectedSection.type === "coding"
+                    ? filteredCodingProblems.length
+                    : filteredWrittenPrompts.length
                 } ${
-                  selectedSection.type === "quiz" ? "questions" : "problems"
+                  selectedSection.type === "quiz"
+                    ? "questions"
+                    : selectedSection.type === "coding"
+                    ? "problems"
+                    : "prompts"
                 }`}
                 sx={{
                   bgcolor:
-                    selectedSection.type === "quiz" ? "var(--accent-indigo)" : "var(--success-500)",
+                    selectedSection.type === "quiz"
+                      ? "var(--accent-indigo)"
+                      : selectedSection.type === "coding"
+                      ? "var(--success-500)"
+                      : "var(--warning-500)",
                   color: "var(--font-light)",
                   fontWeight: 600,
                 }}
@@ -469,11 +670,9 @@ export function AssessmentPreviewSection({
                 variant="outlined"
                 onClick={() => {
                   setSelectedSectionId("");
-                  if (selectedSection.type === "quiz") {
-                    setMcqPage(1);
-                  } else {
-                    setCodingPage(1);
-                  }
+                  setMcqPage(1);
+                  setCodingPage(1);
+                  setWrittenPage(1);
                 }}
                 sx={{ textTransform: "none" }}
               >
@@ -493,7 +692,7 @@ export function AssessmentPreviewSection({
               }}
               sectionName={selectedSection.title}
             />
-          ) : (
+          ) : selectedSection.type === "coding" ? (
             <CodingProblemsTable
               problems={
                 filteredCodingProblems as Array<
@@ -506,6 +705,18 @@ export function AssessmentPreviewSection({
               onLimitChange={(newLimit) => {
                 setLimit(newLimit);
                 setCodingPage(1);
+              }}
+              sectionName={selectedSection.title}
+            />
+          ) : (
+            <WrittenPromptsPreviewTable
+              prompts={filteredWrittenPrompts}
+              page={writtenPage}
+              limit={limit}
+              onPageChange={setWrittenPage}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setWrittenPage(1);
               }}
               sectionName={selectedSection.title}
             />
@@ -534,16 +745,18 @@ export function AssessmentPreviewSection({
             variant="h6"
             sx={{ color: "var(--font-secondary)", mb: 1, fontWeight: 600 }}
           >
-            Select a Section to View Questions
+            Select a Section to Preview Content
           </Typography>
           <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
-            Click on any section card above to view its questions or problems
+            Select a section card above to preview quiz questions, coding problems, or written prompts.
           </Typography>
         </Paper>
       )}
 
       {/* Empty State */}
-      {totalMCQs.length === 0 && allCodingProblems.length === 0 && (
+      {totalMCQs.length === 0 &&
+        allCodingProblems.length === 0 &&
+        totalWrittenPromptsCount === 0 && (
         <Paper sx={{ p: 4, textAlign: "center", bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
           <Box sx={{ mb: 2 }}>
             <IconWrapper

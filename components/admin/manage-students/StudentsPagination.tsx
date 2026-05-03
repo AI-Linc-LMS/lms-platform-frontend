@@ -35,7 +35,8 @@ export function StudentsPagination({
         alignItems: { xs: "flex-start", sm: "center" },
         gap: 2,
         borderTop: "1px solid var(--border-default)",
-        backgroundColor: "var(--surface)",
+        backgroundColor:
+          "color-mix(in srgb, var(--font-primary) 2.5%, var(--card-bg))",
       }}
     >
       <Box

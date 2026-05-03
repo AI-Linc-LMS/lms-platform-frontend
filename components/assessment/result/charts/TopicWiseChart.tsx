@@ -40,10 +40,10 @@ export function TopicWiseChart({ topicWiseStats }: TopicWiseChartProps) {
   }));
 
   const getColor = (accuracy: number) => {
-    if (accuracy >= 80) return "#10b981";
-    if (accuracy >= 60) return "#3b82f6";
-    if (accuracy >= 40) return "#f59e0b";
-    return "#ef4444";
+    if (accuracy >= 80) return "var(--course-cta)";
+    if (accuracy >= 60) return "var(--accent-blue-light)";
+    if (accuracy >= 40) return "var(--warning-500)";
+    return "var(--error-500)";
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -52,29 +52,29 @@ export function TopicWiseChart({ topicWiseStats }: TopicWiseChartProps) {
       return (
         <Box
           sx={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #e5e7eb",
+            backgroundColor: "var(--font-light)",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             p: 1.5,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            boxShadow: "0 4px 12px color-mix(in srgb, var(--font-dark) 10%, transparent)",
           }}
         >
           <Typography
             variant="body2"
-            sx={{ fontWeight: 700, mb: 1, color: "#1f2937" }}
+            sx={{ fontWeight: 700, mb: 1, color: "var(--font-primary-dark)" }}
           >
             {data.fullTopic}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
             Accuracy: <strong style={{ color: getColor(data.accuracy) }}>{data.accuracy}%</strong>
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
-            Correct: <strong style={{ color: "#10b981" }}>{data.correct}</strong>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
+            Correct: <strong style={{ color: "var(--course-cta)" }}>{data.correct}</strong>
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
-            Incorrect: <strong style={{ color: "#ef4444" }}>{data.incorrect}</strong>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
+            Incorrect: <strong style={{ color: "var(--error-500)" }}>{data.incorrect}</strong>
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
             Total: {data.total}
           </Typography>
         </Box>
@@ -89,9 +89,9 @@ export function TopicWiseChart({ topicWiseStats }: TopicWiseChartProps) {
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
-        background: "#ffffff",
+        background: "var(--font-light)",
       }}
     >
       <Box
@@ -107,20 +107,20 @@ export function TopicWiseChart({ topicWiseStats }: TopicWiseChartProps) {
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:chart-bar" size={24} color="#6366f1" />
+          <IconWrapper icon="mdi:chart-bar" size={24} color="var(--accent-indigo)" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               mb: 0.25,
             }}
           >
@@ -129,7 +129,7 @@ export function TopicWiseChart({ topicWiseStats }: TopicWiseChartProps) {
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
             }}
           >
@@ -144,22 +144,22 @@ export function TopicWiseChart({ topicWiseStats }: TopicWiseChartProps) {
             data={chartData}
             margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
             <XAxis
               dataKey="topic"
               angle={-45}
               textAnchor="end"
               height={100}
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
             />
             <YAxis
               domain={[0, 100]}
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
               label={{
                 value: "Accuracy (%)",
                 angle: -90,
                 position: "insideLeft",
-                style: { textAnchor: "middle", fill: "#6b7280" },
+                style: { textAnchor: "middle", fill: "var(--font-secondary)" },
               }}
             />
             <Tooltip content={<CustomTooltip />} />

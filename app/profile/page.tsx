@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, CircularProgress } from "@mui/material";
 import { motion } from "framer-motion";
@@ -61,18 +61,20 @@ function saveLocalProfile(data: Partial<UserProfileUpdate>) {
 
 function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
   const local = loadLocalProfile();
-  const merged = { ...apiProfile };
+  const merged = { ...apiProfile } as Record<string, unknown>;
   for (const [key, value] of Object.entries(local)) {
-    if (isEmptyValue((merged as any)[key]) && !isEmptyValue(value)) {
-      (merged as any)[key] = value;
+    if (isEmptyValue(merged[key]) && !isEmptyValue(value)) {
+      merged[key] = value;
     }
   }
-  return merged;
+  return merged as unknown as UserProfile;
 }
 
 export default function ProfilePage() {
   const { t } = useTranslation("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  /** Same fields as GET user-profile; no localStorage merge — used for profile strength % to match dashboard. */
+  const [profileFromApi, setProfileFromApi] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -83,14 +85,11 @@ export default function ProfilePage() {
     setActiveTab(newValue);
   };
 
-  useEffect(() => {
-    loadProfileData();
-  }, []);
-
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     try {
       setLoading(true);
       const profileData = await profileService.getUserProfile();
+      setProfileFromApi(profileData);
       setProfile(mergeWithLocalFallback(profileData));
 
       try {
@@ -104,19 +103,44 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast, t]);
+
+  useEffect(() => {
+    void loadProfileData();
+  }, [loadProfileData]);
+
+  useEffect(() => {
+    if (!loading && typeof window !== "undefined" && window.location.hash) {
+      setTimeout(() => {
+        const id = window.location.hash.substring(1);
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 500);
+    }
+  }, [loading]);
 
   const handleSaveProfile = async (updatedProfile: UserProfileUpdate) => {
     saveLocalProfile(updatedProfile);
 
     try {
       const apiResponse = await profileService.updateUserProfile(updatedProfile);
+      setProfileFromApi((prev) => {
+        const base = prev ?? ({} as UserProfile);
+        const result = { ...base, ...updatedProfile } as UserProfile;
+        for (const [key, val] of Object.entries(apiResponse)) {
+          if (!isEmptyValue(val)) {
+            (result as unknown as Record<string, unknown>)[key] = val;
+          }
+        }
+        result.profile_picture = result.profile_picture ?? "";
+        return result;
+      });
       setProfile((prev) => {
         if (!prev) return { ...updatedProfile, ...apiResponse } as UserProfile;
         const result = { ...prev, ...updatedProfile };
         for (const [key, val] of Object.entries(apiResponse)) {
           if (!isEmptyValue(val)) {
-            (result as any)[key] = val;
+            (result as unknown as Record<string, unknown>)[key] = val;
           }
         }
         result.profile_picture = result.profile_picture ?? "";
@@ -402,7 +426,7 @@ export default function ProfilePage() {
                   >
                     <ProfileSummary profile={profile} onSave={handleSaveProfile} />
                     <ProfileCompletionCard
-                      profile={profile}
+                      profile={profileFromApi ?? profile}
                       onCompleteProfile={() => {
                         const el = document.getElementById("personal-information");
                         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });

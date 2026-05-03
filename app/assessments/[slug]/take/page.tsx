@@ -13,7 +13,7 @@ import {
   startTransition,
   memo,
 } from "react";
-import type { RefObject } from "react";
+import type { RefObject, Dispatch, SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
@@ -57,6 +57,7 @@ import {
   mergeAssessmentSections,
   normalizeSubjectiveAnswer,
   parseSectionCompletelyAttempted,
+  subjectivePayloadHasContent,
   timedSectionCompletionKey,
 } from "@/utils/assessment.utils";
 import {
@@ -72,8 +73,16 @@ import {
   type ViolationScreenshotSample,
 } from "@/lib/services/assessment.service";
 import { captureViolationScreenshotFile } from "@/lib/utils/assessment-violation-screenshot.utils";
-import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
+
+/** Quiz section question row from merged assessment detail (MCQ / MSQ). */
+type QuizTakeQuestion = {
+  id: number;
+  question?: unknown;
+  question_style?: string;
+  [key: string]: unknown;
+};
 
 // Lazy load dialogs only
 const SubmissionDialog = lazy(() =>
@@ -99,6 +108,7 @@ const MAX_VIOLATION_CAPTURE_RETRIES = 6;
 const MAX_SESSION_START_PROOF_ATTEMPTS = 6;
 
 const SECTION_COMPLETELY_ATTEMPTED_KEY = "section_completely_attempted";
+const AUTO_SUBMIT_REASON_TAB_SWITCH_LIMIT = "tab_switch_limit";
 
 /** First section index the learner may enter: skips timed sections already marked complete on the response sheet. */
 function firstTimedSectionEntryIndex(
@@ -247,18 +257,31 @@ export default function TakeAssessmentPage({
   const latestViolationTypeRef = useRef<string | null>(null);
   const lastTabSwitchCountAtScreenshotRef = useRef(-1);
   const handleFinalSubmitRef = useRef<() => void>(() => {});
+  const tabSwitchLimitAutoSubmitTriggeredRef = useRef(false);
+  const autoSubmitReasonRef = useRef<string | null>(null);
+  const autoSubmitMetaRef = useRef<Record<string, any> | null>(null);
   const mediaGraceUntilRef = useRef(0);
   const timedSectionsCompleteRef = useRef<Set<string>>(new Set());
   const prevSectionIndexMarkRef = useRef<number | null>(null);
+  /** Native file pickers often exit fullscreen; skip harsh exit confirm for the next loss only. */
+  const skipNextFullscreenExitPromptRef = useRef(false);
+  const filePickerSkipClearTimerRef = useRef<number | null>(null);
+  const setShowFullscreenWarningRef = useRef<
+    Dispatch<SetStateAction<boolean>> | undefined
+  >(undefined);
 
   // Data hooks
   const { assessment, loading } = useAssessmentData(slug);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    if (loading || !assessment) {
+      setMobileAssessmentGate("pending");
+      return;
+    }
     setMobileAssessmentGate(
-      isMobileOrTabletForAssessment() ? "blocked" : "ok"
+      !isCurrentDeviceAllowedForAssessment(assessment) ? "blocked" : "ok"
     );
-  }, []);
+  }, [loading, assessment]);
 
   // Preload proctoring model in background (non-blocking)
   useEffect(() => {
@@ -722,6 +745,34 @@ export default function TakeAssessmentPage({
     );
   }, [tabSwitchCount, assessmentStarted, submitting, showToast]);
 
+  useEffect(() => {
+    if (!assessmentStarted || submitting) return;
+    if (!assessment?.tab_switch_limit_enabled) return;
+    const limit = Number(assessment?.tab_switch_limit_count || 0);
+    if (!Number.isFinite(limit) || limit <= 0) return;
+    if (tabSwitchCount < limit) return;
+    if (tabSwitchLimitAutoSubmitTriggeredRef.current) return;
+    tabSwitchLimitAutoSubmitTriggeredRef.current = true;
+    autoSubmitReasonRef.current = AUTO_SUBMIT_REASON_TAB_SWITCH_LIMIT;
+    autoSubmitMetaRef.current = {
+      limit,
+      current_count: tabSwitchCount,
+      triggered_at: new Date().toISOString(),
+    };
+    showToast(
+      "Tab-switch limit reached. Submitting your assessment automatically.",
+      "warning"
+    );
+    handleFinalSubmitRef.current();
+  }, [
+    assessmentStarted,
+    submitting,
+    assessment?.tab_switch_limit_enabled,
+    assessment?.tab_switch_limit_count,
+    tabSwitchCount,
+    showToast,
+  ]);
+
   // Show toast notifications for proctoring violations
   useEffect(() => {
     if (!assessmentStarted || submitting || !latestViolation) return;
@@ -1037,9 +1088,12 @@ export default function TakeAssessmentPage({
                     const response = questionResponses[questionIdKey];
                     const questionId = Number(questionIdKey);
                     if (response !== undefined) {
-                      const text = normalizeSubjectiveAnswer(response);
-                      loadedResponses["subjective"][questionId] = text;
-                      loadedResponses["subjective"][String(questionId)] = text;
+                      const stored =
+                        typeof response === "object" && response !== null
+                          ? response
+                          : normalizeSubjectiveAnswer(response);
+                      loadedResponses["subjective"][questionId] = stored;
+                      loadedResponses["subjective"][String(questionId)] = stored;
                     }
                   });
                 });
@@ -1150,6 +1204,64 @@ export default function TakeAssessmentPage({
     setShowFullscreenExitConfirm(true);
   }, []);
 
+  const onNativeFilePickerWillOpen = useCallback(() => {
+    skipNextFullscreenExitPromptRef.current = true;
+    if (filePickerSkipClearTimerRef.current) {
+      clearTimeout(filePickerSkipClearTimerRef.current);
+    }
+    filePickerSkipClearTimerRef.current = window.setTimeout(() => {
+      filePickerSkipClearTimerRef.current = null;
+      skipNextFullscreenExitPromptRef.current = false;
+    }, 4000);
+  }, []);
+
+  const onBenignFullscreenLoss = useCallback(() => {
+    if (filePickerSkipClearTimerRef.current) {
+      clearTimeout(filePickerSkipClearTimerRef.current);
+      filePickerSkipClearTimerRef.current = null;
+    }
+
+    const isFs = () =>
+      !!document.fullscreenElement ||
+      !!(document as unknown as { webkitFullscreenElement?: Element })
+        .webkitFullscreenElement ||
+      !!(document as unknown as { mozFullScreenElement?: Element })
+        .mozFullScreenElement ||
+      !!(document as unknown as { msFullscreenElement?: Element })
+        .msFullscreenElement;
+
+    const tryReenter = async () => {
+      if (submittingRef.current || !assessmentStartedRef.current) return;
+      try {
+        await enterFullscreen();
+        await new Promise((r) => setTimeout(r, 150));
+        if (!isFs()) {
+          setShowFullscreenWarningRef.current?.(true);
+        }
+      } catch {
+        setShowFullscreenWarningRef.current?.(true);
+      }
+    };
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+      window.clearTimeout(fallbackTimer);
+      void tryReenter();
+    };
+
+    const onFocus = () => finish();
+    const onVis = () => {
+      if (document.visibilityState === "visible") finish();
+    };
+    const fallbackTimer = window.setTimeout(finish, 800);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+  }, [enterFullscreen]);
+
   // Prompt submit vs continue when user leaves fullscreen (must run before submission hook)
   const {
     showFullscreenWarning,
@@ -1164,7 +1276,13 @@ export default function TakeAssessmentPage({
     onLeftFullscreen: openFullscreenExitPrompt,
     onEscapePressed: openFullscreenExitPrompt,
     suppressEscapeInterceptor: showFullscreenExitConfirm,
+    skipNextFullscreenExitPromptRef,
+    onBenignFullscreenLoss,
   });
+
+  useLayoutEffect(() => {
+    setShowFullscreenWarningRef.current = setShowFullscreenWarning;
+  }, [setShowFullscreenWarning]);
 
   useKeyboardShortcuts({
     enabled: assessmentStarted && !submitting,
@@ -1188,6 +1306,8 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog,
     violationScreenshotSamplesRef: violationScreenshotEvidenceRef,
     timedSectionsCompleteRef,
+    autoSubmitReasonRef,
+    autoSubmitMetaRef,
   });
 
   useEffect(() => {
@@ -1717,9 +1837,9 @@ export default function TakeAssessmentPage({
     t,
   ]);
 
-  const quizQuestions = useMemo(() => {
+  const quizQuestions = useMemo((): QuizTakeQuestion[] => {
     if (!currentSection || sectionType !== "quiz") return [];
-    return currentSection.questions || [];
+    return (currentSection.questions || []) as QuizTakeQuestion[];
   }, [currentSection, sectionType]);
 
   const subjectiveQuestions = useMemo((): Array<{
@@ -1727,6 +1847,7 @@ export default function TakeAssessmentPage({
     question_text: string;
     max_marks?: number;
     question_type?: string;
+    answer_mode?: string;
   }> => {
     if (!currentSection || sectionType !== "subjective") return [];
     return (currentSection.questions || []) as Array<{
@@ -1734,6 +1855,7 @@ export default function TakeAssessmentPage({
       question_text: string;
       max_marks?: number;
       question_type?: string;
+      answer_mode?: string;
     }>;
   }, [currentSection, sectionType]);
 
@@ -1750,10 +1872,14 @@ export default function TakeAssessmentPage({
     const sectionResponses = responses[sectionType] || {};
     
     // Create a hash of only the relevant responses for this section
-    const relevantResponses = quizQuestions.map((q: any) => ({
-      id: q.id,
-      answered: !!sectionResponses[q.id]
-    }));
+    const relevantResponses = quizQuestions.map((q: any) => {
+      const r = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
+      const answered =
+        q.question_style === "multiple"
+          ? Array.isArray(r) && r.length > 0
+          : r !== undefined && r !== null && r !== "";
+      return { id: q.id, answered };
+    });
     const hash = JSON.stringify(relevantResponses);
     
     // Only recalculate if responses for this section actually changed
@@ -1763,10 +1889,10 @@ export default function TakeAssessmentPage({
     
     lastMappedHashRef.current = hash;
     
-    const mapped = quizQuestions.map((q: any) => ({
+    const mapped = quizQuestions.map((q: any, idx: number) => ({
       id: q.id,
       question: q.question,
-      answered: !!sectionResponses[q.id],
+      answered: relevantResponses[idx]?.answered ?? false,
     }));
     
     mappedQuizQuestionsRef.current = mapped;
@@ -1784,11 +1910,9 @@ export default function TakeAssessmentPage({
     const sectionResponses = responses[sectionType] || {};
     const relevantResponses = subjectiveQuestions.map((q: any) => {
       const raw = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
-      const text =
-        typeof raw === "string" ? raw : normalizeSubjectiveAnswer(raw);
       return {
         id: q.id,
-        answered: text.trim().length > 0,
+        answered: subjectivePayloadHasContent(q.answer_mode, raw),
       };
     });
     const hash = JSON.stringify(relevantResponses);
@@ -1799,14 +1923,12 @@ export default function TakeAssessmentPage({
       return mappedSubjectiveQuestionsRef.current;
     }
     lastMappedSubjectiveHashRef.current = hash;
-    const mapped = subjectiveQuestions.map((q: any) => {
+    const mapped = subjectiveQuestions.map((q: any, idx: number) => {
       const raw = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
-      const text =
-        typeof raw === "string" ? raw : normalizeSubjectiveAnswer(raw);
       return {
         id: q.id,
         question: q.question_text,
-        answered: text.trim().length > 0,
+        answered: relevantResponses[idx]?.answered ?? false,
       };
     });
     mappedSubjectiveQuestionsRef.current = mapped;
@@ -1845,7 +1967,18 @@ export default function TakeAssessmentPage({
           sectionType,
           questionId,
         );
-        if (isAssessmentQuestionCompleted(sectionType, response)) {
+        if (
+          isAssessmentQuestionCompleted(
+            sectionType,
+            response,
+            sectionType === "subjective"
+              ? {
+                  answer_mode: (question as { answer_mode?: string })
+                    .answer_mode,
+                }
+              : undefined,
+          )
+        ) {
           answered++;
         }
       });
@@ -1872,11 +2005,37 @@ export default function TakeAssessmentPage({
   const handleQuizAnswerSelect = useCallback(
     (answerId: string | number) => {
       const question = quizQuestions[currentQuestionIndex];
-      if (question) {
-        handleAnswerChange(sectionType, question.id, answerId);
+      if (!question) return;
+      const letter = String(answerId).toUpperCase();
+      if (question.question_style === "multiple") {
+        const cur =
+          responses[sectionType]?.[question.id] ??
+          responses[sectionType]?.[String(question.id)];
+        const set = new Set<string>(
+          Array.isArray(cur)
+            ? cur.map((x: unknown) => String(x).toUpperCase())
+            : cur != null && cur !== ""
+              ? [String(cur).toUpperCase()]
+              : [],
+        );
+        if (set.has(letter)) {
+          set.delete(letter);
+        } else {
+          set.add(letter);
+        }
+        const arr = Array.from(set).sort();
+        handleAnswerChange(sectionType, question.id, arr.length ? arr : null);
+        return;
       }
+      handleAnswerChange(sectionType, question.id, letter);
     },
-    [quizQuestions, currentQuestionIndex, sectionType, handleAnswerChange]
+    [
+      quizQuestions,
+      currentQuestionIndex,
+      sectionType,
+      handleAnswerChange,
+      responses,
+    ]
   );
 
   const handleClearAnswer = useCallback(() => {
@@ -1935,13 +2094,13 @@ export default function TakeAssessmentPage({
     return responses["coding"]?.[currentCodingQuestion.id] || null;
   }, [currentCodingQuestion, responses]);
 
-  const currentSubjectiveAnswer = useMemo(() => {
+  const currentSubjectiveValue = useMemo(() => {
     if (!currentSubjectiveQuestion) return "";
-    const raw =
+    return (
       responses["subjective"]?.[currentSubjectiveQuestion.id] ??
-      responses["subjective"]?.[String(currentSubjectiveQuestion.id)];
-    if (typeof raw === "string") return raw;
-    return normalizeSubjectiveAnswer(raw);
+      responses["subjective"]?.[String(currentSubjectiveQuestion.id)] ??
+      ""
+    );
   }, [currentSubjectiveQuestion, responses]);
 
   // Get coding questions for navigation - optimized
@@ -2410,15 +2569,16 @@ export default function TakeAssessmentPage({
                       question_text: currentSubjectiveQuestion.question_text,
                       max_marks: currentSubjectiveQuestion.max_marks,
                       question_type: currentSubjectiveQuestion.question_type,
+                      answer_mode: currentSubjectiveQuestion.answer_mode,
                     }}
-                    answerText={currentSubjectiveAnswer}
+                    value={currentSubjectiveValue}
                     questions={mappedSubjectiveQuestions}
                     totalQuestions={subjectiveQuestions.length}
-                    onAnswerChange={(text) =>
+                    onChange={(next) =>
                       handleAnswerChange(
                         "subjective",
                         currentSubjectiveQuestion.id,
-                        text
+                        next
                       )
                     }
                     onNextQuestion={navigation.handleNext}
@@ -2426,6 +2586,7 @@ export default function TakeAssessmentPage({
                     onQuestionClick={handleSubjectiveQuestionClick}
                     assessmentUploadClientId={uploadClientId}
                     onSubjectiveImageUploadError={handleSubjectiveImageUploadError}
+                    onNativeFilePickerWillOpen={onNativeFilePickerWillOpen}
                   />
                 )}
 

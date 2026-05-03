@@ -23,9 +23,9 @@ export function AnswerDistributionChart({
   unattempted,
 }: AnswerDistributionChartProps) {
   const data = [
-    { name: "Correct", value: correct, color: "#10b981" },
-    { name: "Incorrect", value: incorrect, color: "#ef4444" },
-    { name: "Unattempted", value: unattempted, color: "#9ca3af" },
+    { name: "Correct", value: correct, color: "var(--course-cta)" },
+    { name: "Incorrect", value: incorrect, color: "var(--error-500)" },
+    { name: "Unattempted", value: unattempted, color: "var(--font-tertiary)" },
   ].filter((item) => item.value > 0);
 
   const total = correct + incorrect + unattempted;
@@ -37,20 +37,20 @@ export function AnswerDistributionChart({
       return (
         <Box
           sx={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #e5e7eb",
+            backgroundColor: "var(--font-light)",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             p: 1.5,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            boxShadow: "0 4px 12px color-mix(in srgb, var(--font-dark) 10%, transparent)",
           }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 700, color: "#1f2937" }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary-dark)" }}>
             {data.name}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
             Count: <strong>{data.value}</strong>
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
             Percentage: <strong>{percentage}%</strong>
           </Typography>
         </Box>
@@ -88,9 +88,9 @@ export function AnswerDistributionChart({
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
-        background: "#ffffff",
+        background: "var(--font-light)",
       }}
     >
       <Box
@@ -106,20 +106,20 @@ export function AnswerDistributionChart({
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "rgba(139, 92, 246, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:chart-pie" size={24} color="#8b5cf6" />
+          <IconWrapper icon="mdi:chart-pie" size={24} color="var(--assessment-chart-violet)" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               mb: 0.25,
             }}
           >
@@ -128,7 +128,7 @@ export function AnswerDistributionChart({
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
             }}
           >
@@ -147,7 +147,7 @@ export function AnswerDistributionChart({
               labelLine={false}
               label={CustomLabel}
               outerRadius={120}
-              fill="#8884d8"
+              fill="var(--assessment-chart-secondary-fill)"
               dataKey="value"
             >
               {data.map((entry, index) => (

@@ -32,6 +32,7 @@ import {
   Assessment,
   isMCQQuestion,
   isCodingQuestion,
+  isSubjectiveQuestion,
 } from "@/lib/services/admin/admin-assessment.service";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
@@ -77,8 +78,10 @@ export default function AssessmentPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "live">("all");
   const [proctoringFilter, setProctoringFilter] = useState<"all" | "enabled" | "disabled">("all");
   const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
+  const [evaluationFilter, setEvaluationFilter] = useState<"all" | "manual" | "auto">("all");
 
   useEffect(() => {
     loadAssessments();
@@ -297,6 +300,7 @@ export default function AssessmentPage() {
       // MCQ rows (same format as edit page)
       const mcqFlat: Record<string, unknown>[] = [];
       const codingFlat: Record<string, unknown>[] = [];
+      const writtenFlat: Record<string, unknown>[] = [];
       for (const sec of data.sections) {
         for (const q of sec.questions) {
           if (isMCQQuestion(q)) {
@@ -338,6 +342,18 @@ export default function AssessmentPage() {
               time_limit: q.time_limit ?? "",
               memory_limit: q.memory_limit ?? "",
             });
+          } else if (isSubjectiveQuestion(q)) {
+            writtenFlat.push({
+              section_id: sec.section_id,
+              section_title: sec.section_title,
+              section_order: sec.order,
+              id: q.id,
+              question_text: q.question_text,
+              evaluation_prompt: q.evaluation_prompt,
+              max_marks: q.max_marks,
+              question_type: q.question_type ?? "",
+              answer_mode: q.answer_mode ?? "text",
+            });
           }
         }
       }
@@ -375,6 +391,17 @@ export default function AssessmentPage() {
         { key: "time_limit", header: "Time Limit (sec)" },
         { key: "memory_limit", header: "Memory Limit (MB)" },
       ];
+      const writtenColumns: { key: string; header: string }[] = [
+        { key: "section_id", header: "Section ID" },
+        { key: "section_title", header: "Section Title" },
+        { key: "section_order", header: "Section Order" },
+        { key: "id", header: "Question ID" },
+        { key: "question_text", header: "Question Text" },
+        { key: "evaluation_prompt", header: "Evaluation Prompt" },
+        { key: "max_marks", header: "Max Marks" },
+        { key: "question_type", header: "Question Type" },
+        { key: "answer_mode", header: "Answer Mode" },
+      ];
 
       const downloads: Array<() => void> = [];
       if (mcqFlat.length > 0) {
@@ -393,20 +420,28 @@ export default function AssessmentPage() {
           )
         );
       }
-      downloads[0]?.();
-      if (downloads.length > 1) {
-        setTimeout(() => downloads[1](), 100);
+      if (writtenFlat.length > 0) {
+        downloads.push(() =>
+          downloadCsv(
+            jsonToCsvRows(writtenFlat, writtenColumns),
+            `assessment-${baseSlug}-written-questions.csv`
+          )
+        );
       }
+      downloads.forEach((fn, i) => {
+        setTimeout(fn, i * 120);
+      });
 
       const fileCount = downloads.length;
-      showToast(
-        fileCount === 2
-          ? "MCQ and coding questions exported (2 files)"
-          : fileCount === 1
-            ? "Questions exported successfully"
-            : "No questions to export",
-        fileCount > 0 ? "success" : "info"
-      );
+      const typeSummary =
+        fileCount === 3
+          ? "MCQ, coding, and written questions exported (3 files)"
+          : fileCount === 2
+            ? "Questions exported (2 files)"
+            : fileCount === 1
+              ? "Questions exported successfully"
+              : "No questions to export";
+      showToast(typeSummary, fileCount > 0 ? "success" : "info");
     } catch (error: any) {
       showToast(
         error?.message || t("admin.assessment.failedToExportQuestions"),
@@ -592,6 +627,9 @@ export default function AssessmentPage() {
         if (statusFilter === "inactive" && assessment.is_active) return false;
       }
 
+      if (draftFilter === "draft" && !assessment.is_draft) return false;
+      if (draftFilter === "live" && assessment.is_draft) return false;
+
       // Proctoring filter
       if (proctoringFilter !== "all") {
         if (proctoringFilter === "enabled" && !assessment.proctoring_enabled) return false;
@@ -604,9 +642,16 @@ export default function AssessmentPage() {
         if (paidFilter === "free" && assessment.is_paid) return false;
       }
 
+      // Manual vs auto evaluation (API default is auto when omitted)
+      if (evaluationFilter !== "all") {
+        const mode = assessment.evaluation_mode ?? "auto";
+        if (evaluationFilter === "manual" && mode !== "manual") return false;
+        if (evaluationFilter === "auto" && mode !== "auto") return false;
+      }
+
       return true;
     });
-  }, [assessments, searchQuery, statusFilter, proctoringFilter, paidFilter]);
+  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
 
   // Client-side pagination
   const paginatedAssessments = useMemo(() => {
@@ -618,21 +663,25 @@ export default function AssessmentPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, proctoringFilter, paidFilter]);
+  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
 
   // Clear all filters
   const handleClearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
+    setDraftFilter("all");
     setProctoringFilter("all");
     setPaidFilter("all");
+    setEvaluationFilter("all");
   };
 
   const hasActiveFilters =
     searchQuery !== "" ||
     statusFilter !== "all" ||
+    draftFilter !== "all" ||
     proctoringFilter !== "all" ||
-    paidFilter !== "all";
+    paidFilter !== "all" ||
+    evaluationFilter !== "all";
 
   return (
     <MainLayout fullWidthContent>
@@ -726,14 +775,10 @@ export default function AssessmentPage() {
         >
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "2fr 1fr 1fr 1fr auto",
-              },
+              display: "flex",
+              flexWrap: "wrap",
               gap: 2,
-              alignItems: "center",
+              alignItems: "stretch",
               direction: rtl ? "rtl" : "ltr",
             }}
           >
@@ -749,6 +794,8 @@ export default function AssessmentPage() {
                 ),
               }}
               sx={{
+                flex: "1 1 280px",
+                minWidth: { xs: "100%", sm: 220 },
                 "& .MuiOutlinedInput-root": {
                   backgroundColor: "var(--card-bg)",
                 },
@@ -756,7 +803,7 @@ export default function AssessmentPage() {
               fullWidth
             />
 
-            <FormControl fullWidth>
+            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
               <InputLabel>Status</InputLabel>
               <Select
                 value={statusFilter}
@@ -771,7 +818,22 @@ export default function AssessmentPage() {
               </Select>
             </FormControl>
 
-            <FormControl fullWidth>
+            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
+              <InputLabel>Authoring</InputLabel>
+              <Select
+                value={draftFilter}
+                label="Authoring"
+                onChange={(e) =>
+                  setDraftFilter(e.target.value as "all" | "draft" | "live")
+                }
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="draft">Draft only</MenuItem>
+                <MenuItem value="live">Published only</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
               <InputLabel>Proctoring</InputLabel>
               <Select
                 value={proctoringFilter}
@@ -788,7 +850,7 @@ export default function AssessmentPage() {
               </Select>
             </FormControl>
 
-            <FormControl fullWidth>
+            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
               <InputLabel>Payment</InputLabel>
               <Select
                 value={paidFilter}
@@ -803,12 +865,32 @@ export default function AssessmentPage() {
               </Select>
             </FormControl>
 
+            <FormControl sx={{ flex: "1 1 180px", minWidth: 160 }} fullWidth>
+              <InputLabel id="admin-assessment-eval-filter-label">
+                {t("admin.assessment.filterEvaluation")}
+              </InputLabel>
+              <Select
+                labelId="admin-assessment-eval-filter-label"
+                value={evaluationFilter}
+                label={t("admin.assessment.filterEvaluation")}
+                onChange={(e) =>
+                  setEvaluationFilter(e.target.value as "all" | "manual" | "auto")
+                }
+              >
+                <MenuItem value="all">{t("admin.assessment.filterEvaluationAll")}</MenuItem>
+                <MenuItem value="manual">{t("admin.assessment.filterEvaluationManual")}</MenuItem>
+                <MenuItem value="auto">{t("admin.assessment.filterEvaluationAuto")}</MenuItem>
+              </Select>
+            </FormControl>
+
             {hasActiveFilters && (
               <Button
                 variant="outlined"
                 onClick={handleClearFilters}
                 startIcon={<IconWrapper icon="mdi:close" size={18} />}
                 sx={{
+                  flex: "0 0 auto",
+                  alignSelf: "center",
                   borderColor: "var(--border-default)",
                   color: "var(--font-secondary)",
                   whiteSpace: "nowrap",
@@ -854,6 +936,18 @@ export default function AssessmentPage() {
                   }}
                 />
               )}
+              {draftFilter !== "all" && (
+                <Chip
+                  label={draftFilter === "draft" ? "Authoring: draft" : "Authoring: published"}
+                  size="small"
+                  onDelete={() => setDraftFilter("all")}
+                  sx={{
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    color: "var(--accent-indigo)",
+                  }}
+                />
+              )}
               {proctoringFilter !== "all" && (
                 <Chip
                   label={`Proctoring: ${proctoringFilter}`}
@@ -871,6 +965,22 @@ export default function AssessmentPage() {
                   label={`Payment: ${paidFilter}`}
                   size="small"
                   onDelete={() => setPaidFilter("all")}
+                  sx={{
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                    color: "var(--accent-indigo)",
+                  }}
+                />
+              )}
+              {evaluationFilter !== "all" && (
+                <Chip
+                  label={
+                    evaluationFilter === "manual"
+                      ? t("admin.assessment.filterEvaluationManual")
+                      : t("admin.assessment.filterEvaluationAuto")
+                  }
+                  size="small"
+                  onDelete={() => setEvaluationFilter("all")}
                   sx={{
                     bgcolor:
                       "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
@@ -918,13 +1028,18 @@ export default function AssessmentPage() {
               assessments={paginatedAssessments}
               assessmentEmailJobMap={assessmentEmailJobMap}
               actionsReadOnly={isCourseManager}
-              onEdit={(id) =>
+              onEdit={(id) => {
+                const row = paginatedAssessments.find((a) => a.id === id);
+                if (!isCourseManager && row?.is_draft) {
+                  router.push(`/admin/assessment/${id}/build`);
+                  return;
+                }
                 router.push(
                   isCourseManager
                     ? `/admin/assessment/${id}/edit?readonly=1`
                     : `/admin/assessment/${id}/edit`
-                )
-              }
+                );
+              }}
               onDelete={isCourseManager ? undefined : handleDeleteClick}
               onTriggerEmailJob={
                 isCourseManager ? undefined : handleOpenEmailTriggerDialog

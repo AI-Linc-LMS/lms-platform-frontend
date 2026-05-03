@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   Box,
   Typography,
@@ -16,6 +16,7 @@ import {
   Collapse,
   CircularProgress,
   Alert,
+  Tooltip,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -29,11 +30,27 @@ import {
 } from "@/lib/services/admin/admin-student-enrollment.service";
 import { EnrollmentJobStatus } from "./EnrollmentJobStatus";
 
-interface EnrollmentJobHistoryProps {
-  onJobSelect?: (taskId: string) => void;
+function formatJobDateTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
 }
 
-export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps) {
+interface EnrollmentJobHistoryProps {
+  onJobSelect?: (taskId: string) => void;
+  /** When true, omit the section title (e.g. parent panel already shows it). */
+  embedded?: boolean;
+}
+
+export function EnrollmentJobHistory({
+  onJobSelect,
+  embedded = false,
+}: EnrollmentJobHistoryProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const { user, loading: authLoading } = useAuth();
@@ -125,35 +142,100 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-        <CircularProgress />
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 5, gap: 2 }}>
+        <CircularProgress size={32} sx={{ color: "var(--accent-indigo)" }} />
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
+          {t("adminManageStudents.loadingJobHistory")}
+        </Typography>
       </Box>
     );
   }
 
   if (jobs.length === 0) {
     return (
-      <Alert severity="info">
-        <Typography variant="body2">{t("adminManageStudents.noEnrollmentJobsFound")}</Typography>
+      <Alert
+        severity="info"
+        icon={<IconWrapper icon="mdi:clipboard-text-clock-outline" size={22} />}
+        sx={{
+          borderRadius: 2,
+          alignItems: "flex-start",
+          py: 1.5,
+          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+          border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, var(--border-default))",
+        }}
+      >
+        <Box>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            {t("adminManageStudents.noEnrollmentJobsFound")}
+          </Typography>
+          <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "var(--font-secondary)" }}>
+            {t("adminManageStudents.enrollmentJobEmptyHint")}
+          </Typography>
+        </Box>
       </Alert>
     );
   }
 
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-        <Typography variant="h6" fontWeight={600}>
-          {t("adminManageStudents.enrollmentJobHistory")}
-        </Typography>
-        <IconButton onClick={loadJobs} size="small" title={t("adminManageStudents.refresh")}>
-          <IconWrapper icon="mdi:refresh" size={20} />
-        </IconButton>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: embedded ? "flex-end" : "space-between",
+          mb: embedded ? 1.5 : 2,
+        }}
+      >
+        {!embedded && (
+          <Typography variant="h6" fontWeight={600} sx={{ color: "var(--font-primary)" }}>
+            {t("adminManageStudents.enrollmentJobHistory")}
+          </Typography>
+        )}
+        <Tooltip title={t("adminManageStudents.refresh")}>
+          <IconButton
+            onClick={loadJobs}
+            size="small"
+            aria-label={t("adminManageStudents.refresh")}
+            sx={{
+              color: "var(--accent-indigo)",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+              "&:hover": {
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
+              },
+            }}
+          >
+            <IconWrapper icon="mdi:refresh" size={20} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          border: "1px solid var(--border-default)",
+          overflow: "hidden",
+          backgroundColor: "var(--card-bg)",
+          boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+        }}
+      >
+        <Table size="small" stickyHeader>
           <TableHead>
-            <TableRow>
+            <TableRow
+              sx={{
+                "& .MuiTableCell-head": {
+                  fontWeight: 700,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "var(--font-secondary)",
+                  backgroundColor: "var(--surface)",
+                  borderBottom: "2px solid var(--border-default)",
+                  py: 1.5,
+                },
+              }}
+            >
               <TableCell>{t("adminManageStudents.id")}</TableCell>
               <TableCell>{t("adminManageStudents.status")}</TableCell>
               <TableCell>{t("adminManageStudents.students")}</TableCell>
@@ -173,7 +255,7 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
               </TableCell>
               <TableCell
                 sx={{
-                  display: { xs: "table-cell", md: "none" },
+                  display: { xs: "table-cell", lg: "none" },
                 }}
               >
                 {t("adminManageStudents.results")}
@@ -186,111 +268,151 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
               <Fragment key={job.id}>
                 <TableRow
                   hover
-                  sx={{ cursor: "pointer" }}
+                  tabIndex={0}
+                  role="button"
+                  aria-expanded={expandedJobId === job.task_id}
+                  aria-label={t("adminManageStudents.enrollmentJobRowLabel", {
+                    id: job.id,
+                    status: getStatusLabel(job.status),
+                  })}
+                  sx={{
+                    cursor: "pointer",
+                    transition: "background-color 0.15s ease",
+                    "&:hover": {
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 8%, var(--card-bg))",
+                    },
+                  }}
                   onClick={() => handleRowClick(job.task_id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleRowClick(job.task_id);
+                    }
+                  }}
                 >
-                  <TableCell>#{job.id}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                    #{job.id}
+                  </TableCell>
                   <TableCell>
                     <Chip
                       label={getStatusLabel(job.status)}
                       color={getStatusColor(job.status)}
                       size="small"
+                      variant="outlined"
+                      sx={{ fontWeight: 600 }}
                     />
                   </TableCell>
-                  <TableCell>{job.students.length}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{job.students.length}</TableCell>
                   <TableCell
                     sx={{
                       display: { xs: "none", lg: "table-cell" },
+                      color: "var(--font-secondary)",
+                      fontSize: "0.8125rem",
                     }}
                   >
-                    {new Date(job.created_at).toLocaleDateString()}{" "}
-                    {new Date(job.created_at).toLocaleTimeString()}
+                    {formatJobDateTime(job.created_at)}
                   </TableCell>
                   <TableCell
                     sx={{
                       display: { xs: "none", lg: "table-cell" },
+                      color: "var(--font-secondary)",
+                      fontSize: "0.8125rem",
                     }}
                   >
-                    {job.completed_at
-                      ? `${new Date(job.completed_at).toLocaleDateString()} ${new Date(
-                          job.completed_at
-                        ).toLocaleTimeString()}`
-                      : "-"}
+                    {job.completed_at ? formatJobDateTime(job.completed_at) : "—"}
                   </TableCell>
                   <TableCell
                     sx={{
-                      display: { xs: "table-cell", md: "none" },
+                      display: { xs: "table-cell", lg: "none" },
                     }}
                   >
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                      <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-                        <Box
-                          component="span"
-                          sx={{
-                            color: "success.main",
-                            fontWeight: 600,
-                            mr: 0.5,
-                          }}
-                        >
-                          C: {job.created_accounts.length}
-                        </Box>
-                        <Box
-                          component="span"
-                          sx={{
-                            color: "primary.main",
-                            fontWeight: 600,
-                            mr: 0.5,
-                          }}
-                        >
-                          E: {job.enrolled_students.length}
-                        </Box>
-                        {(job.skipped_accounts.length > 0 ||
-                          job.skipped_enrollments.length > 0) && (
-                          <Box
-                            component="span"
-                            sx={{
-                              color: "warning.main",
-                              fontWeight: 600,
-                              mr: 0.5,
-                            }}
-                          >
-                            S: {job.skipped_accounts.length + job.skipped_enrollments.length}
-                          </Box>
-                        )}
-                        {job.failed_students.length > 0 && (
-                          <Box
-                            component="span"
-                            sx={{
-                              color: "error.main",
-                              fontWeight: 600,
-                            }}
-                          >
-                            F: {job.failed_students.length}
-                          </Box>
-                        )}
-                      </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 0.5,
+                        alignItems: "center",
+                        maxWidth: 200,
+                      }}
+                    >
+                      <Tooltip title={t("adminManageStudents.enrollmentResultCreated")}>
+                        <Chip
+                          size="small"
+                          label={`C ${job.created_accounts.length}`}
+                          color="success"
+                          variant="outlined"
+                          sx={{ height: 22, fontSize: "0.7rem", fontWeight: 600 }}
+                        />
+                      </Tooltip>
+                      <Tooltip title={t("adminManageStudents.enrollmentResultEnrolled")}>
+                        <Chip
+                          size="small"
+                          label={`E ${job.enrolled_students.length}`}
+                          color="primary"
+                          variant="outlined"
+                          sx={{ height: 22, fontSize: "0.7rem", fontWeight: 600 }}
+                        />
+                      </Tooltip>
+                      {(job.skipped_accounts.length > 0 ||
+                        job.skipped_enrollments.length > 0) && (
+                        <Tooltip title={t("adminManageStudents.enrollmentResultSkipped")}>
+                          <Chip
+                            size="small"
+                            label={`S ${job.skipped_accounts.length + job.skipped_enrollments.length}`}
+                            color="warning"
+                            variant="outlined"
+                            sx={{ height: 22, fontSize: "0.7rem", fontWeight: 600 }}
+                          />
+                        </Tooltip>
+                      )}
+                      {job.failed_students.length > 0 && (
+                        <Tooltip title={t("adminManageStudents.enrollmentResultFailed")}>
+                          <Chip
+                            size="small"
+                            label={`F ${job.failed_students.length}`}
+                            color="error"
+                            variant="outlined"
+                            sx={{ height: 22, fontSize: "0.7rem", fontWeight: 600 }}
+                          />
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleActionClick(e, job.task_id)}
+                  <TableCell align="right">
+                    <Tooltip
+                      title={
+                        expandedJobId === job.task_id
+                          ? t("adminManageStudents.collapseJobDetails")
+                          : t("adminManageStudents.expandJobDetails")
+                      }
                     >
-                      <IconWrapper
-                        icon={
+                      <IconButton
+                        size="small"
+                        aria-expanded={expandedJobId === job.task_id}
+                        aria-label={
                           expandedJobId === job.task_id
-                            ? "mdi:chevron-up"
-                            : "mdi:chevron-down"
+                            ? t("adminManageStudents.collapseJobDetails")
+                            : t("adminManageStudents.expandJobDetails")
                         }
-                        size={20}
-                      />
-                    </IconButton>
+                        onClick={(e) => handleActionClick(e, job.task_id)}
+                      >
+                        <IconWrapper
+                          icon={
+                            expandedJobId === job.task_id
+                              ? "mdi:chevron-up"
+                              : "mdi:chevron-down"
+                          }
+                          size={20}
+                        />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell
                     style={{ paddingBottom: 0, paddingTop: 0 }}
-                    colSpan={6}
+                    colSpan={7}
                   >
                     <Collapse
                       in={expandedJobId === job.task_id}
@@ -314,6 +436,19 @@ export function EnrollmentJobHistory({ onJobSelect }: EnrollmentJobHistoryProps)
           </TableBody>
         </Table>
       </TableContainer>
+      <Typography
+        variant="caption"
+        component="p"
+        sx={{
+          display: "block",
+          mt: 1.5,
+          px: 0.5,
+          color: "var(--font-secondary)",
+          lineHeight: 1.5,
+        }}
+      >
+        {t("adminManageStudents.enrollmentJobHistoryHint")}
+      </Typography>
     </Box>
   );
 }

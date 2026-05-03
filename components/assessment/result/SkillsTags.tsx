@@ -23,14 +23,14 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
         elevation={0}
         sx={{
           p: 3.5,
-          border: "1px solid #d1fae5",
+          border: "1px solid color-mix(in srgb, var(--course-cta) 18%, transparent)",
           borderRadius: 3,
-          background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
+          background: "linear-gradient(135deg, var(--font-light) 0%, color-mix(in srgb, var(--course-cta) 10%, var(--card-bg)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px rgba(16, 185, 129, 0.1)",
-            borderColor: "#10b981",
+            boxShadow: "0 8px 20px color-mix(in srgb, var(--course-cta) 12%, transparent)",
+            borderColor: "var(--course-cta)",
           },
         }}
       >
@@ -42,12 +42,12 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
             mb: 2,
           }}
         >
-          <IconWrapper icon="mdi:star-circle" size={24} color="#10b981" />
+          <IconWrapper icon="mdi:star-circle" size={24} color="var(--course-cta)" />
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
             }}
           >
             Skills You Shine In
@@ -68,18 +68,18 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
                 label={skill}
                 icon={<IconWrapper icon="mdi:check" size={16} />}
                 sx={{
-                  backgroundColor: "#d1fae5",
-                  color: "#065f46",
+                  backgroundColor: "color-mix(in srgb, var(--course-cta) 18%, transparent)",
+                  color: "color-mix(in srgb, var(--course-cta) 75%, var(--font-dark))",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
                   height: 32,
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#a7f3d0",
+                    backgroundColor: "color-mix(in srgb, var(--course-cta) 30%, transparent)",
                     transform: "scale(1.05)",
                   },
                   "& .MuiChip-icon": {
-                    color: "#10b981",
+                    color: "var(--course-cta)",
                   },
                 }}
               />
@@ -88,7 +88,7 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontStyle: "italic",
               }}
             >
@@ -103,14 +103,14 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
         elevation={0}
         sx={{
           p: 3.5,
-          border: "1px solid #fef3c7",
+          border: "1px solid color-mix(in srgb, var(--warning-500) 18%, transparent)",
           borderRadius: 3,
-          background: "linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)",
+          background: "linear-gradient(135deg, var(--font-light) 0%, color-mix(in srgb, var(--warning-100) 95%, var(--card-bg)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px rgba(245, 158, 11, 0.1)",
-            borderColor: "#f59e0b",
+            boxShadow: "0 8px 20px color-mix(in srgb, var(--warning-500) 12%, transparent)",
+            borderColor: "var(--warning-500)",
           },
         }}
       >
@@ -122,12 +122,12 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
             mb: 2,
           }}
         >
-          <IconWrapper icon="mdi:target" size={24} color="#f59e0b" />
+          <IconWrapper icon="mdi:target" size={24} color="var(--warning-500)" />
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
             }}
           >
             Skills That Need Attention
@@ -148,18 +148,18 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
                 label={skill}
                 icon={<IconWrapper icon="mdi:alert" size={16} />}
                 sx={{
-                  backgroundColor: "#fef3c7",
-                  color: "#92400e",
+                  backgroundColor: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+                  color: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))",
                   fontWeight: 600,
                   fontSize: "0.8125rem",
                   height: 32,
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#fde68a",
+                    backgroundColor: "color-mix(in srgb, var(--warning-500) 35%, transparent)",
                     transform: "scale(1.05)",
                   },
                   "& .MuiChip-icon": {
-                    color: "#f59e0b",
+                    color: "var(--warning-500)",
                   },
                 }}
               />
@@ -168,7 +168,7 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontStyle: "italic",
               }}
             >

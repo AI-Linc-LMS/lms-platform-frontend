@@ -126,7 +126,7 @@ export function IdentityOverviewSection({ data, traitInsights = [] }: IdentityOv
                   className="h-2.5 rounded-full transition-all duration-1000"
                   style={{
                     width: `${personality_archetype.confidence_score}%`,
-                    backgroundColor: personality_archetype.confidence_score >= 80 ? '#10b981' : personality_archetype.confidence_score >= 65 ? '#3b82f6' : '#f59e0b'
+                    backgroundColor: personality_archetype.confidence_score >= 80 ? 'var(--course-cta)' : personality_archetype.confidence_score >= 65 ? 'var(--accent-blue-light)' : 'var(--warning-500)'
                   }}
                 />
               </div>
@@ -148,7 +148,7 @@ export function IdentityOverviewSection({ data, traitInsights = [] }: IdentityOv
                   className="h-2.5 rounded-full transition-all duration-1000 delay-100"
                   style={{
                     width: `${personality_archetype.emotional_stability}%`,
-                    backgroundColor: personality_archetype.emotional_stability >= 80 ? '#10b981' : personality_archetype.emotional_stability >= 65 ? '#3b82f6' : '#f59e0b'
+                    backgroundColor: personality_archetype.emotional_stability >= 80 ? 'var(--course-cta)' : personality_archetype.emotional_stability >= 65 ? 'var(--accent-blue-light)' : 'var(--warning-500)'
                   }}
                 />
               </div>
@@ -170,7 +170,7 @@ export function IdentityOverviewSection({ data, traitInsights = [] }: IdentityOv
                   className="h-2.5 rounded-full transition-all duration-1000 delay-200"
                   style={{
                     width: `${personality_archetype.adaptability_score}%`,
-                    backgroundColor: personality_archetype.adaptability_score >= 80 ? '#10b981' : personality_archetype.adaptability_score >= 65 ? '#3b82f6' : '#f59e0b'
+                    backgroundColor: personality_archetype.adaptability_score >= 80 ? 'var(--course-cta)' : personality_archetype.adaptability_score >= 65 ? 'var(--accent-blue-light)' : 'var(--warning-500)'
                   }}
                 />
               </div>

@@ -20,15 +20,28 @@ import { AIGeneratedSection } from "./AIGeneratedSection";
 import { CodingProblemSelectionSection } from "./CodingProblemSelectionSection";
 import { AIGeneratedCodingSection } from "./AIGeneratedCodingSection";
 import { RawCodingProblemSection } from "./RawCodingProblemSection";
-import { MCQ, MCQListItem, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
+import { CodingCSVUploadSection } from "./CodingCSVUploadSection";
+import {
+  SubjectiveQuestionsFormSection,
+  type SubjectiveQuestionDraft,
+} from "./SubjectiveQuestionsFormSection";
+import { SubjectiveQuestionSelectionSection } from "./SubjectiveQuestionSelectionSection";
+import {
+  MCQ,
+  MCQListItem,
+  CodingProblemListItem,
+  AssessmentSubjectiveQuestionListItem,
+} from "@/lib/services/admin/admin-assessment.service";
 import { Section } from "./MultipleSectionsSection";
 import { SectionQuestionsSidenav } from "./SectionQuestionsSidenav";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
-type CodingInputMethod = "existing" | "ai" | "raw";
+type CodingInputMethod = "existing" | "ai" | "raw" | "csv";
+type SubjectiveInputMethod = "manual" | "existing";
 
 interface SectionBasedQuestionsInputProps {
   sections: Section[];
+  evaluationMode: "auto" | "manual";
   mcqInputMethodBySection: Record<string, MCQInputMethod>;
   onMcqInputMethodChange: (sectionId: string, method: MCQInputMethod) => void;
   // Section-based question assignments
@@ -53,10 +66,19 @@ interface SectionBasedQuestionsInputProps {
   onAiCodingProblemsChange: (sectionId: string, problems: CodingProblemListItem[]) => void;
   existingCodingProblems: CodingProblemListItem[];
   loadingCodingProblems: boolean;
+  subjectiveInputMethodBySection: Record<string, SubjectiveInputMethod>;
+  onSubjectiveInputMethodChange: (sectionId: string, method: SubjectiveInputMethod) => void;
+  manualSubjectiveQuestions: Record<string, SubjectiveQuestionDraft[]>;
+  onManualSubjectiveQuestionsChange: (sectionId: string, rows: SubjectiveQuestionDraft[]) => void;
+  sectionSubjectiveQuestionIds: Record<string, number[]>;
+  onSectionSubjectiveQuestionIdsChange: (sectionId: string, ids: number[]) => void;
+  existingSubjectiveQuestions: AssessmentSubjectiveQuestionListItem[];
+  loadingSubjectiveQuestions: boolean;
 }
 
 export function SectionBasedQuestionsInput({
   sections,
+  evaluationMode,
   mcqInputMethodBySection,
   onMcqInputMethodChange,
   sectionMcqIds,
@@ -77,9 +99,18 @@ export function SectionBasedQuestionsInput({
   onAiCodingProblemsChange,
   existingCodingProblems,
   loadingCodingProblems,
+  subjectiveInputMethodBySection,
+  onSubjectiveInputMethodChange,
+  manualSubjectiveQuestions,
+  onManualSubjectiveQuestionsChange,
+  sectionSubjectiveQuestionIds,
+  onSectionSubjectiveQuestionIdsChange,
+  existingSubjectiveQuestions,
+  loadingSubjectiveQuestions,
 }: SectionBasedQuestionsInputProps) {
   const [selectedSectionId, setSelectedSectionId] = useState<string | "">("");
   const [selectedCodingSectionId, setSelectedCodingSectionId] = useState<string | "">("");
+  const [selectedSubjectiveSectionId, setSelectedSubjectiveSectionId] = useState<string | "">("");
 
   const quizSections = useMemo(
     () => sections.filter((s) => s.type === "quiz"),
@@ -89,15 +120,19 @@ export function SectionBasedQuestionsInput({
     () => sections.filter((s) => s.type === "coding"),
     [sections]
   );
+  const subjectiveSections = useMemo(
+    () => sections.filter((s) => s.type === "subjective"),
+    [sections]
+  );
 
-  // Auto-select first section if none selected (only on mount)
+  // Auto-select first section if none selected (mount only)
   useEffect(() => {
-    if (!selectedSectionId && !selectedCodingSectionId && quizSections.length > 0) {
-      setSelectedSectionId(quizSections[0].id);
-    } else if (!selectedSectionId && !selectedCodingSectionId && codingSections.length > 0) {
-      setSelectedCodingSectionId(codingSections[0].id);
+    if (!selectedSectionId && !selectedCodingSectionId && !selectedSubjectiveSectionId) {
+      if (quizSections.length > 0) setSelectedSectionId(quizSections[0].id);
+      else if (codingSections.length > 0) setSelectedCodingSectionId(codingSections[0].id);
+      else if (subjectiveSections.length > 0) setSelectedSubjectiveSectionId(subjectiveSections[0].id);
     }
-  }, []); // Only run on mount
+  }, []);
 
   const currentManualMCQs = selectedSectionId
     ? manualMCQs[selectedSectionId] || []
@@ -162,11 +197,31 @@ export function SectionBasedQuestionsInput({
   const sectionCodingCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     codingSections.forEach((section) => {
-      // Count only selected IDs (both "existing" and "ai" store selected ids here; avoid double-counting with aiCodingProblems)
       counts[section.id] = sectionCodingProblemIds[section.id]?.length ?? 0;
     });
     return counts;
   }, [codingSections, sectionCodingProblemIds]);
+
+  const sectionSubjectiveCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    subjectiveSections.forEach((section) => {
+      const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+      if (method === "existing") {
+        counts[section.id] = sectionSubjectiveQuestionIds[section.id]?.length ?? 0;
+      } else {
+        const rows = manualSubjectiveQuestions[section.id] || [];
+        counts[section.id] = rows.filter(
+          (r) => r.question_text.trim().length > 0 && r.evaluation_prompt.trim().length > 0
+        ).length;
+      }
+    });
+    return counts;
+  }, [
+    subjectiveSections,
+    subjectiveInputMethodBySection,
+    sectionSubjectiveQuestionIds,
+    manualSubjectiveQuestions,
+  ]);
 
   // Check validation errors for sections (insufficient questions)
   const sectionValidationErrors = useMemo(() => {
@@ -191,28 +246,65 @@ export function SectionBasedQuestionsInput({
         }
       }
     });
-    
+
+    subjectiveSections.forEach((section) => {
+      if (section.number_of_questions_to_show !== undefined) {
+        const n = sectionSubjectiveCounts[section.id] || 0;
+        if (n < section.number_of_questions_to_show) {
+          errors[section.id] = `Need at least ${section.number_of_questions_to_show} written prompts, but only ${n} added`;
+        }
+      }
+    });
+
     return errors;
-  }, [quizSections, codingSections, sectionQuestionCounts, sectionCodingCounts]);
+  }, [
+    quizSections,
+    codingSections,
+    subjectiveSections,
+    sectionQuestionCounts,
+    sectionCodingCounts,
+    sectionSubjectiveCounts,
+  ]);
+
+  const isSubjectiveFormatLocked = useMemo(() => {
+    if (!selectedSubjectiveSectionId) return false;
+    const manual = (manualSubjectiveQuestions[selectedSubjectiveSectionId] || []).some(
+      (r) => r.question_text.trim() || r.evaluation_prompt.trim()
+    );
+    const existing = (sectionSubjectiveQuestionIds[selectedSubjectiveSectionId] || []).length > 0;
+    return manual || existing;
+  }, [selectedSubjectiveSectionId, manualSubjectiveQuestions, sectionSubjectiveQuestionIds]);
+
+  const currentSubjectiveInputMethod = selectedSubjectiveSectionId
+    ? (subjectiveInputMethodBySection[selectedSubjectiveSectionId] ?? "manual")
+    : "manual";
 
   const handleSectionSelect = (sectionId: string) => {
     if (!sectionId) {
       setSelectedSectionId("");
       setSelectedCodingSectionId("");
+      setSelectedSubjectiveSectionId("");
       return;
     }
-    
+
     const section = sections.find((s) => s.id === sectionId);
     if (section?.type === "quiz") {
       setSelectedSectionId(sectionId);
       setSelectedCodingSectionId("");
+      setSelectedSubjectiveSectionId("");
     } else if (section?.type === "coding") {
       setSelectedCodingSectionId(sectionId);
       setSelectedSectionId("");
+      setSelectedSubjectiveSectionId("");
+    } else if (section?.type === "subjective") {
+      setSelectedSubjectiveSectionId(sectionId);
+      setSelectedSectionId("");
+      setSelectedCodingSectionId("");
     }
   };
 
-  const currentSelectedId = selectedSectionId || selectedCodingSectionId;
+  const currentSelectedId =
+    selectedSectionId || selectedCodingSectionId || selectedSubjectiveSectionId;
   const currentSection = sections.find((s) => s.id === currentSelectedId);
 
   return (
@@ -242,6 +334,7 @@ export function SectionBasedQuestionsInput({
             onSectionSelect={handleSectionSelect}
             sectionQuestionCounts={sectionQuestionCounts}
             sectionCodingCounts={sectionCodingCounts}
+            sectionSubjectiveCounts={sectionSubjectiveCounts}
           />
         </Box>
 
@@ -353,6 +446,93 @@ export function SectionBasedQuestionsInput({
         </>
       )}
 
+      {selectedSubjectiveSectionId &&
+        (() => {
+          const subjSection = sections.find((s) => s.id === selectedSubjectiveSectionId);
+          if (!subjSection || subjSection.type !== "subjective") return null;
+          const selIds =
+            sectionSubjectiveQuestionIds[selectedSubjectiveSectionId] || [];
+          const manualRows =
+            manualSubjectiveQuestions[selectedSubjectiveSectionId] || [];
+          return (
+            <>
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor:
+                    "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Adding written questions to: {subjSection.title}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                  {subjSection.description || "No description"}
+                </Typography>
+                {subjSection.number_of_questions_to_show != null && (
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "var(--warning-500)", mt: 1, fontWeight: 500 }}
+                  >
+                    Required: {subjSection.number_of_questions_to_show} prompt(s)
+                    {sectionSubjectiveCounts[subjSection.id] !== undefined && (
+                      <span style={{ marginLeft: 8 }}>
+                        ({sectionSubjectiveCounts[subjSection.id]} added)
+                      </span>
+                    )}
+                  </Typography>
+                )}
+              </Paper>
+              {sectionValidationErrors[subjSection.id] && (
+                <Alert severity="error">{sectionValidationErrors[subjSection.id]}</Alert>
+              )}
+              <FormControl fullWidth>
+                <InputLabel>Question input method</InputLabel>
+                <Select
+                  value={currentSubjectiveInputMethod}
+                  onChange={(e) => {
+                    if (!isSubjectiveFormatLocked && selectedSubjectiveSectionId) {
+                      onSubjectiveInputMethodChange(
+                        selectedSubjectiveSectionId,
+                        e.target.value as SubjectiveInputMethod
+                      );
+                    }
+                  }}
+                  label="Question input method"
+                  disabled={isSubjectiveFormatLocked}
+                >
+                  <MenuItem value="manual">Manual entry</MenuItem>
+                  <MenuItem value="existing">Choose from existing</MenuItem>
+                </Select>
+              </FormControl>
+              {isSubjectiveFormatLocked && (
+                <Alert severity="info">
+                  Clear all prompts in this section to switch input method.
+                </Alert>
+              )}
+              {currentSubjectiveInputMethod === "manual" && (
+                <SubjectiveQuestionsFormSection
+                  questions={manualRows}
+                  onQuestionsChange={(rows) =>
+                    onManualSubjectiveQuestionsChange(selectedSubjectiveSectionId, rows)
+                  }
+                  evaluationMode={evaluationMode}
+                />
+              )}
+              {currentSubjectiveInputMethod === "existing" && (
+                <SubjectiveQuestionSelectionSection
+                  selectedIds={selIds}
+                  onSelectionChange={(ids) =>
+                    onSectionSubjectiveQuestionIdsChange(selectedSubjectiveSectionId, ids)
+                  }
+                  questions={existingSubjectiveQuestions}
+                  loading={loadingSubjectiveQuestions}
+                />
+              )}
+            </>
+          );
+        })()}
+
       {selectedCodingSectionId && (
         <>
           {(() => {
@@ -402,6 +582,7 @@ export function SectionBasedQuestionsInput({
                     <MenuItem value="existing">Choose from Existing</MenuItem>
                     <MenuItem value="ai">AI Generated</MenuItem>
                     <MenuItem value="raw">Add Your Problem</MenuItem>
+                    <MenuItem value="csv">Bulk Upload (CSV)</MenuItem>
                   </Select>
                 </FormControl>
                 {isCodingFormatLocked && (
@@ -437,6 +618,19 @@ export function SectionBasedQuestionsInput({
 
                 {currentCodingInputMethod === "raw" && (
                   <RawCodingProblemSection
+                    codingProblemIds={currentCodingProblemIds}
+                    onCodingProblemIdsChange={(ids) =>
+                      onSectionCodingProblemIdsChange(selectedCodingSectionId, ids)
+                    }
+                    generatedProblems={selectedCodingSectionId ? (aiCodingProblems[selectedCodingSectionId] || []) : []}
+                    onGeneratedProblemsChange={(problems) =>
+                      onAiCodingProblemsChange(selectedCodingSectionId, problems)
+                    }
+                  />
+                )}
+
+                {currentCodingInputMethod === "csv" && (
+                  <CodingCSVUploadSection
                     codingProblemIds={currentCodingProblemIds}
                     onCodingProblemIdsChange={(ids) =>
                       onSectionCodingProblemIdsChange(selectedCodingSectionId, ids)

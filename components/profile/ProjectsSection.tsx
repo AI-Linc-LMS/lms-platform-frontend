@@ -140,26 +140,24 @@ export function ProjectsSection({
     setDialogOpen(false);
     setEditingIndex(null);
 
-    if (editingIndex === null && projects.length === 0) {
-      try {
-        setSaving(true);
-        await onSave({
-          projects: updated.map((proj) => ({
-            id: proj.id,
-            name: proj.name,
-            description: proj.description ?? "",
-            technologies: proj.technologies,
-            url: proj.url || undefined,
-            start_date: proj.start_date || undefined,
-            end_date: proj.end_date || undefined,
-            current: proj.current,
-          })),
-        });
-      } catch {
-        // handled by parent
-      } finally {
-        setSaving(false);
-      }
+    try {
+      setSaving(true);
+      await onSave({
+        projects: updated.map((proj) => ({
+          id: proj.id,
+          name: proj.name,
+          description: proj.description ?? "",
+          technologies: proj.technologies,
+          url: proj.url || undefined,
+          start_date: proj.start_date || undefined,
+          end_date: proj.end_date || undefined,
+          current: proj.current,
+        })),
+      });
+    } catch {
+      // handled by parent
+    } finally {
+      setSaving(false);
     }
   };
 

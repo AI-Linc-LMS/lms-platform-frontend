@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
@@ -15,6 +15,8 @@ import {
   Step,
   StepLabel,
   CircularProgress,
+  Tooltip,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -24,6 +26,8 @@ import {
   CreateAssessmentPayload,
   AssessmentQuizSectionWrite,
   AssessmentCodingProblemSectionWrite,
+  AssessmentSubjectiveSectionWrite,
+  AssessmentSubjectiveQuestionListItem,
   MCQ,
   CodingProblemListItem,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -38,7 +42,13 @@ import {
 } from "@/components/admin/assessment/MultipleSectionsSection";
 import { SectionBasedQuestionsInput } from "@/components/admin/assessment/SectionBasedQuestionsInput";
 import { AssessmentPreviewSection } from "@/components/admin/assessment/AssessmentPreviewSection";
+import type { WrittenPromptPreview } from "@/components/admin/assessment/SectionCard";
+import type { SubjectiveQuestionDraft } from "@/components/admin/assessment/SubjectiveQuestionsFormSection";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
+import {
+  applyAssessmentDetailToBasicFields,
+  mapQuestionsExportToAuthoringState,
+} from "@/lib/utils/assessment-authoring-from-export.utils";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 
@@ -54,10 +64,11 @@ function toAssessmentApiDecimalString(
 
 const steps = ["Assessment Details", "Add Questions", "Review & Create"];
 
-export default function CreateAssessmentPage() {
+function CreateAssessmentPageContent() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { clientInfo } = useClientInfo();
   const canConfigureLiveStreaming =
@@ -72,6 +83,10 @@ export default function CreateAssessmentPage() {
 
   const [activeStep, setActiveStep] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [editingAssessmentId, setEditingAssessmentId] = useState<number | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(false);
+  const [loadedIsDraft, setLoadedIsDraft] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   // Assessment basic info
   const [title, setTitle] = useState("");
@@ -99,6 +114,8 @@ export default function CreateAssessmentPage() {
 
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
+  const [tabSwitchLimitEnabled, setTabSwitchLimitEnabled] = useState(false);
+  const [tabSwitchLimitCount, setTabSwitchLimitCount] = useState(2);
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
   const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
@@ -133,7 +150,7 @@ export default function CreateAssessmentPage() {
 
   // Coding problem input method (per section)
   const [codingInputMethodBySection, setCodingInputMethodBySection] =
-    useState<Record<string, "existing" | "ai" | "raw">>({});
+    useState<Record<string, "existing" | "ai" | "raw" | "csv">>({});
   const [sectionCodingProblemIds, setSectionCodingProblemIds] = useState<
     Record<string, number[]>
   >({});
@@ -145,6 +162,19 @@ export default function CreateAssessmentPage() {
     CodingProblemListItem[]
   >([]);
   const [loadingCodingProblems, setLoadingCodingProblems] = useState(false);
+
+  const [subjectiveInputMethodBySection, setSubjectiveInputMethodBySection] =
+    useState<Record<string, "manual" | "existing">>({});
+  const [manualSubjectiveQuestions, setManualSubjectiveQuestions] = useState<
+    Record<string, SubjectiveQuestionDraft[]>
+  >({});
+  const [sectionSubjectiveQuestionIds, setSectionSubjectiveQuestionIds] = useState<
+    Record<string, number[]>
+  >({});
+  const [existingSubjectiveQuestions, setExistingSubjectiveQuestions] = useState<
+    AssessmentSubjectiveQuestionListItem[]
+  >([]);
+  const [loadingSubjectiveQuestions, setLoadingSubjectiveQuestions] = useState(false);
 
   const passBandFieldErrors = useMemo(
     () =>
@@ -160,8 +190,89 @@ export default function CreateAssessmentPage() {
   useEffect(() => {
     loadExistingMCQs();
     loadExistingCodingProblems();
+    loadExistingSubjectiveQuestions();
     loadCourses();
   }, []);
+
+  useEffect(() => {
+    const v = searchParams.get("fromDraft");
+    if (v && /^\d+$/.test(v)) {
+      setEditingAssessmentId(Number(v));
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!editingAssessmentId || !config.clientId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingDraft(true);
+        const [detail, exportJson] = await Promise.all([
+          adminAssessmentService.getAssessmentById(config.clientId, editingAssessmentId),
+          adminAssessmentService.getQuestionsExportJson(config.clientId, editingAssessmentId),
+        ]);
+        if (cancelled) return;
+        const d = detail as { is_draft?: boolean; submissions_count?: number };
+        setLoadedIsDraft(Boolean(d.is_draft));
+        if (d.submissions_count && d.submissions_count > 0) {
+          showToast("This assessment already has attempts; sections cannot be edited here.", "error");
+          router.replace(`/admin/assessment/${editingAssessmentId}/edit`);
+          return;
+        }
+        applyAssessmentDetailToBasicFields(detail, {
+          setTitle,
+          setInstructions,
+          setDescription,
+          setDurationMinutes,
+          setStartTime,
+          setEndTime,
+          setIsPaid,
+          setPrice,
+          setCurrency,
+          setIsActive,
+          setCourseIds,
+          setColleges,
+          setProctoringEnabled,
+          setLiveStreaming,
+          setSendCommunication,
+          setShowResult,
+          setEvaluationMode,
+          setAllowMovementAcrossSections,
+          setTabSwitchLimitEnabled,
+          setTabSwitchLimitCount,
+          setCertificateAvailable,
+          setPassBandLowerPercent,
+          setPassBandUpperPercent,
+          setAllowDesktop,
+          setAllowMobile,
+          setAllowTablet,
+        });
+        const mapped = mapQuestionsExportToAuthoringState(exportJson);
+        setSections(mapped.sections);
+        setMcqInputMethodBySection(mapped.mcqInputMethodBySection);
+        setCodingInputMethodBySection(mapped.codingInputMethodBySection);
+        setSubjectiveInputMethodBySection(mapped.subjectiveInputMethodBySection);
+        setSectionMcqIds(mapped.sectionMcqIds);
+        setSectionCodingProblemIds(mapped.sectionCodingProblemIds);
+        setSectionSubjectiveQuestionIds(mapped.sectionSubjectiveQuestionIds);
+        setManualMCQs({});
+        setCsvMCQs({});
+        setAiMCQs({});
+        setManualSubjectiveQuestions({});
+        setAiCodingProblems({});
+      } catch (e: unknown) {
+        if (!cancelled) {
+          showToast(e instanceof Error ? e.message : "Failed to load draft assessment", "error");
+          router.replace("/admin/assessment");
+        }
+      } finally {
+        if (!cancelled) setLoadingDraft(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editingAssessmentId, router, showToast]);
 
   const loadCourses = async () => {
     try {
@@ -203,6 +314,20 @@ export default function CreateAssessmentPage() {
     }
   };
 
+  const loadExistingSubjectiveQuestions = async () => {
+    try {
+      setLoadingSubjectiveQuestions(true);
+      const data = await adminAssessmentService.listAssessmentSubjectiveQuestions(
+        config.clientId
+      );
+      setExistingSubjectiveQuestions(Array.isArray(data) ? data : []);
+    } catch (error: any) {
+      showToast(error?.message || "Failed to load written questions", "error");
+    } finally {
+      setLoadingSubjectiveQuestions(false);
+    }
+  };
+
   const handleNext = () => {
     if (activeStep === 0) {
       // Validate basic info
@@ -235,14 +360,20 @@ export default function CreateAssessmentPage() {
       if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
         return;
       }
+      if (tabSwitchLimitEnabled && tabSwitchLimitCount < 1) {
+        showToast("Allowed tab switches must be at least 1", "error");
+        return;
+      }
     }
     if (activeStep === 1) {
       // Validate questions for each section
       const quizSections = sections.filter((s) => s.type === "quiz");
       const codingSections = sections.filter((s) => s.type === "coding");
-      
+      const subjectiveSections = sections.filter((s) => s.type === "subjective");
+
       let hasQuizQuestions = false;
       let hasCodingProblems = false;
+      let hasSubjectiveQuestions = false;
 
       // Check quiz sections (each section can have its own input method)
       if (quizSections.length > 0) {
@@ -280,8 +411,31 @@ export default function CreateAssessmentPage() {
         }
       }
 
+      if (subjectiveSections.length > 0) {
+        for (const section of subjectiveSections) {
+          const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+          if (method === "existing") {
+            if ((sectionSubjectiveQuestionIds[section.id] || []).length > 0) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          } else {
+            const rows = manualSubjectiveQuestions[section.id] || [];
+            const filled = rows.filter(
+              (r) =>
+                r.question_text.trim().length > 0 &&
+                r.evaluation_prompt.trim().length > 0
+            );
+            if (filled.length > 0) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          }
+        }
+      }
+
       // At least one section type must have questions
-      if (!hasQuizQuestions && !hasCodingProblems) {
+      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions) {
         showToast(
           "Please add at least one question to a section",
           "error"
@@ -322,6 +476,9 @@ export default function CreateAssessmentPage() {
       if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
         return true;
       }
+      if (tabSwitchLimitEnabled && tabSwitchLimitCount < 1) {
+        return true;
+      }
       return false;
     }
     
@@ -329,7 +486,8 @@ export default function CreateAssessmentPage() {
       // Step 1: Validate questions for each section
       const quizSections = sections.filter((s) => s.type === "quiz");
       const codingSections = sections.filter((s) => s.type === "coding");
-      
+      const subjectiveSections = sections.filter((s) => s.type === "subjective");
+
       // Check quiz sections
       for (const section of quizSections) {
         // Calculate total MCQs for this section (inline logic)
@@ -361,10 +519,30 @@ export default function CreateAssessmentPage() {
           return true; // Not enough problems
         }
       }
+
+      for (const section of subjectiveSections) {
+        const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+        let totalWritten = 0;
+        if (method === "existing") {
+          totalWritten = (sectionSubjectiveQuestionIds[section.id] || []).length;
+        } else {
+          const rows = manualSubjectiveQuestions[section.id] || [];
+          totalWritten = rows.filter(
+            (r) =>
+              r.question_text.trim().length > 0 &&
+              r.evaluation_prompt.trim().length > 0
+          ).length;
+        }
+        const requiredWritten = section.number_of_questions_to_show ?? 1;
+        if (totalWritten < requiredWritten) {
+          return true;
+        }
+      }
       
       // At least one section type must have questions
       let hasQuizQuestions = false;
       let hasCodingProblems = false;
+      let hasSubjectiveQuestions = false;
       
       if (quizSections.length > 0) {
         for (const section of quizSections) {
@@ -397,8 +575,32 @@ export default function CreateAssessmentPage() {
           }
         }
       }
+
+      if (subjectiveSections.length > 0) {
+        for (const section of subjectiveSections) {
+          const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+          if (method === "existing") {
+            if ((sectionSubjectiveQuestionIds[section.id] || []).length > 0) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          } else {
+            const rows = manualSubjectiveQuestions[section.id] || [];
+            if (
+              rows.some(
+                (r) =>
+                  r.question_text.trim().length > 0 &&
+                  r.evaluation_prompt.trim().length > 0
+              )
+            ) {
+              hasSubjectiveQuestions = true;
+              break;
+            }
+          }
+        }
+      }
       
-      if (!hasQuizQuestions && !hasCodingProblems) {
+      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions) {
         return true; // No questions at all
       }
       
@@ -420,6 +622,9 @@ export default function CreateAssessmentPage() {
     aiMCQs,
     sectionCodingProblemIds,
     aiCodingProblems,
+    subjectiveInputMethodBySection,
+    manualSubjectiveQuestions,
+    sectionSubjectiveQuestionIds,
     passBandFieldErrors.lower,
     passBandFieldErrors.upper,
   ]);
@@ -537,6 +742,47 @@ export default function CreateAssessmentPage() {
     return problems;
   };
 
+  const getTotalSubjectiveCountForSection = (sectionId: string): number => {
+    const method = subjectiveInputMethodBySection[sectionId] ?? "manual";
+    if (method === "existing") {
+      return (sectionSubjectiveQuestionIds[sectionId] || []).length;
+    }
+    const rows = manualSubjectiveQuestions[sectionId] || [];
+    return rows.filter(
+      (r) =>
+        r.question_text.trim().length > 0 &&
+        r.evaluation_prompt.trim().length > 0
+    ).length;
+  };
+
+  const getWrittenPromptsForSection = (
+    sectionId: string
+  ): WrittenPromptPreview[] => {
+    const method = subjectiveInputMethodBySection[sectionId] ?? "manual";
+    if (method === "existing") {
+      const ids = sectionSubjectiveQuestionIds[sectionId] || [];
+      return existingSubjectiveQuestions
+        .filter((q) => ids.includes(q.id))
+        .map((q) => ({
+          question_text: q.question_text,
+          max_marks: q.max_marks,
+          answer_mode: q.answer_mode,
+        }));
+    }
+    const drafts = manualSubjectiveQuestions[sectionId] || [];
+    return drafts
+      .filter(
+        (r: SubjectiveQuestionDraft) =>
+          r.question_text.trim().length > 0 &&
+          r.evaluation_prompt.trim().length > 0
+      )
+      .map((r) => ({
+        question_text: r.question_text,
+        max_marks: r.max_marks,
+        answer_mode: r.answer_mode,
+      }));
+  };
+
   // Get all MCQs across all sections with section information
   const getAllMCQsWithSections = (): Array<MCQ & { sectionId: string }> => {
     const quizSections = sections.filter((s) => s.type === "quiz");
@@ -555,7 +801,10 @@ export default function CreateAssessmentPage() {
     return getAllMCQsWithSections().map(({ sectionId, ...mcq }) => mcq);
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (options?: {
+    skipSectionValidation?: boolean;
+    forceDraft?: boolean;
+  }) => {
     try {
       setCreating(true);
 
@@ -571,15 +820,28 @@ export default function CreateAssessmentPage() {
       const codingSections = sections
         .filter((s) => s.type === "coding")
         .sort((a, b) => a.order - b.order);
+      const subjectiveSections = sections
+        .filter((s) => s.type === "subjective")
+        .sort((a, b) => a.order - b.order);
 
-      // Validate that at least one section has questions
-      if (quizSections.length === 0 && codingSections.length === 0) {
-        showToast("Please add at least one section", "error");
+      const skipSectionValidation = Boolean(options?.skipSectionValidation);
+      // Need at least one quiz, coding, or written section block (relaxed for draft save)
+      if (
+        !skipSectionValidation &&
+        quizSections.length === 0 &&
+        codingSections.length === 0 &&
+        subjectiveSections.length === 0
+      ) {
+        showToast(
+          "Please add at least one quiz, coding, or written section",
+          "error"
+        );
         setCreating(false);
         return;
       }
 
       if (
+        !skipSectionValidation &&
         durationMinutes >= 1 &&
         sections.some((s) =>
           sectionTimeLimitExceedsOverallMessage(durationMinutes, s.timeLimitMinutes)
@@ -594,7 +856,7 @@ export default function CreateAssessmentPage() {
       }
 
       // Validate that all quiz sections have at least 1 question
-      if (quizSections.length > 0) {
+      if (!skipSectionValidation && quizSections.length > 0) {
         const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
           [];
         quizSections.forEach((section) => {
@@ -623,7 +885,7 @@ export default function CreateAssessmentPage() {
 
       // Validate number_of_questions_to_show for quiz sections
       const invalidQuizSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
-      quizSections.forEach((section) => {
+      if (!skipSectionValidation) quizSections.forEach((section) => {
         if (section.number_of_questions_to_show !== undefined) {
           const totalQuestions = getTotalMCQCountForSection(section.id);
           if (totalQuestions < section.number_of_questions_to_show) {
@@ -637,7 +899,7 @@ export default function CreateAssessmentPage() {
         }
       });
 
-      if (invalidQuizSections.length > 0) {
+      if (!skipSectionValidation && invalidQuizSections.length > 0) {
         const errorMessages = invalidQuizSections
           .sort((a, b) => a.order - b.order)
           .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} questions, but only ${s.selected} selected`)
@@ -652,21 +914,23 @@ export default function CreateAssessmentPage() {
 
       // Validate number_of_questions_to_show for coding sections
       const invalidCodingSections: Array<{ title: string; order: number; required: number; selected: number }> = [];
-      codingSections.forEach((section) => {
-        if (section.number_of_questions_to_show !== undefined) {
-          const totalProblems = getTotalCodingProblemCountForSection(section.id);
-          if (totalProblems < section.number_of_questions_to_show) {
-            invalidCodingSections.push({
-              title: section.title,
-              order: section.order,
-              required: section.number_of_questions_to_show,
-              selected: totalProblems,
-            });
+      if (!skipSectionValidation) {
+        codingSections.forEach((section) => {
+          if (section.number_of_questions_to_show !== undefined) {
+            const totalProblems = getTotalCodingProblemCountForSection(section.id);
+            if (totalProblems < section.number_of_questions_to_show) {
+              invalidCodingSections.push({
+                title: section.title,
+                order: section.order,
+                required: section.number_of_questions_to_show,
+                selected: totalProblems,
+              });
+            }
           }
-        }
-      });
+        });
+      }
 
-      if (invalidCodingSections.length > 0) {
+      if (!skipSectionValidation && invalidCodingSections.length > 0) {
         const errorMessages = invalidCodingSections
           .sort((a, b) => a.order - b.order)
           .map((s) => `"${s.title}" (Order: ${s.order}): Need ${s.required} problems, but only ${s.selected} selected`)
@@ -679,10 +943,88 @@ export default function CreateAssessmentPage() {
         return;
       }
 
+      if (!skipSectionValidation && subjectiveSections.length > 0) {
+        const sectionsWithoutQuestions: Array<{ title: string; order: number }> =
+          [];
+        subjectiveSections.forEach((section) => {
+          if (getTotalSubjectiveCountForSection(section.id) === 0) {
+            sectionsWithoutQuestions.push({
+              title: section.title,
+              order: section.order,
+            });
+          }
+        });
+
+        if (sectionsWithoutQuestions.length > 0) {
+          const sectionNames = sectionsWithoutQuestions
+            .sort((a, b) => a.order - b.order)
+            .map((s) => `"${s.title}" (Order: ${s.order})`)
+            .join(", ");
+          showToast(
+            `Please add at least 1 written prompt to the following sections: ${sectionNames}`,
+            "error"
+          );
+          setCreating(false);
+          return;
+        }
+      }
+
+      // Validate number_of_questions_to_show for subjective sections
+      const invalidSubjectiveSections: Array<{
+        title: string;
+        order: number;
+        required: number;
+        selected: number;
+      }> = [];
+      if (!skipSectionValidation) {
+        subjectiveSections.forEach((section) => {
+          if (section.number_of_questions_to_show !== undefined) {
+            const totalWritten = getTotalSubjectiveCountForSection(section.id);
+            if (totalWritten < section.number_of_questions_to_show) {
+              invalidSubjectiveSections.push({
+                title: section.title,
+                order: section.order,
+                required: section.number_of_questions_to_show,
+                selected: totalWritten,
+              });
+            }
+          }
+        });
+      }
+
+      if (!skipSectionValidation && invalidSubjectiveSections.length > 0) {
+        const errorMessages = invalidSubjectiveSections
+          .sort((a, b) => a.order - b.order)
+          .map(
+            (s) =>
+              `"${s.title}" (Order: ${s.order}): Need ${s.required} prompts, but only ${s.selected} added`
+          )
+          .join("; ");
+        showToast(
+          `Written sections with insufficient prompts: ${errorMessages}`,
+          "error"
+        );
+        setCreating(false);
+        return;
+      }
+
       if (passBandFieldErrors.lower || passBandFieldErrors.upper) {
         setActiveStep(0);
         setCreating(false);
         return;
+      }
+
+      if (skipSectionValidation) {
+        if (!title.trim() || !instructions.trim()) {
+          showToast("Title and instructions are required to save a draft.", "error");
+          setCreating(false);
+          return;
+        }
+        if (durationMinutes < 1) {
+          showToast("Duration must be at least 1 minute.", "error");
+          setCreating(false);
+          return;
+        }
       }
 
       // Convert datetime-local strings to IST ISO format (format: "2026-01-22T22:54:00+05:30")
@@ -742,6 +1084,8 @@ export default function CreateAssessmentPage() {
         evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
+        tab_switch_limit_enabled: tabSwitchLimitEnabled,
+        tab_switch_limit_count: tabSwitchLimitEnabled ? tabSwitchLimitCount : null,
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
@@ -769,9 +1113,19 @@ export default function CreateAssessmentPage() {
         }
       });
 
+      const quizSectionsForPayload = quizSections.filter(
+        (s) => getTotalMCQCountForSection(s.id) > 0
+      );
+      const codingSectionsForPayload = codingSections.filter(
+        (s) => getTotalCodingProblemCountForSection(s.id) > 0
+      );
+      const subjectiveSectionsForPayload = subjectiveSections.filter(
+        (s) => getTotalSubjectiveCountForSection(s.id) > 0
+      );
+
       // Prepare quiz sections (API: `quizSection` camelCase array)
-      if (quizSections.length > 0) {
-        payload.quizSection = quizSections.map((section) => {
+      if (quizSectionsForPayload.length > 0) {
+        payload.quizSection = quizSectionsForPayload.map((section) => {
           const sectionMCQs = getMCQsForSection(section.id);
           const sectionMcqIds = getMcqIdsForSection(section.id);
 
@@ -837,8 +1191,8 @@ export default function CreateAssessmentPage() {
       }
 
       // Prepare coding sections (API: `codingProblemSection` camelCase array)
-      if (codingSections.length > 0) {
-        payload.codingProblemSection = codingSections.map((section) => {
+      if (codingSectionsForPayload.length > 0) {
+        payload.codingProblemSection = codingSectionsForPayload.map((section) => {
           const sectionCodingProblemIds = getCodingProblemIdsForSection(
             section.id
           );
@@ -887,15 +1241,206 @@ export default function CreateAssessmentPage() {
         });
       }
 
+      if (subjectiveSectionsForPayload.length > 0) {
+        payload.subjectiveQuestionSection = subjectiveSectionsForPayload.map((section) => {
+          const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+          const totalCount = getTotalSubjectiveCountForSection(section.id);
+
+          const sectionPayload: AssessmentSubjectiveSectionWrite = {
+            title: section.title.trim(),
+            order: section.order,
+            number_of_questions:
+              section.number_of_questions_to_show !== undefined
+                ? section.number_of_questions_to_show
+                : totalCount,
+          };
+
+          if (section.description && section.description.trim()) {
+            sectionPayload.description = section.description.trim();
+          }
+
+          if (section.easyScore !== undefined) {
+            sectionPayload.easy_score = section.easyScore;
+          }
+          if (section.mediumScore !== undefined) {
+            sectionPayload.medium_score = section.mediumScore;
+          }
+          if (section.hardScore !== undefined) {
+            sectionPayload.hard_score = section.hardScore;
+          }
+
+          if (
+            section.timeLimitMinutes != null &&
+            Number.isFinite(section.timeLimitMinutes) &&
+            section.timeLimitMinutes > 0
+          ) {
+            sectionPayload.time_limit_minutes = Math.round(
+              section.timeLimitMinutes
+            );
+          }
+          const subjectiveCutoff = toAssessmentApiDecimalString(
+            section.sectionCutoffMarks
+          );
+          if (subjectiveCutoff != null) {
+            sectionPayload.section_cutoff_marks = subjectiveCutoff;
+          }
+
+          if (method === "existing") {
+            const ids = sectionSubjectiveQuestionIds[section.id] || [];
+            if (ids.length > 0) {
+              sectionPayload.subjective_question_ids = ids;
+            }
+          } else {
+            const drafts = manualSubjectiveQuestions[section.id] || [];
+            const filtered = drafts.filter(
+              (r) =>
+                r.question_text.trim().length > 0 &&
+                r.evaluation_prompt.trim().length > 0
+            );
+            if (filtered.length > 0) {
+              sectionPayload.subjective_questions = filtered.map((row) => ({
+                question_text: row.question_text.trim(),
+                evaluation_prompt: row.evaluation_prompt.trim(),
+                max_marks: row.max_marks,
+                ...(row.question_type?.trim()
+                  ? { question_type: row.question_type.trim() }
+                  : {}),
+                ...(row.answer_mode ? { answer_mode: row.answer_mode } : {}),
+              }));
+            }
+          }
+
+          if (section.number_of_questions_to_show !== undefined) {
+            sectionPayload.number_of_questions_to_show =
+              section.number_of_questions_to_show;
+          }
+
+          return sectionPayload;
+        });
+      }
+
       payload.quizSection = payload.quizSection ?? [];
       payload.codingProblemSection = payload.codingProblemSection ?? [];
-      payload.subjectiveQuestionSection = [];
+      payload.subjectiveQuestionSection = payload.subjectiveQuestionSection ?? [];
 
-      await adminAssessmentService.createAssessment(config.clientId, payload);
-      showToast("Assessment created successfully", "success");
-      router.push("/admin/assessment");
+      if (options?.forceDraft) {
+        payload.is_draft = true;
+        payload.is_active = false;
+      }
+
+      if (editingAssessmentId) {
+        await adminAssessmentService.updateAssessment(
+          config.clientId,
+          editingAssessmentId,
+          payload
+        );
+        showToast(
+          options?.forceDraft ? "Draft saved successfully" : "Assessment updated successfully",
+          "success"
+        );
+        router.push(`/admin/assessment/${editingAssessmentId}/edit`);
+      } else {
+        const created = await adminAssessmentService.createAssessment(
+          config.clientId,
+          payload
+        );
+        showToast(
+          options?.forceDraft ? "Draft saved successfully" : "Assessment created successfully",
+          "success"
+        );
+        if (options?.forceDraft) {
+          router.push(`/admin/assessment/create?fromDraft=${created.id}`);
+        } else {
+          router.push("/admin/assessment");
+        }
+      }
     } catch (error: any) {
-      showToast(error?.message || "Failed to create assessment", "error");
+      showToast(
+        error?.message ||
+          (editingAssessmentId ? "Failed to update assessment" : "Failed to create assessment"),
+        "error"
+      );
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    setSavingDraft(true);
+    try {
+      await handleCreate({ skipSectionValidation: true, forceDraft: true });
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const saveDraftDisabled = creating || loadingDraft || savingDraft;
+
+  const renderSaveDraftButton = (opts?: { compact?: boolean }) => {
+    const compact = opts?.compact ?? false;
+    const label = savingDraft ? "Saving…" : "Save draft";
+    const btn = (
+      <Button
+        variant="outlined"
+        color="secondary"
+        size={compact ? "small" : "medium"}
+        onClick={() => void handleSaveDraft()}
+        disabled={saveDraftDisabled}
+        startIcon={
+          savingDraft ? (
+            <CircularProgress size={compact ? 14 : 16} color="inherit" aria-hidden />
+          ) : (
+            <IconWrapper icon="mdi:content-save-outline" size={compact ? 18 : 20} />
+          )
+        }
+        aria-busy={savingDraft}
+        sx={{
+          borderColor: "color-mix(in srgb, var(--font-secondary) 35%, var(--border-default) 65%)",
+          color: "var(--font-primary)",
+          fontWeight: 600,
+          textTransform: "none",
+          letterSpacing: "0.01em",
+          px: compact ? 1.5 : 2,
+          "&:hover": {
+            borderColor: "var(--accent-indigo)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)",
+          },
+          "&.Mui-disabled": {
+            borderColor: "var(--border-default)",
+          },
+        }}
+      >
+        {label}
+      </Button>
+    );
+    return (
+      <Tooltip
+        title={
+          editingAssessmentId
+            ? "Updates your draft on the server. Learners still cannot see it until you publish."
+            : "Saves progress as a draft (title, settings, and any sections you’ve started). You can leave and continue later—learners never see drafts until you publish."
+        }
+        placement="bottom"
+        arrow
+        enterDelay={400}
+      >
+        <span>{btn}</span>
+      </Tooltip>
+    );
+  };
+
+  const handlePublishAssessment = async () => {
+    if (!editingAssessmentId || !config.clientId) return;
+    try {
+      setCreating(true);
+      await adminAssessmentService.publishAssessment(config.clientId, editingAssessmentId, {
+        is_active: true,
+      });
+      showToast("Assessment published", "success");
+      setLoadedIsDraft(false);
+      router.push(`/admin/assessment/${editingAssessmentId}/edit`);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Failed to publish", "error");
     } finally {
       setCreating(false);
     }
@@ -933,6 +1478,8 @@ export default function CreateAssessmentPage() {
               showResult={showResult}
               evaluationMode={evaluationMode}
               allowMovementAcrossSections={allowMovementAcrossSections}
+              tabSwitchLimitEnabled={tabSwitchLimitEnabled}
+              tabSwitchLimitCount={tabSwitchLimitCount}
               certificateAvailable={certificateAvailable}
               passBandLowerPercent={passBandLowerPercent}
               passBandUpperPercent={passBandUpperPercent}
@@ -956,6 +1503,8 @@ export default function CreateAssessmentPage() {
               onShowResultChange={setShowResult}
               onEvaluationModeChange={setEvaluationMode}
               onAllowMovementAcrossSectionsChange={setAllowMovementAcrossSections}
+              onTabSwitchLimitEnabledChange={setTabSwitchLimitEnabled}
+              onTabSwitchLimitCountChange={setTabSwitchLimitCount}
               onCertificateAvailableChange={setCertificateAvailable}
               onPassBandLowerPercentChange={setPassBandLowerPercent}
               onPassBandUpperPercentChange={setPassBandUpperPercent}
@@ -974,6 +1523,7 @@ export default function CreateAssessmentPage() {
       case 1:
         return (
           <SectionBasedQuestionsInput
+            evaluationMode={evaluationMode}
             sections={sections}
             mcqInputMethodBySection={mcqInputMethodBySection}
             onMcqInputMethodChange={(sectionId, method) => {
@@ -1017,15 +1567,41 @@ export default function CreateAssessmentPage() {
             }}
             existingCodingProblems={existingCodingProblems}
             loadingCodingProblems={loadingCodingProblems}
+            subjectiveInputMethodBySection={subjectiveInputMethodBySection}
+            onSubjectiveInputMethodChange={(sectionId, method) => {
+              setSubjectiveInputMethodBySection((prev) => ({
+                ...prev,
+                [sectionId]: method,
+              }));
+            }}
+            manualSubjectiveQuestions={manualSubjectiveQuestions}
+            onManualSubjectiveQuestionsChange={(sectionId, rows) => {
+              setManualSubjectiveQuestions((prev) => ({
+                ...prev,
+                [sectionId]: rows,
+              }));
+            }}
+            sectionSubjectiveQuestionIds={sectionSubjectiveQuestionIds}
+            onSectionSubjectiveQuestionIdsChange={(sectionId, ids) => {
+              setSectionSubjectiveQuestionIds((prev) => ({
+                ...prev,
+                [sectionId]: ids,
+              }));
+            }}
+            existingSubjectiveQuestions={existingSubjectiveQuestions}
+            loadingSubjectiveQuestions={loadingSubjectiveQuestions}
           />
         );
 
       case 2:
         const totalMCQsWithSections = getAllMCQsWithSections();
         const totalMCQs = getAllMCQs();
-        const quizSections = sections.filter((s) => s.type === "quiz");
-        const codingSections = sections.filter((s) => s.type === "coding");
-        // Calculate total questions (MCQs + coding problems)
+        const orderedSections = [...sections].sort((a, b) => a.order - b.order);
+        const previewSectionTitle =
+          orderedSections.find((s) => s.type === "quiz")?.title ??
+          orderedSections.find((s) => s.type === "coding")?.title ??
+          orderedSections.find((s) => s.type === "subjective")?.title ??
+          "";
 
         return (
           <AssessmentPreviewSection
@@ -1035,13 +1611,14 @@ export default function CreateAssessmentPage() {
             isPaid={isPaid}
             price={price}
             currency={currency}
-            sectionTitle={quizSections.length > 0 ? quizSections[0].title : ""}
+            sectionTitle={previewSectionTitle}
             totalMCQs={totalMCQs}
             totalMCQsWithSections={totalMCQsWithSections}
             sections={sections}
             getMCQsForSection={getMCQsForSection}
             getCodingProblemIdsForSection={getCodingProblemIdsForSection}
             getCodingProblemsForSection={getCodingProblemsForSection}
+            getWrittenPromptsForSection={getWrittenPromptsForSection}
           />
         );
 
@@ -1062,16 +1639,68 @@ export default function CreateAssessmentPage() {
           >
             Back to Assessments
           </Button>
-          <Typography
-            variant="h4"
+          <Box
             sx={{
-              fontWeight: 700,
-              color: "var(--font-primary)",
-              fontSize: { xs: "1.5rem", sm: "2rem" },
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 2.5,
             }}
           >
-            Create Assessment
-          </Typography>
+            <Box sx={{ flex: "1 1 240px", minWidth: 0 }}>
+              <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 0.75 }}>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: "var(--font-primary)",
+                    fontSize: { xs: "1.5rem", sm: "2rem" },
+                  }}
+                >
+                  {editingAssessmentId ? "Edit draft assessment" : "Create Assessment"}
+                </Typography>
+                {(Boolean(editingAssessmentId) || savingDraft) && (
+                  <Chip
+                    size="small"
+                    label={savingDraft ? "Saving draft…" : "Draft"}
+                    color="default"
+                    sx={{
+                      fontWeight: 600,
+                      height: 26,
+                      bgcolor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+                      color: "var(--font-secondary)",
+                      border: "1px solid var(--border-default)",
+                    }}
+                  />
+                )}
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "var(--font-secondary)",
+                  maxWidth: 560,
+                  lineHeight: 1.5,
+                }}
+              >
+                {editingAssessmentId
+                  ? "Changes are stored as a draft until you publish. Use Save draft anytime; use Save assessment when sections are ready."
+                  : "Use Save draft to keep work in progress without publishing. Learners only see the assessment after you publish from the final step or the edit screen."}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                flex: "0 0 auto",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: { xs: "stretch", sm: "flex-end" },
+                gap: 0.75,
+                width: { xs: "100%", sm: "auto" },
+              }}
+            >
+              {renderSaveDraftButton()}
+            </Box>
+          </Box>
         </Box>
 
         {/* Stepper */}
@@ -1139,7 +1768,13 @@ export default function CreateAssessmentPage() {
             border: "1px solid var(--border-default)",
           }}
         >
-          {renderStepContent()}
+          {loadingDraft ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            renderStepContent()
+          )}
         </Paper>
 
         {/* Navigation Buttons */}
@@ -1158,37 +1793,55 @@ export default function CreateAssessmentPage() {
           >
             Back
           </Button>
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+            {renderSaveDraftButton({ compact: true })}
             {activeStep === steps.length - 1 ? (
-              <Button
-                variant="contained"
-                onClick={handleCreate}
-                disabled={creating}
-                startIcon={
-                  creating ? (
-                    <CircularProgress size={18} color="inherit" />
-                  ) : (
-                    <IconWrapper icon="mdi:check" size={18} />
-                  )
-                }
-                sx={{
-                  bgcolor: "var(--accent-indigo)",
-                  color: "var(--font-light)",
-                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-                  "&.Mui-disabled": {
-                    color: "var(--font-secondary)",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
-                  },
-                }}
-              >
-                {creating ? "Creating..." : "Create Assessment"}
-              </Button>
+              <>
+                {editingAssessmentId && loadedIsDraft && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => void handlePublishAssessment()}
+                    disabled={saveDraftDisabled}
+                  >
+                    Publish assessment
+                  </Button>
+                )}
+                <Button
+                  variant="contained"
+                  onClick={() => void handleCreate()}
+                  disabled={creating || loadingDraft || savingDraft}
+                  startIcon={
+                    creating ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <IconWrapper icon="mdi:check" size={18} />
+                    )
+                  }
+                  sx={{
+                    bgcolor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
+                    "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                    "&.Mui-disabled": {
+                      color: "var(--font-secondary)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                    },
+                  }}
+                >
+                  {creating
+                    ? editingAssessmentId
+                      ? "Saving..."
+                      : "Creating..."
+                    : editingAssessmentId
+                      ? "Save assessment"
+                      : "Create Assessment"}
+                </Button>
+              </>
             ) : (
               <Button
                 variant="contained"
                 onClick={handleNext}
-                disabled={isNextButtonDisabled}
+                disabled={isNextButtonDisabled || savingDraft}
                 endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
                 sx={{
                   bgcolor: "var(--accent-indigo)",
@@ -1208,5 +1861,21 @@ export default function CreateAssessmentPage() {
         </Box>
       </Box>
     </MainLayout>
+  );
+}
+
+export default function CreateAssessmentPage() {
+  return (
+    <Suspense
+      fallback={
+        <MainLayout>
+          <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
+            <CircularProgress />
+          </Box>
+        </MainLayout>
+      }
+    >
+      <CreateAssessmentPageContent />
+    </Suspense>
   );
 }

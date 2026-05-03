@@ -45,15 +45,15 @@ export function StrengthsRisksSection({ data }: StrengthsRisksSectionProps) {
   }));
 
   const getPriorityColor = (priority: string) => {
-    if (priority === "high") return "#ef4444";
-    if (priority === "medium") return "#f59e0b";
-    return "#3b82f6";
+    if (priority === "high") return "var(--error-500)";
+    if (priority === "medium") return "var(--warning-500)";
+    return "var(--accent-blue-light)";
   };
 
   const getSeverityColor = (score: number) => {
-    if (score >= 70) return "#ef4444";
-    if (score >= 50) return "#f59e0b";
-    return "#3b82f6";
+    if (score >= 70) return "var(--error-500)";
+    if (score >= 50) return "var(--warning-500)";
+    return "var(--accent-blue-light)";
   };
 
   return (
@@ -208,14 +208,14 @@ export function StrengthsRisksSection({ data }: StrengthsRisksSectionProps) {
             <div className="w-full h-[400px]">
               <ResponsiveContainer>
                 <ComposedChart data={growthData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
                   <XAxis
                     dataKey="area"
-                    tick={{ fontSize: 11, fill: "#475569", fontWeight: 600 }}
+                    tick={{ fontSize: 11, fill: "var(--font-muted)", fontWeight: 600 }}
                   />
                   <YAxis
                     domain={[0, 100]}
-                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
                     label={{ value: "Score", angle: -90, position: "insideLeft" }}
                   />
                   <Tooltip
@@ -235,9 +235,9 @@ export function StrengthsRisksSection({ data }: StrengthsRisksSectionProps) {
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="current" name="Current Score" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="target" name="Target Score" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Line type="monotone" dataKey="target" stroke="#10b981" strokeWidth={3} dot={{ fill: "#10b981", r: 5 }} />
+                  <Bar dataKey="current" name="Current Score" fill="var(--neutral-300)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="target" name="Target Score" fill="var(--accent-blue-light)" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="target" stroke="var(--course-cta)" strokeWidth={3} dot={{ fill: "var(--course-cta)", r: 5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

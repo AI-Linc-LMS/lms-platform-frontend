@@ -137,25 +137,23 @@ export function CertificationsSection({
     setDialogOpen(false);
     setEditingIndex(null);
 
-    if (editingIndex === null && certifications.length === 0) {
-      try {
-        setSaving(true);
-        await onSave({
-          certifications: updated.map((cert) => ({
-            id: cert.id,
-            name: cert.name,
-            issuing_organization: cert.issuing_organization,
-            issue_date: cert.issue_date ?? "",
-            expiration_date: cert.expiration_date || undefined,
-            credential_id: cert.credential_id || undefined,
-            credential_url: cert.credential_url || undefined,
-          })),
-        });
-      } catch {
-        // handled by parent
-      } finally {
-        setSaving(false);
-      }
+    try {
+      setSaving(true);
+      await onSave({
+        certifications: updated.map((cert) => ({
+          id: cert.id,
+          name: cert.name,
+          issuing_organization: cert.issuing_organization,
+          issue_date: cert.issue_date ?? "",
+          expiration_date: cert.expiration_date || undefined,
+          credential_id: cert.credential_id || undefined,
+          credential_url: cert.credential_url || undefined,
+        })),
+      });
+    } catch {
+      // handled by parent
+    } finally {
+      setSaving(false);
     }
   };
 

@@ -110,7 +110,7 @@ export function LockdownEnvironmentPanel({
         alignItems: "center",
         justifyContent: "center",
         p: 2,
-        bgcolor: "#f3f4f6",
+        bgcolor: "var(--neutral-100)",
       }}
     >
       <Paper elevation={2} sx={{ maxWidth: 560, width: 1, p: 3, borderRadius: 2 }}>

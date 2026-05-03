@@ -25,6 +25,7 @@ import {
   adminStudentEnrollmentService,
   StudentEnrollmentJob,
   EnrollmentJobStatus as JobStatus,
+  formatEnrollmentJobStudentLabel,
 } from "@/lib/services/admin/admin-student-enrollment.service";
 import { coursesService, Course } from "@/lib/services/courses.service";
 
@@ -247,14 +248,8 @@ export function EnrollmentJobStatus({
     return course?.title || `Course ID: ${courseId}`;
   };
 
-  // Helper to get student name by user ID
-  // Note: We can't directly match user_id to the original student name/email
-  // without additional API calls to fetch user details by user_id
-  // For now, we show the user ID - in production, you might want to fetch user details
-  const getStudentName = (userId: number): string => {
-    return `User ID: ${userId}`;
-  };
-
+  const getStudentName = (userId: number): string =>
+    formatEnrollmentJobStudentLabel(userId, job?.user_labels);
 
   if (loading && !job) {
     return (

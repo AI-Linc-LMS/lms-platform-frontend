@@ -21,7 +21,7 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
         transition: "all 0.3s ease",
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow: "0 8px 20px rgba(139, 92, 246, 0.15)",
+          boxShadow: "0 8px 20px color-mix(in srgb, var(--accent-purple) 22%, transparent)",
         },
       }}
     >
@@ -38,13 +38,13 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: "#8b5cf6",
+            backgroundColor: "var(--assessment-chart-violet)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:message-text" size={22} color="#ffffff" />
+          <IconWrapper icon="mdi:message-text" size={22} color="var(--font-light)" />
         </Box>
         <Typography
           variant="h6"
@@ -72,7 +72,7 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
               <IconWrapper
                 icon="mdi:checkbox-marked-circle"
                 size={18}
-                color="#8b5cf6"
+                color="var(--assessment-chart-violet)"
                 style={{ marginTop: "2px", flexShrink: 0 }}
               />
               <Typography

@@ -23,6 +23,10 @@ import {
   PERFORMANCE_TONE_PDF,
   SUBMISSION_BADGE_PDF,
 } from "@/lib/utils/assessment-performance-summary.utils";
+import {
+  normalizeSubjectiveAnswer,
+  parseSubjectiveAnswerPayload,
+} from "@/utils/assessment.utils";
 
 /** Design tokens */
 const SKY = { r: 2, g: 132, b: 199 };
@@ -74,6 +78,53 @@ function stripHtmlForPdf(s: string): string {
     .replace(/&gt;/g, ">")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function formatPdfQuizSelectedAnswer(
+  raw: QuizResponseItem["selected_answer"],
+): string {
+  if (raw == null || raw === "") return "";
+  if (Array.isArray(raw)) {
+    return [...raw]
+      .map((x) => String(x).toUpperCase())
+      .filter(Boolean)
+      .sort()
+      .join(", ");
+  }
+  return String(raw).toUpperCase();
+}
+
+function pdfQuizSelectedLetters(
+  raw: QuizResponseItem["selected_answer"],
+): Set<string> {
+  const s = new Set<string>();
+  if (raw == null || raw === "") return s;
+  if (Array.isArray(raw)) {
+    for (const x of raw) {
+      const u = String(x).toUpperCase().trim();
+      if (u) s.add(u);
+    }
+    return s;
+  }
+  const u = String(raw).toUpperCase().trim();
+  if (u) s.add(u);
+  return s;
+}
+
+function pdfQuizCorrectLetters(q: QuizResponseItem): Set<string> {
+  const s = new Set<string>();
+  const style = q.question_style;
+  const opts = q.correct_options;
+  if (style === "multiple" && opts && opts.length > 0) {
+    for (const x of opts) {
+      const u = String(x).toUpperCase().trim();
+      if (u) s.add(u);
+    }
+    return s;
+  }
+  const u = String(q.correct_option ?? "").toUpperCase().trim();
+  if (u) s.add(u);
+  return s;
 }
 
 /**
@@ -341,6 +392,8 @@ function drawProctoringSummaryPdf(
   yStart: number,
   ensureSpace: (mm: number) => void,
   fitEntireBlock: (mm: number) => void,
+  /** After `fitEntireBlock` / `ensureSpace`, `newPage()` may reset the live cursor — read it here, not `yStart`. */
+  getCurrentY: () => number,
   proctoring: NonNullable<AssessmentResult["proctoring"]>,
   setInk: () => void,
 ): number {
@@ -370,7 +423,8 @@ function drawProctoringSummaryPdf(
 
   const innerPad = 5;
   const topPad = 5;
-  const bottomPad = 5;
+  /** Extra space below last row baseline for descenders + footer breathing room. */
+  const bottomPad = 7;
   const titleFirstBaselineOffset = 4;
   const valueColW = 14;
   const textInnerW = contentW - innerPad * 2;
@@ -418,10 +472,11 @@ function drawProctoringSummaryPdf(
     }, 0) - gapBetweenRows;
 
   const blockH = headerBlockH + rowsBlockH + bottomPad;
+  const layoutSafetyMm = 12;
 
-  fitEntireBlock(blockH + 8);
-  ensureSpace(blockH + 8);
-  const y = yStart;
+  fitEntireBlock(blockH + layoutSafetyMm);
+  ensureSpace(blockH + layoutSafetyMm);
+  const y = getCurrentY();
 
   pdf.setFillColor(254, 250, 250);
   pdf.setDrawColor(252, 165, 165);
@@ -484,7 +539,7 @@ function drawProctoringSummaryPdf(
     baseline = rowStart + rowH + (isLast ? 0 : gapBetweenRows);
   }
 
-  return y + blockH + 6;
+  return y + blockH + 8;
 }
 
 function extractCodeTextForPdf(s: string): string {
@@ -1416,9 +1471,9 @@ export function generateAssessmentResultPdfVector(
     for (let qi = 0; qi < quizResponses.length; qi++) {
       const q = quizResponses[qi]!;
       const selectedRaw = q.selected_answer;
-      const selectedU =
-        selectedRaw != null ? String(selectedRaw).toUpperCase() : "";
-      const correctU = String(q.correct_option ?? "").toUpperCase();
+      const selectedU = formatPdfQuizSelectedAnswer(selectedRaw);
+      const selectedSet = pdfQuizSelectedLetters(selectedRaw);
+      const correctSet = pdfQuizCorrectLetters(q);
       const options = getQuizOptionsForPdf(q.options ?? {});
 
       const statusLabel = q.is_correct ? "Correct" : "Incorrect";
@@ -1429,6 +1484,7 @@ export function generateAssessmentResultPdfVector(
       const metaParts = [
         `Q${qi + 1} of ${quizResponses.length}`,
         statusLabel,
+        selectedU ? `Your answer: ${selectedU}` : null,
         q.difficulty_level || null,
         q.topic ? capitalizeFirstPdf(q.topic) : null,
       ].filter(Boolean) as string[];
@@ -1467,8 +1523,8 @@ export function generateAssessmentResultPdfVector(
       cy += qLines.length * 4.2 + 4;
 
       for (const opt of options) {
-        const isCorrectOpt = opt.id === correctU;
-        const isSelected = opt.id === selectedU;
+        const isCorrectOpt = correctSet.has(opt.id);
+        const isSelected = selectedSet.has(opt.id);
         let tag = "";
         if (isCorrectOpt && isSelected) tag = " (correct · your answer)";
         else if (isCorrectOpt) tag = " (correct)";
@@ -1487,7 +1543,7 @@ export function generateAssessmentResultPdfVector(
         cy += wrapped.length * 4 + 1.2;
       }
 
-      if (!selectedU) {
+      if (selectedSet.size === 0) {
         pdf.setFont(PDF_FONT, "italic");
         pdf.setFontSize(7.5);
         pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
@@ -1755,9 +1811,63 @@ export function generateAssessmentResultPdfVector(
     for (let si = 0; si < subjectiveResponses.length; si++) {
       const s = subjectiveResponses[si]!;
       const qText = formatAssessmentRichTextForPdf(s.question_text || "");
-      const ans = formatAssessmentPlainTextForPdf(
-        (s.your_answer ?? s.answer ?? "").trim(),
-      );
+      const rawAns = s.your_answer ?? s.answer;
+      const parsed = parseSubjectiveAnswerPayload(rawAns);
+      const images =
+        s.images && s.images.length > 0 ? s.images : parsed.images || [];
+      const files =
+        s.files && s.files.length > 0 ? s.files : parsed.files || [];
+      const video =
+        s.video?.url != null && s.video.url !== ""
+          ? s.video
+          : parsed.video?.url
+            ? parsed.video
+            : null;
+
+      const textNorm = normalizeSubjectiveAnswer(rawAns).trim();
+      const ans = formatAssessmentPlainTextForPdf(textNorm);
+
+      const attachLineParts: string[] = [];
+      if (images.length > 0) {
+        attachLineParts.push("Images (open in browser):");
+        images.forEach((im, idx) => {
+          const url = typeof im.url === "string" ? im.url : "";
+          if (url) attachLineParts.push(`  ${idx + 1}. ${url}`);
+        });
+      }
+      if (files.length > 0) {
+        attachLineParts.push("Files:");
+        files.forEach((f, idx) => {
+          const url = typeof f.url === "string" ? f.url : "";
+          if (url) {
+            const name = f.name ? ` — ${f.name}` : "";
+            attachLineParts.push(`  ${idx + 1}. ${url}${name}`);
+          }
+        });
+      }
+      if (video?.url) {
+        const dur =
+          video.duration_seconds != null &&
+          Number.isFinite(video.duration_seconds)
+            ? ` (${Math.round(video.duration_seconds)}s)`
+            : "";
+        attachLineParts.push(`Video${dur}:`);
+        attachLineParts.push(`  ${video.url}`);
+      }
+      const attachPlain = attachLineParts.length
+        ? formatAssessmentPlainTextForPdf(attachLineParts.join("\n"))
+        : "";
+
+      const hasWrittenContent = Boolean(ans) || attachPlain.length > 0;
+      const ansBody =
+        ans && attachPlain
+          ? `${ans}\n\n${attachPlain}`
+          : ans
+            ? ans
+            : attachPlain
+              ? attachPlain
+              : "No response submitted.";
+
       const graded =
         s.awarded_marks != null && Number.isFinite(Number(s.awarded_marks));
       const scoreLine = graded
@@ -1770,22 +1880,32 @@ export function generateAssessmentResultPdfVector(
             ),
           )
         : null;
+      const modeLabel =
+        s.answer_mode && typeof s.answer_mode === "string"
+          ? capitalizeFirstPdf(
+              formatAssessmentPlainTextForPdf(
+                s.answer_mode.replace(/_/g, " "),
+              ),
+            )
+          : null;
       const metaParts = [
         `Q${si + 1} of ${subjectiveResponses.length}`,
         formatAssessmentPlainTextForPdf(s.section_title || "") || null,
         typeLabel,
+        modeLabel,
         `Max ${s.max_marks} marks`,
         scoreLine,
       ].filter(Boolean) as string[];
       const metaLine = metaParts.join(" · ");
 
-      const ansBody = ans ? ans : "No response submitted.";
       const feedbackRaw =
         typeof s.feedback === "string"
           ? formatAssessmentPlainTextForPdf(s.feedback.trim())
           : "";
 
-      const ansFontStyle: "normal" | "italic" = ans ? "normal" : "italic";
+      const ansFontStyle: "normal" | "italic" = hasWrittenContent
+        ? "normal"
+        : "italic";
 
       const metaBlockH =
         measurePdfWrappedHeightMm(pdf, metaLine, writtenCardTextW, 8, "bold") +
@@ -1911,7 +2031,7 @@ export function generateAssessmentResultPdfVector(
       );
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8.5);
-      if (!ans) {
+      if (!hasWrittenContent) {
         pdf.setFont(PDF_FONT, "italic");
         pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
       } else {
@@ -1992,6 +2112,7 @@ export function generateAssessmentResultPdfVector(
       y,
       ensureSpace,
       fitEntireBlock,
+      () => y,
       data.proctoring,
       setInk,
     );
