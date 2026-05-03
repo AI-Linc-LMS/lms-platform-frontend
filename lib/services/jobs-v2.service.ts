@@ -1,6 +1,11 @@
 import apiClient from "./api";
 import { config } from "../config";
 import { AxiosError } from "axios";
+import {
+  getExternalJobById,
+  isLikelyExternalJsonSyntheticId,
+} from "../jobs/external-json-jobs-store";
+import { hydrateExternalJobFromScraperById } from "../jobs/job-scraper-feed";
 
 export interface JobV2 {
   id: number;
@@ -51,6 +56,16 @@ export interface JobV2 {
     options?: string[];
   }>;
   question_ids?: number[];
+  /** Set only for client-merged static JSON feed listings (not from API). Legacy value `april11` may appear in old data. */
+  listing_source?: "api" | "external_json" | "april11" | "job_scraper";
+  /** Optional AI-generated copy (enriched JSON or on-demand API). */
+  ai_summary?: string;
+  ai_highlights?: string[];
+  /** Job-scraper / external feed only — does not come from LMS jobs API. */
+  scraper_source?: string;
+  scraper_requirements?: string;
+  scraper_job_benefits?: string;
+  scraper_key_points?: string[];
 }
 
 /** Normalizes API `applicable_passout_year` for UI (string or number from JSON). */
@@ -144,11 +159,22 @@ export const jobsV2Service = {
   },
 
   getJobById: async (id: number): Promise<JobV2 | null> => {
+    const fromStore = getExternalJobById(id);
+    if (fromStore) return fromStore;
+
+    if (isLikelyExternalJsonSyntheticId(id)) {
+      await hydrateExternalJobFromScraperById(id).catch(() => undefined);
+      return getExternalJobById(id) ?? null;
+    }
+
     try {
       const response = await apiClient.get<JobV2>(`/jobs-v2/api/jobs/${id}/`);
       return response.data;
     } catch (err) {
       const error = err as AxiosError<ApiErrorPayload>;
+      if (error.response?.status === 404) {
+        return null;
+      }
       const message =
         error.response?.data?.error ||
         error.response?.data?.message ||
@@ -169,6 +195,10 @@ export const jobsV2Service = {
     }
   ): Promise<{ id: number; status: string }> => {
     const clientId = payload?.client_id ?? config.clientId;
+    // Scraper / feed jobs use synthetic negative IDs; LMS has no apply row → 404.
+    if (payload?.external && isLikelyExternalJsonSyntheticId(jobId)) {
+      return { id: 0, status: "external_only" };
+    }
     try {
       const response = await apiClient.post<{ id: number; status: string }>(
         `/jobs-v2/api/jobs/${jobId}/apply/`,

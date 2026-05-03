@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Box,
@@ -21,6 +21,17 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { JobSearchIllustration, JobDetailIllustration } from "@/components/jobs-v2/illustrations";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
+import {
+  formatJobDescriptionBody,
+  formatApplicationDeadlineLabel,
+  humanizeJobFieldLabel,
+  formatJobSourceLabel,
+} from "@/lib/utils/format-job-description";
+import {
+  getJobsV2ApplyHref,
+  getJobsV2BrowseHref,
+  getJobsV2ListQueryString,
+} from "@/lib/utils/jobs-v2-navigation";
 
 const getPostedLabel = (d?: string) => {
   if (!d) return "—";
@@ -35,9 +46,18 @@ const getPostedLabel = (d?: string) => {
 
 export default function JobDetailPage() {
   const params = useParams();
+  const detailSearchParams = useSearchParams();
   const { showToast } = useToast();
   const { isAdminMode } = useAdminMode();
   const id = Number(params?.id);
+
+  const { jobsListBackHref, jobsListQueryString } = useMemo(() => {
+    const qs = getJobsV2ListQueryString(detailSearchParams);
+    return {
+      jobsListQueryString: qs,
+      jobsListBackHref: getJobsV2BrowseHref(qs),
+    };
+  }, [detailSearchParams]);
   const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -74,7 +94,7 @@ export default function JobDetailPage() {
         setApplying(true);
         const res = await jobsV2Service.applyForJob(job.id, { external: true });
         window.open(job.apply_link!, "_blank");
-        if (res.status === "applying") {
+        if (res.status === "applying" && res.id > 0) {
           setPendingApplicationId(res.id);
           setShowConfirmAppliedDialog(true);
         }
@@ -134,21 +154,38 @@ export default function JobDetailPage() {
     }
   }, [job, favoriteLoading, showToast]);
 
+  const normalizedDescription = useMemo(
+    () => formatJobDescriptionBody(job?.job_description),
+    [job?.job_description]
+  );
+  const normalizedRequirements = useMemo(
+    () => formatJobDescriptionBody(job?.scraper_requirements),
+    [job?.scraper_requirements]
+  );
+  const normalizedBenefits = useMemo(
+    () => formatJobDescriptionBody(job?.scraper_job_benefits),
+    [job?.scraper_job_benefits]
+  );
+  const closingDateLabel = useMemo(
+    () => formatApplicationDeadlineLabel(job?.application_deadline),
+    [job?.application_deadline]
+  );
+
   if (loading || !job) {
     return (
       <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
+        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--surface)" }}>
           <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: "auto" }}>
             <Button
               component={Link}
-              href="/jobs-v2"
+              href={jobsListBackHref}
               startIcon={<ArrowLeft size={18} />}
                 sx={{
                   mb: 2,
                 textTransform: "none",
                 color: "var(--accent-indigo)",
                 fontWeight: 500,
-                "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
+                "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
               }}
             >
               Back to Jobs
@@ -169,7 +206,7 @@ export default function JobDetailPage() {
             ) : (
               <Box sx={{ textAlign: "center", py: 8 }}>
                 <JobDetailIllustration width={140} height={115} primaryColor="var(--font-tertiary)" />
-                <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary)" }}>
+                <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary-dark)" }}>
                   Job not found
                 </Typography>
                 <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
@@ -177,7 +214,7 @@ export default function JobDetailPage() {
                 </Typography>
                 <Button
                   component={Link}
-                  href="/jobs-v2"
+                  href={jobsListBackHref}
                   startIcon={<ArrowLeft size={18} />}
                   sx={{
                     textTransform: "none",
@@ -217,7 +254,7 @@ export default function JobDetailPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
+      <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--surface)" }}>
         {/* Hero header - matches admin reports / jobs list style */}
         <Box
           sx={{
@@ -227,7 +264,7 @@ export default function JobDetailPage() {
             gap: { xs: 2, md: 3 },
             p: { xs: 2, md: 3 },
             mb: 0,
-            background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)",
+            background: "linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 88%, var(--border-default) 12%) 50%, var(--border-default) 100%)",
             borderBottom: "1px solid",
             borderColor: "divider",
             position: "relative",
@@ -240,21 +277,21 @@ export default function JobDetailPage() {
               width: 200,
               height: 200,
               borderRadius: "50%",
-              background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+              background: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
             },
           }}
         >
           <Box sx={{ maxWidth: 1100, mx: "auto", width: "100%", position: "relative", zIndex: 1 }}>
             <Button
               component={Link}
-              href="/jobs-v2"
+              href={jobsListBackHref}
               startIcon={<ArrowLeft size={18} />}
               sx={{
                 mb: 2,
                 textTransform: "none",
                 color: "var(--accent-indigo)",
                 fontWeight: 500,
-                "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
+                "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
               }}
             >
               Back to Jobs
@@ -311,7 +348,7 @@ export default function JobDetailPage() {
                   </Avatar>
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
+                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary-dark)", letterSpacing: "-0.02em" }}>
                     {job.job_title}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>
@@ -324,10 +361,10 @@ export default function JobDetailPage() {
                           Job type:
                         </Typography>
                         <Chip
-                          label={job.job_type}
+                          label={humanizeJobFieldLabel(job.job_type) ?? job.job_type}
                           size="small"
                           sx={{
-                            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                             color: "var(--accent-indigo)",
                             fontWeight: 600,
                           }}
@@ -340,7 +377,7 @@ export default function JobDetailPage() {
                           Employment type:
                         </Typography>
                         <Chip
-                          label={job.employment_type}
+                          label={humanizeJobFieldLabel(job.employment_type) ?? job.employment_type}
                           size="small"
                           variant="outlined"
                           sx={{ borderColor: "var(--accent-indigo)", color: "var(--accent-indigo)", fontWeight: 500 }}
@@ -403,7 +440,7 @@ export default function JobDetailPage() {
                         border: "1px solid",
                         borderColor: "divider",
                         backgroundColor: "var(--card-bg)",
-                        "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
+                        "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                       }}
                     >
                       <Heart size={20} fill={job.is_favourited ? "var(--accent-indigo)" : "none"} />
@@ -432,7 +469,7 @@ export default function JobDetailPage() {
                         : undefined,
                     }}
                   >
-                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+                    {hasApplied ? "Applied" : applying ? "Applying..." : "Apply"}
                   </Button>
                 ) : hasApplied || !canApply ? (
                   <Button
@@ -459,7 +496,7 @@ export default function JobDetailPage() {
                 ) : (
                   <Button
                     component={Link}
-                    href={`/jobs-v2/${job.id}/apply`}
+                    href={getJobsV2ApplyHref(job.id, jobsListQueryString)}
                     variant="contained"
                     startIcon={<ExternalLink size={18} />}
                     sx={{
@@ -504,7 +541,7 @@ export default function JobDetailPage() {
                   border: "1px solid",
                   borderColor: "divider",
                   backgroundColor: "var(--card-bg)",
-                  boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 6%, transparent)",
+                  boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 4%, transparent)",
                 }}
               >
                 {/* Section header */}
@@ -512,37 +549,38 @@ export default function JobDetailPage() {
                   sx={{
                     px: 2.5,
                     py: 2,
-                    borderBottom: job.job_description ? "1px solid" : "none",
+                    borderBottom: normalizedDescription ? "1px solid" : "none",
                     borderColor: "divider",
-                    background: "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 6%, transparent) 0%, transparent 100%)",
+                    background: "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 4%, transparent) 0%, transparent 100%)",
                   }}
                 >
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary-dark)", letterSpacing: "-0.02em" }}>
                     Job Description
                   </Typography>
                 </Box>
 
                 {/* Text description */}
-                {job.job_description && (
+                {normalizedDescription && (
                   <Box sx={{ px: 2.5, py: 2.5 }}>
                     <Typography
                       variant="body1"
+                      component="div"
                       sx={{
                         whiteSpace: "pre-wrap",
                         lineHeight: 1.8,
-                        color: "var(--font-secondary)",
+                        color: "var(--font-muted)",
                         fontSize: "0.9375rem",
                         "& p": { mb: 1.5 },
                         "& ul, & ol": { pl: 2.5, mb: 1.5 },
                         "& li": { mb: 0.5 },
                       }}
                     >
-                      {job.job_description}
+                      {normalizedDescription}
                     </Typography>
                   </Box>
                 )}
 
-                {!job.job_description && !job.jd_file_url && (
+                {!normalizedDescription && !job.jd_file_url && (
                   <Box sx={{ px: 2.5, py: 3, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">
                       No job description available
@@ -550,6 +588,86 @@ export default function JobDetailPage() {
                   </Box>
                 )}
               </Paper>
+
+              {job.scraper_key_points && job.scraper_key_points.length > 0 && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: "var(--card-bg)",
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary-dark)" }}>
+                    Highlights
+                  </Typography>
+                  <Box
+                    component="ul"
+                    sx={{
+                      m: 0,
+                      pl: 2.25,
+                      color: "var(--font-muted)",
+                      "& li": { mb: 1, lineHeight: 1.65 },
+                    }}
+                  >
+                    {job.scraper_key_points.map((pt, i) => (
+                      <Typography key={i} component="li" variant="body2">
+                        {pt}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Paper>
+              )}
+
+              {normalizedRequirements && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: "var(--card-bg)",
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary-dark)" }}>
+                    Requirements
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "var(--font-muted)" }}
+                  >
+                    {normalizedRequirements}
+                  </Typography>
+                </Paper>
+              )}
+
+              {normalizedBenefits && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: "var(--card-bg)",
+                  }}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary-dark)" }}>
+                    Benefits
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "var(--font-muted)" }}
+                  >
+                    {normalizedBenefits}
+                  </Typography>
+                </Paper>
+              )}
 
               {job.role_process && (
                 <Paper
@@ -562,12 +680,12 @@ export default function JobDetailPage() {
                     backgroundColor: "var(--card-bg)",
                   }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary)" }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary-dark)" }}>
                     Role Process
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "var(--font-secondary)" }}
+                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "var(--font-muted)" }}
                   >
                     {job.role_process}
                   </Typography>
@@ -585,7 +703,7 @@ export default function JobDetailPage() {
                     backgroundColor: "var(--card-bg)",
                   }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary)" }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary-dark)" }}>
                     Key Skills
                   </Typography>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
@@ -596,9 +714,9 @@ export default function JobDetailPage() {
                         size="small"
                         variant="outlined"
                         sx={{
-                          borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                          borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
                           color: "var(--accent-indigo)",
-                          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
                           fontWeight: 500,
                         }}
                       />
@@ -618,12 +736,12 @@ export default function JobDetailPage() {
                     backgroundColor: "var(--card-bg)",
                   }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary)" }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary-dark)" }}>
                     About Company
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "var(--font-secondary)" }}
+                    sx={{ whiteSpace: "pre-wrap", lineHeight: 1.75, color: "var(--font-muted)" }}
                   >
                     {job.company_info}
                   </Typography>
@@ -643,23 +761,47 @@ export default function JobDetailPage() {
                 backgroundColor: "var(--card-bg)",
                 position: { lg: "sticky" },
                 top: { lg: 24 },
-                boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 6%, transparent)",
+                boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 4%, transparent)",
               }}
             >
               <Box
                 sx={{
                   px: 2.5,
                   py: 2,
-                  background: "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 0%, transparent 100%)",
+                  background: "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 6%, transparent) 0%, transparent 100%)",
                   borderBottom: "1px solid",
                   borderColor: "divider",
                 }}
               >
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary-dark)", letterSpacing: "-0.02em" }}>
                   Job Details
                 </Typography>
               </Box>
               <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 0 }}>
+                {job.scraper_source && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
+                    }}
+                  >
+                    <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
+                      <FileText size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>
+                        Source
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>
+                        {formatJobSourceLabel(job.scraper_source)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
                 {job.industry_type && (
                   <Box
                     sx={{
@@ -668,7 +810,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -676,7 +818,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>Industry</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.industry_type}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.industry_type) ?? job.industry_type}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -688,7 +832,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -696,7 +840,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>Department</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.department}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.department) ?? job.department}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -708,7 +854,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -716,7 +862,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>Employment Type</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.employment_type}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.employment_type) ?? job.employment_type}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -728,7 +876,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -736,7 +884,9 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>Role Category</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.role_category}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>
+                        {humanizeJobFieldLabel(job.role_category) ?? job.role_category}
+                      </Typography>
                     </Box>
                   </Box>
                 )}
@@ -748,7 +898,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -756,7 +906,7 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>Education</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.education}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>{job.education}</Typography>
                     </Box>
                   </Box>
                 )}
@@ -768,7 +918,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -778,7 +928,7 @@ export default function JobDetailPage() {
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>
                         Applicable passout year
                       </Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
                     </Box>
                   </Box>
                 )}
@@ -790,7 +940,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -798,7 +948,7 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>UG Requirements</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.ug_requirements}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>{job.ug_requirements}</Typography>
                     </Box>
                   </Box>
                 )}
@@ -810,7 +960,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -818,11 +968,11 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>PG Requirements</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.pg_requirements}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>{job.pg_requirements}</Typography>
                     </Box>
                   </Box>
                 )}
-                {job.application_deadline && (
+                {closingDateLabel && (
                   <Box
                     sx={{
                       display: "flex",
@@ -830,7 +980,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -838,12 +988,8 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>Closing Date</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>
-                        {new Date(job.application_deadline).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>
+                        {closingDateLabel}
                       </Typography>
                     </Box>
                   </Box>
@@ -856,7 +1002,7 @@ export default function JobDetailPage() {
                       gap: 1.5,
                       py: 1.5,
                       borderBottom: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                     }}
                   >
                     <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>
@@ -864,11 +1010,11 @@ export default function JobDetailPage() {
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, display: "block" }}>Openings</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 500 }}>{job.number_of_openings}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}>{job.number_of_openings}</Typography>
                     </Box>
                   </Box>
                 )}
-                {!job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !passoutYearDisplay && !job.ug_requirements && !job.pg_requirements && !job.application_deadline && (job.number_of_openings == null || job.number_of_openings === 0) && (
+                {!job.scraper_source && !job.industry_type && !job.department && !job.employment_type && !job.role_category && !job.education && !passoutYearDisplay && !job.ug_requirements && !job.pg_requirements && !closingDateLabel && (job.number_of_openings == null || job.number_of_openings === 0) && (
                   <Box sx={{ py: 2, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">No additional details</Typography>
                   </Box>
@@ -887,7 +1033,7 @@ export default function JobDetailPage() {
                   backgroundColor: "var(--card-bg)",
                 }}
               >
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary)" }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: "var(--font-primary-dark)" }}>
                   Apply for this position
                 </Typography>
                 <Button
@@ -903,10 +1049,10 @@ export default function JobDetailPage() {
                     fontWeight: 600,
                     borderColor: "var(--accent-indigo)",
                     color: "var(--accent-indigo)",
-                    "&:hover": { borderColor: "var(--accent-indigo-dark)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
+                    "&:hover": { borderColor: "var(--accent-indigo-dark)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                   }}
                 >
-                  Apply on External Link
+                  Apply
                 </Button>
               </Paper>
             )}
@@ -919,12 +1065,12 @@ export default function JobDetailPage() {
                   p: 2,
                   borderRadius: 2,
                   border: "1px solid",
-                  borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                    borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
                   },
                 }}
               >
@@ -944,7 +1090,7 @@ export default function JobDetailPage() {
                     <FileText size={20} color="var(--font-light)" />
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: "0.875rem" }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary-dark)", fontSize: "0.875rem" }}>
                       Attached JD (PDF)
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
@@ -990,7 +1136,7 @@ export default function JobDetailPage() {
             backgroundColor: "var(--card-bg)",
             borderTop: "1px solid",
             borderColor: "divider",
-            boxShadow: "0 -4px 12px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+            boxShadow: "0 -4px 12px color-mix(in srgb, var(--font-primary) 8%, transparent)",
           }}
         >
           {hasExternalLink ? (
@@ -1012,7 +1158,7 @@ export default function JobDetailPage() {
                   : undefined,
               }}
             >
-              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply on External Link"}
+              {hasApplied ? "Applied" : applying ? "Applying..." : "Apply"}
             </Button>
           ) : hasApplied || !canApply ? (
             <Button
@@ -1036,7 +1182,7 @@ export default function JobDetailPage() {
           ) : (
             <Button
               component={Link}
-              href={`/jobs-v2/${job.id}/apply`}
+              href={getJobsV2ApplyHref(job.id, jobsListQueryString)}
               variant="contained"
               fullWidth
               startIcon={<ExternalLink size={18} />}

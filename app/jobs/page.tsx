@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback, startTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Box, LinearProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -16,6 +17,16 @@ import { jobsService, Job, JobFilters } from "@/lib/services/jobs.service";
 import { useToast } from "@/components/common/Toast";
 
 const ITEMS_PER_PAGE = 10;
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
+const LEGACY_JOBS_CACHE_TTL_MS = 120_000;
+
+function parseJobsPageSize(raw: string | null): number {
+  if (!raw) return ITEMS_PER_PAGE;
+  const n = parseInt(raw, 10);
+  return PAGE_SIZE_OPTIONS.includes(n as (typeof PAGE_SIZE_OPTIONS)[number])
+    ? n
+    : ITEMS_PER_PAGE;
+}
 
 /**
  * Normalized job for fast filtering
@@ -27,11 +38,17 @@ type NormalizedJob = Job & {
   _company: string;
   _description: string;
   _tags: string[];
+  _postedAtIso?: string;
 };
+
+let legacyJobsNormalizedCache: { jobs: NormalizedJob[]; at: number } | null = null;
 
 export default function JobsPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [filtering, setFiltering] = useState(false);
@@ -42,8 +59,41 @@ export default function JobsPage() {
   const [filters, setFilters] = useState<JobFilters>({});
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
+  const page = useMemo(() => {
+    const raw = searchParams.get("page");
+    const n = raw ? parseInt(raw, 10) : 1;
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+  }, [searchParams]);
+
+  const pageSize = useMemo(
+    () => parseJobsPageSize(searchParams.get("page_size")),
+    [searchParams]
+  );
+
+  const syncJobsListUrl = useCallback(
+    (overrides: { page?: number; page_size?: number }) => {
+      const p = new URLSearchParams(searchParams.toString());
+      const currentPage = (() => {
+        const r = p.get("page");
+        const n = r ? parseInt(r, 10) : 1;
+        return Number.isFinite(n) && n >= 1 ? n : 1;
+      })();
+      const currentSize = parseJobsPageSize(p.get("page_size"));
+      const nextPage = overrides.page !== undefined ? overrides.page : currentPage;
+      const nextSize =
+        overrides.page_size !== undefined ? overrides.page_size : currentSize;
+      if (nextPage <= 1) p.delete("page");
+      else p.set("page", String(nextPage));
+      if (nextSize === ITEMS_PER_PAGE) p.delete("page_size");
+      else p.set("page_size", String(nextSize));
+      const qs = p.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  const syncJobsListUrlRef = useRef(syncJobsListUrl);
+  syncJobsListUrlRef.current = syncJobsListUrl;
 
   const workerRef = useRef<Worker | null>(null);
   const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,7 +109,7 @@ export default function JobsPage() {
 
     workerRef.current.onmessage = (e) => {
       setFilteredJobs(e.data);
-      setPage(1);
+      syncJobsListUrlRef.current({ page: 1 });
       setFiltering(false);
     };
 
@@ -79,26 +129,52 @@ export default function JobsPage() {
    */
   useEffect(() => {
     const loadJobs = async () => {
-      try {
+      const now = Date.now();
+      const cached =
+        legacyJobsNormalizedCache &&
+        now - legacyJobsNormalizedCache.at < LEGACY_JOBS_CACHE_TTL_MS
+          ? legacyJobsNormalizedCache.jobs
+          : null;
+      if (cached) {
+        setAllJobs(cached);
+        setFilteredJobs(cached);
+        setLoading(false);
+      } else {
         setLoading(true);
+      }
+
+      try {
         const res = await jobsService.getJobs();
 
-        const normalized: NormalizedJob[] = res.results.map((job) => ({
-          ...job,
-          _location: String(job.location || "").toLowerCase(),
-          _jobType: String(job.job_type || "").toLowerCase(),
-          _title: String(job.job_title || "").toLowerCase(),
-          _company: String(job.company_name || "").toLowerCase(),
-          _description: String(job.job_description || "").toLowerCase(),
-          _tags: Array.isArray(job.tags)
-            ? job.tags.map((t) => String(t).toLowerCase())
-            : [],
-        }));
+        const normalized: NormalizedJob[] = res.results.map((job) => {
+          const postedRaw = job.created_at || job.job_post_date;
+          const postedStr =
+            postedRaw != null && String(postedRaw).trim()
+              ? String(postedRaw).trim()
+              : undefined;
+          return {
+            ...job,
+            _location: String(job.location || "").toLowerCase(),
+            _jobType: String(job.job_type || "").toLowerCase(),
+            _title: String(job.job_title || "").toLowerCase(),
+            _company: String(job.company_name || "").toLowerCase(),
+            _description: String(job.job_description || "").toLowerCase(),
+            _tags: Array.isArray(job.tags)
+              ? job.tags.map((t) => String(t).toLowerCase())
+              : [],
+            _postedAtIso: postedStr,
+          };
+        });
 
+        legacyJobsNormalizedCache = { jobs: normalized, at: Date.now() };
         setAllJobs(normalized);
         setFilteredJobs(normalized);
       } catch (err) {
         showToast(t("jobs.failedToLoad"), "error");
+        if (!cached) {
+          setAllJobs([]);
+          setFilteredJobs([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -137,6 +213,17 @@ export default function JobsPage() {
   }, [filteredJobs, page, pageSize]);
 
   const totalCount = filteredJobs.length;
+
+  const maxPage = useMemo(
+    () => Math.max(1, Math.ceil(filteredJobs.length / pageSize) || 1),
+    [filteredJobs.length, pageSize]
+  );
+
+  useEffect(() => {
+    if (page > maxPage) {
+      syncJobsListUrl({ page: maxPage });
+    }
+  }, [page, maxPage, syncJobsListUrl]);
 
   /**
    * Handlers - Memoized and optimized
@@ -190,23 +277,24 @@ export default function JobsPage() {
       setFilters({});
       setSearchQuery("");
       setFilteredJobs(allJobs);
-      setPage(1);
+      syncJobsListUrl({ page: 1 });
     });
-  }, [allJobs]);
+  }, [allJobs, syncJobsListUrl]);
 
-  const handlePageChange = useCallback((_: unknown, value: number) => {
-    startTransition(() => {
-      setPage(value);
-    });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  const handlePageChange = useCallback(
+    (_: unknown, value: number) => {
+      syncJobsListUrl({ page: value });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [syncJobsListUrl]
+  );
 
-  const handlePageSizeChange = useCallback((size: number) => {
-    startTransition(() => {
-      setPageSize(size);
-      setPage(1);
-    });
-  }, []);
+  const handlePageSizeChange = useCallback(
+    (size: number) => {
+      syncJobsListUrl({ page: 1, page_size: size });
+    },
+    [syncJobsListUrl]
+  );
 
   const handleSearchClear = useCallback(() => {
     if (searchTimeoutRef.current) {
