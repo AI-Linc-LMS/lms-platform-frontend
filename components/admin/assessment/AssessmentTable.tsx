@@ -470,6 +470,16 @@ export function AssessmentTable({
                       <ListItemText>Live monitor</ListItemText>
                     </MenuItem>
                   )}
+                  <MenuItem
+                    component={Link}
+                    href={`/admin/certificates/assessment/${encodeURIComponent(assessment.slug)}`}
+                    onClick={() => handleMenuClose(assessment.id)}
+                  >
+                    <ListItemIcon>
+                      <IconWrapper icon="mdi:certificate" size={18} color="#0d9488" />
+                    </ListItemIcon>
+                    <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
+                  </MenuItem>
                   {!actionsReadOnly && onTriggerEmailJob && (() => {
                     const job = assessmentEmailJobMap[assessment.id];
                     const isTriggering = triggeringEmailJobId === assessment.id;
@@ -1141,6 +1151,16 @@ export function AssessmentTable({
                           <ListItemText>Live monitor</ListItemText>
                         </MenuItem>
                       )}
+                      <MenuItem
+                        component={Link}
+                        href={`/admin/certificates/assessment/${encodeURIComponent(assessment.slug)}`}
+                        onClick={() => handleMenuClose(assessment.id)}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:certificate" size={18} color="#0d9488" />
+                        </ListItemIcon>
+                        <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
+                      </MenuItem>
                       {!actionsReadOnly && onTriggerEmailJob && (() => {
                         const job = assessmentEmailJobMap[assessment.id];
                         const isTriggering = triggeringEmailJobId === assessment.id;

@@ -15,7 +15,6 @@ import { AssessmentResultHeader } from "@/components/assessment/result/Assessmen
 import { ScoreDisplay } from "@/components/assessment/result/ScoreDisplay";
 import { EnhancedStatsBar } from "@/components/assessment/result/EnhancedStatsBar";
 import { TopicWiseBreakdown } from "@/components/assessment/result/TopicWiseBreakdown";
-import { StrengthsWeaknesses } from "@/components/assessment/result/StrengthsWeaknesses";
 import { EnhancedSkillsTags } from "@/components/assessment/result/EnhancedSkillsTags";
 import { OverallFeedback } from "@/components/assessment/result/OverallFeedback";
 import { PsychometricResultView } from "@/components/assessment/result/PsychometricResultView";
@@ -40,6 +39,8 @@ import { isScoreInAppreciationBand, scoreToPercent } from "@/lib/certificate/pas
 import { getLearnerDisplayNameFromResult } from "@/lib/certificate/learner-name";
 import { CertificateLearnerToolbar } from "@/components/certificate/CertificateLearnerToolbar";
 import { DynamicCertificate } from "@/components/certificate/DynamicCertificate";
+import { getUploadedFiles } from "@/lib/services/file-upload.service";
+import { config } from "@/lib/config";
 
 function sanitizeCertificateFileSegment(raw: string, fallback: string): string {
   const s = raw
@@ -47,6 +48,15 @@ function sanitizeCertificateFileSegment(raw: string, fallback: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 72);
   return s || fallback;
+}
+
+function asNumber(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function looksLikeImageUrl(url: string): boolean {
+  return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
 }
 
 export default function AssessmentResultPage() {
@@ -61,7 +71,12 @@ export default function AssessmentResultPage() {
   const [psychometricData, setPsychometricData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [uploadCertificateExporting, setUploadCertificateExporting] = useState(false);
   const [assessmentDetail, setAssessmentDetail] = useState<AssessmentDetail | null>(null);
+  const [uploadedCertificateUrl, setUploadedCertificateUrl] = useState<string>("");
+  const [uploadedCertificateTier, setUploadedCertificateTier] =
+    useState<"participation" | "excellence">("participation");
+  const [checkingUploadedCertificate, setCheckingUploadedCertificate] = useState(false);
 
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -87,21 +102,6 @@ export default function AssessmentResultPage() {
     loadAssessmentResult();
   }, [slug]);
 
-  useEffect(() => {
-    if (!slug) return;
-    let cancelled = false;
-    assessmentService
-      .getAssessmentDetail(slug)
-      .then((d) => {
-        if (!cancelled) setAssessmentDetail(d);
-      })
-      .catch(() => {
-        if (!cancelled) setAssessmentDetail(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
 
   const inAppreciationBand = useMemo(() => {
     if (!assessmentResult || !assessmentDetail?.certificate_available) return false;
@@ -113,6 +113,81 @@ export default function AssessmentResultPage() {
       assessmentDetail.pass_band_upper_min_percent
     );
   }, [assessmentResult, assessmentDetail]);
+
+  const preferredCertificateTier = useMemo<"participation" | "excellence">(() => {
+   
+    if (!assessmentResult || !assessmentDetail?.certificate_available) {
+      return "participation";
+    }
+    const upper = asNumber(assessmentDetail.pass_band_upper_min_percent);
+    if (upper == null) return "participation";
+    const pct =assessmentResult.stats?.score
+    return pct >= upper ? "excellence" : "participation";
+  }, [assessmentResult, assessmentDetail]);
+
+  useEffect(() => {
+    if (!assessmentResult) {
+      setUploadedCertificateUrl("");
+      return;
+    }
+
+    // Only skip when backend explicitly disables certificates.
+    if (assessmentDetail?.certificate_available === false) {
+      setUploadedCertificateUrl("");
+      return;
+    }
+
+
+    const clientId = Number(config.clientId);
+    if (!Number.isFinite(clientId) || clientId <= 0) {
+      setUploadedCertificateUrl("");
+      return;
+    }
+
+    const folderSlug = (assessmentDetail?.slug || slug || "").trim().toLowerCase();
+    if (!folderSlug) {
+      setUploadedCertificateUrl("");
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingUploadedCertificate(true);
+    setUploadedCertificateTier(preferredCertificateTier);
+
+    getUploadedFiles(clientId)
+      .then((res) => {
+        if (cancelled) return;
+        const files = (Array.isArray(res?.files) ? res.files : []).filter((f) => {
+          const m = (f.module || "").toLowerCase();
+          return m === "certificate";
+        });
+        const pathNeedle = `/certificate/${clientId}/${folderSlug}/${preferredCertificateTier}/`;
+        const byPath = files.find((f) =>
+          (f.url || "").toLowerCase().includes(pathNeedle)
+        );
+        // Fallback for alternate backend layouts: ensure at least client + slug + tier are present.
+        const relaxed = files.find((f) => {
+          const u = (f.url || "").toLowerCase();
+          return (
+            u.includes(`/certificate/${clientId}/`) &&
+            u.includes(`/${folderSlug}/`) &&
+            u.includes(`/${preferredCertificateTier}/`)
+          );
+        });
+
+        setUploadedCertificateUrl((byPath?.url || relaxed?.url || "").trim());
+      })
+      .catch(() => {
+        if (!cancelled) setUploadedCertificateUrl("");
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingUploadedCertificate(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [assessmentResult, assessmentDetail, preferredCertificateTier, slug]);
 
   /** Classic achievement wording (no credential lines). Shown only when score is in the appreciation band. */
   const appreciationCertificateContent = useMemo(() => {
@@ -136,7 +211,7 @@ export default function AssessmentResultPage() {
 
   /**
    * Result record with metric lines. Always completion-style so it does not duplicate the achievement
-   * headline when both certificates are shown.
+   * headline when both certificate are shown.
    * Must return `null` when not ready — `return true` makes this a boolean and breaks certificate + PNG.
    */
   const resultCertificateContent = useMemo(() => {
@@ -156,9 +231,9 @@ export default function AssessmentResultPage() {
       attemptedQuestions: s.attempted_questions,
       totalQuestions: s.total_questions,
       timeTakenMinutes: s.time_taken_minutes,
-      inAppreciationBand: false,
+      inAppreciationBand: preferredCertificateTier === "excellence",
     });
-  }, [assessmentResult, assessmentDetail, clientInfo, user, slug]);
+  }, [assessmentResult, assessmentDetail, clientInfo, user, slug, preferredCertificateTier]);
 
   const certificateDownloadFileStem = useMemo(() => {
     if (!assessmentResult || !user) {
@@ -196,7 +271,7 @@ export default function AssessmentResultPage() {
       }
 
       const result = await assessmentService.getAssessmentResult(slug);
-
+      setAssessmentDetail(result.assessment_details);
       if ((result as any).assessment_meta) {
         setPsychometricData(result);
       } else {
@@ -271,6 +346,60 @@ export default function AssessmentResultPage() {
     }
   };
 
+  const handleDownloadUploadedCertificate = async () => {
+    if (!uploadedCertificateUrl || uploadCertificateExporting) return;
+    const learnerName = getLearnerDisplayNameFromResult(assessmentResult, user);
+    if (!learnerName) {
+      showToast("Could not resolve learner name for certificate.", "error");
+      return;
+    }
+
+    try {
+      setUploadCertificateExporting(true);
+      const response = await fetch("/api/certificate/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: learnerName,
+          templateUrl: uploadedCertificateUrl,
+          templateHasDate: true,
+          issuerName: clientInfo?.name || "",
+          courseName: assessmentResult?.assessment_name || slug,
+        }),
+      });
+
+      if (!response.ok) {
+        let message = "Failed to generate personalized certificate";
+        try {
+          const data = (await response.json()) as { error?: string };
+          if (data?.error) message = data.error;
+        } catch {
+          // ignore JSON parse failure
+        }
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const fileBase = `certificate-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`;
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `${fileBase}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      showToast("Certificate downloaded.", "success");
+    } catch (e) {
+      showToast(
+        e instanceof Error ? e.message : "Failed to generate personalized certificate",
+        "error",
+      );
+    } finally {
+      setUploadCertificateExporting(false);
+    }
+  };
+
   return (
     <MainLayout>
       <Box
@@ -322,7 +451,6 @@ export default function AssessmentResultPage() {
           accuracy={stats?.accuracy_percent||0}
           percentile={stats.percentile}
         />
-  {JSON.stringify(resultCertificateContent)}
         {resultCertificateContent && user ? (
           <Paper
             className="exclude-from-pdf"
@@ -337,12 +465,14 @@ export default function AssessmentResultPage() {
             }}
           >
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              {appreciationCertificateContent ? "Certificates" : "Your certificate"}
+              {appreciationCertificateContent ? "Your certificate" : "Your certificate"}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {appreciationCertificateContent
-                ? "Each row has its own download buttons. The top bar \"Download PDF\" is your full result report, not a certificate."
-                : "Download buttons below match this certificate. The top bar \"Download PDF\" is your full result report, not a certificate."}
+              {uploadedCertificateUrl
+                ? "The top bar \"Download PDF\" is your full result report."
+                : appreciationCertificateContent
+                  ? "Each row has its own download buttons. The top bar \"Download PDF\" is your full result report, not a certificate."
+                  : "Download buttons below match this certificate. The top bar \"Download PDF\" is your full result report, not a certificate."}
             </Typography>
 
             <Box
@@ -359,22 +489,80 @@ export default function AssessmentResultPage() {
                 Certificate preview (same layout as PNG/PDF)
               </Typography>
               <Box sx={{ height: 210, position: "relative", overflow: "hidden" }}>
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    transform: "scale(0.3)",
-                    transformOrigin: "top left",
-                    pointerEvents: "none",
-                  }}
-                >
-                  <DynamicCertificate content={resultCertificateContent} />
-                </Box>
+                {checkingUploadedCertificate ? (
+                  <Box sx={{ height: "100%", display: "grid", placeItems: "center" }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Checking certificate...
+                    </Typography>
+                  </Box>
+                ) : uploadedCertificateUrl ? (
+                  looksLikeImageUrl(uploadedCertificateUrl) ? (
+                    <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+                      <Box
+                        component="img"
+                        src={uploadedCertificateUrl}
+                        alt={`${uploadedCertificateTier} certificate`}
+                        sx={{ width: "100%", height: "100%", objectFit: "contain", bgcolor: "background.paper" }}
+                      />
+                      <Typography
+                        sx={{
+                          position: "absolute",
+                          top: "53%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          px: 1.5,
+                          borderRadius: 1,
+                          fontWeight: 700,
+                          fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                          color: "#ffffff",
+                          bgcolor: "rgba(17, 24, 39, 0.45)",
+                          textAlign: "center",
+                          maxWidth: "80%",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {getLearnerDisplayNameFromResult(assessmentResult, user)}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Box sx={{ height: "100%", display: "grid", placeItems: "center", p: 2 }}>
+                      <Typography variant="body2" color="text.secondary" align="center">
+                         Certificate file is available. Use the download button below.
+                      </Typography>
+                    </Box>
+                  )
+                ) : (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      transform: "scale(0.3)",
+                      transformOrigin: "top left",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <DynamicCertificate content={resultCertificateContent} />
+                  </Box>
+                )}
               </Box>
             </Box>
 
-            {appreciationCertificateContent ? (
+            {uploadedCertificateUrl ? (
+              <Box sx={{ mb: 3 }}>
+                
+                <Button
+                  onClick={handleDownloadUploadedCertificate}
+                  disabled={uploadCertificateExporting}
+                  variant="contained"
+                  startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                >
+                  {uploadCertificateExporting ? "Preparing..." : "Download certificate"}
+                </Button>
+              </Box>
+            ) : appreciationCertificateContent ? (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" fontWeight={700} gutterBottom>
                   Certificate of achievement
@@ -394,22 +582,17 @@ export default function AssessmentResultPage() {
             ) : null}
 
             <Box>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                Certificate with result summary
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                Includes score, accuracy, percentile, attempts, and time. Signatory image uses client
-                branding when configured.
-              </Typography>
-              {JSON.stringify(resultCertificateContent)}
-              <CertificateLearnerToolbar
-                key={`res-${certificateBrandingKey}`}
-                content={resultCertificateContent}
-                fileNameBase={`certificate-result-summary-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`}
-                dense
-                pngButtonLabel="Download result-summary certificate (PNG)"
-                pdfButtonLabel="Download result-summary certificate (PDF)"
-              />
+             
+              {!uploadedCertificateUrl ? (
+                <CertificateLearnerToolbar
+                  key={`res-${certificateBrandingKey}`}
+                  content={resultCertificateContent}
+                  fileNameBase={`certificate-result-summary-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`}
+                  dense
+                  pngButtonLabel="Download result-summary certificate (PNG)"
+                  pdfButtonLabel="Download result-summary certificate (PDF)"
+                />
+              ) : null}
             </Box>
           </Paper>
         ) : null}

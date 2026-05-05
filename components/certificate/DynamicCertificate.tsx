@@ -19,6 +19,17 @@ function formatCertificateDate(d: Date, locale = "en-GB"): string {
   }
 }
 
+function makeFallbackSignature(name: string, certId: string): string {
+  const base = (name || "Organization").trim();
+  const parts = base.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return base;
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  const seed = (certId || "00").length % 3;
+  const connector = seed === 0 ? " " : seed === 1 ? " ~ " : "  ";
+  return `${first}${connector}${last}`;
+}
+
 export interface DynamicCertificateProps {
   content: CertificateContent;
 }
@@ -42,12 +53,24 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
     }
 
     const { branding, dateLabelPrefix = "DATE:" } = content;
-    const accent = branding?.accentColor || "#6d28d9";
+    const accent = branding?.accentColor || "#5a46a0";
+    const nameAccent = "#1587c9";
     const dateStr = formatCertificateDate(content?.issuedOn || new Date());
     const logoUrl = (branding?.logoUrl || "").trim();
     const nameLen = (content.recipientName || "").length;
+    const signatoryName =
+      (branding?.signatoryName || "").trim() ||
+      (branding?.issuerDisplayName || "").trim() ||
+      "Organization";
+    const signatoryTitle =
+      (branding?.signatoryTitle || "").trim() || "Authorized representative";
+    const hasSignatureImage = Boolean((branding?.signatureImageUrl || "").trim());
+    const fallbackSignatureText = makeFallbackSignature(signatoryName, content.certificateId);
+    const isExcellence =
+      content.variant === "assessment_appreciation" ||
+      /excellence|achievement/i.test(content.headlineTitle || "");
     /** Aligns with server canvas sizing in `app/api/certificate/generate/route.ts`. */
-    const recipientFontSize = nameLen > 30 ? 44 : nameLen > 20 ? 50 : 58;
+    const recipientFontSize = nameLen > 30 ? 56 : nameLen > 20 ? 64 : 72;
 
     const dotPattern =
       "radial-gradient(circle at 1px 1px, rgba(90,70,160,0.07) 1px, transparent 0)";
@@ -70,7 +93,7 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
           overflow: "hidden",
           display: "grid",
           gridTemplateColumns: "1fr 300px",
-          boxShadow: "0 24px 48px rgba(45, 20, 80, 0.18)",
+          boxShadow: "0 22px 52px rgba(16, 24, 40, 0.18)",
           fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
           bgcolor: "#faf8ff",
           color: "#1a1033",
@@ -81,8 +104,8 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
         <Box
           sx={{
             position: "relative",
-            px: 5,
-            pt: 3.5,
+            px: 5.5,
+            pt: 3,
             pb: content?.credentialLines?.length ? 16 : 3.5,
             backgroundColor: "#f7f4ff",
             backgroundImage: `${lineMask}, ${dotPattern}`,
@@ -90,13 +113,28 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
             backgroundPosition: "0 0, 0 0",
           }}
         >
+          {isExcellence ? (
+            <Box sx={{ position: "absolute", top: 10, left: 10, width: 96, height: 118, zIndex: 3 }}>
+              <Box
+                component="svg"
+                viewBox="0 0 100 120"
+                sx={{ width: "100%", height: "100%" }}
+                fill="none"
+              >
+                <circle cx="50" cy="40" r="31" fill="#D4AF37" />
+                <circle cx="50" cy="40" r="23" fill="#E9C96B" />
+                <path d="M36 68L24 112L46 96L54 118L64 96L86 112L74 68H36Z" fill="#E6C86D" />
+                <circle cx="50" cy="40" r="30.2" stroke="#B9911B" strokeWidth="1.6" />
+              </Box>
+            </Box>
+          ) : null}
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
               gap: 2,
-              mb: 2,
+              mb: 1.5,
             }}
           >
             <Typography
@@ -173,23 +211,45 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
           <Typography
             sx={{
               textAlign: "center",
-              fontSize: 28,
+              fontSize: 50,
               fontWeight: 800,
-              letterSpacing: "0.14em",
+              letterSpacing: "0.11em",
               textTransform: "uppercase",
-              color: "#2d1b4e",
-              mb: 2.5,
+              color: "#3e3aa5",
+              lineHeight: 1.05,
+              mb: 0.6,
             }}
           >
             {content.headlineTitle}
           </Typography>
 
+          <Box
+            sx={{
+              width: "54%",
+              mx: "auto",
+              mb: 0.8,
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <Box
+              component="svg"
+              viewBox="0 0 220 24"
+              sx={{ width: "100%", height: 20 }}
+              fill="none"
+            >
+              <path d="M8 12H94" stroke="rgba(90,70,160,0.35)" strokeWidth="1.4" />
+              <path d="M126 12H212" stroke="rgba(90,70,160,0.35)" strokeWidth="1.4" />
+              <path d="M110 4C104 4 101 8 101 12C101 16 104 20 110 20C116 20 119 16 119 12C119 8 116 4 110 4Z" stroke="rgba(90,70,160,0.55)" strokeWidth="1.4" />
+            </Box>
+          </Box>
+
           <Typography
             sx={{
               textAlign: "center",
-              fontSize: 17,
+              fontSize: 19,
               color: "rgba(26,16,51,0.72)",
-              mb: 1,
+              mb: 0.2,
             }}
           >
             {content.preamble}
@@ -198,29 +258,41 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
           <Typography
             sx={{
               textAlign: "center",
-              fontFamily: '"Alex Brush", "Brush Script MT", "Segoe Script", cursive',
+              fontFamily: '"Alex Brush"',
               fontSize: recipientFontSize,
               fontWeight: 400,
               lineHeight: 1.15,
-              color: accent,
-              mb: 2,
+              color: nameAccent,
+              mb: 0.8,
               px: 2,
               wordBreak: "break-word",
+              textTransform: "none",
+              letterSpacing: "0",
+              textShadow: "0 1px 0 rgba(255,255,255,0.85)",
             }}
           >
             {content.recipientName}
           </Typography>
 
+          <Box
+            sx={{
+              width: "58%",
+              mx: "auto",
+              borderBottom: "2px solid rgba(90,70,160,0.45)",
+              mb: 1.35,
+            }}
+          />
+
           <Typography
             component="div"
             sx={{
               textAlign: "center",
-              fontSize: 17,
+              fontSize: 18,
               lineHeight: 1.55,
               color: "rgba(26,16,51,0.85)",
               maxWidth: 720,
               mx: "auto",
-              mb: 2,
+              mb: 1.1,
               px: 2,
             }}
           >
@@ -238,49 +310,13 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
             ))}
           </Typography>
 
-          {content.scoreText ? (
-            <Typography
-              sx={{
-                textAlign: "center",
-                fontSize: 15,
-                fontWeight: 600,
-                color: accent,
-              }}
-            >
-              Score: {content.scoreText}
-            </Typography>
-          ) : null}
-
-          {content.credentialLines && content.credentialLines.length > 0 ? (
-            <Box
-              sx={{
-                textAlign: "center",
-                mt: 1.5,
-                mb: 1,
-                px: 2,
-              }}
-            >
-              {content.credentialLines.map((line, i) => (
-                <Typography
-                  key={i}
-                  sx={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "rgba(26,16,51,0.68)",
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {line}
-                </Typography>
-              ))}
-            </Box>
-          ) : null}
+          <Box sx={{ flex: 1 }} />
 
           <Box
             sx={{
               position: "absolute",
-              left: 48,
-              right: 48,
+              left: 42,
+              right: 42,
               bottom: 28,
               display: "flex",
               flexWrap: "wrap",
@@ -288,8 +324,8 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
               alignItems: "flex-end",
             }}
           >
-            <Box sx={{ minWidth: 200, maxWidth: 360 }}>
-              {branding?.signatureImageUrl ? (
+            <Box sx={{ minWidth: 200, maxWidth: 360, p: 1, borderRadius: 1.5, backgroundColor: "rgba(255,255,255,0.45)" }}>
+              {hasSignatureImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={branding.signatureImageUrl}
@@ -304,13 +340,27 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
                   }}
                 />
               ) : (
-                <Box sx={{ height: 40, borderBottom: "2px solid rgba(26,16,51,0.35)", mb: 1, width: 180 }} />
+                <Box sx={{ mb: 1, width: 220 }}>
+                  <Typography
+                    sx={{
+                      fontFamily: '"Alex Brush", "Brush Script MT", "Segoe Script", cursive',
+                      fontSize: 34,
+                      lineHeight: 1,
+                      color: "#1f7bd8",
+                      textAlign: "left",
+                      mb: 0.2,
+                    }}
+                  >
+                    {fallbackSignatureText}
+                  </Typography>
+                  <Box sx={{ borderBottom: "2px solid rgba(26,16,51,0.35)" }} />
+                </Box>
               )}
-              <Typography sx={{ fontWeight: 800, fontSize: 15, color: "#1a1033" }}>
-                {branding?.signatoryName || "Authorized representative"}
+              <Typography sx={{ fontWeight: 800, fontSize: 15, color: "#1a1033", textTransform: "title-case" }}>
+                {signatoryName}
               </Typography>
               <Typography sx={{ fontSize: 13, color: "rgba(26,16,51,0.65)" }}>
-                {branding?.signatoryTitle || ""}
+                {signatoryTitle}
               </Typography>
             </Box>
 

@@ -6,6 +6,13 @@ import type { CertificateBranding, CertificateContent, CertificateVariant } from
 import { generateCertificateId } from "./certificate-id";
 import { scoreToPercent } from "./pass-band";
 
+function toTitleCaseName(name: string): string {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase())
+    .trim();
+}
+
 function baseContent(
   variant: CertificateVariant,
   partial: Omit<
@@ -18,14 +25,14 @@ function baseContent(
   return {
     variant,
     issuedOn: partial.issuedOn ?? new Date(),
-    certificateId: partial.certificateId ?? generateCertificateId(),
+    certificateId: partial.certificateId ?? generateCertificateId(branding?.issuerDisplayName),
     dateLabelPrefix: partial.dateLabelPrefix ?? "DATE:",
     preamble: partial.preamble,
     headlineTitle: partial.headlineTitle,
     bodyLead: partial.bodyLead,
     bodySegments: partial.bodySegments,
     subjectName: partial.subjectName,
-    recipientName: partial.recipientName,
+    recipientName: toTitleCaseName(partial.recipientName),
     scoreText: partial.scoreText,
     credentialLines: partial.credentialLines,
     branding,
@@ -79,14 +86,9 @@ export function buildAssessmentParticipationCertificate(
       recipientName,
       subjectName: assessmentTitle,
       headlineTitle: "Certificate of participation",
-      preamble: "This acknowledges that",
-      bodyLead: "has successfully participated in the assessment",
-      bodySegments: [
-        { text: assessmentTitle, bold: true },
-        { text: " conducted by ", bold: false },
-        { text: branding.issuerDisplayName, bold: true },
-        { text: ".", bold: false },
-      ],
+      preamble: "This certificate is presented to",
+      bodyLead: "For completing structured training in ",
+      bodySegments: [{ text: assessmentTitle, bold: true }],
       issuedOn,
       certificateId,
     },
@@ -111,46 +113,16 @@ export function buildAssessmentAppreciationCertificate(
     {
       recipientName,
       subjectName: assessmentTitle,
-      scoreText,
-      headlineTitle: "Certificate of achievement",
-      preamble: "This is to certify that",
-      bodyLead: "has demonstrated outstanding performance on the assessment",
-      bodySegments: [
-        { text: assessmentTitle, bold: true },
-        { text: ` with a score of ${scoreText}, offered by `, bold: false },
-        { text: branding.issuerDisplayName, bold: true },
-        { text: ".", bold: false },
-      ],
+      scoreText: undefined,
+      headlineTitle: "Certificate of excellence",
+      preamble: "This certificate is presented to",
+      bodyLead: "For completing structured training in ",
+      bodySegments: [{ text: assessmentTitle, bold: true }],
       issuedOn,
       certificateId,
     },
     branding
   );
-}
-
-function formatAssessmentResultCredentialLines(args: {
-  accuracyPercent: number;
-  percentile?: number | null;
-  attemptedQuestions: number;
-  totalQuestions: number;
-  timeTakenMinutes?: number | null;
-}): string[] {
-  const lines: string[] = [];
-  const acc = Math.round(Number(args.accuracyPercent) || 0);
-  lines.push(`Accuracy: ${acc}%`);
-  if (args.percentile != null && !Number.isNaN(Number(args.percentile))) {
-    lines.push(`Percentile: ${Math.round(Number(args.percentile))}`);
-  }
-  const att = args.attemptedQuestions ?? 0;
-  const tot = args.totalQuestions ?? 0;
-  if (tot > 0) {
-    lines.push(`Questions attempted: ${att} / ${tot}`);
-  }
-  const mins = args.timeTakenMinutes;
-  if (mins != null && Number(mins) > 0) {
-    lines.push(`Time taken: ${Math.round(Number(mins))} min`);
-  }
-  return lines;
 }
 
 /**
@@ -189,37 +161,18 @@ export function buildAssessmentResultCertificate(args: {
     certificateId,
   } = args;
 
-  const pct = scoreToPercent(score, maximumMarks);
-  const pctRounded = Math.round(pct);
-  const max = Number(maximumMarks) || 0;
-  const scoreText =
-    max > 0 ? `${score} / ${max} (${pctRounded}%)` : `${pctRounded}%`;
-
-  const credentialLines = formatAssessmentResultCredentialLines({
-    accuracyPercent,
-    percentile,
-    attemptedQuestions,
-    totalQuestions,
-    timeTakenMinutes,
-  });
-
   if (inAppreciationBand) {
     return baseContent(
       "assessment_result",
       {
         recipientName,
         subjectName: assessmentTitle,
-        scoreText,
-        credentialLines,
-        headlineTitle: "Certificate of achievement",
-        preamble: "This is to certify that",
-        bodyLead: "has demonstrated outstanding performance on the assessment",
-        bodySegments: [
-          { text: assessmentTitle, bold: true },
-          { text: ` with a score of ${scoreText}, offered by `, bold: false },
-          { text: branding.issuerDisplayName, bold: true },
-          { text: ".", bold: false },
-        ],
+        scoreText: undefined,
+        credentialLines: undefined,
+        headlineTitle: "Certificate of excellence",
+        preamble: "This certificate is presented to",
+        bodyLead: "For completing structured training in ",
+        bodySegments: [{ text: assessmentTitle, bold: true }],
         issuedOn,
         certificateId,
       },
@@ -232,20 +185,12 @@ export function buildAssessmentResultCertificate(args: {
     {
       recipientName,
       subjectName: assessmentTitle,
-      scoreText,
-      credentialLines,
+      scoreText: undefined,
+      credentialLines: undefined,
       headlineTitle: "Certificate of completion",
-      preamble: "This is to certify that",
-      bodyLead: "has successfully completed the assessment",
-      bodySegments: [
-        { text: assessmentTitle, bold: true },
-        {
-          text: ` with a recorded score of ${scoreText}, offered by `,
-          bold: false,
-        },
-        { text: branding.issuerDisplayName, bold: true },
-        { text: ".", bold: false },
-      ],
+      preamble: "This certificate is presented to",
+      bodyLead: "For completing structured training in ",
+      bodySegments: [{ text: assessmentTitle, bold: true }],
       issuedOn,
       certificateId,
     },

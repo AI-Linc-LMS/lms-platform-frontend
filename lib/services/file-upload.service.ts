@@ -6,7 +6,11 @@ export type FileUploadModule =
   | "report_issue"
   | "profile_avatar"
   | "job_application"
+  | "certificate"
   | "other";
+
+/** Tier folder for assessment certificate assets (backend maps to S3 path). */
+export type CertificateUploadTier = "participation" | "excellence";
 
 export interface FileUploadResponse {
   id: number;
@@ -118,6 +122,41 @@ function pickMetadataRecord(
   return top;
 }
 
+async function postUploadFormData(
+  cid: number,
+  formData: FormData,
+  file: File,
+  fallbackModule: string,
+): Promise<FileUploadResponse> {
+  const response = await apiClient.post<Record<string, unknown>>(
+    `/api/clients/${cid}/upload/`,
+    formData,
+    {
+      transformRequest: (data) => data,
+    },
+  );
+
+  const top = (response.data ?? {}) as Record<string, unknown>;
+  const url = extractUploadUrlFromPayload(top);
+
+  if (!url) {
+    throw new Error(
+      "File upload response did not include a usable URL. Check API response shape (expected url, file_url, nested data.file, etc.).",
+    );
+  }
+
+  const meta = pickMetadataRecord(top, url);
+  const m = readIdFilenameModuleCreated(meta);
+
+  return {
+    id: m.id,
+    url,
+    filename: m.filename || file.name || "upload.jpg",
+    module: m.module || fallbackModule,
+    created_at: m.created_at || new Date().toISOString(),
+  };
+}
+
 function formatUploadAxiosError(err: unknown): string {
   if (!axios.isAxiosError(err)) {
     return err instanceof Error ? err.message : String(err);
@@ -182,33 +221,52 @@ export const uploadFile = async (
   formData.append("module", module);
 
   try {
-    const response = await apiClient.post<Record<string, unknown>>(
-      `/api/clients/${cid}/upload/`,
-      formData,
-      {
-        transformRequest: (data) => data,
-      },
-    );
-
-    const top = (response.data ?? {}) as Record<string, unknown>;
-    const url = extractUploadUrlFromPayload(top);
-
-    if (!url) {
-      throw new Error(
-        "File upload response did not include a usable URL. Check API response shape (expected url, file_url, nested data.file, etc.).",
-      );
+    return await postUploadFormData(cid, formData, file, module);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw new Error(`File upload failed: ${formatUploadAxiosError(err)}`);
     }
+    throw err;
+  }
+};
 
-    const meta = pickMetadataRecord(top, url);
-    const m = readIdFilenameModuleCreated(meta);
+/**
+ * Admin certificate template/asset upload. Sends `module=certificate` plus `certificate_scope`
+ * and related fields; backend should store objects under the S3 `certificate/{clientId}/...` prefix.
+ */
+export const uploadAdminCertificateAsset = async (
+  clientId: number,
+  file: File,
+  params:
+    | { scope: "assessment"; slug: string; tier: CertificateUploadTier }
+    | { scope: "course"; courseId: number },
+): Promise<FileUploadResponse> => {
+  const cid = Number(clientId);
+  if (!Number.isFinite(cid) || cid <= 0) {
+    throw new Error(`Invalid client id for file upload: ${String(clientId)}`);
+  }
 
-    return {
-      id: m.id,
-      url,
-      filename: m.filename || file.name || "upload.jpg",
-      module: m.module || module,
-      created_at: m.created_at || new Date().toISOString(),
-    };
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("module", "certificate");
+  formData.append("certificate_scope", params.scope);
+
+  if (params.scope === "assessment") {
+    const slug = params.slug.trim();
+    if (!slug) {
+      throw new Error("Assessment slug is required for certificate upload.");
+    }
+    formData.append("certificate_path_hint", `certificate/${cid}/${slug}/${params.tier}/`);
+  } else {
+    const courseId = Number(params.courseId);
+    if (!Number.isFinite(courseId) || courseId <= 0) {
+      throw new Error(`Invalid course id for certificate upload: ${String(params.courseId)}`);
+    }
+    formData.append("certificate_path_hint", `certificate/${cid}/course/${courseId}/`);
+  }
+
+  try {
+    return await postUploadFormData(cid, formData, file, "certificate");
   } catch (err) {
     if (axios.isAxiosError(err)) {
       throw new Error(`File upload failed: ${formatUploadAxiosError(err)}`);
