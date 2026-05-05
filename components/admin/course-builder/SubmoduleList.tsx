@@ -49,11 +49,11 @@ interface SubmoduleListProps {
 const emptyForm: SubmoduleData = { title: "", description: "", order: 1 };
 
 const STAT_BADGES: { key: string; icon: string; color: string; label: string }[] = [
-  { key: "video_count", icon: "mdi:video", color: "#7c3aed", label: "Videos" },
-  { key: "article_count", icon: "mdi:file-document", color: "#2563eb", label: "Articles" },
-  { key: "quiz_count", icon: "mdi:help-circle", color: "#d97706", label: "Quizzes" },
-  { key: "coding_problem_count", icon: "mdi:code-tags", color: "#dc2626", label: "Coding" },
-  { key: "assignment_count", icon: "mdi:clipboard-text", color: "#059669", label: "Assignments" },
+  { key: "video_count", icon: "mdi:video", color: "var(--accent-purple)", label: "Videos" },
+  { key: "article_count", icon: "mdi:file-document", color: "var(--accent-indigo)", label: "Articles" },
+  { key: "quiz_count", icon: "mdi:help-circle", color: "var(--warning-500)", label: "Quizzes" },
+  { key: "coding_problem_count", icon: "mdi:code-tags", color: "var(--error-500)", label: "Coding" },
+  { key: "assignment_count", icon: "mdi:clipboard-text", color: "var(--success-500)", label: "Assignments" },
 ];
 
 export function SubmoduleList({
@@ -170,7 +170,7 @@ export function SubmoduleList({
   return (
     <Box sx={{ pl: 2, pt: 1 }}>
       {submodules.length === 0 ? (
-        <Typography variant="body2" sx={{ color: "#9ca3af", py: 1 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-tertiary)", py: 1 }}>
           No submodules yet
         </Typography>
       ) : (
@@ -184,7 +184,9 @@ export function SubmoduleList({
                 sx={{
                   borderRadius: 1.5,
                   border: "1px solid",
-                  borderColor: isExpanded ? "#c7d2fe" : "#e5e7eb",
+                  borderColor: isExpanded
+                    ? "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)"
+                    : "var(--border-default)",
                   overflow: "hidden",
                   transition: "border-color 0.2s",
                 }}
@@ -198,8 +200,10 @@ export function SubmoduleList({
                     px: 2,
                     py: 1.5,
                     cursor: "pointer",
-                    bgcolor: isExpanded ? "#fafafe" : "transparent",
-                    "&:hover": { bgcolor: "#f9fafb" },
+                    bgcolor: isExpanded
+                      ? "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)"
+                      : "transparent",
+                    "&:hover": { bgcolor: "var(--surface)" },
                     transition: "background 0.15s",
                   }}
                   onClick={() => toggleExpand(sub.id)}
@@ -209,9 +213,9 @@ export function SubmoduleList({
                       <IconWrapper
                         icon={isExpanded ? "mdi:chevron-down" : "mdi:chevron-right"}
                         size={18}
-                        color="#9ca3af"
+                        color="var(--font-tertiary)"
                       />
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827" }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                         {sub.order}. {sub.title}
                       </Typography>
                       {total > 0 && (
@@ -222,8 +226,8 @@ export function SubmoduleList({
                             height: 20,
                             fontSize: "0.65rem",
                             fontWeight: 600,
-                            bgcolor: "#f3f4f6",
-                            color: "#6b7280",
+                            bgcolor: "var(--surface)",
+                            color: "var(--font-secondary)",
                           }}
                         />
                       )}
@@ -244,7 +248,7 @@ export function SubmoduleList({
                                   px: 0.5,
                                   py: 0.125,
                                   borderRadius: 0.5,
-                                  bgcolor: "#f9fafb",
+                                  bgcolor: "var(--surface)",
                                 }}
                               >
                                 <IconWrapper icon={badge.icon} size={12} color={badge.color} />
@@ -260,7 +264,7 @@ export function SubmoduleList({
                     {sub.description && (
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", display: "block", mt: 0.25, ml: 3.5 }}
+                        sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25, ml: 3.5 }}
                       >
                         {sub.description}
                       </Typography>
@@ -275,7 +279,7 @@ export function SubmoduleList({
                         <IconButton
                           size="small"
                           onClick={() => openSubmoduleEditor(sub)}
-                          sx={{ color: "#4f46e5" }}
+                          sx={{ color: "var(--accent-indigo)" }}
                         >
                           <IconWrapper icon="mdi:pencil" size={16} />
                         </IconButton>
@@ -283,7 +287,7 @@ export function SubmoduleList({
                       <IconButton
                         size="small"
                         onClick={() => setDeleteTarget(sub)}
-                        sx={{ color: "#ef4444" }}
+                        sx={{ color: "var(--error-500)" }}
                       >
                         <IconWrapper icon="mdi:delete" size={16} />
                       </IconButton>
@@ -293,7 +297,7 @@ export function SubmoduleList({
 
                 {/* Expanded Content */}
                 <Collapse in={isExpanded}>
-                  <Box sx={{ px: 2, pb: 1.5, borderTop: "1px solid #f3f4f6" }}>
+                  <Box sx={{ px: 2, pb: 1.5, borderTop: "1px solid var(--border-default)" }}>
                     <ContentList
                       courseId={courseId}
                       submoduleId={sub.id}
@@ -312,7 +316,12 @@ export function SubmoduleList({
           size="small"
           startIcon={<IconWrapper icon="mdi:plus" size={16} />}
           onClick={openAdd}
-          sx={{ mt: 1, color: "#6366f1", textTransform: "none", fontWeight: 600 }}
+          sx={{
+            mt: 1,
+            color: "var(--accent-indigo)",
+            textTransform: "none",
+            fontWeight: 600,
+          }}
         >
           Add Submodule
         </Button>
@@ -350,7 +359,7 @@ export function SubmoduleList({
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeDialog} disabled={saving} sx={{ color: "#6b7280" }}>
+          <Button onClick={closeDialog} disabled={saving} sx={{ color: "var(--font-secondary)" }}>
             Cancel
           </Button>
           <Button
@@ -358,7 +367,16 @@ export function SubmoduleList({
             disabled={saving || !formData.title.trim()}
             variant="contained"
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
-            sx={{ bgcolor: "#6366f1" }}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {saving ? "Saving..." : editingId !== null ? "Update" : "Create"}
           </Button>

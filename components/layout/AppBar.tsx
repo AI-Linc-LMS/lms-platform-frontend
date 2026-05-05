@@ -13,6 +13,7 @@ import {
   Popover,
   Tooltip,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
@@ -247,10 +248,10 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
       position="fixed"
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        backgroundColor: "#ffffff",
-        color: "#111827",
+        backgroundColor: "var(--surface)",
+        color: "var(--font-primary)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        borderBottom: "1px solid #e5e7eb",
+        borderBottom: "1px solid var(--border-default)",
         width: {
           xs: "100%",
           md: `calc(100% - ${
@@ -407,24 +408,25 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 px: 2,
                 py: 1,
                 borderRadius: 2,
-                backgroundColor: "#fef3c7",
-                border: "1px solid #fde68a",
+                backgroundColor: "var(--surface-indigo-light)",
+                border: "1px solid",
+                borderColor: "var(--primary-200)",
                 transition: "all 0.2s ease",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 "&:hover": {
-                  backgroundColor: "#fde68a",
+                  backgroundColor: "var(--primary-100)",
                   boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                   transform: "translateY(-1px)",
                 },
               }}
             >
-              <IconWrapper icon="mdi:clock-outline" size={16} color="#92400e" />
+              <IconWrapper icon="mdi:clock-outline" size={16} color="var(--primary-700)" />
               <Typography
                 variant="body2"
                 sx={{
                   fontSize: "0.875rem",
                   fontWeight: 600,
-                  color: "#92400e",
+                  color: "var(--primary-700)",
                 }}
               >
                 <motion.span
@@ -460,24 +462,25 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 px: 2,
                 py: 1,
                 borderRadius: 2,
-                backgroundColor: "#fef3c7",
-                border: "1px solid #fde68a",
+                backgroundColor: "var(--surface-indigo-light)",
+                border: "1px solid",
+                borderColor: "var(--primary-200)",
                 transition: "all 0.2s ease",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 "&:hover": {
-                  backgroundColor: "#fde68a",
+                  backgroundColor: "var(--primary-100)",
                   boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                   transform: "translateY(-1px)",
                 },
               }}
             >
-              <IconWrapper icon="mdi:clock-outline" size={16} color="#92400e" />
+              <IconWrapper icon="mdi:clock-outline" size={16} color="var(--primary-700)" />
               <Typography
                 variant="body2"
                 sx={{
                   fontSize: "0.875rem",
                   fontWeight: 600,
-                  color: "#92400e",
+                  color: "var(--primary-700)",
                 }}
               >
                 TL
@@ -500,8 +503,12 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 mt: 1,
                 minWidth: 280,
                 borderRadius: 2,
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                border: "1px solid",
+                borderColor: "var(--primary-200)",
+                bgcolor: "var(--card-bg)",
+                color: "var(--font-primary)",
+                boxShadow: (theme) =>
+                  `0 8px 24px ${alpha(theme.palette.common.black, 0.15)}`,
                 pointerEvents: "auto",
               },
             }}

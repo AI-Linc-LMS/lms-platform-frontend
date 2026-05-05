@@ -35,11 +35,11 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
   const getStatusColor = () => {
     switch (proctoringStatus) {
       case "NORMAL":
-        return "#10b981";
+        return "var(--course-cta)";
       case "WARNING":
-        return "#f59e0b";
+        return "var(--warning-500)";
       case "VIOLATION":
-        return "#ef4444";
+        return "var(--error-500)";
     }
   };
   return (
@@ -52,8 +52,8 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
         insetInlineEnd: 0,
         zIndex: 1300,
         p: 1.2,
-        backgroundColor: "#fff",
-        borderBottom: "1px solid #e5e7eb",
+        backgroundColor: "var(--font-light)",
+        borderBottom: "1px solid var(--border-default)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -84,31 +84,31 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
               height: 22,
               bgcolor:
                 liveStreamStatus === "connected"
-                  ? "#dcfce7"
+                  ? "color-mix(in srgb, var(--course-cta) 14%, transparent)"
                   : liveStreamStatus === "error"
-                    ? "#fee2e2"
-                    : "#fef3c7",
+                    ? "color-mix(in srgb, var(--error-500) 12%, transparent)"
+                    : "color-mix(in srgb, var(--warning-500) 18%, transparent)",
               color:
                 liveStreamStatus === "connected"
-                  ? "#166534"
+                  ? "color-mix(in srgb, var(--course-cta) 78%, var(--font-dark))"
                   : liveStreamStatus === "error"
-                    ? "#991b1b"
-                    : "#92400e",
+                    ? "color-mix(in srgb, var(--error-600) 88%, var(--font-dark))"
+                    : "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))",
               border:
                 liveStreamStatus === "connected"
-                  ? "1px solid #86efac"
-                  : "1px solid #fcd34d",
+                  ? "1px solid color-mix(in srgb, var(--course-cta) 38%, transparent)"
+                  : "1px solid color-mix(in srgb, var(--warning-500) 42%, transparent)",
             }}
           />
         )}
         {/* Timer */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="mdi:timer-outline" size={24} color="#6b7280" />
+          <IconWrapper icon="mdi:timer-outline" size={24} color="var(--font-secondary)" />
           <Typography
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#374151",
+              color: "var(--font-muted)",
               fontFamily: "monospace",
             }}
           >
@@ -125,7 +125,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
               gap: 1,
               px: 1.5,
               py: 0.75,
-              backgroundColor: "#1f2937",
+              backgroundColor: "var(--font-primary-dark)",
               borderRadius: 1,
               border: `2px solid ${getStatusColor()}`,
             }}
@@ -169,7 +169,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
                 />
                 <Typography
                   variant="caption"
-                  sx={{ color: "#fff", fontWeight: 600, fontSize: "0.65rem" }}
+                  sx={{ color: "var(--font-light)", fontWeight: 600, fontSize: "0.65rem" }}
                 >
                   REC
                 </Typography>
@@ -229,29 +229,29 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
           minWidth: { xs: "120px", md: "180px" },
           px: { xs: 2, md: 3 },
           py: 1.25,
-          backgroundColor: isLastQuestion ? "#10b981" : "#6366f1",
-          color: "#ffffff",
+          backgroundColor: isLastQuestion ? "var(--course-cta)" : "var(--accent-indigo)",
+          color: "var(--font-light)",
           fontWeight: 600,
           fontSize: { xs: "0.875rem", md: "1rem" },
           textTransform: "none",
           borderRadius: 2,
           boxShadow: isLastQuestion
-            ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
-            : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+            ? "var(--assessment-catalog-cta-success-shadow)"
+            : "var(--assessment-catalog-cta-auto-shadow)",
           transition: "all 0.2s ease-in-out",
           "&:hover": {
-            backgroundColor: isLastQuestion ? "#059669" : "#4f46e5",
+            backgroundColor: isLastQuestion ? "var(--assessment-success-strong)" : "var(--accent-indigo-dark)",
             boxShadow: isLastQuestion
-              ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
-              : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+              ? "var(--assessment-catalog-cta-success-shadow-hover)"
+              : "var(--assessment-catalog-cta-auto-shadow-hover)",
             transform: "translateY(-1px)",
           },
           "&:active": {
             transform: "translateY(0)",
           },
           "&:disabled": {
-            backgroundColor: "#9ca3af",
-            color: "#ffffff",
+            backgroundColor: "var(--font-tertiary)",
+            color: "var(--font-light)",
             boxShadow: "none",
             transform: "none",
             cursor: "not-allowed",

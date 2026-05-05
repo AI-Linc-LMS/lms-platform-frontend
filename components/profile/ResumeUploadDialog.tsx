@@ -97,7 +97,7 @@ export function ResumeUploadDialog({
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 3 },
-          boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+          boxShadow: "0 24px 64px color-mix(in srgb, var(--font-primary) 28%, transparent)",
           overflow: "hidden",
         },
       }}
@@ -109,8 +109,8 @@ export function ResumeUploadDialog({
           justifyContent: "space-between",
           px: { xs: 2.5, sm: 3 },
           py: 2,
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid color-mix(in srgb, var(--border-default) 88%, transparent)",
+          backgroundColor: "color-mix(in srgb, var(--surface) 75%, var(--background))",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -119,19 +119,20 @@ export function ResumeUploadDialog({
               width: 48,
               height: 48,
               borderRadius: 2,
-              background: "linear-gradient(135deg, rgba(10, 102, 194, 0.12) 0%, rgba(10, 102, 194, 0.06) 100%)",
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 14%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 9%, transparent) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:file-document-plus-outline" size={26} color="#0a66c2" />
+            <IconWrapper icon="mdi:file-document-plus-outline" size={26} color="var(--accent-indigo)" />
           </Box>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#111827", fontSize: "1.25rem" }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "1.25rem" }}>
               Upload Resume
             </Typography>
-            <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
               PDF only, max {MAX_SIZE_MB}MB
             </Typography>
           </Box>
@@ -143,16 +144,16 @@ export function ResumeUploadDialog({
       <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, py: 3 }}>
         <Box
           sx={{
-            border: "2px dashed #e2e8f0",
+            border: "2px dashed color-mix(in srgb, var(--border-default) 88%, transparent)",
             borderRadius: 3,
             p: 5,
             textAlign: "center",
             cursor: "pointer",
-            backgroundColor: "#f8fafc",
+            backgroundColor: "color-mix(in srgb, var(--surface) 75%, var(--background))",
             transition: "all 0.2s ease",
             "&:hover": {
-              backgroundColor: "rgba(10, 102, 194, 0.04)",
-              borderColor: "#0a66c2",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, var(--background))",
+              borderColor: "var(--accent-indigo)",
             },
           }}
           onClick={() => fileInputRef.current?.click()}
@@ -169,20 +170,20 @@ export function ResumeUploadDialog({
           <IconWrapper
             icon="mdi:file-document-outline"
             size={56}
-            color={selectedFile ? "#0a66c2" : "#94a3b8"}
+            color={selectedFile ? "var(--accent-indigo)" : "var(--font-tertiary)"}
           />
           <Typography
             variant="body1"
             sx={{
               mt: 1.5,
-              color: selectedFile ? "#0a66c2" : "#475569",
+              color: selectedFile ? "var(--accent-indigo)" : "var(--font-secondary)",
               fontWeight: 600,
               fontSize: "0.9375rem",
             }}
           >
             {selectedFile ? selectedFile.name : "Drag and drop a PDF here, or click to select"}
           </Typography>
-          <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "#94a3b8" }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "var(--font-tertiary)" }}>
             PDF only, max {MAX_SIZE_MB}MB
           </Typography>
         </Box>
@@ -206,10 +207,10 @@ export function ResumeUploadDialog({
         sx={{
           px: { xs: 2.5, sm: 3 },
           py: 2,
-          borderTop: "1px solid rgba(0,0,0,0.08)",
+          borderTop: "1px solid color-mix(in srgb, var(--border-default) 88%, transparent)",
           gap: 1.5,
           flexDirection: { xs: "column-reverse", sm: "row" },
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--card-bg)",
         }}
       >
         <Button
@@ -218,12 +219,12 @@ export function ResumeUploadDialog({
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            color: "#64748b",
+            color: "var(--font-secondary)",
             borderRadius: 2,
             px: 3,
             py: 1.25,
-            border: "1px solid rgba(0,0,0,0.12)",
-            "&:hover": { backgroundColor: "#f1f5f9" },
+            border: "1px solid color-mix(in srgb, var(--border-default) 95%, transparent)",
+            "&:hover": { backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))" },
           }}
         >
           Cancel
@@ -239,8 +240,8 @@ export function ResumeUploadDialog({
             borderRadius: 2,
             px: 3,
             py: 1.25,
-            backgroundColor: "#0a66c2",
-            "&:hover": { backgroundColor: "#004182" },
+            backgroundColor: "var(--accent-indigo)",
+            "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
           {uploading ? "Uploading…" : "Upload"}

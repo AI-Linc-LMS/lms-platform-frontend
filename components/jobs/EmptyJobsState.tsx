@@ -16,7 +16,10 @@ const EmptyJobsStateComponent = () => {
         borderColor: 'divider',
       }}
     >
-      <Briefcase size={48} style={{ color: '#9ca3af', margin: '0 auto 16px' }} />
+      <Briefcase
+        size={48}
+        style={{ color: 'var(--font-tertiary)', margin: '0 auto 16px' }}
+      />
       <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
         No jobs found
       </Typography>

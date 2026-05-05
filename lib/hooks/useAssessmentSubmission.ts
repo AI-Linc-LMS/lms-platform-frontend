@@ -40,6 +40,8 @@ interface UseAssessmentSubmissionOptions {
   violationScreenshotSamplesRef?: MutableRefObject<ViolationScreenshotSample[]>;
   /** Keys from `timedSectionCompletionKey` — merged into final payload. */
   timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
+  autoSubmitReasonRef?: MutableRefObject<string | null>;
+  autoSubmitMetaRef?: MutableRefObject<Record<string, any> | null>;
 }
 
 export function useAssessmentSubmission({
@@ -55,6 +57,8 @@ export function useAssessmentSubmission({
   setShowSubmitDialog,
   violationScreenshotSamplesRef,
   timedSectionsCompleteRef,
+  autoSubmitReasonRef,
+  autoSubmitMetaRef,
 }: UseAssessmentSubmissionOptions) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -276,6 +280,8 @@ export function useAssessmentSubmission({
         quizSectionId,
         codingProblemSectionId,
         subjectiveQuestionSectionId,
+        auto_submitted_reason: autoSubmitReasonRef?.current || undefined,
+        auto_submitted_meta: autoSubmitMetaRef?.current || undefined,
       };
 
       // Submit assessment - THIS IS THE CRITICAL STEP

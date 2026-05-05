@@ -12,7 +12,7 @@ interface ApplicationsIllustrationProps {
 const ApplicationsIllustrationComponent = ({
   width = 140,
   height = 110,
-  primaryColor = "#6366f1",
+  primaryColor = "var(--accent-indigo)",
 }: ApplicationsIllustrationProps) => (
   <Box
     component="svg"
@@ -25,7 +25,7 @@ const ApplicationsIllustrationComponent = ({
     {/* Stacked documents */}
     <rect x="25" y="35" width="50" height="60" rx="2" fill={primaryColor} opacity={0.15} />
     <rect x="30" y="30" width="50" height="60" rx="2" fill={primaryColor} opacity={0.25} />
-    <rect x="35" y="25" width="50" height="60" rx="2" fill="#fff" stroke={primaryColor} strokeWidth="2" />
+    <rect x="35" y="25" width="50" height="60" rx="2" fill="var(--font-light)" stroke={primaryColor} strokeWidth="2" />
     <rect x="45" y="38" width="30" height="4" rx="1" fill={primaryColor} opacity={0.5} />
     <rect x="45" y="48" width="25" height="4" rx="1" fill={primaryColor} opacity={0.35} />
     <rect x="45" y="58" width="28" height="4" rx="1" fill={primaryColor} opacity={0.3} />

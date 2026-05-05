@@ -62,18 +62,19 @@ export function AdminLiveSessionsTable({
     <Paper
       sx={{
         borderRadius: 2,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         overflow: "hidden",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <TableContainer>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+            <TableRow sx={{ backgroundColor: "var(--surface)" }}>
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -82,7 +83,7 @@ export function AdminLiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -91,7 +92,7 @@ export function AdminLiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -100,7 +101,7 @@ export function AdminLiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -109,7 +110,7 @@ export function AdminLiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -118,7 +119,7 @@ export function AdminLiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -127,7 +128,7 @@ export function AdminLiveSessionsTable({
               <TableCell
                 sx={{
                   fontWeight: 600,
-                  color: "#374151",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                   width: 48,
                 }}
@@ -141,7 +142,7 @@ export function AdminLiveSessionsTable({
               <TableRow
                 key={activity.id}
                 sx={{
-                  "&:hover": { backgroundColor: "#f9fafb" },
+                  "&:hover": { backgroundColor: "var(--surface)" },
                 }}
               >
                 <TableCell>
@@ -152,8 +153,8 @@ export function AdminLiveSessionsTable({
                           label={t("adminLiveSessions.platformMeet")}
                           size="small"
                           sx={{
-                            bgcolor: "#e8f5e9",
-                            color: "#0f9d58",
+                            bgcolor: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)",
+                            color: "var(--success-500)",
                             fontWeight: 600,
                             fontSize: "0.7rem",
                             height: 22,
@@ -164,8 +165,8 @@ export function AdminLiveSessionsTable({
                           label={t("adminLiveSessions.platformZoom")}
                           size="small"
                           sx={{
-                            bgcolor: "#eef2ff",
-                            color: "#4f46e5",
+                            bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                            color: "var(--accent-indigo)",
                             fontWeight: 600,
                             fontSize: "0.7rem",
                             height: 22,
@@ -175,21 +176,21 @@ export function AdminLiveSessionsTable({
                     </Box>
                     <Typography
                       variant="body2"
-                      sx={{ fontWeight: 600, color: "#111827" }}
+                      sx={{ fontWeight: 600, color: "var(--font-primary)" }}
                     >
                       {activity.topic_name ?? "—"}
                     </Typography>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" sx={{ color: "#374151" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
                     {activity.class_datetime
                       ? formatDateTime(activity.class_datetime)
                       : "—"}
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" sx={{ color: "#374151" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
                     {activity.course_detail?.title ?? "—"}
                   </Typography>
                 </TableCell>
@@ -199,8 +200,9 @@ export function AdminLiveSessionsTable({
                       label={t("liveSessions.live")}
                       size="small"
                       sx={{
-                        backgroundColor: "#d1fae5",
-                        color: "#065f46",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                        color: "var(--success-500)",
                         fontWeight: 600,
                         fontSize: "0.75rem",
                       }}
@@ -210,8 +212,9 @@ export function AdminLiveSessionsTable({
                       label={t("adminLiveSessions.ended")}
                       size="small"
                       sx={{
-                        backgroundColor: "#9ca3af",
-                        color: "#1f2937",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--font-tertiary) 45%, transparent)",
+                        color: "var(--font-primary)",
                         fontWeight: 600,
                         fontSize: "0.75rem",
                       }}
@@ -221,8 +224,9 @@ export function AdminLiveSessionsTable({
                       label={t("liveSessions.expired")}
                       size="small"
                       sx={{
-                        backgroundColor: "#fed7aa",
-                        color: "#9a3412",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+                        color: "var(--warning-500)",
                         fontWeight: 600,
                         fontSize: "0.75rem",
                       }}
@@ -232,20 +236,21 @@ export function AdminLiveSessionsTable({
                       label={t("liveSessions.scheduled")}
                       size="small"
                       sx={{
-                        backgroundColor: "#dbeafe",
-                        color: "#1e40af",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                        color: "var(--accent-indigo)",
                         fontWeight: 600,
                         fontSize: "0.75rem",
                       }}
                     />
                   ) : (
-                    <Typography variant="body2" sx={{ color: "#374151" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
                       —
                     </Typography>
                   )}
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" sx={{ color: "#374151" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
                     {uniqueAttendanceCounts[activity.id] != null && uniqueAttendanceCounts[activity.id] > 0
                       ? uniqueAttendanceCounts[activity.id]
                       : "—"}
@@ -278,8 +283,13 @@ export function AdminLiveSessionsTable({
                           textTransform: "none",
                           fontSize: "0.8rem",
                           alignSelf: "flex-start",
-                          borderColor: "#6366f1",
-                          color: "#6366f1",
+                          borderColor: "var(--accent-indigo)",
+                          color: "var(--accent-indigo)",
+                          "&:hover": {
+                            borderColor: "var(--accent-indigo-dark)",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                          },
                         }}
                       >
                         {t("adminLiveSessions.createZoom")}
@@ -302,8 +312,12 @@ export function AdminLiveSessionsTable({
                             textTransform: "none",
                             fontSize: "0.8rem",
                             alignSelf: "flex-start",
-                            bgcolor: "#0f9d58",
-                            "&:hover": { bgcolor: "#0c7c45" },
+                            bgcolor: "var(--success-500)",
+                            color: "var(--font-light)",
+                            "&:hover": {
+                              bgcolor:
+                                "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark))",
+                            },
                           }}
                         >
                           {t("adminLiveSessions.openGoogleMeet")}
@@ -325,8 +339,9 @@ export function AdminLiveSessionsTable({
                             textTransform: "none",
                             fontSize: "0.8rem",
                             alignSelf: "flex-start",
-                            bgcolor: "#6366f1",
-                            "&:hover": { bgcolor: "#4f46e5" },
+                            bgcolor: "var(--accent-indigo)",
+                            color: "var(--font-light)",
+                            "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                           }}
                         >
                           {t("adminLiveSessions.startMeeting")}
@@ -359,7 +374,7 @@ export function AdminLiveSessionsTable({
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           display: "flex",
                           alignItems: "center",
                           gap: 0.5,
@@ -403,8 +418,12 @@ export function AdminLiveSessionsTable({
                           sx={{
                             fontSize: "0.75rem",
                             textTransform: "none",
-                            color: "#6366f1",
+                            color: "var(--accent-indigo)",
                             alignSelf: "flex-start",
+                            "&:hover": {
+                              backgroundColor:
+                                "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                            },
                           }}
                         >
                           {t("adminLiveSessions.openRecording")}
@@ -428,8 +447,13 @@ export function AdminLiveSessionsTable({
                               sx={{
                                 fontSize: "0.75rem",
                                 textTransform: "none",
-                                color: "#9ca3af",
+                                color: "var(--font-secondary)",
                                 alignSelf: "flex-start",
+                                "&.Mui-disabled": {
+                                  color: "var(--font-secondary)",
+                                  WebkitTextFillColor: "var(--font-secondary)",
+                                  opacity: 0.85,
+                                },
                               }}
                             >
                               {t("adminLiveSessions.openRecording")}
@@ -462,15 +486,15 @@ export function AdminLiveSessionsTable({
         onRowsPerPageChange={onRowsPerPageChange}
         rowsPerPageOptions={[5, 10, 25, 50]}
         sx={{
-          borderTop: "1px solid #e5e7eb",
+          borderTop: "1px solid var(--border-default)",
           "& .MuiTablePagination-toolbar": { px: 2 },
           "& .MuiTablePagination-selectLabel": {
             fontSize: "0.875rem",
-            color: "#6b7280",
+            color: "var(--font-secondary)",
           },
           "& .MuiTablePagination-displayedRows": {
             fontSize: "0.875rem",
-            color: "#6b7280",
+            color: "var(--font-secondary)",
           },
           "& .MuiTablePagination-select": {
             fontSize: "0.875rem",

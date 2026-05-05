@@ -124,7 +124,8 @@ export default function AdminStudentDetailPage() {
             p: 3,
             mb: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -137,11 +138,11 @@ export default function AdminStudentDetailPage() {
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
                 {student.name}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 {student.email}
               </Typography>
               {student.phone_number && (
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {student.phone_number}
                 </Typography>
               )}
@@ -177,10 +178,10 @@ export default function AdminStudentDetailPage() {
                 sx={{
                   color:
                     summary.average_score >= 70
-                      ? "#16a34a"
+                      ? "var(--success-500)"
                       : summary.average_score >= 50
-                      ? "#d97706"
-                      : "#dc2626",
+                      ? "var(--warning-500)"
+                      : "var(--error-500)",
                 }}
               >
                 {summary.average_score?.toFixed(1)}%
@@ -203,7 +204,8 @@ export default function AdminStudentDetailPage() {
               p: 3,
               mb: 3,
               borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -211,11 +213,11 @@ export default function AdminStudentDetailPage() {
             </Typography>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="score" name="Score" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="score" name="Score" fill="var(--accent-indigo)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Paper>
@@ -227,7 +229,8 @@ export default function AdminStudentDetailPage() {
               p: 3,
               mb: 3,
               borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -240,7 +243,7 @@ export default function AdminStudentDetailPage() {
                   sx={{
                     p: 2,
                     borderRadius: 1,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--border-default)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
@@ -250,7 +253,7 @@ export default function AdminStudentDetailPage() {
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>
                       {t.topic}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                       {t.completed}/{t.total_interviews} completed
                     </Typography>
                   </Box>
@@ -260,7 +263,7 @@ export default function AdminStudentDetailPage() {
                       size="small"
                       sx={{ fontWeight: 600 }}
                     />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       Best: {t.highest_score}%
                     </Typography>
                   </Box>
@@ -276,7 +279,8 @@ export default function AdminStudentDetailPage() {
               p: 3,
               mb: 3,
               borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -295,17 +299,17 @@ export default function AdminStudentDetailPage() {
                   sx={{
                     p: 2,
                     borderRadius: 2,
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
+                    border: "1px solid var(--border-default)",
+                    backgroundColor: "var(--surface)",
                   }}
                 >
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     {diff}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {stats.completed}/{stats.total} completed
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     Avg: {stats.average_score?.toFixed(1)}%
                   </Typography>
                 </Box>
@@ -319,7 +323,8 @@ export default function AdminStudentDetailPage() {
             sx={{
               p: 3,
               borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>

@@ -231,7 +231,7 @@ export function ImageUploadDialog({
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 2 },
-          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+          boxShadow: "0 8px 24px color-mix(in srgb, var(--font-primary) 16%, transparent)",
           m: { xs: 0, sm: 2 },
           maxHeight: { xs: "100vh", sm: "90vh" },
           overflow: "hidden",
@@ -243,8 +243,8 @@ export function ImageUploadDialog({
           pb: { xs: 1.5, sm: 2 },
           px: { xs: 2.5, sm: 3 },
           pt: { xs: 2.5, sm: 3 },
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          backgroundColor: "#f9fafb",
+          borderBottom: "1px solid var(--border-default)",
+          backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
           display: "flex",
           alignItems: "center",
           gap: { xs: 1.25, sm: 1.5 },
@@ -255,21 +255,21 @@ export function ImageUploadDialog({
             width: { xs: 36, sm: 40 },
             height: { xs: 36, sm: 40 },
             borderRadius: "50%",
-            backgroundColor: "rgba(10, 102, 194, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:image" size={20} color="#0a66c2" />
+          <IconWrapper icon="mdi:image" size={20} color="var(--accent-indigo)" />
         </Box>
         <Box sx={{ flex: 1 }}>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#000000",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.125rem", sm: "1.25rem" },
               mb: subtitle ? 0.25 : 0,
             }}
@@ -280,7 +280,7 @@ export function ImageUploadDialog({
             <Typography
               variant="caption"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 fontWeight: 400,
               }}
@@ -293,9 +293,9 @@ export function ImageUploadDialog({
           onClick={handleClose}
           disabled={uploading}
           sx={{
-            color: "#666666",
+            color: "var(--font-secondary)",
             "&:hover": {
-              backgroundColor: "rgba(0,0,0,0.05)",
+              backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
             },
           }}
         >
@@ -316,7 +316,7 @@ export function ImageUploadDialog({
             <Typography
               variant="caption"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 mt: 1,
                 display: "block",
@@ -339,25 +339,25 @@ export function ImageUploadDialog({
         {!displayImage ? (
           <Box
             sx={{
-              border: "2px dashed rgba(0,0,0,0.12)",
+              border: "2px dashed color-mix(in srgb, var(--border-default) 80%, var(--font-secondary))",
               borderRadius: 2,
               p: 4,
               textAlign: "center",
-              backgroundColor: "#f9fafb",
+              backgroundColor: "color-mix(in srgb, var(--surface) 80%, var(--background))",
               cursor: "pointer",
               transition: "all 0.2s ease",
               "&:hover": {
-                borderColor: "#0a66c2",
-                backgroundColor: "rgba(10, 102, 194, 0.02)",
+                borderColor: "var(--accent-indigo)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
               },
             }}
             onClick={() => fileInputRef.current?.click()}
           >
-            <IconWrapper icon="mdi:cloud-upload" size={48} color="#9ca3af" />
+            <IconWrapper icon="mdi:cloud-upload" size={48} color="var(--font-tertiary)" />
             <Typography
               variant="body1"
               sx={{
-                color: "#000000",
+                color: "var(--font-primary)",
                 fontWeight: 600,
                 mt: 2,
                 mb: 1,
@@ -368,7 +368,7 @@ export function ImageUploadDialog({
             <Typography
               variant="caption"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
               }}
             >
@@ -377,7 +377,7 @@ export function ImageUploadDialog({
             <Typography
               variant="caption"
               sx={{
-                color: "#9ca3af",
+                color: "var(--font-tertiary)",
                 fontSize: "0.75rem",
                 mt: 1,
                 display: "block",
@@ -394,8 +394,8 @@ export function ImageUploadDialog({
                 height: aspectRatio ? "auto" : { xs: 200, sm: 300 },
                 borderRadius: 2,
                 overflow: "hidden",
-                border: "1px solid rgba(0,0,0,0.08)",
-                backgroundColor: "#f9fafb",
+                border: "1px solid var(--border-default)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 80%, var(--background))",
                 position: "relative",
               }}
             >
@@ -418,7 +418,7 @@ export function ImageUploadDialog({
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    border: "2px dashed rgba(10, 102, 194, 0.5)",
+                    border: "2px dashed color-mix(in srgb, var(--accent-indigo) 50%, transparent)",
                     pointerEvents: "none",
                   }}
                 />
@@ -442,11 +442,11 @@ export function ImageUploadDialog({
                   textTransform: "none",
                   fontWeight: 600,
                   borderRadius: "24px",
-                  borderColor: "#0a66c2",
-                  color: "#0a66c2",
+                  borderColor: "var(--accent-indigo)",
+                  color: "var(--accent-indigo)",
                   "&:hover": {
-                    borderColor: "#004182",
-                    backgroundColor: "rgba(10, 102, 194, 0.05)",
+                    borderColor: "var(--accent-indigo-dark)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   },
                 }}
               >
@@ -462,11 +462,11 @@ export function ImageUploadDialog({
                     textTransform: "none",
                     fontWeight: 600,
                     borderRadius: "24px",
-                    borderColor: "#666666",
-                    color: "#666666",
+                    borderColor: "var(--font-secondary)",
+                    color: "var(--font-secondary)",
                     "&:hover": {
-                      borderColor: "#000000",
-                      backgroundColor: "#f3f2ef",
+                      borderColor: "var(--font-primary)",
+                      backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
                     },
                   }}
                 >
@@ -483,11 +483,11 @@ export function ImageUploadDialog({
                     textTransform: "none",
                     fontWeight: 600,
                     borderRadius: "24px",
-                    borderColor: "#d32f2f",
-                    color: "#d32f2f",
+                    borderColor: "var(--error-500)",
+                    color: "var(--error-500)",
                     "&:hover": {
-                      borderColor: "#b71c1c",
-                      backgroundColor: "rgba(211, 47, 47, 0.05)",
+                      borderColor: "color-mix(in srgb, var(--error-500) 78%, var(--font-primary))",
+                      backgroundColor: "color-mix(in srgb, var(--error-500) 6%, transparent)",
                     },
                   }}
                 >
@@ -505,10 +505,10 @@ export function ImageUploadDialog({
         sx={{
           px: { xs: 2.5, sm: 3 },
           py: { xs: 2, sm: 2.5 },
-          borderTop: "1px solid rgba(0,0,0,0.08)",
+          borderTop: "1px solid var(--border-default)",
           gap: { xs: 1, sm: 1.25 },
           flexDirection: { xs: "column-reverse", sm: "row" },
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--background)",
         }}
       >
         <Button
@@ -517,16 +517,16 @@ export function ImageUploadDialog({
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            color: "#666666",
+            color: "var(--font-secondary)",
             borderRadius: "24px",
             px: { xs: 3, sm: 3 },
             py: { xs: 1.125, sm: 0.875 },
             width: { xs: "100%", sm: "auto" },
             minWidth: { xs: "auto", sm: 100 },
-            border: "1px solid rgba(0,0,0,0.12)",
+            border: "1px solid var(--border-default)",
             "&:hover": {
-              backgroundColor: "#f3f2ef",
-              borderColor: "rgba(0,0,0,0.2)",
+              backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
+              borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
             },
             transition: "all 0.2s ease",
           }}
@@ -540,20 +540,20 @@ export function ImageUploadDialog({
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            backgroundColor: "#0a66c2",
+            backgroundColor: "var(--accent-indigo)",
             borderRadius: "24px",
             px: { xs: 3, sm: 3.5 },
             py: { xs: 1.125, sm: 0.875 },
             width: { xs: "100%", sm: "auto" },
             minWidth: { xs: "auto", sm: 120 },
-            boxShadow: "0 2px 4px rgba(10, 102, 194, 0.2)",
+            boxShadow: "0 2px 4px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
             "&:hover": {
-              backgroundColor: "#004182",
-              boxShadow: "0 4px 8px rgba(10, 102, 194, 0.3)",
+              backgroundColor: "var(--accent-indigo-dark)",
+              boxShadow: "0 4px 8px color-mix(in srgb, var(--accent-indigo) 36%, transparent)",
             },
             "&:disabled": {
-              backgroundColor: "#e5e7eb",
-              color: "#9ca3af",
+              backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--border-default))",
+              color: "var(--font-tertiary)",
               boxShadow: "none",
             },
             transition: "all 0.2s ease",
@@ -565,8 +565,8 @@ export function ImageUploadDialog({
                 sx={{
                   width: 16,
                   height: 16,
-                  border: "2px solid rgba(255,255,255,0.3)",
-                  borderTop: "2px solid #ffffff",
+                  border: "2px solid color-mix(in srgb, var(--font-light) 35%, transparent)",
+                  borderTop: "2px solid var(--font-light)",
                   borderRadius: "50%",
                   animation: "spin 0.8s linear infinite",
                   "@keyframes spin": {

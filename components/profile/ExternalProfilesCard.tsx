@@ -139,12 +139,12 @@ export function ExternalProfilesCard({
         sx={{
           p: 2,
           borderRadius: 1.5,
-          border: "1px solid rgba(0,0,0,0.08)",
-          backgroundColor: profileValue ? "#ffffff" : "#f9fafb",
+          border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          backgroundColor: profileValue ? "var(--background)" : "var(--surface)",
           transition: "all 0.2s ease",
           "&:hover": {
-            backgroundColor: profileValue ? "#f3f2ef" : "#f9fafb",
-            borderColor: "rgba(0,0,0,0.12)",
+            backgroundColor: profileValue ? "color-mix(in srgb, var(--surface) 85%, var(--background))" : "var(--surface)",
+            borderColor: "color-mix(in srgb, var(--font-primary) 14%, transparent)",
             transform: profileValue ? "translateY(-1px)" : "none",
           },
         }}
@@ -162,7 +162,7 @@ export function ExternalProfilesCard({
                 width: 40,
                 height: 40,
                 borderRadius: "50%",
-                backgroundColor: profileValue ? "#f3f2ef" : "#e9e7e3",
+                backgroundColor: profileValue ? "color-mix(in srgb, var(--surface) 85%, var(--background))" : "color-mix(in srgb, var(--surface) 72%, var(--background))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -173,7 +173,7 @@ export function ExternalProfilesCard({
               <IconWrapper 
                 icon={icon} 
                 size={20} 
-                color={profileValue ? "#0a66c2" : "#666666"} 
+                color={profileValue ? "var(--accent-indigo)" : "var(--font-secondary)"} 
               />
             </Box>
           )}
@@ -181,7 +181,7 @@ export function ExternalProfilesCard({
             <Typography
               variant="caption"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 display: "block",
@@ -210,7 +210,7 @@ export function ExternalProfilesCard({
               <Typography
                 variant="body2"
                 sx={{
-                  color: profileValue ? "#000000" : "#666666",
+                  color: profileValue ? "var(--font-primary)" : "var(--font-secondary)",
                   fontWeight: profileValue ? 500 : 400,
                   fontSize: "0.9375rem",
                 }}
@@ -225,11 +225,11 @@ export function ExternalProfilesCard({
                       display: "flex",
                       alignItems: "center",
                       gap: 0.75,
-                      color: "#0a66c2",
+                      color: "var(--accent-indigo)",
                       textDecoration: "none",
                       "&:hover": {
                         textDecoration: "underline",
-                        color: "#004182",
+                        color: "var(--accent-indigo-dark)",
                       },
                       transition: "all 0.2s ease",
                     }}
@@ -244,14 +244,14 @@ export function ExternalProfilesCard({
                     >
                       {profileValue}
                     </Box>
-                    <IconWrapper icon="mdi:open-in-new" size={16} color="#0a66c2" />
+                    <IconWrapper icon="mdi:open-in-new" size={16} color="var(--accent-indigo)" />
                   </Box>
                 ) : (
                   <Box
                     component="span"
                     sx={{
                       fontStyle: "italic",
-                      color: "#9ca3af",
+                      color: "var(--font-tertiary)",
                     }}
                   >
                     {t("profile.notAdded")}
@@ -270,13 +270,13 @@ export function ExternalProfilesCard({
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
         borderRadius: { xs: 1, sm: 2 },
         mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+        boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
@@ -292,7 +292,7 @@ export function ExternalProfilesCard({
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#000000",
+            color: "var(--font-primary)",
             fontSize: "1.25rem",
           }}
         >
@@ -307,10 +307,10 @@ export function ExternalProfilesCard({
             onClick={onRemoveSection}
             sx={{
               textTransform: "none",
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontWeight: 500,
               fontSize: "0.8125rem",
-              "&:hover": { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#dc2626" },
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--error-500) 10%, transparent)", color: "var(--error-500)" },
             }}
           >
             Remove
@@ -327,11 +327,11 @@ export function ExternalProfilesCard({
             }}
             sx={{
               textTransform: "none",
-              color: "#0a66c2",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               fontSize: "0.9375rem",
               "&:hover": {
-                backgroundColor: "rgba(10, 102, 194, 0.08)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
               },
               transition: "all 0.2s ease",
             }}
@@ -348,12 +348,12 @@ export function ExternalProfilesCard({
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                borderColor: "#e5e7eb",
-                color: "#6b7280",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
                 borderRadius: 1.5,
                 "&:hover": {
-                  borderColor: "#d1d5db",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -367,11 +367,11 @@ export function ExternalProfilesCard({
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: "#0a66c2",
+                backgroundColor: "var(--accent-indigo)",
                 borderRadius: "24px",
                 px: 2,
                 "&:hover": {
-                  backgroundColor: "#004182",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
                 transition: "all 0.2s ease",
               }}

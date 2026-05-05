@@ -21,12 +21,12 @@ import {
   SUBMISSION_BADGE_HEX,
 } from "@/lib/utils/assessment-performance-summary.utils";
 
-const SKY = "#0284c7";
-const SKY_DEEP = "#0369a1";
-const INK = "#0f172a";
-const MUTED = "#64748b";
-const TRACK = "#e2e8f0";
-const FILL = "#0284c7";
+const SKY = "var(--primary-400)";
+const SKY_DEEP = "var(--primary-600)";
+const INK = "var(--primary-900)";
+const MUTED = "var(--font-secondary)";
+const TRACK = "var(--border-light)";
+const FILL = "var(--primary-400)";
 
 function pct(n: number, total: number): number {
   if (!total || !Number.isFinite(n)) return 0;
@@ -46,25 +46,25 @@ function WeakSkillCard({ row }: { row: WeakSkillDisplayRow }) {
   const hasAccuracy = row.accuracyPercent != null;
 
   const badgeBg =
-    !hasAccuracy || acc >= 50 ? "#fef3c7" : acc >= 25 ? "#ffedd5" : "#fee2e2";
+    !hasAccuracy || acc >= 50 ? "color-mix(in srgb, var(--warning-500) 18%, transparent)" : acc >= 25 ? "color-mix(in srgb, var(--accent-orange) 14%, transparent)" : "color-mix(in srgb, var(--error-500) 12%, transparent)";
   const badgeColor =
-    !hasAccuracy || acc >= 50 ? "#b45309" : acc >= 25 ? "#c2410c" : "#b91c1c";
-  const barTrack = "#ffedd5";
+    !hasAccuracy || acc >= 50 ? "color-mix(in srgb, var(--accent-orange) 92%, var(--font-dark))" : acc >= 25 ? "color-mix(in srgb, var(--accent-orange) 78%, var(--font-dark))" : "var(--error-600)";
+  const barTrack = "color-mix(in srgb, var(--accent-orange) 14%, transparent)";
   const barFill =
     acc >= 50
-      ? "linear-gradient(90deg,#f59e0b,#fbbf24)"
+      ? "linear-gradient(90deg,var(--warning-500),var(--accent-yellow))"
       : acc >= 25
-        ? "linear-gradient(90deg,#ea580c,#fb923c)"
-        : "linear-gradient(90deg,#dc2626,#f87171)";
+        ? "linear-gradient(90deg,var(--accent-orange),var(--accent-orange))"
+        : "linear-gradient(90deg,var(--error-600),color-mix(in srgb, var(--error-500) 65%, white))";
 
   return (
     <div
       style={{
-        background: "#ffffff",
+        background: "var(--font-light)",
         borderRadius: 10,
         padding: "14px 16px 12px",
-        border: "1px solid #fed7aa",
-        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.05)",
+        border: "1px solid color-mix(in srgb, var(--accent-orange) 22%, transparent)",
+        boxShadow: "0 2px 8px color-mix(in srgb, var(--primary-900) 6%, transparent)",
       }}
     >
       <div
@@ -141,7 +141,7 @@ function WeakSkillCard({ row }: { row: WeakSkillDisplayRow }) {
           }}
         >
           <span style={{ fontSize: 11, color: MUTED, lineHeight: 1.4 }}>
-            <strong style={{ color: "#475569", fontWeight: 600 }}>
+            <strong style={{ color: "var(--font-muted)", fontWeight: 600 }}>
               {row.correct}/{row.total}
             </strong>{" "}
             correct
@@ -152,7 +152,7 @@ function WeakSkillCard({ row }: { row: WeakSkillDisplayRow }) {
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.06em",
-              color: "#d97706",
+              color: "var(--ats-warning-muted)",
             }}
           >
             Practice priority
@@ -244,7 +244,7 @@ const AssessmentPdfSummaryView = forwardRef<
       style={{
         width: "794px",
         boxSizing: "border-box",
-        background: "#ffffff",
+        background: "var(--font-light)",
         padding: "0 48px 36px",
         fontFamily: "Inter, system-ui, -apple-system, sans-serif",
         color: INK,
@@ -306,10 +306,10 @@ const AssessmentPdfSummaryView = forwardRef<
             width: 228,
             flexShrink: 0,
             borderRadius: 10,
-            border: "1px solid #e2e8f0",
-            background: "#f8fafc",
+            border: "1px solid var(--border-light)",
+            background: "var(--surface)",
             padding: "16px 16px 14px",
-            boxShadow: "0 4px 14px rgba(15, 23, 42, 0.06)",
+            boxShadow: "0 4px 14px color-mix(in srgb, var(--primary-900) 8%, transparent)",
             alignSelf: "flex-start",
           }}
         >
@@ -351,7 +351,7 @@ const AssessmentPdfSummaryView = forwardRef<
           >
             {performanceTier.label}
           </div>
-          <div style={{ fontSize: 12, color: "#334155" }}>
+          <div style={{ fontSize: 12, color: "var(--neutral-600)" }}>
             <div
               style={{
                 display: "flex",
@@ -440,7 +440,7 @@ const AssessmentPdfSummaryView = forwardRef<
           margin: "0 0 30px",
           fontSize: 13,
           lineHeight: 1.65,
-          color: "#334155",
+          color: "var(--neutral-600)",
         }}
       >
         This report summarizes outcomes for{" "}
@@ -462,7 +462,7 @@ const AssessmentPdfSummaryView = forwardRef<
           style={{
             flex: 1,
             background: `linear-gradient(180deg, ${SKY} 0%, ${SKY} 78%, ${SKY_DEEP} 78%, ${SKY_DEEP} 100%)`,
-            color: "#fff",
+            color: "var(--font-light)",
             padding: "26px 24px",
             minHeight: 176,
             boxSizing: "border-box",
@@ -479,15 +479,15 @@ const AssessmentPdfSummaryView = forwardRef<
               {stats.attempted_questions}
             </div>
           </div>
-          <div style={{ fontSize: 11, lineHeight: 1.45, opacity: 0.92, color: "#e0f2fe" }}>
+          <div style={{ fontSize: 11, lineHeight: 1.45, opacity: 0.92, color: "color-mix(in srgb, var(--accent-blue-light) 22%, transparent)" }}>
             Out of {stats.total_questions} total items · {data.status}
           </div>
         </div>
         <div
           style={{
             flex: 1,
-            background: `linear-gradient(180deg, ${INK} 0%, ${INK} 78%, #1e293b 78%, #1e293b 100%)`,
-            color: "#fff",
+            background: `linear-gradient(180deg, ${INK} 0%, ${INK} 78%, var(--neutral-700) 78%, var(--neutral-700) 100%)`,
+            color: "var(--font-light)",
             padding: "26px 24px",
             minHeight: 176,
             boxSizing: "border-box",
@@ -596,10 +596,10 @@ const AssessmentPdfSummaryView = forwardRef<
         style={{
           marginBottom: 24,
           padding: "20px 20px 20px 16px",
-          background: "linear-gradient(135deg, #fffbeb 0%, #fff7ed 55%, #ffedd5 100%)",
-          borderLeft: "4px solid #f59e0b",
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--warning-100) 95%, var(--card-bg)) 0%, color-mix(in srgb, var(--warning-100) 90%, var(--card-bg)) 55%, color-mix(in srgb, var(--accent-orange) 14%, transparent) 100%)",
+          borderLeft: "4px solid var(--warning-500)",
           borderRadius: 10,
-          boxShadow: "0 4px 20px rgba(245, 158, 11, 0.08)",
+          boxShadow: "0 4px 20px color-mix(in srgb, var(--warning-500) 10%, transparent)",
         }}
       >
         <div style={{ marginBottom: 16 }}>
@@ -642,10 +642,10 @@ const AssessmentPdfSummaryView = forwardRef<
           style={{
             marginBottom: 28,
             padding: "20px 20px 20px 16px",
-            background: "linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)",
+            background: "linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--surface-blue-light) 90%, var(--card-bg)) 100%)",
             borderLeft: `4px solid ${SKY}`,
             borderRadius: 10,
-            boxShadow: "0 4px 20px rgba(2, 132, 199, 0.07)",
+            boxShadow: "0 4px 20px color-mix(in srgb, var(--primary-400) 10%, transparent)",
           }}
         >
           <h2
@@ -669,7 +669,7 @@ const AssessmentPdfSummaryView = forwardRef<
               listStyle: "none",
               fontSize: 12,
               lineHeight: 1.65,
-              color: "#334155",
+              color: "var(--neutral-600)",
             }}
           >
             {feedbackPoints.map((point: string, i: number) => (

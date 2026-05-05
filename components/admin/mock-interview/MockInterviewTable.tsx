@@ -43,9 +43,9 @@ const STATUS_COLORS: Record<string, "default" | "primary" | "success" | "warning
 };
 
 const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy: "#22c55e",
-  Medium: "#f59e0b",
-  Hard: "#ef4444",
+  Easy: "var(--success-500)",
+  Medium: "var(--warning-500)",
+  Hard: "var(--error-500)",
 };
 
 function formatDate(dateStr?: string) {
@@ -81,7 +81,8 @@ export function MockInterviewTable({
       <Paper
         sx={{
           borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          boxShadow:
+            "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
           overflow: "hidden",
         }}
       >
@@ -96,9 +97,10 @@ export function MockInterviewTable({
     <Paper
       sx={{
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
         overflow: "hidden",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <Box
@@ -107,10 +109,10 @@ export function MockInterviewTable({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--border-default)",
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
           {t("adminMockInterview.tabInterviews")}
         </Typography>
         {onExport && (
@@ -127,15 +129,16 @@ export function MockInterviewTable({
             onClick={onExport}
             disabled={exporting || interviews.length === 0}
             sx={{
-              borderColor: "#6366f1",
-              color: "#6366f1",
+              borderColor: "var(--accent-indigo)",
+              color: "var(--accent-indigo)",
               "&:hover": {
-                borderColor: "#4f46e5",
-                backgroundColor: "#eef2ff",
+                borderColor: "var(--accent-indigo-dark)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
               },
               "&.Mui-disabled": {
-                borderColor: "#e5e7eb",
-                color: "#9ca3af",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
               },
             }}
           >
@@ -148,7 +151,7 @@ export function MockInterviewTable({
           sx={{
             p: 6,
             textAlign: "center",
-            borderTop: "1px solid #e5e7eb",
+            borderTop: "1px solid var(--border-default)",
           }}
         >
           <Box
@@ -156,7 +159,8 @@ export function MockInterviewTable({
               width: 72,
               height: 72,
               borderRadius: "50%",
-              backgroundColor: "#eef2ff",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -167,13 +171,13 @@ export function MockInterviewTable({
             <IconWrapper
               icon="mdi:clipboard-text-outline"
               size={36}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
           </Box>
-          <Typography variant="body1" sx={{ fontWeight: 500, color: "#374151", mb: 0.5 }}>
+          <Typography variant="body1" sx={{ fontWeight: 500, color: "var(--font-primary)", mb: 0.5 }}>
             {t("adminMockInterview.noInterviewsFound")}
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
             {t("adminMockInterview.tryAdjustingFilters")}
           </Typography>
         </Box>
@@ -188,28 +192,28 @@ export function MockInterviewTable({
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.titleColumn")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.student")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.topic")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.difficulty")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.status")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.score")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.created")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb", width: 100 }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)", width: 100 }}>
                     {t("adminMockInterview.actions")}
                   </TableCell>
                 </TableRow>
@@ -238,7 +242,7 @@ export function MockInterviewTable({
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "#6b7280", fontSize: "0.7rem" }}
+                          sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
                         >
                           {row.student_email}
                         </Typography>
@@ -254,8 +258,15 @@ export function MockInterviewTable({
                         label={row.difficulty}
                         size="small"
                         sx={{
-                          backgroundColor: `${DIFFICULTY_COLORS[row.difficulty] || "#6b7280"}20`,
-                          color: DIFFICULTY_COLORS[row.difficulty] || "#374151",
+                          backgroundColor:
+                            row.difficulty === "Easy"
+                              ? "color-mix(in srgb, var(--success-500) 16%, transparent)"
+                              : row.difficulty === "Medium"
+                                ? "color-mix(in srgb, var(--warning-500) 16%, transparent)"
+                                : row.difficulty === "Hard"
+                                  ? "color-mix(in srgb, var(--error-500) 16%, transparent)"
+                                  : "color-mix(in srgb, var(--font-secondary) 14%, transparent)",
+                          color: DIFFICULTY_COLORS[row.difficulty] || "var(--font-primary)",
                           fontWeight: 600,
                           fontSize: "0.7rem",
                         }}
@@ -277,10 +288,10 @@ export function MockInterviewTable({
                             fontWeight: 600,
                             color:
                               (row.overall_score ?? 0) >= 70
-                                ? "#16a34a"
+                                ? "var(--success-500)"
                                 : (row.overall_score ?? 0) >= 50
-                                ? "#d97706"
-                                : "#dc2626",
+                                ? "var(--warning-500)"
+                                : "var(--error-500)",
                           }}
                         >
                           {row.overall_score}%
@@ -290,7 +301,7 @@ export function MockInterviewTable({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {formatDate(row.created_at)}
                       </Typography>
                     </TableCell>
@@ -303,13 +314,14 @@ export function MockInterviewTable({
                           handleRowClick(row.id);
                         }}
                         sx={{
-                          borderColor: "#6366f1",
-                          color: "#6366f1",
+                          borderColor: "var(--accent-indigo)",
+                          color: "var(--accent-indigo)",
                           textTransform: "none",
                           fontWeight: 600,
                           "&:hover": {
-                            borderColor: "#4f46e5",
-                            backgroundColor: "#eef2ff",
+                            borderColor: "var(--accent-indigo-dark)",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
                           },
                         }}
                       >

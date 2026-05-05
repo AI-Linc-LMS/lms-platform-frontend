@@ -8,30 +8,60 @@
     | "sequential_questions_only"
     | "locked_after_leave";
 
-  export interface Assessment {
-    id: number;
-    title: string;
-    description: string;
-    slug: string;
-    instructions?: string;
-    duration_minutes: number;
-    is_paid: boolean;
-    price: number | null;
-    amount?: number;
-    is_active: boolean;
-    number_of_questions: number;
-    created_at: string;
-    is_attempted: boolean;
-    start_time?: string | null;
-    end_time?: string | null;
-    has_attempted?: boolean; // For backward compatibility
-    proctoring_enabled?: boolean;
-    /** "not_started" | "in_progress" | "submitted" | "completed" – when "submitted" or "completed", show results */
-    status?: "not_started" | "in_progress" | "submitted" | "completed";
-    allow_desktop?: boolean;
-    allow_mobile?: boolean;
-    allow_tablet?: boolean;
-  }
+export interface Assessment {
+  id: number;
+  title: string;
+  description: string;
+  slug: string;
+  instructions?: string;
+  duration_minutes: number;
+  is_paid: boolean;
+  price: number | null;
+  amount?: number;
+  is_active: boolean;
+  number_of_questions: number;
+  created_at: string;
+  is_attempted: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
+  has_attempted?: boolean; // For backward compatibility
+  proctoring_enabled?: boolean;
+  /** Learner lifecycle; API may also send finalized/expired — normalize in UI helpers. */
+  status?:
+    | "not_started"
+    | "in_progress"
+    | "submitted"
+    | "completed"
+    | "finalized"
+    | "expired";
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
+  show_result?: boolean;
+  evaluation_mode?: "auto" | "manual";
+  review_status?: "not_required" | "pending_evaluation" | "evaluated" | "published";
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
+}
+
+export interface AssessmentDetail extends Assessment {
+  sections: any[];
+  /** When false, hide "View Assessment Result" button on submission-success */
+  show_result?: boolean;
+  /** When false, fixed section order is explained on the assessment overview page. */
+  allow_movement?: boolean;
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
+}
+
+/** Lockdown policy for the assessment take flow (aligned with `evaluateLockdownGate`). */
+export interface AssessmentTakeFlags {
+  require_lockdown_browser?: boolean;
+  lockdown_clients?: Array<"seb" | "respondus">;
+  kiosk_query_param?: { key: string; value: string } | null;
+}
+
 
   export interface AssessmentDetail extends Assessment {
     sections: any[];
@@ -77,33 +107,43 @@
     status: string;
   }
 
-  export interface FinalSubmissionResponse {
+export interface SubmissionResponse {
+  response_sheet: any;
+  status: string;
+}
+
+export interface FinalSubmissionResponse {
+  id?: number;
+  score?: number;
+  offered_scholarship_percentage?: number;
+  status: string;
+  submitted_at?: string;
+  review_status?: string;
+  show_result?: boolean;
+  message?: string;
+  auto_submitted_reason?: string | null;
+  auto_submitted_meta?: Record<string, any>;
+  auto_submit_message?: string;
+}
+
+export interface ScholarshipStatus {
+  has_submitted: boolean;
+  score: number;
+  offered_scholarship_percentage: number;
+  is_redeemed: boolean;
+  referral_code: string;
+}
+
+export interface AttemptedAssessment {
+  id: number;
+  assessment: {
     id: number;
     score: number;
     offered_scholarship_percentage: number;
     status: string;
     submitted_at: string;
   }
-
-  export interface ScholarshipStatus {
-    has_submitted: boolean;
-    score: number;
-    offered_scholarship_percentage: number;
-    is_redeemed: boolean;
-    referral_code: string;
-  }
-
-  export interface AttemptedAssessment {
-    id: number;
-    assessment: {
-      id: number;
-      title: string;
-      slug: string;
-    };
-    score: number;
-    status: string;
-    submitted_at: string;
-  }
+}
 
   export interface TopicWiseStats {
     total: number;

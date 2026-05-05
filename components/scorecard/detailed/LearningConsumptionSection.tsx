@@ -52,9 +52,6 @@ interface LearningConsumptionSectionProps {
   data: LearningConsumption;
 }
 
-/** Accent for mock interview card (distinct from info/secondary). */
-const MOCK_INTERVIEW_ACCENT = "#8b5cf6";
-
 const SECTION_PAPER = {
   p: { xs: 2, sm: 3, md: 3.5 },
   borderRadius: 3,
@@ -246,10 +243,10 @@ function ChartTooltipContent(props: {
         {label}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-        <Typography variant="body2" sx={{ color: "#0f766e", fontWeight: 600 }}>
+        <Typography variant="body2" sx={{ color: "var(--success-500)", fontWeight: 600 }}>
           Completed: {Number(completed)}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6b7280", fontWeight: 500 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
           Pending: {Number(pending)}
         </Typography>
       </Box>
@@ -270,6 +267,7 @@ const KPI_TOOLTIPS: Record<string, string> = {
 
 export function LearningConsumptionSection({ data }: LearningConsumptionSectionProps) {
   const theme = useTheme();
+  const mockInterviewAccent = theme.palette.secondary.main;
   const miniStat = (accent: string) => contentTypeMiniStatSx(accent, theme.palette.mode);
 
   const totalContent =
@@ -474,8 +472,8 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                   <span style={{ color: theme.palette.text.primary, fontWeight: 500 }}>{value}</span>
                 )}
               />
-              <Bar dataKey="completed" stackId="a" fill="#10b981" name="Completed" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="pending" stackId="a" fill="#e5e7eb" name="Pending" radius={[0, 0, 4, 4]} />
+              <Bar dataKey="completed" stackId="a" fill="var(--success-500)" name="Completed" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="pending" stackId="a" fill="var(--border-default)" name="Pending" radius={[0, 0, 4, 4]} />
             </BarChart>
           </ResponsiveContainer>
         </Box>
@@ -788,7 +786,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
 
           <Box sx={{ display: "flex", minWidth: 0 }}>
             <ContentTypeBreakdownCard
-              accentColor={MOCK_INTERVIEW_ACCENT}
+              accentColor={mockInterviewAccent}
               icon={<IconWrapper icon="mdi:account-voice" size={24} color="#ffffff" />}
               title="Mock interviews"
               subtitle={`${data.mockInterviews.completed} of ${data.mockInterviews.totalAssigned} completed`}
@@ -797,7 +795,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
               <Box sx={{ flex: 1, minHeight: 0 }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
                   <Box>
-                    <Box sx={miniStat(MOCK_INTERVIEW_ACCENT)}>
+                    <Box sx={miniStat(mockInterviewAccent)}>
                       <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
                         Pending
                       </Typography>
@@ -807,7 +805,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                     </Box>
                   </Box>
                   <Box>
-                    <Box sx={miniStat(MOCK_INTERVIEW_ACCENT)}>
+                    <Box sx={miniStat(mockInterviewAccent)}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
                         <Typography variant="caption" color="text.secondary" fontWeight={600}>
                           Active total
@@ -828,7 +826,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                     </Box>
                   </Box>
                   <Box>
-                    <Box sx={miniStat(MOCK_INTERVIEW_ACCENT)}>
+                    <Box sx={miniStat(mockInterviewAccent)}>
                       <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
                         Completion
                       </Typography>
@@ -842,7 +840,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                     </Box>
                   </Box>
                   <Box>
-                    <Box sx={miniStat(MOCK_INTERVIEW_ACCENT)}>
+                    <Box sx={miniStat(mockInterviewAccent)}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
                         <Typography variant="caption" color="text.secondary" fontWeight={600}>
                           Avg score

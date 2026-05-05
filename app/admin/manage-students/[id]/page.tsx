@@ -73,29 +73,30 @@ export default function StudentDetailsPage() {
   const sectionPaperSx = {
     p: 3,
     borderRadius: 3,
-    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
-    border: "1px solid #e5e7eb",
+    boxShadow:
+      "0 10px 24px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+    border: "1px solid var(--border-default)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(249,250,251,0.8) 100%)",
+      "linear-gradient(180deg, var(--card-bg) 0%, color-mix(in srgb, var(--surface) 80%, transparent) 100%)",
   } as const;
 
   const tableHeaderRowSx = {
-    backgroundColor: "#f8fafc",
+    backgroundColor: "var(--surface)",
     "& .MuiTableCell-root": {
       fontWeight: 700,
-      color: "#334155",
-      borderBottom: "1px solid #e2e8f0",
+      color: "var(--font-primary)",
+      borderBottom: "1px solid var(--border-default)",
     },
   } as const;
 
   const tableContainerSx = {
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--border-default)",
     borderRadius: 2,
     overflowX: "auto",
     "&::-webkit-scrollbar": { height: 8, width: 8 },
-    "&::-webkit-scrollbar-track": { backgroundColor: "#f1f5f9" },
+    "&::-webkit-scrollbar-track": { backgroundColor: "var(--surface)" },
     "&::-webkit-scrollbar-thumb": {
-      backgroundColor: "#cbd5e1",
+      backgroundColor: "var(--border-default)",
       borderRadius: 4,
     },
   } as const;
@@ -215,7 +216,7 @@ export default function StudentDetailsPage() {
           }}
         >
           <CircularProgress size={36} />
-          <Typography variant="body1" sx={{ color: "#64748b", fontWeight: 500 }}>
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
             {t("manageStudents.loadingStudentProfile")}
           </Typography>
         </Box>
@@ -241,17 +242,18 @@ export default function StudentDetailsPage() {
               py: 5,
               textAlign: "center",
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
+              border: "1px solid var(--border-default)",
+              boxShadow:
+                "0 10px 24px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             }}
           >
             <Box sx={{ mb: 1.5 }}>
-              <IconWrapper icon="mdi:account-alert-outline" size={38} color="#94a3b8" />
+              <IconWrapper icon="mdi:account-alert-outline" size={38} color="var(--font-tertiary)" />
             </Box>
-            <Typography variant="h6" sx={{ color: "#334155", fontWeight: 600 }}>
+            <Typography variant="h6" sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
               {t("manageStudents.studentNotFound")}
             </Typography>
-            <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
               {t("manageStudents.studentNotFoundDesc")}
             </Typography>
           </Paper>
@@ -290,7 +292,7 @@ export default function StudentDetailsPage() {
           <Button
             startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
             onClick={() => router.push("/admin/manage-students")}
-            sx={{ color: "#6366f1" }}
+            sx={{ color: "var(--accent-indigo)" }}
           >
             {t("common.back")}
           </Button>
@@ -298,7 +300,7 @@ export default function StudentDetailsPage() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.5rem", sm: "2rem" },
             }}
           >
@@ -334,7 +336,7 @@ export default function StudentDetailsPage() {
                  <Paper sx={sectionPaperSx}>
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
+                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 2, letterSpacing: 0.2 }}
                 >
                   {t("manageStudents.activityBreakdown")}
                 </Typography>
@@ -346,7 +348,7 @@ export default function StudentDetailsPage() {
                     ))}
                   </Box>
                 ) : (
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("manageStudents.noActivityBreakdown")}
                   </Typography>
                 )}
@@ -392,7 +394,7 @@ export default function StudentDetailsPage() {
               <Paper sx={sectionPaperSx}>
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
+                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 2, letterSpacing: 0.2 }}
                 >
                   {t("manageStudents.assessmentHistory")}
                 </Typography>
@@ -414,8 +416,8 @@ export default function StudentDetailsPage() {
                             <TableRow
                               key={assessment.id}
                               sx={{
-                                "&:nth-of-type(odd)": { backgroundColor: "#fcfdff" },
-                                "&:hover": { backgroundColor: "#f8fafc" },
+                                "&:nth-of-type(odd)": { backgroundColor: "color-mix(in srgb, var(--card-bg) 80%, var(--surface) 20%)" },
+                                "&:hover": { backgroundColor: "var(--surface)" },
                               }}
                             >
                               <TableCell>
@@ -428,9 +430,13 @@ export default function StudentDetailsPage() {
                                   label={assessment.status || "N/A"}
                                   sx={{
                                     backgroundColor:
-                                      assessment.status === "submitted" ? "#d1fae5" : "#f3f4f6",
+                                      assessment.status === "submitted"
+                                        ? "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)"
+                                        : "var(--surface)",
                                     color:
-                                      assessment.status === "submitted" ? "#065f46" : "#6b7280",
+                                      assessment.status === "submitted"
+                                        ? "var(--success-500)"
+                                        : "var(--font-secondary)",
                                   }}
                                 />
                               </TableCell>
@@ -446,7 +452,7 @@ export default function StudentDetailsPage() {
                       sx={{
                         mt: 2,
                         pt: 2,
-                        borderTop: "1px solid #e5e7eb",
+                        borderTop: "1px solid var(--border-default)",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
@@ -465,7 +471,7 @@ export default function StudentDetailsPage() {
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#6b7280",
+                            color: "var(--font-secondary)",
                             fontSize: { xs: "0.75rem", sm: "0.875rem" },
                           }}
                         >
@@ -500,7 +506,7 @@ export default function StudentDetailsPage() {
                     </Box>
                   </>
                 ) : (
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("manageStudents.noAssessmentsFound")}
                   </Typography>
                 )}
@@ -512,7 +518,7 @@ export default function StudentDetailsPage() {
               <Paper sx={sectionPaperSx}>
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 700, color: "#0f172a", mb: 2, letterSpacing: 0.2 }}
+                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 2, letterSpacing: 0.2 }}
                 >
                   {t("manageStudents.last30DaysActivity")}
                 </Typography>
@@ -533,8 +539,8 @@ export default function StudentDetailsPage() {
                             <TableRow
                               key={day.date}
                               sx={{
-                                "&:nth-of-type(odd)": { backgroundColor: "#fcfdff" },
-                                "&:hover": { backgroundColor: "#f8fafc" },
+                                "&:nth-of-type(odd)": { backgroundColor: "color-mix(in srgb, var(--card-bg) 80%, var(--surface) 20%)" },
+                                "&:hover": { backgroundColor: "var(--surface)" },
                               }}
                             >
                               <TableCell>{formatDate(day.date)}</TableCell>
@@ -551,7 +557,7 @@ export default function StudentDetailsPage() {
                     sx={{
                       mt: 2,
                       pt: 2,
-                      borderTop: "1px solid #e5e7eb",
+                      borderTop: "1px solid var(--border-default)",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
@@ -570,7 +576,7 @@ export default function StudentDetailsPage() {
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#6b7280",
+                          color: "var(--font-secondary)",
                           fontSize: { xs: "0.75rem", sm: "0.875rem" },
                         }}
                       >
@@ -605,7 +611,7 @@ export default function StudentDetailsPage() {
                     </Box>
                   </>
                 ) : (
-                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("manageStudents.no30DayActivity")}
                   </Typography>
                 )}

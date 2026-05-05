@@ -4,13 +4,20 @@ import { Box, Typography, Paper, Chip, Divider } from "@mui/material";
 import { Section } from "./MultipleSectionsSection";
 import { MCQ, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 
+export type WrittenPromptPreview = {
+  question_text: string;
+  max_marks: number;
+  answer_mode?: string;
+};
+
 interface SectionCardProps {
   section: Section;
   isSelected: boolean;
   onClick: () => void;
   sectionMCQs?: MCQ[];
   sectionProblems?: CodingProblemListItem[];
-  type: "quiz" | "coding";
+  sectionWrittenPrompts?: WrittenPromptPreview[];
+  type: "quiz" | "coding" | "subjective";
 }
 
 export function SectionCard({
@@ -19,15 +26,23 @@ export function SectionCard({
   onClick,
   sectionMCQs = [],
   sectionProblems = [],
+  sectionWrittenPrompts = [],
   type,
 }: SectionCardProps) {
   const isQuiz = type === "quiz";
-  const items = isQuiz ? sectionMCQs : sectionProblems;
+  const isCoding = type === "coding";
+  const isWritten = type === "subjective";
+  const items = isQuiz
+    ? sectionMCQs
+    : isCoding
+    ? sectionProblems
+    : sectionWrittenPrompts;
   const itemsToShow = section.number_of_questions_to_show || items.length;
 
   // Calculate scores and breakdowns
   let maxPossibleScore = 0;
   let difficultyBreakdown: Record<string, number> = {};
+  let answerModeBreakdown: Record<string, number> = {};
 
   if (isQuiz) {
     const easyCount = sectionMCQs.filter((q) => q.difficulty_level === "Easy").length;
@@ -38,7 +53,7 @@ export function SectionCard({
       mediumCount * (section.mediumScore || 2) +
       hardCount * (section.hardScore || 3);
     difficultyBreakdown = { Easy: easyCount, Medium: mediumCount, Hard: hardCount };
-  } else {
+  } else if (isCoding) {
     const easyCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "easy").length;
     const mediumCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "medium").length;
     const hardCount = sectionProblems.filter((p) => (p.difficulty_level || "").toLowerCase() === "hard").length;
@@ -47,23 +62,41 @@ export function SectionCard({
       mediumCount * (section.mediumScore || 2) +
       hardCount * (section.hardScore || 3);
     difficultyBreakdown = { Easy: easyCount, Medium: mediumCount, Hard: hardCount };
+  } else if (isWritten) {
+    maxPossibleScore = sectionWrittenPrompts.reduce((sum, p) => sum + (p.max_marks || 0), 0);
+    sectionWrittenPrompts.forEach((p) => {
+      const mode = (p.answer_mode || "text").trim() || "text";
+      answerModeBreakdown[mode] = (answerModeBreakdown[mode] || 0) + 1;
+    });
   }
 
   const bgColor = isQuiz
     ? isSelected
-      ? "#e0e7ff"
-      : "#eef2ff"
+      ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)"
+      : "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)"
+    : isCoding
+    ? isSelected
+      ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
+      : "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
     : isSelected
-    ? "#a7f3d0"
-    : "#d1fae5";
+    ? "color-mix(in srgb, var(--warning-500) 28%, var(--border-default) 72%)"
+    : "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)";
   const borderColor = isQuiz
     ? isSelected
-      ? "#4f46e5"
-      : "#6366f1"
+      ? "var(--accent-indigo-dark)"
+      : "var(--accent-indigo)"
+    : isCoding
+    ? isSelected
+      ? "var(--success-500)"
+      : "var(--success-500)"
     : isSelected
-    ? "#059669"
-    : "#10b981";
-  const chipColor = isQuiz ? "#6366f1" : "#10b981";
+    ? "var(--warning-500)"
+    : "var(--warning-500)";
+  const chipColor = isQuiz
+    ? "var(--accent-indigo)"
+    : isCoding
+    ? "var(--success-500)"
+    : "var(--warning-500)";
 
   return (
     <Paper
@@ -77,7 +110,11 @@ export function SectionCard({
         cursor: "pointer",
         transition: "all 0.2s",
         "&:hover": {
-          bgcolor: isQuiz ? "#e0e7ff" : "#a7f3d0",
+          bgcolor: isQuiz
+            ? "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)"
+            : isCoding
+            ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
+            : "color-mix(in srgb, var(--warning-500) 22%, var(--border-default) 78%)",
           transform: "translateX(2px)",
         },
       }}
@@ -95,7 +132,7 @@ export function SectionCard({
             {section.title}
           </Typography>
           {section.description && (
-            <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
               {section.description}
             </Typography>
           )}
@@ -103,7 +140,7 @@ export function SectionCard({
         <Chip
           label={`Order ${section.order}`}
           size="small"
-          sx={{ bgcolor: chipColor, color: "white", fontWeight: 600 }}
+          sx={{ bgcolor: chipColor, color: "var(--font-light)", fontWeight: 600 }}
         />
       </Box>
       <Divider sx={{ my: 1.5 }} />
@@ -120,23 +157,31 @@ export function SectionCard({
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", display: "block", mb: 0.5 }}
+            sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}
           >
-            {isQuiz ? "Questions" : "Problems"}
+            {isQuiz ? "Questions" : isCoding ? "Problems" : "Prompts"}
           </Typography>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             <Chip
               label={`Total: ${items.length}`}
               size="small"
-              sx={{ bgcolor: "white", fontWeight: 600 }}
+              sx={{ bgcolor: "var(--font-light)", fontWeight: 600 }}
             />
             {section.number_of_questions_to_show && (
               <Chip
                 label={`Showing: ${itemsToShow}`}
                 size="small"
                 sx={{
-                  bgcolor: isQuiz ? "#dbeafe" : "#a7f3d0",
-                  color: isQuiz ? "#1e40af" : "#065f46",
+                  bgcolor: isQuiz
+                    ? "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)"
+                    : isCoding
+                    ? "color-mix(in srgb, var(--success-500) 32%, var(--border-default) 68%)"
+                    : "color-mix(in srgb, var(--warning-500) 22%, var(--border-default) 78%)",
+                  color: isQuiz
+                    ? "var(--accent-indigo)"
+                    : isCoding
+                    ? "var(--success-500)"
+                    : "var(--warning-500)",
                   fontWeight: 600,
                 }}
               />
@@ -154,27 +199,43 @@ export function SectionCard({
                     sx={{
                       bgcolor:
                         level === "Easy"
-                          ? "#d1fae5"
+                          ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                           : level === "Medium"
-                          ? "#fef3c7"
-                          : "#fed7aa",
+                          ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                          : "color-mix(in srgb, var(--warning-500) 24%, var(--surface) 76%)",
                       color:
                         level === "Easy"
-                          ? "#065f46"
+                          ? "var(--success-500)"
                           : level === "Medium"
-                          ? "#92400e"
-                          : "#7c2d12",
+                          ? "var(--warning-500)"
+                          : "var(--error-500)",
                       fontSize: "0.7rem",
                     }}
                   />
                 ))}
             </Box>
           )}
+          {isWritten && Object.keys(answerModeBreakdown).length > 0 && (
+            <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 1 }}>
+              {Object.entries(answerModeBreakdown).map(([mode, count]) => (
+                <Chip
+                  key={mode}
+                  label={`${mode}: ${count}`}
+                  size="small"
+                  sx={{
+                    bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                    color: "var(--warning-500)",
+                    fontSize: "0.7rem",
+                  }}
+                />
+              ))}
+            </Box>
+          )}
         </Box>
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", display: "block", mb: 0.5 }}
+            sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}
           >
             Scoring Configuration
           </Typography>
@@ -185,23 +246,51 @@ export function SectionCard({
                   <Chip
                     label={`Easy: ${section.easyScore || 1} pts`}
                     size="small"
-                    sx={{ bgcolor: "#d1fae5", color: "#065f46", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)", color: "var(--success-500)", fontWeight: 600 }}
                   />
                   <Chip
                     label={`Medium: ${section.mediumScore || 2} pts`}
                     size="small"
-                    sx={{ bgcolor: "#fef3c7", color: "#92400e", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)", color: "var(--warning-500)", fontWeight: 600 }}
                   />
                   <Chip
                     label={`Hard: ${section.hardScore || 3} pts`}
                     size="small"
-                    sx={{ bgcolor: "#fed7aa", color: "#7c2d12", fontWeight: 600 }}
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 24%, var(--surface) 76%)", color: "var(--error-500)", fontWeight: 600 }}
                   />
                 </Box>
                 {sectionMCQs.length > 0 && (
                   <Typography
                     variant="caption"
-                    sx={{ color: "#6366f1", fontWeight: 600, mt: 0.5 }}
+                    sx={{ color: "var(--accent-indigo)", fontWeight: 600, mt: 0.5 }}
+                  >
+                    Max Possible Score: {maxPossibleScore} points
+                  </Typography>
+                )}
+              </>
+            ) : isCoding ? (
+              <>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Chip
+                    label={`Easy: ${section.easyScore || 1} pts`}
+                    size="small"
+                    sx={{ bgcolor: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)", color: "var(--success-500)", fontWeight: 600 }}
+                  />
+                  <Chip
+                    label={`Medium: ${section.mediumScore || 2} pts`}
+                    size="small"
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)", color: "var(--warning-500)", fontWeight: 600 }}
+                  />
+                  <Chip
+                    label={`Hard: ${section.hardScore || 3} pts`}
+                    size="small"
+                    sx={{ bgcolor: "color-mix(in srgb, var(--warning-500) 24%, var(--surface) 76%)", color: "var(--error-500)", fontWeight: 600 }}
+                  />
+                </Box>
+                {sectionProblems.length > 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "var(--success-500)", fontWeight: 600, mt: 0.5 }}
                   >
                     Max Possible Score: {maxPossibleScore} points
                   </Typography>
@@ -209,29 +298,15 @@ export function SectionCard({
               </>
             ) : (
               <>
-                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                  <Chip
-                    label={`Easy: ${section.easyScore || 1} pts`}
-                    size="small"
-                    sx={{ bgcolor: "#d1fae5", color: "#065f46", fontWeight: 600 }}
-                  />
-                  <Chip
-                    label={`Medium: ${section.mediumScore || 2} pts`}
-                    size="small"
-                    sx={{ bgcolor: "#fef3c7", color: "#92400e", fontWeight: 600 }}
-                  />
-                  <Chip
-                    label={`Hard: ${section.hardScore || 3} pts`}
-                    size="small"
-                    sx={{ bgcolor: "#fed7aa", color: "#7c2d12", fontWeight: 600 }}
-                  />
-                </Box>
-                {sectionProblems.length > 0 && (
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
+                  Marks sum from each prompt (written sections).
+                </Typography>
+                {sectionWrittenPrompts.length > 0 && (
                   <Typography
                     variant="caption"
-                    sx={{ color: "#10b981", fontWeight: 600, mt: 0.5 }}
+                    sx={{ color: "var(--warning-500)", fontWeight: 600, mt: 0.5 }}
                   >
-                    Max Possible Score: {maxPossibleScore} points
+                    Total marks (prompts): {maxPossibleScore}
                   </Typography>
                 )}
               </>

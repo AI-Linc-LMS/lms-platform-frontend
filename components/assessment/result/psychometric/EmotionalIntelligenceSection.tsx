@@ -47,10 +47,10 @@ export function EmotionalIntelligenceSection({ data }: EmotionalIntelligenceSect
   ];
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#10b981";
-    if (score >= 65) return "#3b82f6";
-    if (score >= 50) return "#f59e0b";
-    return "#ef4444";
+    if (score >= 80) return "var(--course-cta)";
+    if (score >= 65) return "var(--accent-blue-light)";
+    if (score >= 50) return "var(--warning-500)";
+    return "var(--error-500)";
   };
 
   const getLevelColor = (level: string) => {
@@ -81,17 +81,17 @@ export function EmotionalIntelligenceSection({ data }: EmotionalIntelligenceSect
         <div className="w-full h-[400px]">
           <ResponsiveContainer>
             <RadarChart data={emotionalData}>
-              <PolarGrid stroke="#e5e7eb" />
+              <PolarGrid stroke="var(--border-default)" />
               <PolarAngleAxis
                 dataKey="dimension"
-                tick={{ fontSize: 12, fill: "#475569", fontWeight: 600 }}
+                tick={{ fontSize: 12, fill: "var(--font-muted)", fontWeight: 600 }}
               />
-              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} />
+              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: "var(--font-secondary)" }} />
               <Radar
                 name="EI Score"
                 dataKey="score"
-                stroke="#ec4899"
-                fill="#ec4899"
+                stroke="var(--accent-pink)"
+                fill="var(--accent-pink)"
                 fillOpacity={0.6}
                 strokeWidth={2}
               />

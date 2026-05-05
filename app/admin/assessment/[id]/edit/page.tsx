@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useRef, type MouseEvent } from "react";
+import { useRouter, useParams, usePathname, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
   Paper,
+  Avatar,
   Button,
   Tabs,
   Tab,
@@ -20,11 +21,16 @@ import {
   CircularProgress,
   Pagination,
   IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
   Chip,
   Tooltip,
+  TextField,
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -39,8 +45,10 @@ import {
   CreateAssessmentPayload,
   isMCQQuestion,
   isCodingQuestion,
+  isSubjectiveQuestion,
   QuestionsExportMCQQuestion,
   QuestionsExportCodingQuestion,
+  QuestionsExportSubjectiveQuestion,
   type AssessmentAnalyticsResponse,
   clampAssessmentAnalyticsTopPerformers,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -64,7 +72,21 @@ import {
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
 type TabValue = "details" | "questions" | "submissions" | "analytics";
-type QuestionsSubTab = "mcq" | "coding";
+type QuestionsSubTab = "mcq" | "coding" | "written";
+
+const ASSESSMENT_EDIT_TAB_VALUES: TabValue[] = [
+  "details",
+  "questions",
+  "submissions",
+  "analytics",
+];
+
+function parseAssessmentEditTabParam(value: string | null): TabValue | null {
+  if (!value) return null;
+  return ASSESSMENT_EDIT_TAB_VALUES.includes(value as TabValue)
+    ? (value as TabValue)
+    : null;
+}
 
 function escapeCsv(val: unknown): string {
   if (val == null || val === undefined) return "";
@@ -160,6 +182,31 @@ function analyticsStatusChipColor(
     return "info";
   }
   return "default";
+}
+
+function humanizeReviewStatus(raw: string | null | undefined): string {
+  if (!raw || !String(raw).trim()) return "Pending evaluation";
+  return String(raw)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function reviewStatusChipColor(
+  raw: string | null | undefined,
+): "default" | "success" | "warning" | "info" {
+  const normalized = String(raw || "").toLowerCase();
+  if (normalized === "published") return "success";
+  if (normalized === "evaluated") return "info";
+  if (normalized === "pending_evaluation") return "warning";
+  return "default";
+}
+
+function buildInitials(name: string | null | undefined): string {
+  const safe = String(name || "").trim();
+  if (!safe) return "U";
+  const words = safe.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 1).toUpperCase();
+  return `${words[0][0] || ""}${words[1][0] || ""}`.toUpperCase();
 }
 
 function clampPercentDisplay(n: number | null | undefined): number {
@@ -301,6 +348,7 @@ export default function AssessmentEditPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -311,7 +359,19 @@ export default function AssessmentEditPage() {
   const readOnly =
     hideAdminQuestions || searchParams.get("readonly") === "1";
   const assessmentId = Number(params.id);
-  const [tab, setTab] = useState<TabValue>("details");
+  const [tab, setTab] = useState<TabValue>(
+    () => parseAssessmentEditTabParam(searchParams.get("tab")) ?? "details",
+  );
+
+  useEffect(() => {
+    const parsed = parseAssessmentEditTabParam(searchParams.get("tab"));
+    if (!parsed) return;
+    if (hideAdminQuestions && parsed === "questions") {
+      setTab("details");
+      return;
+    }
+    setTab(parsed);
+  }, [searchParams, hideAdminQuestions]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
@@ -339,8 +399,11 @@ export default function AssessmentEditPage() {
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
   const [showResult, setShowResult] = useState(true);
+  const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
+  const [tabSwitchLimitEnabled, setTabSwitchLimitEnabled] = useState(false);
+  const [tabSwitchLimitCount, setTabSwitchLimitCount] = useState(2);
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [passBandLowerPercent, setPassBandLowerPercent] = useState("");
   const [passBandUpperPercent, setPassBandUpperPercent] = useState("");
@@ -352,10 +415,20 @@ export default function AssessmentEditPage() {
   const [questionsLimit, setQuestionsLimit] = useState(10);
   const [codingQuestionsPage, setCodingQuestionsPage] = useState(1);
   const [codingQuestionsLimit, setCodingQuestionsLimit] = useState(10);
+  const [writtenQuestionsPage, setWrittenQuestionsPage] = useState(1);
+  const [writtenQuestionsLimit, setWrittenQuestionsLimit] = useState(10);
   const [submissionsPage, setSubmissionsPage] = useState(1);
   const [submissionsLimit, setSubmissionsLimit] = useState(10);
   const [downloadingAllSubmissionPdfs, setDownloadingAllSubmissionPdfs] =
     useState(false);
+  const [submissionActionsAnchorEl, setSubmissionActionsAnchorEl] = useState<null | HTMLElement>(null);
+  const [submissionActionsTarget, setSubmissionActionsTarget] = useState<SubmissionsExportSubmission | null>(null);
+  useEffect(() => {
+    if (evaluationMode === "manual" && showResult) {
+      setShowResult(false);
+    }
+  }, [evaluationMode, showResult]);
+
   const [previewMCQ, setPreviewMCQ] = useState<{
     section: { section_title: string };
     question: QuestionsExportMCQQuestion;
@@ -363,6 +436,10 @@ export default function AssessmentEditPage() {
   const [previewCoding, setPreviewCoding] = useState<{
     section: { section_title: string };
     question: QuestionsExportCodingQuestion;
+  } | null>(null);
+  const [previewWritten, setPreviewWritten] = useState<{
+    section: { section_title: string };
+    question: QuestionsExportSubjectiveQuestion;
   } | null>(null);
   const [questionsSubTab, setQuestionsSubTab] = useState<QuestionsSubTab>("mcq");
 
@@ -430,7 +507,14 @@ export default function AssessmentEditPage() {
       setLiveStreaming((data as any).live_streaming ?? false);
       setSendCommunication((data as any).send_communication ?? false);
       setShowResult((data as any).show_result ?? true);
+      setEvaluationMode((data as any).evaluation_mode === "manual" ? "manual" : "auto");
       setAllowMovementAcrossSections(anyData.allow_movement !== false);
+      setTabSwitchLimitEnabled(Boolean(anyData.tab_switch_limit_enabled));
+      setTabSwitchLimitCount(
+        Number(anyData.tab_switch_limit_count) > 0
+          ? Number(anyData.tab_switch_limit_count)
+          : 2
+      );
       setCertificateAvailable(Boolean(anyData.certificate_available));
       setPassBandLowerPercent(
         anyData.pass_band_lower_min_percent != null &&
@@ -602,6 +686,10 @@ export default function AssessmentEditPage() {
       showToast(t("assessmentDevice.atLeastOne"), "error");
       return;
     }
+    if (tabSwitchLimitEnabled && tabSwitchLimitCount < 1) {
+      showToast("Allowed tab switches must be at least 1", "error");
+      return;
+    }
     try {
       setSaving(true);
       const payload: Partial<CreateAssessmentPayload> = {
@@ -618,9 +706,12 @@ export default function AssessmentEditPage() {
         proctoring_enabled: proctoringEnabled,
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         send_communication: sendCommunication,
-        show_result: showResult,
+        show_result: evaluationMode === "manual" ? false : showResult,
+        evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
         allow_movement: allowMovementAcrossSections,
+        tab_switch_limit_enabled: tabSwitchLimitEnabled,
+        tab_switch_limit_count: tabSwitchLimitEnabled ? tabSwitchLimitCount : null,
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
@@ -651,6 +742,45 @@ export default function AssessmentEditPage() {
       showToast(e?.message || "Failed to update assessment", "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePublishSubmission = async (submission: SubmissionsExportSubmission) => {
+    if (!assessmentId || !config.clientId) return;
+    const submissionId = Number((submission as any).submission_id);
+    if (!submissionId) return;
+    try {
+      await adminAssessmentService.publishSubmissionResult(config.clientId, assessmentId, submissionId);
+      showToast("Result published", "success");
+      await loadSubmissions();
+      await loadAssessment();
+    } catch (e: any) {
+      showToast(e?.message || "Failed to publish result", "error");
+    }
+  };
+
+  const handleOpenSubmissionActionsMenu = (
+    event: MouseEvent<HTMLElement>,
+    submission: SubmissionsExportSubmission,
+  ) => {
+    setSubmissionActionsAnchorEl(event.currentTarget);
+    setSubmissionActionsTarget(submission);
+  };
+
+  const handleCloseSubmissionActionsMenu = () => {
+    setSubmissionActionsAnchorEl(null);
+    setSubmissionActionsTarget(null);
+  };
+
+  const handleBulkPublish = async () => {
+    if (!assessmentId || !config.clientId) return;
+    try {
+      const result = await adminAssessmentService.publishAssessmentResultsBulk(config.clientId, assessmentId);
+      showToast(`Published ${result.published_count ?? 0} submissions`, "success");
+      await loadSubmissions();
+      await loadAssessment();
+    } catch (e: any) {
+      showToast(e?.message || "Failed to bulk publish results", "error");
     }
   };
 
@@ -750,6 +880,42 @@ export default function AssessmentEditPage() {
     const csv = jsonToCsvRows(flat, columns);
     downloadCsv(csv, `assessment-${questionsData.assessment.slug || assessmentId}-coding-questions.csv`);
     showToast("Coding questions exported", "success");
+  };
+
+  const handleDownloadWrittenQuestions = () => {
+    if (!questionsData) return;
+    const flat: Record<string, unknown>[] = [];
+    for (const sec of subjectiveSections) {
+      for (const q of sec.questions) {
+        if (isSubjectiveQuestion(q)) {
+          flat.push({
+            section_id: sec.section_id,
+            section_title: sec.section_title,
+            section_order: sec.order,
+            id: q.id,
+            question_text: q.question_text,
+            evaluation_prompt: q.evaluation_prompt,
+            max_marks: q.max_marks,
+            question_type: q.question_type ?? "",
+            answer_mode: q.answer_mode ?? "text",
+          });
+        }
+      }
+    }
+    const columns: { key: string; header: string }[] = [
+      { key: "section_id", header: "Section ID" },
+      { key: "section_title", header: "Section Title" },
+      { key: "section_order", header: "Section Order" },
+      { key: "id", header: "Question ID" },
+      { key: "question_text", header: "Question Text" },
+      { key: "evaluation_prompt", header: "Evaluation Prompt" },
+      { key: "max_marks", header: "Max Marks" },
+      { key: "question_type", header: "Question Type" },
+      { key: "answer_mode", header: "Answer Mode" },
+    ];
+    const csv = jsonToCsvRows(flat, columns);
+    downloadCsv(csv, `assessment-${questionsData.assessment.slug || assessmentId}-written-questions.csv`);
+    showToast("Written questions exported", "success");
   };
 
   function downloadCsv(csv: string, filename: string) {
@@ -862,6 +1028,14 @@ export default function AssessmentEditPage() {
     );
   }, [questionsData]);
 
+  const subjectiveSections = useMemo(() => {
+    if (!questionsData?.sections) return [];
+    return questionsData.sections.filter((s) => {
+      const t = (s.section_type ?? "").toLowerCase();
+      return t === "subjective" || t === "written";
+    });
+  }, [questionsData]);
+
   const allQuizItems = useMemo(() => {
     return quizSections.flatMap((sec) =>
       sec.questions
@@ -878,6 +1052,14 @@ export default function AssessmentEditPage() {
     );
   }, [codingSections]);
 
+  const allWrittenItems = useMemo(() => {
+    return subjectiveSections.flatMap((sec) =>
+      sec.questions
+        .filter((q): q is QuestionsExportSubjectiveQuestion => isSubjectiveQuestion(q))
+        .map((q) => ({ section: sec, question: q }))
+    );
+  }, [subjectiveSections]);
+
   const paginatedQuizQuestions = useMemo(() => {
     const start = (questionsPage - 1) * questionsLimit;
     return allQuizItems.slice(start, start + questionsLimit);
@@ -888,9 +1070,14 @@ export default function AssessmentEditPage() {
     return allCodingItems.slice(start, start + codingQuestionsLimit);
   }, [allCodingItems, codingQuestionsPage, codingQuestionsLimit]);
 
+  const paginatedWrittenQuestions = useMemo(() => {
+    const start = (writtenQuestionsPage - 1) * writtenQuestionsLimit;
+    return allWrittenItems.slice(start, start + writtenQuestionsLimit);
+  }, [allWrittenItems, writtenQuestionsPage, writtenQuestionsLimit]);
+
   const totalQuizQuestions = allQuizItems.length;
   const totalCodingQuestions = allCodingItems.length;
-  const totalQuestions = totalQuizQuestions + totalCodingQuestions;
+  const totalWrittenQuestions = allWrittenItems.length;
 
   const paginatedSubmissions = useMemo(() => {
     if (!submissionsData?.submissions) return [];
@@ -899,6 +1086,20 @@ export default function AssessmentEditPage() {
   }, [submissionsData, submissionsPage, submissionsLimit]);
 
   const totalSubmissions = submissionsData?.submissions?.length ?? 0;
+
+  const manualReviewStats = useMemo(() => {
+    const rows = submissionsData?.submissions || [];
+    let pending = 0;
+    let evaluated = 0;
+    let published = 0;
+    rows.forEach((row) => {
+      const status = String((row as any).review_status || "pending_evaluation").toLowerCase();
+      if (status === "published") published += 1;
+      else if (status === "evaluated") evaluated += 1;
+      else pending += 1;
+    });
+    return { pending, evaluated, published };
+  }, [submissionsData]);
 
   const submissionsIncludeProctoring = useMemo(() => {
     if (!submissionsData?.submissions?.length) return false;
@@ -1030,17 +1231,30 @@ export default function AssessmentEditPage() {
   useEffect(() => {
     setQuestionsPage(1);
     setCodingQuestionsPage(1);
+    setWrittenQuestionsPage(1);
     setSubmissionsPage(1);
   }, [tab]);
 
   useEffect(() => {
     if (tab !== "questions" || !questionsData) return;
-    if (questionsSubTab === "mcq" && totalQuizQuestions === 0 && totalCodingQuestions > 0) {
-      setQuestionsSubTab("coding");
-    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0 && totalQuizQuestions > 0) {
-      setQuestionsSubTab("mcq");
+    if (questionsSubTab === "mcq" && totalQuizQuestions === 0) {
+      if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
+      else if (totalWrittenQuestions > 0) setQuestionsSubTab("written");
+    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0) {
+      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
+      else if (totalWrittenQuestions > 0) setQuestionsSubTab("written");
+    } else if (questionsSubTab === "written" && totalWrittenQuestions === 0) {
+      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
+      else if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
     }
-  }, [tab, questionsData, questionsSubTab, totalQuizQuestions, totalCodingQuestions]);
+  }, [
+    tab,
+    questionsData,
+    questionsSubTab,
+    totalQuizQuestions,
+    totalCodingQuestions,
+    totalWrittenQuestions,
+  ]);
 
   const codingProblemDataForPreview = (q: QuestionsExportCodingQuestion) => ({
     content_title: q.title,
@@ -1062,7 +1276,7 @@ export default function AssessmentEditPage() {
 
   if (loading) {
     return (
-      <MainLayout>
+      <MainLayout fullWidthContent>
         <Box
           sx={{
             display: "flex",
@@ -1079,7 +1293,7 @@ export default function AssessmentEditPage() {
 
   if (!assessment) {
     return (
-      <MainLayout>
+      <MainLayout fullWidthContent>
         <Box sx={{ p: 3 }}>
           <Typography color="text.secondary">Assessment not found</Typography>
           <Button
@@ -1097,7 +1311,7 @@ export default function AssessmentEditPage() {
   const displayTitle = assessment.title || (readOnly ? "View Assessment" : "Edit Assessment");
 
   return (
-    <MainLayout>
+    <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
@@ -1110,7 +1324,7 @@ export default function AssessmentEditPage() {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1.5rem", sm: "2rem" },
             mb: 1,
           }}
@@ -1124,11 +1338,38 @@ export default function AssessmentEditPage() {
               : "You can view this assessment but cannot change settings or content."}
           </Alert>
         )}
+        {!readOnly &&
+          assessment.is_draft &&
+          !(assessment.submissions_count && assessment.submissions_count > 0) && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 3 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() =>
+                    router.push(`/admin/assessment/${assessmentId}/build`)
+                  }
+                >
+                  Continue editing
+                </Button>
+              }
+            >
+              This assessment is still a draft. Open the full editor to change sections, questions, and
+              AI-generated content. Publish from the editor when you are ready to make it visible to learners.
+            </Alert>
+          )}
 
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Tabs
             value={tab}
-            onChange={(_, v: TabValue) => setTab(v)}
+            onChange={(_, v: TabValue) => {
+              setTab(v);
+              const next = new URLSearchParams(searchParams.toString());
+              next.set("tab", v);
+              router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+            }}
             sx={{
               borderBottom: 1,
               borderColor: "divider",
@@ -1173,7 +1414,10 @@ export default function AssessmentEditPage() {
                   showLiveStreamingToggle={canConfigureLiveStreaming}
                   sendCommunication={sendCommunication}
                   showResult={showResult}
+                  evaluationMode={evaluationMode}
                   allowMovementAcrossSections={allowMovementAcrossSections}
+                  tabSwitchLimitEnabled={tabSwitchLimitEnabled}
+                  tabSwitchLimitCount={tabSwitchLimitCount}
                   certificateAvailable={certificateAvailable}
                   passBandLowerPercent={passBandLowerPercent}
                   passBandUpperPercent={passBandUpperPercent}
@@ -1195,9 +1439,12 @@ export default function AssessmentEditPage() {
                   onLiveStreamingChange={setLiveStreaming}
                   onSendCommunicationChange={setSendCommunication}
                   onShowResultChange={setShowResult}
+                  onEvaluationModeChange={setEvaluationMode}
                   onAllowMovementAcrossSectionsChange={
                     setAllowMovementAcrossSections
                   }
+                  onTabSwitchLimitEnabledChange={setTabSwitchLimitEnabled}
+                  onTabSwitchLimitCountChange={setTabSwitchLimitCount}
                   onCertificateAvailableChange={setCertificateAvailable}
                   onPassBandLowerPercentChange={setPassBandLowerPercent}
                   onPassBandUpperPercentChange={setPassBandUpperPercent}
@@ -1224,7 +1471,10 @@ export default function AssessmentEditPage() {
                           <IconWrapper icon="mdi:content-save" size={18} />
                         )
                       }
-                      sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                      sx={{
+                        bgcolor: "var(--accent-indigo)",
+                        "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                      }}
                     >
                       {saving ? "Saving…" : "Save"}
                     </Button>
@@ -1292,6 +1542,32 @@ export default function AssessmentEditPage() {
                           </Box>
                         }
                       />
+                      <Tab
+                        value="written"
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            Written
+                            {totalWrittenQuestions > 0 && (
+                              <Chip
+                                label={totalWrittenQuestions}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  bgcolor:
+                                    questionsSubTab === "written"
+                                      ? "warning.main"
+                                      : "action.hover",
+                                  color:
+                                    questionsSubTab === "written"
+                                      ? "primary.contrastText"
+                                      : "text.secondary",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        }
+                      />
                     </Tabs>
 
                     {questionsSubTab === "mcq" && (
@@ -1300,21 +1576,21 @@ export default function AssessmentEditPage() {
                         sx={{
                           borderRadius: 2,
                           overflow: "hidden",
-                          borderColor: "#e5e7eb",
-                          bgcolor: "#fafafa",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
                         }}
                       >
                         <Box
                           sx={{
                             px: 2,
                             py: 1.5,
-                            borderBottom: "1px solid #e5e7eb",
+                            borderBottom: "1px solid var(--border-default)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
                             flexWrap: "wrap",
                             gap: 1,
-                            bgcolor: "#fff",
+                            bgcolor: "var(--card-bg)",
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
@@ -1326,7 +1602,10 @@ export default function AssessmentEditPage() {
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadMCQQuestions}
                             disabled={readOnly || totalQuizQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            sx={{
+                              bgcolor: "var(--accent-indigo)",
+                              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                            }}
                           >
                             Download MCQ CSV
                           </Button>
@@ -1340,7 +1619,7 @@ export default function AssessmentEditPage() {
                             <TableContainer sx={{ maxHeight: 440 }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
-                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
@@ -1352,7 +1631,7 @@ export default function AssessmentEditPage() {
                                 </TableHead>
                                 <TableBody>
                                   {paginatedQuizQuestions.map(({ section: sec, question: q }) => (
-                                    <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                    <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
                                       <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
                                       <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
                                       <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
@@ -1377,7 +1656,7 @@ export default function AssessmentEditPage() {
                                         <IconButton
                                           size="small"
                                           onClick={() => setPreviewMCQ({ section: sec, question: q })}
-                                          sx={{ color: "#6366f1" }}
+                                          sx={{ color: "var(--accent-indigo)" }}
                                           title="Preview"
                                         >
                                           <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -1407,21 +1686,21 @@ export default function AssessmentEditPage() {
                         sx={{
                           borderRadius: 2,
                           overflow: "hidden",
-                          borderColor: "#e5e7eb",
-                          bgcolor: "#fafafa",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
                         }}
                       >
                         <Box
                           sx={{
                             px: 2,
                             py: 1.5,
-                            borderBottom: "1px solid #e5e7eb",
+                            borderBottom: "1px solid var(--border-default)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
                             flexWrap: "wrap",
                             gap: 1,
-                            bgcolor: "#fff",
+                            bgcolor: "var(--card-bg)",
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
@@ -1433,7 +1712,10 @@ export default function AssessmentEditPage() {
                             startIcon={<IconWrapper icon="mdi:download" size={18} />}
                             onClick={handleDownloadCodingQuestions}
                             disabled={readOnly || totalCodingQuestions === 0}
-                            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                            sx={{
+                              bgcolor: "var(--accent-indigo)",
+                              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                            }}
                           >
                             Download Coding CSV
                           </Button>
@@ -1447,7 +1729,7 @@ export default function AssessmentEditPage() {
                             <TableContainer sx={{ maxHeight: 440 }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
-                                  <TableRow sx={{ bgcolor: "#f3f4f6" }}>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Order</TableCell>
                                     <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
@@ -1459,7 +1741,7 @@ export default function AssessmentEditPage() {
                                 </TableHead>
                                 <TableBody>
                                   {paginatedCodingQuestions.map(({ section: sec, question: q }) => (
-                                    <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "#f9fafb" } }}>
+                                    <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
                                       <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
                                       <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
                                       <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
@@ -1470,7 +1752,7 @@ export default function AssessmentEditPage() {
                                         {q.problem_statement && (
                                           <Typography
                                             variant="caption"
-                                            sx={{ color: "#6b7280", display: "block", mt: 0.25 }}
+                                            sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}
                                           >
                                             {(() => {
                                               const text = htmlToPlainText(String(q.problem_statement));
@@ -1487,16 +1769,16 @@ export default function AssessmentEditPage() {
                                             sx={{
                                               bgcolor:
                                                 q.difficulty_level === "Easy"
-                                                  ? "#d1fae5"
+                                                  ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                                                   : q.difficulty_level === "Medium"
-                                                  ? "#fde68a"
-                                                  : "#fed7aa",
+                                                  ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                                                  : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                                               color:
                                                 q.difficulty_level === "Easy"
-                                                  ? "#065f46"
+                                                  ? "var(--success-500)"
                                                   : q.difficulty_level === "Medium"
-                                                  ? "#92400e"
-                                                  : "#7c2d12",
+                                                  ? "var(--warning-500)"
+                                                  : "var(--warning-500)",
                                               fontWeight: 600,
                                               fontSize: "0.7rem",
                                             }}
@@ -1510,7 +1792,7 @@ export default function AssessmentEditPage() {
                                         <IconButton
                                           size="small"
                                           onClick={() => setPreviewCoding({ section: sec, question: q })}
-                                          sx={{ color: "#6366f1" }}
+                                          sx={{ color: "var(--accent-indigo)" }}
                                           title="Preview"
                                         >
                                           <IconWrapper icon="mdi:eye-outline" size={18} />
@@ -1528,6 +1810,160 @@ export default function AssessmentEditPage() {
                               onPageChange={setCodingQuestionsPage}
                               onLimitChange={(l) => { setCodingQuestionsLimit(l); setCodingQuestionsPage(1); }}
                               itemLabel="questions"
+                            />
+                          </>
+                        )}
+                      </Paper>
+                    )}
+
+                    {questionsSubTab === "written" && (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 2,
+                          overflow: "hidden",
+                          borderColor: "var(--border-default)",
+                          bgcolor: "var(--surface)",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1.5,
+                            borderBottom: "1px solid var(--border-default)",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            bgcolor: "var(--card-bg)",
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {totalWrittenQuestions} written prompt
+                            {totalWrittenQuestions !== 1 ? "s" : ""}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                            onClick={handleDownloadWrittenQuestions}
+                            disabled={readOnly || totalWrittenQuestions === 0}
+                            sx={{
+                              bgcolor: "var(--warning-500)",
+                              "&:hover": { bgcolor: "color-mix(in srgb, var(--warning-500) 85%, var(--font-primary) 15%)" },
+                            }}
+                          >
+                            Download written CSV
+                          </Button>
+                        </Box>
+                        {totalWrittenQuestions === 0 ? (
+                          <Box sx={{ py: 6, textAlign: "center" }}>
+                            <Typography color="text.secondary">
+                              No written (subjective) questions.
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <>
+                            <TableContainer sx={{ maxHeight: 440 }}>
+                              <Table size="small" stickyHeader>
+                                <TableHead>
+                                  <TableRow sx={{ bgcolor: "var(--surface)" }}>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Section
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Order
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      ID
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem", minWidth: 220 }}>
+                                      Prompt
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Max marks
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>
+                                      Answer mode
+                                    </TableCell>
+                                    <TableCell
+                                      sx={{
+                                        fontWeight: 700,
+                                        py: 1.5,
+                                        width: 56,
+                                        textAlign: "center",
+                                        fontSize: "0.8rem",
+                                      }}
+                                    />
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {paginatedWrittenQuestions.map(({ section: sec, question: q }) => (
+                                    <TableRow
+                                      key={`written-${q.id}-${sec.section_id}`}
+                                      hover
+                                      sx={{ "&:hover": { bgcolor: "var(--surface)" } }}
+                                    >
+                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell sx={{ py: 1.5, maxWidth: 300 }}>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: "vertical",
+                                          }}
+                                          title={q.question_text}
+                                        >
+                                          {q.question_text}
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5, fontWeight: 600 }}>{q.max_marks}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>
+                                        <Chip
+                                          label={q.answer_mode || "text"}
+                                          size="small"
+                                          sx={{
+                                            bgcolor:
+                                              "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                                            color: "var(--warning-500)",
+                                            fontWeight: 600,
+                                            fontSize: "0.7rem",
+                                          }}
+                                        />
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1.5, textAlign: "center" }}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            setPreviewWritten({ section: sec, question: q })
+                                          }
+                                          sx={{ color: "var(--warning-500)" }}
+                                          title="Preview"
+                                        >
+                                          <IconWrapper icon="mdi:eye-outline" size={18} />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                            <PaginationControls
+                              totalItems={totalWrittenQuestions}
+                              page={writtenQuestionsPage}
+                              limit={writtenQuestionsLimit}
+                              onPageChange={setWrittenQuestionsPage}
+                              onLimitChange={(l) => {
+                                setWrittenQuestionsLimit(l);
+                                setWrittenQuestionsPage(1);
+                              }}
+                              itemLabel="prompts"
                             />
                           </>
                         )}
@@ -1594,110 +2030,217 @@ export default function AssessmentEditPage() {
                     )}
                   </DialogContent>
                 </Dialog>
+
+                {/* Written / subjective preview dialog */}
+                <Dialog
+                  open={!!previewWritten}
+                  onClose={() => setPreviewWritten(null)}
+                  maxWidth="sm"
+                  fullWidth
+                  PaperProps={{ sx: { borderRadius: 2 } }}
+                >
+                  <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span>Written prompt · {previewWritten?.section.section_title}</span>
+                    <IconButton size="small" onClick={() => setPreviewWritten(null)} aria-label="Close">
+                      <IconWrapper icon="mdi:close" size={20} />
+                    </IconButton>
+                  </DialogTitle>
+                  <DialogContent dividers>
+                    {previewWritten && (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Question
+                        </Typography>
+                        <Typography variant="body1">{previewWritten.question.question_text}</Typography>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Evaluation prompt (rubric / AI)
+                        </Typography>
+                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                          {previewWritten.question.evaluation_prompt}
+                        </Typography>
+                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+                          <Chip
+                            label={`Max marks: ${previewWritten.question.max_marks}`}
+                            size="small"
+                            sx={{ fontWeight: 600 }}
+                          />
+                          <Chip
+                            label={previewWritten.question.answer_mode || "text"}
+                            size="small"
+                            sx={{
+                              bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
+                              color: "var(--warning-500)",
+                              fontWeight: 600,
+                            }}
+                          />
+                          {previewWritten.question.question_type ? (
+                            <Chip label={previewWritten.question.question_type} size="small" variant="outlined" />
+                          ) : null}
+                        </Box>
+                      </Box>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </>
             )}
 
             {tab === "submissions" && (
               <>
-                <Box
+                <Paper
+                  elevation={0}
                   sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: 2,
                     mb: 2,
+                    p: { xs: 1.5, sm: 2 },
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    background:
+                      "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 46%)",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary">
-                    Export submissions · View and download table
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<IconWrapper icon="mdi:download" size={18} />}
-                      onClick={handleDownloadSubmissions}
-                      disabled={
-                        !submissionsData?.submissions?.length ||
-                        (readOnly && !hideAdminQuestions)
-                      }
-                      sx={{
-                        bgcolor: "#6366f1",
-                        "&:hover": { bgcolor: "#4f46e5" },
-                      }}
-                    >
-                      Download table
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={
-                        downloadingAllSubmissionPdfs ? (
-                          <CircularProgress size={16} color="inherit" />
-                        ) : (
-                          <IconWrapper icon="mdi:folder-zip-outline" size={18} />
-                        )
-                      }
-                      onClick={() => void handleDownloadAllSubmissionPdfsZip()}
-                      disabled={
-                        downloadingAllSubmissionPdfs ||
-                        !submissionsData?.submissions?.length ||
-                        (readOnly && !hideAdminQuestions)
-                      }
-                      sx={{
-                        bgcolor: "#e11d48",
-                        "&:hover": { bgcolor: "#be123c" },
-                        textTransform: "none",
-                      }}
-                    >
-                      {downloadingAllSubmissionPdfs
-                        ? "Preparing ZIP..."
-                        : "Download all PDFs (ZIP)"}
-                    </Button>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      gap: 1.5,
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+                        Submissions workspace
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Review attempts, evaluate responses, and export learner reports.
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      {evaluationMode === "manual" && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<IconWrapper icon="mdi:publish" size={18} />}
+                          onClick={() => void handleBulkPublish()}
+                        >
+                          Publish evaluated
+                        </Button>
+                      )}
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                        onClick={handleDownloadSubmissions}
+                        disabled={
+                          !submissionsData?.submissions?.length ||
+                          (readOnly && !hideAdminQuestions)
+                        }
+                        sx={{
+                          bgcolor: "var(--accent-indigo)",
+                          "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                          textTransform: "none",
+                        }}
+                      >
+                        Download table
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={
+                          downloadingAllSubmissionPdfs ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <IconWrapper icon="mdi:folder-zip-outline" size={18} />
+                          )
+                        }
+                        onClick={() => void handleDownloadAllSubmissionPdfsZip()}
+                        disabled={
+                          downloadingAllSubmissionPdfs ||
+                          !submissionsData?.submissions?.length ||
+                          (readOnly && !hideAdminQuestions)
+                        }
+                        sx={{
+                          bgcolor: "var(--error-500)",
+                          "&:hover": {
+                            bgcolor:
+                              "color-mix(in srgb, var(--error-500) 86%, var(--accent-indigo-dark))",
+                          },
+                          textTransform: "none",
+                        }}
+                      >
+                        {downloadingAllSubmissionPdfs
+                          ? "Preparing ZIP..."
+                          : "Download all PDFs"}
+                      </Button>
+                    </Box>
                   </Box>
-                </Box>
+
+                  <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <Chip size="small" label={`Total ${totalSubmissions}`} sx={{ fontWeight: 700 }} />
+                    {evaluationMode === "manual" ? (
+                      <>
+                        <Chip size="small" color="warning" variant="outlined" label={`Pending ${manualReviewStats.pending}`} />
+                        <Chip size="small" color="info" variant="outlined" label={`Evaluated ${manualReviewStats.evaluated}`} />
+                        <Chip size="small" color="success" variant="outlined" label={`Published ${manualReviewStats.published}`} />
+                      </>
+                    ) : (
+                      <Chip size="small" color="info" variant="outlined" label="Auto evaluation mode" />
+                    )}
+                  </Box>
+                </Paper>
                 {!submissionsData?.submissions?.length ? (
                   <Typography color="text.secondary">
                     No submissions to display.
                   </Typography>
                 ) : (
                   <>
-                    <TableContainer sx={{ maxHeight: 480, overflow: "auto" }}>
+                    <Alert severity="info" sx={{ mb: 1.5 }}>
+                      Tip: Use the Evaluate action for detailed per-question grading. Scroll horizontally to view all columns.
+                    </Alert>
+                    <TableContainer
+                      sx={{
+                        maxHeight: 560,
+                        overflow: "auto",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 2,
+                        bgcolor: "background.paper",
+                      }}
+                    >
                       <Table size="small" stickyHeader>
                         <TableHead>
-                          <TableRow sx={{ bgcolor: "#f9fafb" }}>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                          <TableRow sx={{ bgcolor: "var(--surface)" }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 210 }}>
                               Name
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 240 }}>
                               Email
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Phone
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Started At
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Submitted At
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Max Marks
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 150 }}>
                               Score
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                              Percentage
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
+                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
                               Attempted
                             </TableCell>
-                           
-                            <TableCell sx={{ fontWeight: 600, py: 1.5, minWidth: 140 }}>
-                              Report
-                            </TableCell>
+                            {evaluationMode === "manual" && (
+                              <>
+                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Review</TableCell>
+                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Evaluated score</TableCell>
+                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Actions</TableCell>
+                              </>
+                            )}
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -1705,9 +2248,39 @@ export default function AssessmentEditPage() {
                             <TableRow
                               key={`${s.email}-${s.submitted_at ?? idx}-${(submissionsPage - 1) * submissionsLimit + idx}`}
                               hover
+                              sx={{
+                                "&:nth-of-type(even)": {
+                                  bgcolor:
+                                    "color-mix(in srgb, var(--font-secondary) 8%, transparent)",
+                                },
+                              }}
                             >
-                              <TableCell sx={{ py: 1.5 }}>{s.name}</TableCell>
-                              <TableCell sx={{ py: 1.5 }}>{s.email}</TableCell>
+                              <TableCell sx={{ py: 1.25 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                  <Avatar
+                                    src={(s as any).profile_pic_url || undefined}
+                                    sx={{
+                                      width: 30,
+                                      height: 30,
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      bgcolor:
+                                        "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                                      color: "var(--accent-indigo-dark)",
+                                    }}
+                                  >
+                                    {buildInitials(s.name)}
+                                  </Avatar>
+                                  <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+                                    {s.name || "Unknown learner"}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell sx={{ py: 1.25 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  {s.email || "—"}
+                                </Typography>
+                              </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.phone ?? "—"}
                               </TableCell>
@@ -1720,66 +2293,120 @@ export default function AssessmentEditPage() {
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.maximum_marks ?? "—"}
                               </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.overall_score ?? "—"}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.percentage ?? "—"}
+                              <TableCell sx={{ py: 1.25 }}>
+                                <Chip
+                                  size="small"
+                                  label={
+                                    s.overall_score != null
+                                      ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
+                                      : "Not graded"
+                                  }
+                                  color={s.overall_score != null ? "primary" : "default"}
+                                  variant={s.overall_score != null ? "filled" : "outlined"}
+                                  sx={{ fontWeight: 700 }}
+                                />
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.attempted_questions ?? "—"}
                               </TableCell>
-                           
-                              <TableCell sx={{ py: 0.5, pr: 1, verticalAlign: "middle" }}>
-                                <Tooltip title={`Download performance report (PDF) for ${s.name}`} placement="top">
-                                  <span>
-                                    <Button
+                              {evaluationMode === "manual" && (
+                                <>
+                                  <TableCell sx={{ py: 1.5 }}>
+                                    <Chip
                                       size="small"
-                                      variant="text"
-                                      aria-label={`Download PDF for ${s.name}`}
-                                      onClick={() => handleDownloadSubmissionPdf(s)}
-                                      disabled={readOnly && !hideAdminQuestions}
-                                      startIcon={
-                                        <IconWrapper
-                                          icon="mdi:file-download-outline"
-                                          size={18}
-                                          color="#e11d48"
-                                        />
+                                      label={humanizeReviewStatus((s as any).review_status)}
+                                      color={reviewStatusChipColor((s as any).review_status)}
+                                      variant={(s as any).review_status === "published" ? "filled" : "outlined"}
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ py: 1.25 }}>
+                                    <Chip
+                                      size="small"
+                                      label={
+                                        s.overall_score != null
+                                          ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
+                                          : "Not evaluated"
                                       }
-                                      sx={{
-                                        color: "#e11d48",
-                                        textTransform: "none",
-                                        fontWeight: 400,
-                                        fontSize: "0.7125rem",
-                                        px: 0.45,
-                                        minWidth: 0,
-                                        "&:hover": {
-                                          bgcolor: "rgba(225, 29, 72, 0.08)",
-                                          color: "#be123c",
-                                        },
-                                        "& .MuiButton-startIcon": {
-                                          marginRight: "6px",
-                                        },
-                                        "&:disabled .MuiButton-startIcon": {
-                                          opacity: 0.5,
-                                        },
-                                      }}
+                                      color={s.overall_score != null ? "primary" : "default"}
+                                      variant={s.overall_score != null ? "filled" : "outlined"}
+                                      sx={{ fontWeight: 700 }}
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ py: 1.5 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={(event) =>
+                                        handleOpenSubmissionActionsMenu(event, s)
+                                      }
+                                      aria-label={`Open actions for ${s.name || "submission"}`}
                                     >
-                                      Download PDF
-                                    </Button>
-                                  </span>
-                                </Tooltip>
-                              </TableCell>
+                                      <IconWrapper icon="mdi:dots-vertical" size={20} />
+                                    </IconButton>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                     </TableContainer>
+                    <Menu
+                      anchorEl={submissionActionsAnchorEl}
+                      open={Boolean(submissionActionsAnchorEl) && Boolean(submissionActionsTarget)}
+                      onClose={handleCloseSubmissionActionsMenu}
+                      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                      transformOrigin={{ vertical: "top", horizontal: "left" }}
+                    >
+                      <MenuItem
+                        onClick={() => {
+                          if (submissionActionsTarget) {
+                            router.push(
+                              `/admin/assessment/${assessmentId}/submissions/${Number(
+                                (submissionActionsTarget as any).submission_id,
+                              )}`,
+                            );
+                          }
+                          handleCloseSubmissionActionsMenu();
+                        }}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:file-document-edit-outline" size={18} />
+                        </ListItemIcon>
+                        <ListItemText primary="Evaluate" />
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          if (submissionActionsTarget) {
+                            handleDownloadSubmissionPdf(submissionActionsTarget);
+                          }
+                          handleCloseSubmissionActionsMenu();
+                        }}
+                        disabled={readOnly && !hideAdminQuestions}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:file-download-outline" size={18} />
+                        </ListItemIcon>
+                        <ListItemText primary="Download PDF" />
+                      </MenuItem>
+                      <MenuItem
+                        onClick={async () => {
+                          if (submissionActionsTarget) {
+                            await handlePublishSubmission(submissionActionsTarget);
+                          }
+                          handleCloseSubmissionActionsMenu();
+                        }}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:publish" size={18} />
+                        </ListItemIcon>
+                        <ListItemText primary="Publish" />
+                      </MenuItem>
+                    </Menu>
                     {totalSubmissions > 0 && (
                       <Box
                         sx={{
                           pt: 2,
-                          borderTop: "1px solid #e5e7eb",
+                          borderTop: "1px solid var(--border-default)",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",

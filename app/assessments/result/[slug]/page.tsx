@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Paper, Typography } from "@mui/material";
+import { Box, Button, Paper,Alert, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
@@ -295,6 +295,9 @@ export default function AssessmentResultPage() {
   }
 
   const stats = assessmentResult?.stats || ({} as AssessmentResult["stats"]);
+  const resultHidden = assessmentResult?.show_result === false;
+  const tabSwitchAutoSubmit =
+    assessmentResult?.auto_submitted_reason === "tab_switch_limit";
 
   const quizResponses = assessmentResult?.user_responses?.quiz_responses || [];
 
@@ -443,6 +446,28 @@ export default function AssessmentResultPage() {
           assessmentTitle={assessmentResult?.assessment_name || ""}
           status={assessmentResult?.status || ""}
         />
+
+        {resultHidden && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              {assessmentResult?.review_status === "published"
+                ? "Result visibility is currently disabled."
+                : "Your assessment is under manual evaluation. Results will appear after publish."}
+            </Typography>
+          </Alert>
+        )}
+
+        {tabSwitchAutoSubmit && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              {assessmentResult?.auto_submit_message ||
+                "This assessment was auto-submitted because the tab-switch limit was reached."}
+            </Typography>
+          </Alert>
+        )}
+
+        {!resultHidden && (
+          <>
 
         {/* Score */}
         <ScoreDisplay
@@ -651,6 +676,8 @@ export default function AssessmentResultPage() {
             assessmentResult as AssessmentResult
           )}
         />
+          </>
+        )}
       </Box>
     </MainLayout>
   );

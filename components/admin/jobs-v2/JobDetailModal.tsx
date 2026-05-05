@@ -56,12 +56,12 @@ const SectionCard = ({
       borderRadius: 2,
       border: "1px solid",
       borderColor: "divider",
-      backgroundColor: "#fff",
+      backgroundColor: "var(--card-bg)",
       mb: 2,
       transition: "box-shadow 0.2s, border-color 0.2s",
       "&:hover": {
-        borderColor: "rgba(99, 102, 241, 0.3)",
-        boxShadow: "0 4px 12px rgba(99, 102, 241, 0.08)",
+        borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+        boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
       },
     }}
   >
@@ -72,13 +72,13 @@ const SectionCard = ({
             width: 32,
             height: 32,
             borderRadius: 1,
-            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon={icon} size={18} style={{ color: "#6366f1" }} />
+          <IconWrapper icon={icon} size={18} style={{ color: "var(--accent-indigo)" }} />
         </Box>
       )}
       <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "text.primary" }}>
@@ -106,14 +106,14 @@ const InfoPill = ({
       px: 1.5,
       py: 1,
       borderRadius: 1.5,
-      backgroundColor: "#fff",
+      backgroundColor: "var(--card-bg)",
       border: "1px solid",
       borderColor: "divider",
       flex: "1 1 140px",
       minWidth: 0,
     }}
   >
-    <Box sx={{ color: "#6366f1", flexShrink: 0 }}>{icon}</Box>
+    <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0 }}>{icon}</Box>
     <Box sx={{ minWidth: 0 }}>
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", lineHeight: 1.2 }}>
         {label}
@@ -156,7 +156,7 @@ export function JobDetailModal({
         sx: {
           borderRadius: fullScreen ? 0 : 3,
           overflow: "hidden",
-          boxShadow: fullScreen ? "none" : "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+          boxShadow: fullScreen ? "none" : "0 25px 50px -12px color-mix(in srgb, var(--font-primary) 30%, transparent)",
           maxHeight: fullScreen ? "100%" : "90vh",
         },
       }}
@@ -169,7 +169,8 @@ export function JobDetailModal({
           alignItems: { xs: "stretch", md: "center" },
           gap: { xs: 2, md: 3 },
           p: 3,
-          background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)",
+          background:
+            "linear-gradient(135deg, var(--background) 0%, var(--surface) 50%, var(--border-default) 100%)",
           borderBottom: "1px solid",
           borderColor: "divider",
         }}
@@ -184,7 +185,7 @@ export function JobDetailModal({
             height: { xs: 140, md: 160 },
           }}
         >
-          <JobDetailIllustration width={180} height={150} primaryColor="#6366f1" />
+          <JobDetailIllustration width={180} height={150} primaryColor="var(--accent-indigo)" />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
@@ -195,16 +196,16 @@ export function JobDetailModal({
                 width: 56,
                 height: 56,
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                border: "2px solid #fff",
-                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                backgroundColor: "var(--accent-indigo)",
+                border: "2px solid var(--font-light)",
+                boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                 fontSize: "1.25rem",
               }}
             >
               {job.company_name?.[0]?.toUpperCase() || "C"}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: "#0f172a" }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary)" }}>
                 {job.job_title}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -215,8 +216,8 @@ export function JobDetailModal({
                   label={job.job_type ?? "Job"}
                   size="small"
                   sx={{
-                    backgroundColor: "rgba(99, 102, 241, 0.12)",
-                    color: "#6366f1",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                    color: "var(--accent-indigo)",
                     fontWeight: 600,
                   }}
                 />
@@ -224,8 +225,8 @@ export function JobDetailModal({
                   label={job.is_published ? "Published" : "Draft"}
                   size="small"
                   sx={{
-                    backgroundColor: job.is_published ? "rgba(34,197,94,0.12)" : "rgba(100,116,139,0.12)",
-                    color: job.is_published ? "#16a34a" : "#64748b",
+                    backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 16%, transparent)" : "color-mix(in srgb, var(--font-secondary) 16%, transparent)",
+                    color: job.is_published ? "var(--success-500)" : "var(--font-secondary)",
                     fontWeight: 500,
                   }}
                 />
@@ -234,9 +235,9 @@ export function JobDetailModal({
                     label={job.employment_type}
                     size="small"
                     sx={{
-                      backgroundColor: "rgba(99, 102, 241, 0.08)",
-                      color: "#6366f1",
-                      border: "1px solid rgba(99, 102, 241, 0.2)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                      color: "var(--accent-indigo)",
+                      border: "1px solid color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
                     }}
                     variant="outlined"
                   />
@@ -252,7 +253,7 @@ export function JobDetailModal({
           px: { xs: 2, sm: 3 },
           pt: 2,
           pb: 2,
-          backgroundColor: "#f8fafc",
+          backgroundColor: "var(--background)",
           maxHeight: fullScreen ? "calc(100vh - 220px)" : "calc(90vh - 220px)",
           overflowY: "auto",
           WebkitOverflowScrolling: "touch",
@@ -326,10 +327,10 @@ export function JobDetailModal({
                       label={s}
                       size="small"
                       sx={{
-                        borderColor: "#6366f1",
-                        color: "#6366f1",
+                        borderColor: "var(--accent-indigo)",
+                        color: "var(--accent-indigo)",
                         fontWeight: 500,
-                        backgroundColor: "rgba(99, 102, 241, 0.06)",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                       }}
                       variant="outlined"
                     />
@@ -388,7 +389,7 @@ export function JobDetailModal({
                       key={c.id}
                       label={c.title}
                       size="small"
-                      sx={{ backgroundColor: "rgba(99, 102, 241, 0.1)", color: "#6366f1", fontWeight: 500 }}
+                      sx={{ backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)", color: "var(--accent-indigo)", fontWeight: 500 }}
                     />
                   ))}
                 </Box>
@@ -413,7 +414,7 @@ export function JobDetailModal({
                   borderRadius: 2,
                   border: "1px solid",
                   borderColor: "divider",
-                  backgroundColor: "#fff",
+                  backgroundColor: "var(--card-bg)",
                 }}
               >
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Apply Link</Typography>
@@ -426,7 +427,7 @@ export function JobDetailModal({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 0.5,
-                    color: "#6366f1",
+                    color: "var(--accent-indigo)",
                     fontWeight: 500,
                     textDecoration: "none",
                     wordBreak: "break-all",
@@ -446,7 +447,7 @@ export function JobDetailModal({
         sx={{
           px: 3,
           py: 2,
-          backgroundColor: "#fff",
+          backgroundColor: "var(--card-bg)",
           borderTop: "1px solid",
           borderColor: "divider",
           gap: 1,
@@ -487,8 +488,8 @@ export function JobDetailModal({
                 px: 2,
                 py: 1,
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               Edit Job

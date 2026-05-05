@@ -119,9 +119,9 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
       sx={{
         mb: 1.5,
         borderRadius: 2,
-        border: "1px solid #c7d2fe",
-        background: "linear-gradient(165deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%)",
-        boxShadow: "0 2px 8px rgba(79, 70, 229, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)",
+        border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+        background: "linear-gradient(165deg, var(--font-light) 0%, var(--surface) 55%, var(--neutral-100) 100%)",
+        boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo-dark) 8%, transparent), 0 1px 2px color-mix(in srgb, var(--primary-900) 6%, transparent)",
         overflow: "hidden",
       }}
     >
@@ -147,13 +147,13 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
           pr: 1.25,
           borderRadius: 0,
           transition: "background-color 0.15s ease",
-          backgroundColor: expanded ? "rgba(238, 242, 255, 0.65)" : "rgba(248, 250, 252, 0.9)",
-          borderBottom: expanded ? "1px solid #c7d2fe" : "none",
+          backgroundColor: expanded ? "color-mix(in srgb, var(--surface-indigo-light) 65%, transparent)" : "color-mix(in srgb, var(--surface) 92%, transparent)",
+          borderBottom: expanded ? "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)" : "none",
           "&:hover": {
-            backgroundColor: expanded ? "rgba(224, 231, 255, 0.85)" : "#f1f5f9",
+            backgroundColor: expanded ? "color-mix(in srgb, var(--surface-indigo-light) 85%, transparent)" : "var(--neutral-100)",
           },
           "&.Mui-focusVisible": {
-            outline: "2px solid #6366f1",
+            outline: "2px solid var(--accent-indigo)",
             outlineOffset: -2,
             zIndex: 1,
           },
@@ -168,13 +168,13 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "#ffffff",
-            border: "1px solid #c7d2fe",
-            boxShadow: "0 1px 3px rgba(79, 70, 229, 0.12)",
+            backgroundColor: "var(--font-light)",
+            border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+            boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo-dark) 14%, transparent)",
           }}
           aria-hidden
         >
-          <IconWrapper icon="mdi:function-variant" size={24} color="#4f46e5" />
+          <IconWrapper icon="mdi:function-variant" size={24} color="var(--accent-indigo-dark)" />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0, py: 0.25 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.35 }}>
@@ -183,7 +183,7 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
               variant="subtitle2"
               sx={{
                 fontWeight: 800,
-                color: "#312e81",
+                color: "var(--accent-indigo-dark)",
                 fontSize: "0.9375rem",
                 letterSpacing: "-0.01em",
               }}
@@ -198,8 +198,8 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
                 fontWeight: 700,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
-                color: "#4f46e5",
-                bgcolor: "rgba(99, 102, 241, 0.12)",
+                color: "var(--accent-indigo-dark)",
+                bgcolor: "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
                 px: 0.75,
                 py: 0.25,
                 borderRadius: 1,
@@ -211,7 +211,7 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
           <Typography
             id={descId}
             variant="caption"
-            sx={{ display: "block", color: "#64748b", lineHeight: 1.5, fontSize: "0.75rem" }}
+            sx={{ display: "block", color: "var(--font-secondary)", lineHeight: 1.5, fontSize: "0.75rem" }}
           >
             {t("quiz.mathSymbols.help")}
           </Typography>
@@ -225,7 +225,7 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#4f46e5",
+            color: "var(--accent-indigo-dark)",
             mt: 0.25,
           }}
           aria-hidden
@@ -233,7 +233,7 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
           <IconWrapper
             icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"}
             size={28}
-            color="#4f46e5"
+            color="var(--accent-indigo-dark)"
           />
         </Box>
       </ButtonBase>
@@ -249,7 +249,7 @@ export const MathSymbolToolbar = memo(function MathSymbolToolbar({
             display: "flex",
             flexDirection: "column",
             gap: 1.5,
-            bgcolor: "#ffffff",
+            bgcolor: "var(--font-light)",
           }}
         >
           {MATH_SYMBOL_GROUPS.map((group) => (
@@ -303,7 +303,7 @@ function SymbolGroupRow({
           fontSize: "0.65rem",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "#6366f1",
+          color: "var(--accent-indigo)",
           pt: { sm: 0.85 },
           minWidth: { sm: 108 },
         }}
@@ -349,9 +349,9 @@ function SymbolGroupRow({
                   fontSize: isNarrow ? "1.05rem" : "0.98rem",
                   fontFamily: SYMBOL_FONT,
                   fontWeight: 600,
-                  color: "#1e1b4b",
-                  backgroundColor: "#fafafa",
-                  border: "1px solid #e5e7eb",
+                  color: "color-mix(in srgb, var(--accent-indigo-dark) 88%, var(--font-dark))",
+                  backgroundColor: "var(--neutral-50)",
+                  border: "1px solid var(--border-default)",
                   transition:
                     "background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease",
                   "@media (pointer: coarse)": {
@@ -359,16 +359,16 @@ function SymbolGroupRow({
                     minHeight: 46,
                   },
                   "&:hover": {
-                    backgroundColor: "#eef2ff",
-                    borderColor: "#a5b4fc",
-                    boxShadow: "0 2px 6px rgba(99, 102, 241, 0.15)",
+                    backgroundColor: "var(--surface-indigo-light)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
+                    boxShadow: "0 2px 6px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
                   },
                   "&:active": {
                     transform: "scale(0.96)",
-                    backgroundColor: "#e0e7ff",
+                    backgroundColor: "color-mix(in srgb, var(--surface-indigo-light) 85%, var(--accent-indigo))",
                   },
                   "&.Mui-focusVisible": {
-                    outline: "2px solid #6366f1",
+                    outline: "2px solid var(--accent-indigo)",
                     outlineOffset: 2,
                   },
                 }}

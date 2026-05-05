@@ -81,7 +81,7 @@ export const DashboardCalendar = () => {
         sx={{
           fontSize: "1.125rem",
           fontWeight: 600,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 2,
         }}
       >
@@ -92,8 +92,8 @@ export const DashboardCalendar = () => {
           p: 3,
           borderRadius: 2,
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
         }}
       >
         <Box
@@ -109,7 +109,7 @@ export const DashboardCalendar = () => {
             sx={{
               fontSize: "1rem",
               fontWeight: 600,
-              color: "#111827",
+              color: "var(--font-primary)",
             }}
           >
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
@@ -144,7 +144,7 @@ export const DashboardCalendar = () => {
                 textAlign: "center",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#6B7280",
+                color: "var(--font-secondary)",
                 py: 0.5,
               }}
             >
@@ -179,20 +179,20 @@ export const DashboardCalendar = () => {
                   justifyContent: "center",
                   borderRadius: 1,
                   backgroundColor: isHighlighted
-                    ? "#6366f1"
+                    ? "var(--accent-indigo)"
                     : isToday
-                    ? "#E0E7FF"
+                    ? "color-mix(in srgb, var(--accent-indigo) 24%, transparent)"
                     : "transparent",
                   color: isHighlighted
                     ? "#ffffff"
                     : isToday
-                    ? "#6366f1"
-                    : "#111827",
+                    ? "var(--accent-indigo)"
+                    : "var(--font-primary)",
                   fontWeight: isToday || isHighlighted ? 600 : 400,
                   fontSize: "0.875rem",
                   cursor: "pointer",
                   "&:hover": {
-                    backgroundColor: isHighlighted ? "#4F46E5" : "#F3F4F6",
+                    backgroundColor: isHighlighted ? "var(--accent-indigo-dark)" : "var(--surface)",
                   },
                 }}
               >

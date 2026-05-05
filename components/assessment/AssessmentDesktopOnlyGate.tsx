@@ -34,7 +34,7 @@ export function AssessmentDesktopOnlyDialog({
           sx: {
             borderRadius: 3,
             overflow: "hidden",
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
           },
         },
       }}
@@ -45,21 +45,21 @@ export function AssessmentDesktopOnlyDialog({
             width: 88,
             height: 88,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+            background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             mx: "auto",
             mb: 2.5,
-            boxShadow: "0 12px 40px rgba(99, 102, 241, 0.35)",
+            boxShadow: "0 12px 40px color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
           }}
         >
-          <IconWrapper icon="mdi:laptop" size={44} color="#ffffff" />
+          <IconWrapper icon="mdi:laptop" size={44} color="var(--font-light)" />
         </Box>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: "#111827", mb: 1.5 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary-dark)", mb: 1.5 }}>
           {t("assessments.desktopOnly.title")}
         </Typography>
-        <Typography variant="body1" sx={{ color: "#6b7280", lineHeight: 1.65 }}>
+        <Typography variant="body1" sx={{ color: "var(--font-secondary)", lineHeight: 1.65 }}>
           {t("assessments.desktopOnly.description")}
         </Typography>
       </DialogContent>
@@ -74,9 +74,9 @@ export function AssessmentDesktopOnlyDialog({
             px: 4,
             py: 1.25,
             borderRadius: 2,
-            backgroundColor: "#6366f1",
-            boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.35)",
-            "&:hover": { backgroundColor: "#4f46e5" },
+            backgroundColor: "var(--accent-indigo)",
+            boxShadow: "0 4px 14px 0 color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
+            "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
           {t("assessments.desktopOnly.gotIt")}
@@ -109,10 +109,10 @@ export function AssessmentDesktopOnlyFullPage({ slug }: { slug: string }) {
             width: "100%",
             p: { xs: 3, sm: 4 },
             borderRadius: 3,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             textAlign: "center",
             background:
-              "linear-gradient(180deg, #fafbff 0%, #ffffff 40%, #ffffff 100%)",
+              "linear-gradient(180deg, var(--card-bg) 0%, var(--font-light) 40%, var(--font-light) 100%)",
           }}
         >
           <Box
@@ -120,21 +120,21 @@ export function AssessmentDesktopOnlyFullPage({ slug }: { slug: string }) {
               width: 88,
               height: 88,
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+              background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               mx: "auto",
               mb: 2.5,
-              boxShadow: "0 12px 40px rgba(99, 102, 241, 0.35)",
+              boxShadow: "0 12px 40px color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
             }}
           >
-            <IconWrapper icon="mdi:monitor" size={44} color="#ffffff" />
+            <IconWrapper icon="mdi:monitor" size={44} color="var(--font-light)" />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "#111827", mb: 1.5 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary-dark)", mb: 1.5 }}>
             {t("assessments.desktopOnly.title")}
           </Typography>
-          <Typography variant="body1" sx={{ color: "#6b7280", lineHeight: 1.65, mb: 3 }}>
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)", lineHeight: 1.65, mb: 3 }}>
             {t("assessments.desktopOnly.description")}
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
@@ -148,8 +148,8 @@ export function AssessmentDesktopOnlyFullPage({ slug }: { slug: string }) {
                 fontWeight: 600,
                 py: 1.25,
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               {t("assessments.desktopOnly.backToOverview")}
@@ -158,7 +158,7 @@ export function AssessmentDesktopOnlyFullPage({ slug }: { slug: string }) {
               variant="text"
               size="medium"
               onClick={() => router.push("/assessments")}
-              sx={{ textTransform: "none", fontWeight: 600, color: "#6b7280" }}
+              sx={{ textTransform: "none", fontWeight: 600, color: "var(--font-secondary)" }}
             >
               {t("assessments.backToAssessments")}
             </Button>

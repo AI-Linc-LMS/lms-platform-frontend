@@ -222,10 +222,10 @@ export default function AdminMockInterviewPage() {
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "#111827" }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
             Mock Interview Admin
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280", mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
             Monitor and analyze student mock interview performance
           </Typography>
         </Box>
@@ -235,7 +235,7 @@ export default function AdminMockInterviewPage() {
           onChange={(_, v: TabValue) => setTab(v)}
           sx={{
             mb: 3,
-            borderBottom: "1px solid #e5e7eb",
+            borderBottom: "1px solid var(--border-default)",
             "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
           }}
         >
@@ -327,7 +327,7 @@ export default function AdminMockInterviewPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <IconWrapper icon="mdi:magnify" size={20} color="#6b7280" />
+                      <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
                     </InputAdornment>
                   ),
                 }}

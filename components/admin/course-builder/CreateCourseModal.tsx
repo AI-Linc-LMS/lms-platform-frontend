@@ -149,7 +149,7 @@ export function CreateCourseModal({
         <IconButton
           onClick={handleClose}
           size="small"
-          sx={{ color: "#6b7280" }}
+          sx={{ color: "var(--font-secondary)" }}
         >
           <IconWrapper icon="mdi:close" size={20} />
         </IconButton>
@@ -184,7 +184,7 @@ export function CreateCourseModal({
                 <MenuItem value="Hard">{t("adminCourseBuilder.hard")}</MenuItem>
               </Select>
               {errors.level && (
-                <Typography variant="caption" sx={{ color: "#d32f2f", mt: 0.5, ml: 1.75 }}>
+                <Typography variant="caption" sx={{ color: "var(--error-500)", mt: 0.5, ml: 1.75 }}>
                   {errors.level}
                 </Typography>
               )}
@@ -204,7 +204,11 @@ export function CreateCourseModal({
         </DialogContent>
 
         <DialogActions sx={{ p: 2, pt: 1 }}>
-          <Button onClick={handleClose} disabled={loading}>
+          <Button
+            onClick={handleClose}
+            disabled={loading}
+            sx={{ color: "var(--font-secondary)" }}
+          >
             {t("adminCourseBuilder.cancel")}
           </Button>
           <Button
@@ -218,7 +222,16 @@ export function CreateCourseModal({
                 <IconWrapper icon="mdi:check" size={18} />
               )
             }
-            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {loading ? t("adminCourseBuilder.creating") : t("adminCourseBuilder.createCourse")}
           </Button>

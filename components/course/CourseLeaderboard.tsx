@@ -22,11 +22,11 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
   const { t } = useTranslation("common");
   const { user } = useAuth();
   const getRankColor = (rank?: number | null) => {
-    if (!rank || rank === 0) return "#6B7280";
-    if (rank === 1) return "#FFD700"; // Gold
-    if (rank === 2) return "#C0C0C0"; // Silver
-    if (rank === 3) return "#CD7F32"; // Bronze
-    return "#6B7280";
+    if (!rank || rank === 0) return "var(--font-secondary)";
+    if (rank === 1) return "var(--warning-500)";
+    if (rank === 2) return "var(--border-default)";
+    if (rank === 3) return "var(--accent-purple)";
+    return "var(--font-secondary)";
   };
 
   const getRankIcon = (rank?: number | null) => {
@@ -91,7 +91,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
       <Typography
         variant="body2"
         sx={{
-          color: "#ffffff",
+          color: "var(--font-light)",
           fontSize: "0.875rem",
           fontWeight: 600,
           mb: 0.5,
@@ -109,14 +109,14 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
             py: 0.5,
             borderBottom:
               index < markingScheme.length - 1
-                ? "1px solid rgba(255, 255, 255, 0.1)"
+                ? "1px solid color-mix(in srgb, var(--font-light) 12%, transparent)"
                 : "none",
           }}
         >
           <Typography
             variant="body2"
             sx={{
-              color: "#ffffff",
+              color: "var(--font-light)",
               fontSize: "0.8125rem",
               fontWeight: 400,
             }}
@@ -126,7 +126,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
           <Typography
             variant="body2"
             sx={{
-              color: "#ffffff",
+              color: "var(--font-light)",
               fontSize: "0.8125rem",
               fontWeight: 600,
             }}
@@ -142,10 +142,11 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
     <Card
       elevation={0}
       sx={{
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 2,
         p: 3,
-        background: "linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%)",
+        background:
+          "linear-gradient(to bottom, var(--card-bg) 0%, var(--surface) 100%)",
         maxHeight: 500,
         display: "flex",
         flexDirection: "column",
@@ -165,7 +166,8 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
             width: 40,
             height: 40,
             borderRadius: 2,
-            background: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
+            background:
+              "linear-gradient(135deg, var(--warning-500) 0%, var(--error-500) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -174,19 +176,23 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
           <IconWrapper
             icon="mdi:trophy"
             size={22}
-            color="#ffffff"
+            color="var(--font-light)"
           />
         </Box>
         <Box sx={{ flex: 1 }}>
           <Typography
             variant="h6"
-            sx={{ fontWeight: 700, color: "#1a1f2e", fontSize: "1.125rem" }}
+            sx={{
+              fontWeight: 700,
+              color: "var(--font-primary)",
+              fontSize: "1.125rem",
+            }}
           >
             {t("courses.leaderboardTitle")}
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("courses.topPerformersInCourse")}
           </Typography>
@@ -198,16 +204,17 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
           componentsProps={{
             tooltip: {
               sx: {
-                backgroundColor: "#1a1f2e",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backgroundColor: "var(--card-bg)",
+                border: "1px solid var(--border-default)",
                 borderRadius: 2,
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                boxShadow:
+                  "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                 maxWidth: 300,
               },
             },
             arrow: {
               sx: {
-                color: "#1a1f2e",
+                color: "var(--card-bg)",
               },
             },
           }}
@@ -215,10 +222,11 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
           <IconButton
             size="small"
             sx={{
-              color: "#6B7280",
+              color: "var(--font-secondary)",
               "&:hover": {
-                color: "#111827",
-                backgroundColor: "rgba(0, 0, 0, 0.04)",
+                color: "var(--font-primary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
               },
             }}
           >
@@ -237,8 +245,8 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
           minHeight: 0,
           overflow: "hidden",
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
           display: "flex",
           flexDirection: "column",
         }}
@@ -257,11 +265,11 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
             <IconWrapper
               icon="mdi:trophy-outline"
               size={48}
-              color="#d1d5db"
+              color="var(--font-tertiary)"
             />
             <Typography
               variant="body2"
-              sx={{ color: "#9ca3af", fontSize: "0.875rem" }}
+              sx={{ color: "var(--font-tertiary)", fontSize: "0.875rem" }}
             >
               {t("courses.noLeaderboardDataAvailable")}
             </Typography>
@@ -280,14 +288,15 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                 width: "6px",
               },
               "&::-webkit-scrollbar-track": {
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--surface)",
                 borderRadius: "3px",
               },
               "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#d1d5db",
+                backgroundColor: "var(--border-default)",
                 borderRadius: "3px",
                 "&:hover": {
-                  backgroundColor: "#9ca3af",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
                 },
               },
             }}
@@ -308,15 +317,21 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                     p: 1.5,
                     borderRadius: 1.5,
                     backgroundColor:
-                      rank > 0 && rank <= 3 ? "#fef3c7" : "#f9fafb",
+                      rank > 0 && rank <= 3
+                        ? "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)"
+                        : "var(--surface)",
                     border: `1px solid ${
-                      rank > 0 && rank <= 3 ? "#fbbf24" : "#e5e7eb"
+                      rank > 0 && rank <= 3
+                        ? "color-mix(in srgb, var(--warning-500) 45%, var(--border-default) 55%)"
+                        : "var(--border-default)"
                     }`,
                     flexShrink: 0,
                     transition: "all 0.2s ease",
                     "&:hover": {
                       backgroundColor:
-                        rank > 0 && rank <= 3 ? "#fde68a" : "#f3f4f6",
+                        rank > 0 && rank <= 3
+                          ? "color-mix(in srgb, var(--warning-500) 24%, var(--surface) 76%)"
+                          : "color-mix(in srgb, var(--surface) 78%, var(--background) 22%)",
                       transform: "translateX(4px)",
                     },
                   }}
@@ -330,11 +345,12 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                       justifyContent: "center",
                       borderRadius: "50%",
                       backgroundColor: getRankColor(rank),
-                      color: "#ffffff",
+                      color: "var(--font-light)",
                       fontWeight: 700,
                       fontSize: "0.8125rem",
                       flexShrink: 0,
-                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                      boxShadow:
+                        "0 2px 4px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                     }}
                   >
                     {getRankIcon(rank)}
@@ -346,8 +362,9 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                       width: 36,
                       height: 36,
                       flexShrink: 0,
-                      border: "2px solid #ffffff",
-                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                      border: "2px solid var(--card-bg)",
+                      boxShadow:
+                        "0 2px 4px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                     }}
                   >
                     {userName[0]}
@@ -357,7 +374,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "#1a1f2e",
+                        color: "var(--font-primary)",
                         fontSize: "0.875rem",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -370,7 +387,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         fontSize: "0.75rem",
                         lineHeight: 1.2,
                       }}
@@ -385,8 +402,8 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                       borderRadius: 1,
                       backgroundColor:
                         rank > 0 && rank <= 3
-                          ? "rgba(139, 92, 246, 0.1)"
-                          : "rgba(99, 102, 241, 0.1)",
+                          ? "color-mix(in srgb, var(--accent-purple) 14%, transparent)"
+                          : "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
                       flexShrink: 0,
                     }}
                   >
@@ -394,7 +411,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                       variant="body2"
                       sx={{
                         fontWeight: 700,
-                        color: "#6366f1",
+                        color: "var(--accent-indigo)",
                         fontSize: "0.8125rem",
                       }}
                     >
@@ -420,8 +437,9 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
               p: 1.5,
               borderRadius: 2,
               background:
-                "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%)",
-              border: "1px solid rgba(99, 102, 241, 0.2)",
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 9%, transparent) 0%, color-mix(in srgb, var(--accent-purple) 9%, transparent) 100%)",
+              border:
+                "1px solid color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
             }}
           >
             <Box
@@ -433,12 +451,13 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                 justifyContent: "center",
                 borderRadius: "50%",
                 background:
-                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-                color: "#ffffff",
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
+                color: "var(--font-light)",
                 fontWeight: 700,
                 fontSize: "0.8125rem",
                 flexShrink: 0,
-                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
+                boxShadow:
+                  "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
               }}
             >
               {currentUserEntry.rank ?? "?"}
@@ -454,8 +473,10 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                 width: 36,
                 height: 36,
                 flexShrink: 0,
-                border: "2px solid rgba(99, 102, 241, 0.3)",
-                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.15)",
+                border:
+                  "2px solid color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                boxShadow:
+                  "0 2px 8px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
               }}
             >
               {getDisplayName(currentUserEntry)[0]}
@@ -465,7 +486,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                 variant="body2"
                 sx={{
                   fontWeight: 700,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                   fontSize: "0.875rem",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -478,7 +499,7 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6366f1",
+                  color: "var(--accent-indigo)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   lineHeight: 1.2,
@@ -494,16 +515,17 @@ export function CourseLeaderboard({ leaderboard }: CourseLeaderboardProps) {
                 py: 0.5,
                 borderRadius: 1.5,
                 background:
-                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
                 flexShrink: 0,
-                boxShadow: "0 2px 4px rgba(99, 102, 241, 0.2)",
+                boxShadow:
+                  "0 2px 4px color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
               }}
             >
               <Typography
                 variant="body2"
                 sx={{
                   fontWeight: 700,
-                  color: "#ffffff",
+                  color: "var(--font-light)",
                   fontSize: "0.8125rem",
                 }}
               >

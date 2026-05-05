@@ -10,7 +10,7 @@ interface BubbleTemplateProps {
 
 const ICON_SIZE = 28;
 const TIMELINE_DOT = 8;
-const TIMELINE_COLOR = "#d1d5db";
+const TIMELINE_COLOR = "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))";
 
 function BubbleSectionHead({
   icon,
@@ -26,7 +26,7 @@ function BubbleSectionHead({
           width: ICON_SIZE,
           height: ICON_SIZE,
           borderRadius: "50%",
-          border: "2px solid #1f2937",
+          border: "2px solid var(--font-primary)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -35,14 +35,14 @@ function BubbleSectionHead({
           printColorAdjust: "exact !important",
         }}
       >
-        <IconWrapper icon={icon} size={14} color="#1f2937" />
+        <IconWrapper icon={icon} size={14} color="var(--font-primary)" />
       </Box>
       <Typography
         data-resume-section-title
         sx={{
           fontSize: "0.95rem",
           fontWeight: 700,
-          color: "#1f2937",
+          color: "var(--font-primary)",
           whiteSpace: "nowrap",
         }}
       >
@@ -66,7 +66,7 @@ function SidebarSectionHead({
           width: ICON_SIZE,
           height: ICON_SIZE,
           borderRadius: "50%",
-          border: "2px solid #1f2937",
+          border: "2px solid var(--font-primary)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -75,14 +75,14 @@ function SidebarSectionHead({
           printColorAdjust: "exact !important",
         }}
       >
-        <IconWrapper icon={icon} size={14} color="#1f2937" />
+        <IconWrapper icon={icon} size={14} color="var(--font-primary)" />
       </Box>
       <Typography
         data-resume-section-title
         sx={{
           fontSize: "0.95rem",
           fontWeight: 700,
-          color: "#1f2937",
+          color: "var(--font-primary)",
           whiteSpace: "nowrap",
         }}
       >
@@ -116,12 +116,12 @@ function TimelineEvent({
         }}
       >
         {endYear && (
-          <Typography sx={{ fontSize: "0.55rem", color: "#6b7280", lineHeight: 1.2 }}>
+          <Typography sx={{ fontSize: "0.55rem", color: "var(--font-secondary)", lineHeight: 1.2 }}>
             {endYear}
           </Typography>
         )}
         {startYear && (
-          <Typography sx={{ fontSize: "0.55rem", color: "#6b7280", lineHeight: 1.2 }}>
+          <Typography sx={{ fontSize: "0.55rem", color: "var(--font-secondary)", lineHeight: 1.2 }}>
             {startYear}
           </Typography>
         )}
@@ -178,7 +178,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
         minHeight: "297mm",
         height: "297mm",
         width: "100%",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
         colorAdjust: "exact !important",
@@ -204,11 +204,11 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
             />
           )}
           <Box>
-            <Typography sx={{ fontSize: "1.3rem", fontWeight: 700, color: "#1f2937" }}>
+            <Typography sx={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--font-primary)" }}>
               {data.basicInfo.firstName} {data.basicInfo.lastName}
             </Typography>
             {data.basicInfo.professionalTitle && (
-              <Typography sx={{ fontSize: "0.8rem", color: "#6b7280" }}>
+              <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
                 {data.basicInfo.professionalTitle}
               </Typography>
             )}
@@ -220,7 +220,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
           <>
             <BubbleSectionHead icon="mdi:text-box-outline">Profile</BubbleSectionHead>
             <Typography
-              sx={{ fontSize: "0.62rem", color: "#4b5563", lineHeight: 1.6, pl: 0.5 }}
+              sx={{ fontSize: "0.62rem", color: "var(--font-secondary)", lineHeight: 1.6, pl: 0.5 }}
             >
               {data.basicInfo.summary}
             </Typography>
@@ -237,17 +237,17 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 startYear={getYear(exp.startDate)}
                 endYear={exp.current ? "present" : getYear(exp.endDate)}
               >
-                <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
+                <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--font-primary)" }}>
                   {exp.position}
                 </Typography>
-                <Typography sx={{ fontSize: "0.62rem", fontStyle: "italic", color: "#6b7280" }}>
+                <Typography sx={{ fontSize: "0.62rem", fontStyle: "italic", color: "var(--font-secondary)" }}>
                   {exp.company}
                   {exp.location ? `, ${exp.location}` : ""}
                 </Typography>
                 {exp.description.filter((d) => d.trim()).length > 0 && (
                   <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.25 }}>
                     {exp.description.filter((d) => d.trim()).map((d, i) => (
-                      <Typography key={i} component="li" sx={{ fontSize: "0.58rem", color: "#4b5563", lineHeight: 1.4 }}>
+                      <Typography key={i} component="li" sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
                         {d}
                       </Typography>
                     ))}
@@ -268,16 +268,16 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 startYear={getYear(edu.startDate)}
                 endYear={getYear(edu.endDate)}
               >
-                <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
+                <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--font-primary)" }}>
                   {edu.degree}
                 </Typography>
-                <Typography sx={{ fontSize: "0.62rem", fontStyle: "italic", color: "#6b7280" }}>
+                <Typography sx={{ fontSize: "0.62rem", fontStyle: "italic", color: "var(--font-secondary)" }}>
                   {edu.institution}
                   {edu.location ? `, ${edu.location}` : ""}
                 </Typography>
                 {edu.description && (
                   <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.25 }}>
-                    <Typography component="li" sx={{ fontSize: "0.58rem", color: "#4b5563", lineHeight: 1.4 }}>
+                    <Typography component="li" sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
                       {edu.description}
                     </Typography>
                   </Box>
@@ -294,7 +294,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
             {data.projects.map((proj) => (
               <TimelineEvent key={proj.id}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
-                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#1f2937" }}>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--font-primary)" }}>
                     {proj.name}
                   </Typography>
                   {proj.link && (
@@ -303,14 +303,14 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                       href={proj.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontSize: "0.58rem", color: "#1f2937", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
+                      sx={{ fontSize: "0.58rem", color: "var(--font-primary)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
                       Link
                     </Typography>
                   )}
                 </Box>
                 {proj.description && (
-                  <Typography sx={{ fontSize: "0.58rem", color: "#4b5563", lineHeight: 1.4 }}>
+                  <Typography sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
                     {proj.description}
                   </Typography>
                 )}
@@ -324,7 +324,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
       <Box
         sx={{
           width: "38%",
-          backgroundColor: "#f3f4f6 !important",
+          backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background)) !important",
           p: 2.5,
           WebkitPrintColorAdjust: "exact !important",
           printColorAdjust: "exact !important",
@@ -353,13 +353,13 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
               sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, textDecoration: "none", color: "inherit" }}
             >
               <Box sx={{ flexShrink: 0, display: "flex" }}>
-                <IconWrapper icon={item.icon} size={14} color="#1f2937" />
+                <IconWrapper icon={item.icon} size={14} color="var(--font-primary)" />
               </Box>
               <Typography
                 data-resume-contact-item
                 sx={{
                   fontSize: "0.58rem",
-                  color: "#4b5563",
+                  color: "var(--font-secondary)",
                   ...(item.icon === "mdi:email-outline"
                     ? { wordBreak: "break-all" }
                     : { whiteSpace: "nowrap" }),
@@ -385,14 +385,14 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    backgroundColor: "#1f2937 !important",
+                    backgroundColor: "var(--font-primary) !important",
                     flexShrink: 0,
                     WebkitPrintColorAdjust: "exact !important",
                     printColorAdjust: "exact !important",
                     colorAdjust: "exact !important",
                   }}
                 />
-                <Typography sx={{ fontSize: "0.62rem", color: "#1f2937" }}>{skill.name}</Typography>
+                <Typography sx={{ fontSize: "0.62rem", color: "var(--font-primary)" }}>{skill.name}</Typography>
               </Box>
             ))}
           </>
@@ -405,7 +405,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#1f2937", flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--font-primary)", flex: 1, minWidth: 0 }}>
                     {cert.name}
                   </Typography>
                   {cert.link && (
@@ -414,17 +414,17 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                       href={cert.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontSize: "0.52rem", color: "#4b5563", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
+                      sx={{ fontSize: "0.52rem", color: "var(--font-secondary)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
                     >
                       Link
                     </Typography>
                   )}
                 </Box>
-                <Typography sx={{ fontSize: "0.58rem", color: "#6b7280" }}>
+                <Typography sx={{ fontSize: "0.58rem", color: "var(--font-secondary)" }}>
                   {cert.issuer}
                 </Typography>
                 {cert.date && (
-                  <Typography sx={{ fontSize: "0.55rem", color: "#6b7280" }}>
+                  <Typography sx={{ fontSize: "0.55rem", color: "var(--font-secondary)" }}>
                     {cert.date.split("-")[0]}
                   </Typography>
                 )}

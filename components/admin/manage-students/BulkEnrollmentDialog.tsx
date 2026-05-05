@@ -285,6 +285,19 @@ export function BulkEnrollmentDialog({
     }
   };
 
+  const handleDownloadSampleCsv = () => {
+    const csvContent = "name,email\nJohn Doe,john.doe@example.com\nJane Smith,jane.smith@example.com\n";
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "bulk_enrollment_sample.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleJobComplete = () => {
     setShowJobStatus(false);
     if (onSuccess) {
@@ -304,18 +317,28 @@ export function BulkEnrollmentDialog({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               {t("adminManageStudents.uploadStudentCsvDesc")}
             </Typography>
+            <Box sx={{ mb: 2 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleDownloadSampleCsv}
+                startIcon={<IconWrapper icon="mdi:download" size={18} />}
+              >
+                {t("adminManageStudents.downloadSampleCsv")}
+              </Button>
+            </Box>
 
             <Box
               sx={{
-                border: "2px dashed #d1d5db",
+                border: "2px dashed var(--border-default)",
                 borderRadius: 2,
                 p: 4,
                 textAlign: "center",
                 mb: 3,
                 cursor: "pointer",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--accent-indigo)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
               onClick={() => document.getElementById("csv-upload-input")?.click()}
@@ -352,7 +375,7 @@ export function BulkEnrollmentDialog({
                         "& .MuiChip-deleteIcon": {
                           cursor: "pointer",
                           "&:hover": {
-                            color: "#ef4444",
+                            color: "var(--error-500)",
                           },
                         },
                       }}
@@ -377,21 +400,36 @@ export function BulkEnrollmentDialog({
                       sx={{
                         mb: 1.5,
                         p: 1.5,
-                        backgroundColor: "#fef2f2",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
                         borderRadius: 1,
-                        border: "1px solid #fecaca",
+                        border: "1px solid color-mix(in srgb, var(--error-500) 35%, var(--border-default) 65%)",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
-                        <Typography variant="body2" component="span" sx={{ fontWeight: 600, color: "#991b1b" }}>
+                        <Typography variant="body2" component="span" sx={{ fontWeight: 600, color: "var(--error-500)" }}>
                           {duplicate.email}
                         </Typography>
-                        <Chip label={`${duplicate.count} ${t("adminManageStudents.times")}`} size="small" sx={{ ml: 1, height: 20, fontSize: "0.7rem", bgcolor: "#fee2e2", color: "#991b1b" }} />
+                        <Chip
+                          label={`${duplicate.count} ${t("adminManageStudents.times")}`}
+                          size="small"
+                          sx={{
+                            ml: 1,
+                            height: 20,
+                            fontSize: "0.7rem",
+                            bgcolor:
+                              "color-mix(in srgb, var(--error-500) 16%, var(--surface) 84%)",
+                            color: "var(--error-500)",
+                          }}
+                        />
                       </Box>
                       <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
                         {duplicate.students.map((student, studentIndex) => (
                           <li key={studentIndex}>
-                            <Typography variant="body2" sx={{ fontSize: "0.8125rem", color: "#7f1d1d" }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: "0.8125rem", color: "var(--font-primary)" }}
+                            >
                               {student.name} {student.phone ? `(${student.phone})` : ""}
                             </Typography>
                           </li>

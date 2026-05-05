@@ -776,7 +776,7 @@ export default function ThreadDetailPage() {
                     size="small"
                     sx={{
                       backgroundColor: "#dbeafe",
-                      color: "#1e40af",
+                      color: "var(--accent-indigo)",
                       fontWeight: 500,
                     }}
                   />
@@ -788,7 +788,7 @@ export default function ThreadDetailPage() {
                 dangerouslySetInnerHTML={{ __html: thread.body }}
                 sx={{
                   mb: 3,
-                  color: "#374151",
+                  color: "var(--font-secondary)",
                   lineHeight: 1.7,
                   fontSize: "1rem",
                   wordBreak: "break-word",
@@ -819,7 +819,7 @@ export default function ThreadDetailPage() {
                     objectFit: "contain",
                   },
                   "& a": {
-                    color: "#2563eb",
+                    color: "var(--accent-indigo)",
                     textDecoration: "none",
                     wordBreak: "break-all",
                     "&:hover": {
@@ -878,7 +878,9 @@ export default function ThreadDetailPage() {
                         sx={{
                           height: 20,
                           fontSize: "0.7rem",
-                          backgroundColor: "#f3f4f6",
+                          backgroundColor: "var(--surface)",
+                          border: "1px solid var(--border-default)",
+                          color: "var(--font-secondary)",
                         }}
                       />
                     </Box>
@@ -947,6 +949,21 @@ export default function ThreadDetailPage() {
               onClick={handleAddComment}
               disabled={!commentBody.trim() || submitting}
               startIcon={<IconWrapper icon="mdi:send" />}
+              sx={{
+                textTransform: "none",
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": {
+                  backgroundColor: "var(--accent-indigo-dark)",
+                },
+                "&.Mui-disabled": {
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 45%, var(--surface) 55%)",
+                  color: "var(--font-secondary)",
+                  WebkitTextFillColor: "var(--font-secondary)",
+                  opacity: 1,
+                },
+              }}
             >
               {submitting ? t("community.posting") : t("community.postAnswer")}
             </Button>
@@ -978,7 +995,7 @@ export default function ThreadDetailPage() {
                 <IconWrapper
                   icon="mdi:comment-outline"
                   size={48}
-                  color="#d1d5db"
+                  color="var(--font-tertiary)"
                   style={{ marginBottom: 8 }}
                 />
                 <Typography variant="body2" color="text.secondary">

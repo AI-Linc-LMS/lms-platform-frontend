@@ -26,11 +26,11 @@ import { config } from "@/lib/config";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, Users, FileText, Heart, GraduationCap } from "lucide-react";
 const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  active: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
-  inactive: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
-  closed: { bg: "rgba(100, 116, 139, 0.12)", color: "#64748b" },
-  completed: { bg: "rgba(34, 197, 94, 0.08)", color: "#15803d" },
-  on_hold: { bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" },
+  active: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
+  inactive: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
+  closed: { bg: "color-mix(in srgb, var(--font-secondary) 16%, transparent)", color: "var(--font-secondary)" },
+  completed: { bg: "color-mix(in srgb, var(--success-500) 10%, transparent)", color: "var(--success-500)" },
+  on_hold: { bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)", color: "var(--warning-500)" },
 };
 
 const formatDate = (d?: string) => {
@@ -61,34 +61,34 @@ const SectionCard = ({
       p: 2.5,
       borderRadius: 2.5,
       border: "1px solid",
-      borderColor: "rgba(0,0,0,0.06)",
-      backgroundColor: "#fff",
+      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+      backgroundColor: "var(--card-bg)",
       mb: 2,
       overflow: "hidden",
       transition: "all 0.2s ease",
       "&:hover": {
-        borderColor: "rgba(99, 102, 241, 0.25)",
-        boxShadow: "0 8px 24px rgba(99, 102, 241, 0.06)",
+        borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
+        boxShadow: "0 8px 24px color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
       },
     }}
   >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, pb: 1.5, borderBottom: "1px solid", borderColor: "rgba(0,0,0,0.04)" }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, pb: 1.5, borderBottom: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" }}>
       {icon && (
         <Box
           sx={{
             width: 36,
             height: 36,
             borderRadius: 1.5,
-            backgroundColor: "rgba(99, 102, 241, 0.08)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon={icon} size={20} style={{ color: "#6366f1" }} />
+          <IconWrapper icon={icon} size={20} style={{ color: "var(--accent-indigo)" }} />
         </Box>
       )}
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#0f172a", letterSpacing: "-0.01em" }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
         {title}
       </Typography>
     </Box>
@@ -116,20 +116,20 @@ const InfoPill = ({
       px: 2,
       py: 1.5,
       borderRadius: 2,
-      backgroundColor: "#fff",
+      backgroundColor: "var(--card-bg)",
       border: "1px solid",
-      borderColor: multiline ? "rgba(99, 102, 241, 0.18)" : "rgba(0,0,0,0.06)",
+      borderColor: multiline ? "color-mix(in srgb, var(--accent-indigo) 24%, transparent)" : "color-mix(in srgb, var(--font-primary) 8%, transparent)",
       flex: multiline ? "1 1 100%" : "1 1 160px",
       minWidth: multiline ? "100%" : 0,
       maxWidth: multiline ? "100%" : undefined,
       transition: "all 0.2s ease",
       "&:hover": {
-        borderColor: "rgba(99, 102, 241, 0.2)",
-        backgroundColor: "rgba(99, 102, 241, 0.02)",
+        borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
       },
     }}
   >
-    <Box sx={{ color: "#6366f1", flexShrink: 0, mt: 0.25 }}>{icon}</Box>
+    <Box sx={{ color: "var(--accent-indigo)", flexShrink: 0, mt: 0.25 }}>{icon}</Box>
     <Box sx={{ minWidth: 0, flex: multiline ? 1 : undefined }}>
       <Typography
         variant="caption"
@@ -149,7 +149,7 @@ const InfoPill = ({
         variant="body2"
         sx={{
           fontWeight: 600,
-          color: "#0f172a",
+          color: "var(--font-primary)",
           mt: 0.25,
           ...(multiline
             ? {
@@ -270,10 +270,10 @@ export default function JobDetailPage() {
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
             sx={{
               textTransform: "none",
-              color: "#64748b",
+              color: "var(--font-secondary)",
               fontWeight: 500,
               fontSize: "0.875rem",
-              "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.06)", color: "#6366f1" },
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)", color: "var(--accent-indigo)" },
             }}
           >
             Jobs
@@ -283,7 +283,7 @@ export default function JobDetailPage() {
             variant="body2"
             sx={{
               fontWeight: 600,
-              color: "#0f172a",
+              color: "var(--font-primary)",
               flex: 1,
               minWidth: 0,
               lineHeight: 1.35,
@@ -309,8 +309,8 @@ export default function JobDetailPage() {
             mb: 3,
             borderRadius: 2.5,
             border: "1px solid",
-            borderColor: "rgba(0,0,0,0.06)",
-            background: "linear-gradient(160deg, #fafbff 0%, #f1f5f9 50%, #e8eef6 100%)",
+            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+            background: "linear-gradient(160deg, var(--surface) 0%, var(--surface) 50%, var(--border-default) 100%)",
             overflow: "hidden",
           }}
         >
@@ -324,9 +324,9 @@ export default function JobDetailPage() {
                     width: 64,
                     height: 64,
                     borderRadius: 2,
-                    backgroundColor: "#6366f1",
-                    border: "3px solid #fff",
-                    boxShadow: "0 4px 14px rgba(99, 102, 241, 0.25)",
+                    backgroundColor: "var(--accent-indigo)",
+                    border: "3px solid var(--font-light)",
+                    boxShadow: "0 4px 14px color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
                     fontSize: "1.4rem",
                     flexShrink: 0,
                   }}
@@ -334,7 +334,7 @@ export default function JobDetailPage() {
                   {job.company_name?.[0]?.toUpperCase() || "C"}
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: "#0f172a", lineHeight: 1.3, letterSpacing: "-0.02em" }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary)", lineHeight: 1.3, letterSpacing: "-0.02em" }}>
                     {job.job_title}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500, fontSize: "1rem" }}>
@@ -344,14 +344,14 @@ export default function JobDetailPage() {
                     <Chip
                       label={job.job_type ?? "Job"}
                       size="small"
-                      sx={{ backgroundColor: "rgba(99, 102, 241, 0.12)", color: "#6366f1", fontWeight: 600, height: 26 }}
+                      sx={{ backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)", fontWeight: 600, height: 26 }}
                     />
                     <Chip
                       label={job.is_published ? "Published" : "Draft"}
                       size="small"
                       sx={{
-                        backgroundColor: job.is_published ? "rgba(34,197,94,0.12)" : "rgba(100,116,139,0.12)",
-                        color: job.is_published ? "#16a34a" : "#64748b",
+                        backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 16%, transparent)" : "color-mix(in srgb, var(--font-secondary) 16%, transparent)",
+                        color: job.is_published ? "var(--success-500)" : "var(--font-secondary)",
                         fontWeight: 600,
                         height: 26,
                       }}
@@ -361,9 +361,9 @@ export default function JobDetailPage() {
                         label={job.employment_type}
                         size="small"
                         sx={{
-                          backgroundColor: "rgba(255,255,255,0.9)",
-                          color: "#6366f1",
-                          border: "1px solid rgba(99, 102, 241, 0.3)",
+                          backgroundColor: "color-mix(in srgb, var(--font-light) 90%, transparent)",
+                          color: "var(--accent-indigo)",
+                          border: "1px solid color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                           fontWeight: 500,
                           height: 26,
                         }}
@@ -385,12 +385,12 @@ export default function JobDetailPage() {
                           backgroundColor: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).bg,
                           color: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).color,
                           "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "rgba(99, 102, 241, 0.3)",
+                            borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                             borderWidth: 1.5,
                           },
-                          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#6366f1" },
+                          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#6366f1",
+                            borderColor: "var(--accent-indigo)",
                             borderWidth: 2,
                           },
                         }}
@@ -427,10 +427,10 @@ export default function JobDetailPage() {
                     sx={{
                       textTransform: "none",
                       fontWeight: 600,
-                      borderColor: "rgba(99, 102, 241, 0.5)",
-                      color: "#6366f1",
+                      borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
+                      color: "var(--accent-indigo)",
                       borderRadius: 2,
-                      "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.06)" },
+                      "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                     }}
                   >
                     View JD
@@ -444,11 +444,11 @@ export default function JobDetailPage() {
                   sx={{
                     textTransform: "none",
                     fontWeight: 600,
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "var(--accent-indigo)",
                     px: 2.5,
                     borderRadius: 2,
-                    boxShadow: "0 2px 8px rgba(99, 102, 241, 0.35)",
-                    "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)" },
+                    boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                    "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
                   }}
                 >
                   Applications
@@ -461,10 +461,10 @@ export default function JobDetailPage() {
                   sx={{
                     textTransform: "none",
                     fontWeight: 600,
-                    borderColor: "rgba(99, 102, 241, 0.5)",
-                    color: "#6366f1",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
+                    color: "var(--accent-indigo)",
                     borderRadius: 2,
-                    "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.06)" },
+                    "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                   }}
                 >
                   Edit
@@ -478,7 +478,10 @@ export default function JobDetailPage() {
                     textTransform: "none",
                     fontWeight: 600,
                     borderRadius: 2,
-                    "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.04)" },
+                    "&:hover": {
+                      backgroundColor:
+                        "color-mix(in srgb, var(--error-500) 6%, transparent)",
+                    },
                   }}
                 >
                   Delete
@@ -511,7 +514,7 @@ export default function JobDetailPage() {
             <InfoPill icon={<Users size={18} />} label="Openings" value={String(job.number_of_openings)} />
           )}
           <InfoPill
-            icon={<Heart size={18} style={{ color: "#6366f1" }} />}
+            icon={<Heart size={18} style={{ color: "var(--accent-indigo)" }} />}
             label="Favourites"
             value={String(job.favorites_count ?? 0)}
           />
@@ -526,7 +529,7 @@ export default function JobDetailPage() {
           <Box>
             {job.job_description && (
               <SectionCard title="Job Description" icon="mdi:text-box-outline">
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "#475569", fontSize: "0.9375rem" }}>
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-secondary)", fontSize: "0.9375rem" }}>
                   {job.job_description}
                 </Typography>
               </SectionCard>
@@ -534,7 +537,7 @@ export default function JobDetailPage() {
 
             {job.role_process && (
               <SectionCard title="Role Process" icon="mdi:format-list-checks">
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "#475569", fontSize: "0.9375rem" }}>
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-secondary)", fontSize: "0.9375rem" }}>
                   {job.role_process}
                 </Typography>
               </SectionCard>
@@ -542,7 +545,7 @@ export default function JobDetailPage() {
 
             {job.company_info && (
               <SectionCard title="About Company" icon="mdi:information-outline">
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "#475569", fontSize: "0.9375rem" }}>
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-secondary)", fontSize: "0.9375rem" }}>
                   {job.company_info}
                 </Typography>
               </SectionCard>
@@ -558,12 +561,12 @@ export default function JobDetailPage() {
                   mb: 2,
                   borderRadius: 2.5,
                   border: "1px solid",
-                  borderColor: "rgba(99, 102, 241, 0.25)",
-                  backgroundColor: "rgba(99, 102, 241, 0.04)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    borderColor: "rgba(99, 102, 241, 0.4)",
-                    backgroundColor: "rgba(99, 102, 241, 0.06)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                   },
                 }}
               >
@@ -579,12 +582,12 @@ export default function JobDetailPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 0.75,
-                    color: "#6366f1",
+                    color: "var(--accent-indigo)",
                     fontWeight: 600,
                     textDecoration: "none",
                     wordBreak: "break-all",
                     fontSize: "0.9375rem",
-                    "&:hover": { textDecoration: "underline", color: "#4f46e5" },
+                    "&:hover": { textDecoration: "underline", color: "var(--accent-indigo-dark)" },
                   }}
                 >
                   <FileText size={18} />
@@ -600,12 +603,12 @@ export default function JobDetailPage() {
                   mb: 2,
                   borderRadius: 2.5,
                   border: "1px solid",
-                  borderColor: "rgba(99, 102, 241, 0.25)",
-                  backgroundColor: "rgba(99, 102, 241, 0.04)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    borderColor: "rgba(99, 102, 241, 0.4)",
-                    backgroundColor: "rgba(99, 102, 241, 0.06)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                   },
                 }}
               >
@@ -621,12 +624,12 @@ export default function JobDetailPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 0.75,
-                    color: "#6366f1",
+                    color: "var(--accent-indigo)",
                     fontWeight: 600,
                     textDecoration: "none",
                     wordBreak: "break-all",
                     fontSize: "0.9375rem",
-                    "&:hover": { textDecoration: "underline", color: "#4f46e5" },
+                    "&:hover": { textDecoration: "underline", color: "var(--accent-indigo-dark)" },
                   }}
                 >
                   <ExternalLink size={18} />
@@ -644,11 +647,11 @@ export default function JobDetailPage() {
                       label={s}
                       size="small"
                       sx={{
-                        borderColor: "rgba(99, 102, 241, 0.4)",
-                        color: "#6366f1",
+                        borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                        color: "var(--accent-indigo)",
                         fontWeight: 500,
-                        backgroundColor: "rgba(99, 102, 241, 0.06)",
-                        "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.1)" },
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                        "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)" },
                       }}
                       variant="outlined"
                     />
@@ -660,27 +663,27 @@ export default function JobDetailPage() {
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
               {job.industry_type && (
                 <SectionCard title="Industry" icon="mdi:factory">
-                  <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>{job.industry_type}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.industry_type}</Typography>
                 </SectionCard>
               )}
               {job.department && (
                 <SectionCard title="Department" icon="mdi:domain">
-                  <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>{job.department}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.department}</Typography>
                 </SectionCard>
               )}
               {job.education && (
                 <SectionCard title="Education" icon="mdi:school-outline">
-                  <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>{job.education}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.education}</Typography>
                 </SectionCard>
               )}
               {passoutYearDisplay && (
                 <SectionCard title="Applicable passout year" icon="mdi:calendar-outline">
-                  <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
                 </SectionCard>
               )}
               {job.role_category && (
                 <SectionCard title="Role Category" icon="mdi:briefcase-outline">
-                  <Typography variant="body2" sx={{ color: "#475569", fontWeight: 500 }}>{job.role_category}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.role_category}</Typography>
                 </SectionCard>
               )}
             </Box>
@@ -691,13 +694,13 @@ export default function JobDetailPage() {
                   {job.ug_requirements && (
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>UG</Typography>
-                      <Typography variant="body2" sx={{ color: "#475569", display: "block", mt: 0.25 }}>{job.ug_requirements}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}>{job.ug_requirements}</Typography>
                     </Box>
                   )}
                   {job.pg_requirements && (
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>PG</Typography>
-                      <Typography variant="body2" sx={{ color: "#475569", display: "block", mt: 0.25 }}>{job.pg_requirements}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}>{job.pg_requirements}</Typography>
                     </Box>
                   )}
                 </Box>
@@ -712,7 +715,7 @@ export default function JobDetailPage() {
                       key={c.id}
                       label={c.title}
                       size="small"
-                      sx={{ backgroundColor: "rgba(99, 102, 241, 0.1)", color: "#6366f1", fontWeight: 500 }}
+                      sx={{ backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)", color: "var(--accent-indigo)", fontWeight: 500 }}
                     />
                   ))}
                 </Box>
@@ -723,7 +726,7 @@ export default function JobDetailPage() {
               <SectionCard title="Targeted Colleges" icon="mdi:domain">
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
                   {collegeMappings.map((m, i) => (
-                    <Chip key={i} label={m.college_name} size="small" variant="outlined" sx={{ borderColor: "rgba(0,0,0,0.12)" }} />
+                    <Chip key={i} label={m.college_name} size="small" variant="outlined" sx={{ borderColor: "color-mix(in srgb, var(--font-primary) 15%, transparent)" }} />
                   ))}
                 </Box>
               </SectionCard>

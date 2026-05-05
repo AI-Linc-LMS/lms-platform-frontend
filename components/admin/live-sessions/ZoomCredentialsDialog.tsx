@@ -137,7 +137,7 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="mdi:video-account" size={24} color="#6366f1" />
+          <IconWrapper icon="mdi:video-account" size={24} color="var(--accent-indigo)" />
           <span>{t("adminLiveSessions.zoomCredentialsTitle")}</span>
         </Box>
         <IconButton aria-label={t("adminLiveSessions.close")} onClick={onClose} size="small">
@@ -145,7 +145,7 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
         </IconButton>
       </DialogTitle>
       <DialogContent>
-        <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
           {t("adminLiveSessions.zoomCredentialsDesc")}
         </Typography>
 
@@ -203,7 +203,10 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
               />
               {hasExistingConfig && (
                 <Box>
-                  <Typography variant="caption" sx={{ color: "#6b7280", mb: 0.5, display: "block" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}
+                  >
                     {t("adminLiveSessions.subscriptionEndpointUrl")}
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -231,14 +234,24 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                       <IconWrapper icon="mdi:content-copy" size={18} />
                     </IconButton>
                   </Box>
-                  <Typography variant="caption" sx={{ color: "#9ca3af", mt: 0.5, display: "block" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "var(--font-tertiary)", mt: 0.5, display: "block" }}
+                  >
                     {t("adminLiveSessions.webhookEndpointHint")}
                   </Typography>
                   {webhookConfigured && (
                     <Chip
                       label={t("adminLiveSessions.webhookActive")}
                       size="small"
-                      sx={{ mt: 1, bgcolor: "#d1fae5", color: "#065f46", fontWeight: 600, fontSize: "0.7rem" }}
+                      sx={{
+                        mt: 1,
+                        bgcolor:
+                          "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                        color: "var(--success-500)",
+                        fontWeight: 600,
+                        fontSize: "0.7rem",
+                      }}
                     />
                   )}
                 </Box>
@@ -269,27 +282,57 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 startIcon={
                   <IconWrapper icon={showSetupHelp ? "mdi:chevron-up" : "mdi:chevron-down"} size={18} />
                 }
-                sx={{ textTransform: "none", color: "#6366f1" }}
+                sx={{
+                  textTransform: "none",
+                  color: "var(--accent-indigo)",
+                  "&:hover": {
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                  },
+                }}
               >
                 {t("adminLiveSessions.zoomMarketplaceSetup")}
               </Button>
               <Collapse in={showSetupHelp}>
-                <Box sx={{ mt: 1, p: 2, bgcolor: "#f8fafc", borderRadius: 1, border: "1px solid #e2e8f0" }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 1 }}>
+                <Box
+                  sx={{
+                    mt: 1,
+                    p: 2,
+                    bgcolor: "var(--surface)",
+                    borderRadius: 1,
+                    border: "1px solid var(--border-default)",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}
+                  >
                     {t("adminLiveSessions.requiredScopes")}
                   </Typography>
-                  <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "#475569" }}>
+                  <Box
+                    component="ul"
+                    sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "var(--font-secondary)" }}
+                  >
                     <li>{t("adminLiveSessions.scopeMeetingWrite")}</li>
                     <li>{t("adminLiveSessions.scopeRecordingRead")}</li>
                     <li>{t("adminLiveSessions.scopeMeetingReadAdmin")}</li>
                   </Box>
-                  <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#64748b" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ display: "block", mt: 1, color: "var(--font-tertiary)" }}
+                  >
                     {t("adminLiveSessions.reauthorizeHint")}
                   </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mt: 2, mb: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, color: "var(--font-primary)", mt: 2, mb: 1 }}
+                  >
                     {t("adminLiveSessions.eventSubscriptions")}
                   </Typography>
-                  <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "#475569" }}>
+                  <Box
+                    component="ul"
+                    sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "var(--font-secondary)" }}
+                  >
                     <li>{t("adminLiveSessions.endpointUrlHint")}</li>
                     <li>{t("adminLiveSessions.secretTokenHint")}</li>
                     <li>{t("adminLiveSessions.subscribeToEvents")}</li>
@@ -306,7 +349,16 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 startIcon={
                   saving ? <CircularProgress size={18} color="inherit" /> : <IconWrapper icon="mdi:content-save" size={18} />
                 }
-                sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                sx={{
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                  "&.Mui-disabled": {
+                    color: "var(--font-secondary)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                  },
+                }}
               >
                 {saving ? t("adminLiveSessions.saving") : t("adminLiveSessions.save")}
               </Button>

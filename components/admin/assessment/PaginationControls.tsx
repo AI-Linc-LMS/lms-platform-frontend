@@ -24,7 +24,7 @@ export function PaginationControls({
     <Box
       sx={{
         p: { xs: 1.5, sm: 2 },
-        borderTop: "1px solid #e5e7eb",
+        borderTop: "1px solid var(--border-default)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -36,7 +36,7 @@ export function PaginationControls({
         <Typography
           variant="body2"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >

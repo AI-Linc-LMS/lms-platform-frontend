@@ -7,7 +7,7 @@ import { AnswerOption } from "./AnswerOption";
 
 interface AnswerOptionsListProps {
   options: QuizOption[];
-  selectedAnswer?: string | number;
+  selectedAnswer?: string | number | string[];
   showCorrectAnswer: boolean;
   correctAnswerId?: string | number;
   isReadOnly: boolean;
@@ -15,6 +15,12 @@ interface AnswerOptionsListProps {
   onAnswerSelect: (answerId: string | number) => void;
   /** When true, reduce spacing so quiz fits without scroll */
   compact?: boolean;
+  /** Multiple-select (MSQ): toggle each option; selectedAnswer is list of letters (any case). */
+  multiSelect?: boolean;
+}
+
+function optionLetter(option: QuizOption): string {
+  return String(option.value ?? option.id ?? "").toUpperCase();
 }
 
 export const AnswerOptionsList = memo(function AnswerOptionsList({
@@ -26,7 +32,17 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
   isSubmitting,
   onAnswerSelect,
   compact,
+  multiSelect,
 }: AnswerOptionsListProps) {
+  const selectedSet = new Set(
+    multiSelect
+      ? Array.isArray(selectedAnswer)
+        ? selectedAnswer.map((x) => String(x).toUpperCase())
+        : selectedAnswer != null && selectedAnswer !== ""
+          ? [String(selectedAnswer).toUpperCase()]
+          : []
+      : [],
+  );
   return (
     <Box
       sx={{
@@ -38,7 +54,10 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
       }}
     >
       {options.map((option) => {
-        const isSelected = selectedAnswer === option.id;
+        const letter = optionLetter(option);
+        const isSelected = multiSelect
+          ? selectedSet.has(letter)
+          : String(selectedAnswer ?? "").toUpperCase() === letter;
         const isCorrect = showCorrectAnswer && correctAnswerId === option.id;
         const isWrongSelection = isSelected && !isCorrect && showCorrectAnswer;
 

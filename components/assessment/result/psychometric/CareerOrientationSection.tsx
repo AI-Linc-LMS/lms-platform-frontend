@@ -22,10 +22,10 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#10b981"; // Green
-    if (score >= 65) return "#3b82f6"; // Blue
-    if (score >= 50) return "#f59e0b"; // Amber
-    return "#ef4444"; // Red
+    if (score >= 80) return "var(--course-cta)"; // Green
+    if (score >= 65) return "var(--accent-blue-light)"; // Blue
+    if (score >= 50) return "var(--warning-500)"; // Amber
+    return "var(--error-500)"; // Red
   };
 
   // Handle both old format (string[]) and new format (Array<{role: string, score: number}>)
@@ -90,7 +90,7 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
               <RadialBar
                 dataKey="value"
                 cornerRadius={8}
-                fill="#3b82f6"
+                fill="var(--accent-blue-light)"
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -98,7 +98,7 @@ export function CareerOrientationSection({ career }: CareerOrientationSectionPro
               </RadialBar>
               <Tooltip 
                 content={<CustomTooltip />}
-                cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
+                cursor={{ fill: 'color-mix(in srgb, var(--font-dark) 5%, transparent)' }}
               />
             </RadialBarChart>
           </ResponsiveContainer>

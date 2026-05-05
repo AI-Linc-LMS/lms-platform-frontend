@@ -86,21 +86,45 @@ export default function PendingInstructorsPage() {
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
+        <Typography
+          variant="h5"
+          fontWeight={700}
+          gutterBottom
+          sx={{ color: "var(--font-primary)" }}
+        >
           {t("adminPendingInstructors.title")}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography
+          variant="body2"
+          sx={{ mb: 3, color: "var(--font-secondary)" }}
+        >
           {t("adminPendingInstructors.subtitle")}
         </Typography>
 
-        <TableContainer component={Paper} elevation={0} sx={{ border: 1, borderColor: "divider" }}>
+        <TableContainer
+          component={Paper}
+          elevation={0}
+          sx={{
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            borderRadius: 2,
+          }}
+        >
           <Table size="small">
-            <TableHead>
+            <TableHead sx={{ backgroundColor: "var(--surface)" }}>
               <TableRow>
-                <TableCell>{t("adminPendingInstructors.email")}</TableCell>
-                <TableCell>{t("adminPendingInstructors.fullName")}</TableCell>
-                <TableCell>{t("adminPendingInstructors.phone")}</TableCell>
-                <TableCell>{t("adminPendingInstructors.createdAt")}</TableCell>
+                <TableCell sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
+                  {t("adminPendingInstructors.email")}
+                </TableCell>
+                <TableCell sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
+                  {t("adminPendingInstructors.fullName")}
+                </TableCell>
+                <TableCell sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
+                  {t("adminPendingInstructors.phone")}
+                </TableCell>
+                <TableCell sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
+                  {t("adminPendingInstructors.createdAt")}
+                </TableCell>
                 <TableCell align="right">
                   {t("adminPendingInstructors.actions")}
                 </TableCell>
@@ -116,25 +140,44 @@ export default function PendingInstructorsPage() {
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">
+                    <Typography sx={{ color: "var(--font-secondary)" }}>
                       {t("adminPendingInstructors.empty")}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 rows.map((row) => (
-                  <TableRow key={row.id} hover>
-                    <TableCell>{row.email}</TableCell>
-                    <TableCell>{row.full_name}</TableCell>
-                    <TableCell>{row.phone_number || "—"}</TableCell>
-                    <TableCell>{formatDate(row.created_at)}</TableCell>
+                  <TableRow
+                    key={row.id}
+                    hover
+                    sx={{
+                      "& td": { borderColor: "var(--border-default)" },
+                      "&:hover": {
+                        backgroundColor:
+                          "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
+                      },
+                    }}
+                  >
+                    <TableCell sx={{ color: "var(--font-primary)" }}>{row.email}</TableCell>
+                    <TableCell sx={{ color: "var(--font-primary)" }}>{row.full_name}</TableCell>
+                    <TableCell sx={{ color: "var(--font-secondary)" }}>
+                      {row.phone_number || "—"}
+                    </TableCell>
+                    <TableCell sx={{ color: "var(--font-secondary)" }}>
+                      {formatDate(row.created_at)}
+                    </TableCell>
                     <TableCell align="right">
                       <Button
                         variant="contained"
                         size="small"
                         disabled={approvingId === row.id}
                         onClick={() => setConfirmRow(row)}
-                        sx={{ textTransform: "none" }}
+                        sx={{
+                          textTransform: "none",
+                          backgroundColor: "var(--accent-indigo)",
+                          color: "var(--font-light)",
+                          "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+                        }}
                       >
                         {approvingId === row.id
                           ? t("adminPendingInstructors.approving")
@@ -154,12 +197,18 @@ export default function PendingInstructorsPage() {
             if (approvingId === null) setConfirmRow(null);
           }}
           aria-labelledby="approve-instructor-dialog-title"
+          PaperProps={{
+            sx: {
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
+            },
+          }}
         >
           <DialogTitle id="approve-instructor-dialog-title">
             {t("adminPendingInstructors.confirmApproveTitle")}
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               {t("adminPendingInstructors.confirmApproveBody", {
                 name: confirmRow?.full_name ?? "",
                 email: confirmRow?.email ?? "",
@@ -170,7 +219,7 @@ export default function PendingInstructorsPage() {
             <Button
               onClick={() => setConfirmRow(null)}
               disabled={approvingId !== null}
-              color="inherit"
+              sx={{ color: "var(--font-secondary)" }}
             >
               {t("common.cancel")}
             </Button>
@@ -178,6 +227,11 @@ export default function PendingInstructorsPage() {
               variant="contained"
               onClick={() => void handleApproveConfirmed()}
               disabled={approvingId !== null}
+              sx={{
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              }}
             >
               {approvingId !== null
                 ? t("adminPendingInstructors.approving")

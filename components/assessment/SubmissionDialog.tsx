@@ -101,7 +101,13 @@ export function SubmissionDialog({
       const questions = section.questions || [];
       const rows = questions.map((q, qIdx) => {
         const response = getResponseForQuestion(responses, sectionType, q.id);
-        const completed = isAssessmentQuestionCompleted(sectionType, response);
+        const completed = isAssessmentQuestionCompleted(
+          sectionType,
+          response,
+          sectionType === "subjective"
+            ? { answer_mode: (q as { answer_mode?: string }).answer_mode }
+            : undefined,
+        );
         return {
           id: q.id,
           label: formatChecklistQuestionLabel(sectionType, q, qIdx),

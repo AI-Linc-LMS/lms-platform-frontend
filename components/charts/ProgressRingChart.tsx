@@ -14,6 +14,7 @@ interface ProgressRingChartProps {
 }
 
 const DEFAULT_RING_COLOR = "#0a66c2";
+const DEFAULT_TRACK_COLOR = "var(--border-default)";
 
 export function ProgressRingChart({
   value,
@@ -41,7 +42,14 @@ export function ProgressRingChart({
       }}
     >
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={DEFAULT_TRACK_COLOR}
+          strokeWidth={strokeWidth}
+        />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -57,11 +65,27 @@ export function ProgressRingChart({
       </svg>
       {showLabel && (
         <Box sx={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <Typography variant="h6" sx={{ fontSize: `${fontSize}px`, fontWeight: 700, color: "#000", lineHeight: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: `${fontSize}px`,
+              fontWeight: 700,
+              color: "var(--font-primary)",
+              lineHeight: 1,
+            }}
+          >
             {Math.round(value)}%
           </Typography>
           {label && (
-            <Typography variant="caption" sx={{ fontSize: "0.75rem", color: "#666", mt: 0.5, textAlign: "center" }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontSize: "0.75rem",
+                color: "var(--font-secondary)",
+                mt: 0.5,
+                textAlign: "center",
+              }}
+            >
               {label}
             </Typography>
           )}

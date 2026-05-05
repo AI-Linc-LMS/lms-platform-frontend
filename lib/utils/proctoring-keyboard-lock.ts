@@ -15,15 +15,14 @@ const KEY_GROUPS: string[][] = [
     "F5",
     "F7",
     "F11",
-    "F12",
     "MetaLeft",
     "MetaRight",
     "OSLeft",
     "OSRight",
     "Tab",
   ],
-  ["Escape", "F11", "F12", "MetaLeft", "MetaRight", "OSLeft", "OSRight"],
-  ["Escape", "F11", "F12"],
+  ["Escape", "F11", "MetaLeft", "MetaRight", "OSLeft", "OSRight"],
+  ["Escape", "F11"],
   ["Escape"],
 ];
 

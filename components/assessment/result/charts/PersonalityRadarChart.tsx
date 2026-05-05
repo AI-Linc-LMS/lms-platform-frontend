@@ -38,12 +38,12 @@ export function PersonalityRadarChart({
   const getBandColor = (band: string) => {
     const bandLower = band.toLowerCase();
     if (bandLower.includes("high") || bandLower.includes("analytical")) {
-      return "#10b981";
+      return "var(--course-cta)";
     }
     if (bandLower.includes("balanced") || bandLower.includes("moderate")) {
-      return "#3b82f6";
+      return "var(--accent-blue-light)";
     }
-    return "#f59e0b";
+    return "var(--warning-500)";
   };
 
   return (
@@ -52,9 +52,9 @@ export function PersonalityRadarChart({
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
-        background: "#ffffff",
+        background: "var(--font-light)",
       }}
     >
       <Box
@@ -70,20 +70,20 @@ export function PersonalityRadarChart({
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:account-circle" size={24} color="#6366f1" />
+          <IconWrapper icon="mdi:account-circle" size={24} color="var(--accent-indigo)" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               mb: 0.25,
             }}
           >
@@ -92,7 +92,7 @@ export function PersonalityRadarChart({
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
             }}
           >
@@ -104,21 +104,21 @@ export function PersonalityRadarChart({
       <Box sx={{ width: "100%", height: 450 }}>
         <ResponsiveContainer>
           <RadarChart data={chartData}>
-            <PolarGrid stroke="#e5e7eb" />
+            <PolarGrid stroke="var(--border-default)" />
             <PolarAngleAxis
               dataKey="trait"
-              tick={{ fontSize: 11, fill: "#6b7280" }}
+              tick={{ fontSize: 11, fill: "var(--font-secondary)" }}
             />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 100]}
-              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              tick={{ fontSize: 10, fill: "var(--font-tertiary)" }}
             />
             <Radar
               name="Trait Score"
               dataKey="score"
-              stroke="#6366f1"
-              fill="#6366f1"
+              stroke="var(--accent-indigo)"
+              fill="var(--accent-indigo)"
               fillOpacity={0.6}
             />
             <Legend />
@@ -149,7 +149,7 @@ export function PersonalityRadarChart({
               variant="body2"
               sx={{
                 fontWeight: 700,
-                color: "#1f2937",
+                color: "var(--font-primary-dark)",
                 mb: 0.5,
               }}
             >
@@ -162,14 +162,14 @@ export function PersonalityRadarChart({
                   py: 0.5,
                   borderRadius: 1,
                   backgroundColor: getBandColor(trait.band),
-                  color: "#ffffff",
+                  color: "var(--font-light)",
                 }}
               >
                 <Typography variant="caption" sx={{ fontWeight: 600 }}>
                   {trait.band}
                 </Typography>
               </Box>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {trait.score}/100
               </Typography>
             </Box>

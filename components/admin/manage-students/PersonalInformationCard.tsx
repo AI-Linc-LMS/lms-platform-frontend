@@ -38,7 +38,10 @@ export function PersonalInformationCard({
       sx={{
         p: 3,
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
       }}
     >
       <Box
@@ -49,7 +52,7 @@ export function PersonalInformationCard({
           mb: 2,
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
           {t("manageStudents.personalInformation")}
         </Typography>
         {!editing && (
@@ -57,7 +60,7 @@ export function PersonalInformationCard({
             startIcon={<IconWrapper icon="mdi:pencil" size={18} />}
             onClick={onEdit}
             size="small"
-            sx={{ color: "#6366f1" }}
+            sx={{ color: "var(--accent-indigo)" }}
           >
             {t("manageStudents.edit")}
           </Button>
@@ -77,7 +80,7 @@ export function PersonalInformationCard({
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("manageStudents.firstName")}
           </Typography>
@@ -90,7 +93,7 @@ export function PersonalInformationCard({
               sx={{ mt: 0.5 }}
             />
           ) : (
-            <Typography variant="body2" sx={{ color: "#374151", mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-primary)", mt: 0.5 }}>
               {personal_info.first_name || "-"}
             </Typography>
           )}
@@ -98,7 +101,7 @@ export function PersonalInformationCard({
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("manageStudents.lastName")}
           </Typography>
@@ -111,7 +114,7 @@ export function PersonalInformationCard({
               sx={{ mt: 0.5 }}
             />
           ) : (
-            <Typography variant="body2" sx={{ color: "#374151", mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-primary)", mt: 0.5 }}>
               {personal_info.last_name || "-"}
             </Typography>
           )}
@@ -119,7 +122,7 @@ export function PersonalInformationCard({
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("manageStudents.email")}
           </Typography>
@@ -133,7 +136,7 @@ export function PersonalInformationCard({
               sx={{ mt: 0.5 }}
             />
           ) : (
-            <Typography variant="body2" sx={{ color: "#374151", mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-primary)", mt: 0.5 }}>
               {personal_info.email}
             </Typography>
           )}
@@ -146,7 +149,7 @@ export function PersonalInformationCard({
                 onClick={onSave}
                 disabled={saving}
                 size="small"
-                sx={{ bgcolor: "#6366f1" }}
+                sx={{ bgcolor: "var(--accent-indigo)", color: "var(--font-light)" }}
               >
                 {saving ? t("manageStudents.saving") : t("manageStudents.save")}
               </Button>

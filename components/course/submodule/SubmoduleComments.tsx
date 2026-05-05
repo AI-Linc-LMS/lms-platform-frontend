@@ -35,7 +35,7 @@ export function SubmoduleComments({
           p: 3,
         }}
       >
-        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           Select a content item to view comments
         </Typography>
       </Box>
@@ -69,9 +69,7 @@ export function SubmoduleComments({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        backgroundColor: "#ece5dd",
-        backgroundImage:
-          'url(\'data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"%3E%3Cpath d="M 100 0 L 0 0 0 100" fill="none" stroke="%23d4d4d4" stroke-width="0.5" opacity="0.3"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100" height="100" fill="url(%23grid)" /%3E%3C/svg%3E\')',
+        backgroundColor: "var(--surface)",
       }}
     >
       {/* Comments List */}
@@ -90,7 +88,8 @@ export function SubmoduleComments({
             backgroundColor: "transparent",
           },
           "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "rgba(0,0,0,0.2)",
+            backgroundColor:
+              "color-mix(in srgb, var(--font-primary) 20%, transparent)",
             borderRadius: "3px",
           },
         }}
@@ -106,11 +105,15 @@ export function SubmoduleComments({
               py: 4,
             }}
           >
-            <IconWrapper icon="mdi:comment-outline" size={48} color="#9ca3af" />
-            <Typography variant="body2" sx={{ color: "#6b7280", mt: 2 }}>
+            <IconWrapper
+              icon="mdi:comment-outline"
+              size={48}
+              color="var(--font-tertiary)"
+            />
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 2 }}>
               No comments yet
             </Typography>
-            <Typography variant="caption" sx={{ color: "#9ca3af", mt: 0.5 }}>
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)", mt: 0.5 }}>
               Be the first to comment
             </Typography>
           </Box>
@@ -146,7 +149,7 @@ export function SubmoduleComments({
                     width: 32,
                     height: 32,
                     flexShrink: 0,
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "var(--accent-indigo)",
                     fontSize: "0.8125rem",
                     fontWeight: 500,
                   }}
@@ -170,7 +173,7 @@ export function SubmoduleComments({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#667781",
+                      color: "var(--font-secondary)",
                       fontSize: "0.75rem",
                       mb: 0.25,
                       px: 0.5,
@@ -185,10 +188,13 @@ export function SubmoduleComments({
                   {/* Message bubble - always left aligned */}
                   <Box
                     sx={{
-                      backgroundColor: isCurrentUser ? "#dcf8c6" : "#ffffff",
+                      backgroundColor: isCurrentUser
+                        ? "color-mix(in srgb, var(--success-500) 18%, var(--card-bg) 82%)"
+                        : "var(--card-bg)",
                       borderRadius: "0 7.5px 7.5px 7.5px",
                       padding: "6px 7px 4px 9px",
-                      boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                      boxShadow:
+                        "0 1px 0.5px color-mix(in srgb, var(--font-primary) 16%, transparent)",
                       position: "relative",
                       wordBreak: "break-word",
                       minWidth: "60px",
@@ -202,15 +208,15 @@ export function SubmoduleComments({
                         borderStyle: "solid",
                         borderWidth: "0 7px 11px 0",
                         borderColor: isCurrentUser
-                          ? "transparent #dcf8c6 transparent transparent"
-                          : "transparent #ffffff transparent transparent",
+                          ? "transparent color-mix(in srgb, var(--success-500) 18%, var(--card-bg) 82%) transparent transparent"
+                          : "transparent var(--card-bg) transparent transparent",
                       },
                     }}
                   >
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#111b21",
+                        color: "var(--font-primary)",
                         fontSize: "0.9375rem",
                         lineHeight: 1.4,
                         mb: 0.5,
@@ -232,7 +238,7 @@ export function SubmoduleComments({
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "#667781",
+                          color: "var(--font-secondary)",
                           fontSize: "0.6875rem",
                           lineHeight: 1,
                           whiteSpace: "nowrap",
@@ -244,7 +250,7 @@ export function SubmoduleComments({
                         <IconWrapper
                           icon="mdi:check-all"
                           size={13}
-                          color="#53bdeb"
+                          color="var(--accent-indigo)"
                         />
                       )}
                     </Box>
@@ -260,8 +266,8 @@ export function SubmoduleComments({
       <Box
         sx={{
           p: 1.5,
-          backgroundColor: "#f0f2f5",
-          borderTop: "1px solid #e9edef",
+          backgroundColor: "var(--surface)",
+          borderTop: "1px solid var(--border-default)",
         }}
       >
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
@@ -282,25 +288,27 @@ export function SubmoduleComments({
                 }
               }}
               sx={{
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--card-bg)",
                 "& .MuiOutlinedInput-root": {
                   fontSize: "0.9375rem",
                   borderRadius: "21.5px",
                   "& fieldset": {
-                    borderColor: "#e9edef",
+                    borderColor: "var(--border-default)",
                     borderWidth: "1px",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#d1d7db",
+                    borderColor:
+                      "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#d1d7db",
+                    borderColor:
+                      "color-mix(in srgb, var(--border-default) 70%, var(--accent-indigo) 30%)",
                     borderWidth: "1px",
                   },
                   "& textarea": {
                     padding: "9px 12px",
                     "&::placeholder": {
-                      color: "#667781",
+                      color: "var(--font-secondary)",
                       opacity: 1,
                     },
                   },
@@ -313,16 +321,21 @@ export function SubmoduleComments({
             onClick={onSubmitComment}
             disabled={!newComment.trim() || submittingComment}
             sx={{
-              backgroundColor: submittingComment ? "#8696a0" : "#25d366",
+              backgroundColor: submittingComment
+                ? "color-mix(in srgb, var(--font-tertiary) 70%, var(--surface) 30%)"
+                : "var(--success-500)",
               minWidth: 48,
               width: 48,
               height: 48,
               borderRadius: "50%",
               "&:hover": {
-                backgroundColor: submittingComment ? "#8696a0" : "#20ba5a",
+                backgroundColor: submittingComment
+                  ? "color-mix(in srgb, var(--font-tertiary) 70%, var(--surface) 30%)"
+                  : "color-mix(in srgb, var(--success-500) 85%, black 15%)",
               },
-              "&:disabled": {
-                backgroundColor: "#8696a0",
+              "&.Mui-disabled": {
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-tertiary) 70%, var(--surface) 30%)",
               },
               boxShadow: "none",
               transition: "background-color 0.2s",
@@ -331,7 +344,7 @@ export function SubmoduleComments({
             <IconWrapper
               icon={submittingComment ? "mdi:loading" : "mdi:send"}
               size={20}
-              color="#ffffff"
+              color="var(--font-light)"
             />
           </Button>
         </Box>

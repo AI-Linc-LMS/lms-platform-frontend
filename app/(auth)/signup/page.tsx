@@ -519,7 +519,7 @@ export default function SignupPage() {
                   gap: 1.25,
                   background:
                     "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                  color: "white",
+                  color: "var(--font-light)",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
                   textTransform: "none",
@@ -534,7 +534,7 @@ export default function SignupPage() {
                     background:
                       "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
                     opacity: 0.6,
-                    color: "white",
+                    color: "var(--font-light)",
                   },
                 }}
               >

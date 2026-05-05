@@ -216,7 +216,7 @@ export function SubjectiveQuestionContent({
         sx={{
           borderRadius: 3,
           border: `1px solid ${alpha(ACCENT, 0.25)}`,
-          background: `linear-gradient(135deg, ${alpha(ACCENT, 0.06)} 0%, #ffffff 48%, #ffffff 100%)`,
+          background: `linear-gradient(135deg, ${alpha(ACCENT, 0.06)} 0%, var(--card-bg) 48%, var(--card-bg) 100%)`,
           overflow: "hidden",
         }}
       >
@@ -296,7 +296,7 @@ export function SubjectiveQuestionContent({
               component="div"
               variant="body1"
               sx={{
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 lineHeight: 1.75,
                 whiteSpace: "pre-wrap",
                 fontSize: { xs: "0.9375rem", sm: "1rem" },
@@ -313,9 +313,10 @@ export function SubjectiveQuestionContent({
         elevation={0}
         sx={{
           borderRadius: 3,
-          border: "1px solid #e2e8f0",
-          backgroundColor: "#ffffff",
-          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow:
+            "0 1px 2px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         }}
       >
         <Collapse in={submitting && !submissionLocked}>
@@ -332,7 +333,10 @@ export function SubjectiveQuestionContent({
         <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
             <IconWrapper icon="mdi:pencil-outline" size={20} color="#64748b" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a1f2e" }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+            >
               {t("courses.subjectiveSectionAnswer")}
             </Typography>
           </Stack>
@@ -355,7 +359,10 @@ export function SubjectiveQuestionContent({
               </Typography>
             </Alert>
           ) : (
-            <Typography variant="body2" sx={{ color: "#64748b", mb: 2, lineHeight: 1.6 }}>
+            <Typography
+              variant="body2"
+              sx={{ color: "var(--font-secondary)", mb: 2, lineHeight: 1.6 }}
+            >
               {t("courses.subjectiveGradingHint")}
             </Typography>
           )}
@@ -374,16 +381,17 @@ export function SubjectiveQuestionContent({
             }}
             sx={{
               "& .MuiOutlinedInput-root": {
-                backgroundColor: "#f8fafc",
+                backgroundColor: "var(--surface)",
                 borderRadius: 2,
                 transition: theme.transitions.create(["box-shadow", "border-color"], {
                   duration: theme.transitions.duration.shorter,
                 }),
                 "&:hover": {
-                  backgroundColor: "#f1f5f9",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--surface) 78%, var(--background) 22%)",
                 },
                 "&.Mui-focused": {
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--card-bg)",
                   boxShadow: `0 0 0 3px ${alpha(ACCENT, 0.2)}`,
                 },
               },
@@ -397,7 +405,10 @@ export function SubjectiveQuestionContent({
             sx={{ mt: 2 }}
           >
             {!submissionLocked ? (
-              <Typography variant="caption" sx={{ color: "#94a3b8", fontWeight: 500 }}>
+              <Typography
+                variant="caption"
+                sx={{ color: "var(--font-tertiary)", fontWeight: 500 }}
+              >
                 {t("courses.subjectiveCharCount", { count: charCount })}
               </Typography>
             ) : (
@@ -412,7 +423,11 @@ export function SubjectiveQuestionContent({
                 submitting ? (
                   <CircularProgress size={18} color="inherit" />
                 ) : (
-                  <IconWrapper icon="mdi:send-check-outline" size={20} color="#ffffff" />
+                  <IconWrapper
+                    icon="mdi:send-check-outline"
+                    size={20}
+                    color="var(--font-light)"
+                  />
                 )
               }
               sx={{
@@ -428,7 +443,8 @@ export function SubjectiveQuestionContent({
                   boxShadow: `0 6px 20px ${alpha(ACCENT, 0.45)}`,
                 },
                 "&:disabled": {
-                  background: "#cbd5e1",
+                  background:
+                    "color-mix(in srgb, var(--border-default) 80%, var(--surface) 20%)",
                   boxShadow: "none",
                 },
               }}
@@ -452,7 +468,7 @@ export function SubjectiveQuestionContent({
               sx={{
                 borderRadius: 3,
                 border: `1px solid ${alpha("#6366f1", 0.35)}`,
-                background: `linear-gradient(145deg, ${alpha("#6366f1", 0.06)} 0%, #ffffff 55%)`,
+                background: `linear-gradient(145deg, ${alpha("#6366f1", 0.06)} 0%, var(--card-bg) 55%)`,
                 overflow: "hidden",
               }}
             >
@@ -478,20 +494,27 @@ export function SubjectiveQuestionContent({
                     borderBottom: { xs: `1px solid ${alpha("#6366f1", 0.15)}`, sm: "none" },
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600, mb: 0.5 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "var(--font-secondary)", fontWeight: 600, mb: 0.5 }}
+                  >
                     {t("courses.subjectiveScoreSummary")}
                   </Typography>
                   <Typography
                     variant="h3"
                     sx={{
                       fontWeight: 800,
-                      color: "#312e81",
+                      color: "var(--accent-indigo-dark)",
                       lineHeight: 1.1,
                       fontSize: { xs: "2rem", sm: "2.35rem" },
                     }}
                   >
                     {lastResult.awarded_marks}
-                    <Typography component="span" variant="h6" sx={{ color: "#64748b", fontWeight: 600 }}>
+                    <Typography
+                      component="span"
+                      variant="h6"
+                      sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
+                    >
                       {" "}
                       / {lastResult.maximum_marks}
                     </Typography>
@@ -515,21 +538,41 @@ export function SubjectiveQuestionContent({
                   <Chip
                     size="small"
                     label={t("courses.subjectiveStatusGraded")}
-                    sx={{ mt: 1.5, fontWeight: 700, backgroundColor: "#e0e7ff", color: "#3730a3" }}
+                    sx={{
+                      mt: 1.5,
+                      fontWeight: 700,
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)",
+                      color: "var(--accent-indigo)",
+                    }}
                   />
                 </Box>
                 <Box sx={{ flex: 1, p: { xs: 2, sm: 2.5 }, minWidth: 0 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b", mb: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 1 }}
+                  >
                     {t("courses.subjectiveLastResult")}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "#64748b", display: "block", mb: 1.5 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}
+                  >
                     {t("courses.subjectiveScoreCaps", {
                       qMax: lastResult.max_marks_question,
                       cap: lastResult.maximum_marks,
                     })}
                   </Typography>
                   <Divider sx={{ my: 1.5 }} />
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: "#475569", display: "block", mb: 0.75 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 700,
+                      color: "var(--font-secondary)",
+                      display: "block",
+                      mb: 0.75,
+                    }}
+                  >
                     {t("courses.subjectiveFeedback")}
                   </Typography>
                   <Box
@@ -542,7 +585,14 @@ export function SubjectiveQuestionContent({
                       px: 1.5,
                     }}
                   >
-                    <Typography variant="body2" sx={{ color: "#334155", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "var(--font-primary)",
+                        lineHeight: 1.65,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
                       {lastResult.feedback}
                     </Typography>
                   </Box>
@@ -560,7 +610,7 @@ export function SubjectiveQuestionContent({
           sx={{
             p: 2.5,
             borderRadius: 3,
-            border: "1px solid #e2e8f0",
+            border: "1px solid var(--border-default)",
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
@@ -575,24 +625,29 @@ export function SubjectiveQuestionContent({
           elevation={0}
           sx={{
             borderRadius: 3,
-            border: "1px solid #e2e8f0",
+            border: "1px solid var(--border-default)",
             overflow: "hidden",
-            boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+            boxShadow:
+              "0 1px 2px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           <Box
             sx={{
               px: 2.5,
               py: 2,
-              background: "linear-gradient(90deg, #f8fafc 0%, #ffffff 100%)",
-              borderBottom: "1px solid #e2e8f0",
+              background:
+                "linear-gradient(90deg, var(--surface) 0%, var(--card-bg) 100%)",
+              borderBottom: "1px solid var(--border-default)",
               display: "flex",
               alignItems: "center",
               gap: 1.25,
             }}
           >
             <IconWrapper icon="mdi:history" size={22} color="#64748b" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a1f2e" }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+            >
               {t("courses.subjectivePastAttempts", { count: pastSorted.length })}
             </Typography>
           </Box>
@@ -618,7 +673,7 @@ export function SubjectiveQuestionContent({
                 TransitionProps={{ unmountOnExit: false }}
                 sx={{
                   "&:before": { display: "none" },
-                  borderBottom: "1px solid #e2e8f0",
+                  borderBottom: "1px solid var(--border-default)",
                   "&:last-of-type": { borderBottom: "none" },
                   "&.Mui-expanded": {
                     margin: 0,
@@ -628,7 +683,7 @@ export function SubjectiveQuestionContent({
               >
                 <AccordionSummary
                   expandIcon={
-                    <Box sx={{ color: "#64748b", display: "flex" }}>
+                    <Box sx={{ color: "var(--font-secondary)", display: "flex" }}>
                       <IconWrapper icon="mdi:chevron-down" size={22} />
                     </Box>
                   }
@@ -645,12 +700,25 @@ export function SubjectiveQuestionContent({
                     spacing={1.5}
                     sx={{ width: "100%", pr: 1, flexWrap: "wrap" }}
                   >
-                    <IconWrapper icon="mdi:calendar-clock-outline" size={18} color="#94a3b8" />
+                    <IconWrapper
+                      icon="mdi:calendar-clock-outline"
+                      size={18}
+                      color="var(--font-tertiary)"
+                    />
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "var(--font-primary)", fontWeight: 600 }}
+                      >
                         {when ? formatRelativeOrAbsolute(when, i18n.language) : "—"}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "#94a3b8", display: { xs: "none", sm: "block" } }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "var(--font-tertiary)",
+                          display: { xs: "none", sm: "block" },
+                        }}
+                      >
                         {when ? new Date(when).toLocaleString(i18n.language) : ""}
                       </Typography>
                     </Box>
@@ -675,8 +743,10 @@ export function SubjectiveQuestionContent({
                       })}
                       sx={{
                         fontWeight: 700,
-                        backgroundColor: "#f1f5f9",
-                        border: "1px solid #e2e8f0",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--surface) 85%, var(--background) 15%)",
+                        border: "1px solid var(--border-default)",
+                        color: "var(--font-primary)",
                       }}
                     />
                   </Stack>
@@ -686,10 +756,18 @@ export function SubjectiveQuestionContent({
                     px: 2,
                     pb: 2.5,
                     pt: 0,
-                    backgroundColor: "#fafafa",
+                    backgroundColor: "var(--surface)",
                   }}
                 >
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: "#64748b", display: "block", mb: 0.75 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 700,
+                      color: "var(--font-secondary)",
+                      display: "block",
+                      mb: 0.75,
+                    }}
+                  >
                     {t("courses.subjectiveYourAnswer")}
                   </Typography>
                   <Typography
@@ -697,19 +775,27 @@ export function SubjectiveQuestionContent({
                     sx={{
                       whiteSpace: "pre-wrap",
                       mb: 2,
-                      color: "#334155",
+                      color: "var(--font-primary)",
                       lineHeight: 1.65,
                       p: 1.5,
                       borderRadius: 2,
-                      backgroundColor: "#ffffff",
-                      border: "1px solid #e2e8f0",
+                      backgroundColor: "var(--card-bg)",
+                      border: "1px solid var(--border-default)",
                     }}
                   >
                     {dim.answer ?? "—"}
                   </Typography>
                   {dim.feedback ? (
                     <>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: "#64748b", display: "block", mb: 0.75 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 700,
+                          color: "var(--font-secondary)",
+                          display: "block",
+                          mb: 0.75,
+                        }}
+                      >
                         {t("courses.subjectiveFeedback")}
                       </Typography>
                       <Box
@@ -720,7 +806,14 @@ export function SubjectiveQuestionContent({
                           pr: 1,
                         }}
                       >
-                        <Typography variant="body2" sx={{ color: "#475569", whiteSpace: "pre-wrap", lineHeight: 1.65 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "var(--font-secondary)",
+                            whiteSpace: "pre-wrap",
+                            lineHeight: 1.65,
+                          }}
+                        >
                           {dim.feedback}
                         </Typography>
                       </Box>
@@ -737,13 +830,26 @@ export function SubjectiveQuestionContent({
           sx={{
             p: 3,
             borderRadius: 3,
-            border: "1px dashed #cbd5e1",
-            backgroundColor: "#f8fafc",
+            border: "1px dashed var(--border-default)",
+            backgroundColor: "var(--surface)",
             textAlign: "center",
           }}
         >
-          <IconWrapper icon="mdi:clipboard-text-clock-outline" size={40} color="#94a3b8" />
-          <Typography variant="body2" sx={{ color: "#64748b", mt: 1.5, maxWidth: 420, mx: "auto", lineHeight: 1.65 }}>
+          <IconWrapper
+            icon="mdi:clipboard-text-clock-outline"
+            size={40}
+            color="var(--font-tertiary)"
+          />
+          <Typography
+            variant="body2"
+            sx={{
+              color: "var(--font-secondary)",
+              mt: 1.5,
+              maxWidth: 420,
+              mx: "auto",
+              lineHeight: 1.65,
+            }}
+          >
             {t("courses.subjectiveNoHistory")}
           </Typography>
         </Paper>

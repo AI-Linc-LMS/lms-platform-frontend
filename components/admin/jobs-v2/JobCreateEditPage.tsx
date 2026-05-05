@@ -111,16 +111,37 @@ const STEPS = [
 ];
 
 const inputSx = {
+  "& .MuiInputLabel-root": {
+    color: "var(--font-secondary)",
+  },
+  "& .MuiFormHelperText-root": {
+    color: "var(--font-secondary)",
+  },
+  "& .MuiInputBase-input, & .MuiInputBase-inputMultiline": {
+    color: "var(--font-primary)",
+    WebkitTextFillColor: "var(--font-primary)",
+    caretColor: "var(--font-primary)",
+    "&::placeholder": {
+      color: "var(--font-tertiary)",
+      opacity: 1,
+    },
+  },
   "& .MuiOutlinedInput-root": {
     borderRadius: 2,
-    backgroundColor: "#fff",
+    backgroundColor: "var(--card-bg)",
     transition: "all 0.2s ease",
-    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.4)" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#6366f1",
+      borderColor: "var(--accent-indigo)",
       borderWidth: 2,
     },
-    "&.Mui-focused .MuiInputLabel-root": { color: "#6366f1" },
+    "& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & textarea:-webkit-autofill, & textarea:-webkit-autofill:hover, & textarea:-webkit-autofill:focus": {
+      WebkitBoxShadow: "0 0 0 1000px var(--card-bg) inset",
+      WebkitTextFillColor: "var(--font-primary)",
+      caretColor: "var(--font-primary)",
+      borderRadius: 8,
+      transition: "background-color 5000s ease-in-out 0s",
+    },
   },
 };
 
@@ -139,8 +160,8 @@ const SectionCard = ({
       p: 3,
       borderRadius: 2.5,
       border: "1px solid",
-      borderColor: "rgba(0,0,0,0.06)",
-      backgroundColor: "#fff",
+      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+      backgroundColor: "var(--card-bg)",
       mb: 2.5,
       transition: "all 0.25s ease",
       overflow: "hidden",
@@ -152,11 +173,12 @@ const SectionCard = ({
         left: 0,
         right: 0,
         height: 3,
-        background: "linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%)",
+        background:
+          "linear-gradient(90deg, color-mix(in srgb, var(--accent-indigo) 20%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 7%, transparent) 100%)",
       },
       "&:hover": {
-        borderColor: "rgba(99, 102, 241, 0.2)",
-        boxShadow: "0 8px 30px rgba(99, 102, 241, 0.08)",
+        borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+        boxShadow: "0 8px 30px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
       },
     }}
   >
@@ -167,18 +189,18 @@ const SectionCard = ({
             width: 44,
             height: 44,
             borderRadius: 2,
-            background: "linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.06) 100%)",
+            background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 24%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             border: "1px solid",
-            borderColor: "rgba(99, 102, 241, 0.2)",
+            borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
           }}
         >
-          <IconWrapper icon={icon} size={24} style={{ color: "#6366f1" }} />
+          <IconWrapper icon={icon} size={24} style={{ color: "var(--accent-indigo)" }} />
         </Box>
       )}
-      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em", fontSize: "1.05rem" }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: "-0.02em", fontSize: "1.05rem" }}>
         {title}
       </Typography>
     </Box>
@@ -428,9 +450,9 @@ export function JobCreateEditPage({
                     gap: 2,
                     p: 2,
                     borderRadius: 2,
-                    backgroundColor: "#f8fafc",
+                    backgroundColor: "var(--background)",
                     border: "1px dashed",
-                    borderColor: "rgba(99, 102, 241, 0.2)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
                   }}
                 >
                   <Box
@@ -445,10 +467,10 @@ export function JobCreateEditPage({
                       objectFit: "contain",
                       border: "1px solid",
                       borderColor: "divider",
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--card-bg)",
                     }}
                   />
-                  <Typography variant="caption" sx={{ fontWeight: 500, color: "#64748b" }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500, color: "var(--font-secondary)" }}>
                     Logo preview
                   </Typography>
                 </Box>
@@ -497,7 +519,7 @@ export function JobCreateEditPage({
               />
             </Box>
             <Box sx={{ mt: 2.5, pt: 2.5, borderTop: "1px solid", borderColor: "divider" }}>
-              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: "#0f172a" }}>
+              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: "var(--font-primary)" }}>
                 Company & Eligibility
               </Typography>
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
@@ -606,7 +628,7 @@ export function JobCreateEditPage({
                 sx={inputSx}
               />
               <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: "#0f172a" }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: "var(--font-primary)" }}>
                   Upload JD (PDF)
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
@@ -619,11 +641,11 @@ export function JobCreateEditPage({
                   sx={{
                     textTransform: "none",
                     fontWeight: 600,
-                    borderColor: "rgba(99, 102, 241, 0.4)",
-                    color: "#6366f1",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                    color: "var(--accent-indigo)",
                     "&:hover": {
-                      borderColor: "#6366f1",
-                      backgroundColor: "rgba(99, 102, 241, 0.08)",
+                      borderColor: "var(--accent-indigo)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                     },
                   }}
                 >
@@ -640,7 +662,7 @@ export function JobCreateEditPage({
                   />
                 </Button>
                 {jdFile && (
-                  <Typography variant="caption" sx={{ ml: 1.5, color: "#64748b" }}>
+                  <Typography variant="caption" sx={{ ml: 1.5, color: "var(--font-secondary)" }}>
                     Selected: {jdFile.name}
                   </Typography>
                 )}
@@ -682,9 +704,9 @@ export function JobCreateEditPage({
                   minHeight: 40,
                   p: 1.5,
                   borderRadius: 2,
-                  backgroundColor: (formData.key_skills ?? []).length > 0 ? "rgba(99, 102, 241, 0.03)" : "transparent",
+                  backgroundColor: (formData.key_skills ?? []).length > 0 ? "color-mix(in srgb, var(--accent-indigo) 5%, transparent)" : "transparent",
                   border: "1px dashed",
-                  borderColor: (formData.key_skills ?? []).length > 0 ? "rgba(99, 102, 241, 0.2)" : "rgba(0,0,0,0.08)",
+                  borderColor: (formData.key_skills ?? []).length > 0 ? "color-mix(in srgb, var(--accent-indigo) 25%, transparent)" : "color-mix(in srgb, var(--font-primary) 10%, transparent)",
                 }}
               >
                 {(formData.key_skills ?? []).map((s, i) => (
@@ -696,11 +718,11 @@ export function JobCreateEditPage({
                     sx={{
                       borderRadius: 1.5,
                       height: 28,
-                      backgroundColor: "rgba(99, 102, 241, 0.12)",
-                      color: "#6366f1",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                      color: "var(--accent-indigo)",
                       fontWeight: 600,
                       fontSize: "0.8rem",
-                      "& .MuiChip-deleteIcon": { color: "#6366f1", "&:hover": { color: "#4f46e5" } },
+                      "& .MuiChip-deleteIcon": { color: "var(--accent-indigo)", "&:hover": { color: "var(--accent-indigo-dark)" } },
                     }}
                   />
                 ))}
@@ -720,8 +742,8 @@ export function JobCreateEditPage({
                         sx={{
                           textTransform: "none",
                           fontWeight: 600,
-                          color: "#6366f1",
-                          "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                          color: "var(--accent-indigo)",
+                          "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
                         }}
                       >
                         Add
@@ -864,7 +886,7 @@ export function JobCreateEditPage({
           <Box>
             <SectionCard title="Targeting" icon="mdi:target">
               <Box sx={{ mb: 2.5 }}>
-                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700, color: "#0f172a" }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700, color: "var(--font-primary)" }}>
                   Courses (optional)
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
@@ -913,7 +935,7 @@ export function JobCreateEditPage({
                 />
               </Box>
               <Box sx={{ mt: 2.5 }}>
-                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700, color: "#0f172a" }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700, color: "var(--font-primary)" }}>
                   College Mapping (targeted colleges)
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
@@ -928,9 +950,9 @@ export function JobCreateEditPage({
                     minHeight: 40,
                     p: 1.5,
                     borderRadius: 2,
-                    backgroundColor: (formData.college_mappings ?? []).length > 0 ? "rgba(99, 102, 241, 0.03)" : "transparent",
+                    backgroundColor: (formData.college_mappings ?? []).length > 0 ? "color-mix(in srgb, var(--accent-indigo) 5%, transparent)" : "transparent",
                     border: "1px dashed",
-                    borderColor: (formData.college_mappings ?? []).length > 0 ? "rgba(99, 102, 241, 0.2)" : "rgba(0,0,0,0.08)",
+                    borderColor: (formData.college_mappings ?? []).length > 0 ? "color-mix(in srgb, var(--accent-indigo) 25%, transparent)" : "color-mix(in srgb, var(--font-primary) 10%, transparent)",
                   }}
                 >
                   {(formData.college_mappings ?? []).map((m, i) => (
@@ -942,12 +964,12 @@ export function JobCreateEditPage({
                       sx={{
                         borderRadius: 1.5,
                         height: 28,
-                        backgroundColor: "rgba(99, 102, 241, 0.08)",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                         border: "1px solid",
-                        borderColor: "rgba(99, 102, 241, 0.25)",
-                        color: "#475569",
+                        borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
+                        color: "var(--font-secondary)",
                         fontWeight: 500,
-                        "& .MuiChip-deleteIcon": { color: "#64748b", "&:hover": { color: "#6366f1" } },
+                        "& .MuiChip-deleteIcon": { color: "var(--font-secondary)", "&:hover": { color: "var(--accent-indigo)" } },
                       }}
                     />
                   ))}
@@ -967,8 +989,8 @@ export function JobCreateEditPage({
                           sx={{
                             textTransform: "none",
                             fontWeight: 600,
-                            color: "#6366f1",
-                            "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+                            color: "var(--accent-indigo)",
+                            "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
                           }}
                         >
                           Add
@@ -991,13 +1013,13 @@ export function JobCreateEditPage({
                   mb: 2.5,
                   p: 2,
                   borderRadius: 2,
-                  backgroundColor: "rgba(99, 102, 241, 0.04)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   border: "1px solid",
-                  borderColor: "rgba(99, 102, 241, 0.12)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                 }}
               >
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#0f172a" }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                     Select questions for applicants
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
@@ -1011,8 +1033,8 @@ export function JobCreateEditPage({
                     sx={{
                       height: 28,
                       fontWeight: 600,
-                      backgroundColor: "rgba(99, 102, 241, 0.12)",
-                      color: "#6366f1",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                      color: "var(--accent-indigo)",
                       "& .MuiChip-label": { px: 1.5 },
                     }}
                   />
@@ -1025,8 +1047,8 @@ export function JobCreateEditPage({
                       textTransform: "none",
                       fontWeight: 600,
                       borderRadius: 1.5,
-                      backgroundColor: "#6366f1",
-                      "&:hover": { backgroundColor: "#4f46e5" },
+                      backgroundColor: "var(--accent-indigo)",
+                      "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
                     }}
                   >
                     Add question
@@ -1040,8 +1062,8 @@ export function JobCreateEditPage({
                       p: 5,
                       borderRadius: 2.5,
                       border: "2px dashed",
-                      borderColor: "rgba(99, 102, 241, 0.3)",
-                      backgroundColor: "rgba(99, 102, 241, 0.03)",
+                      borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 5%, transparent)",
                       textAlign: "center",
                     }}
                   >
@@ -1050,19 +1072,20 @@ export function JobCreateEditPage({
                         width: 72,
                         height: 72,
                         borderRadius: 2.5,
-                        background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%)",
+                        background:
+                          "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 20%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 7%, transparent) 100%)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         mx: "auto",
                         mb: 2,
                         border: "1px solid",
-                        borderColor: "rgba(99, 102, 241, 0.2)",
+                        borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
                       }}
                     >
-                      <IconWrapper icon="mdi:help-circle-outline" size={36} style={{ color: "#6366f1" }} />
+                      <IconWrapper icon="mdi:help-circle-outline" size={36} style={{ color: "var(--accent-indigo)" }} />
                     </Box>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: "#334155", mb: 0.5 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-secondary)", mb: 0.5 }}>
                       No questions yet
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -1079,9 +1102,9 @@ export function JobCreateEditPage({
                         px: 3,
                         py: 1.25,
                         borderRadius: 2,
-                        backgroundColor: "#6366f1",
-                        boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
-                        "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.35)" },
+                        backgroundColor: "var(--accent-indigo)",
+                        boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                        "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
                       }}
                     >
                       Create first question
@@ -1122,15 +1145,15 @@ export function JobCreateEditPage({
                               p: 2,
                               borderRadius: 2,
                               border: "2px solid",
-                              borderColor: selected ? "#6366f1" : "rgba(0,0,0,0.08)",
-                              backgroundColor: selected ? "rgba(99, 102, 241, 0.06)" : "#fff",
+                              borderColor: selected ? "var(--accent-indigo)" : "color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                              backgroundColor: selected ? "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" : "var(--font-light)",
                               cursor: "pointer",
                               transition: "all 0.2s ease",
-                              boxShadow: selected ? "0 2px 8px rgba(99, 102, 241, 0.15)" : "none",
+                              boxShadow: selected ? "0 2px 8px color-mix(in srgb, var(--accent-indigo) 20%, transparent)" : "none",
                               "&:hover": {
-                                borderColor: selected ? "#6366f1" : "rgba(99, 102, 241, 0.4)",
-                                backgroundColor: selected ? "rgba(99, 102, 241, 0.08)" : "rgba(99, 102, 241, 0.02)",
-                                boxShadow: selected ? "0 2px 12px rgba(99, 102, 241, 0.2)" : "0 1px 4px rgba(0,0,0,0.04)",
+                                borderColor: selected ? "var(--accent-indigo)" : "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                                backgroundColor: selected ? "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" : "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
+                                boxShadow: selected ? "0 2px 12px color-mix(in srgb, var(--accent-indigo) 25%, transparent)" : "0 1px 4px color-mix(in srgb, var(--font-primary) 6%, transparent)",
                               },
                             }}
                           >
@@ -1140,8 +1163,8 @@ export function JobCreateEditPage({
                                 height: 24,
                                 borderRadius: 0.75,
                                 border: "2px solid",
-                                borderColor: selected ? "#6366f1" : "#cbd5e1",
-                                backgroundColor: selected ? "#6366f1" : "transparent",
+                                borderColor: selected ? "var(--accent-indigo)" : "var(--border-default)",
+                                backgroundColor: selected ? "var(--accent-indigo)" : "transparent",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -1149,10 +1172,10 @@ export function JobCreateEditPage({
                                 mt: 0.25,
                               }}
                             >
-                              {selected && <IconWrapper icon="mdi:check" size={14} style={{ color: "#fff" }} />}
+                              {selected && <IconWrapper icon="mdi:check" size={14} style={{ color: "var(--font-light)" }} />}
                             </Box>
                             <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 500, color: "#0f172a", lineHeight: 1.5 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.5 }}>
                                 {q.question_text}
                                 {q.is_required && (
                                   <Typography component="span" color="error" sx={{ fontSize: "0.7rem", ml: 0.5 }}>
@@ -1168,8 +1191,8 @@ export function JobCreateEditPage({
                                     height: 24,
                                     fontSize: "0.7rem",
                                     fontWeight: 600,
-                                    backgroundColor: "rgba(99, 102, 241, 0.1)",
-                                    color: "#6366f1",
+                                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                                    color: "var(--accent-indigo)",
                                     border: "none",
                                   }}
                                 />
@@ -1190,11 +1213,11 @@ export function JobCreateEditPage({
                                           px: 1,
                                           py: 0.25,
                                           borderRadius: 1,
-                                          bgcolor: "rgba(0,0,0,0.04)",
-                                          color: "#475569",
+                                          bgcolor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
+                                          color: "var(--font-secondary)",
                                           fontSize: "0.75rem",
                                           border: "1px solid",
-                                          borderColor: "rgba(0,0,0,0.06)",
+                                          borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
                                         }}
                                       >
                                         {String.fromCharCode(65 + i)}. {opt}
@@ -1265,9 +1288,9 @@ export function JobCreateEditPage({
                   sx={{
                     p: 2,
                     borderRadius: 2,
-                    backgroundColor: formData.is_published ? "rgba(34, 197, 94, 0.06)" : "rgba(99, 102, 241, 0.04)",
+                    backgroundColor: formData.is_published ? "color-mix(in srgb, var(--success-500) 8%, transparent)" : "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                     border: "1px solid",
-                    borderColor: formData.is_published ? "rgba(34, 197, 94, 0.2)" : "rgba(99, 102, 241, 0.15)",
+                    borderColor: formData.is_published ? "color-mix(in srgb, var(--success-500) 25%, transparent)" : "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
                   }}
                 >
                   <FormControl size="small" fullWidth sx={inputSx}>
@@ -1326,12 +1349,12 @@ export function JobCreateEditPage({
           alignItems: { xs: "stretch", md: "center" },
           gap: 3,
           p: 3.5,
-          background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 35%, #eef2ff 100%)",
+          background: "linear-gradient(135deg, var(--background) 0%, var(--surface) 35%, color-mix(in srgb, var(--accent-indigo) 10%, var(--surface)) 100%)",
           borderRadius: 2.5,
           mb: 3,
           border: "1px solid",
-          borderColor: "rgba(99, 102, 241, 0.12)",
-          boxShadow: "0 4px 20px rgba(99, 102, 241, 0.06)",
+          borderColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+          boxShadow: "0 4px 20px color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
           position: "relative",
           overflow: "hidden",
           "&::after": {
@@ -1342,7 +1365,7 @@ export function JobCreateEditPage({
             width: 160,
             height: 160,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 0%, transparent 70%)",
           },
         }}
       >
@@ -1359,12 +1382,12 @@ export function JobCreateEditPage({
               zIndex: 1,
             }}
           >
-            <CreateJobIllustration width={100} height={88} primaryColor="#6366f1" />
+            <CreateJobIllustration width={100} height={88} primaryColor="var(--accent-indigo)" />
           </Box>
         )}
         <Box sx={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.03em" }}>
               {isEditMode ? "Edit Job" : "Create Job"}
             </Typography>
             {isEditMode && (
@@ -1372,11 +1395,11 @@ export function JobCreateEditPage({
                 variant="body2"
                 sx={{
                   fontWeight: 500,
-                  color: "#64748b",
+                  color: "var(--font-secondary)",
                   px: 1.5,
                   py: 0.25,
                   borderRadius: 1.5,
-                  backgroundColor: "rgba(0,0,0,0.04)",
+                  backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                 }}
               >
                 {title}
@@ -1386,7 +1409,7 @@ export function JobCreateEditPage({
           <Typography
             variant="body2"
             sx={{
-              color: "#64748b",
+              color: "var(--font-secondary)",
               fontWeight: 500,
               display: "inline-flex",
               alignItems: "center",
@@ -1395,8 +1418,16 @@ export function JobCreateEditPage({
             }}
           >
             Step {activeStep + 1} of {STEPS.length}
-            <Box component="span" sx={{ color: "rgba(0,0,0,0.3)" }}>·</Box>
-            <Box component="span" sx={{ color: "#6366f1", fontWeight: 600 }}>{STEPS[activeStep]}</Box>
+            <Box
+              component="span"
+              sx={{
+                color:
+                  "color-mix(in srgb, var(--font-primary) 35%, transparent)",
+              }}
+            >
+              .
+            </Box>
+            <Box component="span" sx={{ color: "var(--accent-indigo)", fontWeight: 600 }}>{STEPS[activeStep]}</Box>
           </Typography>
         </Box>
       </Box>
@@ -1409,29 +1440,29 @@ export function JobCreateEditPage({
           mb: 3,
           borderRadius: 2.5,
           border: "1px solid",
-          borderColor: "rgba(0,0,0,0.06)",
-          backgroundColor: "#fff",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 6%, transparent)",
         }}
       >
         <Stepper
           activeStep={activeStep}
           sx={{
             "& .MuiStepConnector-line": {
-              borderColor: "rgba(99, 102, 241, 0.25)",
+              borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
               borderTopWidth: 2,
               transition: "border-color 0.2s ease",
             },
             "& .MuiStepLabel-label": {
               fontWeight: 500,
               fontSize: { xs: "0.8rem", sm: "0.9rem" },
-              color: "#64748b",
+              color: "var(--font-secondary)",
             },
-            "& .MuiStepIcon-root.Mui-completed": { color: "#16a34a" },
-            "& .MuiStepIcon-root.Mui-completed .MuiStepIcon-text": { fill: "#fff" },
-            "& .MuiStepIcon-root.Mui-active": { color: "#6366f1" },
+            "& .MuiStepIcon-root.Mui-completed": { color: "var(--success-500)" },
+            "& .MuiStepIcon-root.Mui-completed .MuiStepIcon-text": { fill: "var(--font-light)" },
+            "& .MuiStepIcon-root.Mui-active": { color: "var(--accent-indigo)" },
             "& .MuiStepLabel-root.Mui-active .MuiStepLabel-label": {
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               fontWeight: 700,
             },
           }}
@@ -1469,10 +1500,10 @@ export function JobCreateEditPage({
           p: 3,
           borderRadius: 2.5,
           borderTop: "1px solid",
-          borderColor: "rgba(0,0,0,0.06)",
-          backgroundColor: "#fff",
+          borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+          backgroundColor: "var(--card-bg)",
           zIndex: 10,
-          boxShadow: "0 -8px 30px rgba(0,0,0,0.06)",
+          boxShadow: "0 -8px 30px color-mix(in srgb, var(--font-primary) 8%, transparent)",
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
@@ -1482,9 +1513,9 @@ export function JobCreateEditPage({
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                color: "#64748b",
+                color: "var(--font-secondary)",
                 px: 2,
-                "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
+                "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
               }}
             >
               Cancel
@@ -1497,9 +1528,9 @@ export function JobCreateEditPage({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  color: "#64748b",
+                  color: "var(--font-secondary)",
                   px: 2.5,
-                  "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)", color: "#6366f1" },
+                  "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)", color: "var(--accent-indigo)" },
                 }}
               >
                 Back
@@ -1516,9 +1547,9 @@ export function JobCreateEditPage({
                   px: 3.5,
                   py: 1.25,
                   borderRadius: 2,
-                  backgroundColor: "#6366f1",
-                  boxShadow: "0 1px 3px rgba(99, 102, 241, 0.3)",
-                  "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.35)" },
+                  backgroundColor: "var(--accent-indigo)",
+                  boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
                 }}
               >
                 Next
@@ -1540,9 +1571,9 @@ export function JobCreateEditPage({
                   px: 3.5,
                   py: 1.25,
                   borderRadius: 2,
-                  backgroundColor: "#6366f1",
-                  boxShadow: "0 1px 3px rgba(99, 102, 241, 0.3)",
-                  "&:hover": { backgroundColor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.35)" },
+                  backgroundColor: "var(--accent-indigo)",
+                  boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
                 }}
               >
                 {submitting ? "Saving..." : "Save Job"}

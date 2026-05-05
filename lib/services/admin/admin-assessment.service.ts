@@ -16,6 +16,9 @@ export interface MCQ {
   option_c: string;
   option_d: string;
   correct_option: "A" | "B" | "C" | "D";
+  question_style?: "single" | "multiple";
+  /** For MSQ (multiple): at least two of A–D; backend stores sorted unique letters. */
+  correct_options?: Array<"A" | "B" | "C" | "D">;
   explanation?: string;
   difficulty_level?: "Easy" | "Medium" | "Hard";
   topic?: string;
@@ -37,6 +40,8 @@ export interface MCQListItem {
   option_c: string;
   option_d: string;
   correct_option: string;
+  question_style?: string;
+  correct_options?: string[];
   explanation?: string;
   difficulty_level?: string;
   topic?: string;
@@ -126,6 +131,41 @@ export interface AssessmentQuizSectionWrite {
   mcq_ids?: number[];
 }
 
+/** One written/subjective block in `subjectiveQuestionSection` on create. */
+export interface AssessmentSubjectiveQuestionWrite {
+  question_text: string;
+  evaluation_prompt: string;
+  max_marks?: number;
+  question_type?: string;
+  answer_mode?: string;
+}
+
+export interface AssessmentSubjectiveSectionWrite {
+  title: string;
+  description?: string;
+  order: number;
+  easy_score?: number;
+  medium_score?: number;
+  hard_score?: number;
+  time_limit_minutes?: number;
+  section_cutoff_marks?: string;
+  number_of_questions?: number;
+  number_of_questions_to_show?: number;
+  subjective_question_ids?: number[];
+  subjective_questions?: AssessmentSubjectiveQuestionWrite[];
+}
+
+/** Pool row for choosing existing written questions */
+export interface AssessmentSubjectiveQuestionListItem {
+  id: number;
+  question_text: string;
+  evaluation_prompt: string;
+  max_marks: number;
+  question_type?: string;
+  answer_mode?: string;
+  created_at?: string;
+}
+
 /** One coding block in `codingProblemSection` on create/update payloads. */
 export interface AssessmentCodingProblemSectionWrite {
   title: string;
@@ -154,12 +194,15 @@ export interface CreateAssessmentPayload {
   price?: string | number | null;
   currency?: string;
   is_active?: boolean;
+  /** When true, server keeps assessment inactive and hidden from learners until published. */
+  is_draft?: boolean;
   proctoring_enabled?: boolean;
   live_streaming?: boolean;
   /** Whether to send notification email to students */
   send_communication?: boolean;
   /** Whether to show results to students after submission (default true) */
   show_result?: boolean;
+  evaluation_mode?: "auto" | "manual";
   /** Whether a certificate can be issued for this assessment */
   certificate_available?: boolean;
   /** Minimum overall percent (inclusive) for pass band lower tier */
@@ -171,12 +214,14 @@ export interface CreateAssessmentPayload {
    * move between section blocks (e.g. quiz ↔ coding). Do not send per-section.
    */
   allow_movement?: boolean;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
   /** API: camelCase array of quiz sections */
   quizSection?: AssessmentQuizSectionWrite[];
   /** API: camelCase array of coding problem sections */
   codingProblemSection?: AssessmentCodingProblemSectionWrite[];
-  /** API: camelCase array (send [] when unused) */
-  subjectiveQuestionSection?: unknown[];
+  /** API: camelCase array of written (subjective) sections */
+  subjectiveQuestionSection?: AssessmentSubjectiveSectionWrite[];
   quiz_section?: QuizSection;
   allow_desktop?: boolean;
   allow_mobile?: boolean;
@@ -218,10 +263,16 @@ export interface Assessment {
   is_paid: boolean;
   price: string | number | null;
   is_active: boolean;
+  /** Authoring draft; learners must not see this assessment. */
+  is_draft?: boolean;
+  /** Instructor-led scoring vs auto (quiz/coding rules). */
+  evaluation_mode?: "auto" | "manual";
   proctoring_enabled?: boolean;
   live_streaming?: boolean;
   /** Allow navigation across section blocks (assessment-wide). */
   allow_movement?: boolean;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
   start_time?: string | null;
   end_time?: string | null;
   created_at: string;
@@ -247,9 +298,12 @@ export interface AssessmentDetail extends Assessment {
   course_ids?: number[];
   currency?: string;
   show_result?: boolean;
+  evaluation_mode?: "auto" | "manual";
   certificate_available?: boolean;
   pass_band_lower_min_percent?: string;
   pass_band_upper_min_percent?: string;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
   /** API: camelCase quiz sections (detail GET) */
   quizSection?: Array<{
     id: number;
@@ -283,7 +337,7 @@ export interface AssessmentDetail extends Assessment {
     order: number;
     coding_problems?: unknown[];
   }>;
-  subjectiveQuestionSection?: unknown[];
+  subjectiveQuestionSection?: AssessmentSubjectiveSectionWrite[];
 }
 
 /**
@@ -367,6 +421,31 @@ export const createAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to create assessment";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Publish assessment (clear draft, optionally activate). POST .../publish/
+ */
+export const publishAssessment = async (
+  clientId: string | number,
+  assessmentId: number,
+  body?: { is_active?: boolean }
+): Promise<Assessment> => {
+  try {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/publish/`,
+      body ?? {}
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to publish assessment";
     throw new Error(message);
   }
 };
@@ -500,6 +579,25 @@ export const getMCQs = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to fetch MCQs";
+    throw new Error(message);
+  }
+};
+
+export const listAssessmentSubjectiveQuestions = async (
+  clientId: string | number
+): Promise<AssessmentSubjectiveQuestionListItem[]> => {
+  try {
+    const response = await apiClient.get(
+      `/admin-dashboard/api/clients/${clientId}/assessment-subjective-questions/`
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      "Failed to fetch written questions";
     throw new Error(message);
   }
 };
@@ -743,8 +841,21 @@ export interface QuestionsExportCodingQuestion {
   [key: string]: unknown;
 }
 
-/** Union type for quiz or coding question in export */
-export type QuestionsExportQuestion = QuestionsExportMCQQuestion | QuestionsExportCodingQuestion;
+/** Questions export – written/subjective question shape */
+export interface QuestionsExportSubjectiveQuestion {
+  id: number;
+  question_text: string;
+  evaluation_prompt: string;
+  max_marks: number;
+  question_type?: string;
+  answer_mode?: string;
+}
+
+/** Union type for quiz, coding, or written question in export */
+export type QuestionsExportQuestion =
+  | QuestionsExportMCQQuestion
+  | QuestionsExportCodingQuestion
+  | QuestionsExportSubjectiveQuestion;
 
 export function isCodingQuestion(q: QuestionsExportQuestion): q is QuestionsExportCodingQuestion {
   return "title" in q && typeof (q as QuestionsExportCodingQuestion).title === "string";
@@ -752,6 +863,17 @@ export function isCodingQuestion(q: QuestionsExportQuestion): q is QuestionsExpo
 
 export function isMCQQuestion(q: QuestionsExportQuestion): q is QuestionsExportMCQQuestion {
   return "question_text" in q && "option_a" in q;
+}
+
+export function isSubjectiveQuestion(q: QuestionsExportQuestion): q is QuestionsExportSubjectiveQuestion {
+  return (
+    typeof q === "object" &&
+    q != null &&
+    "evaluation_prompt" in q &&
+    typeof (q as QuestionsExportSubjectiveQuestion).evaluation_prompt === "string" &&
+    "max_marks" in q &&
+    typeof (q as QuestionsExportSubjectiveQuestion).max_marks === "number"
+  );
 }
 
 export interface QuestionsExportSection {
@@ -818,8 +940,11 @@ export interface SubmissionsExportUserResponses {
 }
 
 export interface SubmissionsExportSubmission {
+  submission_id?: number;
   status?: string;
+  review_status?: string;
   score?: number | null;
+  profile_pic_url?: string;
   name: string;
   email: string;
   phone?: string;
@@ -835,6 +960,7 @@ export interface SubmissionsExportSubmission {
   section_wise_scores?: Record<string, number>;
   section_wise_max_scores?: Record<string, number>;
   proctoring?: SubmissionsExportProctoringData;
+  manual_evaluation_payload?: Record<string, unknown>;
 }
 
 export interface SubmissionsExportResponse {
@@ -846,6 +972,39 @@ export interface SubmissionsExportResponse {
     show_result?: boolean;
   };
   submissions: SubmissionsExportSubmission[];
+}
+
+export interface ManualEvaluationQuestionScore {
+  id: number;
+  awarded_marks: number;
+  note?: string;
+}
+
+export interface ManualEvaluationPayload {
+  quiz_scores: ManualEvaluationQuestionScore[];
+  coding_scores: ManualEvaluationQuestionScore[];
+  subjective_scores: ManualEvaluationQuestionScore[];
+  admin_notes?: string;
+}
+
+export interface SubmissionManualEvaluationResponse {
+  assessment: { id: number; title: string; slug: string; evaluation_mode?: "auto" | "manual" };
+  submission: {
+    id: number;
+    status: string;
+    review_status: string;
+    score: number | null;
+    published_at?: string | null;
+    last_evaluated_at?: string | null;
+    manual_evaluation_payload?: ManualEvaluationPayload;
+  };
+  student: { id: number; name: string; email: string; phone?: string };
+  responses: {
+    quiz_responses: Array<Record<string, unknown> & { question_id: number; max_marks?: number }>;
+    coding_problem_responses: Array<Record<string, unknown> & { problem_id: number; max_marks?: number }>;
+    subjective_responses: Array<Record<string, unknown> & { question_id: number; max_marks?: number }>;
+  };
+  maximum_marks: number;
 }
 
 /**
@@ -872,6 +1031,51 @@ export const getSubmissionsExportJson = async (
 ): Promise<SubmissionsExportResponse> => {
   const response = await apiClient.get<SubmissionsExportResponse>(
     `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/`
+  );
+  return response.data;
+};
+
+export const saveManualEvaluation = async (
+  clientId: string | number,
+  assessmentId: number,
+  submissionId: number,
+  payload: { manual_evaluation_payload?: ManualEvaluationPayload }
+): Promise<{ message: string }> => {
+  const response = await apiClient.patch(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions/${submissionId}/manual-evaluation/`,
+    payload,
+  );
+  return response.data;
+};
+
+export const getSubmissionManualEvaluation = async (
+  clientId: string | number,
+  assessmentId: number,
+  submissionId: number
+): Promise<SubmissionManualEvaluationResponse> => {
+  const response = await apiClient.get<SubmissionManualEvaluationResponse>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions/${submissionId}/manual-evaluation/`
+  );
+  return response.data;
+};
+
+export const publishSubmissionResult = async (
+  clientId: string | number,
+  assessmentId: number,
+  submissionId: number,
+): Promise<{ message: string }> => {
+  const response = await apiClient.post(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions/${submissionId}/publish/`,
+  );
+  return response.data;
+};
+
+export const publishAssessmentResultsBulk = async (
+  clientId: string | number,
+  assessmentId: number,
+): Promise<{ published_count: number }> => {
+  const response = await apiClient.post(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/publish-results/`,
   );
   return response.data;
 };
@@ -1052,6 +1256,7 @@ export const adminAssessmentService = {
   getAssessments,
   getAssessmentById,
   createAssessment,
+  publishAssessment,
   updateAssessment,
   deleteAssessment,
   duplicateAssessment,
@@ -1059,8 +1264,13 @@ export const adminAssessmentService = {
   getQuestionsExport,
   getQuestionsExportJson,
   getSubmissionsExportJson,
+  getSubmissionManualEvaluation,
+  saveManualEvaluation,
+  publishSubmissionResult,
+  publishAssessmentResultsBulk,
   getAssessmentAnalytics,
   getMCQs,
+  listAssessmentSubjectiveQuestions,
   generateMCQsWithAI,
   getCodingProblems,
   generateCodingProblemsWithAI,

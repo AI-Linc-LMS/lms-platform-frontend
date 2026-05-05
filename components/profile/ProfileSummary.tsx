@@ -63,13 +63,13 @@ export function ProfileSummary({
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
         borderRadius: { xs: 1, sm: 2 },
         mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)",
+        boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.12)",
+          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
@@ -85,7 +85,7 @@ export function ProfileSummary({
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#000000",
+            color: "var(--font-primary)",
             fontSize: "1.25rem",
             letterSpacing: "-0.01em",
           }}
@@ -104,11 +104,11 @@ export function ProfileSummary({
               }}
               sx={{
                 textTransform: "none",
-                color: "#0a66c2",
+                color: "var(--accent-indigo)",
                 fontWeight: 600,
                 fontSize: "0.9375rem",
                 "&:hover": {
-                  backgroundColor: "rgba(10, 102, 194, 0.08)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
                 transition: "all 0.2s ease",
               }}
@@ -125,9 +125,9 @@ export function ProfileSummary({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   "&:hover": {
-                    backgroundColor: "#f3f2ef",
+                    backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
                   },
                 }}
               >
@@ -141,11 +141,11 @@ export function ProfileSummary({
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  backgroundColor: "#0a66c2",
+                  backgroundColor: "var(--accent-indigo)",
                   borderRadius: "24px",
                   px: 2,
                   "&:hover": {
-                    backgroundColor: "#004182",
+                    backgroundColor: "var(--accent-indigo-dark)",
                   },
                   transition: "all 0.2s ease",
                 }}
@@ -180,7 +180,7 @@ export function ProfileSummary({
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#000000",
+                  color: "var(--font-primary)",
                   fontSize: "0.9375rem",
                   lineHeight: 1.7,
                   whiteSpace: "pre-wrap",
@@ -197,7 +197,7 @@ export function ProfileSummary({
                   onClick={() => setExpanded(!expanded)}
                   sx={{
                     textTransform: "none",
-                    color: "#0a66c2",
+                    color: "var(--accent-indigo)",
                     fontWeight: 600,
                     fontSize: "0.875rem",
                     mt: 1,
@@ -216,7 +216,7 @@ export function ProfileSummary({
             <Typography
               variant="body2"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 fontStyle: "italic",
               }}
             >

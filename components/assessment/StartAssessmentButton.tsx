@@ -22,7 +22,7 @@ export function StartAssessmentButton({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#f9fafb",
+        backgroundColor: "var(--surface)",
       }}
     >
       <Paper
@@ -49,9 +49,9 @@ export function StartAssessmentButton({
             py: 1.5,
             fontSize: "1rem",
             fontWeight: 600,
-            backgroundColor: "#374151",
+            backgroundColor: "var(--font-muted)",
             "&:hover": {
-              backgroundColor: "#1f2937",
+              backgroundColor: "var(--font-primary-dark)",
             },
           }}
         >

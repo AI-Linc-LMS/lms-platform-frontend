@@ -28,7 +28,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
         height: "297mm",
         minHeight: "297mm",
         overflow: "hidden",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
       }}
@@ -39,7 +39,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
           sx={{
             fontSize: "1.5rem",
             fontWeight: 300,
-            color: "#000000",
+            color: "var(--font-primary)",
             mb: 0.3,
             letterSpacing: "-0.02em",
           }}
@@ -51,7 +51,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
           <Typography
             sx={{
               fontSize: "0.875rem",
-              color: "#000000",
+              color: "var(--font-primary)",
               mb: 1,
               fontWeight: 500,
             }}
@@ -65,7 +65,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             display: "flex",
             gap: 1.5,
             flexWrap: "wrap",
-            color: "#666666",
+            color: "var(--font-secondary)",
           }}
         >
           {[
@@ -88,7 +88,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 sx={{ display: "flex", alignItems: "center", gap: 0.5, textDecoration: "none", color: "inherit" }}
               >
                 <Box sx={{ flexShrink: 0, display: "flex" }}>
-                  <IconWrapper icon={item.icon} size={11} color="#666666" />
+                  <IconWrapper icon={item.icon} size={11} color="var(--font-secondary)" />
                 </Box>
                 <Typography
                   data-resume-contact-item
@@ -116,7 +116,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
           <Typography
             sx={{
               fontSize: "0.625rem",
-              color: "#333333",
+              color: "var(--font-primary)",
               lineHeight: 1.6,
               fontWeight: 300,
             }}
@@ -134,7 +134,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
-              color: "#000000",
+              color: "var(--font-primary)",
               mb: 1,
               letterSpacing: "0.15em",
               textTransform: "uppercase",
@@ -155,14 +155,14 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 >
                   <Typography
                     data-resume-nowrap
-                    sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000" }}
+                    sx={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--font-primary)" }}
                   >
                     {exp.position}
                   </Typography>
                   <Typography
                     sx={{
                       fontSize: "0.625rem",
-                      color: "#666666",
+                      color: "var(--font-secondary)",
                       fontWeight: 400,
                       whiteSpace: "nowrap",
                       ml: 2,
@@ -172,7 +172,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                   </Typography>
                 </Box>
                 <Typography
-                  sx={{ fontSize: "0.625rem", color: "#666666", fontWeight: 400 }}
+                  sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", fontWeight: 400 }}
                 >
                   {exp.company}
                   {exp.location && ` / ${exp.location}`}
@@ -189,13 +189,13 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                         key={descIndex}
                         sx={{
                           fontSize: "0.625rem",
-                          color: "#333333",
+                          color: "var(--font-primary)",
                           lineHeight: 1.6,
                           mb: 0.5,
                           fontWeight: 300,
                           "&:before": {
                             content: '"— "',
-                            color: "#999999",
+                            color: "var(--font-tertiary)",
                           },
                         }}
                       >
@@ -217,7 +217,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
-              color: "#000000",
+              color: "var(--font-primary)",
               mb: 1,
               letterSpacing: "0.15em",
               textTransform: "uppercase",
@@ -237,14 +237,14 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
               >
                 <Typography
                   data-resume-nowrap
-                  sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000" }}
+                  sx={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--font-primary)" }}
                 >
                   {edu.degree}
                 </Typography>
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#666666",
+                    color: "var(--font-secondary)",
                     fontWeight: 400,
                     whiteSpace: "nowrap",
                     ml: 2,
@@ -254,13 +254,13 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 </Typography>
               </Box>
               <Typography
-                sx={{ fontSize: "0.625rem", color: "#666666", fontWeight: 400 }}
+                sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", fontWeight: 400 }}
               >
                 {edu.institution}
                 {edu.location && ` / ${edu.location}`}
               </Typography>
               {edu.gpa && (
-                <Typography sx={{ fontSize: "0.625rem", color: "#666666", mt: 0.2, whiteSpace: "nowrap" }}>
+                <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mt: 0.2, whiteSpace: "nowrap" }}>
                   {edu.gpa}
                 </Typography>
               )}
@@ -277,7 +277,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
-              color: "#000000",
+              color: "var(--font-primary)",
               mb: 1,
               letterSpacing: "0.15em",
               textTransform: "uppercase",
@@ -289,7 +289,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
           <Typography
             sx={{
               fontSize: "0.625rem",
-              color: "#333333",
+              color: "var(--font-primary)",
               lineHeight: 1.6,
               fontWeight: 300,
             }}
@@ -307,7 +307,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
-              color: "#000000",
+              color: "var(--font-primary)",
               mb: 1,
               letterSpacing: "0.15em",
               textTransform: "uppercase",
@@ -329,7 +329,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
               >
                 <Typography
                   data-resume-nowrap
-                  sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#000000" }}
+                  sx={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--font-primary)" }}
                 >
                   {project.name}
                 </Typography>
@@ -341,7 +341,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                     rel="noopener noreferrer"
                     sx={{
                       fontSize: "0.625rem",
-                      color: "#2563eb",
+                      color: "var(--accent-indigo)",
                       fontWeight: 500,
                       flexShrink: 0,
                       whiteSpace: "nowrap",
@@ -357,7 +357,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#333333",
+                    color: "var(--font-primary)",
                     lineHeight: 1.5,
                     mb: 0.3,
                     fontWeight: 300,
@@ -371,7 +371,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#666666",
+                    color: "var(--font-secondary)",
                     fontWeight: 300,
                   }}
                 >
@@ -391,7 +391,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             sx={{
               fontSize: "0.625rem",
               fontWeight: 700,
-              color: "#000000",
+              color: "var(--font-primary)",
               mb: 1,
               letterSpacing: "0.15em",
               textTransform: "uppercase",
@@ -413,7 +413,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <Typography
-                    sx={{ fontSize: "0.625rem", fontWeight: 500, color: "#000000", flex: 1, minWidth: 0 }}
+                    sx={{ fontSize: "0.625rem", fontWeight: 500, color: "var(--font-primary)", flex: 1, minWidth: 0 }}
                   >
                     {cert.name}
                   </Typography>
@@ -425,7 +425,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                       rel="noopener noreferrer"
                       sx={{
                         fontSize: "0.55rem",
-                        color: "#2563eb",
+                        color: "var(--accent-indigo)",
                         fontWeight: 600,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
@@ -435,7 +435,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                     </Typography>
                   )}
                 </Box>
-                <Typography sx={{ fontSize: "0.625rem", color: "#666666" }}>
+                <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)" }}>
                   {cert.issuer}
                 </Typography>
               </Box>
@@ -443,7 +443,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.625rem",
-                    color: "#666666",
+                    color: "var(--font-secondary)",
                   }}
                 >
                   {formatDate(cert.date, "", false)}

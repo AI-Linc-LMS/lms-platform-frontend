@@ -29,10 +29,10 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
           width: "100%",
           height: { xs: 220, sm: 280, md: 340, lg: 400 },
           overflow: "hidden",
-          backgroundColor: coverPhotoUrl ? "transparent" : "#0f172a",
+          backgroundColor: coverPhotoUrl ? "transparent" : "var(--surface)",
           backgroundImage: coverPhotoUrl
-            ? `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%), url(${coverPhotoUrl})`
-            : "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
+            ? `linear-gradient(180deg, color-mix(in srgb, var(--font-primary) 15%, transparent) 0%, color-mix(in srgb, var(--font-primary) 40%, transparent) 100%), url(${coverPhotoUrl})`
+            : "linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, var(--background)) 0%, color-mix(in srgb, var(--surface) 72%, var(--background)) 50%, color-mix(in srgb, var(--surface) 58%, var(--background)) 100%)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -43,7 +43,7 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
                 position: "absolute",
                 inset: 0,
                 background:
-                  "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(10, 102, 194, 0.15) 0%, transparent 70%)",
+                  "radial-gradient(ellipse 80% 50% at 50% 100%, color-mix(in srgb, var(--accent-indigo) 16%, transparent) 0%, transparent 70%)",
                 pointerEvents: "none",
               },
         }}
@@ -59,7 +59,7 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
             right: 0,
             height: "40%",
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)",
+              "linear-gradient(to top, color-mix(in srgb, var(--font-primary) 50%, transparent) 0%, transparent 100%)",
             pointerEvents: "none",
           }}
         />
@@ -79,19 +79,19 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
               startIcon={<IconWrapper icon="mdi:image-edit-outline" size={18} />}
               onClick={() => setUrlDialogOpen(true)}
               sx={{
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                backgroundColor: "color-mix(in srgb, var(--background) 95%, transparent)",
                 backdropFilter: "blur(12px)",
-                color: "#0f172a",
+                color: "var(--font-primary)",
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: { xs: "0.8125rem", sm: "0.9375rem" },
                 borderRadius: "12px",
                 px: { xs: 2, sm: 2.5 },
                 py: { xs: 0.875, sm: 1 },
-                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                boxShadow: "0 4px 20px color-mix(in srgb, var(--font-primary) 16%, transparent)",
                 "&:hover": {
-                  backgroundColor: "#ffffff",
-                  boxShadow: "0 6px 24px rgba(0,0,0,0.2)",
+                  backgroundColor: "var(--background)",
+                  boxShadow: "0 6px 24px color-mix(in srgb, var(--font-primary) 22%, transparent)",
                   transform: "translateY(-1px)",
                 },
                 transition: "all 0.2s ease",

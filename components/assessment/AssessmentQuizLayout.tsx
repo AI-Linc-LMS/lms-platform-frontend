@@ -12,6 +12,8 @@ export interface QuizQuestion {
   id: string | number;
   question: string;
   options: QuizOption[];
+  /** Default single (MCQ); multiple = MSQ (checkboxes). */
+  question_style?: "single" | "multiple";
 }
 
 export interface QuizOption {
@@ -23,7 +25,7 @@ export interface QuizOption {
 interface AssessmentQuizLayoutProps {
   currentQuestionIndex: number;
   currentQuestion: QuizQuestion;
-  selectedAnswer?: string | number;
+  selectedAnswer?: string | number | string[];
   questions: Array<{
     id: string | number;
     question: string;
@@ -51,6 +53,7 @@ export const AssessmentQuizLayout = memo(
     onQuestionClick,
   }: AssessmentQuizLayoutProps) {
     const theme = useTheme();
+    const isMsq = currentQuestion.question_style === "multiple";
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
     const isFirstQuestion = currentQuestionIndex === 0;
 
@@ -131,14 +134,14 @@ export const AssessmentQuizLayout = memo(
             sx={{
               flex: 1,
               p: { xs: 2, sm: 3, md: 4 },
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--font-light)",
               borderRadius: 2,
-              border: "1px solid #e8ecf1",
+              border: "1px solid var(--border-default)",
               display: "flex",
               flexDirection: "column",
               minHeight: { md: "min(520px, 70vh)" },
               boxShadow:
-                "0 10px 40px rgba(15, 23, 42, 0.07), 0 1px 0 rgba(15, 23, 42, 0.04)",
+                "0 10px 40px color-mix(in srgb, var(--primary-900) 9%, transparent), 0 1px 0 color-mix(in srgb, var(--primary-900) 6%, transparent)",
             }}
           >
             {/* Question Title */}
@@ -152,10 +155,14 @@ export const AssessmentQuizLayout = memo(
               isReadOnly={false}
               isSubmitting={false}
               onAnswerSelect={onAnswerSelect}
+              multiSelect={isMsq}
             />
 
             {/* Clear Answer Button - Only show if answer is selected */}
-            {selectedAnswer !== undefined && selectedAnswer !== null && onClearAnswer && (
+            {onClearAnswer &&
+              (isMsq
+                ? Array.isArray(selectedAnswer) && selectedAnswer.length > 0
+                : selectedAnswer !== undefined && selectedAnswer !== null) && (
               <Box
                 sx={{
                   mt: 2,
@@ -167,15 +174,15 @@ export const AssessmentQuizLayout = memo(
                   variant="text"
                   onClick={onClearAnswer}
                   sx={{
-                    color: "#ef4444",
+                    color: "var(--error-500)",
                     textTransform: "none",
                     fontSize: "0.875rem",
                     fontWeight: 500,
                     px: 2,
                     py: 0.75,
                     "&:hover": {
-                      backgroundColor: "#fee2e2",
-                      color: "#dc2626",
+                      backgroundColor: "color-mix(in srgb, var(--error-500) 12%, transparent)",
+                      color: "var(--error-600)",
                     },
                   }}
                 >
@@ -206,7 +213,7 @@ export const AssessmentQuizLayout = memo(
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontWeight: 500,
                   }}
                 >
@@ -231,8 +238,8 @@ export const AssessmentQuizLayout = memo(
                   onClick={onPreviousQuestion}
                   disabled={isFirstQuestion}
                   sx={{
-                    borderColor: "#6366f1",
-                    color: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
+                    color: "var(--accent-indigo)",
                     px: { xs: 2, sm: 3 },
                     py: 1.5,
                     fontSize: "0.9375rem",
@@ -245,12 +252,12 @@ export const AssessmentQuizLayout = memo(
                       sm: "120px",
                     },
                     "&:hover": {
-                      borderColor: "#4f46e5",
-                      backgroundColor: "#6366f115",
+                      borderColor: "var(--accent-indigo-dark)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 9%, transparent)",
                     },
                     "&:disabled": {
-                      borderColor: "#d1d5db",
-                      color: "#9ca3af",
+                      borderColor: "var(--border-light)",
+                      color: "var(--font-tertiary)",
                     },
                   }}
                 >
@@ -269,7 +276,7 @@ export const AssessmentQuizLayout = memo(
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontWeight: 500,
                     }}
                   >
@@ -283,8 +290,8 @@ export const AssessmentQuizLayout = memo(
                   onClick={onNextQuestion}
                   disabled={isLastQuestion}
                   sx={{
-                    backgroundColor: "#6366f1",
-                    color: "#ffffff",
+                    backgroundColor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
                     px: { xs: 2, sm: 4 },
                     py: 1.5,
                     fontSize: "0.9375rem",
@@ -297,11 +304,11 @@ export const AssessmentQuizLayout = memo(
                       sm: "140px",
                     },
                     "&:hover": {
-                      backgroundColor: "#4f46e5",
+                      backgroundColor: "var(--accent-indigo-dark)",
                     },
                     "&:disabled": {
-                      backgroundColor: "#d1d5db",
-                      color: "#9ca3af",
+                      backgroundColor: "var(--border-light)",
+                      color: "var(--font-tertiary)",
                     },
                   }}
                 >
@@ -320,7 +327,13 @@ export const AssessmentQuizLayout = memo(
     if (prevProps.currentQuestion.id !== nextProps.currentQuestion.id) return false;
     
     // If selected answer changed, re-render
-    if (prevProps.selectedAnswer !== nextProps.selectedAnswer) return false;
+    const selEq =
+      prevProps.selectedAnswer === nextProps.selectedAnswer ||
+      (Array.isArray(prevProps.selectedAnswer) &&
+        Array.isArray(nextProps.selectedAnswer) &&
+        JSON.stringify(prevProps.selectedAnswer) ===
+          JSON.stringify(nextProps.selectedAnswer));
+    if (!selEq) return false;
     
     // If total questions changed, re-render
     if (prevProps.totalQuestions !== nextProps.totalQuestions) return false;

@@ -43,22 +43,22 @@ export function CognitiveWorkStyleSection({ data }: CognitiveWorkStyleSectionPro
       x: data.execution_vs_ideation.execution_score,
       y: data.execution_vs_ideation.ideation_score,
       name: "Your Position",
-      fill: "#6366f1"
+      fill: "var(--accent-indigo)"
     }
   ];
 
   // Thinking style data
   const thinkingStyleData = [
-    { name: "Logical", value: data.thinking_style.logical_score, fill: "#3b82f6" },
-    { name: "Creative", value: data.thinking_style.creative_score, fill: "#8b5cf6" },
-    { name: "Hybrid", value: data.thinking_style.hybrid_score, fill: "#ec4899" },
+    { name: "Logical", value: data.thinking_style.logical_score, fill: "var(--accent-blue-light)" },
+    { name: "Creative", value: data.thinking_style.creative_score, fill: "var(--assessment-chart-violet)" },
+    { name: "Hybrid", value: data.thinking_style.hybrid_score, fill: "var(--accent-pink)" },
   ];
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#10b981";
-    if (score >= 65) return "#3b82f6";
-    if (score >= 50) return "#f59e0b";
-    return "#ef4444";
+    if (score >= 80) return "var(--course-cta)";
+    if (score >= 65) return "var(--accent-blue-light)";
+    if (score >= 50) return "var(--warning-500)";
+    return "var(--error-500)";
   };
 
   return (
@@ -115,14 +115,14 @@ export function CognitiveWorkStyleSection({ data }: CognitiveWorkStyleSectionPro
             <ScatterChart
               margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
               <XAxis
                 type="number"
                 dataKey="x"
                 name="Execution"
                 domain={[0, 100]}
                 label={{ value: "Execution Score", position: "insideBottom", offset: -5 }}
-                tick={{ fontSize: 12, fill: "#64748b" }}
+                tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
               />
               <YAxis
                 type="number"
@@ -130,7 +130,7 @@ export function CognitiveWorkStyleSection({ data }: CognitiveWorkStyleSectionPro
                 name="Ideation"
                 domain={[0, 100]}
                 label={{ value: "Ideation Score", angle: -90, position: "insideLeft" }}
-                tick={{ fontSize: 12, fill: "#64748b" }}
+                tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
               />
               <Tooltip
                 cursor={{ strokeDasharray: "3 3" }}
@@ -148,7 +148,7 @@ export function CognitiveWorkStyleSection({ data }: CognitiveWorkStyleSectionPro
                   return null;
                 }}
               />
-              <Scatter name="Balance" data={quadrantData} fill="#6366f1">
+              <Scatter name="Balance" data={quadrantData} fill="var(--accent-indigo)">
                 {quadrantData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}

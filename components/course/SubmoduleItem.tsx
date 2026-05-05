@@ -107,7 +107,7 @@ export function SubmoduleItem({
         <Typography
           variant="body2"
           sx={{
-            color: "#ffffff",
+            color: "var(--font-light)",
             fontSize: { xs: "0.8125rem", sm: "0.875rem" },
             fontWeight: 600,
             mb: 1,
@@ -125,19 +125,19 @@ export function SubmoduleItem({
               py: 0.5,
               borderBottom:
                 index < contentBreakdown.length - 1
-                  ? "1px solid rgba(255, 255, 255, 0.1)"
+                  ? "1px solid color-mix(in srgb, var(--font-light) 12%, transparent)"
                   : "none",
             }}
           >
             <IconWrapper
               icon={item.icon}
               size={16}
-              color="#ffffff"
+              color="var(--font-light)"
             />
             <Typography
               variant="body2"
               sx={{
-                color: "#ffffff",
+                color: "var(--font-light)",
                 fontSize: { xs: "0.75rem", sm: "0.8125rem" },
                 fontWeight: 400,
                 flex: 1,
@@ -148,7 +148,7 @@ export function SubmoduleItem({
             <Typography
               variant="body2"
               sx={{
-                color: "#ffffff",
+                color: "var(--font-light)",
                 fontSize: { xs: "0.75rem", sm: "0.8125rem" },
                 fontWeight: 600,
               }}
@@ -162,7 +162,7 @@ export function SubmoduleItem({
       <Typography
         variant="body2"
         sx={{
-          color: "#ffffff",
+          color: "var(--font-light)",
           p: { xs: 1, sm: 1.25 },
           fontSize: { xs: "0.75rem", sm: "0.875rem" },
         }}
@@ -179,14 +179,16 @@ export function SubmoduleItem({
         gap: { xs: 1.5, sm: 2 },
         py: { xs: 1.25, sm: 1.5 },
         px: { xs: 0.5, sm: 0 },
-        borderBottom: "1px solid #f3f4f6",
+        borderBottom: "1px solid var(--border-default)",
         "&:last-child": {
           borderBottom: "none",
         },
         cursor: hasContent ? "pointer" : "not-allowed",
         opacity: hasContent ? 1 : 0.5,
         "&:hover": {
-          backgroundColor: hasContent ? "#f9fafb" : "transparent",
+          backgroundColor: hasContent
+            ? "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)"
+            : "transparent",
         },
       }}
       onClick={(e) => {
@@ -213,7 +215,7 @@ export function SubmoduleItem({
         <IconWrapper
           icon="mdi:book-open-variant-outline"
           size={22}
-          color="#6b7280"
+          color="var(--font-secondary)"
         />
         {isCompleted && (
           <Box
@@ -224,18 +226,18 @@ export function SubmoduleItem({
               width: { xs: 14, sm: 16 },
               height: { xs: 14, sm: 16 },
               borderRadius: "50%",
-              backgroundColor: "#10b981",
+              backgroundColor: "var(--success-500)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "2px solid #ffffff",
+              border: "2px solid var(--card-bg)",
               zIndex: 1,
             }}
           >
             <IconWrapper
               icon="mdi:check"
               size={10}
-              color="#ffffff"
+              color="var(--font-light)"
             />
           </Box>
         )}
@@ -244,7 +246,7 @@ export function SubmoduleItem({
         <Typography
           variant="body2"
           sx={{
-            color: "#1a1f2e",
+            color: "var(--font-primary)",
             fontWeight: 500,
             fontSize: { xs: "0.8125rem", sm: "0.875rem" },
             overflow: "hidden",
@@ -273,20 +275,20 @@ export function SubmoduleItem({
                   gap: 0.5,
                   px: 1,
                   py: 0.25,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   borderRadius: 1,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--card-bg)",
                 }}
               >
                 <IconWrapper
                   icon={item.icon}
                   size={14}
-                  color="#6b7280"
+                  color="var(--font-secondary)"
                 />
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#1a1f2e",
+                    color: "var(--font-primary)",
                     fontSize: { xs: "0.6875rem", sm: "0.75rem" },
                     fontWeight: 400,
                     whiteSpace: "nowrap",
@@ -310,7 +312,7 @@ export function SubmoduleItem({
         <Typography
           variant="body2"
           sx={{
-            color: "#9ca3af",
+            color: "var(--font-tertiary)",
             fontSize: { xs: "0.6875rem", sm: "0.75rem" },
           }}
         >
@@ -328,17 +330,18 @@ export function SubmoduleItem({
             componentsProps={{
               tooltip: {
                 sx: {
-                  backgroundColor: "#1a1f2e",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "var(--card-bg)",
+                  border: "1px solid var(--border-default)",
                   borderRadius: 2,
-                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  boxShadow:
+                    "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                   maxWidth: { xs: 280, sm: 300 },
                   p: 0,
                 },
               },
               arrow: {
                 sx: {
-                  color: "#1a1f2e",
+                  color: "var(--card-bg)",
                 },
               },
             }}
@@ -351,7 +354,8 @@ export function SubmoduleItem({
                 borderRadius: 0.5,
                 transition: "all 0.2s",
                 "&:hover": {
-                  backgroundColor: "rgba(107, 114, 128, 0.15)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--font-secondary) 15%, transparent)",
                   transform: "scale(1.1)",
                 },
               }}
@@ -365,7 +369,7 @@ export function SubmoduleItem({
               <IconWrapper
                 icon="mdi:information-outline"
                 size={16}
-                color="#9ca3af"
+                color="var(--font-tertiary)"
               />
             </Box>
           </Tooltip>

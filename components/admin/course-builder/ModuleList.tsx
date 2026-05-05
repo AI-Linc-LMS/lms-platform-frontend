@@ -156,7 +156,7 @@ export function ModuleList({
   return (
     <Box>
       {modules.length === 0 ? (
-        <Typography variant="body2" sx={{ color: "#9ca3af", py: 2 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-tertiary)", py: 2 }}>
           {t("adminCourseBuilder.noModulesYet")}
         </Typography>
       ) : (
@@ -168,7 +168,7 @@ export function ModuleList({
               onChange={() => handleAccordionChange(mod.id)}
               disableGutters
               sx={{
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--border-default)",
                 borderRadius: "8px !important",
                 boxShadow: "none",
                 "&::before": { display: "none" },
@@ -180,7 +180,7 @@ export function ModuleList({
                   <IconWrapper
                     icon="mdi:chevron-down"
                     size={22}
-                    color="#6366f1"
+                    color="var(--accent-indigo)"
                     style={{
                       transform: expandedId === mod.id ? "rotate(180deg)" : "rotate(0deg)",
                       transition: "transform 0.2s",
@@ -205,8 +205,8 @@ export function ModuleList({
                     alignItems: "center",
                     justifyContent: "center",
                     borderRadius: 1.5,
-                    bgcolor: "#6366f1",
-                    color: "#fff",
+                    bgcolor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
                   }}
                 >
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: "0.875rem" }}>
@@ -216,13 +216,13 @@ export function ModuleList({
 
                 {/* Title and description */}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#111827", lineHeight: 1.3 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}>
                     {mod.title}
                   </Typography>
                   {mod.description && (
                     <Typography
                       variant="caption"
-                      sx={{ color: "#6b7280", display: "block", mt: 0.25 }}
+                      sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}
                       noWrap
                     >
                       {mod.description}
@@ -243,9 +243,13 @@ export function ModuleList({
                         size="small"
                         onClick={() => openEdit(mod)}
                         sx={{
-                          color: "#6366f1",
-                          bgcolor: "#eef2ff",
-                          "&:hover": { bgcolor: "#e0e7ff" },
+                          color: "var(--accent-indigo)",
+                          bgcolor:
+                            "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                          "&:hover": {
+                            bgcolor:
+                              "color-mix(in srgb, var(--accent-indigo) 20%, var(--surface) 80%)",
+                          },
                         }}
                         role="button"
                         tabIndex={0}
@@ -265,9 +269,13 @@ export function ModuleList({
                         size="small"
                         onClick={() => setDeleteTarget(mod)}
                         sx={{
-                          color: "#ef4444",
-                          bgcolor: "#fef2f2",
-                          "&:hover": { bgcolor: "#fee2e2" },
+                          color: "var(--error-500)",
+                          bgcolor:
+                            "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                          "&:hover": {
+                            bgcolor:
+                              "color-mix(in srgb, var(--error-500) 20%, var(--surface) 80%)",
+                          },
                         }}
                         role="button"
                         tabIndex={0}
@@ -284,7 +292,9 @@ export function ModuleList({
                   </Box>
                 ) : null}
               </AccordionSummary>
-              <AccordionDetails sx={{ px: 2, pb: 2, pt: 0, borderTop: "1px solid #f3f4f6" }}>
+              <AccordionDetails
+                sx={{ px: 2, pb: 2, pt: 0, borderTop: "1px solid var(--border-default)" }}
+              >
                 {loadingSubs[mod.id] ? (
                   <LinearProgress sx={{ my: 2, height: 2, borderRadius: 1 }} />
                 ) : (
@@ -311,9 +321,13 @@ export function ModuleList({
             mt: 2,
             textTransform: "none",
             fontWeight: 600,
-            borderColor: "#6366f1",
-            color: "#6366f1",
-            "&:hover": { borderColor: "#4f46e5", bgcolor: "#eef2ff" },
+            borderColor: "var(--accent-indigo)",
+            color: "var(--accent-indigo)",
+            "&:hover": {
+              borderColor: "var(--accent-indigo-dark)",
+              bgcolor:
+                "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+            },
           }}
         >
           {t("adminCourseBuilder.addModule")}
@@ -352,7 +366,7 @@ export function ModuleList({
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeDialog} disabled={saving} sx={{ color: "#6b7280" }}>
+          <Button onClick={closeDialog} disabled={saving} sx={{ color: "var(--font-secondary)" }}>
             {t("adminCourseBuilder.cancel")}
           </Button>
           <Button
@@ -360,7 +374,16 @@ export function ModuleList({
             disabled={saving || !formData.title.trim()}
             variant="contained"
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
-            sx={{ bgcolor: "#6366f1" }}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {saving ? t("adminCourseBuilder.saving") : editingId !== null ? t("adminCourseBuilder.update") : t("adminCourseBuilder.create")}
           </Button>

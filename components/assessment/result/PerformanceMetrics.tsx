@@ -25,8 +25,8 @@ export function PerformanceMetrics({
       displayValue: cappedAccuracy,
       unit: "%",
       icon: "mdi:bullseye-arrow",
-      color: "#6366f1",
-      gradient: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+      color: "var(--accent-indigo)",
+      gradient: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
     },
     {
       label: "Test Duration",
@@ -34,8 +34,8 @@ export function PerformanceMetrics({
       displayValue: testDuration || 0,
       unit: " mins",
       icon: "mdi:timer-outline",
-      color: "#8b5cf6",
-      gradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+      color: "var(--assessment-chart-violet)",
+      gradient: "linear-gradient(135deg, var(--assessment-chart-violet) 0%, var(--accent-purple) 100%)",
     },
     {
       label: "Performance Percentile",
@@ -43,8 +43,8 @@ export function PerformanceMetrics({
       displayValue: cappedPercentile,
       unit: "%",
       icon: "mdi:chart-line-variant",
-      color: "#10b981",
-      gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+      color: "var(--course-cta)",
+      gradient: "linear-gradient(135deg, var(--course-cta) 0%, var(--assessment-success-strong) 100%)",
     },
   ];
 
@@ -54,7 +54,7 @@ export function PerformanceMetrics({
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
       }}
     >
@@ -66,12 +66,12 @@ export function PerformanceMetrics({
           mb: 3,
         }}
       >
-        <IconWrapper icon="mdi:chart-box-outline" size={24} color="#6366f1" />
+        <IconWrapper icon="mdi:chart-box-outline" size={24} color="var(--accent-indigo)" />
         <Typography
           variant="h6"
           sx={{
             fontWeight: 700,
-            color: "#1f2937",
+            color: "var(--font-primary-dark)",
           }}
         >
           Performance Metrics
@@ -92,8 +92,8 @@ export function PerformanceMetrics({
               textAlign: "center",
               p: 3,
               borderRadius: 2,
-              background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
-              border: "1px solid #e5e7eb",
+              background: "linear-gradient(135deg, var(--font-light) 0%, var(--surface) 100%)",
+              border: "1px solid var(--border-default)",
             }}
           >
             <Box
@@ -117,8 +117,8 @@ export function PerformanceMetrics({
                   background: `conic-gradient(
                     ${metric.color} 0%,
                     ${metric.color} ${metric.displayValue}%,
-                    #e5e7eb ${metric.displayValue}%,
-                    #e5e7eb 100%
+                    var(--border-default) ${metric.displayValue}%,
+                    var(--border-default) 100%
                   )`,
                   display: "flex",
                   alignItems: "center",
@@ -130,12 +130,12 @@ export function PerformanceMetrics({
                     width: 100,
                     height: 100,
                     borderRadius: "50%",
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "var(--font-light)",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 0 0 6px #ffffff",
+                    boxShadow: "0 0 0 6px var(--font-light)",
                   }}
                 >
                   <IconWrapper
@@ -169,7 +169,7 @@ export function PerformanceMetrics({
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontWeight: 600,
               }}
             >

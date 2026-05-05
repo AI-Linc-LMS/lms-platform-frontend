@@ -171,7 +171,10 @@ export function CourseManagementCard({
       sx={{
         p: 3,
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         mb: 3,
       }}
     >
@@ -182,7 +185,7 @@ export function CourseManagementCard({
           gap: 2,
           mb: 3,
           pb: 2,
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--border-default)",
         }}
       >
         <Box
@@ -190,15 +193,16 @@ export function CourseManagementCard({
             width: 48,
             height: 48,
             borderRadius: 2,
-            backgroundColor: "#eef2ff",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:book-education" size={24} color="#6366f1" />
+          <IconWrapper icon="mdi:book-education" size={24} color="var(--accent-indigo)" />
         </Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
           {t("manageStudents.courseManagement")}
         </Typography>
       </Box>
@@ -249,8 +253,9 @@ export function CourseManagementCard({
             onClick={handleEnroll}
             disabled={!selectedCourseId || loading || isEnrolled}
             sx={{
-              bgcolor: "#10b981",
-              "&:hover": { bgcolor: "#059669" },
+              bgcolor: "var(--success-500)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "color-mix(in srgb, var(--success-500) 85%, black 15%)" },
               minWidth: { xs: "100%", sm: 120 },
             }}
           >
@@ -263,8 +268,9 @@ export function CourseManagementCard({
             onClick={handleUnenroll}
             disabled={!selectedCourseId || loading || !isEnrolled}
             sx={{
-              bgcolor: "#f59e0b",
-              "&:hover": { bgcolor: "#d97706" },
+              bgcolor: "var(--warning-500)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "color-mix(in srgb, var(--warning-500) 85%, black 15%)" },
               minWidth: { xs: "100%", sm: 120 },
             }}
           >
@@ -277,11 +283,11 @@ export function CourseManagementCard({
             onClick={handleResetProgress}
             disabled={!selectedCourseId || loading || !isEnrolled}
             sx={{
-              borderColor: "#f59e0b",
-              color: "#f59e0b",
+              borderColor: "var(--warning-500)",
+              color: "var(--warning-500)",
               "&:hover": {
-                borderColor: "#d97706",
-                bgcolor: "#fef3c7",
+                borderColor: "color-mix(in srgb, var(--warning-500) 80%, black 20%)",
+                bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
               },
               minWidth: { xs: "100%", sm: 140 },
             }}

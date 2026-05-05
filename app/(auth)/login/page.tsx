@@ -245,7 +245,7 @@ export default function LoginPage() {
                       variant="body2"
                       sx={{
                         fontSize: "0.875rem",
-                        color: "#1e293b",
+                        color: "var(--font-primary)",
                         fontWeight: 400,
                       }}
                     >
@@ -288,7 +288,7 @@ export default function LoginPage() {
                   mb: 2,
                   background:
                     "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                  color: "white",
+                  color: "var(--font-light)",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
                   textTransform: "none",

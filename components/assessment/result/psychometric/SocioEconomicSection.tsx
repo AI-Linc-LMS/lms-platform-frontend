@@ -30,19 +30,19 @@ export function SocioEconomicSection({ data }: SocioEconomicSectionProps) {
       factor: "Resource\nAvailability",
       score: data.contextual_factors.resource_availability,
       benchmark: 70,
-      fill: "#3b82f6"
+      fill: "var(--accent-blue-light)"
     },
     {
       factor: "Support\nNetwork",
       score: data.contextual_factors.support_network_strength,
       benchmark: 70,
-      fill: "#10b981"
+      fill: "var(--course-cta)"
     },
     {
       factor: "Opportunity\nAccess",
       score: data.contextual_factors.opportunity_access,
       benchmark: 70,
-      fill: "#f59e0b"
+      fill: "var(--warning-500)"
     },
   ];
 
@@ -98,14 +98,14 @@ export function SocioEconomicSection({ data }: SocioEconomicSectionProps) {
         <div className="w-full h-[350px] mb-6">
           <ResponsiveContainer>
             <BarChart data={contextualData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
               <XAxis
                 dataKey="factor"
-                tick={{ fontSize: 11, fill: "#475569", fontWeight: 600 }}
+                tick={{ fontSize: 11, fill: "var(--font-muted)", fontWeight: 600 }}
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fontSize: 12, fill: "#64748b" }}
+                tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
                 label={{ value: "Score (0-100)", angle: -90, position: "insideLeft" }}
               />
               <Tooltip
@@ -129,7 +129,7 @@ export function SocioEconomicSection({ data }: SocioEconomicSectionProps) {
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Bar>
-              <Bar dataKey="benchmark" name="Average Benchmark" fill="#94a3b8" radius={[8, 8, 0, 0]} opacity={0.5} />
+              <Bar dataKey="benchmark" name="Average Benchmark" fill="var(--neutral-300)" radius={[8, 8, 0, 0]} opacity={0.5} />
             </BarChart>
           </ResponsiveContainer>
         </div>

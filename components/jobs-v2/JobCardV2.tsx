@@ -90,15 +90,18 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
         borderRadius: 2.5,
         marginBottom: 2,
         border: "1px solid",
-        borderColor: "rgba(99, 102, 241, 0.12)",
-        backgroundColor: "#ffffff",
+        borderColor:
+          "color-mix(in srgb, var(--accent-indigo) 18%, var(--border-default))",
+        backgroundColor: "var(--card-bg)",
         transition: "all 0.2s ease",
         width: "100%",
         maxWidth: "100%",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 6%, transparent)",
         "&:hover": {
-          borderColor: "rgba(99, 102, 241, 0.35)",
-          boxShadow: "0 8px 24px rgba(99, 102, 241, 0.12)",
+          borderColor:
+            "color-mix(in srgb, var(--accent-indigo) 40%, var(--border-default))",
+          boxShadow:
+            "0 8px 24px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
         },
       }}
     >
@@ -112,8 +115,8 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
             borderRadius: 1.5,
             border: "1px solid",
             borderColor: "divider",
-            backgroundColor: "#6366f1",
-            color: "#ffffff",
+            backgroundColor: "var(--accent-indigo)",
+            color: "var(--font-light)",
             fontSize: { xs: "1rem", md: "1.25rem" },
             fontWeight: 600,
             flexShrink: 0,
@@ -138,7 +141,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
                   fontWeight: 600,
                   fontSize: { xs: "1rem", sm: "1.1rem" },
                   mb: 0.5,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                   lineHeight: 1.3,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -168,13 +171,13 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
                   size="small"
                   disabled={favoriteLoading}
                   sx={{
-                    color: isFavorite ? "#6366f1" : "text.secondary",
+                    color: isFavorite ? "var(--accent-indigo)" : "text.secondary",
                     "&:hover": {
-                      backgroundColor: "rgba(99, 102, 241, 0.08)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                     },
                   }}
                 >
-                  <Heart size={18} fill={isFavorite ? "#6366f1" : "none"} />
+                  <Heart size={18} fill={isFavorite ? "var(--accent-indigo)" : "none"} />
                 </IconButton>
               </Tooltip>
             )}
@@ -191,7 +194,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
           >
             {job.location && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <MapPin size={14} style={{ color: "#6b7280" }} />
+                <MapPin size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -202,7 +205,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
             )}
             {job.years_of_experience && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Briefcase size={14} style={{ color: "#6b7280" }} />
+                <Briefcase size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -213,7 +216,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
             )}
             {passoutYear && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <GraduationCap size={14} style={{ color: "#6b7280" }} />
+                <GraduationCap size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -224,7 +227,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
             )}
             {job.salary && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Banknote size={14} style={{ color: "#6b7280" }} />
+                <Banknote size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{
@@ -239,7 +242,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
             )}
             {job.created_at && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Clock size={14} style={{ color: "#6b7280" }} />
+                <Clock size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -279,13 +282,13 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
                   sx={{
                     height: 26,
                     fontSize: "0.75rem",
-                    backgroundColor: "rgba(99, 102, 241, 0.04)",
-                    color: "#6366f1",
-                    borderColor: "rgba(99, 102, 241, 0.3)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                    color: "var(--accent-indigo)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                     fontWeight: 500,
                     "&:hover": {
-                      backgroundColor: "rgba(99, 102, 241, 0.1)",
-                      borderColor: "#6366f1",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                      borderColor: "var(--accent-indigo)",
                     },
                   }}
                 />
@@ -308,8 +311,8 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
               endIcon={<ChevronRight size={16} />}
               sx={{
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                color: "#ffffff",
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
                 textTransform: "none",
                 px: { xs: 2, md: 2.5 },
                 py: 0.75,
@@ -319,8 +322,8 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
                 flex: { xs: "1 1 auto", sm: "0 0 auto" },
                 minWidth: { xs: "auto", sm: 140 },
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
-                  boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)",
+                  backgroundColor: "var(--accent-indigo-dark)",
+                  boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
                 },
               }}
             >

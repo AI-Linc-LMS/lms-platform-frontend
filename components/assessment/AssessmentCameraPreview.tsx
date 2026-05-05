@@ -24,13 +24,13 @@ export function AssessmentCameraPreview({
         return {
           icon: "mdi:alert-circle",
           message: "No Face Detected",
-          color: "#ef4444",
+          color: "var(--error-500)",
         };
       } else if (faceCount > 1) {
         return {
           icon: "mdi:account-multiple-alert",
           message: `${faceCount} Faces Detected`,
-          color: "#ef4444",
+          color: "var(--error-500)",
         };
       }
     }
@@ -81,10 +81,12 @@ export function AssessmentCameraPreview({
         borderRadius: 2,
         overflow: "hidden",
         border: visible
-          ? `2px solid ${violationInfo ? violationInfo.color : "#059669"}`
+          ? `2px solid ${violationInfo ? violationInfo.color : "var(--assessment-success-strong)"}`
           : "none",
-        backgroundColor: "#000",
-        boxShadow: visible ? "0 4px 12px rgba(0,0,0,0.3)" : "none",
+        backgroundColor: "var(--assessment-video-letterbox-bg)",
+        boxShadow: visible
+          ? "0 4px 12px color-mix(in srgb, var(--font-dark) 32%, transparent)"
+          : "none",
         opacity: visible ? 1 : 0,
         visibility: visible ? "visible" : "hidden",
         pointerEvents: visible ? "auto" : "none",
@@ -111,7 +113,7 @@ export function AssessmentCameraPreview({
           position: "absolute",
           top: 4,
           left: 4,
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          backgroundColor: "color-mix(in srgb, var(--font-dark) 72%, transparent)",
           borderRadius: 1,
           px: 1,
           py: 0.5,
@@ -119,7 +121,7 @@ export function AssessmentCameraPreview({
       >
         <Typography
           variant="caption"
-          sx={{ color: "#fff", fontWeight: 600, fontSize: "0.7rem" }}
+          sx={{ color: "var(--font-light)", fontWeight: 600, fontSize: "0.7rem" }}
         >
           CAMERA
         </Typography>
@@ -137,7 +139,7 @@ export function AssessmentCameraPreview({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backgroundColor: "color-mix(in srgb, var(--font-dark) 82%, transparent)",
             borderRadius: 2,
             px: 2,
             py: 1.5,

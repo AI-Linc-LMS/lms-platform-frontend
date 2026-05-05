@@ -34,8 +34,9 @@ export function StudentsPagination({
         justifyContent: "space-between",
         alignItems: { xs: "flex-start", sm: "center" },
         gap: 2,
-        borderTop: "1px solid #e5e7eb",
-        backgroundColor: "#fafafa",
+        borderTop: "1px solid var(--border-default)",
+        backgroundColor:
+          "color-mix(in srgb, var(--font-primary) 2.5%, var(--card-bg))",
       }}
     >
       <Box
@@ -49,7 +50,7 @@ export function StudentsPagination({
         <Typography
           variant="body2"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
           }}
         >

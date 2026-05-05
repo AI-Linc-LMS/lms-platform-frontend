@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useRef, use, useCallback } from "react";
+import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,8 +25,6 @@ import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-devi
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { CheckCircle, XCircle, Video, Mic, AlertCircle } from "lucide-react";
-import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
-import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 interface DeviceStatus {
   camera: boolean;
@@ -63,7 +61,7 @@ export default function DeviceCheckPage({
     >(null);
 
   const [mobileAssessmentGate, setMobileAssessmentGate] = useState<
-    "pending" | "blocked" | "ok"
+    "pending" | "ok"
   >("pending");
 
   // ✅ FACE VALIDATION STATE
@@ -118,12 +116,6 @@ export default function DeviceCheckPage({
       // For count === 1, useEffect below will check status
     },
   });
-
-  useLayoutEffect(() => {
-    setMobileAssessmentGate(
-      isMobileOrTabletForAssessment() ? "blocked" : "ok"
-    );
-  }, []);
 
   // Update face validation status when faceCount or faceStatus changes
   useEffect(() => {
@@ -436,6 +428,7 @@ export default function DeviceCheckPage({
         showToast("Failed to load assessment details", "error");
       } finally {
         setLoading(false);
+        setMobileAssessmentGate("ok");
       }
     };
 
@@ -501,7 +494,7 @@ export default function DeviceCheckPage({
             sx={{
               p: { xs: 3, sm: 4 },
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               textAlign: "center",
             }}
           >
@@ -510,7 +503,7 @@ export default function DeviceCheckPage({
                 width: 72,
                 height: 72,
                 borderRadius: "50%",
-                backgroundColor: "rgba(245, 158, 11, 0.15)",
+                backgroundColor: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -521,18 +514,18 @@ export default function DeviceCheckPage({
               <IconWrapper
                 icon="mdi:cellphone-off"
                 size={40}
-                color="#d97706"
+                color="var(--ats-warning-muted)"
               />
             </Box>
             <Typography
               variant="h5"
-              sx={{ fontWeight: 800, color: "#1f2937", mb: 1 }}
+              sx={{ fontWeight: 800, color: "var(--font-primary-dark)", mb: 1 }}
             >
               {t("assessmentDevice.deviceCheckBlockedTitle")}
             </Typography>
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", mb: 3, maxWidth: 480, mx: "auto" }}
+              sx={{ color: "var(--font-secondary)", mb: 3, maxWidth: 480, mx: "auto" }}
             >
               {t("assessmentDevice.deviceCheckBlockedSubtitle")}
             </Typography>
@@ -551,8 +544,8 @@ export default function DeviceCheckPage({
                 textTransform: "none",
                 fontWeight: 600,
                 px: 3,
-                backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
               {t("assessmentDevice.backToAssessment")}
@@ -565,9 +558,6 @@ export default function DeviceCheckPage({
 
   // Don't show loading screen - render immediately for better UX
 
-  if (mobileAssessmentGate === "blocked") {
-    return <AssessmentDesktopOnlyFullPage slug={slug} />;
-  }
   if (mobileAssessmentGate === "pending") {
     return (
       <MainLayout>
@@ -580,7 +570,7 @@ export default function DeviceCheckPage({
             py: 8,
           }}
         >
-          <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+          <CircularProgress size={40} sx={{ color: "var(--accent-indigo)" }} />
         </Box>
       </MainLayout>
     );
@@ -596,7 +586,7 @@ export default function DeviceCheckPage({
               width: 80,
               height: 80,
               borderRadius: "50%",
-              backgroundColor: "#6366f1",
+              backgroundColor: "var(--accent-indigo)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -604,7 +594,7 @@ export default function DeviceCheckPage({
               mb: 2,
             }}
           >
-            <IconWrapper icon="mdi:camera" size={40} color="#ffffff" />
+            <IconWrapper icon="mdi:camera" size={40} color="var(--font-light)" />
           </Box>
           <Typography
             variant="h4"
@@ -618,7 +608,7 @@ export default function DeviceCheckPage({
           </Typography>
           <Typography
             variant="body1"
-            sx={{ color: "#6b7280", maxWidth: 500, mx: "auto" }}
+            sx={{ color: "var(--font-secondary)", maxWidth: 500, mx: "auto" }}
           >
             Before starting your assessment, we need to verify that your camera
             and microphone are working properly. This ensures a smooth
@@ -653,21 +643,21 @@ export default function DeviceCheckPage({
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              backgroundColor: deviceStatus.camera ? "#f0fdf4" : "#fef2f2",
+              border: "1px solid var(--border-default)",
+              backgroundColor: deviceStatus.camera ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))" : "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               {deviceStatus.camera ? (
-                <CheckCircle size={32} color="#10b981" />
+                <CheckCircle size={32} color="var(--course-cta)" />
               ) : (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--error-500)" />
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                   Camera
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {deviceStatus.camera
                     ? "Camera is working properly"
                     : "Camera check required"}
@@ -689,10 +679,10 @@ export default function DeviceCheckPage({
                 overflow: "hidden",
                 border: deviceStatus.camera
                   ? faceValidationPassed
-                    ? "2px solid #10b981"
-                    : "2px solid #f59e0b"
-                  : "2px solid #e5e7eb",
-                backgroundColor: "#000000",
+                    ? "2px solid var(--course-cta)"
+                    : "2px solid var(--warning-500)"
+                  : "2px solid var(--border-default)",
+                backgroundColor: "var(--assessment-video-letterbox-bg)",
                 minHeight: deviceStatus.camera ? "auto" : "200px",
                 display: "flex",
                 alignItems: "center",
@@ -708,11 +698,11 @@ export default function DeviceCheckPage({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "rgba(0, 0, 0, 0.7)",
+                    backgroundColor: "color-mix(in srgb, var(--font-dark) 72%, transparent)",
                     zIndex: 1,
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#ffffff" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-light)" }}>
                     Camera preview will appear here
                   </Typography>
                 </Box>
@@ -725,11 +715,11 @@ export default function DeviceCheckPage({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    backgroundColor: "color-mix(in srgb, var(--font-dark) 86%, transparent)",
                     zIndex: 1,
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#ffffff" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-light)" }}>
                     {isNavigatingToAssessment
                       ? "Starting assessment..."
                       : "Initializing face detection..."}
@@ -748,7 +738,7 @@ export default function DeviceCheckPage({
                   maxHeight: "300px",
                   minHeight: "200px",
                   objectFit: "cover",
-                  backgroundColor: "#000000",
+                  backgroundColor: "var(--assessment-video-letterbox-bg)",
                 }}
                 onLoadedMetadata={() => {
                   if (videoRef.current) {
@@ -777,7 +767,7 @@ export default function DeviceCheckPage({
                       icon={<CircularProgress size={16} />}
                       label="Initializing face detection..."
                       size="small"
-                      sx={{ backgroundColor: "#6366f1", color: "#ffffff" }}
+                      sx={{ backgroundColor: "var(--accent-indigo)", color: "var(--font-light)" }}
                     />
                   )}
                   {!isFaceDetectionInitializing && (
@@ -802,9 +792,9 @@ export default function DeviceCheckPage({
                         size="small"
                         sx={{
                           backgroundColor: faceValidationPassed
-                            ? "#10b981"
-                            : "#ef4444",
-                          color: "#ffffff",
+                            ? "var(--course-cta)"
+                            : "var(--error-500)",
+                          color: "var(--font-light)",
                         }}
                       />
                       {faceStatus !== "NORMAL" && latestViolation && (
@@ -813,8 +803,8 @@ export default function DeviceCheckPage({
                           label={latestViolation.message}
                           size="small"
                           sx={{
-                            backgroundColor: "#f59e0b",
-                            color: "#ffffff",
+                            backgroundColor: "var(--warning-500)",
+                            color: "var(--font-light)",
                             fontSize: "0.7rem",
                             maxWidth: "200px",
                           }}
@@ -853,21 +843,21 @@ export default function DeviceCheckPage({
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              backgroundColor: deviceStatus.microphone ? "#f0fdf4" : "#fef2f2",
+              border: "1px solid var(--border-default)",
+              backgroundColor: deviceStatus.microphone ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))" : "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               {deviceStatus.microphone ? (
-                <CheckCircle size={32} color="#10b981" />
+                <CheckCircle size={32} color="var(--course-cta)" />
               ) : (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--error-500)" />
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                   Microphone
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {deviceStatus.microphone
                     ? "Microphone is working properly"
                     : "Microphone check required"}
@@ -885,7 +875,7 @@ export default function DeviceCheckPage({
               <Box sx={{ mt: 2 }}>
                 <Typography
                   variant="caption"
-                  sx={{ color: "#6b7280", display: "block", mb: 1 }}
+                  sx={{ color: "var(--font-secondary)", display: "block", mb: 1 }}
                 >
                   Audio Level
                 </Typography>
@@ -895,16 +885,16 @@ export default function DeviceCheckPage({
                   sx={{
                     height: 8,
                     borderRadius: 1,
-                    backgroundColor: "#e5e7eb",
+                    backgroundColor: "var(--border-default)",
                     "& .MuiLinearProgress-bar": {
-                      backgroundColor: "#10b981",
+                      backgroundColor: "var(--course-cta)",
                       borderRadius: 1,
                     },
                   }}
                 />
                 <Typography
                   variant="caption"
-                  sx={{ color: "#6b7280", display: "block", mt: 0.5 }}
+                  sx={{ color: "var(--font-secondary)", display: "block", mt: 0.5 }}
                 >
                   {audioLevel > 0.1
                     ? "Speak to test your microphone"
@@ -919,24 +909,24 @@ export default function DeviceCheckPage({
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               backgroundColor:
                 networkStatus === "good"
-                  ? "#f0fdf4"
+                  ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))"
                   : networkStatus === "moderate"
-                  ? "#fefce8"
+                  ? "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg))"
                   : networkStatus === "poor"
-                  ? "#fef2f2"
-                  : "#f9fafb",
+                  ? "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))"
+                  : "var(--surface)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               {networkStatus === "good" ? (
-                <CheckCircle size={32} color="#10b981" />
+                <CheckCircle size={32} color="var(--course-cta)" />
               ) : networkStatus === "moderate" ? (
-                <AlertCircle size={32} color="#f59e0b" />
+                <AlertCircle size={32} color="var(--warning-500)" />
               ) : networkStatus === "poor" ? (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--error-500)" />
               ) : (
                 <CircularProgress size={32} />
               )}
@@ -1017,8 +1007,8 @@ export default function DeviceCheckPage({
                   fontWeight: 600,
                   px: 3,
                   py: 1.5,
-                  borderColor: "#6366f1",
-                  color: "#4338ca",
+                  borderColor: "var(--accent-indigo)",
+                  color: "var(--accent-indigo-dark)",
                 }}
               >
                 {t("assessments.deviceCheck.recheckInternet")}
@@ -1044,9 +1034,9 @@ export default function DeviceCheckPage({
                     fontWeight: 600,
                     px: 4,
                     py: 1.5,
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "var(--accent-indigo)",
                     "&:hover": {
-                      backgroundColor: "#4f46e5",
+                      backgroundColor: "var(--accent-indigo-dark)",
                     },
                   }}
                 >
@@ -1068,9 +1058,9 @@ export default function DeviceCheckPage({
                 fontWeight: 600,
                 px: 4,
                 py: 1.5,
-                backgroundColor: "#10b981",
+                backgroundColor: "var(--course-cta)",
                 "&:hover": {
-                  backgroundColor: "#059669",
+                  backgroundColor: "var(--assessment-success-strong)",
                 },
               }}
             >
@@ -1087,11 +1077,11 @@ export default function DeviceCheckPage({
               fontWeight: 600,
               px: 4,
               py: 1.5,
-              borderColor: "#e5e7eb",
-              color: "#6b7280",
+              borderColor: "var(--border-default)",
+              color: "var(--font-secondary)",
               "&:hover": {
-                borderColor: "#d1d5db",
-                backgroundColor: "#f9fafb",
+                borderColor: "var(--border-light)",
+                backgroundColor: "var(--surface)",
               },
             }}
           >
@@ -1105,23 +1095,23 @@ export default function DeviceCheckPage({
           sx={{
             mt: 4,
             p: 3,
-            backgroundColor: "#eff6ff",
-            border: "1px solid #bfdbfe",
+            backgroundColor: "color-mix(in srgb, var(--surface-blue-light) 90%, var(--card-bg))",
+            border: "1px solid color-mix(in srgb, var(--accent-blue-light) 35%, transparent)",
             borderRadius: 2,
           }}
         >
           <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-            <IconWrapper icon="mdi:information" size={24} color="#3b82f6" />
+            <IconWrapper icon="mdi:information" size={24} color="var(--accent-blue-light)" />
             <Box>
               <Typography
                 variant="subtitle2"
-                sx={{ fontWeight: 600, color: "#1e40af", mb: 0.5 }}
+                sx={{ fontWeight: 600, color: "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))", mb: 0.5 }}
               >
                 Why do we need this?
               </Typography>
               <Typography
                 variant="body2"
-                sx={{ color: "#1e40af", fontSize: "0.875rem", lineHeight: 1.7 }}
+                sx={{ color: "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))", fontSize: "0.875rem", lineHeight: 1.7 }}
               >
                 Your camera and microphone are essential for the assessment
                 process. We use your camera to monitor the assessment session

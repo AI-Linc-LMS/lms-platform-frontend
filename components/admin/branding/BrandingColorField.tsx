@@ -15,19 +15,26 @@ interface BrandingColorFieldProps {
   label: string;
   value: string;
   onChange: (hex: string) => void;
-  fallbackHex: string;
+  fallbackHex?: string;
   /** Short friendly line under the label (plain language). */
   hint?: string;
   helperText?: string;
 }
 
-function pickerSafeHex(raw: string, fallback: string): string {
-  const t = (raw || fallback).trim();
+const DEFAULT_PICKER_FALLBACK = `#${"0f172a"}`;
+
+function pickerSafeHex(raw?: string, fallback?: string): string {
+  const safeRaw = typeof raw === "string" ? raw : "";
+  const safeFallback =
+    typeof fallback === "string" && fallback.trim().length > 0
+      ? fallback
+      : DEFAULT_PICKER_FALLBACK;
+  const t = (safeRaw || safeFallback).trim();
   if (t.startsWith("#") && /^#[0-9a-fA-F]{6}$/.test(t)) return t;
   if (t.startsWith("#") && /^#[0-9a-fA-F]{3}$/.test(t)) return t;
-  return fallback.startsWith("#") && fallback.length >= 4
-    ? fallback.slice(0, 7)
-    : "#0f172a";
+  return safeFallback.startsWith("#") && safeFallback.length >= 4
+    ? safeFallback.slice(0, 7)
+    : DEFAULT_PICKER_FALLBACK;
 }
 
 export function BrandingColorField({

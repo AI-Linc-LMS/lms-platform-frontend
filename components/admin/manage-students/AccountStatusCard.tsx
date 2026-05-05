@@ -30,12 +30,15 @@ export function AccountStatusCard({
       sx={{
         p: 3,
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
       }}
     >
       <Typography
         variant="h6"
-        sx={{ fontWeight: 600, color: "#111827", mb: 2 }}
+        sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 2 }}
       >
         {t("manageStudents.accountStatus")}
       </Typography>
@@ -53,9 +56,11 @@ export function AccountStatusCard({
             justifyContent: "space-between",
             p: 2,
             borderRadius: 2,
-            backgroundColor: personal_info.is_active ? "#f0fdf4" : "#fef2f2",
+            backgroundColor: personal_info.is_active
+              ? "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)"
+              : "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
             border: `2px solid ${
-              personal_info.is_active ? "#10b981" : "#ef4444"
+              personal_info.is_active ? "var(--success-500)" : "var(--error-500)"
             }`,
           }}
         >
@@ -67,21 +72,21 @@ export function AccountStatusCard({
               color="primary"
               sx={{
                 "& .MuiSwitch-switchBase.Mui-checked": {
-                  color: "#10b981",
+                  color: "var(--success-500)",
                 },
                 "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                  backgroundColor: "#10b981",
+                  backgroundColor: "var(--success-500)",
                 },
               }}
             />
             <Box>
               <Typography
                 variant="body2"
-                sx={{ fontWeight: 500, color: "#111827" }}
+                sx={{ fontWeight: 500, color: "var(--font-primary)" }}
               >
                 {personal_info.is_active ? t("manageStudents.active") : t("manageStudents.inactive")}
               </Typography>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {personal_info.is_active
                   ? t("manageStudents.studentCanAccess")
                   : t("manageStudents.studentAccessDisabled")}
@@ -91,8 +96,10 @@ export function AccountStatusCard({
           <Chip
             label={personal_info.is_active ? t("manageStudents.active") : t("manageStudents.inactive")}
             sx={{
-              backgroundColor: personal_info.is_active ? "#d1fae5" : "#fee2e2",
-              color: personal_info.is_active ? "#065f46" : "#991b1b",
+              backgroundColor: personal_info.is_active
+                ? "color-mix(in srgb, var(--success-500) 18%, var(--surface) 82%)"
+                : "color-mix(in srgb, var(--error-500) 18%, var(--surface) 82%)",
+              color: personal_info.is_active ? "var(--success-500)" : "var(--error-500)",
               fontWeight: 600,
               fontSize: "0.875rem",
             }}

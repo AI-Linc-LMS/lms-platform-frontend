@@ -109,29 +109,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         return false;
       }
 
-      // Prevent F11 / F12 (fullscreen / devtools)
-      if (event.key === "F11" || event.key === "F12") {
-        event.preventDefault();
-        return false;
-      }
-
-      // Prevent Ctrl+Shift+I (dev tools)
-      if (event.ctrlKey && event.shiftKey && event.key === "I") {
-        event.preventDefault();
-        return false;
-      }
-
-      // Prevent Ctrl+Shift+J (console)
-      if (event.ctrlKey && event.shiftKey && event.key === "J") {
-        event.preventDefault();
-        return false;
-      }
-
-      // Prevent Ctrl+Shift+C (inspect element)
-      if (event.ctrlKey && event.shiftKey && (event.key === "C" || event.key === "c")) {
-        event.preventDefault();
-        return false;
-      }
+      // Devtools shortcut restrictions intentionally disabled.
     };
 
     // Prevent back navigation

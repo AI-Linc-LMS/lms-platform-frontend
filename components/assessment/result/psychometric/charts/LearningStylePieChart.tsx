@@ -24,17 +24,17 @@ export function LearningStylePieChart({ learningStyle }: LearningStylePieChartPr
     {
       name: "Visual",
       value: learningStyle.visual_percentage,
-      color: "#2563EB",
+      color: "var(--assessment-chart-blue)",
     },
     {
       name: "Auditory",
       value: learningStyle.auditory_percentage,
-      color: "#8b5cf6",
+      color: "var(--assessment-chart-violet)",
     },
     {
       name: "Kinesthetic",
       value: learningStyle.kinesthetic_percentage,
-      color: "#16A34A",
+      color: "var(--assessment-chart-green)",
     },
   ];
 
@@ -99,7 +99,7 @@ export function LearningStylePieChart({ learningStyle }: LearningStylePieChartPr
               labelLine={false}
               label={CustomLabel}
               outerRadius={100}
-              fill="#8884d8"
+              fill="var(--assessment-chart-secondary-fill)"
               dataKey="value"
             >
               {data.map((entry, index) => (

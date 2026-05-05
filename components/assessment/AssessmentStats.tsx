@@ -29,9 +29,9 @@ export function AssessmentStats({
         elevation={0}
         sx={{
           p: 2.5,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           borderRadius: 2,
-          background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+          background: "linear-gradient(135deg, var(--font-light) 0%, var(--surface) 100%)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -40,7 +40,7 @@ export function AssessmentStats({
               width: 40,
               height: 40,
               borderRadius: 1.5,
-              backgroundColor: "rgba(99, 102, 241, 0.1)",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -49,7 +49,7 @@ export function AssessmentStats({
             <IconWrapper
               icon="mdi:clipboard-list-outline"
               size={22}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
           </Box>
           <Box>
@@ -57,7 +57,7 @@ export function AssessmentStats({
               variant="h5"
               sx={{
                 fontWeight: 700,
-                color: "#1f2937",
+                color: "var(--font-primary-dark)",
                 lineHeight: 1,
               }}
             >
@@ -66,7 +66,7 @@ export function AssessmentStats({
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 fontWeight: 500,
               }}
@@ -81,9 +81,9 @@ export function AssessmentStats({
         elevation={0}
         sx={{
           p: 2.5,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           borderRadius: 2,
-          background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+          background: "linear-gradient(135deg, var(--font-light) 0%, var(--surface) 100%)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -92,7 +92,7 @@ export function AssessmentStats({
               width: 40,
               height: 40,
               borderRadius: 1.5,
-              backgroundColor: "rgba(59, 130, 246, 0.1)",
+              backgroundColor: "color-mix(in srgb, var(--accent-blue-light) 12%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -101,7 +101,7 @@ export function AssessmentStats({
             <IconWrapper
               icon="mdi:play-circle-outline"
               size={22}
-              color="#3b82f6"
+              color="var(--accent-blue-light)"
             />
           </Box>
           <Box>
@@ -109,7 +109,7 @@ export function AssessmentStats({
               variant="h5"
               sx={{
                 fontWeight: 700,
-                color: "#1f2937",
+                color: "var(--font-primary-dark)",
                 lineHeight: 1,
               }}
             >
@@ -118,7 +118,7 @@ export function AssessmentStats({
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 fontWeight: 500,
               }}
@@ -133,9 +133,9 @@ export function AssessmentStats({
         elevation={0}
         sx={{
           p: 2.5,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           borderRadius: 2,
-          background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+          background: "linear-gradient(135deg, var(--font-light) 0%, var(--surface) 100%)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -144,7 +144,7 @@ export function AssessmentStats({
               width: 40,
               height: 40,
               borderRadius: 1.5,
-              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              backgroundColor: "color-mix(in srgb, var(--course-cta) 12%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -153,7 +153,7 @@ export function AssessmentStats({
             <IconWrapper
               icon="mdi:check-circle-outline"
               size={22}
-              color="#10b981"
+              color="var(--course-cta)"
             />
           </Box>
           <Box>
@@ -161,7 +161,7 @@ export function AssessmentStats({
               variant="h5"
               sx={{
                 fontWeight: 700,
-                color: "#1f2937",
+                color: "var(--font-primary-dark)",
                 lineHeight: 1,
               }}
             >
@@ -170,7 +170,7 @@ export function AssessmentStats({
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 fontWeight: 500,
               }}

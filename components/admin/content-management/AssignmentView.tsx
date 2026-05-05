@@ -24,9 +24,9 @@ export function AssignmentView({ content }: AssignmentViewProps) {
         elevation={0}
         sx={{
           p: { xs: 3, sm: 4, md: 5 },
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--card-bg)",
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           height: "100%",
           overflow: "auto",
         }}
@@ -39,8 +39,8 @@ export function AssignmentView({ content }: AssignmentViewProps) {
               mb: 2,
               px: 1.5,
               py: 0.5,
-              bgcolor: "#f3f4f6",
-              color: "#6b7280",
+              bgcolor: "var(--surface)",
+              color: "var(--font-secondary)",
               borderRadius: 1,
               fontWeight: 600,
             }}
@@ -52,7 +52,7 @@ export function AssignmentView({ content }: AssignmentViewProps) {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             mb: 3,
             fontSize: { xs: "1.5rem", sm: "2rem" },
           }}
@@ -63,7 +63,7 @@ export function AssignmentView({ content }: AssignmentViewProps) {
           variant="body1"
           sx={{
             lineHeight: 1.8,
-            color: "#374151",
+            color: "var(--font-secondary)",
             whiteSpace: "pre-wrap",
             fontSize: { xs: "0.9375rem", sm: "1rem" },
           }}

@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Paper, Typography, Button, Chip } from "@mui/material";
+import { Box, Paper, Typography, Button, Chip, Link } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { SubjectiveResponseItem } from "@/lib/services/assessment.service";
+import {
+  mergeSubjectiveApiRowIntoPayload,
+  normalizeSubjectiveAnswer,
+  parseSubjectiveAnswerPayload,
+  subjectivePayloadHasContent,
+} from "@/utils/assessment.utils";
 
 interface SubjectiveResponsesSectionProps {
   subjectiveResponses: SubjectiveResponseItem[];
@@ -17,11 +23,6 @@ function formatQuestionTypeLabel(type: string) {
   return type.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
-function getSubjectiveAnswerText(q: SubjectiveResponseItem): string {
-  const raw = q.your_answer ?? q.answer ?? "";
-  return typeof raw === "string" ? raw : String(raw ?? "");
-}
-
 export function SubjectiveResponsesSection({
   subjectiveResponses,
 }: SubjectiveResponsesSectionProps) {
@@ -33,8 +34,10 @@ export function SubjectiveResponsesSection({
 
   if (!q) return null;
 
-  const answerText = getSubjectiveAnswerText(q);
-  const answered = Boolean(answerText.trim());
+  const mergedPayload = mergeSubjectiveApiRowIntoPayload(q);
+  const answerText = normalizeSubjectiveAnswer(mergedPayload);
+  const parsed = parseSubjectiveAnswerPayload(mergedPayload);
+  const answered = subjectivePayloadHasContent(q.answer_mode, mergedPayload);
   const feedbackText =
     typeof q.feedback === "string" ? q.feedback.trim() : "";
   const hasFeedback = feedbackText.length > 0;
@@ -46,9 +49,9 @@ export function SubjectiveResponsesSection({
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         borderRadius: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         mb: 4,
       }}
     >
@@ -56,7 +59,7 @@ export function SubjectiveResponsesSection({
         variant="h6"
         sx={{
           fontWeight: 700,
-          color: "#1a1f2e",
+          color: "var(--font-primary)",
           mb: 2,
           fontSize: { xs: "1.125rem", sm: "1.25rem" },
         }}
@@ -72,9 +75,9 @@ export function SubjectiveResponsesSection({
           mb: 2,
           px: { xs: 1, sm: 2 },
           py: 1.5,
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--surface)",
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
         }}
       >
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
@@ -83,8 +86,8 @@ export function SubjectiveResponsesSection({
               variant="outlined"
               onClick={() => setCurrentIndex((i) => i - 1)}
               sx={{
-                borderColor: "#6366f1",
-                color: "#6366f1",
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
                 px: 2,
                 py: 1,
                 minWidth: "100px",
@@ -93,8 +96,9 @@ export function SubjectiveResponsesSection({
                 borderRadius: 2,
                 textTransform: "none",
                 "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "#6366f115",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
               }}
             >
@@ -103,7 +107,7 @@ export function SubjectiveResponsesSection({
           )}
         </Box>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <Typography variant="body2" sx={{ color: "#6b7280", fontWeight: 600, fontSize: "0.9375rem" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 600, fontSize: "0.9375rem" }}>
             Question {currentIndex + 1} of {total}
           </Typography>
         </Box>
@@ -113,8 +117,9 @@ export function SubjectiveResponsesSection({
               variant="contained"
               onClick={() => setCurrentIndex((i) => i + 1)}
               sx={{
-                background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                color: "#ffffff",
+                background:
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+                color: "var(--font-light)",
                 px: 2.5,
                 py: 1,
                 minWidth: "100px",
@@ -122,10 +127,13 @@ export function SubjectiveResponsesSection({
                 fontWeight: 600,
                 borderRadius: 2,
                 textTransform: "none",
-                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                boxShadow:
+                  "0 4px 12px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                 "&:hover": {
-                  background: "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)",
-                  boxShadow: "0 6px 16px rgba(99, 102, 241, 0.4)",
+                  background:
+                    "linear-gradient(135deg, var(--accent-indigo-dark) 0%, var(--accent-indigo) 100%)",
+                  boxShadow:
+                    "0 6px 16px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
                   transform: "translateY(-1px)",
                 },
                 transition: "all 0.2s ease-in-out",
@@ -141,8 +149,8 @@ export function SubjectiveResponsesSection({
         sx={{
           p: 2,
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#fafafa",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2 }}>
@@ -151,7 +159,9 @@ export function SubjectiveResponsesSection({
               minWidth: 36,
               height: 36,
               borderRadius: "50%",
-              backgroundColor: answered ? "#6366f1" : "#e5e7eb",
+              backgroundColor: answered
+                ? "var(--accent-indigo)"
+                : "var(--border-default)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -161,7 +171,7 @@ export function SubjectiveResponsesSection({
             <IconWrapper
               icon={answered ? "mdi:text-box-check-outline" : "mdi:text-box-remove-outline"}
               size={20}
-              color={answered ? "#ffffff" : "#9ca3af"}
+              color={answered ? "var(--font-light)" : "var(--font-tertiary)"}
             />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -171,33 +181,62 @@ export function SubjectiveResponsesSection({
                 <Chip
                   label={q.section_title}
                   size="small"
-                  sx={{ backgroundColor: "#e0e7ff", color: "#4338ca", fontSize: "0.75rem", fontWeight: 600 }}
+                  sx={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                    color: "var(--accent-indigo)",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                  }}
                 />
               ) : null}
               <Chip
                 label={`Max ${q.max_marks} marks`}
                 size="small"
-                sx={{ backgroundColor: "#f0fdf4", color: "#166534", fontSize: "0.75rem", fontWeight: 600 }}
+                sx={{
+                  backgroundColor:
+                    "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                  color: "var(--success-500)",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                }}
               />
               {q.question_type ? (
                 <Chip
                   label={formatQuestionTypeLabel(q.question_type)}
                   variant="outlined"
                   size="small"
-                  sx={{ fontSize: "0.75rem", fontWeight: 600, borderColor: "#e5e7eb" }}
+                  sx={{
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-secondary)",
+                  }}
                 />
               ) : null}
               {graded ? (
                 <Chip
                   label={`Score: ${q.awarded_marks} / ${q.max_marks}`}
                   size="small"
-                  sx={{ backgroundColor: "#d1fae5", color: "#065f46", fontWeight: 700, fontSize: "0.75rem" }}
+                  sx={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                    color: "var(--success-500)",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                  }}
                 />
               ) : (
                 <Chip
                   label="Awaiting evaluation"
                   size="small"
-                  sx={{ backgroundColor: "#fef3c7", color: "#92400e", fontWeight: 600, fontSize: "0.75rem" }}
+                  sx={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+                    color: "var(--warning-500)",
+                    fontWeight: 600,
+                    fontSize: "0.75rem",
+                  }}
                 />
               )}
             </Box>
@@ -206,7 +245,7 @@ export function SubjectiveResponsesSection({
                 component="div"
                 sx={{
                   fontWeight: 500,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                   lineHeight: 1.6,
                   "& p": { margin: "0 0 0.5em 0" },
                   "& p:last-child": { marginBottom: 0 },
@@ -214,7 +253,7 @@ export function SubjectiveResponsesSection({
                 dangerouslySetInnerHTML={{ __html: q.question_text }}
               />
             ) : (
-              <Typography variant="body1" sx={{ fontWeight: 500, color: "#1a1f2e", lineHeight: 1.6 }}>
+              <Typography variant="body1" sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.6 }}>
                 {q.question_text}
               </Typography>
             )}
@@ -230,7 +269,7 @@ export function SubjectiveResponsesSection({
             variant="caption"
             sx={{
               fontWeight: 700,
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               textTransform: "uppercase",
               letterSpacing: 0.06,
               display: "block",
@@ -244,28 +283,69 @@ export function SubjectiveResponsesSection({
             sx={{
               p: 2,
               borderRadius: 2,
-              border: "1px solid #e5e7eb",
-              backgroundColor: "#ffffff",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
               minHeight: 80,
             }}
           >
             {answered ? (
-              <Typography
-                component="pre"
-                sx={{
-                  m: 0,
-                  fontFamily: "var(--font-family-primary), system-ui, sans-serif",
-                  fontSize: "0.875rem",
-                  lineHeight: 1.65,
-                  color: "#1f2937",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {answerText}
-              </Typography>
+              <>
+                {answerText.trim().length > 0 ? (
+                  <Typography
+                    component="pre"
+                    sx={{
+                      m: 0,
+                      fontFamily: "var(--font-family-primary), system-ui, sans-serif",
+                      fontSize: "0.875rem",
+                      lineHeight: 1.65,
+                      color: "var(--font-primary)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {answerText}
+                  </Typography>
+                ) : null}
+                {(parsed.images?.length ?? 0) > 0 && (
+                  <Box sx={{ mt: answerText.trim() ? 1.5 : 0 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+                      Images
+                    </Typography>
+                    {(parsed.images || []).map((im, i) => (
+                      <Link key={`${im.url}-${i}`} href={im.url} target="_blank" rel="noopener noreferrer" variant="body2" display="block" sx={{ mb: 0.5 }}>
+                        {im.name || `Image ${i + 1}`}
+                      </Link>
+                    ))}
+                  </Box>
+                )}
+                {(parsed.files?.length ?? 0) > 0 && (
+                  <Box sx={{ mt: 1.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+                      Files
+                    </Typography>
+                    {(parsed.files || []).map((f, i) => (
+                      <Link key={`${f.url}-${i}`} href={f.url} target="_blank" rel="noopener noreferrer" variant="body2" display="block" sx={{ mb: 0.5 }}>
+                        {f.name || `File ${i + 1}`}
+                      </Link>
+                    ))}
+                  </Box>
+                )}
+                {parsed.video?.url ? (
+                  <Box sx={{ mt: 1.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 0.5 }}>
+                      Video response
+                    </Typography>
+                    <Link href={parsed.video.url} target="_blank" rel="noopener noreferrer" variant="body2">
+                      Open video
+                      {parsed.video.duration_seconds != null
+                        ? ` (${Math.round(parsed.video.duration_seconds)}s)`
+                        : ""}
+                    </Link>
+                  </Box>
+                ) : null}
+              </>
             ) : (
-              <Typography variant="body2" sx={{ color: "#9ca3af", fontStyle: "italic" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-tertiary)", fontStyle: "italic" }}>
                 No response submitted for this question.
               </Typography>
             )}
@@ -277,7 +357,7 @@ export function SubjectiveResponsesSection({
                 variant="caption"
                 sx={{
                   fontWeight: 700,
-                  color: "#0d9488",
+                  color: "var(--success-500)",
                   textTransform: "uppercase",
                   letterSpacing: 0.06,
                   display: "block",
@@ -291,15 +371,17 @@ export function SubjectiveResponsesSection({
                 sx={{
                   p: 2,
                   borderRadius: 2,
-                  border: "1px solid #ccfbf1",
-                  backgroundColor: "#f0fdfa",
+                  border:
+                    "1px solid color-mix(in srgb, var(--success-500) 30%, var(--border-default))",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--success-500) 10%, var(--surface))",
                 }}
               >
                 <Typography
                   variant="body2"
                   sx={{
                     m: 0,
-                    color: "#134e4a",
+                    color: "var(--font-secondary)",
                     lineHeight: 1.65,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",

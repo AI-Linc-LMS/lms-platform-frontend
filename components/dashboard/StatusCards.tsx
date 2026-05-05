@@ -38,7 +38,7 @@ export const StatusCards = ({
         sx={{
           fontSize: "1.125rem",
           fontWeight: 600,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 2,
         }}
       >
@@ -59,9 +59,9 @@ export const StatusCards = ({
           sx={{
             p: 3,
             borderRadius: 2,
-            backgroundColor: "#FEF3C7",
+            backgroundColor: "color-mix(in srgb, var(--warning-500) 24%, transparent)",
             position: "relative",
-            border: "1px solid #FDE68A",
+            border: "1px solid color-mix(in srgb, var(--warning-500) 42%, transparent)",
           }}
         >
           <Box sx={{ position: "absolute", top: 16, insetInlineEnd: 16 }}>
@@ -71,7 +71,7 @@ export const StatusCards = ({
               size={48}
               thickness={4}
               sx={{
-                color: "#F59E0B",
+                color: "var(--warning-500)",
                 transform: "rotate(-90deg)",
               }}
             />
@@ -83,7 +83,7 @@ export const StatusCards = ({
                 transform: "translate(-50%, -50%)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#92400E",
+                color: "var(--font-primary)",
               }}
             >
               {lessonsPercentage}%
@@ -92,14 +92,14 @@ export const StatusCards = ({
           <IconWrapper
             icon="mdi:file-document-outline"
             size={32}
-            style={{ color: "#F59E0B", marginBottom: 12 }}
+            style={{ color: "var(--warning-500)", marginBottom: 12 }}
           />
           <Typography
             variant="h5"
             sx={{
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               mb: 0.5,
             }}
           >
@@ -107,7 +107,7 @@ export const StatusCards = ({
           </Typography>
           <Typography
             variant="body2"
-            sx={{ fontSize: "0.875rem", color: "#6B7280" }}
+            sx={{ fontSize: "0.875rem", color: "var(--font-secondary)" }}
           >
             of {lessons.total} completed
           </Typography>
@@ -118,9 +118,9 @@ export const StatusCards = ({
           sx={{
             p: 3,
             borderRadius: 2,
-            backgroundColor: "#FCE7F3",
+            backgroundColor: "color-mix(in srgb, var(--accent-pink) 24%, transparent)",
             position: "relative",
-            border: "1px solid #FBCFE8",
+            border: "1px solid color-mix(in srgb, var(--accent-pink) 42%, transparent)",
           }}
         >
           <Box sx={{ position: "absolute", top: 16, insetInlineEnd: 16 }}>
@@ -130,7 +130,7 @@ export const StatusCards = ({
               size={48}
               thickness={4}
               sx={{
-                color: "#EC4899",
+                color: "var(--accent-pink)",
                 transform: "rotate(-90deg)",
               }}
             />
@@ -142,7 +142,7 @@ export const StatusCards = ({
                 transform: "translate(-50%, -50%)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#BE185D",
+                color: "var(--font-primary)",
               }}
             >
               {assignmentsPercentage}%
@@ -151,14 +151,14 @@ export const StatusCards = ({
           <IconWrapper
             icon="mdi:check-circle-outline"
             size={32}
-            style={{ color: "#EC4899", marginBottom: 12 }}
+            style={{ color: "var(--accent-pink)", marginBottom: 12 }}
           />
           <Typography
             variant="h5"
             sx={{
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               mb: 0.5,
             }}
           >
@@ -166,7 +166,7 @@ export const StatusCards = ({
           </Typography>
           <Typography
             variant="body2"
-            sx={{ fontSize: "0.875rem", color: "#6B7280" }}
+            sx={{ fontSize: "0.875rem", color: "var(--font-secondary)" }}
           >
             of {assignments.total} completed
           </Typography>
@@ -177,9 +177,9 @@ export const StatusCards = ({
           sx={{
             p: 3,
             borderRadius: 2,
-            backgroundColor: "#D1FAE5",
+            backgroundColor: "color-mix(in srgb, var(--success-500) 24%, transparent)",
             position: "relative",
-            border: "1px solid #A7F3D0",
+            border: "1px solid color-mix(in srgb, var(--success-500) 42%, transparent)",
           }}
         >
           <Box sx={{ position: "absolute", top: 16, insetInlineEnd: 16 }}>
@@ -189,7 +189,7 @@ export const StatusCards = ({
               size={48}
               thickness={4}
               sx={{
-                color: "#10B981",
+                color: "var(--success-500)",
                 transform: "rotate(-90deg)",
               }}
             />
@@ -201,7 +201,7 @@ export const StatusCards = ({
                 transform: "translate(-50%, -50%)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#065F46",
+                color: "var(--font-primary)",
               }}
             >
               {testsPercentage}%
@@ -210,14 +210,14 @@ export const StatusCards = ({
           <IconWrapper
             icon="mdi:clipboard-check-outline"
             size={32}
-            style={{ color: "#10B981", marginBottom: 12 }}
+            style={{ color: "var(--success-500)", marginBottom: 12 }}
           />
           <Typography
             variant="h5"
             sx={{
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               mb: 0.5,
             }}
           >
@@ -225,7 +225,7 @@ export const StatusCards = ({
           </Typography>
           <Typography
             variant="body2"
-            sx={{ fontSize: "0.875rem", color: "#6B7280" }}
+            sx={{ fontSize: "0.875rem", color: "var(--font-secondary)" }}
           >
             of {tests.total} completed
           </Typography>

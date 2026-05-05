@@ -33,21 +33,22 @@ export function MockInterviewHeader({
               width: 52,
               height: 52,
               borderRadius: 2,
-              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              background:
+                "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <IconWrapper icon="mdi:account-voice" size={26} color="#ffffff" />
+            <IconWrapper icon="mdi:account-voice" size={26} color="var(--font-light)" />
           </Box>
           <Box>
             <Typography
               variant="h5"
               sx={{
                 fontWeight: 700,
-                color: "#111827",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1.25rem", sm: "1.5rem" },
               }}
             >
@@ -56,7 +57,7 @@ export function MockInterviewHeader({
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.875rem",
                 mt: 0.25,
               }}
@@ -67,12 +68,13 @@ export function MockInterviewHeader({
         </Box>
         {totalInterviews != null && totalInterviews > 0 && activeTab === "overview" && (
           <Chip
-            icon={<IconWrapper icon="mdi:clipboard-check-outline" size={16} color="#6366f1" />}
+            icon={<IconWrapper icon="mdi:clipboard-check-outline" size={16} color="var(--accent-indigo)" />}
             label={t("adminMockInterview.interviewsCount", { count: totalInterviews })}
             size="small"
             sx={{
-              backgroundColor: "#eef2ff",
-              color: "#4f46e5",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               "& .MuiChip-icon": { ml: 1 },
               "& .MuiChip-label": { pl: 0.5 },

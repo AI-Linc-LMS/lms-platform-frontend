@@ -42,9 +42,9 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
       sx={{
         p: { xs: 2, sm: 3, md: 4 },
         borderRadius: 3,
-        border: "1px solid rgba(0,0,0,0.08)",
-        backgroundColor: "#ffffff",
-        boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow: "0 0 0 1px color-mix(in srgb, var(--border-default) 70%, transparent), 0 4px 12px rgba(0,0,0,0.06)",
         overflow: "hidden",
       }}
     >
@@ -57,7 +57,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
           gap: 2,
           mb: 3,
           pb: 3,
-          borderBottom: "2px solid rgba(0,0,0,0.08)",
+          borderBottom: "2px solid var(--border-default)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -92,7 +92,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
               variant="h5"
               sx={{
                 fontWeight: 700,
-                color: "#000000",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1.15rem", sm: "1.35rem" },
                 lineHeight: 1.2,
               }}
@@ -101,7 +101,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
             </Typography>
             <Typography
               variant="body2"
-              sx={{ color: "#666666", fontSize: "0.8rem", mt: 0.25 }}
+              sx={{ color: "var(--font-secondary)", fontSize: "0.8rem", mt: 0.25 }}
             >
               Student Overview
             </Typography>
@@ -114,18 +114,18 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 key={`program-${index}-${name}`}
                 label={name}
                 size="small"
-                icon={<IconWrapper icon="mdi:school-outline" size={16} color="#0a66c2" />}
+                icon={<IconWrapper icon="mdi:school-outline" size={16} color="var(--accent-indigo)" />}
                 sx={{
-                  backgroundColor: "rgba(10, 102, 194, 0.08)",
-                  color: "#0a66c2",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                  color: "var(--accent-indigo)",
                   fontWeight: 600,
                   fontSize: "0.8rem",
-                  "& .MuiChip-icon": { color: "#0a66c2" },
+                  "& .MuiChip-icon": { color: "var(--accent-indigo)" },
                 }}
               />
             ))
           ) : (
-            <Typography variant="body2" sx={{ color: "#666666" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               No program
             </Typography>
           )}
@@ -135,8 +135,8 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
             label={data.cohort}
             size="small"
             sx={{
-              backgroundColor: "rgba(0,0,0,0.06)",
-              color: "#555",
+              backgroundColor: "color-mix(in srgb, var(--font-secondary) 12%, transparent)",
+              color: "var(--font-secondary)",
               fontWeight: 500,
               fontSize: "0.75rem",
             }}
@@ -200,7 +200,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 )}
               </Box>
               <Box sx={{ textAlign: "center", width: "100%" }}>
-                <Typography variant="body2" sx={{ color: "#666666", fontSize: "0.875rem", mb: 1.5, fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.875rem", mb: 1.5, fontWeight: 500 }}>
                   Overall Performance Score
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, flexWrap: "wrap" }}>
@@ -221,12 +221,12 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   {data.gradeCriteria && (
                     <Tooltip title={data.gradeCriteria} placement="top" arrow>
                       <Box component="span" sx={{ display: "inline-flex", alignItems: "center", cursor: "help" }}>
-                        <IconWrapper icon="mdi:information-outline" size={20} color="#666666" />
+                        <IconWrapper icon="mdi:information-outline" size={20} color="var(--font-secondary)" />
                       </Box>
                     </Tooltip>
                   )}
                 </Box>
-                <Typography variant="caption" sx={{ color: "#666666", fontSize: "0.75rem", display: "block", mt: 1.5 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.75rem", display: "block", mt: 1.5 }}>
                   Based on completion and time (score 0–100)
                 </Typography>
               </Box>
@@ -237,7 +237,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
         {/* Right: Performance Metrics */}
         <Box sx={{ minWidth: 0 }}>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#000000", fontSize: "1.25rem", mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: "1.25rem", mb: 2 }}>
               Performance Metrics
             </Typography>
             <Box
@@ -253,7 +253,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     p: 2.5,
                     borderRadius: 2,
                     minHeight: 150,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "var(--card-bg)",
                     border: "2px solid rgba(10, 102, 194, 0.2)",
                 background: "linear-gradient(135deg, rgba(10, 102, 194, 0.05) 0%, rgba(10, 102, 194, 0.02) 100%)",
                 transition: "all 0.2s ease",
@@ -282,7 +282,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#666666",
+                      color: "var(--font-secondary)",
                       fontSize: "0.9375rem",
                       fontWeight: 500,
                       display: "block",
@@ -294,7 +294,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     variant="h5"
                     sx={{
                       fontWeight: 700,
-                      color: "#000000",
+                      color: "var(--font-primary)",
                       fontSize: "1.75rem",
                       lineHeight: 1.2,
                     }}
@@ -306,7 +306,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -321,7 +321,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     p: 2.5,
                     borderRadius: 2,
                     minHeight: 150,
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "var(--card-bg)",
                     border: "2px solid rgba(245, 158, 11, 0.2)",
                 background: "linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%)",
                 transition: "all 0.2s ease",
@@ -350,7 +350,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#666666",
+                      color: "var(--font-secondary)",
                       fontSize: "0.9375rem",
                       fontWeight: 500,
                       display: "block",
@@ -363,7 +363,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                       variant="h5"
                       sx={{
                         fontWeight: 700,
-                        color: "#000000",
+                        color: "var(--font-primary)",
                         fontSize: "1.75rem",
                         lineHeight: 1.2,
                       }}
@@ -403,7 +403,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -418,7 +418,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 p: 2.5,
                 borderRadius: 2,
                 minHeight: 150,
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--card-bg)",
                 border: "2px solid rgba(16, 185, 129, 0.2)",
                 background: "linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)",
                 transition: "all 0.2s ease",
@@ -442,7 +442,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#666666",
+                      color: "var(--font-secondary)",
                       fontSize: "0.9375rem",
                       fontWeight: 500,
                       display: "block",
@@ -454,7 +454,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     variant="h5"
                     sx={{
                       fontWeight: 700,
-                      color: "#000000",
+                      color: "var(--font-primary)",
                       fontSize: "1.75rem",
                       lineHeight: 1.2,
                     }}
@@ -466,7 +466,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -481,7 +481,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 p: 2.5,
                 borderRadius: 2,
                 minHeight: 150,
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--card-bg)",
                 border: `2px solid ${learningStateColor}40`,
                 background: `linear-gradient(135deg, ${learningStateColor}15 0%, ${learningStateColor}05 100%)`,
                 transition: "all 0.2s ease",
@@ -510,7 +510,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#666666",
+                      color: "var(--font-secondary)",
                       fontSize: "0.9375rem",
                       fontWeight: 500,
                       display: "block",
@@ -532,7 +532,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     />
                     <Tooltip title={learningStateTooltip(data.statusBadge)} placement="top" arrow>
                       <Box component="span" sx={{ display: "inline-flex", alignItems: "center", cursor: "help" }}>
-                        <IconWrapper icon="mdi:information-outline" size={18} color="#666666" />
+                        <IconWrapper icon="mdi:information-outline" size={18} color="var(--font-secondary)" />
                       </Box>
                     </Tooltip>
                   </Box>
@@ -541,7 +541,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.875rem",
                 }}
               >
@@ -560,8 +560,8 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
           mt: 3,
           p: 2.5,
           borderRadius: 2,
-          backgroundColor: "#f9fafb",
-          border: "1px solid rgba(0,0,0,0.08)",
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border-default)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
@@ -579,10 +579,10 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
             <IconWrapper icon="mdi:calendar-week" size={22} color="#0a66c2" />
           </Box>
           <Box>
-            <Typography variant="caption" sx={{ color: "#666666", fontSize: "0.75rem", fontWeight: 500, display: "block" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.75rem", fontWeight: 500, display: "block" }}>
               Current Week / Module
             </Typography>
-            <Typography variant="body2" sx={{ color: "#000000", fontSize: "0.875rem", fontWeight: 600 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-primary)", fontSize: "0.875rem", fontWeight: 600 }}>
               Across all enrolled courses
             </Typography>
           </Box>
@@ -603,7 +603,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                       p: 1.5,
                       borderRadius: 2,
                       border: "1px solid rgba(10, 102, 194, 0.2)",
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "var(--card-bg)",
                     }}
                   >
                     <Typography
@@ -620,10 +620,10 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     >
                       {course.courseName}
                     </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: "#000000", fontSize: "1rem" }}>
+                    <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "1rem" }}>
                       Week {course.currentWeek}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "#666666", fontSize: "0.75rem", display: "block", mt: 0.25 }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.75rem", display: "block", mt: 0.25 }}>
                       {course.currentModule}
                     </Typography>
                   </Box>
@@ -634,7 +634,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                         p: 1.5,
                         borderRadius: 2,
                         border: "1px solid rgba(10, 102, 194, 0.2)",
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "var(--card-bg)",
                         transition: "all 0.2s ease",
                         cursor: "pointer",
                         "&:hover": {
@@ -657,10 +657,10 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                       >
                         {course.courseName}
                       </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 700, color: "#000000", fontSize: "1rem" }}>
+                      <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "1rem" }}>
                         Week {course.currentWeek}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "#666666", fontSize: "0.75rem", display: "block", mt: 0.25 }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.75rem", display: "block", mt: 0.25 }}>
                         {course.currentModule}
                       </Typography>
                     </Box>
@@ -671,10 +671,10 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
           </Box>
         ) : (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Typography variant="body1" sx={{ fontWeight: 700, color: "#000000", fontSize: "1rem" }}>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "1rem" }}>
               Week {data.currentWeek}
             </Typography>
-            <Typography variant="caption" sx={{ color: "#666666", fontSize: "0.75rem" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}>
               {data.currentModule}
             </Typography>
           </Box>

@@ -114,7 +114,7 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
   return (
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151" }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
           {t("adminLiveSessions.attendanceSection", { count })}
         </Typography>
         {syncAvailable && (
@@ -136,22 +136,33 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
           </Button>
         )}
       </Box>
-      <Typography variant="caption" sx={{ color: "#9ca3af", mb: 1.5, display: "block" }}>
+      <Typography
+        variant="caption"
+        sx={{ color: "var(--font-tertiary)", mb: 1.5, display: "block" }}
+      >
         {syncedAt
           ? t("adminLiveSessions.lastSynced", { date: formatDateTimeShort(syncedAt) })
           : t("adminLiveSessions.neverSynced")}
       </Typography>
-      <Typography variant="caption" sx={{ color: "#6b7280", mb: 1.5, display: "block", fontStyle: "italic" }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "var(--font-secondary)",
+          mb: 1.5,
+          display: "block",
+          fontStyle: "italic",
+        }}
+      >
         {t("adminLiveSessions.attendanceSyncHint")}
       </Typography>
 
       {count === 0 && neverSynced && (
-        <Typography variant="body2" sx={{ color: "#6b7280", py: 1 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", py: 1 }}>
           {t("adminLiveSessions.noAttendanceData")}
         </Typography>
       )}
       {count === 0 && !neverSynced && (
-        <Typography variant="body2" sx={{ color: "#6b7280", py: 1 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", py: 1 }}>
           {t("adminLiveSessions.noParticipantsFound")}
         </Typography>
       )}
@@ -160,7 +171,7 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
         <TableContainer component={Paper} variant="outlined" sx={{ overflow: "hidden" }}>
           <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: "#f9fafb" }}>
+              <TableRow sx={{ bgcolor: "var(--surface)" }}>
                 <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "24%" }}>{t("adminLiveSessions.name")}</TableCell>
                 <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "24%" }}>{t("adminLiveSessions.email")}</TableCell>
                 <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "16%" }}>{t("adminLiveSessions.join")}</TableCell>

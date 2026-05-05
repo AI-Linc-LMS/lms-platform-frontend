@@ -20,6 +20,7 @@ import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
+import { parseCSVRows } from "@/lib/utils/csv-parse";
 import { normalizeEncoding } from "@/lib/utils/text-utils";
 
 interface CSVUploadSectionProps {
@@ -65,53 +66,6 @@ export function CSVUploadSection({
       }
     };
     reader.readAsText(file, "UTF-8");
-  };
-
-  /** Parse CSV rows respecting quoted fields (commas, newlines, "" inside quotes). */
-  const parseCSVRows = (text: string): string[][] => {
-    const rows: string[][] = [];
-    let row: string[] = [];
-    let cell = "";
-    let inQuotes = false;
-    const len = text.length;
-
-    for (let i = 0; i < len; i++) {
-      const c = text[i];
-      if (inQuotes) {
-        if (c === '"') {
-          if (i + 1 < len && text[i + 1] === '"') {
-            cell += '"';
-            i++;
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          cell += c;
-        }
-        continue;
-      }
-      if (c === '"') {
-        inQuotes = true;
-        continue;
-      }
-      if (c === ",") {
-        row.push(cell.trim());
-        cell = "";
-        continue;
-      }
-      if (c === "\n" || c === "\r") {
-        row.push(cell.trim());
-        cell = "";
-        if (row.some((x) => x.length > 0)) rows.push(row);
-        row = [];
-        if (c === "\r" && i + 1 < len && text[i + 1] === "\n") i++;
-        continue;
-      }
-      cell += c;
-    }
-    row.push(cell.trim());
-    if (row.some((x) => x.length > 0)) rows.push(row);
-    return rows;
   };
 
   const parseCSV = (csvText: string): MCQ[] => {
@@ -226,7 +180,7 @@ export function CSVUploadSection({
         </Button>
       </Box>
 
-      <Paper sx={{ p: 3, bgcolor: "#f9fafb" }}>
+      <Paper sx={{ p: 3, bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <input
             accept=".csv"
@@ -240,7 +194,7 @@ export function CSVUploadSection({
               variant="contained"
               component="span"
               startIcon={<IconWrapper icon="mdi:upload" size={18} />}
-              sx={{ bgcolor: "#6366f1" }}
+              sx={{ bgcolor: "var(--accent-indigo)" }}
             >
               Upload CSV File
             </Button>
@@ -267,7 +221,7 @@ export function CSVUploadSection({
           <TableContainer component={Paper} sx={{ maxHeight: 440, overflow: "auto" }}>
             <Table size="small" stickyHeader>
               <TableHead>
-                <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                <TableRow sx={{ backgroundColor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
                   <TableCell sx={{ fontWeight: 600 }}>Question</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Option A</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Option B</TableCell>
@@ -295,7 +249,7 @@ export function CSVUploadSection({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: mcq.correct_option === "A" ? "#10b981" : "#6b7280",
+                            color: mcq.correct_option === "A" ? "var(--success-500)" : "var(--font-secondary)",
                             fontWeight: mcq.correct_option === "A" ? 600 : 400,
                           }}
                         >
@@ -306,7 +260,7 @@ export function CSVUploadSection({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: mcq.correct_option === "B" ? "#10b981" : "#6b7280",
+                            color: mcq.correct_option === "B" ? "var(--success-500)" : "var(--font-secondary)",
                             fontWeight: mcq.correct_option === "B" ? 600 : 400,
                           }}
                         >
@@ -317,7 +271,7 @@ export function CSVUploadSection({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: mcq.correct_option === "C" ? "#10b981" : "#6b7280",
+                            color: mcq.correct_option === "C" ? "var(--success-500)" : "var(--font-secondary)",
                             fontWeight: mcq.correct_option === "C" ? 600 : 400,
                           }}
                         >
@@ -328,7 +282,7 @@ export function CSVUploadSection({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: mcq.correct_option === "D" ? "#10b981" : "#6b7280",
+                            color: mcq.correct_option === "D" ? "var(--success-500)" : "var(--font-secondary)",
                             fontWeight: mcq.correct_option === "D" ? 600 : 400,
                           }}
                         >
@@ -340,7 +294,7 @@ export function CSVUploadSection({
                           variant="body2"
                           sx={{
                             fontWeight: 600,
-                            color: "#6366f1",
+                            color: "var(--accent-indigo)",
                           }}
                         >
                           {mcq.correct_option}
@@ -397,7 +351,7 @@ export function CSVUploadSection({
                         <IconButton
                           size="small"
                           onClick={() => handleDelete(globalIndex)}
-                          sx={{ color: "#ef4444" }}
+                          sx={{ color: "var(--error-500)" }}
                           aria-label="Delete question"
                         >
                           <IconWrapper icon="mdi:delete" size={16} />

@@ -85,12 +85,13 @@ export function ModuleAccordion({
       disabled={isLocked || !hasContent}
       sx={{
         boxShadow: "none",
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 1,
         mb: 1.5,
+        backgroundColor: "var(--card-bg)",
         "&:before": { display: "none" },
         "&.Mui-disabled": {
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--surface)",
           opacity: 0.8,
           "& .MuiAccordionSummary-content": {
             opacity: "1 !important",
@@ -104,13 +105,13 @@ export function ModuleAccordion({
             <IconWrapper
               icon="mdi:lock-outline"
               size={20}
-              color="#9ca3af"
+              color="var(--font-tertiary)"
             />
           ) : (
             <IconWrapper
               icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}
               size={28}
-              color="#6b7280"
+              color="var(--font-secondary)"
             />
           )
         }
@@ -143,7 +144,7 @@ export function ModuleAccordion({
                 <IconWrapper
                   icon="mdi:check-circle-outline"
                   size={22}
-                  color="#10b981"
+                  color="var(--success-500)"
                 />
               )}
 
@@ -152,7 +153,7 @@ export function ModuleAccordion({
                 <IconWrapper
                   icon="mdi:lock-outline"
                   size={18}
-                  color="#9ca3af"
+                  color="var(--font-tertiary)"
                 />
               )}
 
@@ -161,7 +162,7 @@ export function ModuleAccordion({
                   fontWeight: 600,
                   fontSize: { xs: "0.95rem", md: "1rem" },
                   lineHeight: 1.3,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                 }}
               >
                 {module.title}
@@ -176,12 +177,12 @@ export function ModuleAccordion({
                     fontSize: "0.65rem",
                     backgroundColor:
                       module.completion_percentage === 100
-                        ? "#d1fae5"
-                        : "#e0e7ff",
+                        ? "color-mix(in srgb, var(--success-500) 18%, var(--surface) 82%)"
+                        : "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)",
                     color:
                       module.completion_percentage === 100
-                        ? "#065f46"
-                        : "#6366f1",
+                        ? "var(--success-500)"
+                        : "var(--accent-indigo)",
                   }}
                 />
               )}
@@ -191,7 +192,7 @@ export function ModuleAccordion({
               variant="body2"
               sx={{
                 fontSize: "0.8rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               {totalSubmoduleLectures} {t("courses.items")}
@@ -205,7 +206,7 @@ export function ModuleAccordion({
               sx={{
                 mt: 0.5,
                 display: "block",
-                color: "#ef4444",
+                color: "var(--error-500)",
                 fontSize: "0.7rem",
                 opacity:"1 !important"
               }}
@@ -226,7 +227,7 @@ export function ModuleAccordion({
               <Box
                 sx={{
                   height: 4,
-                  backgroundColor: "#e5e7eb",
+                  backgroundColor: "var(--border-default)",
                   borderRadius: 2,
                   overflow: "hidden",
                 }}
@@ -237,8 +238,8 @@ export function ModuleAccordion({
                     height: "100%",
                     backgroundColor:
                       module.completion_percentage === 100
-                        ? "#10b981"
-                        : "#6366f1",
+                        ? "var(--success-500)"
+                        : "var(--accent-indigo)",
                     transition: "width 0.3s ease",
                   }}
                 />
@@ -268,7 +269,7 @@ export function ModuleAccordion({
             ))}
           </Box>
         ) : (
-          <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
             No submodules available
           </Typography>
         )}

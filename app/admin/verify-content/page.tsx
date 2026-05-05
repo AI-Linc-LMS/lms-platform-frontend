@@ -175,7 +175,7 @@ export default function VerifyContentPage() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.5rem", sm: "2rem" },
               mb: 1,
             }}
@@ -184,7 +184,10 @@ export default function VerifyContentPage() {
           </Typography>
           <Typography
             variant="body2"
-            sx={{ color: "#6b7280", fontSize: { xs: "0.875rem", sm: "1rem" } }}
+            sx={{
+              color: "var(--font-secondary)",
+              fontSize: { xs: "0.875rem", sm: "1rem" },
+            }}
           >
             {t("adminContentManagement.subtitle")}
           </Typography>
@@ -222,7 +225,10 @@ export default function VerifyContentPage() {
           <Paper
             sx={{
               borderRadius: 2,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
               overflow: "hidden",
             }}
           >

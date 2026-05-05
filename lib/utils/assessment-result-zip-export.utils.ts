@@ -3,6 +3,10 @@ import {
   generateAssessmentResultPdfVector,
   type AssessmentPdfStudentOverrides,
 } from "@/lib/utils/assessment-result-pdf.utils";
+import {
+  normalizeSubjectiveAnswer,
+  parseSubjectiveAnswerPayload,
+} from "@/utils/assessment.utils";
 
 function subjectiveAnswerToPlainText(raw: string): string {
   if (!raw.trim()) return raw;
@@ -53,13 +57,43 @@ export async function downloadAssessmentResultZipBundle(
 
   const subjective = data.user_responses?.subjective_responses ?? [];
   subjective.forEach((s, i) => {
-    const raw = s.your_answer ?? s.answer ?? "";
-    const text = typeof raw === "string" ? raw : String(raw ?? "");
-    if (!text.trim()) return;
-    zip.file(
-      `subjective/${String(i + 1).padStart(2, "0")}-question-${s.question_id}.txt`,
-      subjectiveAnswerToPlainText(text),
-    );
+    const raw = s.your_answer ?? s.answer;
+    const parsed = parseSubjectiveAnswerPayload(raw);
+    const images =
+      s.images && s.images.length > 0 ? s.images : parsed.images || [];
+    const files =
+      s.files && s.files.length > 0 ? s.files : parsed.files || [];
+    const video =
+      s.video?.url != null && s.video.url !== ""
+        ? s.video
+        : parsed.video?.url
+          ? parsed.video
+          : null;
+
+    const text = normalizeSubjectiveAnswer(raw);
+    const plain = subjectiveAnswerToPlainText(text).trim();
+    const prefix = `subjective/${String(i + 1).padStart(2, "0")}-question-${s.question_id}`;
+    if (plain) {
+      zip.file(`${prefix}.txt`, plain);
+    }
+    const hasAssets =
+      images.length > 0 || files.length > 0 || Boolean(video?.url);
+    if (hasAssets) {
+      zip.file(
+        `${prefix}-attachments.json`,
+        JSON.stringify(
+          {
+            question_id: s.question_id,
+            answer_mode: s.answer_mode ?? null,
+            images,
+            files,
+            video: video ?? null,
+          },
+          null,
+          2,
+        ),
+      );
+    }
   });
 
   const quiz = data.user_responses?.quiz_responses ?? [];
@@ -81,6 +115,7 @@ export async function downloadAssessmentResultZipBundle(
       "- assessment-result.json — raw API payload (archive / tooling)",
       "- coding/*.txt — submitted code per problem (when present)",
       "- subjective/*.txt — written answers as plain text (when present)",
+      "- subjective/*-attachments.json — image/file/video URLs when present",
       "- quiz/quiz-responses.json — MCQ-style responses (when present)",
       "",
     ].join("\n"),

@@ -64,7 +64,7 @@ export default function AdminBrandingPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
-  const { refreshClientInfo } = useClientInfo();
+  const { clientInfo, loading: loadingClientInfo, refreshClientInfo } = useClientInfo();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -96,6 +96,13 @@ export default function AdminBrandingPage() {
     if (loginLogoUrl.trim() !== baseline.loginLogoUrl.trim()) return true;
     return themeFingerprint(draftThemeRaw) !== themeFingerprint(baseline.draftThemeRaw);
   }, [baseline, selectedPreset, loginImgUrl, loginLogoUrl, draftThemeRaw]);
+
+  const hasBrandingFeature = useMemo(() => {
+    const features = clientInfo?.features ?? [];
+    // Backward-compatible fallback: if no features are configured, keep branding accessible.
+    if (features.length === 0) return true;
+    return features.some((f) => f.name === "admin_branding");
+  }, [clientInfo?.features]);
 
   useEffect(() => {
     const el = previewRef.current;
@@ -236,11 +243,23 @@ export default function AdminBrandingPage() {
     }
   };
 
-  if (authLoading || !user || !isClientOrgAdminRole(user.role)) {
+  if (authLoading || loadingClientInfo || !user || !isClientOrgAdminRole(user.role)) {
     return (
       <MainLayout>
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />
+        </Box>
+      </MainLayout>
+    );
+  }
+
+  if (!hasBrandingFeature) {
+    return (
+      <MainLayout>
+        <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, py: 4 }}>
+          <Alert severity="warning" sx={{ borderRadius: 2 }}>
+            Branding & Theme is disabled for this client. Enable `admin_branding` in the super admin feature selection to access this page.
+          </Alert>
         </Box>
       </MainLayout>
     );
@@ -354,23 +373,29 @@ export default function AdminBrandingPage() {
                 sx={{
                   borderRadius: 2,
                   alignItems: "flex-start",
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--font-primary)",
+                  "& .MuiAlert-icon": {
+                    color: "var(--accent-indigo)",
+                  },
                   "& .MuiAlert-message": { width: "100%" },
                 }}
               >
-                <Typography fontWeight={800} sx={{ mb: 1 }}>
+                <Typography fontWeight={800} sx={{ mb: 1, color: "var(--font-primary)" }}>
                   {t("branding.guideTitle")}
                 </Typography>
                 <Stack component="ul" spacing={0.75} sx={{ m: 0, pl: 2.25, listStyle: "disc" }}>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep1")}
                   </Typography>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep2")}
                   </Typography>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep3")}
                   </Typography>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep4")}
                   </Typography>
                 </Stack>
@@ -408,7 +433,7 @@ export default function AdminBrandingPage() {
                     onChange={(hex) =>
                       setDraftThemeRaw((prev) => ({ ...prev, secondary500: hex }))
                     }
-                    fallbackHex="#12293a"
+                    fallbackHex={normalizedPreview.secondary500}
                     helperText={t("branding.sidebarBgHelp")}
                   />
                   <BrandingColorField
@@ -418,7 +443,7 @@ export default function AdminBrandingPage() {
                     onChange={(hex) =>
                       setDraftThemeRaw((prev) => ({ ...prev, fontLightNav: hex }))
                     }
-                    fallbackHex="#ffffff"
+                    fallbackHex={normalizedPreview.fontLightNav}
                   />
                   <BrandingColorField
                     label={t("branding.brandPrimary")}
@@ -431,7 +456,7 @@ export default function AdminBrandingPage() {
                         muiPrimaryMain: hex,
                       }))
                     }
-                    fallbackHex="#255c79"
+                    fallbackHex={normalizedPreview.primary500}
                     helperText={t("branding.brandPrimaryHelp")}
                   />
                   <BrandingColorField
@@ -441,7 +466,7 @@ export default function AdminBrandingPage() {
                     onChange={(hex) =>
                       setDraftThemeRaw((prev) => ({ ...prev, primary300: hex }))
                     }
-                    fallbackHex="#63b6d3"
+                    fallbackHex={normalizedPreview.primary300}
                   />
                 </Stack>
               </BrandingSectionCard>
@@ -569,7 +594,7 @@ export default function AdminBrandingPage() {
                         hint={t("branding.loginSloganColorHint")}
                         value={draftThemeRaw.loginHeroSloganColor ?? ""}
                         onChange={(hex) => setHeroField("loginHeroSloganColor", hex)}
-                        fallbackHex="#0f172a"
+                        fallbackHex={normalizedPreview.loginHeroSloganColor}
                       />
                     </Box>
                   </Stack>
@@ -640,7 +665,7 @@ export default function AdminBrandingPage() {
                         onChange={(hex) =>
                           setHeroField("loginHeroBrandNameColor", hex)
                         }
-                        fallbackHex="#1e293b"
+                        fallbackHex={normalizedPreview.loginHeroBrandNameColor}
                       />
                     </Box>
                   </Stack>
@@ -736,11 +761,16 @@ export default function AdminBrandingPage() {
 
             <Box
               sx={{
-                position: { lg: "sticky" },
-                top: { lg: 16 },
+                position: { xs: "static", md: "sticky" },
+                top: { md: 84 },
+                width: { lg: 400 },
+                maxHeight: { md: "calc(100vh - 108px)" },
+                overflowY: { md: "auto" },
+                alignSelf: "start",
                 display: "flex",
                 flexDirection: "column",
                 gap: 2.5,
+                pr: { md: 0.5 },
               }}
             >
               <Paper
@@ -753,7 +783,11 @@ export default function AdminBrandingPage() {
                   bgcolor: (theme) =>
                     theme.palette.mode === "dark"
                       ? alpha(theme.palette.common.white, 0.04)
-                      : "#fafbfc",
+                      : "var(--surface)",
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? `0 10px 30px ${alpha(theme.palette.common.black, 0.28)}`
+                      : "0 12px 28px color-mix(in srgb, var(--font-primary) 10%, transparent)",
                 }}
               >
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
@@ -790,8 +824,9 @@ export default function AdminBrandingPage() {
                     border: "1px solid",
                     borderColor: "divider",
                     p: 2.5,
-                    backgroundColor: "var(--background, #f8fafc)",
-                    boxShadow: "inset 0 1px 2px rgba(15,23,42,0.04)",
+                    backgroundColor: "var(--background)",
+                    boxShadow:
+                      "inset 0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent)",
                   }}
                 >
                   <Typography
@@ -806,7 +841,7 @@ export default function AdminBrandingPage() {
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ color: "var(--font-secondary, #6b7280)", mb: 2 }}
+                    sx={{ color: "var(--font-secondary)", mb: 2 }}
                   >
                     {t("branding.previewBody")}
                   </Typography>
@@ -872,10 +907,26 @@ export default function AdminBrandingPage() {
                 ) : null}
                 <Button
                   variant="outlined"
-                  color="inherit"
                   disabled={!isDirty || saving}
                   onClick={handleDiscard}
-                  sx={{ textTransform: "none", fontWeight: 600 }}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-primary)",
+                    backgroundColor: "var(--surface)",
+                    "&:hover": {
+                      borderColor: "var(--accent-indigo)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                    },
+                    "&.Mui-disabled": {
+                      color: "var(--font-secondary)",
+                      borderColor: "var(--border-default)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--surface) 70%, var(--background) 30%)",
+                    },
+                  }}
                 >
                   {t("branding.discard")}
                 </Button>
@@ -892,7 +943,7 @@ export default function AdminBrandingPage() {
                         component="span"
                         sx={{
                           display: "inline-flex",
-                          color: "primary.contrastText",
+                          color: "var(--font-light)",
                         }}
                       >
                         <IconWrapper
@@ -903,7 +954,21 @@ export default function AdminBrandingPage() {
                       </Box>
                     )
                   }
-                  sx={{ textTransform: "none", fontWeight: 700, minWidth: 160 }}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 700,
+                    minWidth: 160,
+                    backgroundColor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
+                    "&:hover": {
+                      backgroundColor: "var(--accent-indigo-dark)",
+                    },
+                    "&.Mui-disabled": {
+                      color: "var(--font-secondary)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 26%, var(--surface) 74%)",
+                    },
+                  }}
                 >
                   {saving ? t("branding.saving") : t("branding.save")}
                 </Button>

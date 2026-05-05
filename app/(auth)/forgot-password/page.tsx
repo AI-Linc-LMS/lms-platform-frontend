@@ -30,7 +30,7 @@ const primaryBtnSx = {
   py: 1.25,
   background:
     "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-  color: "white",
+  color: "var(--font-light)",
   fontWeight: 600,
   fontSize: "0.9375rem",
   textTransform: "none",
@@ -51,18 +51,18 @@ const primaryBtnSx = {
 const resendBtnSx = {
   py: 1.25,
   mb: 0.5,
-  borderColor: "#e2e8f0",
+  borderColor: "var(--border-default)",
   borderWidth: 1.5,
-  color: "text.primary",
+  color: "var(--font-primary)",
   textTransform: "none",
   fontWeight: 500,
   fontSize: "0.875rem",
   "&:hover": {
-    borderColor: "#cbd5e1",
-    backgroundColor: "#f8fafc",
+    borderColor: "color-mix(in srgb, var(--border-default) 70%, var(--font-primary))",
+    backgroundColor: "color-mix(in srgb, var(--surface) 70%, var(--background))",
     borderWidth: 1.5,
   },
-  "&:disabled": { borderColor: "#e2e8f0", opacity: 0.5 },
+  "&:disabled": { borderColor: "var(--border-default)", opacity: 0.5 },
 } as const;
 
 const fieldSx = (mb: number) => ({

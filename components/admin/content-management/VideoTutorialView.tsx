@@ -59,9 +59,9 @@ export function VideoTutorialView({ content }: VideoTutorialViewProps) {
           elevation={0}
           sx={{
             p: { xs: 2, sm: 3, md: 4 },
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--card-bg)",
             borderRadius: 2,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             flexShrink: 0,
           }}
         >
@@ -73,8 +73,8 @@ export function VideoTutorialView({ content }: VideoTutorialViewProps) {
                 mb: 2,
                 px: 1.5,
                 py: 0.5,
-                bgcolor: "#f3f4f6",
-                color: "#6b7280",
+                bgcolor: "var(--surface)",
+                color: "var(--font-secondary)",
                 borderRadius: 1,
                 fontWeight: 600,
               }}
@@ -86,7 +86,7 @@ export function VideoTutorialView({ content }: VideoTutorialViewProps) {
             variant="h5"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary)",
               mb: 2,
               fontSize: { xs: "1.25rem", sm: "1.5rem" },
             }}
@@ -99,27 +99,27 @@ export function VideoTutorialView({ content }: VideoTutorialViewProps) {
                 mt: 3,
                 mb: 1.5,
                 fontWeight: 600,
-                color: "#111827",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1.125rem", sm: "1.25rem" },
               },
               "& h3": {
                 mt: 2.5,
                 mb: 1,
                 fontWeight: 600,
-                color: "#111827",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1rem", sm: "1.125rem" },
               },
               "& h4": {
                 mt: 2,
                 mb: 0.5,
                 fontWeight: 600,
-                color: "#111827",
+                color: "var(--font-primary)",
                 fontSize: { xs: "0.9375rem", sm: "1rem" },
               },
               "& p": {
                 mb: 1.5,
                 lineHeight: 1.8,
-                color: "#374151",
+                color: "var(--font-secondary)",
                 fontSize: { xs: "0.9375rem", sm: "1rem" },
               },
               "& ul, & ol": {
@@ -129,15 +129,15 @@ export function VideoTutorialView({ content }: VideoTutorialViewProps) {
               "& li": {
                 mb: 0.75,
                 lineHeight: 1.8,
-                color: "#374151",
+                color: "var(--font-secondary)",
               },
               "& strong": {
                 fontWeight: 600,
-                color: "#111827",
+                color: "var(--font-primary)",
               },
               "& pre": {
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "var(--surface)",
+                border: "1px solid var(--border-default)",
                 borderRadius: 1,
                 p: 2,
                 overflow: "auto",
@@ -145,41 +145,45 @@ export function VideoTutorialView({ content }: VideoTutorialViewProps) {
                 "& code": {
                   fontFamily: "monospace",
                   fontSize: "0.875rem",
-                  color: "#111827",
+                  color: "var(--font-primary)",
                 },
               },
               "& blockquote": {
-                borderLeft: "4px solid #6366f1",
+                borderLeft: "4px solid var(--accent-indigo)",
                 pl: 2,
                 ml: 0,
                 py: 1,
                 mb: 1.5,
                 fontStyle: "italic",
-                color: "#6b7280",
-                backgroundColor: "#f9fafb",
+                color: "var(--font-secondary)",
+                backgroundColor: "var(--surface)",
               },
               "& .video-description": {
                 "& .real-world-example": {
-                  backgroundColor: "#f0f9ff",
-                  border: "1px solid #bae6fd",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--accent-indigo) 28%, var(--border-default) 72%)",
                   borderRadius: 1,
                   p: 2,
                   mb: 2,
                 },
                 "& .banner": {
-                  backgroundColor: "#fef3c7",
-                  border: "1px solid #fde68a",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default) 65%)",
                   borderRadius: 1,
                   p: 1.5,
                   mb: 1.5,
                   "& h4": {
                     mt: 0,
                     mb: 0.5,
-                    color: "#92400e",
+                    color: "var(--warning-500)",
                   },
                   "& p": {
                     mb: 0,
-                    color: "#78350f",
+                    color: "var(--font-primary)",
                   },
                 },
               },

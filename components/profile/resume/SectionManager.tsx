@@ -69,18 +69,18 @@ export function SectionManager({ sections, onSectionsChange }: SectionManagerPro
         sx={{
           p: 2,
           mb: 2,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           borderRadius: 2,
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <IconWrapper icon="mdi:view-grid" color="#6366f1" size={20} />
-          <Typography sx={{ fontWeight: 600, color: "#1f2937" }}>
+          <IconWrapper icon="mdi:view-grid" color="var(--accent-purple)" size={20} />
+          <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
             Sections
           </Typography>
         </Box>
-        <Typography sx={{ fontSize: "0.75rem", color: "#6b7280" }}>
+        <Typography sx={{ fontSize: "0.75rem", color: "var(--font-secondary)" }}>
           Drag to reorder • Toggle to show/hide
         </Typography>
       </Paper>
@@ -96,13 +96,13 @@ export function SectionManager({ sections, onSectionsChange }: SectionManagerPro
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnd={handleDragEnd}
             sx={{
-              border: section.enabled ? "2px solid #6366f1" : "1px solid #e5e7eb",
+              border: section.enabled ? "2px solid var(--accent-purple)" : "1px solid var(--border-default)",
               borderRadius: 2,
               overflow: "hidden",
               cursor: "grab",
               opacity: draggedIndex === index ? 0.5 : 1,
               transition: "all 0.2s",
-              backgroundColor: section.enabled ? "#ffffff" : "#f9fafb",
+              backgroundColor: section.enabled ? "var(--background)" : "var(--surface)",
               "&:active": {
                 cursor: "grabbing",
               },
@@ -115,16 +115,16 @@ export function SectionManager({ sections, onSectionsChange }: SectionManagerPro
                 alignItems: "center",
                 justifyContent: "space-between",
                 p: 2,
-                backgroundColor: section.enabled ? "#f9fafb" : "#ffffff",
+                backgroundColor: section.enabled ? "var(--surface)" : "var(--background)",
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <IconWrapper icon="mdi:drag-horizontal-variant" size={20} color="#9ca3af" />
-                <IconWrapper icon={section.icon} size={20} color={section.enabled ? "#6366f1" : "#9ca3af"} />
+                <IconWrapper icon="mdi:drag-horizontal-variant" size={20} color="var(--font-tertiary)" />
+                <IconWrapper icon={section.icon} size={20} color={section.enabled ? "var(--accent-purple)" : "var(--font-tertiary)"} />
                 <Typography
                   sx={{
                     fontWeight: 600,
-                    color: section.enabled ? "#1f2937" : "#9ca3af",
+                    color: section.enabled ? "var(--font-primary)" : "var(--font-tertiary)",
                   }}
                 >
                   {section.name}

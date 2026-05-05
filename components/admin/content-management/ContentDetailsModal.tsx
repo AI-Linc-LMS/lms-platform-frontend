@@ -27,14 +27,14 @@ interface ContentDetailsModalProps {
 
 const getTypeColor = (type: ContentType) => {
   const colors: Record<ContentType, { bg: string; text: string }> = {
-    Quiz: { bg: "#eef2ff", text: "#6366f1" },
-    Article: { bg: "#d1fae5", text: "#10b981" },
-    Assignment: { bg: "#fef3c7", text: "#f59e0b" },
-    CodingProblem: { bg: "#ede9fe", text: "#8b5cf6" },
-    DevCodingProblem: { bg: "#fce7f3", text: "#ec4899" },
-    VideoTutorial: { bg: "#fee2e2", text: "#ef4444" },
+    Quiz: { bg: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)", text: "var(--accent-indigo)" },
+    Article: { bg: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)", text: "var(--success-500)" },
+    Assignment: { bg: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)", text: "var(--warning-500)" },
+    CodingProblem: { bg: "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)", text: "var(--accent-purple)" },
+    DevCodingProblem: { bg: "color-mix(in srgb, var(--accent-purple) 10%, var(--surface) 90%)", text: "var(--accent-purple)" },
+    VideoTutorial: { bg: "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)", text: "var(--error-500)" },
   };
-  return colors[type] || { bg: "#f3f4f6", text: "#6b7280" };
+  return colors[type] || { bg: "var(--surface)", text: "var(--font-secondary)" };
 };
 
 const formatDate = (dateString: string) => {
@@ -95,7 +95,7 @@ export function ContentDetailsModal({
         <IconButton
           onClick={onClose}
           size="small"
-          sx={{ color: "#6b7280" }}
+          sx={{ color: "var(--font-secondary)" }}
         >
           <IconWrapper icon="mdi:close" size={20} />
         </IconButton>
@@ -119,14 +119,14 @@ export function ContentDetailsModal({
             <Box>
               <Typography
                 variant="h6"
-                sx={{ fontWeight: 600, mb: 2, color: "#111827" }}
+                sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}
               >
                 {t("adminContentManagement.basicInformation")}
               </Typography>
               <Paper
                 sx={{
                   p: 2,
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   borderRadius: 1,
                 }}
               >
@@ -134,7 +134,7 @@ export function ContentDetailsModal({
                   <Box>
                     <Typography
                       variant="caption"
-                      sx={{ color: "#6b7280", fontWeight: 600 }}
+                      sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                     >
                       {t("adminContentManagement.titleColumn")}
                     </Typography>
@@ -146,7 +146,7 @@ export function ContentDetailsModal({
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                       >
                         {t("adminContentManagement.type")}
                       </Typography>
@@ -165,7 +165,7 @@ export function ContentDetailsModal({
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                       >
                         {t("adminContentManagement.verificationStatus")}
                       </Typography>
@@ -174,8 +174,12 @@ export function ContentDetailsModal({
                           label={content.is_verified ? t("adminContentManagement.verified") : t("adminContentManagement.unverified")}
                           size="small"
                           sx={{
-                            bgcolor: content.is_verified ? "#d1fae5" : "#fee2e2",
-                            color: content.is_verified ? "#065f46" : "#991b1b",
+                            bgcolor: content.is_verified
+                              ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                              : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                            color: content.is_verified
+                              ? "var(--success-500)"
+                              : "var(--error-500)",
                             fontWeight: 600,
                           }}
                         />
@@ -184,7 +188,7 @@ export function ContentDetailsModal({
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                       >
                         {t("adminContentManagement.order")}
                       </Typography>
@@ -195,7 +199,7 @@ export function ContentDetailsModal({
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                       >
                         {t("adminContentManagement.duration")}
                       </Typography>
@@ -206,7 +210,7 @@ export function ContentDetailsModal({
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                       >
                         {t("adminContentManagement.marks")}
                       </Typography>
@@ -220,7 +224,7 @@ export function ContentDetailsModal({
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                       >
                         {t("adminContentManagement.createdAt")}
                       </Typography>
@@ -231,7 +235,7 @@ export function ContentDetailsModal({
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                       >
                         {t("adminContentManagement.lastUpdated")}
                       </Typography>
@@ -248,14 +252,14 @@ export function ContentDetailsModal({
             <Box>
               <Typography
                 variant="h6"
-                sx={{ fontWeight: 600, mb: 2, color: "#111827" }}
+                sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}
               >
                 {t("adminContentManagement.contentDetails")}
               </Typography>
               <Paper
                 sx={{
                   p: 2,
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: "var(--surface)",
                   borderRadius: 1,
                   maxHeight: 400,
                   overflow: "auto",
@@ -272,7 +276,7 @@ export function ContentDetailsModal({
                         <Box key={key}>
                           <Typography
                             variant="caption"
-                            sx={{ color: "#6b7280", fontWeight: 600 }}
+                            sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                           >
                             {key.replace(/_/g, " ").toUpperCase()}
                           </Typography>
@@ -289,7 +293,7 @@ export function ContentDetailsModal({
                         <Box key={key}>
                           <Typography
                             variant="caption"
-                            sx={{ color: "#6b7280", fontWeight: 600 }}
+                            sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                           >
                             {key.replace(/_/g, " ").toUpperCase()}
                           </Typography>
@@ -298,7 +302,7 @@ export function ContentDetailsModal({
                             sx={{
                               mt: 0.5,
                               p: 1,
-                              backgroundColor: "#ffffff",
+                              backgroundColor: "var(--card-bg)",
                               borderRadius: 1,
                               fontSize: "0.75rem",
                               overflow: "auto",
@@ -316,7 +320,7 @@ export function ContentDetailsModal({
                       <Box key={key}>
                         <Typography
                           variant="caption"
-                          sx={{ color: "#6b7280", fontWeight: 600 }}
+                        sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                         >
                           {key.replace(/_/g, " ").toUpperCase()}
                         </Typography>
