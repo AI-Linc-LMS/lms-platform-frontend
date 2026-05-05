@@ -84,6 +84,34 @@ export interface SubmissionResponse {
   status: string;
 }
 
+export interface AssessmentDetailsSnapshot {
+  id: number;
+  title: string;
+  slug: string;
+  instructions?: string;
+  description?: string;
+  duration_minutes: number;
+  proctoring_enabled?: boolean;
+  live_streaming?: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
+  is_paid?: boolean;
+  price?: number | string | null;
+  is_active?: boolean;
+  colleges?: unknown;
+  show_result?: boolean;
+  evaluation_mode?: "auto" | "manual";
+  allow_desktop?: boolean;
+  allow_mobile?: boolean;
+  allow_tablet?: boolean;
+  certificate_available?: boolean | null;
+  pass_band_upper_min_percent?: number | null;
+  pass_band_lower_min_percent?: number | null;
+  allow_movement?: boolean;
+  tab_switch_limit_enabled?: boolean;
+  tab_switch_limit_count?: number | null;
+}
+
 export interface FinalSubmissionResponse {
   id?: number;
   score?: number;
@@ -96,6 +124,7 @@ export interface FinalSubmissionResponse {
   auto_submitted_reason?: string | null;
   auto_submitted_meta?: Record<string, any>;
   auto_submit_message?: string;
+  assessment_details?: AssessmentDetailsSnapshot;
 }
 
 export interface ScholarshipStatus {
@@ -142,6 +171,7 @@ export interface AssessmentResult {
   assessment_id: string;
   assessment_name: string;
   maximum_marks: number;
+  assessment_details?: AssessmentDetailsSnapshot;
   /** Learner display name when API includes it on the result */
   student_name?: string;
   student_email?: string;
