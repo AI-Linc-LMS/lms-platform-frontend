@@ -215,9 +215,9 @@ export default function AssessmentResultPage() {
    * Must return `null` when not ready — `return true` makes this a boolean and breaks certificate + PNG.
    */
   const resultCertificateContent = useMemo(() => {
-    // if (!assessmentResult || !user) return null;
-    // if (!assessmentDetail) return null;
-    // if (!assessmentDetail.certificate_available) return null;
+    if (!assessmentResult || !user) return null;
+    if (!assessmentDetail) return null;
+    if (!assessmentDetail.certificate_available) return null;
     const s:any = assessmentResult?.stats || {};
     const name = getLearnerDisplayNameFromResult(assessmentResult, user);
     return buildAssessmentResultCertificate({
