@@ -53,6 +53,9 @@ export interface AssessmentDetail extends Assessment {
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
+  certificate_available?: boolean | null;
+  pass_band_upper_min_percent?: number | null;
+  pass_band_lower_min_percent?: number | null;
 }
 
 /** Lockdown policy for the assessment take flow (aligned with `evaluateLockdownGate`). */
@@ -171,7 +174,8 @@ export interface AssessmentResult {
   assessment_id: string;
   assessment_name: string;
   maximum_marks: number;
-  assessment_details?: AssessmentDetailsSnapshot;
+  assessment_details: AssessmentDetail;
+  
   /** Learner display name when API includes it on the result */
   student_name?: string;
   student_email?: string;

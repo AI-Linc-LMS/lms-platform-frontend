@@ -92,6 +92,22 @@ export function mapSubmissionsExportRowToAssessmentResult(
       }
     : undefined;
 
+  const assessmentDetails: AssessmentResult["assessment_details"] = {
+    id: a.id,
+    title: a.title,
+    description: "",
+    slug: a.slug,
+    instructions: "",
+    duration_minutes: 0,
+    is_paid: false,
+    price: null,
+    is_active: true,
+    number_of_questions: totalQuestions,
+    created_at: "",
+    is_attempted: true,
+    sections: [],
+    show_result: a.show_result,
+  };
   const manualPayload =
     sub.manual_evaluation_payload &&
     typeof sub.manual_evaluation_payload === "object"
@@ -114,6 +130,7 @@ export function mapSubmissionsExportRowToAssessmentResult(
     score: stats.score,
     assessment_id: String(a.id),
     assessment_name: a.title,
+    assessment_details: assessmentDetails,
     maximum_marks: maxMarks,
     student_name: sub.name,
     student_email: sub.email,
