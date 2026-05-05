@@ -174,7 +174,7 @@ export interface AssessmentResult {
   assessment_id: string;
   assessment_name: string;
   maximum_marks: number;
-  assessment_details: AssessmentDetailsSnapshot;
+  assessment_details: AssessmentDetail;
   
   /** Learner display name when API includes it on the result */
   student_name?: string;

@@ -102,6 +102,7 @@ export function mapSubmissionsExportRowToAssessmentResult(
     is_paid: false,
     price: null,
     is_active: true,
+    number_of_questions: totalQuestions,
     created_at: "",
     is_attempted: true,
     sections: [],
@@ -130,7 +131,6 @@ export function mapSubmissionsExportRowToAssessmentResult(
     assessment_id: String(a.id),
     assessment_name: a.title,
     assessment_details: assessmentDetails,
-    
     maximum_marks: maxMarks,
     student_name: sub.name,
     student_email: sub.email,
