@@ -60,6 +60,25 @@ function looksLikeImageUrl(url: string): boolean {
   return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
 }
 
+function pickCertificateCourseDisplayName(
+  detail: AssessmentDetailsSnapshot | null | undefined,
+): string | null {
+  if (!detail) return null;
+  const picks = [
+    detail.certificate_course_name,
+    detail.course_title,
+    detail.certificateCourseName,
+    detail.courseTitle,
+  ];
+  for (const v of picks) {
+    if (typeof v === "string") {
+      const t = v.trim();
+      if (t) return t;
+    }
+  }
+  return null;
+}
+
 export default function AssessmentResultPage() {
   const params = useParams();
   const router = useRouter();
@@ -76,7 +95,7 @@ export default function AssessmentResultPage() {
   const [assessmentDetail, setAssessmentDetail] = useState<AssessmentDetailsSnapshot | null>(null);
   const [uploadedCertificateUrl, setUploadedCertificateUrl] = useState<string>("");
   const [uploadedCertificateTier, setUploadedCertificateTier] =
-    useState<"participation" | "excellence">("participation");
+    useState<"participation" | "excellence"|"">();
   const [checkingUploadedCertificate, setCheckingUploadedCertificate] = useState(false);
 
   const { showToast } = useToast();
@@ -115,16 +134,41 @@ export default function AssessmentResultPage() {
     );
   }, [assessmentResult, assessmentDetail]);
 
-  const preferredCertificateTier = useMemo<"participation" | "excellence">(() => {
+  const preferredCertificateTier = useMemo<"participation" | "excellence"|"">(() => {
    
     if (!assessmentResult || !assessmentDetail?.certificate_available) {
-      return "participation";
+      return "";
     }
     const upper = asNumber(assessmentDetail.pass_band_upper_min_percent);
-    if (upper == null) return "participation";
+    const lower = asNumber(assessmentDetail?.pass_band_lower_min_percent||0);
+    if (upper == null||lower == null) return "";
     const pct =scoreToPercent(assessmentResult.stats?.score, assessmentResult.stats?.maximum_marks);
-    return pct >= upper ? "excellence" : "participation";
+    return pct >= upper ? "excellence" : pct<=upper && pct>=lower ? "participation" : "";
   }, [assessmentResult, assessmentDetail]);
+
+  const isCertificateEligible = useMemo(() => {
+    if (!assessmentResult || !assessmentDetail?.certificate_available) return false;
+    const lower = asNumber(assessmentDetail.pass_band_lower_min_percent);
+    if (lower == null) return false;
+    const pct = scoreToPercent(
+      assessmentResult.stats?.score,
+      assessmentResult.stats?.maximum_marks,
+    );
+    return pct > lower;
+  }, [assessmentResult, assessmentDetail]);
+
+  /** Shown after “For completing structured training in …”. API course label if set, else assessment/test title. */
+  const structuredTrainingSubject = useMemo(() => {
+    const fromApi = pickCertificateCourseDisplayName(assessmentDetail);
+    if (fromApi) return fromApi;
+    const fallback = (
+      assessmentResult?.assessment_name ||
+      assessmentDetail?.title ||
+      slug ||
+      ""
+    ).trim();
+    return fallback || null;
+  }, [assessmentDetail, assessmentResult, slug]);
 
   useEffect(() => {
     if (!assessmentResult) {
@@ -135,6 +179,12 @@ export default function AssessmentResultPage() {
     // Only skip when backend explicitly disables certificates.
     if (assessmentDetail?.certificate_available === false) {
       setUploadedCertificateUrl("");
+      return;
+    }
+
+    if (!isCertificateEligible || !preferredCertificateTier) {
+      setUploadedCertificateUrl("");
+      setCheckingUploadedCertificate(false);
       return;
     }
 
@@ -188,7 +238,7 @@ export default function AssessmentResultPage() {
     return () => {
       cancelled = true;
     };
-  }, [assessmentResult, assessmentDetail, preferredCertificateTier, slug]);
+  }, [assessmentResult, assessmentDetail, isCertificateEligible, preferredCertificateTier, slug]);
 
   /** Classic achievement wording (no credential lines). Shown only when score is in the appreciation band. */
   const appreciationCertificateContent = useMemo(() => {
@@ -205,10 +255,19 @@ export default function AssessmentResultPage() {
     return buildAssessmentAppreciationCertificate({
       recipientName: name,
       assessmentTitle: assessmentResult.assessment_name || slug,
+      certificateCourseName: structuredTrainingSubject,
       branding: finalizeBranding(buildCertificateBranding(clientInfo)),
       scoreText,
     });
-  }, [assessmentResult, assessmentDetail, clientInfo, user, slug, inAppreciationBand]);
+  }, [
+    assessmentResult,
+    assessmentDetail,
+    clientInfo,
+    user,
+    slug,
+    inAppreciationBand,
+    structuredTrainingSubject,
+  ]);
 
   /**
    * Result record with metric lines. Always completion-style so it does not duplicate the achievement
@@ -219,11 +278,13 @@ export default function AssessmentResultPage() {
     if (!assessmentResult || !user) return null;
     if (!assessmentDetail) return null;
     if (!assessmentDetail.certificate_available) return null;
+    if (!isCertificateEligible || !preferredCertificateTier) return null;
     const s:any = assessmentResult?.stats || {};
     const name = getLearnerDisplayNameFromResult(assessmentResult, user);
     return buildAssessmentResultCertificate({
       recipientName: name,
       assessmentTitle: assessmentResult?.assessment_name || slug,
+      certificateCourseName: structuredTrainingSubject,
       branding: finalizeBranding(buildCertificateBranding(clientInfo)),
       score: s.score,
       maximumMarks: s.maximum_marks,
@@ -234,7 +295,16 @@ export default function AssessmentResultPage() {
       timeTakenMinutes: s.time_taken_minutes,
       inAppreciationBand: preferredCertificateTier === "excellence",
     });
-  }, [assessmentResult, assessmentDetail, clientInfo, user, slug, preferredCertificateTier]);
+  }, [
+    assessmentResult,
+    assessmentDetail,
+    clientInfo,
+    user,
+    slug,
+    isCertificateEligible,
+    preferredCertificateTier,
+    structuredTrainingSubject,
+  ]);
 
   const certificateDownloadFileStem = useMemo(() => {
     if (!assessmentResult || !user) {
@@ -366,9 +436,9 @@ export default function AssessmentResultPage() {
         body: JSON.stringify({
           studentName: learnerName,
           templateUrl: uploadedCertificateUrl,
-          templateHasDate: true,
           issuerName: clientInfo?.name || "",
           courseName: assessmentResult?.assessment_name || slug,
+          structuredTrainingSubject,
         }),
       });
 

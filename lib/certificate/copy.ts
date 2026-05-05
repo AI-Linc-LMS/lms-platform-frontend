@@ -13,6 +13,28 @@ function toTitleCaseName(name: string): string {
     .trim();
 }
 
+/** Optional “structured training in {course}” line; omitted when no course label is configured. */
+function trainingInCourseLine(courseName?: string | null): Pick<
+  CertificateContent,
+  "bodyLead" | "bodySegments"
+> {
+  const trimmed = String(courseName ?? "").trim();
+  if (!trimmed) {
+    return { bodyLead: "", bodySegments: undefined };
+  }
+  return {
+    bodyLead: "For completing structured training in",
+    bodySegments: [
+      {
+        text: trimmed,
+        bold: true,
+        color: "#3e3aa5",
+        fontSizePx: 28,
+      },
+    ],
+  };
+}
+
 function baseContent(
   variant: CertificateVariant,
   partial: Omit<
@@ -74,12 +96,15 @@ export function buildAssessmentParticipationCertificate(
   args: {
     recipientName: string;
     assessmentTitle: string;
+    /** Linked course/program label when the assessment sits inside a named course track. */
+    certificateCourseName?: string | null;
     branding: CertificateBranding;
     issuedOn?: Date;
     certificateId?: string;
   }
 ): CertificateContent {
-  const { recipientName, assessmentTitle, branding, issuedOn, certificateId } = args;
+  const { recipientName, assessmentTitle, branding, issuedOn, certificateId, certificateCourseName } = args;
+  const trainingLine = trainingInCourseLine(certificateCourseName);
   return baseContent(
     "assessment_participation",
     {
@@ -87,8 +112,7 @@ export function buildAssessmentParticipationCertificate(
       subjectName: assessmentTitle,
       headlineTitle: "Certificate of participation",
       preamble: "This certificate is presented to",
-      bodyLead: "For completing structured training in ",
-      bodySegments: [{ text: assessmentTitle, bold: true }],
+      ...trainingLine,
       issuedOn,
       certificateId,
     },
@@ -100,14 +124,16 @@ export function buildAssessmentAppreciationCertificate(
   args: {
     recipientName: string;
     assessmentTitle: string;
+    certificateCourseName?: string | null;
     branding: CertificateBranding;
     scoreText: string;
     issuedOn?: Date;
     certificateId?: string;
   }
 ): CertificateContent {
-  const { recipientName, assessmentTitle, branding, scoreText, issuedOn, certificateId } =
+  const { recipientName, assessmentTitle, branding, scoreText, issuedOn, certificateId, certificateCourseName } =
     args;
+  const trainingLine = trainingInCourseLine(certificateCourseName);
   return baseContent(
     "assessment_appreciation",
     {
@@ -116,8 +142,7 @@ export function buildAssessmentAppreciationCertificate(
       scoreText: undefined,
       headlineTitle: "Certificate of excellence",
       preamble: "This certificate is presented to",
-      bodyLead: "For completing structured training in ",
-      bodySegments: [{ text: assessmentTitle, bold: true }],
+      ...trainingLine,
       issuedOn,
       certificateId,
     },
@@ -132,6 +157,7 @@ export function buildAssessmentAppreciationCertificate(
 export function buildAssessmentResultCertificate(args: {
   recipientName: string;
   assessmentTitle: string;
+  certificateCourseName?: string | null;
   branding: CertificateBranding;
   score: number;
   maximumMarks: number;
@@ -148,6 +174,7 @@ export function buildAssessmentResultCertificate(args: {
   const {
     recipientName,
     assessmentTitle,
+    certificateCourseName,
     branding,
     score,
     maximumMarks,
@@ -161,6 +188,8 @@ export function buildAssessmentResultCertificate(args: {
     certificateId,
   } = args;
 
+  const trainingLine = trainingInCourseLine(certificateCourseName);
+
   if (inAppreciationBand) {
     return baseContent(
       "assessment_result",
@@ -171,8 +200,7 @@ export function buildAssessmentResultCertificate(args: {
         credentialLines: undefined,
         headlineTitle: "Certificate of excellence",
         preamble: "This certificate is presented to",
-        bodyLead: "For completing structured training in ",
-        bodySegments: [{ text: assessmentTitle, bold: true }],
+        ...trainingLine,
         issuedOn,
         certificateId,
       },
@@ -189,8 +217,7 @@ export function buildAssessmentResultCertificate(args: {
       credentialLines: undefined,
       headlineTitle: "Certificate of completion",
       preamble: "This certificate is presented to",
-      bodyLead: "For completing structured training in ",
-      bodySegments: [{ text: assessmentTitle, bold: true }],
+      ...trainingLine,
       issuedOn,
       certificateId,
     },

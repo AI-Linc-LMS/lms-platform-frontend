@@ -58,6 +58,9 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
     const dateStr = formatCertificateDate(content?.issuedOn || new Date());
     const logoUrl = (branding?.logoUrl || "").trim();
     const nameLen = (content.recipientName || "").length;
+    const hasBodyCopy =
+      Boolean((content.bodyLead || "").trim()) ||
+      Boolean(content.bodySegments?.some((s) => String(s.text || "").trim()));
     const signatoryName =
       (branding?.signatoryName || "").trim() ||
       (branding?.issuerDisplayName || "").trim() ||
@@ -283,32 +286,41 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
             }}
           />
 
-          <Typography
-            component="div"
-            sx={{
-              textAlign: "center",
-              fontSize: 18,
-              lineHeight: 1.55,
-              color: "rgba(26,16,51,0.85)",
-              maxWidth: 720,
-              mx: "auto",
-              mb: 1.1,
-              px: 2,
-            }}
-          >
-            <Box component="span" sx={{ fontWeight: 500 }}>
-              {content.bodyLead}{" "}
-            </Box>
-            {content.bodySegments?.map((seg, i) => (
-              <Box
-                component="span"
-                key={i}
-                sx={{ fontWeight: seg.bold ? 700 : 500, color: seg.bold ? "#1a1033" : "inherit" }}
-              >
-                {seg.text}
-              </Box>
-            ))}
-          </Typography>
+          {hasBodyCopy ? (
+            <Typography
+              component="div"
+              sx={{
+                textAlign: "center",
+                fontSize: 18,
+                lineHeight: 1.55,
+                color: "rgba(26,16,51,0.85)",
+                maxWidth: 720,
+                mx: "auto",
+                mb: 1.1,
+                px: 2,
+              }}
+            >
+              {(content.bodyLead || "").trim() ? (
+                <Box component="span" sx={{ fontWeight: 500 }}>
+                  {content.bodyLead.trim()}
+                  {content.bodySegments?.length ? "\u00A0" : null}
+                </Box>
+              ) : null}
+              {content.bodySegments?.map((seg, i) => (
+                <Box
+                  component="span"
+                  key={i}
+                  sx={{
+                    fontWeight: seg.bold ? 700 : 500,
+                    color: seg.color ?? (seg.bold ? "#1a1033" : "inherit"),
+                    ...(seg.fontSizePx != null ? { fontSize: seg.fontSizePx } : {}),
+                  }}
+                >
+                  {seg.text}
+                </Box>
+              ))}
+            </Typography>
+          ) : null}
 
           <Box sx={{ flex: 1 }} />
 

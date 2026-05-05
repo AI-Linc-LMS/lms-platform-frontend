@@ -31,7 +31,14 @@ export interface CertificateContent {
   /** Main achievement sentence; may include placeholders — use bodySegments for rich line */
   bodyLead: string;
   /** Optional segments after lead: plain / bold pairs for emphasis */
-  bodySegments?: Array<{ text: string; bold?: boolean }>;
+  bodySegments?: Array<{
+    text: string;
+    bold?: boolean;
+    /** When set, overrides default segment color (e.g. accent for course title). */
+    color?: string;
+    /** Optional pixel font size for emphasis (e.g. course line). */
+    fontSizePx?: number;
+  }>;
   subjectName: string;
   issuedOn: Date;
   certificateId: string;

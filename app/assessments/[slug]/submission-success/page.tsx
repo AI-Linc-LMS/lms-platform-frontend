@@ -187,6 +187,18 @@ export default function SubmissionSuccessPage() {
                 content={buildAssessmentParticipationCertificate({
                   recipientName: getUserDisplayName(user),
                   assessmentTitle: assessment.title,
+                  certificateCourseName: (() => {
+                    const vals = [
+                      assessment.certificate_course_name,
+                      assessment.course_title,
+                      assessment.certificateCourseName,
+                      assessment.courseTitle,
+                    ];
+                    for (const v of vals) {
+                      if (typeof v === "string" && v.trim()) return v.trim();
+                    }
+                    return (assessment.title || "").trim() || null;
+                  })(),
                   branding: finalizeBranding(buildCertificateBranding(clientInfo)),
                 })}
                 fileNameBase={`certificate-participation-${assessment.slug || slug}`}

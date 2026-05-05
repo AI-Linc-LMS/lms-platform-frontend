@@ -56,6 +56,14 @@ export interface AssessmentDetail extends Assessment {
   certificate_available?: boolean | null;
   pass_band_upper_min_percent?: number | null;
   pass_band_lower_min_percent?: number | null;
+  /**
+   * When set and non-empty, certificates show “For completing structured training in {name}”.
+   * When omitted/empty, that line is omitted.
+   */
+  certificate_course_name?: string | null;
+  course_title?: string | null;
+  certificateCourseName?: string | null;
+  courseTitle?: string | null;
 }
 
 /** Lockdown policy for the assessment take flow (aligned with `evaluateLockdownGate`). */
@@ -113,6 +121,16 @@ export interface AssessmentDetailsSnapshot {
   allow_movement?: boolean;
   tab_switch_limit_enabled?: boolean;
   tab_switch_limit_count?: number | null;
+  /**
+   * When set and non-empty, certificates show “For completing structured training in {name}”.
+   * When omitted/empty, that line is omitted (assessment-only completion).
+   */
+  certificate_course_name?: string | null;
+  /** Optional API alias used by some backends for linked course labeling. */
+  course_title?: string | null;
+  /** camelCase alternate some APIs may emit */
+  certificateCourseName?: string | null;
+  courseTitle?: string | null;
 }
 
 export interface FinalSubmissionResponse {
