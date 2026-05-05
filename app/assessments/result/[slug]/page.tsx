@@ -122,7 +122,7 @@ export default function AssessmentResultPage() {
     }
     const upper = asNumber(assessmentDetail.pass_band_upper_min_percent);
     if (upper == null) return "participation";
-    const pct =assessmentResult.stats?.score
+    const pct =scoreToPercent(assessmentResult.stats?.score, assessmentResult.stats?.maximum_marks);
     return pct >= upper ? "excellence" : "participation";
   }, [assessmentResult, assessmentDetail]);
 
