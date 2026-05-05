@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -18,11 +18,16 @@ import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { getUserDisplayName } from "@/lib/utils/user-utils";
 import {
   getLinkedInPostText,
-  getLinkedInShareUrl,
   blobToBase64,
   CERTIFICATE_MIN_COMPLETION,
-  checkCertificateImageInPublicImages,
 } from "@/lib/services/certificate-share.service";
+import { DynamicCertificate } from "@/components/certificate/DynamicCertificate";
+import { buildCourseCompletionCertificate } from "@/lib/certificate/copy";
+import {
+  buildCertificateBranding,
+  finalizeBranding,
+} from "@/lib/certificate/client-branding";
+import { certificateElementToPngBlob } from "@/lib/utils/certificate-export.utils";
 
 interface CertificateButtonsProps {
   courseId: number;
@@ -37,102 +42,83 @@ interface CertificateButtonsProps {
 }
 
 export function CertificateButtons({
-  courseId,
   courseTitle,
   certificateAvailable,
   completionPercentage = 0,
   score = "100%",
-  certificateUrl,
 }: CertificateButtonsProps) {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [imageAvailable, setImageAvailable] = useState<boolean | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [sharePostText, setSharePostText] = useState("");
   const [shareCertificateBlob, setShareCertificateBlob] = useState<Blob | null>(null);
   const [shareImageObjectUrl, setShareImageObjectUrl] = useState<string | null>(null);
   const [copyBothStep, setCopyBothStep] = useState<"image" | "message">("image");
   const { clientInfo } = useClientInfo();
+  const certRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!courseTitle?.trim()) {
-      setImageAvailable(false);
-      return;
-    }
-    const check = async () => {
-      try {
-        const available = await checkCertificateImageInPublicImages(courseTitle);
-        setImageAvailable(available);
-      } catch {
-        setImageAvailable(false);
-      }
-    };
-    check();
-  }, [courseTitle]);
+  const certificateContent = useMemo(() => {
+    if (!user || !courseTitle?.trim()) return null;
+    const branding = finalizeBranding(buildCertificateBranding(clientInfo));
+    return buildCourseCompletionCertificate({
+      recipientName: getUserDisplayName(user),
+      courseTitle: courseTitle.trim(),
+      branding,
+    });
+  }, [user, courseTitle, clientInfo]);
 
   const canClaimCertificate =
     certificateAvailable === true &&
     completionPercentage >= CERTIFICATE_MIN_COMPLETION &&
-    imageAvailable === true;
+    certificateContent != null;
 
   if (!certificateAvailable) {
     return null;
   }
+
+  const safeName = (s: string) =>
+    (s || "").replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
+
+  const captureBlob = async (): Promise<Blob> => {
+    const el = certRef.current;
+    if (!el) throw new Error("Certificate is not ready");
+    return certificateElementToPngBlob(el);
+  };
 
   const handleDownloadCertificate = async () => {
     if (!user) {
       showToast("Please login to download certificate", "error");
       return;
     }
-    if (imageAvailable !== true) {
-      showToast("Certificate image is not available for this course.", "warning");
-      return;
-    }
     if (!canClaimCertificate) {
-      showToast(`Complete ${CERTIFICATE_MIN_COMPLETION}% of the course to download the certificate.`, "warning");
+      showToast(
+        `Complete ${CERTIFICATE_MIN_COMPLETION}% of the course to download the certificate.`,
+        "warning"
+      );
       return;
     }
 
     try {
       setDownloading(true);
-      const studentName = getUserDisplayName(user);
-
-      // Generate certificate
-      const response = await fetch("/api/certificate/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          studentName,
-          courseName: courseTitle,
-          index: 0, // You can get this from backend if needed
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to generate certificate");
-      }
-
-      // Download the image
-      const blob = await response.blob();
+      const blob = await captureBlob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const safeName = (s: string) => (s || "").replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
+      const studentName = getUserDisplayName(user);
       a.download = `certificate-${safeName(studentName)}-${safeName(courseTitle)}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
       showToast("Certificate downloaded successfully!", "success");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Download error:", error);
-      showToast(error.message || "Failed to download certificate", "error");
+      showToast(
+        error instanceof Error ? error.message : "Failed to download certificate",
+        "error"
+      );
     } finally {
       setDownloading(false);
     }
@@ -143,12 +129,11 @@ export function CertificateButtons({
       showToast("Please login to share certificate", "error");
       return;
     }
-    if (imageAvailable !== true) {
-      showToast("Certificate image is not available for this course.", "warning");
-      return;
-    }
     if (!canClaimCertificate) {
-      showToast(`Complete ${CERTIFICATE_MIN_COMPLETION}% of the course to share your certificate.`, "warning");
+      showToast(
+        `Complete ${CERTIFICATE_MIN_COMPLETION}% of the course to share your certificate.`,
+        "warning"
+      );
       return;
     }
 
@@ -165,23 +150,7 @@ export function CertificateButtons({
 
     setSharing(true);
     try {
-      const studentName = getUserDisplayName(user);
-      const response = await fetch("/api/certificate/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName,
-          courseName: courseTitle ?? "",
-          index: 0,
-        }),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error || "Failed to generate certificate");
-      }
-
-      const blob = await response.blob();
+      const blob = await captureBlob();
       setShareCertificateBlob(blob);
       const objectUrl = URL.createObjectURL(blob);
       setShareImageObjectUrl(objectUrl);
@@ -190,13 +159,16 @@ export function CertificateButtons({
         await navigator.clipboard.writeText(postText);
         showToast("Message copied! Paste (Ctrl+V or Cmd+V) in LinkedIn.", "success");
       } catch {
-        showToast("Could not copy. Use \"Copy message\" below.", "warning");
+        showToast('Could not copy. Use "Copy message" below.', "warning");
       }
 
       setSharePostText(postText);
       setShareDialogOpen(true);
-    } catch (error: any) {
-      showToast(error?.message ?? "Failed to prepare share", "error");
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : "Failed to prepare share",
+        "error"
+      );
     } finally {
       setSharing(false);
     }
@@ -212,13 +184,6 @@ export function CertificateButtons({
     setShareDialogOpen(false);
   };
 
-  const handleOpenLinkedInFromDialog = () => {
-    const pageUrl = typeof window !== "undefined" ? window.location.href : "";
-    const shareUrl = getLinkedInShareUrl(pageUrl);
-    window.open(shareUrl, "_blank", "noopener,noreferrer");
-    handleCloseShareDialog();
-  };
-
   const handleCopyMessage = async () => {
     try {
       await navigator.clipboard.writeText(sharePostText);
@@ -230,9 +195,7 @@ export function CertificateButtons({
 
   const copyImageToClipboard = async (blob: Blob): Promise<boolean> => {
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       return true;
     } catch {
       try {
@@ -258,17 +221,19 @@ export function CertificateButtons({
     if (ok) {
       showToast("Certificate image copied! Paste (Ctrl+V or Cmd+V) in your LinkedIn post.", "success");
     } else {
-      showToast("Could not copy image. Please use Download Certificate, then add the file in LinkedIn.", "warning");
+      showToast(
+        'Could not copy image. Please use Download Certificate, then add the file in LinkedIn.',
+        "warning"
+      );
     }
   };
 
   const handleCopyImageAndMessage = async () => {
     if (!shareCertificateBlob || !sharePostText) return;
-    // LinkedIn needs image-only for the first paste. So we use two steps, both on user click so clipboard works.
     if (copyBothStep === "image") {
       const imageOk = await copyImageToClipboard(shareCertificateBlob);
       if (!imageOk) {
-        showToast("Could not copy image. Use \"Copy image\" and \"Copy message\" separately.", "warning");
+        showToast('Could not copy image. Use "Copy image" and "Copy message" separately.', "warning");
         return;
       }
       setCopyBothStep("message");
@@ -279,7 +244,7 @@ export function CertificateButtons({
         setCopyBothStep("image");
         showToast("Caption copied! Paste again in your LinkedIn post.", "success");
       } catch {
-        showToast("Could not copy. Use \"Copy message\" instead.", "warning");
+        showToast('Could not copy. Use "Copy message" instead.', "warning");
       }
     }
   };
@@ -293,17 +258,30 @@ export function CertificateButtons({
         mt: 2,
       }}
     >
-      {imageAvailable === null && (
+      {certificateContent ? (
+        <Box
+          sx={{
+            position: "fixed",
+            left: -14000,
+            top: 0,
+            width: 1200,
+            height: 675,
+            pointerEvents: "none",
+            zIndex: -5,
+            overflow: "visible",
+          }}
+          aria-hidden
+        >
+          <DynamicCertificate ref={certRef} content={certificateContent} />
+        </Box>
+      ) : null}
+
+      {!certificateContent && (
         <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          Checking certificate availability…
+          Sign in to generate your certificate.
         </Typography>
       )}
-      {imageAvailable === false && (
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          Certificate template is not available for this course.
-        </Typography>
-      )}
-      {imageAvailable === true && !canClaimCertificate && (
+      {certificateContent && !canClaimCertificate && (
         <Typography variant="caption" sx={{ color: "text.secondary" }}>
           Complete {CERTIFICATE_MIN_COMPLETION}% of the course to unlock certificate download and sharing.
         </Typography>
@@ -319,7 +297,7 @@ export function CertificateButtons({
             )
           }
           onClick={handleDownloadCertificate}
-          disabled={downloading || !user || !canClaimCertificate || imageAvailable !== true}
+          disabled={downloading || !user || !canClaimCertificate}
           sx={{
             backgroundColor: "#5A46A0",
             "&:hover": {
@@ -333,14 +311,10 @@ export function CertificateButtons({
         <Button
           variant="outlined"
           startIcon={
-            sharing ? (
-              <CircularProgress size={20} />
-            ) : (
-              <IconWrapper icon="mdi:linkedin" size={20} />
-            )
+            sharing ? <CircularProgress size={20} /> : <IconWrapper icon="mdi:linkedin" size={20} />
           }
           onClick={handleShareOnLinkedIn}
-          disabled={!user || sharing || !canClaimCertificate || imageAvailable !== true}
+          disabled={!user || sharing || !canClaimCertificate}
           sx={{
             borderColor: "#0077b5",
             color: "#0077b5",
@@ -358,7 +332,9 @@ export function CertificateButtons({
         <DialogTitle>Add to your LinkedIn post</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Open LinkedIn and start a new post. Click &quot;Copy image and message&quot; to copy the image, paste (Ctrl+V or Cmd+V) in the post, then click the same button again to copy your caption and paste again.
+            Open LinkedIn and start a new post. Click &quot;Copy image and message&quot; to copy the image,
+            paste (Ctrl+V or Cmd+V) in the post, then click the same button again to copy your caption and
+            paste again.
           </Typography>
           {shareImageObjectUrl && (
             <Box sx={{ mb: 2, borderRadius: 1, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>

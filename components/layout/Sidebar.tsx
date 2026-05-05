@@ -49,6 +49,8 @@ interface NavigationItem {
   path: string;
   icon: string;
   featureName: string;
+  /** If set, show when any listed client admin feature is enabled (OR). */
+  featureNamesAny?: string[];
   /** If true, only org admins (admin / superadmin) see this link. */
   orgAdminOnly?: boolean;
 }
@@ -280,12 +282,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_assessment",
     },
     {
-      label: "Scorecard",
-      labelKey: "nav.scorecard",
-      path: "/admin/scorecard",
-      icon: "mdi:chart-box-outline",
-      featureName: "admin_scorecard",
+      label: "Certificate uploads",
+      labelKey: "nav.certificateUploads",
+      path: "/admin/certificates",
+      icon: "mdi:certificate",
+      featureName: "admin_certificates",
     },
+   
     {
       label: "Jobs",
       labelKey: "nav.adminJobsV2",
@@ -355,6 +358,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         if (effectiveAdminMode && item.featureName === "admin_scorecard") {
           return true;
         }
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((n) => filteredFeatureNames.has(n));
+        }
         return filteredFeatureNames.has(item.featureName);
       });
     } else {
@@ -363,7 +370,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     if (isCourseManagerRole(role) && effectiveAdminMode) {
       const allow = new Set(COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES);
-      items = items.filter((item) => allow.has(item.featureName));
+      items = items.filter((item) => {
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((f) => allow.has(f));
+        }
+        return allow.has(item.featureName);
+      });
     }
 
     items = items.filter(

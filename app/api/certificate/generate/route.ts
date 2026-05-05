@@ -7,8 +7,16 @@ const fontsDir = path.join(process.cwd(), "public", "assets", "fonts");
 const alexBrushPath = path.join(fontsDir, "AlexBrush-Regular.ttf");
 const coltonsPath = path.join(fontsDir, "COLTONSC.ttf");
 
+let alexBrushRegistered = false;
 if (fs.existsSync(alexBrushPath)) {
-  registerFont(alexBrushPath, { family: "Alex Brush" });
+  try {
+    registerFont(alexBrushPath, { family: "Alex Brush", weight: "normal", style: "normal" });
+    registerFont(alexBrushPath, { family: "Alex Brush", weight: "normal", style: "normal" });
+    registerFont(alexBrushPath, { family: "Alex Brush Regular", weight: "normal", style: "normal" });
+    alexBrushRegistered = true;
+  } catch {
+    alexBrushRegistered = false;
+  }
 }
 if (fs.existsSync(coltonsPath)) {
   registerFont(coltonsPath, { family: "COLTONS" });
@@ -59,10 +67,22 @@ function getCertificateImagePathForCourse(courseName: string): string | null {
   return null;
 }
 
-function generateCertificateId() {
+function generateCertificateId(prefix?: string) {
   const year = new Date().getFullYear();
   const seq = Math.floor(1000 + Math.random() * 9000);
-  return `ZS-${year}-${seq}`;
+  const letters = String(prefix ?? "")
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase()
+    .slice(0, 2);
+  const idPrefix = letters.length === 2 ? letters : "ZS";
+  return `${idPrefix}-${year}-${seq}`;
+}
+
+function toTitleCaseName(name: string): string {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase())
+    .trim();
 }
 
 export async function GET(request: NextRequest) {
@@ -75,7 +95,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentName, courseName, certificateId, index } = body;
+    const { studentName, courseName, certificateId, templateUrl, templateHasDate, issuerName } = body;
 
     if (!studentName) {
       return NextResponse.json(
@@ -83,13 +103,24 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const imagePath = getCertificateImagePathForCourse(courseName ?? "");
+    const templateCandidate =
+      typeof templateUrl === "string" && templateUrl.trim() ? templateUrl.trim() : null;
+    const imagePath = templateCandidate ?? getCertificateImagePathForCourse(courseName ?? "");
 
     if (!imagePath) {
       return NextResponse.json(
         { error: "Certificate template not found for this course" },
         { status: 404 }
+      );
+    }
+
+    if (!fs.existsSync(alexBrushPath) || !alexBrushRegistered) {
+      return NextResponse.json(
+        {
+          error:
+            "Alex Brush font could not be loaded. Verify public/assets/fonts/AlexBrush-Regular.ttf and restart the server.",
+        },
+        { status: 500 }
       );
     }
 
@@ -104,16 +135,29 @@ export async function POST(request: NextRequest) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    let fontSize = 90;
-    if (studentName.length > 20) fontSize = 75;
-    if (studentName.length > 30) fontSize = 74;
+    // Force Alex Brush for generated certificate name.
+    const nameFont = fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
+    const cleanName = toTitleCaseName(String(studentName || ""));
+    let fontSize = Math.round(canvas.width * 0.072);
+    if (cleanName.length > 20) fontSize = Math.round(canvas.width * 0.072);
+    if (cleanName.length > 30) fontSize = Math.round(canvas.width * 0.062);
 
-    const nameFont = fs.existsSync(alexBrushPath) ? "Alex Brush" : "Arial";
-    ctx.font = `${fontSize}px "${nameFont}"`;
-    ctx.fillText(studentName?.toLowerCase(), canvas.width / 2, canvas.height * 0.53);
+    // Fit to template width so long names remain visible.
+    const maxNameWidth = canvas.width * 0.72;
+    do {
+      ctx.font = `normal ${fontSize}px "${nameFont}"`;
+      if (ctx.measureText(cleanName).width <= maxNameWidth || fontSize <= 38) break;
+      fontSize -= 2;
+    } while (fontSize > 38);
+
+    // Plain Alex Brush text only (no stroke/shadow/effects).
+
+    const nameX = canvas.width / 2;
+    const nameY = canvas.height * 0.53;
+    ctx.fillText(cleanName, nameX, nameY);
 
     /* ===== CERTIFICATE ID (VALUE ONLY) ===== */
-    const id = certificateId ?? generateCertificateId();
+    const id = certificateId ?? generateCertificateId(issuerName ?? courseName ?? "");
 
     ctx.fillStyle = "#000";
     ctx.textAlign = "left";
@@ -123,15 +167,19 @@ export async function POST(request: NextRequest) {
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
-    /* ===== DATE OF ISSUE (bottom-right, under "DATE OF ISSUE" label) ===== */
-    const dateStr = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    ctx.textAlign = "right";
-    ctx.font = "Arial";
-    ctx.fillText(dateStr, canvas.width * 0.88, canvas.height * 0.872);
+    // Uploaded templates usually already include date text/slot.
+    // Skip drawing date when template indicates it already has one.
+    const hasDateOnTemplate = Boolean(templateCandidate) || Boolean(templateHasDate);
+    if (!hasDateOnTemplate) {
+      const dateStr = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      ctx.textAlign = "right";
+      ctx.font = "Arial";
+      ctx.fillText(dateStr, canvas.width * 0.88, canvas.height * 0.872);
+    }
 
     const buffer = canvas.toBuffer("image/png");
 

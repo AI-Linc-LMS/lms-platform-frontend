@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import {
   Box,
@@ -242,8 +243,17 @@ export default function CourseViewPage() {
               )}
             </Box>
           </Box>
-          {!isCourseManager ? (
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Button
+              variant="outlined"
+              component={Link}
+              href={`/admin/certificates/course/${courseId}`}
+              startIcon={<IconWrapper icon="mdi:certificate" size={18} />}
+            >
+              {t("certificatesUpload.openCourseCertificates")}
+            </Button>
+            {!isCourseManager ? (
+              <>
               <Tooltip title={isPublished ? t("adminCourseBuilder.unpublishCourseTooltip") : t("adminCourseBuilder.publishCourseTooltip")}>
                 <Button
                   variant="outlined"
@@ -292,8 +302,9 @@ export default function CourseViewPage() {
               >
                 {t("adminCourseBuilder.editCourse")}
               </Button>
-            </Box>
-          ) : null}
+              </>
+            ) : null}
+          </Box>
         </Box>
 
         {/* Course Information Card */}

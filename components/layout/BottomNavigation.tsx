@@ -19,6 +19,8 @@ interface NavigationItem {
   featureName: string;
   labelKey?: string;
   orgAdminOnly?: boolean;
+  /** If set, show when any listed client admin feature is enabled (OR). */
+  featureNamesAny?: string[];
 }
 
 // Regular (non-admin) navigation items
@@ -108,6 +110,14 @@ const adminNavigationItems: NavigationItem[] = [
     featureName: "admin_assessment",
   },
   {
+    label: "Certificates",
+    path: "/admin/certificates",
+    icon: "mdi:certificate",
+    featureName: "admin_assessment",
+    featureNamesAny: ["admin_assessment", "admin_course_builder"],
+    labelKey: "nav.certificateUploads",
+  },
+  {
     label: "Verify Content",
     path: "/admin/verify-content",
     icon: "mdi:check-circle",
@@ -186,6 +196,10 @@ export const BottomNavigation: React.FC = () => {
         // Always show dashboard for regular users
         if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
+        }
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((n) => filteredFeatureNames.has(n));
         }
         return filteredFeatureNames.has(item.featureName);
       });
