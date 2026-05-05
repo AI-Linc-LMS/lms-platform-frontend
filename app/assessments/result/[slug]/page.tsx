@@ -8,6 +8,7 @@ import {
   assessmentService,
   AssessmentDetail,
   AssessmentResult,
+  AssessmentDetailsSnapshot,
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -72,7 +73,7 @@ export default function AssessmentResultPage() {
   const [loading, setLoading] = useState(true);
   const [pdfExporting, setPdfExporting] = useState(false);
   const [uploadCertificateExporting, setUploadCertificateExporting] = useState(false);
-  const [assessmentDetail, setAssessmentDetail] = useState<AssessmentDetail | null>(null);
+  const [assessmentDetail, setAssessmentDetail] = useState<AssessmentDetailsSnapshot | null>(null);
   const [uploadedCertificateUrl, setUploadedCertificateUrl] = useState<string>("");
   const [uploadedCertificateTier, setUploadedCertificateTier] =
     useState<"participation" | "excellence">("participation");
@@ -271,7 +272,7 @@ export default function AssessmentResultPage() {
       }
 
       const result = await assessmentService.getAssessmentResult(slug);
-      setAssessmentDetail(result.assessment_details);
+      setAssessmentDetail(result?.assessment_details || null);
       if ((result as any).assessment_meta) {
         setPsychometricData(result);
       } else {
