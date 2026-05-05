@@ -85,6 +85,48 @@ function toTitleCaseName(name: string): string {
     .trim();
 }
 
+function hasLikelyPrintedTextInRegion(
+  ctx: { getImageData: (sx: number, sy: number, sw: number, sh: number) => { data: Uint8ClampedArray } },
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): boolean {
+  const sx = Math.max(0, Math.floor(x));
+  const sy = Math.max(0, Math.floor(y));
+  const sw = Math.max(1, Math.floor(w));
+  const sh = Math.max(1, Math.floor(h));
+  const data = ctx.getImageData(sx, sy, sw, sh).data;
+  let ink = 0;
+  let considered = 0;
+  // Ignore 6% edges of the slot to avoid borders/ornaments causing false hits.
+  const ix0 = Math.floor(sw * 0.06);
+  const ix1 = Math.ceil(sw * 0.94);
+  const iy0 = Math.floor(sh * 0.06);
+  const iy1 = Math.ceil(sh * 0.94);
+  for (let py = iy0; py < iy1; py++) {
+    for (let px = ix0; px < ix1; px++) {
+      const i = (py * sw + px) * 4;
+      const a = data[i + 3];
+      if (a < 10) continue;
+      considered++;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const chroma = max - min;
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      // Text strokes are usually either darker than the light paper,
+      // or have enough chroma (e.g. blue/purple subject text).
+      if (lum < 165 || chroma > 20) ink++;
+    }
+  }
+  if (considered <= 0) return false;
+  // Low threshold: a small amount of ink in this slot likely means value already printed.
+  return ink / considered > 0.02;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const courseName = searchParams.get("courseName") ?? "";
@@ -95,7 +137,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentName, courseName, certificateId, templateUrl, templateHasDate, issuerName } = body;
+    const {
+      studentName,
+      courseName,
+      certificateId,
+      templateUrl,
+      templateHasDate,
+      templateHasSubject,
+      issuerName,
+      structuredTrainingSubject,
+    } = body;
 
     if (!studentName) {
       return NextResponse.json(
@@ -143,7 +194,7 @@ export async function POST(request: NextRequest) {
     if (cleanName.length > 30) fontSize = Math.round(canvas.width * 0.062);
 
     // Fit to template width so long names remain visible.
-    const maxNameWidth = canvas.width * 0.72;
+    const maxNameWidth = canvas.width * 0.82;
     do {
       ctx.font = `normal ${fontSize}px "${nameFont}"`;
       if (ctx.measureText(cleanName).width <= maxNameWidth || fontSize <= 38) break;
@@ -156,6 +207,38 @@ export async function POST(request: NextRequest) {
     const nameY = canvas.height * 0.53;
     ctx.fillText(cleanName, nameX, nameY);
 
+    /** Uploaded templates often print “… training in” with a blank for course/test name — fill it here. */
+    const trainingSubject =
+      typeof structuredTrainingSubject === "string"
+        ? structuredTrainingSubject.trim()
+        : "";
+    const templateSubjectAlreadyRendered =
+      templateHasSubject === true ||
+      (templateCandidate
+        ? hasLikelyPrintedTextInRegion(
+            ctx,
+            // Check only the expected SUBJECT VALUE slot (below "For completing..." text).
+            canvas.width * 0.2,
+            canvas.height * 0.665,
+            canvas.width * 0.6,
+            canvas.height * 0.055,
+          )
+        : false);
+
+    if (templateCandidate && trainingSubject && !templateSubjectAlreadyRendered) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#3e3aa5";
+      let subFont = Math.round(canvas.width * 0.026);
+      const maxSubWidth = canvas.width * 0.72;
+      do {
+        ctx.font = `bold ${subFont}px Arial`;
+        if (ctx.measureText(trainingSubject).width <= maxSubWidth || subFont <= 14) break;
+        subFont -= 1;
+      } while (subFont > 14);
+      ctx.fillText(trainingSubject, canvas.width / 2, canvas.height * 0.67);
+    }
+
     /* ===== CERTIFICATE ID (VALUE ONLY) ===== */
     const id = certificateId ?? generateCertificateId(issuerName ?? courseName ?? "");
 
@@ -167,18 +250,32 @@ export async function POST(request: NextRequest) {
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
-    // Uploaded templates usually already include date text/slot.
-    // Skip drawing date when template indicates it already has one.
-    const hasDateOnTemplate = Boolean(templateCandidate) || Boolean(templateHasDate);
-    if (!hasDateOnTemplate) {
+    // Draw issue date unless the client says the template image already bakes in a final date value.
+    // (Previously any `templateUrl` skipped the date, which left “DATE OF ISSUE” labels empty.)
+    const templateDateAlreadyRendered =
+      templateHasDate === true ||
+      (templateCandidate
+        ? hasLikelyPrintedTextInRegion(
+            ctx,
+            // Check only the expected DATE VALUE slot (avoid "DATE OF ISSUE" label row).
+            canvas.width * 0.69,
+            canvas.height * 0.86,
+            canvas.width * 0.22,
+            canvas.height * 0.045,
+          )
+        : false);
+    if (!templateDateAlreadyRendered) {
       const dateStr = new Date().toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
       });
       ctx.textAlign = "right";
-      ctx.font = "Arial";
-      ctx.fillText(dateStr, canvas.width * 0.88, canvas.height * 0.872);
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#000";
+      const dateFontPx = Math.max(20, Math.round(canvas.width * 0.02));
+      ctx.font = `${dateFontPx}px "${idFont}"`;
+      ctx.fillText(dateStr, canvas.width * 0.85, canvas.height * 0.872);
     }
 
     const buffer = canvas.toBuffer("image/png");
