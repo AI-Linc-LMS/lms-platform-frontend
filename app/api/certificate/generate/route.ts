@@ -84,6 +84,15 @@ function toTitleCaseName(name: string): string {
     .trim();
 }
 
+function setSansFont(
+  ctx: { font: string },
+  sizePx: number,
+  weight: "normal" | "bold" = "normal",
+) {
+  // Keep all non-name text on sans fonts only.
+  ctx.font = `${weight} ${sizePx}px "Arial","Helvetica","Segoe UI",sans-serif`;
+}
+
 function hasLikelyPrintedTextInRegion(
   ctx: { getImageData: (sx: number, sy: number, sw: number, sh: number) => { data: Uint8ClampedArray } },
   x: number,
@@ -231,7 +240,7 @@ export async function POST(request: NextRequest) {
       let subFont = Math.round(canvas.width * 0.026);
       const maxSubWidth = canvas.width * 0.72;
       do {
-        ctx.font = `bold ${subFont}px Arial`;
+        setSansFont(ctx, subFont, "bold");
         if (ctx.measureText(trainingSubject).width <= maxSubWidth || subFont <= 14) break;
         subFont -= 1;
       } while (subFont > 14);
@@ -244,8 +253,7 @@ export async function POST(request: NextRequest) {
     ctx.fillStyle = "#000";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    const idFont = "Arial";
-    ctx.font = `37px "${idFont}"`;
+    setSansFont(ctx, 37, "normal");
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
@@ -273,7 +281,7 @@ export async function POST(request: NextRequest) {
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#000";
       const dateFontPx = Math.max(20, Math.round(canvas.width * 0.02));
-      ctx.font = `${dateFontPx}px "${idFont}"`;
+      setSansFont(ctx, dateFontPx, "normal");
       ctx.fillText(dateStr, canvas.width * 0.85, canvas.height * 0.872);
     }
 
