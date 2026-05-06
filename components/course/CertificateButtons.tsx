@@ -33,6 +33,8 @@ interface CertificateButtonsProps {
   courseId: number;
   courseTitle: string;
   certificateAvailable?: boolean;
+  /** Uploaded admin course certificate template URL from S3. */
+  uploadedTemplateUrl?: string | null;
   /** Overall course completion percentage (0–100). Buttons are actionable only when > 80%. */
   completionPercentage?: number;
   /** Score to show in LinkedIn post (e.g. "92%" or "100%") */
@@ -44,6 +46,7 @@ interface CertificateButtonsProps {
 export function CertificateButtons({
   courseTitle,
   certificateAvailable,
+  uploadedTemplateUrl,
   completionPercentage = 0,
   score = "100%",
 }: CertificateButtonsProps) {
@@ -82,6 +85,31 @@ export function CertificateButtons({
     (s || "").replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
 
   const captureBlob = async (): Promise<Blob> => {
+    if (uploadedTemplateUrl && user) {
+      const response = await fetch("/api/certificate/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: getUserDisplayName(user),
+          templateUrl: uploadedTemplateUrl,
+          courseName: courseTitle,
+          issuerName: clientInfo?.name || "",
+          structuredTrainingSubject: courseTitle,
+        }),
+      });
+      if (!response.ok) {
+        let message = "Failed to generate personalized certificate";
+        try {
+          const data = (await response.json()) as { error?: string };
+          if (data?.error) message = data.error;
+        } catch {
+          // ignore JSON parse failures
+        }
+        throw new Error(message);
+      }
+      return response.blob();
+    }
+
     const el = certRef.current;
     if (!el) throw new Error("Certificate is not ready");
     return certificateElementToPngBlob(el);

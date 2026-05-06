@@ -205,13 +205,10 @@ export default function AssessmentResultPage() {
     setCheckingUploadedCertificate(true);
     setUploadedCertificateTier(preferredCertificateTier);
 
-    getUploadedFiles(clientId)
+    getUploadedFiles(clientId,"certificate")
       .then((res) => {
         if (cancelled) return;
-        const files = (Array.isArray(res?.files) ? res.files : []).filter((f) => {
-          const m = (f.module || "").toLowerCase();
-          return m === "certificate";
-        });
+        const files = Array.isArray(res?.files) ? res.files?.filter((f) => f.module === "certificate") : [];
         const pathNeedle = `/certificate/${clientId}/${folderSlug}/${preferredCertificateTier}/`;
         const byPath = files.find((f) =>
           (f.url || "").toLowerCase().includes(pathNeedle)

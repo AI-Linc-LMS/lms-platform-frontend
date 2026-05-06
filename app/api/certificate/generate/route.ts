@@ -5,6 +5,7 @@ import fs from "fs";
 
 const fontsDir = path.join(process.cwd(), "public", "assets", "fonts");
 const alexBrushPath = path.join(fontsDir, "AlexBrush-Regular.ttf");
+const robotoRegularPath = path.join(fontsDir, "Roboto-Regular.ttf");
 const coltonsPath = path.join(fontsDir, "COLTONSC.ttf");
 
 let alexBrushRegistered = false;
@@ -12,6 +13,7 @@ if (fs.existsSync(alexBrushPath)) {
   try {
     registerFont(alexBrushPath, { family: "Alex Brush", weight: "normal", style: "normal" });
     registerFont(alexBrushPath, { family: "Alex Brush Regular", weight: "normal", style: "normal" });
+    registerFont(robotoRegularPath, { family: "Roboto", weight: "normal", style: "normal" });
     alexBrushRegistered = true;
   } catch {
     alexBrushRegistered = false;
@@ -82,6 +84,15 @@ function toTitleCaseName(name: string): string {
     .toLowerCase()
     .replace(/\b([a-z])/g, (m) => m.toUpperCase())
     .trim();
+}
+
+function setSansFont(
+  ctx: { font: string },
+  sizePx: number,
+  weight: "normal" | "bold" = "normal",
+) {
+  // Keep all non-name text on sans fonts only.
+  ctx.font = `${weight} ${sizePx}px "Arial","Helvetica","Segoe UI",sans-serif`;
 }
 
 function hasLikelyPrintedTextInRegion(
@@ -186,7 +197,7 @@ export async function POST(request: NextRequest) {
     ctx.textBaseline = "middle";
 
     // Only learner name uses Alex Brush.
-    const nameFont =fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
+    const nameFont = fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
     const cleanName = toTitleCaseName(String(studentName || ""));
     let fontSize = Math.round(canvas.width * 0.072);
     if (cleanName.length > 20) fontSize = Math.round(canvas.width * 0.072);
@@ -215,13 +226,13 @@ export async function POST(request: NextRequest) {
       templateHasSubject === true ||
       (templateCandidate
         ? hasLikelyPrintedTextInRegion(
-            ctx,
-            // Check only the expected SUBJECT VALUE slot (below "For completing..." text).
-            canvas.width * 0.2,
-            canvas.height * 0.665,
-            canvas.width * 0.6,
-            canvas.height * 0.055,
-          )
+          ctx,
+          // Check only the expected SUBJECT VALUE slot (below "For completing..." text).
+          canvas.width * 0.2,
+          canvas.height * 0.665,
+          canvas.width * 0.6,
+          canvas.height * 0.055,
+        )
         : false);
 
     if (templateCandidate && trainingSubject && !templateSubjectAlreadyRendered) {
@@ -231,7 +242,7 @@ export async function POST(request: NextRequest) {
       let subFont = Math.round(canvas.width * 0.026);
       const maxSubWidth = canvas.width * 0.72;
       do {
-        ctx.font = `bold ${subFont}px Arial`;
+        setSansFont(ctx, subFont, "bold");
         if (ctx.measureText(trainingSubject).width <= maxSubWidth || subFont <= 14) break;
         subFont -= 1;
       } while (subFont > 14);
@@ -244,8 +255,9 @@ export async function POST(request: NextRequest) {
     ctx.fillStyle = "#000";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    const idFont = "Arial";
-    ctx.font = `37px "${idFont}"`;
+
+    // FORCE reset font (important)
+    ctx.font = `normal 37px "Roboto","Arial","Helvetica","Segoe UI",sans-serif`;
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
@@ -255,13 +267,13 @@ export async function POST(request: NextRequest) {
       templateHasDate === true ||
       (templateCandidate
         ? hasLikelyPrintedTextInRegion(
-            ctx,
-            // Check only the expected DATE VALUE slot (avoid "DATE OF ISSUE" label row).
-            canvas.width * 0.69,
-            canvas.height * 0.86,
-            canvas.width * 0.22,
-            canvas.height * 0.045,
-          )
+          ctx,
+          // Check only the expected DATE VALUE slot (avoid "DATE OF ISSUE" label row).
+          canvas.width * 0.69,
+          canvas.height * 0.86,
+          canvas.width * 0.22,
+          canvas.height * 0.045,
+        )
         : false);
     if (!templateDateAlreadyRendered) {
       const dateStr = new Date().toLocaleDateString("en-US", {
@@ -272,8 +284,8 @@ export async function POST(request: NextRequest) {
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#000";
-      const dateFontPx = Math.max(20, Math.round(canvas.width * 0.02));
-      ctx.font = `${dateFontPx}px "${idFont}"`;
+      ctx.font = `normal 37px "Roboto","Arial","Helvetica","Segoe UI",sans-serif`;
+
       ctx.fillText(dateStr, canvas.width * 0.85, canvas.height * 0.872);
     }
 
