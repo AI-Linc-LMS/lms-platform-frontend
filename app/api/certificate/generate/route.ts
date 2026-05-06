@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     ctx.textBaseline = "middle";
 
     // Only learner name uses Alex Brush.
-    const nameFont =fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
+    const nameFont = fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
     const cleanName = toTitleCaseName(String(studentName || ""));
     let fontSize = Math.round(canvas.width * 0.072);
     if (cleanName.length > 20) fontSize = Math.round(canvas.width * 0.072);
@@ -224,13 +224,13 @@ export async function POST(request: NextRequest) {
       templateHasSubject === true ||
       (templateCandidate
         ? hasLikelyPrintedTextInRegion(
-            ctx,
-            // Check only the expected SUBJECT VALUE slot (below "For completing..." text).
-            canvas.width * 0.2,
-            canvas.height * 0.665,
-            canvas.width * 0.6,
-            canvas.height * 0.055,
-          )
+          ctx,
+          // Check only the expected SUBJECT VALUE slot (below "For completing..." text).
+          canvas.width * 0.2,
+          canvas.height * 0.665,
+          canvas.width * 0.6,
+          canvas.height * 0.055,
+        )
         : false);
 
     if (templateCandidate && trainingSubject && !templateSubjectAlreadyRendered) {
@@ -253,7 +253,9 @@ export async function POST(request: NextRequest) {
     ctx.fillStyle = "#000";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    setSansFont(ctx, 37, "normal");
+
+    // FORCE reset font (important)
+    ctx.font = `normal 37px "Arial","Helvetica","Segoe UI",sans-serif`;
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
@@ -263,13 +265,13 @@ export async function POST(request: NextRequest) {
       templateHasDate === true ||
       (templateCandidate
         ? hasLikelyPrintedTextInRegion(
-            ctx,
-            // Check only the expected DATE VALUE slot (avoid "DATE OF ISSUE" label row).
-            canvas.width * 0.69,
-            canvas.height * 0.86,
-            canvas.width * 0.22,
-            canvas.height * 0.045,
-          )
+          ctx,
+          // Check only the expected DATE VALUE slot (avoid "DATE OF ISSUE" label row).
+          canvas.width * 0.69,
+          canvas.height * 0.86,
+          canvas.width * 0.22,
+          canvas.height * 0.045,
+        )
         : false);
     if (!templateDateAlreadyRendered) {
       const dateStr = new Date().toLocaleDateString("en-US", {
@@ -280,8 +282,8 @@ export async function POST(request: NextRequest) {
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#000";
-      const dateFontPx = Math.max(20, Math.round(canvas.width * 0.02));
-      setSansFont(ctx, dateFontPx, "normal");
+      ctx.font = `normal 37px "Arial","Helvetica","Segoe UI",sans-serif`;
+
       ctx.fillText(dateStr, canvas.width * 0.85, canvas.height * 0.872);
     }
 
