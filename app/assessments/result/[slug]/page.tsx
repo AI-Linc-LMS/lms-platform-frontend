@@ -677,19 +677,6 @@ export default function AssessmentResultPage() {
               </Box>
             ) : null}
 
-            <Box>
-             
-              {!uploadedCertificateUrl ? (
-                <CertificateLearnerToolbar
-                  key={`res-${certificateBrandingKey}`}
-                  content={resultCertificateContent}
-                  fileNameBase={`certificate-result-summary-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`}
-                  dense
-                  pngButtonLabel="Download result-summary certificate (PNG)"
-                  pdfButtonLabel="Download result-summary certificate (PDF)"
-                />
-              ) : null}
-            </Box>
           </Paper>
         ) : null}
 

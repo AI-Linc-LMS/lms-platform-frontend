@@ -11,7 +11,6 @@ let alexBrushRegistered = false;
 if (fs.existsSync(alexBrushPath)) {
   try {
     registerFont(alexBrushPath, { family: "Alex Brush", weight: "normal", style: "normal" });
-    registerFont(alexBrushPath, { family: "Alex Brush", weight: "normal", style: "normal" });
     registerFont(alexBrushPath, { family: "Alex Brush Regular", weight: "normal", style: "normal" });
     alexBrushRegistered = true;
   } catch {
@@ -186,8 +185,8 @@ export async function POST(request: NextRequest) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Force Alex Brush for generated certificate name.
-    const nameFont = fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
+    // Only learner name uses Alex Brush.
+    const nameFont =fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
     const cleanName = toTitleCaseName(String(studentName || ""));
     let fontSize = Math.round(canvas.width * 0.072);
     if (cleanName.length > 20) fontSize = Math.round(canvas.width * 0.072);
