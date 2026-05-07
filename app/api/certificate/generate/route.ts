@@ -94,7 +94,7 @@ function setSansFont(
   weight: "normal" | "bold" = "normal",
 ) {
   // Keep all non-name text on sans fonts only.
-  ctx.font = `${weight} ${sizePx}px "Arial","Helvetica","Segoe UI",sans-serif`;
+  ctx.font = `${weight} ${sizePx}px "Montserrat","Arial","Helvetica","Segoe UI",sans-serif`;
 }
 
 function hasLikelyPrintedTextInRegion(
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
     ctx.textBaseline = "middle";
 
     // Only learner name uses Alex Brush.
-    const nameFont = fs.existsSync(alexBrushPath) ? "Alex Brush" : "Segoe Script";
+    const nameFont = "Montserrat";
     const cleanName = toTitleCaseName(String(studentName || ""));
     let fontSize = Math.round(canvas.width * 0.072);
     if (cleanName.length > 20) fontSize = Math.round(canvas.width * 0.072);
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#641c53";
-      let subFont = Math.round(canvas.width * 0.026);
+      let subFont = Math.round(canvas.width * 0.032);
       const maxSubWidth = canvas.width * 0.72;
       do {
         setSansFont(ctx, subFont, "bold");
