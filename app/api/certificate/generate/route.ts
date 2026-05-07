@@ -193,31 +193,46 @@ export async function POST(request: NextRequest) {
 
     ctx.drawImage(image, 0, 0);
 
-    /* ===== NAME ===== */
-    ctx.fillStyle = "#5A46A0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+ /* ===== NAME ===== */
+ctx.fillStyle = "#5A46A0";
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
 
-    // Only learner name uses Alex Brush.
-    const nameFont = "Montserrat";
-    const cleanName = toTitleCaseName(String(studentName || ""));
-    let fontSize = Math.round(canvas.width * 0.072);
-    if (cleanName.length > 20) fontSize = Math.round(canvas.width * 0.072);
-    if (cleanName.length > 30) fontSize = Math.round(canvas.width * 0.062);
+// Only learner name uses Montserrat.
+const nameFont = "Montserrat";
+const cleanName = toTitleCaseName(String(studentName || ""));
 
-    // Fit to template width so long names remain visible.
-    const maxNameWidth = canvas.width * 0.82;
-    do {
-      ctx.font = `normal ${fontSize}px "${nameFont}"`;
-      if (ctx.measureText(cleanName).width <= maxNameWidth || fontSize <= 38) break;
-      fontSize -= 2;
-    } while (fontSize > 38);
+// Reduced base font sizes
+let fontSize = Math.round(canvas.width * 0.055);
 
-    // Plain Alex Brush text only (no stroke/shadow/effects).
+if (cleanName.length > 20) {
+  fontSize = Math.round(canvas.width * 0.05);
+}
 
-    const nameX = canvas.width / 2;
-    const nameY = canvas.height * 0.53;
-    ctx.fillText(cleanName, nameX, nameY);
+if (cleanName.length > 30) {
+  fontSize = Math.round(canvas.width * 0.045);
+}
+
+// Fit to template width so long names remain visible.
+const maxNameWidth = canvas.width * 0.78;
+
+do {
+  ctx.font = `normal ${fontSize}px "${nameFont}"`;
+
+  if (
+    ctx.measureText(cleanName).width <= maxNameWidth ||
+    fontSize <= 30
+  ) {
+    break;
+  }
+
+  fontSize -= 2;
+} while (fontSize > 30);
+
+const nameX = canvas.width / 2;
+const nameY = canvas.height * 0.53;
+
+ctx.fillText(cleanName, nameX, nameY);
 
     /** Uploaded templates often print “… training in” with a blank for course/test name — fill it here. */
     const trainingSubject =
