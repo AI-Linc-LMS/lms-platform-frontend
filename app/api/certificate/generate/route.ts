@@ -6,6 +6,7 @@ import fs from "fs";
 const fontsDir = path.join(process.cwd(), "public", "assets", "fonts");
 const alexBrushPath = path.join(fontsDir, "AlexBrush-Regular.ttf");
 const robotoRegularPath = path.join(fontsDir, "Roboto-Regular.ttf");
+const montserratPath = path.join(fontsDir, "Montserrat-Regular.ttf");
 const coltonsPath = path.join(fontsDir, "COLTONSC.ttf");
 
 let alexBrushRegistered = false;
@@ -14,6 +15,7 @@ if (fs.existsSync(alexBrushPath)) {
     registerFont(alexBrushPath, { family: "Alex Brush", weight: "normal", style: "normal" });
     registerFont(alexBrushPath, { family: "Alex Brush Regular", weight: "normal", style: "normal" });
     registerFont(robotoRegularPath, { family: "Roboto", weight: "normal", style: "normal" });
+    registerFont(montserratPath, { family: "Montserrat", weight: "normal", style: "normal" });
     alexBrushRegistered = true;
   } catch {
     alexBrushRegistered = false;
@@ -238,7 +240,7 @@ export async function POST(request: NextRequest) {
     if (templateCandidate && trainingSubject && !templateSubjectAlreadyRendered) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = "#3e3aa5";
+      ctx.fillStyle = "#641c53";
       let subFont = Math.round(canvas.width * 0.026);
       const maxSubWidth = canvas.width * 0.72;
       do {
@@ -257,7 +259,7 @@ export async function POST(request: NextRequest) {
     ctx.textBaseline = "middle";
 
     // FORCE reset font (important)
-    ctx.font = `normal 37px "Roboto","Arial","Helvetica","Segoe UI",sans-serif`;
+    ctx.font = `normal 37px "Montserrat","Arial","Helvetica","Segoe UI",sans-serif`;
 
     ctx.fillText(id, canvas.width * 0.16, canvas.height * 0.872);
 
@@ -284,7 +286,7 @@ export async function POST(request: NextRequest) {
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#000";
-      ctx.font = `normal 37px "Roboto","Arial","Helvetica","Segoe UI",sans-serif`;
+      ctx.font = `normal 37px "Montserrat","Arial","Helvetica","Segoe UI",sans-serif`;
 
       ctx.fillText(dateStr, canvas.width * 0.85, canvas.height * 0.872);
     }
