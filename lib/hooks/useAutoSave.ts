@@ -35,6 +35,25 @@ export function useAutoSave({
     updatedAt: null,
   });
 
+  // Mirror frequently-changing inputs into refs so the setup effect below does NOT
+  // tear down + recreate its setTimeout/setInterval on every keystroke. Previously
+  // listing `responses`/`metadata`/`sections` in the effect deps meant typing
+  // continuously prevented autosave from ever firing (the 5s/30s timers were
+  // reset on each keystroke).
+  const responsesRef = useRef(responses);
+  const sectionsRef = useRef(sections);
+  const metadataRef = useRef(metadata);
+  const timedSectionsCompleteSetRef = timedSectionsCompleteRef;
+  useEffect(() => {
+    responsesRef.current = responses;
+  }, [responses]);
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
+  useEffect(() => {
+    metadataRef.current = metadata;
+  }, [metadata]);
+
   useEffect(() => {
     if (!enabled) {
       setRemoteAutosave({ status: "idle", updatedAt: null });
@@ -52,6 +71,10 @@ export function useAutoSave({
 
     const save = async () => {
       try {
+        const responses = responsesRef.current;
+        const sections = sectionsRef.current;
+        const metadata = metadataRef.current;
+
         // Check if there are responses to save
         const hasResponses = Object.keys(responses).some(
           (sectionType) =>
@@ -59,12 +82,12 @@ export function useAutoSave({
             Object.keys(responses[sectionType]).length > 0
         );
         const hasTimedCompletion =
-          (timedSectionsCompleteRef?.current?.size ?? 0) > 0;
+          (timedSectionsCompleteSetRef?.current?.size ?? 0) > 0;
 
         if (!hasResponses && !hasTimedCompletion) return;
 
-        const timedFingerprint = timedSectionsCompleteRef?.current?.size
-          ? [...timedSectionsCompleteRef.current].sort().join("|")
+        const timedFingerprint = timedSectionsCompleteSetRef?.current?.size
+          ? [...timedSectionsCompleteSetRef.current].sort().join("|")
           : "";
         const responsesString = JSON.stringify(responses);
         const fingerprint = `${responsesString}::${timedFingerprint}`;
@@ -92,7 +115,7 @@ export function useAutoSave({
             responses,
             sections,
             getCodeFromSession,
-            timedSectionsCompleteRef?.current ?? null,
+            timedSectionsCompleteSetRef?.current ?? null,
           );
 
         // Calculate total duration
@@ -155,7 +178,7 @@ export function useAutoSave({
         intervalRef.current = null;
       }
     };
-  }, [enabled, slug, responses, sections, metadata, interval, timedSectionsCompleteRef]);
+  }, [enabled, slug, interval, timedSectionsCompleteSetRef]);
 
   // Cleanup on unmount
   useEffect(() => {
