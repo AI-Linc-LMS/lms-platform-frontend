@@ -103,12 +103,10 @@ export function useProctoring(
         onStatusChangeRef.current?.(newStatus);
       },
 
-      /** ✅ FIXED FACE COUNT CALLBACK */
       onFaceCountChange: (count) => {
-        setFaceState({
-          count,
-          updatedAt: Date.now(), // 🔥 forces re-render
-        });
+        setFaceState((prev) =>
+          prev.count === count ? prev : { count, updatedAt: Date.now() }
+        );
 
         if (count === 1) {
           setLatestViolation((prev) =>

@@ -737,15 +737,12 @@ export class ProctoringService {
    * Process detection result and trigger callbacks
    */
   private processDetectionResult(result: FaceDetectionResult): void {
-    // Update face count immediately - always update and call callback
     const faceCountChanged = result.faceCount !== this.currentFaceCount;
     this.currentFaceCount = result.faceCount;
 
-    // Always call callback to ensure UI is updated with latest face count
-    // This ensures the UI reflects the current detection state
-    // IMPORTANT: Always call this, even if count is 0, to keep UI in sync
-    // Use optional chaining to safely call the callback
-    this.config.onFaceCountChange?.(result.faceCount);
+    if (faceCountChanged) {
+      this.config.onFaceCountChange?.(result.faceCount);
+    }
 
     // Update latest violation immediately based on current detection
     // Use the first violation from current detection (most recent)

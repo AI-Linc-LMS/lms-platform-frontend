@@ -1482,7 +1482,7 @@ export default function TakeAssessmentPage({
       isInitializingRef.current = false;
     }
   }, [
-    timer,
+    timer.start,
     startProctoring,
     enterFullscreen,
     showToast,
@@ -1504,26 +1504,30 @@ export default function TakeAssessmentPage({
   // Track if timer has been initialized to prevent multiple resets
   const timerInitializedRef = useRef(false);
   const lastRemainingTimeRef = useRef<number | null>(null);
-  
+  const timerRemainingSecondsRef = useRef(timer.remainingSeconds);
+  timerRemainingSecondsRef.current = timer.remainingSeconds;
+
   // Update timer when remaining_time changes (for resuming assessments) - DEFERRED to prevent freeze
   useEffect(() => {
     if (assessment?.remaining_time !== undefined && assessment?.remaining_time !== null) {
       const newTimeSeconds = assessment.remaining_time * 60;
-      
+
       // If remaining_time is 0, auto-submit immediately
       if (assessment.remaining_time === 0 && assessmentStarted && !submitting) {
         showToast("Time is up! Submitting assessment...", "warning");
         handleFinalSubmit();
         return;
       }
-      
+
       // Only reset if time actually changed (not just on every render)
       if (lastRemainingTimeRef.current !== assessment.remaining_time) {
         lastRemainingTimeRef.current = assessment.remaining_time;
-        
+
         // Defer timer reset to prevent blocking initial render
         const resetTimer = () => {
-          const timeDifference = Math.abs(timer.remainingSeconds - newTimeSeconds);
+          const timeDifference = Math.abs(
+            timerRemainingSecondsRef.current - newTimeSeconds
+          );
           // Only reset if difference is significant (more than 10 seconds) or not initialized
           if (!timerInitializedRef.current || timeDifference > 10) {
             timerInitializedRef.current = true;
@@ -1533,7 +1537,7 @@ export default function TakeAssessmentPage({
             }
           }
         };
-        
+
         // Defer with longer delay to prevent freeze
         if (typeof window !== "undefined" && "requestIdleCallback" in window) {
           (window as any).requestIdleCallback(resetTimer, { timeout: 1000 });
@@ -1542,7 +1546,16 @@ export default function TakeAssessmentPage({
         }
       }
     }
-  }, [assessment?.remaining_time, assessment?.status, assessmentStarted, submitting, timer, showToast, handleFinalSubmit]);
+  }, [
+    assessment?.remaining_time,
+    assessment?.status,
+    assessmentStarted,
+    submitting,
+    timer.reset,
+    timer.start,
+    showToast,
+    handleFinalSubmit,
+  ]);
   
   // Auto-start when assessment loads (if not submitted) - deferred to prevent freeze
   useEffect(() => {

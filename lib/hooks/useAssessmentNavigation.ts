@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 interface UseAssessmentNavigationOptions {
   currentSectionIndex: number;
@@ -87,12 +87,21 @@ export function useAssessmentNavigation({
     setCurrentQuestionIndex,
   ]);
 
-  return {
-    handlePrevious,
-    handleNext,
-    currentSectionQuestionCount,
-    isLastQuestion,
-    totalQuestions,
-  };
+  return useMemo(
+    () => ({
+      handlePrevious,
+      handleNext,
+      currentSectionQuestionCount,
+      isLastQuestion,
+      totalQuestions,
+    }),
+    [
+      handlePrevious,
+      handleNext,
+      currentSectionQuestionCount,
+      isLastQuestion,
+      totalQuestions,
+    ]
+  );
 }
 
