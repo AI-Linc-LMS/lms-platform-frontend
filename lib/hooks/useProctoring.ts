@@ -142,6 +142,10 @@ export function useProctoring(
           : false,
       });
 
+      serviceRef.current.clearViolationHistory();
+      setViolations([]);
+      setLatestViolation(null);
+
       setIsActive(true);
     } catch (err) {
       setError(

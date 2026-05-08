@@ -779,8 +779,6 @@ export default function TakeAssessmentPage({
 
     // Skip NORMAL status violations
     if (latestViolation.type === "NORMAL") return;
-    // TRACKPAD_SWIPE toast is shown from useTrackpadSwipeDetector to avoid duplicate
-    if (latestViolation.type === "TRACKPAD_SWIPE") return;
 
     const now = Date.now();
     const violationType = latestViolation.type;
@@ -1446,13 +1444,20 @@ export default function TakeAssessmentPage({
           tryAttach();
         });
 
-        // Start face detection in the background — do NOT await.
-        startProctoring().catch(() => {
+        try {
+          await startProctoring();
+        } catch (proctorErr) {
+          isInitializingRef.current = false;
+          setShowStartButton(true);
+          flushSync(() => setAssessmentStarted(false));
           showToast(
-            "Face detection could not start, but your camera is active.",
-            "warning"
+            proctorErr instanceof Error
+              ? proctorErr.message
+              : "Face detection could not start. Please try again or refresh the page.",
+            "error"
           );
-        });
+          return;
+        }
       } else {
         setAssessmentStarted(true);
       }
@@ -1476,6 +1481,8 @@ export default function TakeAssessmentPage({
         .catch(() => {
           setShowFullscreenWarning(true);
         });
+
+      isInitializingRef.current = false;
     } catch (error: any) {
       showToast(error.message || "Failed to start assessment.", "error");
       setShowStartButton(true);
