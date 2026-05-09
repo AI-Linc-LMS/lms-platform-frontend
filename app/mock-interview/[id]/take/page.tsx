@@ -224,7 +224,15 @@ export default function TakeMockInterviewPage() {
     preferWhisper: true,
     paused: isSpeaking,
   });
-  const { start: startStt, stop: stopStt, transcript: recognizedText, isListening, error: sttError } = speechToText;
+  const {
+    start: startStt,
+    stop: stopStt,
+    transcript: recognizedText,
+    isListening,
+    error: sttError,
+    tip: sttTip,
+    needsTypingFallback,
+  } = speechToText;
 
   // Disable ESC and right-click
   useKeyboardShortcuts({
@@ -235,8 +243,12 @@ export default function TakeMockInterviewPage() {
   });
 
   useEffect(() => {
-    if (sttError) showToast(sttError, "error");
-  }, [sttError, showToast]);
+    if (sttError) showToast(sttError, needsTypingFallback ? "warning" : "error");
+  }, [sttError, needsTypingFallback, showToast]);
+
+  useEffect(() => {
+    if (sttTip) showToast(sttTip, "info");
+  }, [sttTip, showToast]);
 
   // Load interview data on mount: use sessionStorage if coming from device-check, else call start API
   useEffect(() => {
@@ -809,8 +821,8 @@ export default function TakeMockInterviewPage() {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#ffffff",
-        color: "#1f2937",
+          backgroundColor: "var(--card-bg)",
+          color: "var(--font-primary-dark)",
         overflow: "hidden",
       }}
     >
@@ -879,6 +891,7 @@ export default function TakeMockInterviewPage() {
               canGoPrevious={currentQuestionIndex > 0}
               isLastQuestion={currentQuestionIndex >= totalQuestions - 1}
               isListening={isListening}
+              typingFallback={needsTypingFallback}
             />
           )}
         </Box>

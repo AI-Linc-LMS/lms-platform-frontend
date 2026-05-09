@@ -19,6 +19,12 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useProctoring } from "@/lib/hooks/useProctoring";
+import {
+  detectBrowser,
+  detectPlatform,
+  type BrowserName,
+  type PlatformName,
+} from "@/lib/utils/browser-detect";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 interface DeviceStatus {
@@ -29,6 +35,8 @@ interface DeviceStatus {
 
 const TTS_TEXT =
   "This is a test of my microphone and speech recognition.";
+const SPEECH_RETRY_DELAYS_MS = [500, 1000, 2000];
+const SPEECH_TIP_RETRY_THRESHOLD = 2;
 
 export default function MockInterviewDeviceCheckPage() {
   const params = useParams();
@@ -50,6 +58,10 @@ export default function MockInterviewDeviceCheckPage() {
   const [isListening, setIsListening] = useState(false);
   const [recognizedText, setRecognizedText] = useState<string>("");
   const [ttsMatch, setTtsMatch] = useState<boolean>(false);
+  const [speechSkipped, setSpeechSkipped] = useState<boolean>(false);
+  const [speechTip, setSpeechTip] = useState<string | null>(null);
+  const [browserName, setBrowserName] = useState<BrowserName>("other");
+  const [platformName, setPlatformName] = useState<PlatformName>("other");
   const [recognition, setRecognition] = useState<any>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -59,6 +71,9 @@ export default function MockInterviewDeviceCheckPage() {
   const isNavigatingToInterviewRef = useRef(false);
   const [isNavigatingToInterview, setIsNavigatingToInterview] = useState(false);
   const hasAutoTestedRef = useRef(false);
+  const speechRetryCountRef = useRef(0);
+  const speechRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioLevelObservedRef = useRef(false);
 
   const {
     isInitializing: isFaceDetectionInitializing,
@@ -216,6 +231,7 @@ export default function MockInterviewDeviceCheckPage() {
               dataArray.reduce((a, b) => a + b) / dataArray.length;
             const normalizedLevel = Math.min(average / 100, 1);
             setAudioLevel(normalizedLevel);
+            if (normalizedLevel > 0.05) audioLevelObservedRef.current = true;
             animationFrameRef.current =
               requestAnimationFrame(updateAudioLevel);
           };
@@ -258,6 +274,8 @@ export default function MockInterviewDeviceCheckPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    setBrowserName(detectBrowser());
+    setPlatformName(detectPlatform());
     const isSupported =
       navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
     if (!isSupported) {
@@ -290,6 +308,8 @@ export default function MockInterviewDeviceCheckPage() {
         const isMatch = matchRatio >= 0.5;
         setTtsMatch(isMatch);
         setIsListening(false);
+        speechRetryCountRef.current = 0;
+        setSpeechTip(null);
         if (isMatch) {
           showToast(t("mockInterview.deviceCheck.speechSuccess"), "success");
         } else {
@@ -298,10 +318,60 @@ export default function MockInterviewDeviceCheckPage() {
       };
       recognitionInstance.onerror = (event: any) => {
         setIsListening(false);
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
+          return;
+        }
         if (event.error === "no-speech") {
           showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
-        } else if (event.error === "not-allowed") {
-          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
+          return;
+        }
+        if (event.error === "aborted") {
+          return;
+        }
+        // network / audio-capture / generic — auto-retry with backoff before
+        // surfacing as a hard error. Edge frequently emits transient `network`.
+        speechRetryCountRef.current += 1;
+        const attempt = speechRetryCountRef.current;
+        const browser = detectBrowser();
+        const platform = detectPlatform();
+        if (
+          browser === "edge" &&
+          platform === "windows" &&
+          attempt >= SPEECH_TIP_RETRY_THRESHOLD
+        ) {
+          setSpeechTip(
+            "Speech recognition can fail in Edge if Online Speech Recognition is off. Open Windows Settings → Privacy & Security → Speech and turn it on, then reload. You can also click 'Skip speech test' below if your microphone is detected."
+          );
+        } else if (
+          browser === "edge" &&
+          platform === "mac" &&
+          attempt >= SPEECH_TIP_RETRY_THRESHOLD
+        ) {
+          setSpeechTip(
+            "On Edge for macOS, allow microphone access in System Settings → Privacy & Security → Microphone, then reload. If speech still doesn&apos;t match, click 'Skip speech test' and continue."
+          );
+        } else if (
+          platform === "mac" &&
+          (browser === "chrome" || browser === "safari" || browser === "other") &&
+          attempt >= SPEECH_TIP_RETRY_THRESHOLD
+        ) {
+          setSpeechTip(
+            "On macOS, allow microphone access for your browser in System Settings → Privacy & Security → Microphone, then reload. If speech still doesn't match, click 'Skip speech test' and continue."
+          );
+        }
+        if (attempt <= SPEECH_RETRY_DELAYS_MS.length) {
+          const delay = SPEECH_RETRY_DELAYS_MS[attempt - 1];
+          if (speechRetryTimeoutRef.current) clearTimeout(speechRetryTimeoutRef.current);
+          speechRetryTimeoutRef.current = setTimeout(() => {
+            try {
+              setIsListening(true);
+              setRecognizedText("");
+              recognitionInstance.start();
+            } catch {
+              setIsListening(false);
+            }
+          }, delay);
         } else {
           showToast(t("mockInterview.deviceCheck.speechError"), "error");
         }
@@ -310,6 +380,10 @@ export default function MockInterviewDeviceCheckPage() {
       setRecognition(recognitionInstance);
     } else {
       showToast(t("mockInterview.deviceCheck.speechNotSupported"), "warning");
+      // No browser STT at all — make sure user can still proceed via skip.
+      setSpeechTip(
+        "Speech recognition isn't available in this browser. Once your microphone is detected, you can click 'Skip speech test' to continue and type your answers during the interview."
+      );
     }
   }, [showToast, t]);
 
@@ -325,6 +399,10 @@ export default function MockInterviewDeviceCheckPage() {
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (speechRetryTimeoutRef.current) {
+        clearTimeout(speechRetryTimeoutRef.current);
+        speechRetryTimeoutRef.current = null;
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -352,17 +430,42 @@ export default function MockInterviewDeviceCheckPage() {
       showToast(t("mockInterview.deviceCheck.speechNotAvailable"), "error");
       return;
     }
+    speechRetryCountRef.current = 0;
+    if (speechRetryTimeoutRef.current) {
+      clearTimeout(speechRetryTimeoutRef.current);
+      speechRetryTimeoutRef.current = null;
+    }
+    setSpeechTip(null);
     setIsListening(true);
     setRecognizedText("");
     setTtsMatch(false);
+    setSpeechSkipped(false);
     recognition.start();
+  };
+
+  const handleSkipSpeechTest = () => {
+    if (speechRetryTimeoutRef.current) {
+      clearTimeout(speechRetryTimeoutRef.current);
+      speechRetryTimeoutRef.current = null;
+    }
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch {}
+    }
+    setIsListening(false);
+    setSpeechSkipped(true);
+    showToast(
+      "Speech test skipped. You can type your answers during the interview.",
+      "info"
+    );
   };
 
   const handleProceed = async () => {
     if (
       !deviceStatus.camera ||
       !deviceStatus.microphone ||
-      !ttsMatch ||
+      (!ttsMatch && !speechSkipped) ||
       !faceValidationPassed
     ) {
       showToast(t("mockInterview.deviceCheck.completeAllChecks"), "error");
@@ -396,11 +499,19 @@ export default function MockInterviewDeviceCheckPage() {
     }
   };
 
+  const canSkipSpeech =
+    deviceStatus.microphone &&
+    !ttsMatch &&
+    !speechSkipped &&
+    (audioLevelObservedRef.current ||
+      speechRetryCountRef.current >= SPEECH_TIP_RETRY_THRESHOLD ||
+      !recognition);
+
   const canProceed =
     deviceStatus.camera &&
     deviceStatus.microphone &&
     deviceStatus.browserSupported &&
-    ttsMatch &&
+    (ttsMatch || speechSkipped) &&
     faceValidationPassed;
 
   return (
@@ -656,15 +767,15 @@ export default function MockInterviewDeviceCheckPage() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              backgroundColor: ttsMatch ? "#f0fdf4" : "#fef2f2",
+              border: "1px solid var(--border-default)",
+              backgroundColor: ttsMatch || speechSkipped ? "var(--success-50)" : "var(--error-100)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-              {ttsMatch ? (
-                <CheckCircle size={32} color="#10b981" />
+              {ttsMatch || speechSkipped ? (
+                <CheckCircle size={32} color="var(--ats-success)" />
               ) : (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--ats-error)" />
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
@@ -673,7 +784,9 @@ export default function MockInterviewDeviceCheckPage() {
                 <Typography variant="body2" sx={{ color: "#6b7280" }}>
                   {ttsMatch
                     ? t("mockInterview.deviceCheck.textMatches")
-                    : t("mockInterview.deviceCheck.readToVerify")}
+                    : speechSkipped
+                      ? "Speech test skipped — you can type answers during the interview."
+                      : t("mockInterview.deviceCheck.readToVerify")}
                 </Typography>
                 {micError && (
                   <Alert severity="error" sx={{ mt: 2 }}>
@@ -794,38 +907,97 @@ export default function MockInterviewDeviceCheckPage() {
                 )}
               </Box>
             )}
-            <Button
-              variant="outlined"
-              onClick={handleStartTTS}
-              disabled={isListening || !deviceStatus.microphone}
-              startIcon={
-                isListening ? (
-                  <CircularProgress size={18} />
-                ) : (
-                  <IconWrapper icon="mdi:microphone" size={20} />
-                )
-              }
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                px: 3,
-                py: 1.25,
-                borderColor: "#6366f1",
-                color: "#6366f1",
-                "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "#eef2ff",
-                },
-                "&:disabled": {
-                  borderColor: "#e5e7eb",
-                  color: "#9ca3af",
-                },
-              }}
-            >
-              {isListening
-                ? t("mockInterview.deviceCheck.listening").split("...")[0]
-                : t("mockInterview.deviceCheck.startSpeechTest")}
-            </Button>
+            {browserName === "edge" && platformName === "windows" && !ttsMatch && !speechSkipped && (
+              <Alert severity="info" icon={<AlertCircle size={20} />} sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Using Microsoft Edge?
+                </Typography>
+                <Typography variant="body2">
+                  If speech isn&apos;t recognized, open <b>Windows Settings → Privacy &amp; Security → Speech</b> and turn on{" "}
+                  <b>Online speech recognition</b>, then reload this page. You can also click <b>Skip speech test</b> below to continue and type your answers during the interview.
+                </Typography>
+              </Alert>
+            )}
+            {browserName === "edge" && platformName === "mac" && !ttsMatch && !speechSkipped && (
+              <Alert severity="info" icon={<AlertCircle size={20} />} sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Using Microsoft Edge on macOS?
+                </Typography>
+                <Typography variant="body2">
+                  If speech isn&apos;t recognized, open <b>System Settings → Privacy &amp; Security → Microphone</b> and allow access for Edge, then reload this page. You can also click <b>Skip speech test</b> to continue and type answers during the interview.
+                </Typography>
+              </Alert>
+            )}
+            {platformName === "mac" && (browserName === "chrome" || browserName === "safari" || browserName === "other") && !ttsMatch && !speechSkipped && (
+              <Alert severity="info" icon={<AlertCircle size={20} />} sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Using macOS?
+                </Typography>
+                <Typography variant="body2">
+                  If speech isn&apos;t recognized, open <b>System Settings → Privacy &amp; Security → Microphone</b> and allow access for your browser, then reload this page. You can also click <b>Skip speech test</b> to continue and type answers during the interview.
+                </Typography>
+              </Alert>
+            )}
+            {speechTip && !(browserName === "edge" && platformName === "windows") && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">{speechTip}</Typography>
+              </Alert>
+            )}
+            {speechSkipped && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  Speech test skipped. Your microphone is detected — you can type answers during the interview.
+                </Typography>
+              </Alert>
+            )}
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+              <Button
+                variant="outlined"
+                onClick={handleStartTTS}
+                disabled={isListening || !deviceStatus.microphone || speechSkipped}
+                startIcon={
+                  isListening ? (
+                    <CircularProgress size={18} />
+                  ) : (
+                    <IconWrapper icon="mdi:microphone" size={20} />
+                  )
+                }
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.25,
+                  borderColor: "#6366f1",
+                  color: "#6366f1",
+                  "&:hover": {
+                    borderColor: "#4f46e5",
+                    backgroundColor: "#eef2ff",
+                  },
+                  "&:disabled": {
+                    borderColor: "#e5e7eb",
+                    color: "#9ca3af",
+                  },
+                }}
+              >
+                {isListening
+                  ? t("mockInterview.deviceCheck.listening").split("...")[0]
+                  : t("mockInterview.deviceCheck.startSpeechTest")}
+              </Button>
+              {canSkipSpeech && (
+                <Button
+                  variant="text"
+                  onClick={handleSkipSpeechTest}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 500,
+                    color: "#6b7280",
+                    "&:hover": { color: "#374151", backgroundColor: "#f3f4f6" },
+                  }}
+                >
+                  Skip speech test
+                </Button>
+              )}
+            </Box>
           </Paper>
         </Box>
 
