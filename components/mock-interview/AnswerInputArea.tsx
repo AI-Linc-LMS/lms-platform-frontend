@@ -18,6 +18,8 @@ export interface AnswerInputAreaProps {
   canGoPrevious: boolean;
   isLastQuestion: boolean;
   isListening?: boolean;
+  /** True when speech recognition has failed and user must type. */
+  typingFallback?: boolean;
 }
 
 export const AnswerInputArea = memo(function AnswerInputArea({
@@ -31,6 +33,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
   canGoPrevious,
   isLastQuestion,
   isListening = false,
+  typingFallback = false,
 }: AnswerInputAreaProps) {
   const { t } = useTranslation("common");
   const displayValue =
@@ -40,10 +43,10 @@ export const AnswerInputArea = memo(function AnswerInputArea({
       elevation={0}
       sx={{
         p: 3,
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         borderRadius: 3,
-        border: "1px solid #e5e7eb",
-        borderColor: isListening ? "#6366f1" : "#e5e7eb",
+        border: "1px solid var(--border-default)",
+        borderColor: isListening ? "var(--accent-indigo)" : "var(--border-default)",
         borderWidth: isListening ? 2 : 1,
         transition: "border-color 0.2s, border-width 0.2s",
       }}
@@ -58,20 +61,40 @@ export const AnswerInputArea = memo(function AnswerInputArea({
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          backgroundColor: isListening ? "#eef2ff" : "#f3f4f6",
+          backgroundColor: typingFallback
+            ? "var(--warning-100)"
+            : isListening
+              ? "var(--surface-indigo-light)"
+              : "var(--surface)",
           border: "1px solid",
-          borderColor: isListening ? "#6366f1" : "#e5e7eb",
+          borderColor: typingFallback
+            ? "var(--warning-500)"
+            : isListening
+              ? "var(--accent-indigo)"
+              : "var(--border-default)",
         }}
       >
-        {isListening ? (
+        {typingFallback ? (
           <>
-            <IconWrapper icon="mdi:microphone" size={24} color="#4f46e5" />
+            <IconWrapper icon="mdi:keyboard" size={24} color="var(--warning-500)" />
             <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#3730a3" }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--warning-500)" }}>
+                Type your answer
+              </Typography>
+              <Typography variant="caption" sx={{ color: "var(--warning-500)" }}>
+                Speech recognition isn&apos;t available — type your response in the box below. Your answer will be saved normally.
+              </Typography>
+            </Box>
+          </>
+        ) : isListening ? (
+          <>
+            <IconWrapper icon="mdi:microphone" size={24} color="var(--accent-indigo)" />
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--accent-indigo-dark)" }}>
                 Microphone on — listening
               </Typography>
-              <Typography variant="caption" sx={{ color: "#6366f1" }}>
-                Speak your answer; your words will appear in the box below.
+              <Typography variant="caption" sx={{ color: "var(--accent-indigo)" }}>
+                Speak your answer; your words will appear in the box below. You can also type if you prefer.
               </Typography>
             </Box>
             <Box
@@ -79,7 +102,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                 width: 10,
                 height: 10,
                 borderRadius: "50%",
-                backgroundColor: "#22c55e",
+                backgroundColor: "var(--ats-success)",
                 animation: "listeningPulse 1.2s ease-in-out infinite",
                 "@keyframes listeningPulse": {
                   "0%, 100%": { opacity: 1, transform: "scale(1)" },
@@ -90,9 +113,9 @@ export const AnswerInputArea = memo(function AnswerInputArea({
           </>
         ) : (
           <>
-            <IconWrapper icon="mdi:microphone" size={24} color="#9ca3af" />
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
-              Microphone will listen automatically. Speak your answer and it will appear below.
+            <IconWrapper icon="mdi:microphone" size={24} color="var(--font-tertiary)" />
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+              Microphone will listen automatically. Speak your answer or type it below.
             </Typography>
           </>
         )}
@@ -101,7 +124,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
         <Typography
           variant="h6"
-          sx={{ fontWeight: 600, flex: 1, color: "#111827" }}
+          sx={{ fontWeight: 600, flex: 1, color: "var(--font-primary-dark)" }}
         >
           Your Answer
         </Typography>
@@ -111,8 +134,8 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             label="Answered"
             size="small"
             sx={{
-              backgroundColor: "#10b981",
-              color: "#ffffff",
+              backgroundColor: "var(--ats-success)",
+              color: "var(--font-light)",
             }}
           />
         )}
@@ -126,20 +149,20 @@ export const AnswerInputArea = memo(function AnswerInputArea({
         placeholder="Type your answer here or speak naturally — your speech will appear here as you talk."
         sx={{
           "& .MuiOutlinedInput-root": {
-            backgroundColor: "#ffffff",
-            color: "#1f2937",
+            backgroundColor: "var(--card-bg)",
+            color: "var(--font-primary-dark)",
             "& fieldset": {
-              borderColor: isListening ? "#a5b4fc" : "#d1d5db",
+              borderColor: isListening ? "var(--primary-200)" : "var(--border-light)",
             },
             "&:hover fieldset": {
-              borderColor: isListening ? "#818cf8" : "#9ca3af",
+              borderColor: isListening ? "var(--accent-indigo)" : "var(--font-tertiary)",
             },
             "&.Mui-focused fieldset": {
-              borderColor: "#6366f1",
+              borderColor: "var(--accent-indigo)",
             },
           },
           "& .MuiInputBase-input": {
-            color: "#1f2937",
+            color: "var(--font-primary-dark)",
           },
         }}
       />
@@ -157,12 +180,12 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             onClick={onPreviousQuestion}
             disabled={!canGoPrevious}
             sx={{
-              borderColor: "#d1d5db",
-              color: "#374151",
+              borderColor: "var(--border-light)",
+              color: "var(--font-muted)",
               textTransform: "none",
               "&:hover": {
-                borderColor: "#9ca3af",
-                backgroundColor: "#f9fafb",
+                borderColor: "var(--font-tertiary)",
+                backgroundColor: "var(--surface)",
               },
             }}
           >
@@ -173,12 +196,12 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             onClick={onSaveAnswer}
             disabled={!currentAnswer}
             sx={{
-              borderColor: "#d1d5db",
-              color: "#374151",
+              borderColor: "var(--border-light)",
+              color: "var(--font-muted)",
               textTransform: "none",
               "&:hover": {
-                borderColor: "#9ca3af",
-                backgroundColor: "#f9fafb",
+                borderColor: "var(--font-tertiary)",
+                backgroundColor: "var(--surface)",
               },
             }}
           >
@@ -189,11 +212,11 @@ export const AnswerInputArea = memo(function AnswerInputArea({
           variant="contained"
           onClick={onNextQuestion}
           sx={{
-            backgroundColor: isLastQuestion ? "#10b981" : "#6366f1",
-            color: "#ffffff",
+            backgroundColor: isLastQuestion ? "var(--ats-success)" : "var(--accent-indigo)",
+            color: "var(--font-light)",
             textTransform: "none",
             "&:hover": {
-              backgroundColor: isLastQuestion ? "#059669" : "#4f46e5",
+              backgroundColor: isLastQuestion ? "var(--ats-success-muted)" : "var(--accent-indigo-dark)",
             },
           }}
         >
