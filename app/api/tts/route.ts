@@ -4,20 +4,7 @@ import { createHash } from "crypto";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || "tts-1";
-const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || "alloy";
-const ALLOWED_VOICES = new Set([
-  "alloy",
-  "ash",
-  "ballad",
-  "coral",
-  "echo",
-  "fable",
-  "onyx",
-  "nova",
-  "sage",
-  "shimmer",
-  "verse",
-]);
+const INTERVIEWER_VOICE = "onyx";
 const MAX_TEXT_LENGTH = 4000;
 const CACHE_MAX_ENTRIES = 200;
 const UPSTREAM_TIMEOUT_MS = 12000;
@@ -123,10 +110,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const requestedVoice = typeof payload.voice === "string" ? payload.voice : "";
-  const voice = ALLOWED_VOICES.has(requestedVoice) ? requestedVoice : OPENAI_TTS_VOICE;
-
-  const cacheKey = makeCacheKey(OPENAI_TTS_MODEL, voice, text);
+  const cacheKey = makeCacheKey(OPENAI_TTS_MODEL, INTERVIEWER_VOICE, text);
   const cached = cacheGet(cacheKey);
   if (cached) {
     return new NextResponse(new Uint8Array(cached), {
@@ -141,7 +125,7 @@ export async function POST(request: NextRequest) {
 
   let upstream: Response;
   try {
-    upstream = await fetchOpenAiTts(OPENAI_TTS_MODEL, voice, text);
+    upstream = await fetchOpenAiTts(OPENAI_TTS_MODEL, INTERVIEWER_VOICE, text);
   } catch (err) {
     return NextResponse.json(
       { error: "tts-upstream-failed", detail: (err as Error).message },

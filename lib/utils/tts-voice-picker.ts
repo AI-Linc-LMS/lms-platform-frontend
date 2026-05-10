@@ -1,30 +1,22 @@
 "use client";
 
-const QUALITY_PATTERNS: RegExp[] = [
-  // Microsoft Online Natural voices (highest quality) - male
+// Ordered list of preferred interviewer voices.
+// William is the AI avatar's designated voice; the rest are device-specific fallbacks.
+const PREFERRED_VOICE_PATTERNS: RegExp[] = [
+  /Microsoft William Multilingual Online \(Natural\)/i,
+  /Microsoft William/i,
   /Microsoft Guy Online \(Natural\)/i,
   /Microsoft Davis Online \(Natural\)/i,
   /Microsoft Tony Online \(Natural\)/i,
   /Microsoft Daniel Online \(Natural\)/i,
   /Microsoft Alex Online \(Natural\)/i,
-  // Microsoft Online Standard voices - male
-  /Microsoft (Guy|Davis|Tony|Daniel|Alex)/i,
-  // Google voices - male
-  /Google US English/i,
-  /Google UK English/i,
-  // Chrome built-in male voices
-  /\bGoogle UK English Male\b/i,
-  /\bGoogle US English Male\b/i,
-  /\bGoogle Mandarin Chinese\b/i,
-  /\bChrome\b.*\b(Male|David|John|Mark|Peter|Sam|William)\b/i,
-  // Generic male name patterns (cross-browser)
-  /\b(Daniel|David|John|Mark|Peter|Sam|William|Robert|James|Michael|Joseph|Thomas|Charles|Christopher|Richard|Matthew|Anthony|Mark|Donald|Andrew|Joshua|Kenneth|George|Edward|Brian|Ronald|Kevin|Jason|Mathew|Gary|Nicholas|Eric|Jonathan|Stephen|Larry|Justin|Scott|Brandon|Benjamin|Samuel|Patrick|Alexander|Raymond|Jack|Dennis|Jerry|Tyler|Aaron|Jose|Adam|Henry|Douglas|Peter|Zachary|Kyle|Walter|Harold|Keith|Christian|Roger|Noah|Gerald|Carl|Arthur|Ryan|Roger|Juan|Elijah|Wayne|Billy|Vincent|Ralph|Roy|Russell|Louis|Philip|Johnny|Ernest|Martin|Randall|Vincent|Ralph|Eugene|Claude|Edwin|Bernie|Ellis|Marvin|Olin|Leigh)\b/i,
-  // Female voices (lower priority - should be last)
-  /Microsoft Aria Online \(Natural\)/i,
-  /Microsoft Jenny Online \(Natural\)/i,
-  /Microsoft (Aria|Jenny|Sara|Emma)/i,
-  /Samantha/i,
-  /Karen/i,
+  /Microsoft (Guy|Davis|Tony|Daniel|Alex)\b/i,
+  /Microsoft (David|Mark) Desktop/i,
+  /\bAlex\b/i,
+  /\bTom\b/i,
+  /\bFred\b/i,
+  /Google UK English Male/i,
+  /Google US English Male/i,
 ];
 
 const PREFERRED_VOICE_STORAGE_KEY = "mockInterview.preferredInterviewerVoice";
@@ -52,28 +44,18 @@ function clearStoredVoiceName(): void {
   } catch {}
 }
 
-/** Clean up and validate stored voice preferences on app init */
+function isPreferredVoice(name: string): boolean {
+  return PREFERRED_VOICE_PATTERNS.some((p) => p.test(name));
+}
+
 export function initializeVoicePreferences(): void {
   if (typeof window === "undefined") return;
   try {
     const stored = window.localStorage.getItem(PREFERRED_VOICE_STORAGE_KEY);
-    // If stored voice is feminine or suspicious, clear it
-    if (stored && !/\b(Guy|Davis|Tony|Daniel|Alex|David|John|Mark|Peter|Sam|William|Google US|Google UK|Male)\b/i.test(stored)) {
+    if (stored && !isPreferredVoice(stored)) {
       window.localStorage.removeItem(PREFERRED_VOICE_STORAGE_KEY);
     }
   } catch {}
-}
-
-function isManlyVoiceName(name: string): boolean {
-  // Microsoft male voices
-  if (/Microsoft (Guy|Davis|Tony|Daniel|Alex)/i.test(name)) return true;
-  // Generic male names
-  if (/\b(Daniel|David|John|Mark|Peter|Sam|William|Robert|James|Michael|Joseph|Thomas|Charles|Christopher|Richard|Matthew|Anthony|Mark|Donald|Andrew|Joshua|Kenneth|George|Edward|Brian|Ronald|Kevin|Jason|Mathew|Gary|Nicholas|Eric|Jonathan|Stephen|Larry|Justin|Scott|Brandon|Benjamin|Samuel|Patrick|Alexander|Raymond|Jack|Dennis|Jerry|Tyler|Aaron|Jose|Adam|Henry|Douglas|Peter|Zachary|Kyle|Walter|Harold|Keith|Christian|Roger|Noah|Gerald|Carl|Arthur|Ryan|Roger|Juan|Elijah|Wayne|Billy|Vincent|Ralph|Roy|Russell|Louis|Philip|Johnny|Ernest|Martin|Randall|Vincent|Ralph|Eugene|Claude|Edwin|Bernie|Ellis|Marvin|Olin|Leigh)\b/i.test(name)) return true;
-  // Google male voices
-  if (/Google (US|UK) English/i.test(name)) return true;
-  // Chrome built-in
-  if (/Chrome.*Male/i.test(name)) return true;
-  return false;
 }
 
 let cachedReady: Promise<void> | null = null;
@@ -98,7 +80,7 @@ export function voicesReady(): Promise<void> {
       resolve();
     };
     synth.addEventListener("voiceschanged", handler);
-    // Some browsers (Safari) never fire voiceschanged but populate later.
+    // Safari may never fire voiceschanged but populates voices later.
     setTimeout(() => {
       if (resolved) return;
       resolved = true;
@@ -112,88 +94,54 @@ export function voicesReady(): Promise<void> {
 
 export interface PickedVoice {
   voice: SpeechSynthesisVoice;
-  /** Lower = better. 0 = top quality match, larger = fallback. */
   rank: number;
-  /** True if voice is network-backed (typically higher quality than local). */
   network: boolean;
 }
 
-export function pickBestVoice(
-  preferredLang = "en-US"
-): PickedVoice | null {
+export function pickBestVoice(preferredLang = "en-US"): PickedVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
 
-  const englishVoices = voices.filter((v) => /^en[-_]/i.test(v.lang) || v.lang === "en");
-  if (!englishVoices.length) return null;
+  const english = voices.filter((v) => /^en[-_]/i.test(v.lang) || v.lang === "en");
+  if (!english.length) return null;
 
-  // Check stored voice: validate it exists AND is male
-  const storedName = getStoredVoiceName();
-  if (storedName) {
-    const storedVoice = englishVoices.find((voice) => voice.name === storedName);
-    
-    // If stored voice no longer exists or is feminine, clear it
-    if (!storedVoice) {
-      clearStoredVoiceName();
-    } else if (isManlyVoiceName(storedVoice.name)) {
-      // Stored voice is valid and male - use it
-      return { voice: storedVoice, rank: -1, network: !storedVoice.localService };
-    } else {
-      // Stored voice exists but is feminine - clear it
-      clearStoredVoiceName();
+  // William is the designated voice — always pick it first if available,
+  // bypassing any cached preference so devices that have it always use it.
+  const william = english.find((v) => /Microsoft William/i.test(v.name));
+  if (william) {
+    storeVoiceName(william.name);
+    return { voice: william, rank: 0, network: !william.localService };
+  }
+
+  // Use cached preference if it's still on this device and still preferred.
+  const stored = getStoredVoiceName();
+  if (stored) {
+    const match = english.find((v) => v.name === stored);
+    if (match && isPreferredVoice(match.name)) {
+      return { voice: match, rank: -1, network: !match.localService };
+    }
+    clearStoredVoiceName();
+  }
+
+  // Walk the priority list — prefer exact lang match, fall back to any English.
+  for (let i = 0; i < PREFERRED_VOICE_PATTERNS.length; i++) {
+    const pattern = PREFERRED_VOICE_PATTERNS[i];
+    const exact = english.find((v) => pattern.test(v.name) && v.lang.toLowerCase() === preferredLang.toLowerCase());
+    if (exact) {
+      storeVoiceName(exact.name);
+      return { voice: exact, rank: i, network: !exact.localService };
+    }
+    const any = english.find((v) => pattern.test(v.name));
+    if (any) {
+      storeVoiceName(any.name);
+      return { voice: any, rank: i, network: !any.localService };
     }
   }
 
-  // Find best matching male voice from QUALITY_PATTERNS
-  for (let i = 0; i < QUALITY_PATTERNS.length; i++) {
-    const pattern = QUALITY_PATTERNS[i];
-    
-    // Prioritize exact language match
-    const exactLang = englishVoices.find(
-      (v) => pattern.test(v.name) && v.lang.toLowerCase() === preferredLang.toLowerCase()
-    );
-    if (exactLang && isManlyVoiceName(exactLang.name)) {
-      storeVoiceName(exactLang.name);
-      return { voice: exactLang, rank: i, network: !exactLang.localService };
-    }
-    
-    // Fallback to any English voice matching pattern
-    const anyLang = englishVoices.find((v) => pattern.test(v.name) && isManlyVoiceName(v.name));
-    if (anyLang) {
-      storeVoiceName(anyLang.name);
-      return { voice: anyLang, rank: i, network: !anyLang.localService };
-    }
-  }
-
-  // Fallback: any network-backed English voice (usually higher quality)
-  const networkVoice = englishVoices.find(
-    (v) => v.localService === false && v.lang.toLowerCase() === preferredLang.toLowerCase()
-  );
-  if (networkVoice && isManlyVoiceName(networkVoice.name)) {
-    storeVoiceName(networkVoice.name);
-    return { voice: networkVoice, rank: QUALITY_PATTERNS.length, network: true };
-  }
-
-  // Last resort: pick any English voice that's male
-  const maleVoice = englishVoices.find((v) => isManlyVoiceName(v.name));
-  if (maleVoice) {
-    storeVoiceName(maleVoice.name);
-    return { voice: maleVoice, rank: QUALITY_PATTERNS.length + 1, network: !maleVoice.localService };
-  }
-
-  // If no male voice found, use first available English voice
-  const firstVoice = englishVoices.find((voice) => voice.lang.toLowerCase() === preferredLang.toLowerCase()) || englishVoices[0];
-  if (firstVoice) {
-    storeVoiceName(firstVoice.name);
-    return { voice: firstVoice, rank: QUALITY_PATTERNS.length + 2, network: !firstVoice.localService };
-  }
-
-  // Nothing available — signal caller to use cloud fallback.
   return null;
 }
 
-/** Force-load the voices list. Some browsers populate lazily. */
 export function warmVoices(): void {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   try {

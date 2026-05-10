@@ -172,7 +172,7 @@ export function useInterviewerVoice(
           const res = await fetch(TTS_API, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: question, voice: "alloy" }),
+            body: JSON.stringify({ text: question }),
             signal: controller.signal,
           });
 
@@ -216,6 +216,11 @@ export function useInterviewerVoice(
         window.speechSynthesis.cancel();
       } catch {}
 
+      // Chrome on Mac silences audio when speak() is called immediately after cancel().
+      // A short delay lets the audio pipeline reset.
+      await wait(60);
+      if (isStale()) return;
+
       await voicesReady();
       if (isStale()) return;
 
@@ -236,6 +241,17 @@ export function useInterviewerVoice(
 
       let firedComplete = false;
 
+      // Chrome on Mac pauses speechSynthesis silently after ~15s of speech.
+      // Periodic resume() keeps it alive for longer answers.
+      let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+
+      const clearKeepAlive = () => {
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+      };
+
       utterance.onstart = () => {
         if (isStale()) return;
         if (!didStart) {
@@ -243,21 +259,37 @@ export function useInterviewerVoice(
           onSpeakStartRef.current?.();
         }
         setAudioActive(true);
+        keepAliveInterval = setInterval(() => {
+          try {
+            if (window.speechSynthesis.speaking) {
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+            } else {
+              clearKeepAlive();
+            }
+          } catch {}
+        }, 10000);
       };
       utterance.onend = () => {
         if (firedComplete) return;
         firedComplete = true;
+        clearKeepAlive();
         finish();
       };
       utterance.onerror = () => {
         if (firedComplete) return;
         firedComplete = true;
+        clearKeepAlive();
         finish();
       };
 
       try {
+        // resume() ensures synthesis isn't in a suspended/paused state before speaking.
+        // This is the primary fix for inaudible audio on macOS Chrome/Safari.
+        window.speechSynthesis.resume();
         window.speechSynthesis.speak(utterance);
       } catch {
+        clearKeepAlive();
         finish();
       }
     };
