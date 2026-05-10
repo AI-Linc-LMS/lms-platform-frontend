@@ -22,6 +22,17 @@ export const config = {
     process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT ||
     process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT ||
     "http://localhost:4318/v1/traces",
+  /** Community widget backend API base URL. Empty string disables community backend features. */
+  communityWidgetApi: (process.env.NEXT_PUBLIC_COMMUNITY_WIDGET_API || "").replace(/\/$/, ""),
+  /** Enable built-in LiveKit live sessions in the community section. */
+  communityBuiltinLive: process.env.NEXT_PUBLIC_COMMUNITY_BUILTIN_LIVE === "true",
+  /**
+   * Rich dummy community data (arena, impact balance fallbacks). Enable with
+   * `NEXT_PUBLIC_COMMUNITY_DUMMY_DATA=true`, or true automatically in development.
+   */
+  communityDummyData:
+    process.env.NEXT_PUBLIC_COMMUNITY_DUMMY_DATA === "true" ||
+    process.env.NODE_ENV === "development",
 } as const;
 
 /** Browser: prefer configured app URL, else current origin. Server: configured app URL or empty. */
