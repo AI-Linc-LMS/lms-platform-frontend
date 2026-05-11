@@ -32,7 +32,7 @@ import { StudentRankingCard } from "@/components/admin/dashboard/StudentRankingC
 import { useToast } from "@/components/common/Toast";
 import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
 import { useAuth } from "@/lib/auth/auth-context";
-import { isCourseManagerRole } from "@/lib/auth/role-utils";
+import { isScopedAdminRole } from "@/lib/auth/role-utils";
 
 type TimePeriod = "weekly" | "bimonthly" | "monthly";
 
@@ -145,7 +145,7 @@ function AdminDashboardPage() {
   const loadAttendanceData = useCallback(async () => {
     if (!dateRange.start || !dateRange.end) return;
     const seq = ++attendanceLoadSeqRef.current;
-    const courseManager = isCourseManagerRole(user?.role);
+    const courseManager = isScopedAdminRole(user?.role);
     try {
       const courseId =
         selectedCourse !== "all" ? Number(selectedCourse) : undefined;

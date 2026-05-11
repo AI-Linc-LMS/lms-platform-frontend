@@ -16,7 +16,7 @@ import { adminCoursesService } from "@/lib/services/admin/admin-courses.service"
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isClientOrgAdminRole,
-  isCourseManagerRole,
+  isScopedAdminRole,
 } from "@/lib/auth/role-utils";
 import { ManageStudentsHeader } from "../../../components/admin/manage-students/ManageStudentsHeader";
 import { StudentsFilters } from "../../../components/admin/manage-students/StudentsFilters";
@@ -61,7 +61,7 @@ export default function ManageStudentsPage() {
   const { t } = useTranslation("common");
   const { user } = useAuth();
   const showOrgAdminEnrollmentTools = isClientOrgAdminRole(user?.role);
-  const courseManagerUser = isCourseManagerRole(user?.role);
+  const courseManagerUser = isScopedAdminRole(user?.role);
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);
