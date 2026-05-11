@@ -914,16 +914,32 @@ export default function TakeAssessmentPage({
     setDevtoolsBlocked(false);
   }, [assessmentStarted, submitting]);
 
-  // Check if already submitted
+  // Check if already submitted — also handle bfcache restore via pageshow.
   useEffect(() => {
     if (assessment && !hasCheckedSubmission.current) {
       hasCheckedSubmission.current = true;
       if (assessment.status === "submitted") {
         showToast("This assessment has already been submitted", "warning");
-        router.push(`/assessments/${slug}`);
+        // replace so back/forward can't return to the take page.
+        router.replace(`/assessments/${slug}`);
       }
     }
   }, [assessment, slug, router, showToast]);
+
+  // bfcache (back/forward cache) restore guard: if the browser restores this
+  // page from cache after a submit redirect, the state can look like an
+  // in-progress attempt even though the server has the assessment marked
+  // submitted. Force a full reload so useAssessmentData re-fetches and
+  // redirects.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        window.location.replace(`/assessments/${slug}`);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [slug]);
 
   // Proctored attempts: if no usable stream, try to acquire one. Only redirect as last resort.
   useEffect(() => {

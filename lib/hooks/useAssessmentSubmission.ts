@@ -357,12 +357,16 @@ export function useAssessmentSubmission({
       });
 
       // Navigate immediately - no delay to prevent freezing
-      // Use window.location for reliable navigation (ensures clean state)
+      // Use window.location.replace (NOT .href) so the take page is removed
+      // from browser history. Otherwise the user can hit "Back" from the
+      // result/success page and land on the in-progress take page, where
+      // (depending on bfcache + race timing) they can resume an interview
+      // they've already submitted.
       // SECURITY: Only navigate if submission was successful
       if (hasNavigatedRef.current) {
         // Use requestAnimationFrame for smooth, non-blocking navigation
         requestAnimationFrame(() => {
-          window.location.href = `/assessments/${slug}/submission-success`;
+          window.location.replace(`/assessments/${slug}/submission-success`);
         });
       }
     } catch (error: any) {

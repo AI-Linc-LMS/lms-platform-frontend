@@ -208,7 +208,12 @@ export default function MockInterviewDeviceCheckPage() {
             };
             checkVideoReady();
           }
-        }).catch((err) => {
+        }).catch((err: unknown) => {
+          const name = (err as { name?: string })?.name;
+          // AbortError fires when the element is removed from the DOM
+          // mid-play (e.g. user navigates away); NotAllowedError fires
+          // when autoplay is blocked. Neither needs surfacing.
+          if (name === "AbortError" || name === "NotAllowedError") return;
           console.error("Failed to play video:", err);
         });
       }

@@ -140,7 +140,13 @@ export default function TakeMockInterviewPage() {
 
       if (proctoringVideoRef.current) {
         proctoringVideoRef.current.srcObject = stream;
-        proctoringVideoRef.current.play();
+        // play() returns a Promise that rejects with AbortError if the
+        // element is removed from the DOM (or src changes) before it
+        // resolves — e.g. on unmount. Swallow it.
+        proctoringVideoRef.current.play().catch((err: unknown) => {
+          if ((err as { name?: string })?.name === "AbortError") return;
+          if ((err as { name?: string })?.name === "NotAllowedError") return;
+        });
       }
 
       if (hasAudio && audioTracks.length > 0) {
