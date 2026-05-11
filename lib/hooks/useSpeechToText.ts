@@ -189,11 +189,6 @@ export function useSpeechToText(
       // No browser STT — rely on Whisper if available.
       browserSttDisabledRef.current = true;
       setMode(preferWhisper ? "whisper-only" : "unavailable");
-      if (detectPlatform() === "mac") {
-        setTip(
-          "On macOS, live browser speech recognition can be limited. Keep microphone permission enabled for your browser in System Settings -> Privacy & Security -> Microphone."
-        );
-      }
       if (!preferWhisper) {
         setError("Speech recognition is not supported in this browser. Please type your answer.");
         setNeedsTypingFallback(true);
@@ -239,14 +234,18 @@ export function useSpeechToText(
         wantsListeningRef.current = false;
         browserSttDisabledRef.current = true;
         setIsListening(false);
-        setError("Microphone access denied. Allow microphone permission and reload.");
-        if (detectPlatform() === "mac") {
-          setTip(
-            "On macOS: open System Settings -> Privacy & Security -> Microphone and allow access for your browser, then reload this page."
-          );
-        }
+        setError("Microphone access denied. Please allow microphone permission and try again.");
         setMode(preferWhisper ? "whisper-only" : "unavailable");
         return;
+      } else if (e.error === "no-speech") {
+      } else if (e.error === "network") {
+        wantsListeningRef.current = false;
+        setIsListening(false);
+        setError("Speech recognition needs internet. Check your connection.");
+      } else if (e.error !== "aborted") {
+        wantsListeningRef.current = false;
+        setIsListening(false);
+        setError("Speech recognition error. Please try again.");
       }
       // Silent / transient — just let onend reschedule.
       if (errType === "no-speech" || errType === "aborted") {

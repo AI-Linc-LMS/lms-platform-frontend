@@ -35,8 +35,6 @@ interface DeviceStatus {
 
 const TTS_TEXT =
   "This is a test of my microphone and speech recognition.";
-const SPEECH_RETRY_DELAYS_MS = [500, 1000, 2000];
-const SPEECH_TIP_RETRY_THRESHOLD = 2;
 
 export default function MockInterviewDeviceCheckPage() {
   const params = useParams();
@@ -55,14 +53,12 @@ export default function MockInterviewDeviceCheckPage() {
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const [faceValidationPassed, setFaceValidationPassed] = useState(false);
   const [faceValidationMessage, setFaceValidationMessage] = useState<string>("");
-  const [isListening, setIsListening] = useState(false);
   const [recognizedText, setRecognizedText] = useState<string>("");
   const [ttsMatch, setTtsMatch] = useState<boolean>(false);
-
-  const [speechTip, setSpeechTip] = useState<string | null>(null);
   const [browserName, setBrowserName] = useState<BrowserName>("other");
   const [platformName, setPlatformName] = useState<PlatformName>("other");
-  const [recognition, setRecognition] = useState<any>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -71,9 +67,35 @@ export default function MockInterviewDeviceCheckPage() {
   const isNavigatingToInterviewRef = useRef(false);
   const [isNavigatingToInterview, setIsNavigatingToInterview] = useState(false);
   const hasAutoTestedRef = useRef(false);
-  const speechRetryCountRef = useRef(0);
-  const speechRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const audioLevelObservedRef = useRef(false);
+  const speechStreamRef = useRef<MediaStream | null>(null);
+  const speechRecorderRef = useRef<MediaRecorder | null>(null);
+  const speechStopTimeoutRef = useRef<number | null>(null);
+
+  const normalize = useCallback(
+    (text: string) => text.toLowerCase().replace(/[^\w\s]/g, "").trim(),
+    []
+  );
+
+  const evaluateSpeechMatch = useCallback(
+    (transcript: string) => {
+      const normalizedTts = normalize(TTS_TEXT);
+      const normalizedRecognized = normalize(transcript);
+      const ttsWords = normalizedTts.split(/\s+/).filter(Boolean);
+      const recognizedWords = normalizedRecognized.split(/\s+/).filter(Boolean);
+      const matchRatio =
+        ttsWords.filter((w) => recognizedWords.includes(w)).length /
+        Math.max(ttsWords.length, 1);
+      const isMatch = matchRatio >= 0.5;
+      setTtsMatch(isMatch);
+      setIsListening(false);
+      if (isMatch) {
+        showToast(t("mockInterview.deviceCheck.speechSuccess"), "success");
+      } else {
+        showToast(t("mockInterview.deviceCheck.textNoMatch"), "error");
+      }
+    },
+    [normalize, showToast, t]
+  );
 
   const {
     isInitializing: isFaceDetectionInitializing,
@@ -231,7 +253,6 @@ export default function MockInterviewDeviceCheckPage() {
               dataArray.reduce((a, b) => a + b) / dataArray.length;
             const normalizedLevel = Math.min(average / 100, 1);
             setAudioLevel(normalizedLevel);
-            if (normalizedLevel > 0.05) audioLevelObservedRef.current = true;
             animationFrameRef.current =
               requestAnimationFrame(updateAudioLevel);
           };
@@ -284,107 +305,6 @@ export default function MockInterviewDeviceCheckPage() {
       return;
     }
     setDeviceStatus((prev) => ({ ...prev, browserSupported: true }));
-
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = "en-US";
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setRecognizedText(transcript);
-        const normalize = (text: string) =>
-          text.toLowerCase().replace(/[^\w\s]/g, "").trim();
-        const normalizedTts = normalize(TTS_TEXT);
-        const normalizedRecognized = normalize(transcript);
-        const ttsWords = normalizedTts.split(/\s+/);
-        const recognizedWords = normalizedRecognized.split(/\s+/);
-        const matchRatio =
-          ttsWords.filter((w) => recognizedWords.includes(w)).length /
-          ttsWords.length;
-        const isMatch = matchRatio >= 0.5;
-        setTtsMatch(isMatch);
-        setIsListening(false);
-        speechRetryCountRef.current = 0;
-        setSpeechTip(null);
-        if (isMatch) {
-          showToast(t("mockInterview.deviceCheck.speechSuccess"), "success");
-        } else {
-          showToast(t("mockInterview.deviceCheck.textNoMatch"), "error");
-        }
-      };
-      recognitionInstance.onerror = (event: any) => {
-        setIsListening(false);
-        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
-          return;
-        }
-        if (event.error === "no-speech") {
-          showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
-          return;
-        }
-        if (event.error === "aborted") {
-          return;
-        }
-        // network / audio-capture / generic — auto-retry with backoff before
-        // surfacing as a hard error. Edge frequently emits transient `network`.
-        speechRetryCountRef.current += 1;
-        const attempt = speechRetryCountRef.current;
-        const browser = detectBrowser();
-        const platform = detectPlatform();
-        if (
-          browser === "edge" &&
-          platform === "windows" &&
-          attempt >= SPEECH_TIP_RETRY_THRESHOLD
-        ) {
-          setSpeechTip(
-            "Speech recognition can fail in Edge if Online Speech Recognition is off. Open Windows Settings → Privacy & Security → Speech and turn it on, then reload."
-          );
-        } else if (
-          browser === "edge" &&
-          platform === "mac" &&
-          attempt >= SPEECH_TIP_RETRY_THRESHOLD
-        ) {
-          setSpeechTip(
-            "On Edge for macOS, allow microphone access in System Settings → Privacy & Security → Microphone, then reload."
-          );
-        } else if (
-          platform === "mac" &&
-          (browser === "chrome" || browser === "safari" || browser === "other") &&
-          attempt >= SPEECH_TIP_RETRY_THRESHOLD
-        ) {
-          setSpeechTip(
-            "On macOS, allow microphone access for your browser in System Settings → Privacy & Security → Microphone, then reload."
-          );
-        }
-        if (attempt <= SPEECH_RETRY_DELAYS_MS.length) {
-          const delay = SPEECH_RETRY_DELAYS_MS[attempt - 1];
-          if (speechRetryTimeoutRef.current) clearTimeout(speechRetryTimeoutRef.current);
-          speechRetryTimeoutRef.current = setTimeout(() => {
-            try {
-              setIsListening(true);
-              setRecognizedText("");
-              recognitionInstance.start();
-            } catch {
-              setIsListening(false);
-            }
-          }, delay);
-        } else {
-          showToast(t("mockInterview.deviceCheck.speechError"), "error");
-        }
-      };
-      recognitionInstance.onend = () => setIsListening(false);
-      setRecognition(recognitionInstance);
-    } else {
-      showToast(t("mockInterview.deviceCheck.speechNotSupported"), "warning");
-      // No browser STT at all — make sure user can still proceed via skip.
-      setSpeechTip(
-        "Speech recognition isn't available in this browser. Please try Chrome or Edge to complete the speech test."
-      );
-    }
   }, [showToast, t]);
 
   useEffect(() => {
@@ -397,12 +317,12 @@ export default function MockInterviewDeviceCheckPage() {
 
   useEffect(() => {
     return () => {
+      if (speechStopTimeoutRef.current) {
+        window.clearTimeout(speechStopTimeoutRef.current);
+        speechStopTimeoutRef.current = null;
+      }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (speechRetryTimeoutRef.current) {
-        clearTimeout(speechRetryTimeoutRef.current);
-        speechRetryTimeoutRef.current = null;
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -420,26 +340,135 @@ export default function MockInterviewDeviceCheckPage() {
           delete (window as any).__mockInterviewStream;
         }
       }
+      if (speechRecorderRef.current) {
+        try {
+          if (speechRecorderRef.current.state !== "inactive") {
+            speechRecorderRef.current.stop();
+          }
+        } catch {
+          // ignore
+        }
+        speechRecorderRef.current = null;
+      }
+      if (speechStreamRef.current) {
+        speechStreamRef.current.getTracks().forEach((track) => track.stop());
+        speechStreamRef.current = null;
+      }
       analyserRef.current = null;
       setAudioLevel(0);
     };
   }, [stopFaceDetection, videoRef]);
 
   const handleStartTTS = () => {
-    if (!recognition) {
-      showToast(t("mockInterview.deviceCheck.speechNotAvailable"), "error");
-      return;
-    }
-    speechRetryCountRef.current = 0;
-    if (speechRetryTimeoutRef.current) {
-      clearTimeout(speechRetryTimeoutRef.current);
-      speechRetryTimeoutRef.current = null;
-    }
-    setSpeechTip(null);
-    setIsListening(true);
+    if (isListening || isTranscribing) return;
     setRecognizedText("");
     setTtsMatch(false);
-    recognition.start();
+    setIsListening(true);
+    setIsTranscribing(false);
+
+    const startRecording = async () => {
+      try {
+        const stream =
+          speechStreamRef.current ||
+          (await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true },
+          }));
+        speechStreamRef.current = stream;
+
+        const chunks: BlobPart[] = [];
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : MediaRecorder.isTypeSupported("audio/mp4")
+              ? "audio/mp4"
+              : "";
+
+        const recorder = new MediaRecorder(
+          stream,
+          mimeType ? { mimeType } : undefined
+        );
+        speechRecorderRef.current = recorder;
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+          setIsListening(false);
+          setIsTranscribing(true);
+          try {
+            const blob = new Blob(chunks, { type: mimeType || "audio/webm" });
+            if (blob.size < 1000) {
+              setIsTranscribing(false);
+              showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+              return;
+            }
+
+            const form = new FormData();
+            form.append("file", blob, "speech.webm");
+            form.append("language", "en");
+            const res = await fetch("/api/transcribe", {
+              method: "POST",
+              body: form,
+            });
+
+            const data = (await res.json().catch(() => ({}))) as {
+              text?: string;
+              error?: string;
+            };
+
+            if (!res.ok) {
+              setIsTranscribing(false);
+              // 503 is typically missing OPENAI_API_KEY on the server running Next.js.
+              showToast(
+                data?.error ||
+                  t("mockInterview.deviceCheck.speechError"),
+                "error"
+              );
+              return;
+            }
+
+            const text = typeof data?.text === "string" ? data.text.trim() : "";
+            setIsTranscribing(false);
+            if (!text) {
+              showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+              return;
+            }
+            setRecognizedText(text);
+            evaluateSpeechMatch(text);
+          } catch {
+            setIsTranscribing(false);
+            showToast(t("mockInterview.deviceCheck.speechError"), "error");
+          }
+        };
+
+        recorder.start();
+
+        // Stop after a short deterministic window.
+        speechStopTimeoutRef.current = window.setTimeout(() => {
+          speechStopTimeoutRef.current = null;
+          try {
+            if (recorder.state !== "inactive") recorder.stop();
+          } catch {
+            setIsListening(false);
+            showToast(t("mockInterview.deviceCheck.speechError"), "error");
+          }
+        }, 4500);
+      } catch (err: any) {
+        setIsListening(false);
+        if (
+          err?.name === "NotAllowedError" ||
+          err?.name === "PermissionDeniedError"
+        ) {
+          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
+        } else {
+          showToast(t("mockInterview.deviceCheck.speechError"), "error");
+        }
+      }
+    };
+
+    startRecording();
   };
 
   const handleProceed = async () => {
@@ -889,17 +918,7 @@ export default function MockInterviewDeviceCheckPage() {
                 </Typography>
               </Alert>
             )}
-            {browserName === "edge" && platformName === "mac" && !ttsMatch && (
-              <Alert severity="info" icon={<AlertCircle size={20} />} sx={{ mb: 2 }}>
-                <Typography variant="body2" fontWeight={600} gutterBottom>
-                  Using Microsoft Edge on macOS?
-                </Typography>
-                <Typography variant="body2">
-                  If speech isn&apos;t recognized, open <b>System Settings → Privacy &amp; Security → Microphone</b> and allow access for Edge, then reload this page.
-                </Typography>
-              </Alert>
-            )}
-            {platformName === "mac" && (browserName === "chrome" || browserName === "safari" || browserName === "other") && !ttsMatch && (
+            {platformName === "mac" && browserName === "chrome" && !ttsMatch && (
               <Alert severity="info" icon={<AlertCircle size={20} />} sx={{ mb: 2 }}>
                 <Typography variant="body2" fontWeight={600} gutterBottom>
                   Using macOS?
@@ -907,11 +926,6 @@ export default function MockInterviewDeviceCheckPage() {
                 <Typography variant="body2">
                   If speech isn&apos;t recognized, open <b>System Settings → Privacy &amp; Security → Microphone</b> and allow access for your browser, then reload this page.
                 </Typography>
-              </Alert>
-            )}
-            {speechTip && !(browserName === "edge" && platformName === "windows") && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="body2">{speechTip}</Typography>
               </Alert>
             )}
             <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
