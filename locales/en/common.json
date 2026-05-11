@@ -1541,6 +1541,13 @@
   "adminInstructors": {
     "title": "Instructors",
     "subtitle": "Review pending applications, manage approved instructors, and audit rejections.",
+    "searchPlaceholder": "Search by name or email…",
+    "noMatch": "No instructors match your search.",
+    "stats": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
     "tabs": {
       "pending": "Pending",
       "approved": "Approved",
@@ -1614,6 +1621,10 @@
       "title": "Assign courses to {{name}}",
       "body": "Select courses to assign. Instructors can view assigned courses, manage enrolled students, and create assessments tagged to these courses.",
       "noCourses": "There are no courses available yet.",
+      "searchPlaceholder": "Search courses…",
+      "selectAll": "Select all",
+      "clearAll": "Clear",
+      "selectedCount": "{{count}} selected",
       "save": "Save"
     },
     "viewCourses": {

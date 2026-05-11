@@ -37,7 +37,7 @@ import {
   adminStudentEnrollmentService,
   StudentEnrollmentJob,
 } from "@/lib/services/admin/admin-student-enrollment.service";
-import { coursesService } from "@/lib/services/courses.service";
+import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { Course } from "@/lib/services/courses.service";
 import { EnrollmentJobStatus } from "./EnrollmentJobStatus";
 
@@ -89,8 +89,14 @@ export function BulkEnrollmentDialog({
   const loadCourses = async () => {
     try {
       setLoadingCourses(true);
-      const coursesData = await coursesService.getCourses();
-      setCourses(coursesData);
+      const raw = await adminCoursesService.getCourses();
+      // Admin endpoint returns either an array or a paginated { results } envelope.
+      const list = Array.isArray(raw)
+        ? raw
+        : Array.isArray((raw as { results?: unknown[] })?.results)
+          ? ((raw as { results: unknown[] }).results as unknown[])
+          : [];
+      setCourses(list as Course[]);
     } catch (error: any) {
       showToast(t("adminManageStudents.failedToLoadCourses"), "error");
     } finally {
