@@ -242,13 +242,20 @@ export default function TakeMockInterviewPage() {
     },
   });
 
+  // STT errors/tips are surfaced only before the interview starts. Once the
+  // user is inside the interview, transient speech-recognition warnings
+  // ("needs internet", "enable Online speech recognition", etc.) are noisy
+  // and distracting — Whisper continues recording independently, so we
+  // suppress them. Permission-level failures still surface via setup checks.
   useEffect(() => {
-    if (sttError) showToast(sttError, needsTypingFallback ? "warning" : "error");
-  }, [sttError, needsTypingFallback, showToast]);
+    if (!interviewStarted && sttError) {
+      showToast(sttError, needsTypingFallback ? "warning" : "error");
+    }
+  }, [sttError, needsTypingFallback, showToast, interviewStarted]);
 
   useEffect(() => {
-    if (sttTip) showToast(sttTip, "info");
-  }, [sttTip, showToast]);
+    if (!interviewStarted && sttTip) showToast(sttTip, "info");
+  }, [sttTip, showToast, interviewStarted]);
 
   // Load interview data on mount: use sessionStorage if coming from device-check, else call start API
   useEffect(() => {
@@ -891,7 +898,7 @@ export default function TakeMockInterviewPage() {
               canGoPrevious={currentQuestionIndex > 0}
               isLastQuestion={currentQuestionIndex >= totalQuestions - 1}
               isListening={isListening}
-              typingFallback={needsTypingFallback}
+              typingFallback={false}
             />
           )}
         </Box>

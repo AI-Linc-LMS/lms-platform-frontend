@@ -918,16 +918,6 @@ export default function MockInterviewDeviceCheckPage() {
                 </Typography>
               </Alert>
             )}
-            {platformName === "mac" && browserName === "chrome" && !ttsMatch && (
-              <Alert severity="info" icon={<AlertCircle size={20} />} sx={{ mb: 2 }}>
-                <Typography variant="body2" fontWeight={600} gutterBottom>
-                  Using macOS?
-                </Typography>
-                <Typography variant="body2">
-                  If speech isn&apos;t recognized, open <b>System Settings → Privacy &amp; Security → Microphone</b> and allow access for your browser, then reload this page.
-                </Typography>
-              </Alert>
-            )}
             <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
               <Button
                 variant="outlined"
