@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Container,
   Box,
@@ -12,7 +14,6 @@ import {
   Avatar,
   Button,
   TextField,
-  IconButton,
   CircularProgress,
   Breadcrumbs,
   Link,
@@ -25,9 +26,38 @@ import {
   communityService,
   ThreadDetail,
   Comment as CommentType,
+  PostType,
+  POST_TYPE_CONFIG,
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
+import { softBreakMarkdown } from "@/lib/utils/html-utils";
+import { config } from "@/lib/config";
+
+const THREAD_EXTRAS_KEY = `community_thread_extras_${config.clientId}`;
+
+interface ThreadExtras {
+  post_type?: PostType;
+  image_urls?: string[];
+  poll_options?: string[];
+  resource_url?: string;
+  tried_steps?: string;
+  humor_tone?: string;
+  punchline?: string;
+  stance?: string;
+  tldr?: string;
+}
+
+function loadThreadExtras(threadId: number): ThreadExtras {
+  try {
+    const raw = localStorage.getItem(THREAD_EXTRAS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return (parsed[String(threadId)] as ThreadExtras) ?? {};
+    }
+  } catch {}
+  return {};
+}
 
 export default function ThreadDetailPage() {
   const params = useParams();
@@ -37,6 +67,7 @@ export default function ThreadDetailPage() {
   const threadId = Number(params.threadId);
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
+  const [extras, setExtras] = useState<ThreadExtras>({});
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -124,6 +155,7 @@ export default function ThreadDetailPage() {
       optimisticCommentVotesRef.current = loadCommentVotesFromStorage();
       optimisticThreadVoteRef.current = loadThreadVoteFromStorage();
       optimisticThreadBookmarkRef.current = loadThreadBookmarkFromStorage();
+      setExtras(loadThreadExtras(threadId));
       loadThread();
     }
   }, [threadId]);
@@ -762,93 +794,173 @@ export default function ThreadDetailPage() {
 
             {/* Content */}
             <Box sx={{ flex: 1 }}>
+              {/* Post type badge */}
+              {(() => {
+                const pt = (thread.post_type || extras.post_type || "question") as PostType;
+                const cfg = POST_TYPE_CONFIG[pt];
+                return (
+                  <Box sx={{ mb: 1 }}>
+                    <Chip
+                      icon={<IconWrapper icon={cfg.icon} size={12} color={cfg.color} />}
+                      label={cfg.label}
+                      size="small"
+                      sx={{
+                        height: 22,
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        backgroundColor: `${cfg.color}12`,
+                        color: cfg.color,
+                        border: `1px solid ${cfg.color}28`,
+                        "& .MuiChip-icon": { ml: 0.5 },
+                      }}
+                    />
+                  </Box>
+                );
+              })()}
+
               {/* Title */}
               <Typography variant="h4" fontWeight={700} gutterBottom>
                 {thread.title}
               </Typography>
 
               {/* Tags */}
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
-                {thread.tags.map((tag) => (
-                  <Chip
-                    key={tag.id}
-                    label={tag.name}
-                    size="small"
-                    sx={{
-                      backgroundColor: "#dbeafe",
-                      color: "var(--accent-indigo)",
-                      fontWeight: 500,
-                    }}
-                  />
-                ))}
-              </Box>
+              {thread.tags.length > 0 && (
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
+                  {thread.tags.map((tag) => (
+                    <Chip
+                      key={tag.id}
+                      label={tag.name}
+                      size="small"
+                      sx={{
+                        backgroundColor:
+                          "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                        color: "var(--accent-indigo)",
+                        fontWeight: 500,
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
 
-              {/* Body */}
+              {/* Resource URL */}
+              {extras.resource_url && (
+                <Box
+                  sx={{
+                    mb: 2, p: 1.5, borderRadius: "8px",
+                    border: "1px solid #bfdbfe", backgroundColor: "#eff6ff",
+                    display: "flex", alignItems: "center", gap: 1,
+                  }}
+                >
+                  <IconWrapper icon="mdi:link-variant" size={16} color="#3b82f6" />
+                  <Link
+                    href={extras.resource_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ fontSize: "0.875rem", color: "#2563eb", wordBreak: "break-all" }}
+                  >
+                    {extras.resource_url}
+                  </Link>
+                </Box>
+              )}
+
+              {/* Tried steps (Question extra) */}
+              {extras.tried_steps && (
+                <Box sx={{ mb: 2.5, pl: 2, borderLeft: "3px solid #a5b4fc" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
+                    <IconWrapper icon="mdi:wrench-clock-outline" size={13} color="#6366f1" />
+                    <Typography variant="caption" fontWeight={700} sx={{ color: "#6366f1", letterSpacing: "0.02em", textTransform: "uppercase", fontSize: "0.68rem" }}>
+                      What they already tried
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                    {extras.tried_steps}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Body — rendered as markdown */}
               <Box
-                dangerouslySetInnerHTML={{ __html: thread.body }}
                 sx={{
                   mb: 3,
-                  color: "var(--font-secondary)",
-                  lineHeight: 1.7,
-                  fontSize: "1rem",
-                  wordBreak: "break-word",
-                  overflowWrap: "break-word",
-                  overflow: "hidden",
-                  width: "100%",
-                  maxWidth: "100%",
-                  "& p": {
-                    margin: 0,
-                    marginBottom: "1rem",
-                    "&:last-child": {
-                      marginBottom: 0,
-                    },
-                  },
-                  "& b, & strong": {
-                    fontWeight: 600,
-                  },
-                  "& i, & em": {
-                    fontStyle: "italic",
-                  },
-                  "& img": {
-                    maxWidth: "100%",
-                    width: "100%",
-                    height: "auto",
-                    display: "block",
-                    margin: "1rem 0",
-                    borderRadius: "4px",
-                    objectFit: "contain",
-                  },
-                  "& a": {
-                    color: "var(--accent-indigo)",
-                    textDecoration: "none",
-                    wordBreak: "break-all",
-                    "&:hover": {
-                      textDecoration: "underline",
-                    },
-                  },
+                  "& p": { mb: 1, lineHeight: 1.8, color: "var(--font-primary)", fontSize: "0.95rem" },
+                  "& h1": { fontSize: "1.6rem", fontWeight: 700, mt: 2, mb: 1, color: "var(--font-primary)" },
+                  "& h2": { fontSize: "1.35rem", fontWeight: 700, mt: 2, mb: 1, color: "var(--font-primary)" },
+                  "& h3": { fontSize: "1.15rem", fontWeight: 600, mt: 1.5, mb: 0.75, color: "var(--font-primary)" },
+                  "& strong": { fontWeight: 700 },
+                  "& em": { fontStyle: "italic" },
                   "& code": {
-                    backgroundColor: "#f3f4f6",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    fontSize: "0.875em",
-                    fontFamily: "monospace",
-                    wordBreak: "break-word",
-                    overflowWrap: "break-word",
+                    fontFamily: "monospace", fontSize: "0.875em",
+                    backgroundColor: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)",
+                    borderRadius: "4px", px: "5px", py: "1px",
                   },
                   "& pre": {
-                    backgroundColor: "#f3f4f6",
-                    padding: "0.75rem",
-                    borderRadius: "4px",
-                    overflow: "auto",
-                    margin: "1rem 0",
-                    maxWidth: "100%",
-                    "& code": {
-                      backgroundColor: "transparent",
-                      padding: 0,
-                    },
+                    backgroundColor: "#1a1b26", color: "#c0caf5",
+                    borderRadius: "10px", p: 2, overflowX: "auto",
+                    my: 1.5, fontSize: "0.875rem", lineHeight: 1.6,
+                    "& code": { backgroundColor: "transparent", border: "none", color: "inherit", p: 0 },
                   },
+                  "& blockquote": {
+                    borderLeft: "3px solid var(--accent-indigo)", pl: 2, ml: 0,
+                    color: "var(--font-secondary)", fontStyle: "italic", my: 1.5,
+                  },
+                  "& ul, & ol": { pl: 3, mb: 1 },
+                  "& li": { mb: 0.4, fontSize: "0.95rem", color: "var(--font-primary)" },
+                  "& a": { color: "var(--accent-indigo)", textDecoration: "underline", wordBreak: "break-all" },
+                  "& hr": { border: "none", borderTop: "1px solid var(--border-default)", my: 2 },
+                  "& table": { borderCollapse: "collapse", width: "100%", mb: 1.5 },
+                  "& th, & td": { border: "1px solid var(--border-default)", px: 1.5, py: 0.75, fontSize: "0.9rem" },
+                  "& th": { backgroundColor: "var(--surface)", fontWeight: 700 },
+                  "& img": { maxWidth: "100%", borderRadius: "8px", my: 1 },
                 }}
-              />
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {softBreakMarkdown(thread.body)}
+                </ReactMarkdown>
+              </Box>
+
+              {/* Attached images */}
+              {(() => {
+                const imageUrls = thread.image_urls?.length ? thread.image_urls : extras.image_urls;
+                return imageUrls && imageUrls.length > 0 ? (
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2.5 }}>
+                    {imageUrls.map((url, i) => (
+                      <Box
+                        key={i}
+                        component="img"
+                        src={url}
+                        alt=""
+                        sx={{
+                          maxWidth: "100%",
+                          width: imageUrls.length === 1 ? "100%" : "calc(50% - 4px)",
+                          maxHeight: 360,
+                          objectFit: "cover",
+                          borderRadius: "10px",
+                          border: "1px solid var(--border-default)",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => window.open(url, "_blank")}
+                      />
+                    ))}
+                  </Box>
+                ) : null;
+              })()}
+
+              {/* Humorous extras */}
+              {extras.punchline && (
+                <Box sx={{ mb: 2, p: 1.5, borderRadius: "8px", backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+                  <Typography variant="body2" fontWeight={700} sx={{ color: "#b45309" }}>
+                    ⚡ {extras.punchline}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Discussion TL;DR */}
+              {extras.tldr && (
+                <Box sx={{ mb: 2, p: 1.5, borderRadius: "8px", backgroundColor: "#f0fdf8", border: "1px solid #6ee7b7" }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: "#065f46" }}>TL;DR</Typography>
+                  <Typography variant="body2" sx={{ color: "#065f46", mt: 0.25 }}>{extras.tldr}</Typography>
+                </Box>
+              )}
 
               {/* Author & Meta */}
               <Box
@@ -972,13 +1084,22 @@ export default function ThreadDetailPage() {
           {/* Comments List */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {thread.comments.map((comment) => (
-              <CommentItem
+              <Box
                 key={comment.id}
-                comment={comment}
-                threadId={threadId}
-                onVote={handleVoteComment}
-                onReply={handleReply}
-              />
+                sx={{
+                  p: 2,
+                  border: "1px solid var(--border-default)",
+                  borderRadius: 2,
+                  backgroundColor: "var(--card-bg)",
+                }}
+              >
+                <CommentItem
+                  comment={comment}
+                  threadId={threadId}
+                  onVote={handleVoteComment}
+                  onReply={handleReply}
+                />
+              </Box>
             ))}
 
             {thread.comments.length === 0 && (
