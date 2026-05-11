@@ -32,8 +32,10 @@ import {
   isAdminOnlyRole,
   isFullAdminRole,
   isCourseManagerRole,
+  isInstructorRole,
   isClientOrgAdminRole,
   COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES,
+  INSTRUCTOR_ADMIN_SIDEBAR_FEATURES,
 } from "@/lib/auth/role-utils";
 import { useTenantShellTheme } from "@/lib/theme/useTenantShellTheme";
 import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
@@ -179,10 +181,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_manage_students",
     },
     {
-      label: "Pending instructors",
-      labelKey: "nav.pendingInstructors",
-      path: "/admin/pending-instructors",
-      icon: "mdi:account-clock",
+      label: "Instructors",
+      labelKey: "nav.instructors",
+      path: "/admin/instructors",
+      icon: "mdi:account-tie",
       featureName: "admin_manage_instructors",
       orgAdminOnly: true,
     },
@@ -370,6 +372,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     if (isCourseManagerRole(role) && effectiveAdminMode) {
       const allow = new Set(COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES);
+      items = items.filter((item) => {
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((f) => allow.has(f));
+        }
+        return allow.has(item.featureName);
+      });
+    }
+
+    if (isInstructorRole(role) && effectiveAdminMode) {
+      const allow = new Set(INSTRUCTOR_ADMIN_SIDEBAR_FEATURES);
       items = items.filter((item) => {
         const any = item.featureNamesAny;
         if (any?.length) {

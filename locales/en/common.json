@@ -11,7 +11,8 @@
     "community": "Community",
     "profile": "Profile",
     "manageStudents": "Manage Students",
-    "pendingInstructors": "Pending instructors",
+    "pendingInstructors": "Instructors",
+    "instructors": "Instructors",
     "courseBuilder": "Course Builder",
     "aiCourseBuilder": "AI Course Builder",
     "emails": "Emails",
@@ -1536,6 +1537,91 @@
     "confirmApproveTitle": "Approve this instructor?",
     "confirmApproveBody": "Are you sure you want to approve {{name}} ({{email}})? They will be able to sign in after approval.",
     "confirmApprove": "Yes, approve"
+  },
+  "adminInstructors": {
+    "title": "Instructors",
+    "subtitle": "Review pending applications, manage approved instructors, and audit rejections.",
+    "tabs": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "columns": {
+      "email": "Email",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "createdAt": "Signed up",
+      "reviewedAt": "Reviewed",
+      "assignedCourses": "Assigned courses",
+      "rejectionReason": "Reason",
+      "actions": "Actions"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "reopen": "Re-review",
+      "assignCourses": "Assign courses",
+      "promote": "Promote",
+      "viewCourses": "View courses"
+    },
+    "loading": {
+      "approving": "Approving…",
+      "rejecting": "Rejecting…",
+      "reopening": "Re-opening…",
+      "assigning": "Saving…",
+      "promoting": "Promoting…"
+    },
+    "empty": {
+      "pending": "No instructors are waiting for approval.",
+      "approved": "No approved instructors yet.",
+      "rejected": "No rejected applications."
+    },
+    "toasts": {
+      "approved": "Instructor approved",
+      "rejected": "Instructor rejected",
+      "reopened": "Instructor moved back to pending",
+      "coursesAssigned": "Course assignments updated",
+      "promoted": "Instructor role updated"
+    },
+    "errors": {
+      "loadFailed": "Failed to load instructors.",
+      "approveFailed": "Could not approve this instructor.",
+      "rejectFailed": "Could not reject this instructor.",
+      "reopenFailed": "Could not move instructor back to pending.",
+      "assignFailed": "Could not update course assignments.",
+      "promoteFailed": "Could not promote this instructor.",
+      "coursesLoadFailed": "Could not load the course list."
+    },
+    "confirm": {
+      "approveTitle": "Approve this instructor?",
+      "approveBody": "Are you sure you want to approve {{name}} ({{email}})? They will be able to sign in after approval.",
+      "approveCta": "Yes, approve",
+      "rejectTitle": "Reject this instructor?",
+      "rejectBody": "Are you sure you want to reject {{name}} ({{email}})? Their account will be disabled and they will receive a notification email.",
+      "rejectCta": "Yes, reject",
+      "reasonLabel": "Reason (optional)",
+      "reopenTitle": "Move back to pending?",
+      "reopenBody": "This will reopen {{name}} ({{email}}) for re-review. They will appear in the pending tab again.",
+      "reopenCta": "Yes, move to pending",
+      "promoteTitle": "Promote {{name}}?",
+      "promoteBody": "Promotion changes the user's role. This action is irreversible from this page.",
+      "promoteCta": "Promote",
+      "promoteRoleCourseManager": "Course Manager",
+      "promoteRoleAdmin": "Admin",
+      "cancel": "Cancel"
+    },
+    "assignDialog": {
+      "title": "Assign courses to {{name}}",
+      "body": "Select courses to assign. Instructors can view assigned courses, manage enrolled students, and create assessments tagged to these courses.",
+      "noCourses": "There are no courses available yet.",
+      "save": "Save"
+    },
+    "viewCourses": {
+      "title": "Courses for {{name}}",
+      "managed": "Managed (primary owner)",
+      "assigned": "Assigned",
+      "noCourses": "This instructor isn't tied to any courses yet."
+    }
   },
   "adminManageStudents": {
     "title": "Manage Students",
