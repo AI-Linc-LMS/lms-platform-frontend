@@ -26,23 +26,7 @@ export function QuestionTitle({ question, compact }: QuestionTitleProps) {
     <Box
       sx={{
         mb: compact ? { xs: 1.5, sm: 2 } : { xs: 2, sm: 3 },
-        maxHeight: compact ? "180px" : "200px",
-        overflowY: "auto",
-        pr: 1,
-        "&::-webkit-scrollbar": {
-          width: "8px",
-        },
-        "&::-webkit-scrollbar-track": {
-          backgroundColor: "#f1f1f1",
-          borderRadius: "4px",
-        },
-        "&::-webkit-scrollbar-thumb": {
-          backgroundColor: "#c1c1c1",
-          borderRadius: "4px",
-          "&:hover": {
-            backgroundColor: "#a8a8a8",
-          },
-        },
+        flexShrink: 0,
       }}
     >
       {hasHtml(question) ? (
@@ -56,7 +40,7 @@ export function QuestionTitle({ question, compact }: QuestionTitleProps) {
           dangerouslySetInnerHTML={{ __html: question }}
         />
       ) : (
-        <Typography variant="h6" sx={titleSx}>
+        <Typography variant="h6" sx={{ ...titleSx, whiteSpace: "pre-wrap" }}>
           {question}
         </Typography>
       )}
