@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { formatMmSs } from "@/lib/utils/formatMmSs";
 import { getSectionTimeCapTotalSeconds } from "@/utils/assessment.utils";
 
-interface AssessmentNavigationProps {
+export interface AssessmentNavigationProps {
   currentSectionIndex: number;
   currentQuestionIndex: number;
   totalQuestions: number;

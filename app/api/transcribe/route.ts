@@ -44,19 +44,52 @@ export async function POST(request: NextRequest) {
   body.append("response_format", "json");
   if (lang) body.append("language", lang);
 
-  const res = await fetch(WHISPER_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body,
-  });
+  let res: Response;
+  try {
+    res = await fetch(WHISPER_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body,
+    });
+  } catch (err) {
+    // Network failure reaching OpenAI — transient. Return 502 so the client
+    // counts this as a tolerable failure (it has retry-with-backoff logic).
+    console.error("[/api/transcribe] upstream fetch failed:", err);
+    return NextResponse.json(
+      { error: "Upstream transcription service unreachable" },
+      { status: 502 }
+    );
+  }
 
   if (!res.ok) {
-    const errText = await res.text();
+    const errText = await res.text().catch(() => "");
+    // Log so server logs show the actual OpenAI error (rate limit, bad audio, etc.)
+    console.warn(
+      `[/api/transcribe] OpenAI returned ${res.status}: ${errText.slice(0, 500)}`
+    );
+
+    // 401 / 403 → fatal config error (bad key, no access).
+    if (res.status === 401 || res.status === 403) {
+      return NextResponse.json(
+        { error: res.status === 401 ? "Invalid API key" : "Forbidden" },
+        { status: res.status }
+      );
+    }
+    // 400 → bad audio chunk (silence, bad codec). Surface as 400 so the
+    // client's transient-failure counter ticks up but isn't fatal alone.
+    if (res.status === 400) {
+      return NextResponse.json(
+        { error: errText || "Bad audio chunk" },
+        { status: 400 }
+      );
+    }
+    // 429 rate limit → preserve so client backs off; otherwise normalize to 502.
+    const status = res.status === 429 ? 429 : 502;
     return NextResponse.json(
-      { error: res.status === 401 ? "Invalid API key" : errText || res.statusText },
-      { status: res.status === 401 ? 401 : 502 }
+      { error: errText || res.statusText || "Upstream error" },
+      { status }
     );
   }
 

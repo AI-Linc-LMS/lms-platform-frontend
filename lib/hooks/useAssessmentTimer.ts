@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
 interface UseAssessmentTimerOptions {
   initialTimeSeconds: number;
@@ -105,20 +105,21 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   }, []);
 
-  // Memoize formatted time to prevent unnecessary string operations
-  const formattedTime = useRef(formatTime(remainingSeconds));
-  
-  useEffect(() => {
-    formattedTime.current = formatTime(remainingSeconds);
-  }, [remainingSeconds, formatTime]);
+  const formattedTime = useMemo(
+    () => formatTime(remainingSeconds),
+    [remainingSeconds, formatTime]
+  );
 
-  return {
-    remainingSeconds,
-    formattedTime: formattedTime.current,
-    isRunning,
-    start,
-    pause,
-    reset,
-  };
+  return useMemo(
+    () => ({
+      remainingSeconds,
+      formattedTime,
+      isRunning,
+      start,
+      pause,
+      reset,
+    }),
+    [remainingSeconds, formattedTime, isRunning, start, pause, reset]
+  );
 }
 

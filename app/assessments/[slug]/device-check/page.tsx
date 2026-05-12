@@ -226,7 +226,12 @@ export default function DeviceCheckPage({
             };
             checkVideoReady();
           }
-        }).catch((err) => {
+        }).catch((err: unknown) => {
+          const name = (err as { name?: string })?.name;
+          // AbortError fires when the element is removed from the DOM
+          // mid-play (e.g. user navigates away); NotAllowedError fires
+          // when autoplay is blocked. Neither needs surfacing.
+          if (name === "AbortError" || name === "NotAllowedError") return;
           console.error("Failed to play video:", err);
         });
       }
@@ -411,10 +416,14 @@ export default function DeviceCheckPage({
           return;
         }
 
-        // Check if assessment is already attempted
-        if (data.is_attempted) {
+        // Check if assessment is already submitted — block re-entry.
+        // (`is_attempted` is true for in-progress too; only redirect when
+        // actually submitted so resume-in-progress still works.)
+        if (data.status === "submitted" || data.status === "finalized") {
           showToast("This assessment has already been submitted", "warning");
-          router.push(`/assessments/${slug}`);
+          // replace, not push: don't leave device-check in history so
+          // back-navigation can't return here.
+          router.replace(`/assessments/${slug}`);
           return;
         }
 

@@ -11,7 +11,8 @@
     "community": "المجتمع",
     "profile": "الملف الشخصي",
     "manageStudents": "إدارة الطلاب",
-    "pendingInstructors": "المعلمون في انتظار الموافقة",
+    "pendingInstructors": "المعلمون",
+    "instructors": "المعلمون",
     "courseBuilder": "منشئ الدورات",
     "aiCourseBuilder": "منشئ الدورات بالذكاء الاصطناعي",
     "emails": "البريد الإلكتروني",
@@ -1405,6 +1406,102 @@
     "confirmApproveTitle": "الموافقة على هذا المعلم؟",
     "confirmApproveBody": "هل أنت متأكد أنك تريد الموافقة على {{name}} ({{email}})؟ سيتمكن من تسجيل الدخول بعد الموافقة.",
     "confirmApprove": "نعم، موافقة"
+  },
+  "adminInstructors": {
+    "title": "المعلمون",
+    "subtitle": "راجع طلبات التسجيل المعلّقة، وأدر المعلمين المعتمدين، وراجع الطلبات المرفوضة.",
+    "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني…",
+    "noMatch": "لا يوجد معلمون مطابقون لبحثك.",
+    "stats": {
+      "pending": "قيد المراجعة",
+      "approved": "معتمد",
+      "rejected": "مرفوض"
+    },
+    "tabs": {
+      "pending": "قيد المراجعة",
+      "approved": "معتمد",
+      "rejected": "مرفوض"
+    },
+    "columns": {
+      "email": "البريد الإلكتروني",
+      "fullName": "الاسم الكامل",
+      "phone": "الهاتف",
+      "createdAt": "تاريخ التسجيل",
+      "reviewedAt": "تاريخ المراجعة",
+      "assignedCourses": "الدورات المخصصة",
+      "rejectionReason": "السبب",
+      "actions": "إجراءات"
+    },
+    "actions": {
+      "approve": "موافقة",
+      "reject": "رفض",
+      "reopen": "إعادة المراجعة",
+      "assignCourses": "تخصيص الدورات",
+      "promote": "ترقية",
+      "viewCourses": "عرض الدورات"
+    },
+    "loading": {
+      "approving": "جاري الموافقة…",
+      "rejecting": "جاري الرفض…",
+      "reopening": "جاري إعادة الفتح…",
+      "assigning": "جاري الحفظ…",
+      "promoting": "جاري الترقية…"
+    },
+    "empty": {
+      "pending": "لا يوجد معلمون في انتظار الموافقة.",
+      "approved": "لا يوجد معلمون معتمدون بعد.",
+      "rejected": "لا توجد طلبات مرفوضة."
+    },
+    "toasts": {
+      "approved": "تمت الموافقة على المعلم",
+      "rejected": "تم رفض المعلم",
+      "reopened": "تمت إعادة المعلم إلى قيد المراجعة",
+      "coursesAssigned": "تم تحديث تخصيصات الدورات",
+      "promoted": "تم تحديث دور المعلم"
+    },
+    "errors": {
+      "loadFailed": "تعذّر تحميل قائمة المعلمين.",
+      "approveFailed": "تعذّرت الموافقة على هذا المعلم.",
+      "rejectFailed": "تعذّر رفض هذا المعلم.",
+      "reopenFailed": "تعذّر إعادة المعلم إلى قيد المراجعة.",
+      "assignFailed": "تعذّر تحديث تخصيصات الدورات.",
+      "promoteFailed": "تعذّرت ترقية هذا المعلم.",
+      "coursesLoadFailed": "تعذّر تحميل قائمة الدورات."
+    },
+    "confirm": {
+      "approveTitle": "الموافقة على هذا المعلم؟",
+      "approveBody": "هل أنت متأكد أنك تريد الموافقة على {{name}} ({{email}})؟ سيتمكن من تسجيل الدخول بعد الموافقة.",
+      "approveCta": "نعم، موافقة",
+      "rejectTitle": "رفض هذا المعلم؟",
+      "rejectBody": "هل أنت متأكد أنك تريد رفض {{name}} ({{email}})؟ سيتم تعطيل حسابه وإرسال إشعار بالبريد الإلكتروني.",
+      "rejectCta": "نعم، رفض",
+      "reasonLabel": "السبب (اختياري)",
+      "reopenTitle": "إعادة إلى قيد المراجعة؟",
+      "reopenBody": "ستتم إعادة {{name}} ({{email}}) إلى قائمة المراجعة. سيظهر في تبويب قيد المراجعة من جديد.",
+      "reopenCta": "نعم، إعادة إلى قيد المراجعة",
+      "promoteTitle": "ترقية {{name}}؟",
+      "promoteBody": "ستؤدي الترقية إلى تغيير دور المستخدم. لا يمكن التراجع عن هذا الإجراء من هذه الصفحة.",
+      "promoteCta": "ترقية",
+      "promoteRoleCourseManager": "مدير دورة",
+      "promoteRoleAdmin": "مدير",
+      "cancel": "إلغاء"
+    },
+    "assignDialog": {
+      "title": "تخصيص دورات لـ {{name}}",
+      "body": "اختر الدورات المراد تخصيصها. سيتمكن المعلمون من عرض الدورات المخصصة، وإدارة الطلاب المسجلين، وإنشاء التقييمات المرتبطة بهذه الدورات.",
+      "noCourses": "لا توجد دورات متاحة بعد.",
+      "searchPlaceholder": "ابحث في الدورات…",
+      "selectAll": "تحديد الكل",
+      "clearAll": "مسح",
+      "selectedCount": "{{count}} محدد",
+      "save": "حفظ"
+    },
+    "viewCourses": {
+      "title": "دورات {{name}}",
+      "managed": "إدارة (المالك الأساسي)",
+      "assigned": "مخصصة",
+      "noCourses": "هذا المعلم غير مرتبط بأي دورات بعد."
+    }
   },
   "adminManageStudents": {
     "title": "إدارة الطلاب",

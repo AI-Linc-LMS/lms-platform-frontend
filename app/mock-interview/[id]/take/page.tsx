@@ -140,7 +140,13 @@ export default function TakeMockInterviewPage() {
 
       if (proctoringVideoRef.current) {
         proctoringVideoRef.current.srcObject = stream;
-        proctoringVideoRef.current.play();
+        // play() returns a Promise that rejects with AbortError if the
+        // element is removed from the DOM (or src changes) before it
+        // resolves — e.g. on unmount. Swallow it.
+        proctoringVideoRef.current.play().catch((err: unknown) => {
+          if ((err as { name?: string })?.name === "AbortError") return;
+          if ((err as { name?: string })?.name === "NotAllowedError") return;
+        });
       }
 
       if (hasAudio && audioTracks.length > 0) {
@@ -224,7 +230,15 @@ export default function TakeMockInterviewPage() {
     preferWhisper: true,
     paused: isSpeaking,
   });
-  const { start: startStt, stop: stopStt, transcript: recognizedText, isListening, error: sttError } = speechToText;
+  const {
+    start: startStt,
+    stop: stopStt,
+    transcript: recognizedText,
+    isListening,
+    error: sttError,
+    tip: sttTip,
+    needsTypingFallback,
+  } = speechToText;
 
   // Disable ESC and right-click
   useKeyboardShortcuts({
@@ -234,9 +248,20 @@ export default function TakeMockInterviewPage() {
     },
   });
 
+  // STT errors/tips are surfaced only before the interview starts. Once the
+  // user is inside the interview, transient speech-recognition warnings
+  // ("needs internet", "enable Online speech recognition", etc.) are noisy
+  // and distracting — Whisper continues recording independently, so we
+  // suppress them. Permission-level failures still surface via setup checks.
   useEffect(() => {
-    if (sttError) showToast(sttError, "error");
-  }, [sttError, showToast]);
+    if (!interviewStarted && sttError) {
+      showToast(sttError, needsTypingFallback ? "warning" : "error");
+    }
+  }, [sttError, needsTypingFallback, showToast, interviewStarted]);
+
+  useEffect(() => {
+    if (!interviewStarted && sttTip) showToast(sttTip, "info");
+  }, [sttTip, showToast, interviewStarted]);
 
   // Load interview data on mount: use sessionStorage if coming from device-check, else call start API
   useEffect(() => {
@@ -809,8 +834,8 @@ export default function TakeMockInterviewPage() {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#ffffff",
-        color: "#1f2937",
+          backgroundColor: "var(--card-bg)",
+          color: "var(--font-primary-dark)",
         overflow: "hidden",
       }}
     >
@@ -879,6 +904,7 @@ export default function TakeMockInterviewPage() {
               canGoPrevious={currentQuestionIndex > 0}
               isLastQuestion={currentQuestionIndex >= totalQuestions - 1}
               isListening={isListening}
+              typingFallback={false}
             />
           )}
         </Box>
