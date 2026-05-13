@@ -18,6 +18,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Chip,
+  Divider,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -26,24 +28,102 @@ import { CreateThreadDialog } from "@/components/community/CreateThreadDialog";
 import {
   communityService,
   Thread,
-  Tag,
+  PostType,
+  POST_TYPE_CONFIG,
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
+import { config } from "@/lib/config";
+
+type ActiveFilter = "all" | PostType | "my_posts";
+
+interface ThreadExtras {
+  post_type: PostType;
+  poll_options?: string[];
+  resource_url?: string;
+  tried_steps?: string;
+  humor_tone?: string;
+  punchline?: string;
+  stance?: string;
+  tldr?: string;
+  image_urls?: string[];
+}
+
+const POST_TYPES = Object.keys(POST_TYPE_CONFIG) as PostType[];
+const THREAD_EXTRAS_KEY = `community_thread_extras_${config.clientId}`;
+const PROFILE_LOCAL_KEY = `user_profile_extra_${config.clientId}`;
+
+function getCurrentUserAuthor() {
+  try {
+    const raw = localStorage.getItem(PROFILE_LOCAL_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      return {
+        id: p.id ?? 0,
+        user_name: p.user_name ?? "",
+        name: p.name ?? p.full_name ?? p.user_name ?? "You",
+        profile_pic_url: p.profile_pic_url ?? p.avatar ?? "",
+        role: p.role ?? "student",
+      };
+    }
+  } catch {}
+  return null;
+}
+
+function loadThreadExtras(): Map<number, ThreadExtras> {
+  try {
+    const stored = localStorage.getItem(THREAD_EXTRAS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return new Map(
+        Object.entries(parsed).map(([id, extras]) => [Number(id), extras as ThreadExtras])
+      );
+    }
+  } catch {}
+  return new Map();
+}
+
+function saveThreadExtras(extras: Map<number, ThreadExtras>): void {
+  try {
+    localStorage.setItem(THREAD_EXTRAS_KEY, JSON.stringify(Object.fromEntries(extras)));
+  } catch {}
+}
+
+function getCurrentUserName(): string | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_LOCAL_KEY);
+    if (raw) {
+      const profile = JSON.parse(raw);
+      return profile.user_name || null;
+    }
+  } catch {}
+  return null;
+}
+
+const FILTER_CONFIG: { key: ActiveFilter; label: string; icon: string; color: string }[] = [
+  { key: "all", label: "All Posts", icon: "mdi:view-grid-outline", color: "#6b7280" },
+  ...POST_TYPES.map((t) => ({
+    key: t as ActiveFilter,
+    label: POST_TYPE_CONFIG[t].label,
+    icon: POST_TYPE_CONFIG[t].icon,
+    color: POST_TYPE_CONFIG[t].color,
+  })),
+  { key: "my_posts", label: "My Posts", icon: "mdi:account-outline", color: "#6b7280" },
+];
 
 export default function CommunityPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [threads, setThreads] = useState<Thread[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedPostType] = useState<PostType>("question");
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const optimisticVotesRef = useRef<Map<number, "upvote" | "downvote" | null>>(
-    new Map()
-  );
+  const threadExtrasRef = useRef<Map<number, ThreadExtras>>(new Map());
+  const optimisticVotesRef = useRef<Map<number, "upvote" | "downvote" | null>>(new Map());
   const optimisticBookmarksRef = useRef<Map<number, boolean>>(new Map());
 
   const VOTES_STORAGE_KEY = "community_thread_votes";
@@ -61,17 +141,14 @@ export default function CommunityPage() {
           ])
         );
       }
-    } catch (error) {
-    }
+    } catch {}
     return new Map();
   };
 
   const saveVotesToStorage = (votes: Map<number, "upvote" | "downvote" | null>) => {
     try {
-      const obj = Object.fromEntries(votes);
-      sessionStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(obj));
-    } catch (error) {
-    }
+      sessionStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(Object.fromEntries(votes)));
+    } catch {}
   };
 
   const loadBookmarksFromStorage = (): Map<number, boolean> => {
@@ -80,108 +157,89 @@ export default function CommunityPage() {
       if (stored) {
         const parsed = JSON.parse(stored);
         return new Map(
-          Object.entries(parsed).map(([id, bookmarked]) => [
-            Number(id),
-            bookmarked as boolean,
-          ])
+          Object.entries(parsed).map(([id, bookmarked]) => [Number(id), bookmarked as boolean])
         );
       }
-    } catch (error) {
-    }
+    } catch {}
     return new Map();
   };
 
   const saveBookmarksToStorage = (bookmarks: Map<number, boolean>) => {
     try {
-      const obj = Object.fromEntries(bookmarks);
-      sessionStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(obj));
-    } catch (error) {
-    }
+      sessionStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(Object.fromEntries(bookmarks)));
+    } catch {}
   };
 
   useEffect(() => {
-    // Load initial optimistic state from storage
     optimisticVotesRef.current = loadVotesFromStorage();
     optimisticBookmarksRef.current = loadBookmarksFromStorage();
+    threadExtrasRef.current = loadThreadExtras();
     loadData();
   }, []);
 
-  // Refresh data when page becomes visible again (user navigates back)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        // Reload data to sync with backend when user returns to the page
-        loadData();
-      }
+      if (document.visibilityState === "visible") loadData();
     };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, sortBy]);
+  }, [searchQuery, sortBy, activeFilter]);
+
+  const mergeExtrasIntoThread = (thread: Thread): Thread => {
+    const extras = threadExtrasRef.current.get(thread.id);
+    // Backend now stores post_type/image_urls/poll_options; fall back to localStorage extras
+    // only when the backend value is absent/empty (e.g. threads created before the migration).
+    return {
+      ...thread,
+      post_type: thread.post_type || extras?.post_type,
+      poll_options: thread.poll_options?.length ? thread.poll_options : extras?.poll_options,
+      image_urls: thread.image_urls?.length ? thread.image_urls : extras?.image_urls,
+    };
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [threadsData, tagsData] = await Promise.all([
-        communityService.getThreads(),
-        communityService.getTags(),
-      ]);
+      const threadsData = await communityService.getThreads();
 
       const mergedThreads = threadsData.map((backendThread) => {
-        const optimisticVote = optimisticVotesRef.current.get(
-          backendThread.id
-        );
-        const optimisticBookmark = optimisticBookmarksRef.current.get(
-          backendThread.id
-        );
+        const optimisticVote = optimisticVotesRef.current.get(backendThread.id);
+        const optimisticBookmark = optimisticBookmarksRef.current.get(backendThread.id);
 
-        // Always trust backend data first - backend is the source of truth
-        // If backend provides user_vote (even if null), use it and clear optimistic state
-        // Only use optimistic state if backend doesn't provide the field at all (undefined)
         let userVote: "upvote" | "downvote" | null;
         if (backendThread.user_vote !== undefined) {
-          // Backend explicitly provided vote data (could be "upvote", "downvote", or null)
-          // This is the source of truth - use it and update optimistic state
           userVote = backendThread.user_vote;
           optimisticVotesRef.current.set(backendThread.id, backendThread.user_vote);
         } else {
-          // Backend didn't provide vote data - use optimistic state as fallback
           userVote = optimisticVote ?? null;
         }
 
         let userBookmarked: boolean;
         if (backendThread.user_bookmarked !== undefined) {
-          // Backend explicitly provided bookmark data - this is the source of truth
-          // Convert null to false for boolean type
           userBookmarked = backendThread.user_bookmarked ?? false;
           optimisticBookmarksRef.current.set(
             backendThread.id,
             backendThread.user_bookmarked ?? false
           );
         } else {
-          // Backend didn't provide bookmark data - use optimistic state as fallback
           userBookmarked = optimisticBookmark ?? false;
         }
 
-        return {
+        return mergeExtrasIntoThread({
           ...backendThread,
           user_vote: userVote,
           user_bookmarked: userBookmarked,
-        };
+        });
       });
 
       saveVotesToStorage(optimisticVotesRef.current);
       saveBookmarksToStorage(optimisticBookmarksRef.current);
       setThreads(mergedThreads);
-      setTags(tagsData);
-    } catch (error) {
+    } catch {
       showToast(t("community.failedToLoad"), "error");
     } finally {
       setLoading(false);
@@ -192,15 +250,85 @@ export default function CommunityPage() {
     title: string;
     body: string;
     tag_ids: number[];
+    post_type: PostType;
+    poll_options?: string[];
+    resource_url?: string;
+    tried_steps?: string;
+    humor_tone?: string;
+    punchline?: string;
+    stance?: string;
+    tldr?: string;
+    image_urls?: string[];
   }) => {
-    try {
-      const newThread = await communityService.createThread(data);
-      setThreads([newThread, ...threads]);
-      showToast(t("community.threadCreated"), "success");
-    } catch (error) {
-      showToast(t("community.failedToCreateThread"), "error");
-      throw error;
-    }
+    const tempId = -Date.now();
+    const author = getCurrentUserAuthor() ?? {
+      id: 0, user_name: "", name: "You", profile_pic_url: "", role: "student" as const,
+    };
+
+    const optimisticThread: Thread = {
+      id: tempId,
+      title: data.title,
+      body: data.body,
+      author,
+      tags: [],
+      upvotes: 0,
+      downvotes: 0,
+      user_vote: null,
+      bookmarks_count: 0,
+      user_bookmarked: false,
+      comments_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      post_type: data.post_type,
+      poll_options: data.poll_options,
+      image_urls: data.image_urls,
+    };
+
+    const extras: ThreadExtras = {
+      post_type: data.post_type,
+      poll_options: data.poll_options,
+      resource_url: data.resource_url,
+      tried_steps: data.tried_steps,
+      humor_tone: data.humor_tone,
+      punchline: data.punchline,
+      stance: data.stance,
+      tldr: data.tldr,
+      image_urls: data.image_urls,
+    };
+
+    threadExtrasRef.current.set(tempId, extras);
+
+    setThreads((prev) => [optimisticThread, ...prev]);
+
+    // Fire API in background — dialog closes immediately
+    communityService
+      .createThread({
+        title: data.title,
+        body: data.body,
+        tag_ids: data.tag_ids,
+        post_type: data.post_type,
+        poll_options: data.poll_options,
+        image_urls: data.image_urls,
+      })
+      .then((newThread) => {
+        threadExtrasRef.current.set(newThread.id, extras);
+        threadExtrasRef.current.delete(tempId);
+        saveThreadExtras(threadExtrasRef.current);
+
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === tempId
+              ? { ...newThread, post_type: data.post_type, poll_options: data.poll_options, image_urls: data.image_urls }
+              : t
+          )
+        );
+        showToast(t("community.threadCreated"), "success");
+      })
+      .catch(() => {
+        setThreads((prev) => prev.filter((t) => t.id !== tempId));
+        threadExtrasRef.current.delete(tempId);
+        showToast(t("community.failedToCreateThread"), "error");
+      });
   };
 
   const handleVote = async (threadId: number, type: "upvote" | "downvote") => {
@@ -213,18 +341,12 @@ export default function CommunityPage() {
     let newUserVote: "upvote" | "downvote" | null = null;
 
     if (currentVote === type) {
-      if (type === "upvote") {
-        newUpvotes = Math.max(0, newUpvotes - 1);
-      } else {
-        newDownvotes = Math.max(0, newDownvotes - 1);
-      }
+      if (type === "upvote") newUpvotes = Math.max(0, newUpvotes - 1);
+      else newDownvotes = Math.max(0, newDownvotes - 1);
       newUserVote = null;
     } else if (currentVote === null) {
-      if (type === "upvote") {
-        newUpvotes += 1;
-      } else {
-        newDownvotes += 1;
-      }
+      if (type === "upvote") newUpvotes += 1;
+      else newDownvotes += 1;
       newUserVote = type;
     } else {
       if (type === "upvote") {
@@ -239,67 +361,100 @@ export default function CommunityPage() {
 
     optimisticVotesRef.current.set(threadId, newUserVote);
     saveVotesToStorage(optimisticVotesRef.current);
-
     setThreads((prev) =>
       prev.map((t) =>
         t.id === threadId
-          ? {
-              ...t,
-              upvotes: newUpvotes,
-              downvotes: newDownvotes,
-              user_vote: newUserVote,
-            }
+          ? { ...t, upvotes: newUpvotes, downvotes: newDownvotes, user_vote: newUserVote }
           : t
       )
     );
 
     try {
       await communityService.voteThread(threadId, type);
-      const [threadsData, tagsData] = await Promise.all([
-        communityService.getThreads(),
-        communityService.getTags(),
-      ]);
+      const threadsData = await communityService.getThreads();
 
       const mergedThreads = threadsData.map((backendThread) => {
-        const optimisticVote = optimisticVotesRef.current.get(
-          backendThread.id
-        );
-
-        // Always trust backend data first - if backend provides user_vote, use it
-        // Only use optimistic state as fallback if backend doesn't provide the data
+        const optimisticVote = optimisticVotesRef.current.get(backendThread.id);
         const finalUserVote =
-          backendThread.user_vote !== undefined
-            ? backendThread.user_vote
-            : optimisticVote ?? null;
-
-        // Update optimistic state to match backend if backend provided it
+          backendThread.user_vote !== undefined ? backendThread.user_vote : optimisticVote ?? null;
         if (backendThread.user_vote !== undefined) {
           optimisticVotesRef.current.set(backendThread.id, backendThread.user_vote);
         }
-
-        return {
-          ...backendThread,
-          upvotes: backendThread.upvotes,
-          downvotes: backendThread.downvotes,
-          user_vote: finalUserVote,
-        };
+        return mergeExtrasIntoThread({ ...backendThread, user_vote: finalUserVote });
       });
 
       saveVotesToStorage(optimisticVotesRef.current);
       setThreads(mergedThreads);
-      setTags(tagsData);
-    } catch (error) {
+    } catch {
       optimisticVotesRef.current.delete(threadId);
       saveVotesToStorage(optimisticVotesRef.current);
       setThreads((prev) =>
         prev.map((t) =>
           t.id === threadId
-            ? {
-                ...t,
-                upvotes: thread.upvotes,
-                downvotes: thread.downvotes,
-                user_vote: thread.user_vote ?? null,
-              }
+            ? { ...t, upvotes: thread.upvotes, downvotes: thread.downvotes, user_vote: thread.user_vote ?? null }
+            : t
+        )
+      );
+      showToast(t("community.failedToVote"), "error");
+    }
+  };
+
+  const handleQuickComment = async (threadId: number, body: string) => {
+    setThreads((prev) =>
+      prev.map((t) => t.id === threadId ? { ...t, comments_count: t.comments_count + 1 } : t)
+    );
+    try {
+      await communityService.createComment(threadId, { body });
+      showToast(t("community.commentAdded"), "success");
+    } catch {
+      setThreads((prev) =>
+        prev.map((t) => t.id === threadId ? { ...t, comments_count: Math.max(0, t.comments_count - 1) } : t)
+      );
+      showToast(t("community.failedToAddComment"), "error");
+    }
+  };
+
+  const handlePollVote = async (threadId: number, optionIndex: number) => {
+    const thread = threads.find((t) => t.id === threadId);
+    if (!thread || !thread.poll_options) return;
+
+    const currentVote = thread.user_poll_vote ?? null;
+    const pollResults = [...(thread.poll_results ?? thread.poll_options.map(() => 0))];
+    let newUserPollVote: number | null;
+
+    if (currentVote === optionIndex) {
+      pollResults[optionIndex] = Math.max(0, pollResults[optionIndex] - 1);
+      newUserPollVote = null;
+    } else {
+      if (currentVote !== null) {
+        pollResults[currentVote] = Math.max(0, pollResults[currentVote] - 1);
+      }
+      pollResults[optionIndex] = (pollResults[optionIndex] ?? 0) + 1;
+      newUserPollVote = optionIndex;
+    }
+
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.id === threadId
+          ? { ...t, poll_results: pollResults, user_poll_vote: newUserPollVote }
+          : t
+      )
+    );
+
+    try {
+      const result = await communityService.votePoll(threadId, optionIndex);
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === threadId
+            ? { ...t, poll_results: result.poll_results, user_poll_vote: result.user_poll_vote }
+            : t
+        )
+      );
+    } catch {
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === threadId
+            ? { ...t, poll_results: thread.poll_results, user_poll_vote: thread.user_poll_vote ?? null }
             : t
         )
       );
@@ -312,104 +467,74 @@ export default function CommunityPage() {
     if (!thread) return;
 
     const isBookmarked = thread.user_bookmarked ?? false;
-    let newBookmarksCount = thread.bookmarks_count;
-    let newUserBookmarked = !isBookmarked;
-
-    if (isBookmarked) {
-      newBookmarksCount = Math.max(0, newBookmarksCount - 1);
-      newUserBookmarked = false;
-    } else {
-      newBookmarksCount += 1;
-      newUserBookmarked = true;
-    }
+    const newBookmarksCount = isBookmarked
+      ? Math.max(0, thread.bookmarks_count - 1)
+      : thread.bookmarks_count + 1;
+    const newUserBookmarked = !isBookmarked;
 
     optimisticBookmarksRef.current.set(threadId, newUserBookmarked);
     saveBookmarksToStorage(optimisticBookmarksRef.current);
-
     setThreads((prev) =>
       prev.map((t) =>
         t.id === threadId
-          ? {
-              ...t,
-              bookmarks_count: newBookmarksCount,
-              user_bookmarked: newUserBookmarked,
-            }
+          ? { ...t, bookmarks_count: newBookmarksCount, user_bookmarked: newUserBookmarked }
           : t
       )
     );
 
     try {
       await communityService.bookmarkThread(threadId);
-      const [threadsData, tagsData] = await Promise.all([
-        communityService.getThreads(),
-        communityService.getTags(),
-      ]);
+      const threadsData = await communityService.getThreads();
 
       const mergedThreads = threadsData.map((backendThread) => {
-        const optimisticBookmark = optimisticBookmarksRef.current.get(
-          backendThread.id
-        );
-
-        // Always trust backend data first - if backend provides user_bookmarked, use it
-        // Only use optimistic state as fallback if backend doesn't provide the data
+        const optimisticBookmark = optimisticBookmarksRef.current.get(backendThread.id);
         const finalUserBookmarked =
           backendThread.user_bookmarked !== undefined
             ? backendThread.user_bookmarked ?? false
             : optimisticBookmark ?? false;
-
-        // Update optimistic state to match backend if backend provided it
         if (backendThread.user_bookmarked !== undefined) {
           optimisticBookmarksRef.current.set(
             backendThread.id,
             backendThread.user_bookmarked ?? false
           );
         }
-
-        return {
-          ...backendThread,
-          bookmarks_count: backendThread.bookmarks_count,
-          user_bookmarked: finalUserBookmarked,
-        };
+        return mergeExtrasIntoThread({ ...backendThread, user_bookmarked: finalUserBookmarked });
       });
 
       setThreads(mergedThreads);
-      setTags(tagsData);
-
       showToast(
-        newUserBookmarked ? t("community.threadBookmarked") : t("community.bookmarkRemoved"),
+        newUserBookmarked
+          ? t("community.threadBookmarked")
+          : t("community.bookmarkRemoved"),
         "success"
       );
-    } catch (error) {
+    } catch {
       setThreads((prev) =>
         prev.map((t) =>
           t.id === threadId
-            ? {
-                ...t,
-                bookmarks_count: thread.bookmarks_count,
-                user_bookmarked: thread.user_bookmarked ?? false,
-              }
+            ? { ...t, bookmarks_count: thread.bookmarks_count, user_bookmarked: thread.user_bookmarked ?? false }
             : t
         )
       );
       optimisticBookmarksRef.current.delete(threadId);
-      setThreads((prev) =>
-        prev.map((t) =>
-          t.id === threadId
-            ? {
-                ...t,
-                bookmarks_count: thread.bookmarks_count,
-                user_bookmarked: thread.user_bookmarked ?? false,
-              }
-            : t
-        )
-      );
       showToast(t("community.failedToBookmark"), "error");
     }
   };
 
   const filteredThreads = useMemo(() => {
+    const currentUserName = getCurrentUserName();
     return threads
       .filter((thread) => {
+        // Post type / my posts filter
+        if (activeFilter !== "all") {
+          if (activeFilter === "my_posts") {
+            if (!currentUserName) return false;
+            return thread.author.user_name === currentUserName;
+          }
+          const threadType = thread.post_type ?? "question";
+          if (threadType !== activeFilter) return false;
+        }
+        // Search filter
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           return (
@@ -421,16 +546,11 @@ export default function CommunityPage() {
       })
       .sort((a, b) => {
         if (sortBy === "recent") {
-          return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-        } else {
-          const scoreA = a.upvotes - a.downvotes;
-          const scoreB = b.upvotes - b.downvotes;
-          return scoreB - scoreA;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
+        return b.upvotes - b.downvotes - (a.upvotes - a.downvotes);
       });
-  }, [threads, searchQuery, sortBy]);
+  }, [threads, searchQuery, sortBy, activeFilter]);
 
   const paginatedThreads = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -474,67 +594,145 @@ export default function CommunityPage() {
                 {t("community.forumSubtitle")}
               </Typography>
             </Box>
+
+            {/* Create Post Button */}
             <Button
               variant="contained"
               size="large"
-              startIcon={<IconWrapper icon="mdi:plus" />}
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
               onClick={() => setCreateDialogOpen(true)}
               sx={{
                 textTransform: "none",
+                fontWeight: 600,
+                borderRadius: "10px",
+                px: 2.5,
               }}
             >
-              {t("community.askQuestion")}
+              Create Post
             </Button>
           </Box>
 
-          {/* Search and Filters */}
+          {/* Search + Filters */}
           <Paper
             elevation={0}
             sx={{
               p: 2,
               border: "1px solid var(--border-default)",
               backgroundColor: "var(--card-bg)",
+              borderRadius: 2,
             }}
           >
+            {/* Row 1: Search */}
+            <TextField
+              placeholder={t("community.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconWrapper icon="mdi:magnify" size={20} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {/* Row 2: Filter pills + Sort */}
             <Box
               sx={{
                 display: "flex",
-                gap: 2,
-                flexWrap: "wrap",
                 alignItems: "center",
+                gap: 1,
+                mt: 1.75,
+                flexWrap: "wrap",
               }}
             >
-              {/* Search */}
-              <TextField
-                placeholder={t("community.searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                size="small"
-                sx={{ flex: 1, minWidth: 250 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconWrapper icon="mdi:magnify" size={20} />
-                    </InputAdornment>
-                  ),
+              {/* Filter pills */}
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 0.75,
+                  flexWrap: "wrap",
+                  flex: 1,
+                  alignItems: "center",
                 }}
-              />
+              >
+                {FILTER_CONFIG.map((f) => {
+                  const active = activeFilter === f.key;
+                  return (
+                    <Chip
+                      key={f.key}
+                      icon={
+                        <IconWrapper
+                          icon={f.icon}
+                          size={13}
+                          color={active ? f.color : "var(--font-tertiary)"}
+                        />
+                      }
+                      label={f.label}
+                      onClick={() => setActiveFilter(f.key)}
+                      size="small"
+                      sx={{
+                        cursor: "pointer",
+                        height: 28,
+                        fontSize: "0.78rem",
+                        fontWeight: active ? 700 : 500,
+                        backgroundColor: active ? `${f.color}15` : "transparent",
+                        color: active ? f.color : "#111111",
+                        border: `1px solid ${active ? f.color : "#c0c0c0"}`,
+                        "& .MuiChip-icon": { ml: 0.75 },
+                        transition: "all 0.15s ease",
+                        "&:hover": {
+                          backgroundColor: `${f.color}10`,
+                          borderColor: f.color,
+                          color: f.color,
+                        },
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+
+              {/* Divider */}
+              <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 0.25 }} />
 
               {/* Sort Tabs */}
               <Tabs
                 value={sortBy}
                 onChange={(_, value) => setSortBy(value)}
-                sx={{ minHeight: 40 }}
+                sx={{
+                  minHeight: 32,
+                  "& .MuiTabs-indicator": { height: 2, borderRadius: 2 },
+                }}
               >
                 <Tab
-                  label={t("community.recent")}
+                  label="Recent"
                   value="recent"
-                  sx={{ minHeight: 40, textTransform: "none" }}
+                  icon={<IconWrapper icon="mdi:clock-outline" size={14} />}
+                  iconPosition="start"
+                  sx={{
+                    minHeight: 32,
+                    textTransform: "none",
+                    fontSize: "0.82rem",
+                    fontWeight: sortBy === "recent" ? 600 : 400,
+                    py: 0,
+                    gap: 0.5,
+                  }}
                 />
                 <Tab
-                  label={t("community.popular")}
+                  label="Popular"
                   value="popular"
-                  sx={{ minHeight: 40, textTransform: "none" }}
+                  icon={<IconWrapper icon="mdi:fire" size={14} />}
+                  iconPosition="start"
+                  sx={{
+                    minHeight: 32,
+                    textTransform: "none",
+                    fontSize: "0.82rem",
+                    fontWeight: sortBy === "popular" ? 600 : 400,
+                    py: 0,
+                    gap: 0.5,
+                  }}
                 />
               </Tabs>
             </Box>
@@ -568,6 +766,8 @@ export default function CommunityPage() {
             <Typography variant="body2" color="text.secondary">
               {searchQuery
                 ? t("community.tryDifferentSearch")
+                : activeFilter !== "all"
+                ? "No posts in this category yet."
                 : t("community.beFirstToStart")}
             </Typography>
           </Paper>
@@ -606,6 +806,8 @@ export default function CommunityPage() {
                   thread={thread}
                   onVote={handleVote}
                   onBookmark={handleBookmark}
+                  onPollVote={handlePollVote}
+                  onComment={handleQuickComment}
                 />
               ))}
             </Box>
@@ -632,7 +834,11 @@ export default function CommunityPage() {
                   showLastButton
                 />
                 <Typography variant="caption" color="text.secondary">
-                  {t("community.showingRange", { start: startItem, end: endItem, total: filteredThreads.length })}
+                  {t("community.showingRange", {
+                    start: startItem,
+                    end: endItem,
+                    total: filteredThreads.length,
+                  })}
                 </Typography>
               </Box>
             )}
@@ -644,7 +850,7 @@ export default function CommunityPage() {
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}
           onSubmit={handleCreateThread}
-          availableTags={tags}
+          initialPostType={selectedPostType}
         />
       </Container>
     </MainLayout>

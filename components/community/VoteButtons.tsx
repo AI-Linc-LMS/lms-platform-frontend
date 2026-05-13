@@ -11,6 +11,7 @@ interface VoteButtonsProps {
   onVote: (type: "upvote" | "downvote") => Promise<void>;
   size?: "small" | "medium";
   orientation?: "vertical" | "horizontal";
+  disabled?: boolean;
 }
 
 export function VoteButtons({
@@ -20,6 +21,7 @@ export function VoteButtons({
   onVote,
   size = "medium",
   orientation = "vertical",
+  disabled = false,
 }: VoteButtonsProps) {
   const [voting, setVoting] = useState(false);
 
@@ -58,7 +60,7 @@ export function VoteButtons({
         <IconButton
           size={size}
           onClick={() => handleVote("upvote")}
-          disabled={voting}
+          disabled={voting || disabled}
           sx={{
             color: "var(--font-secondary)",
             backgroundColor: "transparent",
