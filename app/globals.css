@@ -688,12 +688,15 @@ body {
   transition: background 0.3s var(--aw-ease), transform 0.3s var(--aw-ease);
 }
 .ailinc-wizard .aw-step-bar-todo { background: rgba(255, 255, 255, 0.08); }
+.ailinc-wizard .aw-step-bar-active-bg {
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.55);
+}
 .ailinc-wizard .aw-step-bar-active {
   background: linear-gradient(90deg, #2356d6, #00e0ff);
-  transform: scaleY(1.4);
-  box-shadow: 0 0 12px rgba(0, 224, 255, 0.45);
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.55);
 }
-.ailinc-wizard .aw-step-bar-done { background: rgba(0, 224, 255, 0.7); }
+.ailinc-wizard .aw-step-bar-done { background: rgba(0, 224, 255, 0.5); }
 
 /* ---- Enhancements: cinematic motion + flourishes ------------------- */
 
@@ -707,12 +710,35 @@ body {
   font-size: clamp(120px, 18vw, 280px);
   line-height: 0.85;
   color: transparent;
-  background: linear-gradient(180deg, rgba(0, 224, 255, 0.14) 0%, rgba(0, 224, 255, 0.02) 60%, transparent 100%);
+  background: linear-gradient(180deg,
+    rgba(0, 224, 255, 0.28) 0%,
+    rgba(35, 86, 214, 0.18) 40%,
+    rgba(0, 224, 255, 0.04) 75%,
+    transparent 100%);
   -webkit-background-clip: text;
   background-clip: text;
   pointer-events: none;
   user-select: none;
   z-index: 1;
+  filter: drop-shadow(0 0 60px rgba(0, 224, 255, 0.08));
+}
+
+/* Step bar refinements — thinner, more refined */
+.ailinc-wizard .aw-step-bar {
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.ailinc-wizard .aw-step-bar-active {
+  width: 56px;
+  height: 3px;
+  transform: none;
+}
+.ailinc-wizard .aw-step-bar-done:hover {
+  background: linear-gradient(90deg, rgba(0, 224, 255, 0.85), rgba(35, 86, 214, 0.85));
+  width: 28px;
+  transition: all 0.3s var(--aw-ease);
 }
 
 /* Terminal-style corner bracket */
