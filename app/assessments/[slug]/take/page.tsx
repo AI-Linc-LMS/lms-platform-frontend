@@ -192,7 +192,6 @@ export default function TakeAssessmentPage({
   const [submitting, setSubmitting] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [notepadOpen, setNotepadOpen] = useState(false);
-  const [devtoolsBlocked, setDevtoolsBlocked] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [showStartButton, setShowStartButton] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -231,13 +230,6 @@ export default function TakeAssessmentPage({
   const hasCheckedSubmission = useRef(false);
   const hasLoadedResponses = useRef(false);
   const answerChangeDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  /**
-   * outer/inner dimension gaps are noisy (scrollbars, zoom, fullscreen, browser UI).
-   * Require several consecutive suspicious polls before blocking; require a few “clean”
-   * polls before clearing to avoid flicker.
-   */
-  const devtoolsSuspectStreakRef = useRef(0);
-  const devtoolsSafeStreakRef = useRef(0);
   const violationScreenshotEvidenceRef = useRef<ViolationScreenshotSample[]>(
     []
   );
@@ -245,12 +237,10 @@ export default function TakeAssessmentPage({
   const violationScreenshotDebounceRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
-  const violationScreenshotUploadingRef = useRef(false);
   /** Serializes violation screenshot uploads so a slow capture cannot drop later violations. */
   const violationScreenshotUploadChainRef = useRef<Promise<void>>(
     Promise.resolve(),
   );
-  const sessionStartProofBusyRef = useRef(false);
   const sessionStartProofUploadedRef = useRef(false);
   const sessionStartProofAttemptsRef = useRef(0);
   const violationCaptureFailStreakRef = useRef(0);
@@ -398,18 +388,12 @@ export default function TakeAssessmentPage({
     [sections]
   );
 
-  // Proctoring
-  const handleViolationThresholdReached = useCallback(() => {
-    // Handled by proctoring system
-  }, []);
-
   // Track eye movement violations for warnings
   const eyeMovementCountRef = useRef(0);
   const lastEyeMovementWarningRef = useRef(0);
 
   const {
     isActive: isProctoringActive,
-    isInitializing,
     faceCount,
     status,
     metadata,
@@ -423,7 +407,6 @@ export default function TakeAssessmentPage({
   } = useAssessmentProctoring({
     assessmentId: assessment?.id || 0,
     maxViolations: MAX_VIOLATIONS,
-    onViolationThresholdReached: handleViolationThresholdReached,
     autoStart: false,
     tabSwitchDetectionEnabled:
       assessmentStarted && assessment?.proctoring_enabled !== false,
@@ -514,7 +497,6 @@ export default function TakeAssessmentPage({
             return;
           }
 
-          violationScreenshotUploadingRef.current = true;
           try {
             const file = await captureViolationScreenshotFile();
             if (!file) {
@@ -579,8 +561,6 @@ export default function TakeAssessmentPage({
               violationScreenshotLastCountRef.current = countAtFire;
               violationCaptureFailStreakRef.current = 0;
             }
-          } finally {
-            violationScreenshotUploadingRef.current = false;
           }
         });
     }, VIOLATION_SCREENSHOT_DEBOUNCE_MS);
@@ -649,7 +629,6 @@ export default function TakeAssessmentPage({
           MAX_VIOLATION_SCREENSHOT_EVIDENCE - 1
         );
 
-        sessionStartProofBusyRef.current = true;
         try {
           const file = await captureViolationScreenshotFile({
             filename: `assessment-session-proof-${Date.now()}.jpg`,
@@ -710,7 +689,6 @@ export default function TakeAssessmentPage({
             sessionStartProofUploadedRef.current = true;
           }
         } finally {
-          sessionStartProofBusyRef.current = false;
           if (sessionStartProofUploadedRef.current) {
             setViolationScreenshotCaptureGateOpen(true);
           }
@@ -906,13 +884,6 @@ export default function TakeAssessmentPage({
     },
     [showToast],
   );
-
-  useEffect(() => {
-    // Devtools detection/overlay intentionally disabled for assessment take flow.
-    devtoolsSuspectStreakRef.current = 0;
-    devtoolsSafeStreakRef.current = 0;
-    setDevtoolsBlocked(false);
-  }, [assessmentStarted, submitting]);
 
   // Check if already submitted — also handle bfcache restore via pageshow.
   useEffect(() => {
@@ -1168,7 +1139,28 @@ export default function TakeAssessmentPage({
     }
   }, [assessment, sections]);
 
-  // Auto-save
+  // Auto-save with user-visible failure / recovery warnings.
+  // Without these, a student on a flaky connection could finish a test thinking it
+  // was saved and lose everything. The toast prompts them to stay on the page while
+  // the hook keeps retrying with exponential backoff.
+  const handleAutosavePersistentFailure = useCallback(() => {
+    showToast(
+      t("assessments.take.autosaveFailureToast", {
+        defaultValue:
+          "We can't reach the server right now. Your recent answers aren't saved yet — please stay on this page; we'll keep retrying automatically.",
+      }),
+      "warning",
+    );
+  }, [showToast, t]);
+  const handleAutosaveRecovery = useCallback(() => {
+    showToast(
+      t("assessments.take.autosaveRecoveryToast", {
+        defaultValue: "Reconnected. Your answers are saved.",
+      }),
+      "success",
+    );
+  }, [showToast, t]);
+
   const { remoteAutosave } = useAutoSave({
     enabled: assessmentStarted && !submitting,
     slug,
@@ -1176,6 +1168,8 @@ export default function TakeAssessmentPage({
     sections,
     metadata,
     timedSectionsCompleteRef,
+    onPersistentFailure: handleAutosavePersistentFailure,
+    onRecovery: handleAutosaveRecovery,
   });
 
   // Track proctoring state
@@ -1709,30 +1703,30 @@ export default function TakeAssessmentPage({
     []
   );
 
-  // Debounce quiz/coding only. Subjective uses a controlled TextField — delayed setState
-  // would reset the input on every keystroke before the timeout fires.
+  // Debounce coding code edits only (high keystroke volume). Quiz selections and subjective
+  // answers update immediately so the UI reflects the click on the next paint — the prior
+  // 100ms debounce on quiz made options feel unresponsive under load.
   const handleAnswerChange = useCallback(
     (sectionType: string, questionId: string | number, answer: any) => {
-      if (sectionType === "subjective") {
+      if (sectionType === "coding") {
         if (answerChangeDebounceRef.current) {
           clearTimeout(answerChangeDebounceRef.current);
-          answerChangeDebounceRef.current = null;
         }
-        setResponses((prev) =>
-          applyAnswerToResponses(prev, sectionType, questionId, answer)
-        );
+        answerChangeDebounceRef.current = setTimeout(() => {
+          setResponses((prev) =>
+            applyAnswerToResponses(prev, sectionType, questionId, answer)
+          );
+        }, 100);
         return;
       }
 
       if (answerChangeDebounceRef.current) {
         clearTimeout(answerChangeDebounceRef.current);
+        answerChangeDebounceRef.current = null;
       }
-
-      answerChangeDebounceRef.current = setTimeout(() => {
-        setResponses((prev) =>
-          applyAnswerToResponses(prev, sectionType, questionId, answer)
-        );
-      }, 100);
+      setResponses((prev) =>
+        applyAnswerToResponses(prev, sectionType, questionId, answer)
+      );
     },
     [applyAnswerToResponses]
   );
@@ -1912,16 +1906,29 @@ export default function TakeAssessmentPage({
     return sectionStatus.reduce((sum, s) => sum + s.answered, 0);
   }, [sectionStatus]);
 
-  // Handlers - memoized
+  // Handlers - stable identity via refs. Previously `responses` in deps caused this callback
+  // to be recreated on every click, which cascaded into MemoizedQuizLayout re-rendering all
+  // options. Read latest values from refs inside the handler instead.
+  const quizQuestionsRef = useRef(quizQuestions);
+  quizQuestionsRef.current = quizQuestions;
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  currentQuestionIndexRef.current = currentQuestionIndex;
+  const sectionTypeRef = useRef(sectionType);
+  sectionTypeRef.current = sectionType;
+  const responsesRef = useRef(responses);
+  responsesRef.current = responses;
+
   const handleQuizAnswerSelect = useCallback(
     (answerId: string | number) => {
-      const question = quizQuestions[currentQuestionIndex];
+      const sectionT = sectionTypeRef.current;
+      const idx = currentQuestionIndexRef.current;
+      const question = quizQuestionsRef.current[idx];
       if (!question) return;
       const letter = String(answerId).toUpperCase();
       if (question.question_style === "multiple") {
         const cur =
-          responses[sectionType]?.[question.id] ??
-          responses[sectionType]?.[String(question.id)];
+          responsesRef.current[sectionT]?.[question.id] ??
+          responsesRef.current[sectionT]?.[String(question.id)];
         const set = new Set<string>(
           Array.isArray(cur)
             ? cur.map((x: unknown) => String(x).toUpperCase())
@@ -1935,18 +1942,12 @@ export default function TakeAssessmentPage({
           set.add(letter);
         }
         const arr = Array.from(set).sort();
-        handleAnswerChange(sectionType, question.id, arr.length ? arr : null);
+        handleAnswerChange(sectionT, question.id, arr.length ? arr : null);
         return;
       }
-      handleAnswerChange(sectionType, question.id, letter);
+      handleAnswerChange(sectionT, question.id, letter);
     },
-    [
-      quizQuestions,
-      currentQuestionIndex,
-      sectionType,
-      handleAnswerChange,
-      responses,
-    ]
+    [handleAnswerChange]
   );
 
   const handleClearAnswer = useCallback(() => {
@@ -2360,42 +2361,6 @@ export default function TakeAssessmentPage({
                 </Paper>
               </Box>
             )}
-
-          {devtoolsBlocked && !submitting && (
-            <Box
-              sx={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 2000,
-                bgcolor:
-                  "color-mix(in srgb, var(--font-primary) 82%, transparent)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                p: 2,
-              }}
-            >
-              <Paper
-                elevation={4}
-                sx={{
-                  maxWidth: 460,
-                  p: 3,
-                  textAlign: "center",
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                  {t("assessments.take.devtoolsBlockedTitle")}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "var(--font-secondary)", lineHeight: 1.65 }}
-                >
-                  {t("assessments.take.devtoolsBlockedBody")}
-                </Typography>
-              </Paper>
-            </Box>
-          )}
 
           <LiveAssessmentTimerBar
             ref={timerControlRef}
