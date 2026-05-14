@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Container,
   Box,
   Typography,
   Button,
@@ -25,11 +24,15 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ThreadCard } from "@/components/community/ThreadCard";
 import { CreateThreadDialog } from "@/components/community/CreateThreadDialog";
+import { BountySection } from "@/components/community/BountySection";
+import { MilestoneWidget } from "@/components/community/MilestoneWidget";
 import {
   communityService,
   Thread,
+  BountyItem,
   PostType,
   POST_TYPE_CONFIG,
+  UserXP,
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
@@ -114,8 +117,13 @@ export default function CommunityPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [bounties, setBounties] = useState<BountyItem[]>([]);
+  const [userXP, setUserXP] = useState<UserXP | null>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [bountyDialog, setBountyDialog] = useState<{ open: boolean; threadId: number | null; points: string }>({
+    open: false, threadId: null, points: "",
+  });
   const [selectedPostType] = useState<PostType>("question");
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
@@ -175,6 +183,7 @@ export default function CommunityPage() {
     optimisticBookmarksRef.current = loadBookmarksFromStorage();
     threadExtrasRef.current = loadThreadExtras();
     loadData();
+    communityService.getUserXP().then(setUserXP).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -204,7 +213,11 @@ export default function CommunityPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const threadsData = await communityService.getThreads();
+      const [threadsData, bountiesData] = await Promise.all([
+        communityService.getThreads(),
+        communityService.getBounties().catch(() => [] as BountyItem[]),
+      ]);
+      setBounties(bountiesData);
 
       const mergedThreads = threadsData.map((backendThread) => {
         const optimisticVote = optimisticVotesRef.current.get(backendThread.id);
@@ -245,6 +258,8 @@ export default function CommunityPage() {
       setLoading(false);
     }
   };
+
+  const refreshXP = () => communityService.getUserXP().then(setUserXP).catch(() => {});
 
   const handleCreateThread = async (data: {
     title: string;
@@ -322,6 +337,7 @@ export default function CommunityPage() {
               : t
           )
         );
+        refreshXP();
         showToast(t("community.threadCreated"), "success");
       })
       .catch(() => {
@@ -371,6 +387,7 @@ export default function CommunityPage() {
 
     try {
       await communityService.voteThread(threadId, type);
+      refreshXP();
       const threadsData = await communityService.getThreads();
 
       const mergedThreads = threadsData.map((backendThread) => {
@@ -405,6 +422,7 @@ export default function CommunityPage() {
     );
     try {
       await communityService.createComment(threadId, { body });
+      refreshXP();
       showToast(t("community.commentAdded"), "success");
     } catch {
       setThreads((prev) =>
@@ -443,6 +461,7 @@ export default function CommunityPage() {
 
     try {
       const result = await communityService.votePoll(threadId, optionIndex);
+      refreshXP();
       setThreads((prev) =>
         prev.map((t) =>
           t.id === threadId
@@ -459,6 +478,33 @@ export default function CommunityPage() {
         )
       );
       showToast(t("community.failedToVote"), "error");
+    }
+  };
+
+  const handleOfferBounty = (threadId: number) => {
+    setBountyDialog({ open: true, threadId, points: "" });
+  };
+
+  const handleSubmitBounty = async () => {
+    const { threadId, points } = bountyDialog;
+    if (!threadId) return;
+    const pts = parseInt(points, 10);
+    if (!pts || pts <= 0) { showToast("Enter a valid points amount.", "error"); return; }
+    setBountyDialog((prev) => ({ ...prev, open: false }));
+    try {
+      const bountyInfo = await communityService.createBounty(threadId, pts);
+      setThreads((prev) => prev.map((t) => t.id === threadId ? { ...t, bounty: bountyInfo } : t));
+      setBounties((prev) => {
+        const thread = threads.find((t) => t.id === threadId);
+        if (!thread) return prev;
+        const updated = prev.map((b) =>
+          b.thread_id === threadId ? { ...b, points: pts, has_bounty: true } : b
+        );
+        return updated.sort((a, b) => b.points - a.points);
+      });
+      showToast("Bounty placed!", "success");
+    } catch {
+      showToast("Failed to place bounty.", "error");
     }
   };
 
@@ -484,6 +530,7 @@ export default function CommunityPage() {
 
     try {
       await communityService.bookmarkThread(threadId);
+      refreshXP();
       const threadsData = await communityService.getThreads();
 
       const mergedThreads = threadsData.map((backendThread) => {
@@ -572,8 +619,13 @@ export default function CommunityPage() {
   };
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
+        {/* Two-column layout — sidebar hidden below md */}
+        <Box sx={{ display: "flex", gap: { md: 3, lg: 3.5 }, alignItems: "flex-start" }}>
+        {/* Main content */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Box
@@ -611,6 +663,9 @@ export default function CommunityPage() {
               Create Post
             </Button>
           </Box>
+
+          {/* Bounty Section */}
+          <BountySection bounties={bounties} />
 
           {/* Search + Filters */}
           <Paper
@@ -808,6 +863,8 @@ export default function CommunityPage() {
                   onBookmark={handleBookmark}
                   onPollVote={handlePollVote}
                   onComment={handleQuickComment}
+                  onOfferBounty={handleOfferBounty}
+                  currentUserName={getCurrentUserName()}
                 />
               ))}
             </Box>
@@ -852,7 +909,91 @@ export default function CommunityPage() {
           onSubmit={handleCreateThread}
           initialPostType={selectedPostType}
         />
-      </Container>
+
+        {/* Offer Bounty Dialog */}
+        {bountyDialog.open && (
+          <Box
+            onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
+            sx={{
+              position: "fixed", inset: 0, zIndex: 1300,
+              backgroundColor: "rgba(0,0,0,0.45)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <Box
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                backgroundColor: "var(--card-bg)", borderRadius: "14px",
+                p: 3, width: 340, border: "1px solid var(--border-default)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                <IconWrapper icon="mdi:fire" size={20} color="#f59e0b" />
+                <Typography variant="subtitle1" fontWeight={700} sx={{ color: "var(--font-primary)" }}>
+                  Offer a Bounty
+                </Typography>
+              </Box>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2, lineHeight: 1.6 }}>
+                Set an IP reward to attract quality answers. The best answer you accept earns the points.
+              </Typography>
+              <TextField
+                label="Points (IP)"
+                type="number"
+                value={bountyDialog.points}
+                onChange={(e) => setBountyDialog((p) => ({ ...p, points: e.target.value }))}
+                fullWidth
+                size="small"
+                autoFocus
+                inputProps={{ min: 1 }}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSubmitBounty(); }}
+                sx={{ mb: 2 }}
+              />
+              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                <Button
+                  size="small"
+                  onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
+                  sx={{ textTransform: "none", color: "var(--font-secondary)" }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={handleSubmitBounty}
+                  disabled={!bountyDialog.points || parseInt(bountyDialog.points) <= 0}
+                  sx={{
+                    textTransform: "none", fontWeight: 600, borderRadius: "8px",
+                    backgroundColor: "#f59e0b", boxShadow: "none",
+                    "&:hover": { backgroundColor: "#d97706", boxShadow: "none" },
+                  }}
+                >
+                  Place Bounty
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        </Box>{/* end main content */}
+
+        {/* Right sidebar — fluid width, sticky */}
+        <Box
+          sx={{
+            display: { xs: "none", md: "block" },
+            width: { md: "26%", lg: "23%", xl: "20%" },
+            maxWidth: 320,
+            minWidth: 220,
+            flexShrink: 0,
+            position: "sticky",
+            top: 80,
+          }}
+        >
+          {userXP && <MilestoneWidget xp={userXP} />}
+        </Box>
+
+        </Box>{/* end two-column layout */}
+      </Box>
     </MainLayout>
   );
 }

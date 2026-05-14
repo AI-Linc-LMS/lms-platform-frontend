@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
-  Container,
   Box,
   Typography,
   Paper,
@@ -28,7 +27,9 @@ import {
   Comment as CommentType,
   PostType,
   POST_TYPE_CONFIG,
+  UserXP,
 } from "@/lib/services/community.service";
+import { MilestoneWidget } from "@/components/community/MilestoneWidget";
 import { useToast } from "@/components/common/Toast";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 import { softBreakMarkdown } from "@/lib/utils/html-utils";
@@ -71,6 +72,7 @@ export default function ThreadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [userXP, setUserXP] = useState<UserXP | null>(null);
   const optimisticCommentVotesRef = useRef<
     Map<number, "upvote" | "downvote" | null>
   >(new Map());
@@ -157,6 +159,7 @@ export default function ThreadDetailPage() {
       optimisticThreadBookmarkRef.current = loadThreadBookmarkFromStorage();
       setExtras(loadThreadExtras(threadId));
       loadThread();
+      communityService.getUserXP().then(setUserXP).catch(() => {});
     }
   }, [threadId]);
 
@@ -295,6 +298,7 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.voteThread(threadId, type);
+      refreshXP();
       const updatedThread = await communityService.getThreadDetail(threadId);
 
       setThread((prev) => {
@@ -403,7 +407,7 @@ export default function ThreadDetailPage() {
     }
   };
 
-  const handleVoteComment = async (
+  const handleVoteComment = useCallback(async (
     commentId: number,
     type: "upvote" | "downvote"
   ) => {
@@ -489,6 +493,7 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.voteComment(threadId, commentId, type);
+      refreshXP();
       const updatedThread = await communityService.getThreadDetail(threadId);
 
       const mergeCommentVotes = (comments: CommentType[]): CommentType[] => {
@@ -543,18 +548,19 @@ export default function ThreadDetailPage() {
       await loadThread();
       showToast(t("community.failedToVote"), "error");
     }
-  };
+  }, [thread, threadId, showToast, t]);
+
+  const refreshXP = () => communityService.getUserXP().then(setUserXP).catch(() => {});
 
   const handleAddComment = async () => {
     if (!commentBody.trim()) return;
 
     setSubmitting(true);
     try {
-      await communityService.createComment(threadId, {
-        body: commentBody.trim(),
-      });
+      await communityService.createComment(threadId, { body: commentBody.trim() });
       setCommentBody("");
       await loadThread();
+      refreshXP();
       showToast(t("community.commentAdded"), "success");
     } catch (error) {
       showToast(t("community.failedToAddComment"), "error");
@@ -563,19 +569,36 @@ export default function ThreadDetailPage() {
     }
   };
 
-  const handleReply = async (parentId: number, body: string) => {
+  const handleReply = useCallback(async (parentId: number, body: string) => {
     try {
-      await communityService.createComment(threadId, {
-        body,
-        parent_id: parentId,
-      });
+      await communityService.createComment(threadId, { body, parent_id: parentId });
       await loadThread();
+      refreshXP();
       showToast(t("community.replyAdded"), "success");
     } catch (error) {
       showToast(t("community.failedToAddReply"), "error");
       throw error;
     }
-  };
+  }, [threadId, showToast, t]);
+
+  const handleAcceptComment = useCallback(async (commentId: number) => {
+    try {
+      const updated = await communityService.acceptComment(threadId, commentId);
+      setThread((prev) => {
+        if (!prev) return prev;
+        const updateComment = (comments: CommentType[]): CommentType[] =>
+          comments.map((c) => {
+            if (c.id === commentId) return { ...c, is_accepted: updated.is_accepted, accepted_at: updated.accepted_at };
+            if (c.id !== commentId && updated.is_accepted) return { ...c, is_accepted: false, accepted_at: null };
+            return { ...c, replies: c.replies ? updateComment(c.replies) : c.replies };
+          });
+        return { ...prev, comments: updateComment(prev.comments) };
+      });
+      communityService.getUserXP().then(setUserXP).catch(() => {});
+    } catch {
+      showToast(t("community.failedToAcceptAnswer"), "error");
+    }
+  }, [threadId, showToast, t]);
 
   const handleBookmark = async () => {
     if (!thread) return;
@@ -607,6 +630,7 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.bookmarkThread(threadId);
+      refreshXP();
       const updatedThread = await communityService.getThreadDetail(threadId);
 
       setThread((prev) => {
@@ -716,20 +740,20 @@ export default function ThreadDetailPage() {
 
   if (loading) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
-        </Container>
+        </Box>
       </MainLayout>
     );
   }
 
   if (!thread) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
           <Paper elevation={0} sx={{ p: 8, textAlign: "center" }}>
             <Typography variant="h6" color="text.secondary">
               {t("community.threadNotFound")}
@@ -738,14 +762,27 @@ export default function ThreadDetailPage() {
               {t("community.backToCommunity")}
             </Button>
           </Paper>
-        </Container>
+        </Box>
       </MainLayout>
     );
   }
 
+  const canAcceptAnswers = !!thread && (
+    !!thread.current_user_is_author ||
+    ['admin', 'superadmin', 'instructor'].includes(thread.current_user_role ?? '')
+  );
+
+  const sortedComments = thread
+    ? [...thread.comments].sort((a, b) => {
+        if (a.is_accepted && !b.is_accepted) return -1;
+        if (!a.is_accepted && b.is_accepted) return 1;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      })
+    : [];
+
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
           <Link
@@ -766,6 +803,11 @@ export default function ThreadDetailPage() {
           </Link>
           <Typography color="text.primary">{thread.title}</Typography>
         </Breadcrumbs>
+
+        {/* Two-column layout: main content + sidebar */}
+        <Box sx={{ display: "flex", gap: { md: 3, lg: 3.5 }, alignItems: "flex-start" }}>
+        {/* Main content column */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
 
         {/* Thread Content */}
         <Paper
@@ -1083,14 +1125,14 @@ export default function ThreadDetailPage() {
 
           {/* Comments List */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {thread.comments.map((comment) => (
+            {sortedComments.map((comment) => (
               <Box
                 key={comment.id}
                 sx={{
-                  p: 2,
-                  border: "1px solid var(--border-default)",
+                  p: comment.is_accepted ? 0 : 2,
+                  border: comment.is_accepted ? "none" : "1px solid var(--border-default)",
                   borderRadius: 2,
-                  backgroundColor: "var(--card-bg)",
+                  backgroundColor: comment.is_accepted ? "transparent" : "var(--card-bg)",
                 }}
               >
                 <CommentItem
@@ -1098,6 +1140,8 @@ export default function ThreadDetailPage() {
                   threadId={threadId}
                   onVote={handleVoteComment}
                   onReply={handleReply}
+                  onAccept={handleAcceptComment}
+                  isThreadAuthor={canAcceptAnswers}
                 />
               </Box>
             ))}
@@ -1126,7 +1170,26 @@ export default function ThreadDetailPage() {
             )}
           </Box>
         </Paper>
-      </Container>
+
+        </Box>{/* end main content column */}
+
+        {/* Sidebar — fluid width, sticky */}
+        <Box
+          sx={{
+            display: { xs: "none", md: "block" },
+            width: { md: "26%", lg: "23%", xl: "20%" },
+            maxWidth: 320,
+            minWidth: 220,
+            flexShrink: 0,
+            position: "sticky",
+            top: 80,
+          }}
+        >
+          {userXP && <MilestoneWidget xp={userXP} />}
+        </Box>
+
+        </Box>{/* end two-column layout */}
+      </Box>
     </MainLayout>
   );
 }

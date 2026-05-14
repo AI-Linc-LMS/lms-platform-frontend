@@ -1171,7 +1171,8 @@
     "createThread": "Create Thread",
     "reply": "Reply",
     "writeReplyPlaceholder": "Write your reply...",
-    "postReply": "Post Reply"
+    "postReply": "Post Reply",
+    "failedToAcceptAnswer": "Failed to update accepted answer"
   },
   "manageStudents": {
     "failedToLoadStudent": "Failed to load student details",
