@@ -35,7 +35,6 @@ import { useToast } from "@/components/common/Toast";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
 import { useLiveProctoringPublisher } from "@/lib/hooks/useLiveProctoringPublisher";
 import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
-import { useAssessmentTimer } from "@/lib/hooks/useAssessmentTimer";
 import { useAssessmentNavigation } from "@/lib/hooks/useAssessmentNavigation";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
@@ -43,8 +42,11 @@ import { useAssessmentSubmission } from "@/lib/hooks/useAssessmentSubmission";
 import { useFullscreenHandler } from "@/lib/hooks/useFullscreenHandler";
 import { useAssessmentSecurity } from "@/lib/hooks/useAssessmentSecurity";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
-import { AssessmentTimerBar } from "@/components/assessment/AssessmentTimerBar";
-import { AssessmentNavigation } from "@/components/assessment/AssessmentNavigation";
+import {
+  LiveAssessmentTimerBar,
+  type AssessmentTimerControl,
+} from "@/components/assessment/LiveAssessmentTimerBar";
+import { LiveAssessmentNavigation } from "@/components/assessment/LiveAssessmentNavigation";
 import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
 import { AssessmentQuizLayout } from "@/components/assessment/AssessmentQuizLayout";
 import {
@@ -317,15 +319,12 @@ export default function TakeAssessmentPage({
     return 3600;
   }, [assessment?.remaining_time, assessment?.duration_minutes]);
 
-  const timer = useAssessmentTimer({
-    initialTimeSeconds,
-    autoStart: false,
-    onTimeUp: () => {
-      if (timeUpCallbackRef.current) {
-        timeUpCallbackRef.current();
-      }
-    },
-  });
+  // Timer state lives inside <LiveAssessmentTimerBar/> (a leaf) so 1Hz ticks do not
+  // re-render the whole page. Page interacts via this control ref.
+  const timerControlRef = useRef<AssessmentTimerControl | null>(null);
+  const handleTimerTimeUp = useCallback(() => {
+    timeUpCallbackRef.current?.();
+  }, []);
 
   // Sections - memoized to prevent unnecessary recalculations
   // Calculate immediately but use startTransition for updates to prevent blocking
@@ -915,16 +914,32 @@ export default function TakeAssessmentPage({
     setDevtoolsBlocked(false);
   }, [assessmentStarted, submitting]);
 
-  // Check if already submitted
+  // Check if already submitted — also handle bfcache restore via pageshow.
   useEffect(() => {
     if (assessment && !hasCheckedSubmission.current) {
       hasCheckedSubmission.current = true;
       if (assessment.status === "submitted") {
         showToast("This assessment has already been submitted", "warning");
-        router.push(`/assessments/${slug}`);
+        // replace so back/forward can't return to the take page.
+        router.replace(`/assessments/${slug}`);
       }
     }
   }, [assessment, slug, router, showToast]);
+
+  // bfcache (back/forward cache) restore guard: if the browser restores this
+  // page from cache after a submit redirect, the state can look like an
+  // in-progress attempt even though the server has the assessment marked
+  // submitted. Force a full reload so useAssessmentData re-fetches and
+  // redirects.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        window.location.replace(`/assessments/${slug}`);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [slug]);
 
   // Proctored attempts: if no usable stream, try to acquire one. Only redirect as last resort.
   useEffect(() => {
@@ -1462,7 +1477,7 @@ export default function TakeAssessmentPage({
         setAssessmentStarted(true);
       }
 
-      timer.start();
+      timerControlRef.current?.start();
 
       void enterFullscreen()
         .then(() => {
@@ -1489,7 +1504,6 @@ export default function TakeAssessmentPage({
       isInitializingRef.current = false;
     }
   }, [
-    timer.start,
     startProctoring,
     enterFullscreen,
     showToast,
@@ -1511,8 +1525,6 @@ export default function TakeAssessmentPage({
   // Track if timer has been initialized to prevent multiple resets
   const timerInitializedRef = useRef(false);
   const lastRemainingTimeRef = useRef<number | null>(null);
-  const timerRemainingSecondsRef = useRef(timer.remainingSeconds);
-  timerRemainingSecondsRef.current = timer.remainingSeconds;
 
   // Update timer when remaining_time changes (for resuming assessments) - DEFERRED to prevent freeze
   useEffect(() => {
@@ -1532,15 +1544,15 @@ export default function TakeAssessmentPage({
 
         // Defer timer reset to prevent blocking initial render
         const resetTimer = () => {
-          const timeDifference = Math.abs(
-            timerRemainingSecondsRef.current - newTimeSeconds
-          );
+          const current =
+            timerControlRef.current?.getRemainingSeconds() ?? 0;
+          const timeDifference = Math.abs(current - newTimeSeconds);
           // Only reset if difference is significant (more than 10 seconds) or not initialized
           if (!timerInitializedRef.current || timeDifference > 10) {
             timerInitializedRef.current = true;
-            timer.reset(newTimeSeconds);
+            timerControlRef.current?.reset(newTimeSeconds);
             if (assessmentStarted) {
-              timer.start();
+              timerControlRef.current?.start();
             }
           }
         };
@@ -1558,8 +1570,6 @@ export default function TakeAssessmentPage({
     assessment?.status,
     assessmentStarted,
     submitting,
-    timer.reset,
-    timer.start,
     showToast,
     handleFinalSubmit,
   ]);
@@ -1759,34 +1769,6 @@ export default function TakeAssessmentPage({
     [currentSection]
   );
 
-  const sectionEnteredAtRef = useRef(Date.now());
-  const [sectionClockTick, setSectionClockTick] = useState(0);
-
-  useLayoutEffect(() => {
-    sectionEnteredAtRef.current = Date.now();
-    setSectionClockTick(0);
-  }, [currentSectionIndex]);
-
-  useEffect(() => {
-    if (!assessmentStarted) return;
-    const sec = sections[currentSectionIndex];
-    const cap = sec ? getSectionTimeCapTotalSeconds(sec) : null;
-    if (cap == null || cap <= 0) return;
-    const id = window.setInterval(() => {
-      setSectionClockTick((tick) => tick + 1);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [assessmentStarted, currentSectionIndex, sections]);
-
-  const sectionTimeRemainingSeconds = useMemo(() => {
-    void sectionClockTick;
-    const sec = sections[currentSectionIndex];
-    const maxSec = sec ? getSectionTimeCapTotalSeconds(sec) : null;
-    if (maxSec == null || maxSec <= 0) return null;
-    const elapsed = Math.floor((Date.now() - sectionEnteredAtRef.current) / 1000);
-    return Math.max(0, maxSec - elapsed);
-  }, [sectionClockTick, sections, currentSectionIndex]);
-
   const atLastQuestionInCurrentSection =
     navigation.currentSectionQuestionCount > 0 &&
     currentQuestionIndex === navigation.currentSectionQuestionCount - 1;
@@ -1811,51 +1793,22 @@ export default function TakeAssessmentPage({
     setCurrentQuestionIndex(0);
   }, [sections.length]);
 
-  const prevSectionTimeRemainingRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    prevSectionTimeRemainingRef.current = null;
-  }, [currentSectionIndex]);
-
-  useEffect(() => {
-    if (!assessmentStarted) return;
-
-    const sec = sections[currentSectionIndex];
-    const cap = sec ? getSectionTimeCapTotalSeconds(sec) : null;
-    if (cap == null || cap <= 0) {
-      prevSectionTimeRemainingRef.current = null;
-      return;
-    }
-
-    if (sectionTimeRemainingSeconds === null) {
-      prevSectionTimeRemainingRef.current = null;
-      return;
-    }
-
-    const prev = prevSectionTimeRemainingRef.current;
-    prevSectionTimeRemainingRef.current = sectionTimeRemainingSeconds;
-
-    if (sectionTimeRemainingSeconds !== 0) return;
-    if (prev === null || prev <= 0) return;
-
-    if (currentSectionIndex < sections.length - 1) {
-      showToast(t("assessments.take.sectionTimeAutoAdvanced"), "warning");
-      setCurrentSectionIndex((i) =>
-        Math.min(i + 1, Math.max(0, sections.length - 1))
-      );
-      setCurrentQuestionIndex(0);
-      return;
-    }
-
-    showToast(t("assessments.take.lastSectionTimeEnded"), "info");
-  }, [
-    assessmentStarted,
-    sectionTimeRemainingSeconds,
-    currentSectionIndex,
-    sections,
-    showToast,
-    t,
-  ]);
+  // Auto-advance fired by <LiveAssessmentNavigation/> when its internal section
+  // countdown transitions to 0 — keeps the per-second ticker out of this component.
+  const handleSectionTimeExpire = useCallback(
+    (isLastSection: boolean) => {
+      if (!isLastSection) {
+        showToast(t("assessments.take.sectionTimeAutoAdvanced"), "warning");
+        setCurrentSectionIndex((i) =>
+          Math.min(i + 1, Math.max(0, sections.length - 1)),
+        );
+        setCurrentQuestionIndex(0);
+        return;
+      }
+      showToast(t("assessments.take.lastSectionTimeEnded"), "info");
+    },
+    [sections.length, showToast, t],
+  );
 
   const quizQuestions = useMemo((): QuizTakeQuestion[] => {
     if (!currentSection || sectionType !== "quiz") return [];
@@ -1879,119 +1832,61 @@ export default function TakeAssessmentPage({
     }>;
   }, [currentSection, sectionType]);
 
-  // Optimized mappedQuizQuestions - cache with ref to prevent recalculation on navigation
-  const mappedQuizQuestionsRef = useRef<any[]>([]);
-  const lastMappedHashRef = useRef<string>("");
-  
+  // Active-section response slice. Narrowing here means typing in section A does not
+  // re-run the mapped-questions memos for section B (their deps reference only this slice).
+  const activeSectionResponses = responses[sectionType];
+
   const mappedQuizQuestions = useMemo(() => {
-    if (!quizQuestions.length) {
-      mappedQuizQuestionsRef.current = [];
-      return [];
-    }
-    
-    const sectionResponses = responses[sectionType] || {};
-    
-    // Create a hash of only the relevant responses for this section
-    const relevantResponses = quizQuestions.map((q: any) => {
+    if (!quizQuestions.length) return [];
+    const sectionResponses = activeSectionResponses || {};
+    return quizQuestions.map((q: any) => {
       const r = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
       const answered =
         q.question_style === "multiple"
           ? Array.isArray(r) && r.length > 0
           : r !== undefined && r !== null && r !== "";
-      return { id: q.id, answered };
-    });
-    const hash = JSON.stringify(relevantResponses);
-    
-    // Only recalculate if responses for this section actually changed
-    if (hash === lastMappedHashRef.current && mappedQuizQuestionsRef.current.length > 0) {
-      return mappedQuizQuestionsRef.current;
-    }
-    
-    lastMappedHashRef.current = hash;
-    
-    const mapped = quizQuestions.map((q: any, idx: number) => ({
-      id: q.id,
-      question: q.question,
-      answered: relevantResponses[idx]?.answered ?? false,
-    }));
-    
-    mappedQuizQuestionsRef.current = mapped;
-    return mapped;
-  }, [quizQuestions, responses, sectionType]);
-
-  const mappedSubjectiveQuestionsRef = useRef<any[]>([]);
-  const lastMappedSubjectiveHashRef = useRef<string>("");
-
-  const mappedSubjectiveQuestions = useMemo(() => {
-    if (!subjectiveQuestions.length) {
-      mappedSubjectiveQuestionsRef.current = [];
-      return [];
-    }
-    const sectionResponses = responses[sectionType] || {};
-    const relevantResponses = subjectiveQuestions.map((q: any) => {
-      const raw = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
       return {
         id: q.id,
-        answered: subjectivePayloadHasContent(q.answer_mode, raw),
+        question: q.question,
+        answered,
       };
     });
-    const hash = JSON.stringify(relevantResponses);
-    if (
-      hash === lastMappedSubjectiveHashRef.current &&
-      mappedSubjectiveQuestionsRef.current.length > 0
-    ) {
-      return mappedSubjectiveQuestionsRef.current;
-    }
-    lastMappedSubjectiveHashRef.current = hash;
-    const mapped = subjectiveQuestions.map((q: any, idx: number) => {
+  }, [quizQuestions, activeSectionResponses]);
+
+  const mappedSubjectiveQuestions = useMemo(() => {
+    if (!subjectiveQuestions.length) return [];
+    const sectionResponses = activeSectionResponses || {};
+    return subjectiveQuestions.map((q: any) => {
       const raw = sectionResponses[q.id] ?? sectionResponses[String(q.id)];
       return {
         id: q.id,
         question: q.question_text,
-        answered: relevantResponses[idx]?.answered ?? false,
+        answered: subjectivePayloadHasContent(q.answer_mode, raw),
       };
     });
-    mappedSubjectiveQuestionsRef.current = mapped;
-    return mapped;
-  }, [subjectiveQuestions, responses, sectionType]);
+  }, [subjectiveQuestions, activeSectionResponses]);
 
-  // Optimized section status - use ref to prevent recalculation on every navigation
-  const sectionStatusRef = useRef<any[]>([]);
-  const lastResponsesHashRef = useRef<string>("");
-  
+  // Section status – previously cached by JSON.stringify of key counts, which never
+  // changed when an existing answer's *value* changed (e.g. typing more text), so
+  // the cache returned stale `answered` counts. Recompute on every responses-change.
+  // The forEach is O(total questions) which is fast enough that no cache is needed.
   const sectionStatus = useMemo(() => {
-    // Create a simple hash of responses to detect actual changes
-    const responsesHash = JSON.stringify(Object.keys(responses).map(key => ({
-      key,
-      count: Object.keys(responses[key] || {}).length
-    })));
-    
-    // Only recalculate if responses actually changed
-    if (responsesHash === lastResponsesHashRef.current && sectionStatusRef.current.length > 0) {
-      return sectionStatusRef.current;
-    }
-    
-    lastResponsesHashRef.current = responsesHash;
-    
-    const status = sections.map((section: any) => {
-      const sectionType = section.section_type || "quiz";
-      const sectionResponses = responses[sectionType] || {};
+    return sections.map((section: any) => {
+      const sectType = section.section_type || "quiz";
       const sectionQuestions = section.questions || [];
-      
-      // Count answered questions for THIS specific section only
       let answered = 0;
       sectionQuestions.forEach((question: any) => {
         const questionId = question.id;
         const response = getResponseForQuestion(
           responses as Record<string, Record<string, unknown>>,
-          sectionType,
+          sectType,
           questionId,
         );
         if (
           isAssessmentQuestionCompleted(
-            sectionType,
+            sectType,
             response,
-            sectionType === "subjective"
+            sectType === "subjective"
               ? {
                   answer_mode: (question as { answer_mode?: string })
                     .answer_mode,
@@ -2002,17 +1897,13 @@ export default function TakeAssessmentPage({
           answered++;
         }
       });
-      
       return {
         sectionName: section.title || section.section_type || "Section",
-        sectionType: sectionType,
+        sectionType: sectType,
         answered,
         total: sectionQuestions.length,
       };
     });
-    
-    sectionStatusRef.current = status;
-    return status;
   }, [sections, responses]);
 
   // totalAnswered must match section breakdown (sum of sectionStatus.answered)
@@ -2161,6 +2052,103 @@ export default function TakeAssessmentPage({
       }
     },
     [codingQuestions, currentQuestionIndex]
+  );
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Stabilized props for memoized layout children
+  //
+  // Without these, every page rerender (proctoring/face detection, debounced
+  // text commits, etc.) would build new object/arrow JSX props, breaking
+  // React.memo on MemoizedCodingLayout / MemoizedSubjectiveLayout — meaning
+  // Monaco and the subjective TextField would reconcile every page render.
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const codingProblemData = useMemo(() => {
+    if (!currentCodingQuestion) return null;
+    return {
+      content_title: currentCodingQuestion.title,
+      details: currentCodingQuestion,
+    };
+  }, [currentCodingQuestion]);
+
+  const codingInitialCode = useMemo(() => {
+    if (!currentCodingQuestion) return "";
+    return (
+      currentCodingResponse?.code ||
+      currentCodingQuestion.template_code?.python ||
+      currentCodingQuestion.template_code?.python3 ||
+      ""
+    );
+  }, [currentCodingQuestion, currentCodingResponse]);
+
+  const codingInitialLanguage = useMemo(() => {
+    return currentCodingResponse?.language || "python";
+  }, [currentCodingResponse]);
+
+  const handleCodingCodeChange = useCallback(
+    (code: string, language: string) => {
+      if (!currentCodingQuestion) return;
+      handleAnswerChange("coding", currentCodingQuestion.id, {
+        code,
+        language,
+        ...(currentCodingResponse || {}),
+      });
+    },
+    [currentCodingQuestion, currentCodingResponse, handleAnswerChange],
+  );
+
+  const handleCodingCodeSubmit = useCallback(
+    (result: {
+      tc_passed?: number;
+      total_tc?: number;
+      best_code?: string;
+      passed?: number;
+      total_test_cases?: number;
+    }) => {
+      if (!currentCodingQuestion) return;
+      const qid = currentCodingQuestion.id;
+      setResponses((prev) => ({
+        ...prev,
+        coding: {
+          ...prev.coding,
+          [qid]: {
+            ...prev.coding?.[qid],
+            code:
+              result.best_code ||
+              prev.coding?.[qid]?.code ||
+              "",
+            language: prev.coding?.[qid]?.language || "python",
+            tc_passed: result.tc_passed ?? result.passed ?? 0,
+            total_tc: result.total_tc ?? result.total_test_cases ?? 0,
+            submitted: true,
+          },
+        },
+      }));
+    },
+    [currentCodingQuestion],
+  );
+
+  const subjectiveCurrentQuestionForLayout = useMemo(() => {
+    if (!currentSubjectiveQuestion) return null;
+    return {
+      id: currentSubjectiveQuestion.id,
+      question_text: currentSubjectiveQuestion.question_text,
+      max_marks: currentSubjectiveQuestion.max_marks,
+      question_type: currentSubjectiveQuestion.question_type,
+      answer_mode: currentSubjectiveQuestion.answer_mode,
+    };
+  }, [currentSubjectiveQuestion]);
+
+  const handleSubjectiveValueChange = useCallback(
+    (next: unknown) => {
+      if (!currentSubjectiveQuestion) return;
+      handleAnswerChange(
+        "subjective",
+        currentSubjectiveQuestion.id,
+        next,
+      );
+    },
+    [currentSubjectiveQuestion, handleAnswerChange],
   );
 
   const handleSubjectiveQuestionClick = useCallback(
@@ -2416,9 +2404,12 @@ export default function TakeAssessmentPage({
             </Box>
           )}
 
-          <AssessmentTimerBar
+          <LiveAssessmentTimerBar
+            ref={timerControlRef}
+            initialTimeSeconds={initialTimeSeconds}
+            autoStart={false}
+            onTimeUp={handleTimerTimeUp}
             title={assessment.title}
-            formattedTime={timer.formattedTime}
             isLastQuestion={navigation.isLastQuestion}
             submitting={submitting}
             onSubmit={handleShowSubmitDialog}
@@ -2447,7 +2438,7 @@ export default function TakeAssessmentPage({
             onToggleNotepad={() => setNotepadOpen((o) => !o)}
           />
 
-          <AssessmentNavigation
+          <LiveAssessmentNavigation
             currentSectionIndex={currentSectionIndex}
             currentQuestionIndex={currentQuestionIndex}
             totalQuestions={navigation.totalQuestions}
@@ -2460,7 +2451,8 @@ export default function TakeAssessmentPage({
               allowMovementAcrossSections ? handleSectionChange : undefined
             }
             allowMovementAcrossSections={allowMovementAcrossSections}
-            sectionTimeRemainingSeconds={sectionTimeRemainingSeconds}
+            assessmentStarted={assessmentStarted}
+            onSectionTimeExpire={handleSectionTimeExpire}
             showAdvanceToNextSection={showAdvanceToNextSection}
             onAdvanceToNextSection={handleOpenAdvanceSectionDialog}
             timedSectionLockRevision={timedSectionLockRevision}
@@ -2532,90 +2524,39 @@ export default function TakeAssessmentPage({
                     slug={slug}
                     remoteAutosave={remoteAutosave}
                     questionId={currentCodingQuestion.id}
-                    problemData={{
-                      content_title: currentCodingQuestion.title,
-                      details: currentCodingQuestion,
-                    }}
-                    initialCode={
-                      currentCodingResponse?.code ||
-                      currentCodingQuestion.template_code?.python ||
-                      currentCodingQuestion.template_code?.python3 ||
-                      ""
-                    }
-                    initialLanguage={
-                      currentCodingResponse?.language || "python"
-                    }
+                    problemData={codingProblemData}
+                    initialCode={codingInitialCode}
+                    initialLanguage={codingInitialLanguage}
                     questions={codingQuestions}
                     totalQuestions={codingQuestions.length}
                     currentQuestionIndex={currentQuestionIndex}
                     onQuestionClick={handleCodingQuestionClick}
                     onNextQuestion={navigation.handleNext}
                     onPreviousQuestion={navigation.handlePrevious}
-                    onCodeChange={(code, language) => {
-                      handleAnswerChange(
-                        "coding",
-                        currentCodingQuestion.id,
-                        {
-                          code,
-                          language,
-                          ...(currentCodingResponse || {}),
-                        }
-                      );
-                    }}
-                    onCodeSubmit={(result) => {
-                      setResponses((prev) => ({
-                        ...prev,
-                        coding: {
-                          ...prev.coding,
-                          [currentCodingQuestion.id]: {
-                            ...prev.coding?.[currentCodingQuestion.id],
-                            code:
-                              result.best_code ||
-                              prev.coding?.[currentCodingQuestion.id]?.code ||
-                              "",
-                            language:
-                              prev.coding?.[currentCodingQuestion.id]
-                                ?.language || "python",
-                            tc_passed: result.tc_passed ?? result.passed ?? 0,
-                            total_tc:
-                              result.total_tc ?? result.total_test_cases ?? 0,
-                            submitted: true, // Mark as submitted
-                          },
-                        },
-                      }));
-                    }}
+                    onCodeChange={handleCodingCodeChange}
+                    onCodeSubmit={handleCodingCodeSubmit}
                   />
                 )}
 
-                {sectionType === "subjective" && currentSubjectiveQuestion && (
-                  <MemoizedSubjectiveLayout
-                    key={`subjective-${currentSubjectiveQuestion.id}-${currentQuestionIndex}`}
-                    currentQuestionIndex={currentQuestionIndex}
-                    currentQuestion={{
-                      id: currentSubjectiveQuestion.id,
-                      question_text: currentSubjectiveQuestion.question_text,
-                      max_marks: currentSubjectiveQuestion.max_marks,
-                      question_type: currentSubjectiveQuestion.question_type,
-                      answer_mode: currentSubjectiveQuestion.answer_mode,
-                    }}
-                    value={currentSubjectiveValue}
-                    questions={mappedSubjectiveQuestions}
-                    totalQuestions={subjectiveQuestions.length}
-                    onChange={(next) =>
-                      handleAnswerChange(
-                        "subjective",
-                        currentSubjectiveQuestion.id,
-                        next
-                      )
-                    }
-                    onNextQuestion={navigation.handleNext}
-                    onPreviousQuestion={navigation.handlePrevious}
-                    onQuestionClick={handleSubjectiveQuestionClick}
-                    assessmentUploadClientId={uploadClientId}
-                    onSubjectiveImageUploadError={handleSubjectiveImageUploadError}
-                    onNativeFilePickerWillOpen={onNativeFilePickerWillOpen}
-                  />
-                )}
+                {sectionType === "subjective" &&
+                  currentSubjectiveQuestion &&
+                  subjectiveCurrentQuestionForLayout && (
+                    <MemoizedSubjectiveLayout
+                      key={`subjective-${currentSubjectiveQuestion.id}-${currentQuestionIndex}`}
+                      currentQuestionIndex={currentQuestionIndex}
+                      currentQuestion={subjectiveCurrentQuestionForLayout}
+                      value={currentSubjectiveValue}
+                      questions={mappedSubjectiveQuestions}
+                      totalQuestions={subjectiveQuestions.length}
+                      onChange={handleSubjectiveValueChange}
+                      onNextQuestion={navigation.handleNext}
+                      onPreviousQuestion={navigation.handlePrevious}
+                      onQuestionClick={handleSubjectiveQuestionClick}
+                      assessmentUploadClientId={uploadClientId}
+                      onSubjectiveImageUploadError={handleSubjectiveImageUploadError}
+                      onNativeFilePickerWillOpen={onNativeFilePickerWillOpen}
+                    />
+                  )}
 
                 {/* Show message if section exists but has no questions */}
                 {sectionType === "quiz" && !currentQuizQuestion && (

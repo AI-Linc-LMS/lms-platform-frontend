@@ -59,6 +59,11 @@ export default function AssessmentDetailPage({
     return Date.now() >= assessmentStartAt.getTime();
   }, [assessmentStartAt, startTimeTick]);
 
+  // Treat both 'submitted' and 'finalized' as "already submitted" — backend
+  // normalizes finalized→submitted in most responses but not all, so guard both.
+  const isAlreadySubmitted =
+    assessment?.status === "submitted" || assessment?.status === "finalized";
+
   useEffect(() => {
     if (!assessmentStartAt) return;
     if (Date.now() >= assessmentStartAt.getTime()) return;
@@ -105,6 +110,15 @@ export default function AssessmentDetailPage({
 
   const handleStart = () => {
     if (!assessment) return;
+
+    // SECURITY: never re-enter the take flow if this assessment is already
+    // submitted/finalized. Route to the success page so the user can view
+    // their result (or just be informed) instead.
+    if (isAlreadySubmitted) {
+      showToast("This assessment has already been submitted", "warning");
+      router.replace(`/assessments/${slug}/submission-success`);
+      return;
+    }
 
     if (!isCurrentDeviceAllowedForAssessment(assessment)) {
       if (isMobileOrTabletForAssessment()) {
@@ -613,9 +627,14 @@ export default function AssessmentDetailPage({
             variant="contained"
             size="large"
             fullWidth
-            startIcon={<IconWrapper icon="mdi:play-circle-outline" size={24} />}
+            startIcon={
+              <IconWrapper
+                icon={isAlreadySubmitted ? "mdi:check-circle-outline" : "mdi:play-circle-outline"}
+                size={24}
+              />
+            }
             onClick={handleStart}
-            disabled={!deviceAllowed || !canStartAssessment}
+            disabled={isAlreadySubmitted || !deviceAllowed || !canStartAssessment}
             sx={{
               backgroundColor: "var(--accent-indigo)",
               color: "var(--font-light)",
@@ -631,7 +650,9 @@ export default function AssessmentDetailPage({
               },
             }}
           >
-            {t("assessments.startAssessment")}
+            {isAlreadySubmitted
+              ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
+              : t("assessments.startAssessment")}
           </Button>
         </Paper>
       </Box>

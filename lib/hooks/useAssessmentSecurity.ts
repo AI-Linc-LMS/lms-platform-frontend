@@ -21,9 +21,19 @@ interface UseAssessmentSecurityOptions {
 export function useAssessmentSecurity({ enabled, submitting = false }: UseAssessmentSecurityOptions) {
   const { showToast } = useToast();
   const hasWarnedRef = useRef(false);
+  // Tracks whether THIS effect run pushed a back-trap entry into history,
+  // so the cleanup can pop it. Without this, the dummy entry survives
+  // window.location.replace at submit time and back-navigation can return
+  // the user to the in-progress take page after submission.
+  const trapPushedRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
+    // When the user is submitting, we MUST NOT push a new back-trap entry —
+    // the navigation to /submission-success is imminent and any extra entry
+    // here would survive window.location.replace and let "back" return to
+    // an in-progress take page.
+    if (submitting) return;
 
     // Prevent refresh - but NOT during submission
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -126,6 +136,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
 
     // Push state to prevent back navigation
     window.history.pushState(null, "", window.location.href);
+    trapPushedRef.current = true;
     
     // Only add beforeunload listener if not submitting
     if (!submitting) {
@@ -169,6 +180,16 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("selectstart", handleSelectStart);
       document.removeEventListener("dragstart", handleDragStart);
+      // Pop the back-trap entry we pushed on mount so it doesn't survive
+      // navigation away (in particular, post-submit window.location.replace).
+      // This must happen AFTER the popstate listener is removed above, or
+      // our own handler would re-push the trap.
+      if (trapPushedRef.current) {
+        trapPushedRef.current = false;
+        try {
+          window.history.back();
+        } catch {}
+      }
     };
   }, [enabled, submitting, showToast]);
 }

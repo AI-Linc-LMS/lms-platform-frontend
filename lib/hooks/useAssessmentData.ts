@@ -83,7 +83,9 @@ export function useAssessmentData(slug: string) {
         // Check if assessment is already submitted
         if (data.status === "submitted") {
           showToast("This assessment has already been submitted", "warning");
-          router.push(`/assessments/${slug}`);
+          // replace (not push) so this take page is wiped from history —
+          // user cannot back-navigate into a submitted assessment.
+          router.replace(`/assessments/${slug}`);
           return;
         }
 

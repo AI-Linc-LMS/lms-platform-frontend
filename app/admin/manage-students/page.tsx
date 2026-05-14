@@ -16,7 +16,7 @@ import { adminCoursesService } from "@/lib/services/admin/admin-courses.service"
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isClientOrgAdminRole,
-  isCourseManagerRole,
+  isScopedAdminRole,
 } from "@/lib/auth/role-utils";
 import { ManageStudentsHeader } from "../../../components/admin/manage-students/ManageStudentsHeader";
 import { StudentsFilters } from "../../../components/admin/manage-students/StudentsFilters";
@@ -60,8 +60,12 @@ export default function ManageStudentsPage() {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const { user } = useAuth();
-  const showOrgAdminEnrollmentTools = isClientOrgAdminRole(user?.role);
-  const courseManagerUser = isCourseManagerRole(user?.role);
+  const courseManagerUser = isScopedAdminRole(user?.role);
+  // Bulk enrollment and job history are available to org admins AND scoped admins
+  // (instructor / course_manager). Backend validates that target courses are in
+  // the user's scope, so this only exposes the UI.
+  const showOrgAdminEnrollmentTools =
+    isClientOrgAdminRole(user?.role) || courseManagerUser;
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);

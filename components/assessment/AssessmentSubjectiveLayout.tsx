@@ -123,6 +123,42 @@ export const AssessmentSubjectiveLayout = memo(
     );
     const answerStr = payload.answer ?? "";
 
+    // Local text state so each keystroke does not bubble up to the parent page (and
+    // re-render the entire assessment tree). Commits are debounced; non-text patches
+    // flush local text first so they cannot drop pending characters.
+    const [localText, setLocalText] = useState<string>(answerStr);
+    const localTextRef = useRef(localText);
+    localTextRef.current = localText;
+    const lastCommittedTextRef = useRef<string>(answerStr);
+    const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // When the active question changes, snap local text to the new question's value.
+    const lastQuestionIdForTextRef = useRef(currentQuestion.id);
+    useEffect(() => {
+      if (lastQuestionIdForTextRef.current !== currentQuestion.id) {
+        lastQuestionIdForTextRef.current = currentQuestion.id;
+        if (commitTimerRef.current) {
+          clearTimeout(commitTimerRef.current);
+          commitTimerRef.current = null;
+        }
+        setLocalText(answerStr);
+        lastCommittedTextRef.current = answerStr;
+      }
+    }, [currentQuestion.id, answerStr]);
+
+    // If the parent value's text moves out of step with our local + last-committed
+    // (e.g. server hydrated existing draft, or another field updated the payload
+    // shape), accept the parent's text as the new source of truth.
+    useEffect(() => {
+      if (
+        answerStr !== lastCommittedTextRef.current &&
+        answerStr !== localTextRef.current
+      ) {
+        setLocalText(answerStr);
+        lastCommittedTextRef.current = answerStr;
+      }
+    }, [answerStr]);
+
     const mergePayload = useCallback(
       (patch: Partial<SubjectiveAnswerPayload>) => {
         const base = parseSubjectiveAnswerPayload(value);
@@ -132,10 +168,76 @@ export const AssessmentSubjectiveLayout = memo(
             max_marks?: number;
             feedback?: string;
           };
-        onChange({ ...rest, ...patch });
+        // Always carry pending local text into a non-text commit so image/file/video
+        // patches don't overwrite typed-but-uncommitted characters. A `patch.answer`
+        // (text commit) overrides via the trailing spread.
+        const merged: Partial<SubjectiveAnswerPayload> = {
+          ...rest,
+          answer: localTextRef.current,
+          ...patch,
+        };
+        if (typeof merged.answer === "string") {
+          lastCommittedTextRef.current = merged.answer;
+        }
+        onChange(merged);
       },
       [value, onChange],
     );
+
+    const flushTextNow = useCallback(() => {
+      if (commitTimerRef.current) {
+        clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = null;
+      }
+      const text = localTextRef.current;
+      if (text === lastCommittedTextRef.current) return;
+      mergePayload({ answer: text });
+    }, [mergePayload]);
+
+    const scheduleTextCommit = useCallback(
+      (text: string) => {
+        if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = setTimeout(() => {
+          commitTimerRef.current = null;
+          if (text !== lastCommittedTextRef.current) {
+            mergePayload({ answer: text });
+          }
+        }, 250);
+      },
+      [mergePayload],
+    );
+
+    const handleTextChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const next = e.target.value;
+        setLocalText(next);
+        scheduleTextCommit(next);
+      },
+      [scheduleTextCommit],
+    );
+
+    // Flush any pending text on unmount so navigation away never silently drops chars.
+    useEffect(() => {
+      return () => {
+        if (commitTimerRef.current) {
+          clearTimeout(commitTimerRef.current);
+          commitTimerRef.current = null;
+          const text = localTextRef.current;
+          if (text !== lastCommittedTextRef.current) {
+            // mergePayload identity may have moved on, but onChange + value are captured
+            // by closure; we intentionally rely on the latest mergePayload via ref of
+            // localTextRef + lastCommittedTextRef for next tick — synchronous call here:
+            try {
+              const flush = flushTextNow;
+              flush();
+            } catch {
+              // best-effort flush
+            }
+          }
+        }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const answeredCountRef = useRef<number>(0);
     const lastQuestionsHashRef = useRef<string>("");
@@ -156,10 +258,10 @@ export const AssessmentSubjectiveLayout = memo(
     }, [questions]);
 
     const { charCount, wordCount } = useMemo(() => {
-      const trimmed = answerStr.trim();
+      const trimmed = localText.trim();
       const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
-      return { charCount: answerStr.length, wordCount: words.length };
-    }, [answerStr]);
+      return { charCount: localText.length, wordCount: words.length };
+    }, [localText]);
 
     const hasDraft =
       charCount > 0 ||
@@ -173,8 +275,6 @@ export const AssessmentSubjectiveLayout = memo(
 
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
     const pendingCaretRef = useRef<number | null>(null);
-    const latestAnswerRef = useRef(answerStr);
-    latestAnswerRef.current = answerStr;
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const fileDocInputRef = useRef<HTMLInputElement | null>(null);
     const imageUploadLockRef = useRef(false);
@@ -187,20 +287,21 @@ export const AssessmentSubjectiveLayout = memo(
 
     const insertChunkAt = useCallback(
       (start: number, end: number, chunk: string) => {
-        const base = latestAnswerRef.current;
+        const base = localTextRef.current;
         const s = Math.max(0, Math.min(start, base.length));
         const e = Math.max(s, Math.min(end, base.length));
         const next = base.slice(0, s) + chunk + base.slice(e);
         pendingCaretRef.current = s + chunk.length;
-        mergePayload({ answer: next });
+        setLocalText(next);
+        scheduleTextCommit(next);
       },
-      [mergePayload],
+      [localTextRef, scheduleTextCommit],
     );
 
     const insertAtCaret = useCallback(
       (text: string) => {
         const el = textAreaRef.current;
-        const len = latestAnswerRef.current.length;
+        const len = localTextRef.current.length;
         const start = el ? el.selectionStart : len;
         const end = el ? el.selectionEnd : len;
         insertChunkAt(start, end, text);
@@ -224,7 +325,7 @@ export const AssessmentSubjectiveLayout = memo(
           return;
         }
         const el = textAreaRef.current;
-        const baseLen = latestAnswerRef.current.length;
+        const baseLen = localTextRef.current.length;
         const start = el ? el.selectionStart : baseLen;
         const end = el ? el.selectionEnd : baseLen;
         imageUploadLockRef.current = true;
@@ -359,7 +460,7 @@ export const AssessmentSubjectiveLayout = memo(
         el.focus();
         el.setSelectionRange(pos, pos);
       });
-    }, [answerStr]);
+    }, [localText]);
 
     return (
       <Box
@@ -392,7 +493,10 @@ export const AssessmentSubjectiveLayout = memo(
           <QuizQuestionList
             questions={questions}
             currentQuestionId={currentQuestion.id}
-            onQuestionClick={onQuestionClick}
+            onQuestionClick={(qid) => {
+              flushTextNow();
+              onQuestionClick?.(qid);
+            }}
             listTitle={t("quiz.writtenListTitle")}
             listSubtitle={t("quiz.writtenListSubtitle")}
             variant="subjective"
@@ -575,8 +679,9 @@ export const AssessmentSubjectiveLayout = memo(
               minRows={mode === "video" ? 3 : 10}
               maxRows={26}
               fullWidth
-              value={answerStr}
-              onChange={(e) => mergePayload({ answer: e.target.value })}
+              value={localText}
+              onChange={handleTextChange}
+              onBlur={flushTextNow}
               inputRef={textAreaRef}
               onPaste={handleAnswerPaste}
               placeholder="Write a clear, structured answer. Use paragraphs where it helps readability."
@@ -1042,7 +1147,10 @@ export const AssessmentSubjectiveLayout = memo(
               >
                 <Button
                   variant="outlined"
-                  onClick={onPreviousQuestion}
+                  onClick={() => {
+                    flushTextNow();
+                    onPreviousQuestion?.();
+                  }}
                   disabled={isFirstQuestion}
                   startIcon={<IconWrapper icon="mdi:chevron-left" size={20} />}
                   sx={{
@@ -1090,7 +1198,10 @@ export const AssessmentSubjectiveLayout = memo(
 
                 <Button
                   variant="contained"
-                  onClick={onNextQuestion}
+                  onClick={() => {
+                    flushTextNow();
+                    onNextQuestion?.();
+                  }}
                   disabled={isLastQuestion}
                   endIcon={<IconWrapper icon="mdi:chevron-right" size={20} />}
                   sx={{

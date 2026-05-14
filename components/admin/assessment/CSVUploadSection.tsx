@@ -96,11 +96,11 @@ export function CSVUploadSection({
     for (let i = 1; i < rows.length; i++) {
       const values = rows[i];
       const mcq: MCQ = {
-        question_text: values[headers.indexOf("question_text")] ?? "",
-        option_a: values[headers.indexOf("option_a")] ?? "",
-        option_b: values[headers.indexOf("option_b")] ?? "",
-        option_c: values[headers.indexOf("option_c")] ?? "",
-        option_d: values[headers.indexOf("option_d")] ?? "",
+        question_text: (values[headers.indexOf("question_text")] ?? "").replace(/\\n/g, "\n"),
+        option_a: (values[headers.indexOf("option_a")] ?? "").replace(/\\n/g, "\n"),
+        option_b: (values[headers.indexOf("option_b")] ?? "").replace(/\\n/g, "\n"),
+        option_c: (values[headers.indexOf("option_c")] ?? "").replace(/\\n/g, "\n"),
+        option_d: (values[headers.indexOf("option_d")] ?? "").replace(/\\n/g, "\n"),
         correct_option: (() => {
           const v = values[headers.indexOf("correct_option")]?.trim().toUpperCase()?.[0] || "A";
           return ["A", "B", "C", "D"].includes(v) ? (v as "A" | "B" | "C" | "D") : "A";
@@ -241,7 +241,7 @@ export function CSVUploadSection({
                   return (
                     <TableRow key={globalIndex}>
                       <TableCell>
-                        <Typography variant="body2" sx={{ maxWidth: 300 }}>
+                        <Typography variant="body2" sx={{ maxWidth: 300, whiteSpace: "pre-wrap" }}>
                           {mcq.question_text}
                         </Typography>
                       </TableCell>
