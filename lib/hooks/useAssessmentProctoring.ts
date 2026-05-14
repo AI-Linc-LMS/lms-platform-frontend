@@ -154,13 +154,20 @@ export function useAssessmentProctoring(
   } = useProctoring({
     autoStart: false, // We'll control this manually
     includeAudio: true,
-    detectionInterval: 800,
+    // Detection runs BlazeFace ML inference on every tick. On low-end Windows laptops
+    // with integrated GPUs, the old 800ms cadence was pinning the CPU and starving the
+    // React render loop — clicks felt unresponsive, code editor lagged. 2000ms cuts CPU
+    // work by ~60% vs the original while keeping proctoring fidelity: a sustained
+    // violation (looking away, phone use, second face) confirms in ~4s, which is well
+    // below any realistic cheating window. For tighter detection we'd move BlazeFace
+    // to a Web Worker so the main thread is never blocked regardless of cadence.
+    detectionInterval: 2000,
     violationCooldown: 2500,
     minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
     maxFaceSize: 75,
     lookingAwayThreshold: 0.3,
     minConfidence: 0.4,
-    smoothFrameCount: 3,
+    smoothFrameCount: 2,
     poorLightingThreshold: 0.4,
   });
 
