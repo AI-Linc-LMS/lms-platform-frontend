@@ -19,6 +19,7 @@ import { I18nProvider } from "@/components/providers/I18nProvider";
 import { DirectionSync } from "@/components/providers/DirectionSync";
 import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
 import { ProfileActivationBlocker } from "@/components/auth/ProfileActivationBlocker";
+import { TenantSetupBlocker } from "@/components/auth/TenantSetupBlocker";
 import { config } from "@/lib/config";
 
 /* ✅ Metadata (SEO) */
@@ -95,6 +96,7 @@ export default async function RootLayout({
                             <TelemetryProvider>
                               <ToastProvider>
                                 <ProfileActivationBlocker />
+                                <TenantSetupBlocker />
                                 {children}
                               </ToastProvider>
                             </TelemetryProvider>
