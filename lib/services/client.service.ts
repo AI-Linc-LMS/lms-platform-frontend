@@ -111,6 +111,12 @@ export interface ClientInfo {
   certificate_signature_url?: string | null;
   certificate_signatory_name?: string | null;
   certificate_signatory_title?: string | null;
+  /** False for self-serve tenants that haven't finished the first-login setup wizard. */
+  setup_completed?: boolean;
+  /** Current wizard step (0-8). */
+  setup_step?: number;
+  /** Autosaved blob of in-progress wizard answers. */
+  wizard_state?: Record<string, any>;
   [key: string]: any; // Allow other properties from API
 }
 
