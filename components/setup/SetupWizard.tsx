@@ -172,7 +172,20 @@ export function SetupWizard({ initialState }: Props) {
       ) : null}
 
       {launchError ? (
-        <p className="mt-6 text-sm text-red-600">{launchError}</p>
+        <div
+          className="mt-6 rounded-xl px-4 py-3"
+          style={{
+            border: "1px solid rgba(248, 113, 113, 0.3)",
+            background: "rgba(248, 113, 113, 0.08)",
+          }}
+        >
+          <p className="aw-mono text-[11px] uppercase tracking-[0.22em] text-[#ff8a8a]">
+            Launch failed
+          </p>
+          <p className="aw-text-dim mt-1 text-[13px] leading-relaxed">
+            {launchError}
+          </p>
+        </div>
       ) : null}
 
       <WizardNav

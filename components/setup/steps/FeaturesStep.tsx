@@ -27,9 +27,7 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
 export function FeaturesStep({ data, onChange }: Props) {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(true);
-  const selected = new Set<number>(
-    data.features?.selected_feature_ids || []
-  );
+  const selected = new Set<number>(data.features?.selected_feature_ids || []);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,20 +64,33 @@ export function FeaturesStep({ data, onChange }: Props) {
   };
 
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-gray-600">
+    <div className="space-y-7">
+      <p className="aw-text-dim text-[14px] leading-[1.65]">
         Pick the modules your tenants will see in the sidebar. You can change
         these anytime later in Settings.
       </p>
 
       {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-          Loading available modules…
+        <div className="aw-card aw-card-thin">
+          <p className="aw-mono aw-text-mute text-[11px] uppercase tracking-[0.22em]">
+            Loading available modules…
+          </p>
         </div>
       ) : features.length === 0 ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-          Couldn&apos;t load modules from the server. You can still launch and
-          enable modules later from Settings.
+        <div
+          className="rounded-[14px] p-4"
+          style={{
+            border: "1px solid rgba(255, 198, 109, 0.3)",
+            background: "rgba(255, 198, 109, 0.06)",
+          }}
+        >
+          <p className="aw-mono text-[10px] uppercase tracking-[0.3em] text-[#ffc66d]">
+            Modules unavailable
+          </p>
+          <p className="aw-text-dim mt-2 text-[13px] leading-relaxed">
+            Couldn&apos;t load modules from the server. You can still launch
+            and enable modules later from Settings.
+          </p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -90,18 +101,20 @@ export function FeaturesStep({ data, onChange }: Props) {
                 key={f.id}
                 type="button"
                 onClick={() => toggle(f.id)}
-                className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${
-                  isOn
-                    ? "border-[var(--primary-500,#2356d6)] bg-[var(--primary-50,#eff6ff)]"
-                    : "border-gray-200 bg-white hover:border-gray-300"
+                className={`aw-option flex items-start gap-3 text-left ${
+                  isOn ? "aw-option-active" : ""
                 }`}
               >
                 <div
-                  className={`mt-0.5 grid h-5 w-5 place-items-center rounded border transition ${
-                    isOn
-                      ? "border-[var(--primary-500,#2356d6)] bg-[var(--primary-500,#2356d6)]"
-                      : "border-gray-300 bg-white"
-                  }`}
+                  className="mt-0.5 grid h-5 w-5 place-items-center rounded transition"
+                  style={{
+                    border: isOn
+                      ? "1px solid #00e0ff"
+                      : "1px solid rgba(255,255,255,0.18)",
+                    background: isOn
+                      ? "linear-gradient(135deg, #00e0ff, #2356d6)"
+                      : "transparent",
+                  }}
                 >
                   {isOn ? (
                     <svg
@@ -109,7 +122,7 @@ export function FeaturesStep({ data, onChange }: Props) {
                       height="12"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="white"
+                      stroke="#05070f"
                       strokeWidth="3"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -119,11 +132,9 @@ export function FeaturesStep({ data, onChange }: Props) {
                   ) : null}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {f.name}
-                  </p>
+                  <p className="aw-text text-[14px] font-semibold">{f.name}</p>
                   {FEATURE_DESCRIPTIONS[f.name] ? (
-                    <p className="mt-0.5 text-xs text-gray-500">
+                    <p className="aw-text-mute mt-1 text-[12px] leading-relaxed">
                       {FEATURE_DESCRIPTIONS[f.name]}
                     </p>
                   ) : null}
@@ -134,7 +145,7 @@ export function FeaturesStep({ data, onChange }: Props) {
         </div>
       )}
 
-      <p className="text-xs text-gray-500">
+      <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
         {selected.size} of {features.length} modules selected
       </p>
     </div>

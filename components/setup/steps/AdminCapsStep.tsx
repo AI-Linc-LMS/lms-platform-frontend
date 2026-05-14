@@ -40,8 +40,8 @@ export function AdminCapsStep({ data, onChange }: Props) {
     onChange({ admin_caps: { ...caps, ...patch } });
 
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-gray-600">
+    <div className="space-y-7">
+      <p className="aw-text-dim text-[14px] leading-[1.65]">
         Choose what your tenant administrators can do. Enable just what your
         org needs — you can always change these later.
       </p>
@@ -54,25 +54,31 @@ export function AdminCapsStep({ data, onChange }: Props) {
               key={t.key}
               type="button"
               onClick={() => set({ [t.key]: !on })}
-              className={`flex w-full items-start justify-between gap-4 rounded-xl border p-4 text-left transition ${
-                on
-                  ? "border-[var(--primary-500,#2356d6)] bg-[var(--primary-50,#eff6ff)]"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+              className={`aw-option flex w-full items-start justify-between gap-4 text-left ${
+                on ? "aw-option-active" : ""
               }`}
             >
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">{t.label}</p>
-                <p className="mt-0.5 text-xs text-gray-500">{t.desc}</p>
+                <p className="aw-text text-[14px] font-semibold">{t.label}</p>
+                <p className="aw-text-mute mt-1 text-[12px] leading-relaxed">
+                  {t.desc}
+                </p>
               </div>
               <div
-                className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-                  on ? "bg-[var(--primary-500,#2356d6)]" : "bg-gray-200"
-                }`}
+                className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
+                style={{
+                  background: on
+                    ? "linear-gradient(90deg, #2356d6, #00e0ff)"
+                    : "rgba(255,255,255,0.08)",
+                }}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${
-                    on ? "left-5" : "left-0.5"
-                  }`}
+                  className="absolute top-0.5 h-5 w-5 rounded-full transition-all"
+                  style={{
+                    left: on ? "1.25rem" : "0.125rem",
+                    background: on ? "#05070f" : "rgba(255,255,255,0.7)",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
+                  }}
                 />
               </div>
             </button>
@@ -80,27 +86,36 @@ export function AdminCapsStep({ data, onChange }: Props) {
         })}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <p className="text-sm font-medium text-gray-700 mb-2">
-          Analytics depth
-        </p>
-        <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-          {(["basic", "advanced"] as const).map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => set({ analytics_depth: d })}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-                (caps.analytics_depth || "basic") === d
-                  ? "bg-white shadow-sm text-gray-900"
-                  : "text-gray-600"
-              }`}
-            >
-              {d === "basic" ? "Basic" : "Advanced"}
-            </button>
-          ))}
+      <div className="aw-card aw-card-thin">
+        <p className="aw-label mb-3">Analytics depth</p>
+        <div
+          className="inline-flex rounded-full p-1"
+          style={{
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.02)",
+          }}
+        >
+          {(["basic", "advanced"] as const).map((d) => {
+            const active = (caps.analytics_depth || "basic") === d;
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => set({ analytics_depth: d })}
+                className="aw-mono px-4 py-1.5 rounded-full text-[11px] uppercase tracking-[0.22em] transition-colors"
+                style={{
+                  color: active ? "#05070f" : "rgb(154,163,192)",
+                  background: active
+                    ? "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)"
+                    : "transparent",
+                }}
+              >
+                {d}
+              </button>
+            );
+          })}
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="aw-text-mute mt-3 text-[12px] leading-relaxed">
           Basic: progress, attempts, completion. Advanced adds funnels, cohort
           comparisons, and time-on-task.
         </p>

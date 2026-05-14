@@ -19,43 +19,77 @@ export function WizardLayout({
   saving,
 }: WizardLayoutProps) {
   const progress = Math.round((step / TOTAL_WIZARD_STEPS) * 100);
+
   return (
-    <div className="min-h-screen bg-[var(--bg-page,#f8fafc)] text-[var(--font-primary,#0f172a)]">
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
-              Setup wizard
-            </p>
-            <p className="text-sm text-gray-700">
-              Step {step} of {TOTAL_WIZARD_STEPS} ·{" "}
-              <span className="font-medium">{STEP_TITLES[step - 1]}</span>
-            </p>
+    <>
+      {/* Sticky header with progress bar */}
+      <header
+        className="sticky top-0 z-30 backdrop-blur-xl"
+        style={{
+          background: "rgba(5, 7, 15, 0.78)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        }}
+      >
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-6 px-[clamp(20px,4vw,48px)] py-5">
+          <div className="flex items-center gap-3">
+            <span className="aw-kicker">Setup · {step.toString().padStart(2, "0")} / 0{TOTAL_WIZARD_STEPS}</span>
+            <span className="aw-mono aw-text-dim hidden text-[11px] uppercase tracking-[0.22em] sm:inline">
+              {STEP_TITLES[step - 1]}
+            </span>
           </div>
-          <div className="flex items-center gap-3 text-xs text-gray-500">
-            {saving ? <span>Saving…</span> : <span>Autosaved</span>}
-            <span className="font-mono">{progress}%</span>
+          <div className="aw-mono flex items-center gap-3 text-[10px] uppercase tracking-[0.3em]">
+            <span className={saving ? "text-[#00e0ff]" : "aw-text-mute"}>
+              {saving ? "Saving…" : "Autosaved"}
+            </span>
+            <span className="aw-text-dim">{progress}%</span>
           </div>
         </div>
-        <div className="h-1 w-full bg-gray-100">
-          <div
-            className="h-full bg-gradient-to-r from-[var(--primary-500,#2356d6)] to-[var(--accent-blue,#00e0ff)] transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="aw-progress-track">
+          <div className="aw-progress-fill" style={{ width: `${progress}%` }} />
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-          {title}
-        </h1>
-        {description ? (
-          <p className="mt-3 text-base leading-relaxed text-gray-600">
-            {description}
-          </p>
-        ) : null}
-        <div className="mt-10">{children}</div>
+      {/* Hero / step intro */}
+      <section className="relative px-[clamp(20px,5vw,80px)] pt-[80px]">
+        <div className="mx-auto max-w-[820px]">
+          {/* Step segment bars (compact) */}
+          <div className="mb-10 flex items-center gap-1.5">
+            {Array.from({ length: TOTAL_WIZARD_STEPS }).map((_, i) => {
+              const n = i + 1;
+              const state =
+                n < step ? "done" : n === step ? "active" : "todo";
+              return (
+                <div
+                  key={n}
+                  className={`aw-step-bar ${
+                    state === "done"
+                      ? "aw-step-bar-done"
+                      : state === "active"
+                        ? "aw-step-bar-active"
+                        : "aw-step-bar-todo"
+                  }`}
+                  title={STEP_TITLES[i]}
+                />
+              );
+            })}
+          </div>
+
+          <span className="aw-kicker mb-5">Step {step} · {STEP_TITLES[step - 1]}</span>
+          <h1 className="aw-serif aw-text mt-4 text-[clamp(36px,5vw,64px)] leading-[1.04]">
+            {title}
+          </h1>
+          {description ? (
+            <p className="aw-text-dim mt-5 max-w-[640px] text-[15px] leading-[1.65]">
+              {description}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      {/* Step content */}
+      <main className="px-[clamp(20px,5vw,80px)] pb-24 pt-12">
+        <div className="mx-auto max-w-[820px]">{children}</div>
       </main>
-    </div>
+    </>
   );
 }

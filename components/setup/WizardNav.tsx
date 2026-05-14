@@ -23,26 +23,50 @@ export function WizardNav({
 }: WizardNavProps) {
   const isFinal = step >= TOTAL_WIZARD_STEPS;
   return (
-    <div className="mt-12 flex items-center justify-between border-t border-gray-200 pt-6">
+    <div
+      className="mt-14 flex items-center justify-between pt-7"
+      style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}
+    >
       <button
         type="button"
         onClick={onBack}
         disabled={!canGoBack || step <= 1}
-        className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="aw-btn aw-btn-ghost"
       >
-        ← Back
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+          <path
+            d="M19 12H5M11 18l-6-6 6-6"
+            stroke="currentColor"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span>Back</span>
       </button>
       <button
         type="button"
         onClick={onNext}
         disabled={!canGoNext || nextLoading}
-        className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary-600,#1d4ed8)] to-[var(--accent-blue,#00e0ff)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+        className="aw-btn aw-btn-primary"
       >
         {nextLoading ? (
-          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-r-transparent" />
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#05070f] border-r-transparent" />
         ) : null}
-        {nextLabel || (isFinal ? "Launch My LMS" : "Continue")}
-        {!isFinal ? <span aria-hidden="true">→</span> : null}
+        <span>{nextLabel || (isFinal ? "Launch My LMS" : "Continue")}</span>
+        {!isFinal ? (
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <path
+              d="M5 12h14M13 6l6 6-6 6"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : null}
       </button>
     </div>
   );
