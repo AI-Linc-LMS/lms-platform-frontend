@@ -1,6 +1,20 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
+
+const cardVariants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.4,
+      delay: i * 0.06,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  }),
+};
 
 interface Props {
   data: WizardData;
@@ -47,14 +61,18 @@ export function AdminCapsStep({ data, onChange }: Props) {
       </p>
 
       <div className="space-y-3">
-        {TOGGLES.map((t) => {
+        {TOGGLES.map((t, i) => {
           const on = Boolean(caps[t.key]);
           return (
-            <button
+            <motion.button
               key={t.key}
+              custom={i}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
               type="button"
               onClick={() => set({ [t.key]: !on })}
-              className={`aw-option flex w-full items-start justify-between gap-4 text-left ${
+              className={`aw-option aw-card-hover flex w-full items-start justify-between gap-4 text-left ${
                 on ? "aw-option-active" : ""
               }`}
             >
@@ -81,7 +99,7 @@ export function AdminCapsStep({ data, onChange }: Props) {
                   }}
                 />
               </div>
-            </button>
+            </motion.button>
           );
         })}
       </div>

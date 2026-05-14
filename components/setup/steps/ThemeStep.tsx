@@ -1,8 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { wizardService } from "@/lib/services/wizard.service";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
 interface Props {
   data: WizardData;
@@ -27,8 +42,13 @@ export function ThemeStep({ data, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
 
   return (
-    <div className="space-y-8">
-      <div>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
+      <motion.div variants={itemVariants}>
         <p className="aw-label">Template</p>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {TEMPLATES.map((t) => {
@@ -38,7 +58,7 @@ export function ThemeStep({ data, onChange }: Props) {
                 key={t.value}
                 type="button"
                 onClick={() => set({ template: t.value })}
-                className={`aw-option text-left ${active ? "aw-option-active" : ""}`}
+                className={`aw-option aw-card-hover text-left ${active ? "aw-option-active" : ""}`}
               >
                 <p className="aw-text text-[14px] font-semibold">{t.label}</p>
                 <p className="aw-text-mute mt-1.5 text-[11px] leading-relaxed">
@@ -48,9 +68,9 @@ export function ThemeStep({ data, onChange }: Props) {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
-      <div>
+      <motion.div variants={itemVariants}>
         <p className="aw-label">Default mode</p>
         <div
           className="inline-flex rounded-full p-1"
@@ -79,9 +99,9 @@ export function ThemeStep({ data, onChange }: Props) {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
-      <div>
+      <motion.div variants={itemVariants}>
         <label className="aw-label" htmlFor="welcome-message">
           Welcome message
         </label>
@@ -97,9 +117,9 @@ export function ThemeStep({ data, onChange }: Props) {
           onChange={(e) => set({ welcome_message: e.target.value })}
           className="aw-textarea"
         />
-      </div>
+      </motion.div>
 
-      <div>
+      <motion.div variants={itemVariants}>
         <p className="aw-label">Hero image (optional)</p>
         <div className="mt-3 flex items-center gap-4">
           <div
@@ -146,7 +166,7 @@ export function ThemeStep({ data, onChange }: Props) {
             />
           </label>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

@@ -1,8 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { wizardService } from "@/lib/services/wizard.service";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
 interface Props {
   data: WizardData;
@@ -119,8 +134,13 @@ export function BrandStep({ data, onChange }: Props) {
     onChange({ brand: { ...brand, ...patch } });
 
   return (
-    <div className="grid gap-8 md:grid-cols-[1.1fr,1fr]">
-      <div className="space-y-7">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="grid gap-8 md:grid-cols-[1.1fr,1fr]"
+    >
+      <motion.div variants={itemVariants} className="space-y-7">
         <AssetField
           label="Light-mode logo"
           hint="Used on the main app shell. PNG or SVG, transparent background works best."
@@ -156,9 +176,9 @@ export function BrandStep({ data, onChange }: Props) {
             fallback="#00e0ff"
           />
         </div>
-      </div>
+      </motion.div>
 
-      <aside className="aw-card">
+      <motion.aside variants={itemVariants} className="aw-card aw-card-hover">
         <span className="aw-card-top-line" aria-hidden />
         <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
           Live preview
@@ -216,7 +236,12 @@ export function BrandStep({ data, onChange }: Props) {
             </span>
           </div>
         </div>
-      </aside>
-    </div>
+
+        <p className="aw-help mt-5">
+          Live preview updates as you type. Real preview after launch will
+          inherit your template & welcome message too.
+        </p>
+      </motion.aside>
+    </motion.div>
   );
 }

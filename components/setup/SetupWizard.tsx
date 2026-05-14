@@ -157,6 +157,7 @@ export function SetupWizard({ initialState }: Props) {
       title={STEP_TITLES[step - 1]}
       description={STEP_DESCRIPTIONS[step - 1]}
       saving={saving}
+      onJumpToStep={jumpTo}
     >
       {step === 1 ? (
         <WelcomeStep state={state} data={data} onChange={updateData} />

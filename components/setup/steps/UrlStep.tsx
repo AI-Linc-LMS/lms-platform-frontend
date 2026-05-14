@@ -1,7 +1,22 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { WizardState } from "@/lib/services/wizard.service";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
 interface Props {
   state: WizardState;
@@ -12,8 +27,13 @@ interface Props {
 export function UrlStep({ state, data, onChange }: Props) {
   const url = data.url || {};
   return (
-    <div className="space-y-8">
-      <div className="aw-card">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
+      <motion.div variants={itemVariants} className="aw-card aw-card-hover">
         <span className="aw-card-top-line" aria-hidden />
         <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
           Your AI Linc subdomain
@@ -32,9 +52,10 @@ export function UrlStep({ state, data, onChange }: Props) {
         <p className="aw-text-dim mt-3 text-[13px] leading-[1.65]">
           Assigned by your AI Linc super-admin. This URL is permanent.
         </p>
-      </div>
+      </motion.div>
 
-      <div
+      <motion.div
+        variants={itemVariants}
         className="rounded-2xl p-7"
         style={{
           border: "1px dashed rgba(255, 255, 255, 0.12)",
@@ -89,7 +110,7 @@ export function UrlStep({ state, data, onChange }: Props) {
             </p>
           </div>
         ) : null}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

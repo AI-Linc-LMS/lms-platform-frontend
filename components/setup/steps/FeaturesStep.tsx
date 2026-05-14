@@ -1,8 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import apiClient from "@/lib/services/api";
 import { WizardData } from "@/lib/setup/wizardData";
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 12, scale: 0.98 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      delay: i * 0.04,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  }),
+};
 
 interface Feature {
   id: number;
@@ -94,14 +109,18 @@ export function FeaturesStep({ data, onChange }: Props) {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {features.map((f) => {
+          {features.map((f, i) => {
             const isOn = selected.has(f.id);
             return (
-              <button
+              <motion.button
                 key={f.id}
+                custom={i}
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
                 type="button"
                 onClick={() => toggle(f.id)}
-                className={`aw-option flex items-start gap-3 text-left ${
+                className={`aw-option aw-card-hover flex items-start gap-3 text-left ${
                   isOn ? "aw-option-active" : ""
                 }`}
               >
@@ -139,7 +158,7 @@ export function FeaturesStep({ data, onChange }: Props) {
                     </p>
                   ) : null}
                 </div>
-              </button>
+              </motion.button>
             );
           })}
         </div>

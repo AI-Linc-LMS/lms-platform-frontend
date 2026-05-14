@@ -75,11 +75,41 @@ export default function SetupPage() {
   if (!state) {
     return (
       <div className="ailinc-wizard grid place-items-center">
-        <div className="flex flex-col items-center gap-3">
-          <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.1)] border-t-[#00e0ff]" />
-          <p className="aw-mono aw-text-mute text-[11px] uppercase tracking-[0.3em]">
-            Loading setup wizard…
-          </p>
+        <div className="aw-grid-bg" aria-hidden />
+        <div className="relative flex flex-col items-center gap-6">
+          <div className="aw-bracket inline-block px-6 py-4">
+            <span
+              className="aw-serif"
+              style={{
+                fontSize: "clamp(48px, 6vw, 80px)",
+                background:
+                  "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+                lineHeight: 1,
+              }}
+            >
+              AI LINC
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="aw-pulse-dot" aria-hidden />
+            <p className="aw-mono aw-text-dim text-[11px] uppercase tracking-[0.32em]">
+              Preparing your launch sequence
+            </p>
+          </div>
+          <div className="mt-2 h-[2px] w-48 overflow-hidden rounded-full bg-white/[0.06]">
+            <div
+              className="h-full"
+              style={{
+                width: "40%",
+                background:
+                  "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)",
+                animation: "aw-marquee-scroll 1.6s ease-in-out infinite",
+              }}
+            />
+          </div>
         </div>
       </div>
     );

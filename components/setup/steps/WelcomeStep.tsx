@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { WizardState } from "@/lib/services/wizard.service";
 
@@ -9,13 +10,36 @@ interface Props {
   onChange: (patch: Partial<WizardData>) => void;
 }
 
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
+
 export function WelcomeStep({ state, data, onChange }: Props) {
   const welcome = data.welcome || {};
   return (
-    <div className="space-y-7">
-      <div className="aw-card">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
+      <motion.div variants={itemVariants} className="aw-card aw-card-hover">
         <span className="aw-card-top-line" aria-hidden />
-        <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
+        <p className="aw-kicker-sm">
+          <span
+            className="inline-block h-1.5 w-1.5 rounded-full"
+            style={{ background: "#00e0ff" }}
+          />
           From your intake form
         </p>
         <dl className="mt-5 grid grid-cols-2 gap-x-8 gap-y-5">
@@ -23,7 +47,7 @@ export function WelcomeStep({ state, data, onChange }: Props) {
             <dt className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.22em]">
               Organisation
             </dt>
-            <dd className="aw-text mt-1.5 text-[15px]">
+            <dd className="aw-text mt-1.5 text-[16px] font-medium">
               {state.organisation_name}
             </dd>
           </div>
@@ -46,9 +70,9 @@ export function WelcomeStep({ state, data, onChange }: Props) {
             </div>
           ) : null}
         </dl>
-      </div>
+      </motion.div>
 
-      <div className="space-y-5">
+      <motion.div variants={itemVariants} className="space-y-5">
         <div>
           <label className="aw-label" htmlFor="confirm-org-name">
             Confirm organisation name
@@ -64,13 +88,36 @@ export function WelcomeStep({ state, data, onChange }: Props) {
             }
             className="aw-input"
           />
+          <p className="aw-help">
+            This is how your name will appear across the platform. You can
+            tweak it later in Settings.
+          </p>
         </div>
+      </motion.div>
 
-        <p className="aw-text-dim text-[13px] leading-[1.65]">
-          You can edit branding, modules, and team in the next steps. None of
-          your choices are final until you launch.
+      <motion.div variants={itemVariants} className="aw-tip">
+        <p className="aw-kicker-sm">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+          Tip
         </p>
-      </div>
-    </div>
+        <p className="aw-text-dim mt-2 text-[13px] leading-relaxed">
+          You can revisit and change every choice from{" "}
+          <span className="aw-text">Settings → Branding & Modules</span> after
+          launch. Nothing is final until you ship.
+        </p>
+      </motion.div>
+    </motion.div>
   );
 }

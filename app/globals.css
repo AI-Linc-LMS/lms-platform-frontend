@@ -685,8 +685,244 @@ body {
   flex: 1;
   height: 3px;
   border-radius: 9999px;
-  transition: background 0.3s var(--aw-ease);
+  transition: background 0.3s var(--aw-ease), transform 0.3s var(--aw-ease);
 }
 .ailinc-wizard .aw-step-bar-todo { background: rgba(255, 255, 255, 0.08); }
-.ailinc-wizard .aw-step-bar-active { background: linear-gradient(90deg, #2356d6, #00e0ff); }
+.ailinc-wizard .aw-step-bar-active {
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  transform: scaleY(1.4);
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.45);
+}
 .ailinc-wizard .aw-step-bar-done { background: rgba(0, 224, 255, 0.7); }
+
+/* ---- Enhancements: cinematic motion + flourishes ------------------- */
+
+/* Massive serif step watermark (e.g. "02" pinned to the side) */
+.ailinc-wizard .aw-watermark {
+  position: absolute;
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: "opsz" 144;
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  font-size: clamp(120px, 18vw, 280px);
+  line-height: 0.85;
+  color: transparent;
+  background: linear-gradient(180deg, rgba(0, 224, 255, 0.14) 0%, rgba(0, 224, 255, 0.02) 60%, transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* Terminal-style corner bracket */
+.ailinc-wizard .aw-bracket {
+  position: relative;
+}
+.ailinc-wizard .aw-bracket::before,
+.ailinc-wizard .aw-bracket::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0, 224, 255, 0.6);
+  transition: all 0.4s var(--aw-ease);
+}
+.ailinc-wizard .aw-bracket::before {
+  top: -6px;
+  left: -8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.ailinc-wizard .aw-bracket::after {
+  bottom: -6px;
+  right: -8px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Marquee strip (continuous horizontal scroll) */
+@keyframes aw-marquee-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.ailinc-wizard .aw-marquee {
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+.ailinc-wizard .aw-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: aw-marquee-scroll 80s linear infinite;
+}
+.ailinc-wizard .aw-marquee:hover .aw-marquee-track {
+  animation-play-state: paused;
+}
+
+/* Pulse dot for "live" status */
+@keyframes aw-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+.ailinc-wizard .aw-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e0ff;
+  box-shadow: 0 0 8px rgba(0, 224, 255, 0.7);
+  animation: aw-pulse-dot 2s ease-in-out infinite;
+}
+
+/* Card hover glow (auto-applied on .aw-card-hover) */
+.ailinc-wizard .aw-card-hover {
+  transition:
+    transform 0.4s var(--aw-ease),
+    border-color 0.3s var(--aw-ease),
+    box-shadow 0.4s var(--aw-ease);
+}
+.ailinc-wizard .aw-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 224, 255, 0.25);
+  box-shadow: 0 12px 36px -16px rgba(0, 224, 255, 0.35);
+}
+
+/* Field group section divider */
+.ailinc-wizard .aw-divider {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  margin: 28px 0;
+}
+.ailinc-wizard .aw-divider-cyan {
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.32), transparent);
+}
+
+/* Mini kicker (inside a card, smaller than .aw-kicker) */
+.ailinc-wizard .aw-kicker-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: rgb(154, 163, 192);
+}
+
+/* Step shortcuts pill row (clickable mini-nav inside header) */
+.ailinc-wizard .aw-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  color: rgb(95, 104, 133);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s var(--aw-ease);
+}
+.ailinc-wizard .aw-shortcut-done {
+  color: rgba(0, 224, 255, 0.85);
+  border-color: rgba(0, 224, 255, 0.18);
+  background: rgba(0, 224, 255, 0.04);
+}
+.ailinc-wizard .aw-shortcut-done:hover {
+  color: #00e0ff;
+  border-color: rgba(0, 224, 255, 0.4);
+}
+.ailinc-wizard .aw-shortcut-active {
+  color: #05070f;
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 4px 16px -4px rgba(0, 224, 255, 0.55);
+  cursor: default;
+}
+.ailinc-wizard .aw-shortcut-todo {
+  cursor: not-allowed;
+}
+
+/* Aurora top accent (slowly drifting gradient line) */
+@keyframes aw-aurora-shift {
+  0%, 100% { transform: translateX(-30%); }
+  50% { transform: translateX(30%); }
+}
+.ailinc-wizard .aw-aurora {
+  position: absolute;
+  top: 0;
+  left: -10%;
+  right: -10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.65), rgba(35, 86, 214, 0.45), transparent);
+  animation: aw-aurora-shift 12s ease-in-out infinite;
+  filter: blur(0.5px);
+}
+
+/* Subtle background grid (under everything inside the scope) */
+.ailinc-wizard .aw-grid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);
+}
+
+/* Scanline shimmer on hero title (one-time on mount) */
+@keyframes aw-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.ailinc-wizard .aw-shimmer {
+  background: linear-gradient(110deg, rgb(var(--aw-fg)) 35%, rgba(0, 224, 255, 0.9) 50%, rgb(var(--aw-fg)) 65%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aw-shimmer 4s ease-out 0.4s 1;
+}
+
+/* Save status indicator with breathing animation */
+@keyframes aw-breath {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.ailinc-wizard .aw-saving {
+  animation: aw-breath 1.4s ease-in-out infinite;
+}
+
+/* Focus ring on inputs becomes cyan glow */
+.ailinc-wizard .aw-input:focus,
+.ailinc-wizard .aw-textarea:focus,
+.ailinc-wizard .aw-select:focus {
+  box-shadow: 0 0 0 4px rgba(0, 224, 255, 0.08), 0 0 24px -8px rgba(0, 224, 255, 0.5);
+}
+
+/* Tip card variant */
+.ailinc-wizard .aw-tip {
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(0, 224, 255, 0.06) 0%, rgba(0, 224, 255, 0.01) 100%);
+}
+.ailinc-wizard .aw-tip::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.4), transparent);
+}

@@ -1,7 +1,22 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData, STEP_TITLES } from "@/lib/setup/wizardData";
 import { WizardState } from "@/lib/services/wizard.service";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
 interface Props {
   state: WizardState;
@@ -51,14 +66,22 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
     .map(([k]) => k.replace(/_/g, " "));
 
   return (
-    <div className="space-y-7">
-      <p className="aw-text-dim text-[14px] leading-[1.65]">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-7"
+    >
+      <motion.p
+        variants={itemVariants}
+        className="aw-text-dim text-[14px] leading-[1.65]"
+      >
         Double-check everything below, then click{" "}
         <span className="aw-text font-semibold">Launch My LMS</span> to go live.
         You can change every choice from Settings afterwards.
-      </p>
+      </motion.p>
 
-      <div className="aw-card">
+      <motion.div variants={itemVariants} className="aw-card aw-card-hover">
         <span className="aw-card-top-line" aria-hidden />
         <div className="-my-1">
           <Row
@@ -146,9 +169,10 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
             onEdit={() => onJumpToStep(7)}
           />
         </div>
-      </div>
+      </motion.div>
 
-      <div
+      <motion.div
+        variants={itemVariants}
         className="rounded-[14px] p-4"
         style={{
           border: "1px solid rgba(255, 198, 109, 0.3)",
@@ -167,7 +191,7 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
           </code>
           . You can edit branding, modules, and team anytime from Settings.
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
