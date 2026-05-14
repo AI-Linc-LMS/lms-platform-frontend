@@ -263,6 +263,7 @@ export default function InterviewResultPage() {
         <QuestionPerformance
           questions={result.questions_for_interview}
           question_scores={result.evaluation_score.question_scores}
+          responses={result.interview_transcript.responses}
           expandedQuestion={expandedQuestion}
           onQuestionToggle={handleQuestionToggle}
           getScoreColor={getScoreColor}
