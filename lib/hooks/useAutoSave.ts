@@ -35,6 +35,17 @@ export function useAutoSave({
     updatedAt: null,
   });
 
+  // Latest-value refs so the save() closure reads fresh data without re-running the effect
+  // on every keystroke / option click. Without this, useEffect re-mounted on every response
+  // change, constantly clearing the 5s initial-save timeout (so it never fired) and churning
+  // the 30s interval — which froze the UI under heavy interaction.
+  const responsesRef = useRef(responses);
+  const sectionsRef = useRef(sections);
+  const metadataRef = useRef(metadata);
+  responsesRef.current = responses;
+  sectionsRef.current = sections;
+  metadataRef.current = metadata;
+
   useEffect(() => {
     if (!enabled) {
       setRemoteAutosave({ status: "idle", updatedAt: null });
@@ -52,6 +63,10 @@ export function useAutoSave({
 
     const save = async () => {
       try {
+        const responses = responsesRef.current;
+        const sections = sectionsRef.current;
+        const metadata = metadataRef.current;
+
         // Check if there are responses to save
         const hasResponses = Object.keys(responses).some(
           (sectionType) =>
@@ -155,7 +170,7 @@ export function useAutoSave({
         intervalRef.current = null;
       }
     };
-  }, [enabled, slug, responses, sections, metadata, interval, timedSectionsCompleteRef]);
+  }, [enabled, slug, interval, timedSectionsCompleteRef]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -169,4 +184,3 @@ export function useAutoSave({
 
   return { remoteAutosave };
 }
-

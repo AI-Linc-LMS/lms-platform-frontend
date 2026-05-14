@@ -1,7 +1,7 @@
 "use client";
 
 import { Box } from "@mui/material";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 import { QuizOption } from "./QuizLayout";
 import { AnswerOption } from "./AnswerOption";
 
@@ -23,6 +23,47 @@ function optionLetter(option: QuizOption): string {
   return String(option.value ?? option.id ?? "").toUpperCase();
 }
 
+// Per-option wrapper carries a stable onClick (option.id closed over the parent ref) so
+// the memoized AnswerOption underneath is not invalidated by inline arrow recreation.
+interface OptionRowProps {
+  option: QuizOption;
+  isSelected: boolean;
+  isCorrect: boolean;
+  isWrongSelection: boolean;
+  isReadOnly: boolean;
+  isSubmitting: boolean;
+  compact?: boolean;
+  onSelectRef: React.MutableRefObject<(id: string | number) => void>;
+}
+
+const OptionRow = memo(function OptionRow({
+  option,
+  isSelected,
+  isCorrect,
+  isWrongSelection,
+  isReadOnly,
+  isSubmitting,
+  compact,
+  onSelectRef,
+}: OptionRowProps) {
+  const handleSelect = useCallback(() => {
+    onSelectRef.current(option.id);
+  }, [option.id, onSelectRef]);
+
+  return (
+    <AnswerOption
+      option={option}
+      isSelected={isSelected}
+      isCorrect={isCorrect}
+      isWrongSelection={isWrongSelection}
+      isReadOnly={isReadOnly}
+      isSubmitting={isSubmitting}
+      onSelect={handleSelect}
+      compact={compact}
+    />
+  );
+});
+
 export const AnswerOptionsList = memo(function AnswerOptionsList({
   options,
   selectedAnswer,
@@ -34,14 +75,28 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
   compact,
   multiSelect,
 }: AnswerOptionsListProps) {
-  const selectedSet = new Set(
-    multiSelect
-      ? Array.isArray(selectedAnswer)
-        ? selectedAnswer.map((x) => String(x).toUpperCase())
-        : selectedAnswer != null && selectedAnswer !== ""
-          ? [String(selectedAnswer).toUpperCase()]
-          : []
-      : [],
+  // Hold onAnswerSelect in a ref so OptionRow's per-option handler stays stable across
+  // parent renders. AnswerOption is memoized — recreating `onSelect` per render defeated
+  // it and re-rendered every option on each click.
+  const onAnswerSelectRef = useRef(onAnswerSelect);
+  onAnswerSelectRef.current = onAnswerSelect;
+
+  const selectedSet = useMemo(
+    () =>
+      new Set(
+        multiSelect
+          ? Array.isArray(selectedAnswer)
+            ? selectedAnswer.map((x) => String(x).toUpperCase())
+            : selectedAnswer != null && selectedAnswer !== ""
+              ? [String(selectedAnswer).toUpperCase()]
+              : []
+          : [],
+      ),
+    [multiSelect, selectedAnswer],
+  );
+  const selectedSingle = useMemo(
+    () => String(selectedAnswer ?? "").toUpperCase(),
+    [selectedAnswer],
   );
   return (
     <Box
@@ -57,12 +112,12 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
         const letter = optionLetter(option);
         const isSelected = multiSelect
           ? selectedSet.has(letter)
-          : String(selectedAnswer ?? "").toUpperCase() === letter;
+          : selectedSingle === letter;
         const isCorrect = showCorrectAnswer && correctAnswerId === option.id;
         const isWrongSelection = isSelected && !isCorrect && showCorrectAnswer;
 
         return (
-          <AnswerOption
+          <OptionRow
             key={option.id}
             option={option}
             isSelected={isSelected}
@@ -70,7 +125,7 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
             isWrongSelection={isWrongSelection}
             isReadOnly={isReadOnly}
             isSubmitting={isSubmitting}
-            onSelect={() => onAnswerSelect(option.id)}
+            onSelectRef={onAnswerSelectRef}
             compact={compact}
           />
         );

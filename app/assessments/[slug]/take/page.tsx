@@ -1699,30 +1699,30 @@ export default function TakeAssessmentPage({
     []
   );
 
-  // Debounce quiz/coding only. Subjective uses a controlled TextField — delayed setState
-  // would reset the input on every keystroke before the timeout fires.
+  // Debounce coding code edits only (high keystroke volume). Quiz selections and subjective
+  // answers update immediately so the UI reflects the click on the next paint — the prior
+  // 100ms debounce on quiz made options feel unresponsive under load.
   const handleAnswerChange = useCallback(
     (sectionType: string, questionId: string | number, answer: any) => {
-      if (sectionType === "subjective") {
+      if (sectionType === "coding") {
         if (answerChangeDebounceRef.current) {
           clearTimeout(answerChangeDebounceRef.current);
-          answerChangeDebounceRef.current = null;
         }
-        setResponses((prev) =>
-          applyAnswerToResponses(prev, sectionType, questionId, answer)
-        );
+        answerChangeDebounceRef.current = setTimeout(() => {
+          setResponses((prev) =>
+            applyAnswerToResponses(prev, sectionType, questionId, answer)
+          );
+        }, 100);
         return;
       }
 
       if (answerChangeDebounceRef.current) {
         clearTimeout(answerChangeDebounceRef.current);
+        answerChangeDebounceRef.current = null;
       }
-
-      answerChangeDebounceRef.current = setTimeout(() => {
-        setResponses((prev) =>
-          applyAnswerToResponses(prev, sectionType, questionId, answer)
-        );
-      }, 100);
+      setResponses((prev) =>
+        applyAnswerToResponses(prev, sectionType, questionId, answer)
+      );
     },
     [applyAnswerToResponses]
   );
@@ -2021,16 +2021,29 @@ export default function TakeAssessmentPage({
     return sectionStatus.reduce((sum, s) => sum + s.answered, 0);
   }, [sectionStatus]);
 
-  // Handlers - memoized
+  // Handlers - stable identity via refs. Previously `responses` in deps caused this callback
+  // to be recreated on every click, which cascaded into MemoizedQuizLayout re-rendering all
+  // options. Read latest values from refs inside the handler instead.
+  const quizQuestionsRef = useRef(quizQuestions);
+  quizQuestionsRef.current = quizQuestions;
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  currentQuestionIndexRef.current = currentQuestionIndex;
+  const sectionTypeRef = useRef(sectionType);
+  sectionTypeRef.current = sectionType;
+  const responsesRef = useRef(responses);
+  responsesRef.current = responses;
+
   const handleQuizAnswerSelect = useCallback(
     (answerId: string | number) => {
-      const question = quizQuestions[currentQuestionIndex];
+      const sectionT = sectionTypeRef.current;
+      const idx = currentQuestionIndexRef.current;
+      const question = quizQuestionsRef.current[idx];
       if (!question) return;
       const letter = String(answerId).toUpperCase();
       if (question.question_style === "multiple") {
         const cur =
-          responses[sectionType]?.[question.id] ??
-          responses[sectionType]?.[String(question.id)];
+          responsesRef.current[sectionT]?.[question.id] ??
+          responsesRef.current[sectionT]?.[String(question.id)];
         const set = new Set<string>(
           Array.isArray(cur)
             ? cur.map((x: unknown) => String(x).toUpperCase())
@@ -2044,18 +2057,12 @@ export default function TakeAssessmentPage({
           set.add(letter);
         }
         const arr = Array.from(set).sort();
-        handleAnswerChange(sectionType, question.id, arr.length ? arr : null);
+        handleAnswerChange(sectionT, question.id, arr.length ? arr : null);
         return;
       }
-      handleAnswerChange(sectionType, question.id, letter);
+      handleAnswerChange(sectionT, question.id, letter);
     },
-    [
-      quizQuestions,
-      currentQuestionIndex,
-      sectionType,
-      handleAnswerChange,
-      responses,
-    ]
+    [handleAnswerChange]
   );
 
   const handleClearAnswer = useCallback(() => {
