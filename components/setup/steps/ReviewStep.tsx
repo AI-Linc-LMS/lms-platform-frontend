@@ -1,7 +1,22 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData, STEP_TITLES } from "@/lib/setup/wizardData";
 import { WizardState } from "@/lib/services/wizard.service";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
 interface Props {
   state: WizardState;
@@ -19,18 +34,23 @@ function Row({
   onEdit?: () => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
+    <div
+      className="flex items-start justify-between gap-4 py-4"
+      style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}
+    >
       <div className="flex-1">
-        <p className="text-xs font-medium uppercase tracking-widest text-gray-500">
+        <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
           {label}
         </p>
-        <div className="mt-1 text-sm text-gray-900">{value || "—"}</div>
+        <div className="aw-text mt-2 text-[14px] leading-[1.6]">
+          {value || "—"}
+        </div>
       </div>
       {onEdit ? (
         <button
           type="button"
           onClick={onEdit}
-          className="text-xs font-semibold uppercase tracking-widest text-[var(--primary-600,#1d4ed8)] hover:text-[var(--primary-700,#1e3a8a)]"
+          className="aw-mono text-[10px] uppercase tracking-[0.3em] text-[#00e0ff] transition-colors hover:text-white"
         >
           Edit
         </button>
@@ -46,104 +66,132 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
     .map(([k]) => k.replace(/_/g, " "));
 
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-gray-600">
-        Double-check everything below, then click <strong>Launch My LMS</strong>{" "}
-        to go live. You can change every choice from Settings afterwards.
-      </p>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-7"
+    >
+      <motion.p
+        variants={itemVariants}
+        className="aw-text-dim text-[14px] leading-[1.65]"
+      >
+        Double-check everything below, then click{" "}
+        <span className="aw-text font-semibold">Launch My LMS</span> to go live.
+        You can change every choice from Settings afterwards.
+      </motion.p>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-6">
-        <Row
-          label={STEP_TITLES[0]}
-          value={data.welcome?.confirmed_org_name || state.organisation_name}
-          onEdit={() => onJumpToStep(1)}
-        />
-        <Row
-          label={STEP_TITLES[1]}
-          value={
-            <div className="flex items-center gap-3">
-              {data.brand?.light_logo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={data.brand.light_logo_url}
-                  alt=""
-                  className="h-6 w-auto"
-                />
-              ) : null}
-              <span className="font-mono text-xs">
-                {data.brand?.primary_color || "—"} ·{" "}
-                {data.brand?.accent_color || "—"}
+      <motion.div variants={itemVariants} className="aw-card aw-card-hover">
+        <span className="aw-card-top-line" aria-hidden />
+        <div className="-my-1">
+          <Row
+            label={STEP_TITLES[0]}
+            value={data.welcome?.confirmed_org_name || state.organisation_name}
+            onEdit={() => onJumpToStep(1)}
+          />
+          <Row
+            label={STEP_TITLES[1]}
+            value={
+              <div className="flex items-center gap-3">
+                {data.brand?.light_logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={data.brand.light_logo_url}
+                    alt=""
+                    className="h-6 w-auto"
+                  />
+                ) : null}
+                <span className="aw-mono text-[12px]">
+                  {data.brand?.primary_color || "—"} ·{" "}
+                  {data.brand?.accent_color || "—"}
+                </span>
+              </div>
+            }
+            onEdit={() => onJumpToStep(2)}
+          />
+          <Row
+            label={STEP_TITLES[2]}
+            value={
+              <span className="aw-mono text-[13px]">
+                {state.subdomain}.ailinc.com
+                {data.url?.custom_domain ? ` · ${data.url.custom_domain}` : ""}
               </span>
-            </div>
-          }
-          onEdit={() => onJumpToStep(2)}
-        />
-        <Row
-          label={STEP_TITLES[2]}
-          value={
-            <span className="font-mono">
-              {state.subdomain}.ailinc.com
-              {data.url?.custom_domain
-                ? ` · ${data.url.custom_domain}`
-                : ""}
-            </span>
-          }
-          onEdit={() => onJumpToStep(3)}
-        />
-        <Row
-          label={STEP_TITLES[3]}
-          value={
-            <>
-              {data.theme?.template || "Default"} ·{" "}
-              {data.theme?.default_mode || "light"} mode
-              {data.theme?.welcome_message ? (
-                <p className="mt-1 text-xs text-gray-500">
-                  &ldquo;{data.theme.welcome_message}&rdquo;
-                </p>
-              ) : null}
-            </>
-          }
-          onEdit={() => onJumpToStep(4)}
-        />
-        <Row
-          label={STEP_TITLES[4]}
-          value={`${featureCount} module${featureCount === 1 ? "" : "s"} enabled`}
-          onEdit={() => onJumpToStep(5)}
-        />
-        <Row
-          label={STEP_TITLES[5]}
-          value={
-            <>
-              <span className="capitalize">
-                {data.admin_caps?.analytics_depth || "basic"} analytics
-              </span>
-              {capsOn.length ? (
-                <span className="text-gray-500"> · {capsOn.join(", ")}</span>
-              ) : null}
-            </>
-          }
-          onEdit={() => onJumpToStep(6)}
-        />
-        <Row
-          label={STEP_TITLES[6]}
-          value={
-            data.course_library?.choice === "import"
-              ? "Import from AI Linc catalogue"
-              : data.course_library?.choice === "build"
-                ? "Build with AI"
-                : data.course_library?.choice === "skip"
-                  ? "Skip for now"
-                  : "—"
-          }
-          onEdit={() => onJumpToStep(7)}
-        />
-      </div>
+            }
+            onEdit={() => onJumpToStep(3)}
+          />
+          <Row
+            label={STEP_TITLES[3]}
+            value={
+              <>
+                <span className="capitalize">
+                  {data.theme?.template || "Default"} ·{" "}
+                  {data.theme?.default_mode || "light"} mode
+                </span>
+                {data.theme?.welcome_message ? (
+                  <p className="aw-text-mute mt-1.5 text-[12px] leading-relaxed">
+                    “{data.theme.welcome_message}”
+                  </p>
+                ) : null}
+              </>
+            }
+            onEdit={() => onJumpToStep(4)}
+          />
+          <Row
+            label={STEP_TITLES[4]}
+            value={`${featureCount} module${featureCount === 1 ? "" : "s"} enabled`}
+            onEdit={() => onJumpToStep(5)}
+          />
+          <Row
+            label={STEP_TITLES[5]}
+            value={
+              <>
+                <span className="capitalize">
+                  {data.admin_caps?.analytics_depth || "basic"} analytics
+                </span>
+                {capsOn.length ? (
+                  <span className="aw-text-mute"> · {capsOn.join(", ")}</span>
+                ) : null}
+              </>
+            }
+            onEdit={() => onJumpToStep(6)}
+          />
+          <Row
+            label={STEP_TITLES[6]}
+            value={
+              data.course_library?.choice === "import"
+                ? "Import from AI Linc catalogue"
+                : data.course_library?.choice === "build"
+                  ? "Build with AI"
+                  : data.course_library?.choice === "skip"
+                    ? "Skip for now"
+                    : "—"
+            }
+            onEdit={() => onJumpToStep(7)}
+          />
+        </div>
+      </motion.div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        Once launched, your tenant moves to <strong>live</strong> and learners
-        can sign in via <code className="rounded bg-amber-100 px-1">{state.subdomain}.ailinc.com</code>.
-        You can edit branding, modules, and team anytime from Settings.
-      </div>
-    </div>
+      <motion.div
+        variants={itemVariants}
+        className="rounded-[14px] p-4"
+        style={{
+          border: "1px solid rgba(255, 198, 109, 0.3)",
+          background: "rgba(255, 198, 109, 0.05)",
+        }}
+      >
+        <p className="aw-mono text-[10px] uppercase tracking-[0.3em] text-[#ffc66d]">
+          Heads up
+        </p>
+        <p className="aw-text-dim mt-2 text-[13px] leading-relaxed">
+          Once launched, your tenant moves to{" "}
+          <span className="aw-text font-semibold">live</span> and learners can
+          sign in via{" "}
+          <code className="aw-mono rounded bg-white/[0.06] px-1.5 py-0.5 text-[12px] text-[#ffc66d]">
+            {state.subdomain}.ailinc.com
+          </code>
+          . You can edit branding, modules, and team anytime from Settings.
+        </p>
+      </motion.div>
+    </motion.div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { WizardState } from "@/lib/services/wizard.service";
 
@@ -9,42 +10,75 @@ interface Props {
   onChange: (patch: Partial<WizardData>) => void;
 }
 
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
+
 export function WelcomeStep({ state, data, onChange }: Props) {
   const welcome = data.welcome || {};
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
+      <motion.div variants={itemVariants} className="aw-card aw-card-hover">
+        <span className="aw-card-top-line" aria-hidden />
+        <p className="aw-kicker-sm">
+          <span
+            className="inline-block h-1.5 w-1.5 rounded-full"
+            style={{ background: "#00e0ff" }}
+          />
           From your intake form
         </p>
-        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+        <dl className="mt-5 grid grid-cols-2 gap-x-8 gap-y-5">
           <div>
-            <dt className="text-gray-500">Organisation</dt>
-            <dd className="font-medium text-gray-900">
+            <dt className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.22em]">
+              Organisation
+            </dt>
+            <dd className="aw-text mt-1.5 text-[16px] font-medium">
               {state.organisation_name}
             </dd>
           </div>
           <div>
-            <dt className="text-gray-500">Your URL</dt>
-            <dd className="font-mono text-gray-900">
+            <dt className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.22em]">
+              Your URL
+            </dt>
+            <dd className="aw-mono mt-1.5 text-[15px] text-[#00e0ff]">
               {state.subdomain}.ailinc.com
             </dd>
           </div>
           {state.contact_email ? (
             <div className="col-span-2">
-              <dt className="text-gray-500">Tenant admin</dt>
-              <dd className="text-gray-900">{state.contact_email}</dd>
+              <dt className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.22em]">
+                Tenant admin
+              </dt>
+              <dd className="aw-text mt-1.5 text-[15px]">
+                {state.contact_email}
+              </dd>
             </div>
           ) : null}
         </dl>
-      </div>
+      </motion.div>
 
-      <div className="space-y-4">
-        <label className="block">
-          <span className="block text-sm font-medium text-gray-700">
+      <motion.div variants={itemVariants} className="space-y-5">
+        <div>
+          <label className="aw-label" htmlFor="confirm-org-name">
             Confirm organisation name
-          </span>
+          </label>
           <input
+            id="confirm-org-name"
             type="text"
             value={welcome.confirmed_org_name ?? state.organisation_name}
             onChange={(e) =>
@@ -52,15 +86,38 @@ export function WelcomeStep({ state, data, onChange }: Props) {
                 welcome: { ...welcome, confirmed_org_name: e.target.value },
               })
             }
-            className="mt-1.5 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-[var(--primary-500,#2356d6)] focus:ring-1 focus:ring-[var(--primary-500,#2356d6)]"
+            className="aw-input"
           />
-        </label>
+          <p className="aw-help">
+            This is how your name will appear across the platform. You can
+            tweak it later in Settings.
+          </p>
+        </div>
+      </motion.div>
 
-        <p className="text-sm text-gray-500">
-          You can edit branding, modules, and team in the next steps. None of
-          your choices are final until you launch.
+      <motion.div variants={itemVariants} className="aw-tip">
+        <p className="aw-kicker-sm">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+          Tip
         </p>
-      </div>
-    </div>
+        <p className="aw-text-dim mt-2 text-[13px] leading-relaxed">
+          You can revisit and change every choice from{" "}
+          <span className="aw-text">Settings → Branding & Modules</span> after
+          launch. Nothing is final until you ship.
+        </p>
+      </motion.div>
+    </motion.div>
   );
 }

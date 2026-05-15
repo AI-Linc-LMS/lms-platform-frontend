@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { TOTAL_WIZARD_STEPS } from "@/lib/setup/wizardData";
 
 interface WizardNavProps {
@@ -23,27 +24,114 @@ export function WizardNav({
 }: WizardNavProps) {
   const isFinal = step >= TOTAL_WIZARD_STEPS;
   return (
-    <div className="mt-12 flex items-center justify-between border-t border-gray-200 pt-6">
-      <button
-        type="button"
-        onClick={onBack}
-        disabled={!canGoBack || step <= 1}
-        className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.5,
+        delay: 0.2,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      className="relative mt-16 pt-7"
+      style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}
+    >
+      {/* Aurora line on the top border */}
+      <div
+        className="aw-aurora"
+        style={{ top: 0, animationDuration: "8s" }}
+        aria-hidden
+      />
+
+      <div className="flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={!canGoBack || step <= 1}
+          className="aw-btn aw-btn-ghost group"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            aria-hidden="true"
+            className="transition-transform group-hover:-translate-x-0.5"
+          >
+            <path
+              d="M19 12H5M11 18l-6-6 6-6"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>Back</span>
+        </button>
+
+        {/* Center: mini step indicator */}
+        <div className="aw-mono hidden text-[10px] uppercase tracking-[0.32em] text-[rgba(255,255,255,0.2)] sm:block">
+          {step.toString().padStart(2, "0")} ·· {TOTAL_WIZARD_STEPS.toString().padStart(2, "0")}
+        </div>
+
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!canGoNext || nextLoading}
+          className={`aw-btn aw-btn-primary group ${
+            isFinal ? "aw-bracket" : ""
+          }`}
+        >
+          {nextLoading ? (
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#05070f] border-r-transparent" />
+          ) : null}
+          <span>{nextLabel || (isFinal ? "Launch My LMS" : "Continue")}</span>
+          {!isFinal ? (
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              aria-hidden="true"
+              className="transition-transform group-hover:translate-x-0.5"
+            >
+              <path
+                d="M5 12h14M13 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              aria-hidden="true"
+              className="transition-transform group-hover:translate-x-0.5"
+            >
+              <path
+                d="M5 12l4 4L19 6"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Below: keyboard hint */}
+      <p
+        className="aw-mono mt-5 text-center text-[10px] uppercase tracking-[0.32em] text-[rgba(255,255,255,0.16)]"
+        aria-hidden
       >
-        ← Back
-      </button>
-      <button
-        type="button"
-        onClick={onNext}
-        disabled={!canGoNext || nextLoading}
-        className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary-600,#1d4ed8)] to-[var(--accent-blue,#00e0ff)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {nextLoading ? (
-          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-r-transparent" />
-        ) : null}
-        {nextLabel || (isFinal ? "Launch My LMS" : "Continue")}
-        {!isFinal ? <span aria-hidden="true">→</span> : null}
-      </button>
-    </div>
+        Press{" "}
+        <span className="text-[rgba(255,255,255,0.3)]">⏎</span> to{" "}
+        {isFinal ? "launch" : "continue"}
+      </p>
+    </motion.div>
   );
 }
