@@ -416,3 +416,539 @@ body {
     transform: scaleX(-1);
   }
 }
+
+/* =========================================================================
+ * AI Linc cinematic design system — scoped to the /setup wizard only.
+ * Mirrors the tokens & utilities from ailinc-web so the first-login
+ * experience matches the marketing site. Wrapper: <div class="ailinc-wizard">.
+ * ======================================================================= */
+.ailinc-wizard {
+  /* Theme tokens */
+  --aw-bg-0: 5 7 15;
+  --aw-bg-1: 10 14 28;
+  --aw-bg-2: 15 20 38;
+  --aw-bg-3: 22 28 51;
+  --aw-fg: 233 236 246;
+  --aw-fg-dim: 154 163 192;
+  --aw-fg-mute: 95 104 133;
+  --aw-line: 255 255 255;
+  --aw-line-alpha: 0.08;
+  --aw-line-2-alpha: 0.14;
+  --aw-grad: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  --aw-radial-1: rgba(0, 224, 255, 0.10);
+  --aw-radial-2: rgba(35, 86, 214, 0.18);
+  --aw-ease: cubic-bezier(.16, 1, .3, 1);
+
+  background: rgb(var(--aw-bg-0));
+  color: rgb(var(--aw-fg));
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+.ailinc-wizard *::selection { background: #00e0ff; color: #05070f; }
+
+/* Surface backdrop (radial glows behind everything) */
+.ailinc-wizard::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60% 50% at 80% 30%, var(--aw-radial-1) 0%, transparent 60%),
+    radial-gradient(50% 40% at 15% 70%, var(--aw-radial-2) 0%, transparent 60%);
+}
+
+/* Grain overlay */
+.ailinc-wizard::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+.ailinc-wizard > * { position: relative; z-index: 2; }
+
+/* Typography */
+.ailinc-wizard .aw-serif {
+  font-family: 'Fraunces', 'Times New Roman', Georgia, serif;
+  font-variation-settings: "opsz" 144;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+.ailinc-wizard .aw-mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
+
+/* Kicker pill */
+.ailinc-wizard .aw-kicker {
+  display: inline-flex;
+  align-items: center;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: #00e0ff;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 224, 255, 0.25);
+  background: rgba(0, 224, 255, 0.04);
+}
+
+/* Gradient text */
+.ailinc-wizard .aw-gradient-text {
+  background: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Generic dim/mute text */
+.ailinc-wizard .aw-text { color: rgb(var(--aw-fg)); }
+.ailinc-wizard .aw-text-dim { color: rgb(var(--aw-fg-dim)); }
+.ailinc-wizard .aw-text-mute { color: rgb(var(--aw-fg-mute)); }
+
+/* Card */
+.ailinc-wizard .aw-card {
+  position: relative;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(8px);
+}
+.ailinc-wizard .aw-card-thin { padding: 18px; }
+.ailinc-wizard .aw-card-top-line {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.4), transparent);
+  pointer-events: none;
+}
+
+/* Inputs */
+.ailinc-wizard .aw-input,
+.ailinc-wizard .aw-textarea,
+.ailinc-wizard .aw-select {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  color: rgb(var(--aw-fg));
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  border-radius: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  font-family: inherit;
+}
+.ailinc-wizard .aw-textarea { resize: vertical; min-height: 80px; }
+.ailinc-wizard .aw-input::placeholder,
+.ailinc-wizard .aw-textarea::placeholder { color: rgb(var(--aw-fg-mute)); }
+.ailinc-wizard .aw-input:focus,
+.ailinc-wizard .aw-textarea:focus,
+.ailinc-wizard .aw-select:focus {
+  border-color: rgba(0, 224, 255, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+}
+.ailinc-wizard .aw-select option {
+  background: rgb(var(--aw-bg-1));
+  color: rgb(var(--aw-fg));
+}
+
+/* Label above inputs */
+.ailinc-wizard .aw-label {
+  display: block;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: rgb(var(--aw-fg-dim));
+  margin-bottom: 8px;
+}
+.ailinc-wizard .aw-help {
+  font-size: 12px;
+  color: rgb(var(--aw-fg-mute));
+  margin-top: 6px;
+}
+
+/* Buttons */
+.ailinc-wizard .aw-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s var(--aw-ease);
+  white-space: nowrap;
+}
+.ailinc-wizard .aw-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ailinc-wizard .aw-btn-primary {
+  color: #05070f;
+  background: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  box-shadow: 0 6px 24px -8px rgba(0, 224, 255, 0.55);
+}
+.ailinc-wizard .aw-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px -8px rgba(0, 224, 255, 0.75);
+}
+.ailinc-wizard .aw-btn-ghost {
+  color: rgb(var(--aw-fg-dim));
+  background: transparent;
+  border-color: rgba(255, 255, 255, var(--aw-line-alpha));
+}
+.ailinc-wizard .aw-btn-ghost:hover:not(:disabled) {
+  color: rgb(var(--aw-fg));
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, var(--aw-line-2-alpha));
+}
+
+/* Toggle / selectable chip */
+.ailinc-wizard .aw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: rgb(var(--aw-fg-dim));
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s var(--aw-ease);
+  font-family: inherit;
+}
+.ailinc-wizard .aw-chip:hover {
+  color: rgb(var(--aw-fg));
+  border-color: rgba(255, 255, 255, var(--aw-line-2-alpha));
+}
+.ailinc-wizard .aw-chip-active {
+  color: #05070f;
+  background: linear-gradient(135deg, rgba(0, 224, 255, 0.95), rgba(35, 86, 214, 0.85));
+  border-color: rgba(0, 224, 255, 0.6);
+}
+
+/* Option / radio card */
+.ailinc-wizard .aw-option {
+  position: relative;
+  display: block;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: all 0.2s var(--aw-ease);
+}
+.ailinc-wizard .aw-option:hover {
+  border-color: rgba(255, 255, 255, var(--aw-line-2-alpha));
+  background: rgba(255, 255, 255, 0.035);
+}
+.ailinc-wizard .aw-option-active {
+  border-color: rgba(0, 224, 255, 0.5);
+  background: rgba(0, 224, 255, 0.06);
+  box-shadow: 0 8px 30px -10px rgba(0, 224, 255, 0.25);
+}
+
+/* Borders */
+.ailinc-wizard .aw-border { border-color: rgba(255, 255, 255, var(--aw-line-alpha)) !important; }
+.ailinc-wizard .aw-border-2 { border-color: rgba(255, 255, 255, var(--aw-line-2-alpha)) !important; }
+
+/* Progress bar */
+.ailinc-wizard .aw-progress-track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.ailinc-wizard .aw-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  transition: width 0.6s var(--aw-ease);
+}
+
+/* Stepper dots */
+.ailinc-wizard .aw-step-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 9999px;
+  transition: background 0.3s var(--aw-ease), transform 0.3s var(--aw-ease);
+}
+.ailinc-wizard .aw-step-bar-todo { background: rgba(255, 255, 255, 0.08); }
+.ailinc-wizard .aw-step-bar-active-bg {
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.55);
+}
+.ailinc-wizard .aw-step-bar-active {
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.55);
+}
+.ailinc-wizard .aw-step-bar-done { background: rgba(0, 224, 255, 0.5); }
+
+/* ---- Enhancements: cinematic motion + flourishes ------------------- */
+
+/* Massive serif step watermark (e.g. "02" pinned to the side) */
+.ailinc-wizard .aw-watermark {
+  position: absolute;
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: "opsz" 144;
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  font-size: clamp(120px, 18vw, 280px);
+  line-height: 0.85;
+  color: transparent;
+  background: linear-gradient(180deg,
+    rgba(0, 224, 255, 0.28) 0%,
+    rgba(35, 86, 214, 0.18) 40%,
+    rgba(0, 224, 255, 0.04) 75%,
+    transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  filter: drop-shadow(0 0 60px rgba(0, 224, 255, 0.08));
+}
+
+/* Step bar refinements — thinner, more refined */
+.ailinc-wizard .aw-step-bar {
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.ailinc-wizard .aw-step-bar-active {
+  width: 56px;
+  height: 3px;
+  transform: none;
+}
+.ailinc-wizard .aw-step-bar-done:hover {
+  background: linear-gradient(90deg, rgba(0, 224, 255, 0.85), rgba(35, 86, 214, 0.85));
+  width: 28px;
+  transition: all 0.3s var(--aw-ease);
+}
+
+/* Terminal-style corner bracket */
+.ailinc-wizard .aw-bracket {
+  position: relative;
+}
+.ailinc-wizard .aw-bracket::before,
+.ailinc-wizard .aw-bracket::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0, 224, 255, 0.6);
+  transition: all 0.4s var(--aw-ease);
+}
+.ailinc-wizard .aw-bracket::before {
+  top: -6px;
+  left: -8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.ailinc-wizard .aw-bracket::after {
+  bottom: -6px;
+  right: -8px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Marquee strip (continuous horizontal scroll) */
+@keyframes aw-marquee-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.ailinc-wizard .aw-marquee {
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+.ailinc-wizard .aw-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: aw-marquee-scroll 80s linear infinite;
+}
+.ailinc-wizard .aw-marquee:hover .aw-marquee-track {
+  animation-play-state: paused;
+}
+
+/* Pulse dot for "live" status */
+@keyframes aw-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+.ailinc-wizard .aw-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e0ff;
+  box-shadow: 0 0 8px rgba(0, 224, 255, 0.7);
+  animation: aw-pulse-dot 2s ease-in-out infinite;
+}
+
+/* Card hover glow (auto-applied on .aw-card-hover) */
+.ailinc-wizard .aw-card-hover {
+  transition:
+    transform 0.4s var(--aw-ease),
+    border-color 0.3s var(--aw-ease),
+    box-shadow 0.4s var(--aw-ease);
+}
+.ailinc-wizard .aw-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 224, 255, 0.25);
+  box-shadow: 0 12px 36px -16px rgba(0, 224, 255, 0.35);
+}
+
+/* Field group section divider */
+.ailinc-wizard .aw-divider {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  margin: 28px 0;
+}
+.ailinc-wizard .aw-divider-cyan {
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.32), transparent);
+}
+
+/* Mini kicker (inside a card, smaller than .aw-kicker) */
+.ailinc-wizard .aw-kicker-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: rgb(154, 163, 192);
+}
+
+/* Step shortcuts pill row (clickable mini-nav inside header) */
+.ailinc-wizard .aw-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  color: rgb(95, 104, 133);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s var(--aw-ease);
+}
+.ailinc-wizard .aw-shortcut-done {
+  color: rgba(0, 224, 255, 0.85);
+  border-color: rgba(0, 224, 255, 0.18);
+  background: rgba(0, 224, 255, 0.04);
+}
+.ailinc-wizard .aw-shortcut-done:hover {
+  color: #00e0ff;
+  border-color: rgba(0, 224, 255, 0.4);
+}
+.ailinc-wizard .aw-shortcut-active {
+  color: #05070f;
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 4px 16px -4px rgba(0, 224, 255, 0.55);
+  cursor: default;
+}
+.ailinc-wizard .aw-shortcut-todo {
+  cursor: not-allowed;
+}
+
+/* Aurora top accent (slowly drifting gradient line) */
+@keyframes aw-aurora-shift {
+  0%, 100% { transform: translateX(-30%); }
+  50% { transform: translateX(30%); }
+}
+.ailinc-wizard .aw-aurora {
+  position: absolute;
+  top: 0;
+  left: -10%;
+  right: -10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.65), rgba(35, 86, 214, 0.45), transparent);
+  animation: aw-aurora-shift 12s ease-in-out infinite;
+  filter: blur(0.5px);
+}
+
+/* Subtle background grid (under everything inside the scope) */
+.ailinc-wizard .aw-grid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);
+}
+
+/* Scanline shimmer on hero title (one-time on mount) */
+@keyframes aw-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.ailinc-wizard .aw-shimmer {
+  background: linear-gradient(110deg, rgb(var(--aw-fg)) 35%, rgba(0, 224, 255, 0.9) 50%, rgb(var(--aw-fg)) 65%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aw-shimmer 4s ease-out 0.4s 1;
+}
+
+/* Save status indicator with breathing animation */
+@keyframes aw-breath {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.ailinc-wizard .aw-saving {
+  animation: aw-breath 1.4s ease-in-out infinite;
+}
+
+/* Focus ring on inputs becomes cyan glow */
+.ailinc-wizard .aw-input:focus,
+.ailinc-wizard .aw-textarea:focus,
+.ailinc-wizard .aw-select:focus {
+  box-shadow: 0 0 0 4px rgba(0, 224, 255, 0.08), 0 0 24px -8px rgba(0, 224, 255, 0.5);
+}
+
+/* Tip card variant */
+.ailinc-wizard .aw-tip {
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(0, 224, 255, 0.06) 0%, rgba(0, 224, 255, 0.01) 100%);
+}
+.ailinc-wizard .aw-tip::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.4), transparent);
+}

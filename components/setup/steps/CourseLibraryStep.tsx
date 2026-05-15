@@ -1,6 +1,20 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      delay: i * 0.08,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  }),
+};
 
 interface Props {
   data: WizardData;
@@ -32,48 +46,57 @@ const OPTIONS: {
 export function CourseLibraryStep({ data, onChange }: Props) {
   const lib = data.course_library || {};
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-600">
+    <div className="space-y-5">
+      <p className="aw-text-dim text-[14px] leading-[1.65]">
         Choose how to populate your course library. You can switch approaches
         or mix and match anytime.
       </p>
 
       <div className="space-y-3">
-        {OPTIONS.map((opt) => {
+        {OPTIONS.map((opt, i) => {
           const on = lib.choice === opt.value;
           return (
-            <button
+            <motion.button
               key={opt.value}
+              custom={i}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
               type="button"
               onClick={() =>
                 onChange({
                   course_library: { ...lib, choice: opt.value },
                 })
               }
-              className={`flex w-full items-start gap-4 rounded-xl border p-4 text-left transition ${
-                on
-                  ? "border-[var(--primary-500,#2356d6)] bg-[var(--primary-50,#eff6ff)]"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+              className={`aw-option aw-card-hover flex w-full items-start gap-4 text-left ${
+                on ? "aw-option-active" : ""
               }`}
             >
               <div
-                className={`mt-1 grid h-5 w-5 place-items-center rounded-full border ${
-                  on
-                    ? "border-[var(--primary-500,#2356d6)] bg-[var(--primary-500,#2356d6)]"
-                    : "border-gray-300 bg-white"
-                }`}
+                className="mt-1 grid h-5 w-5 place-items-center rounded-full transition"
+                style={{
+                  border: on
+                    ? "1px solid #00e0ff"
+                    : "1px solid rgba(255,255,255,0.18)",
+                  background: on
+                    ? "linear-gradient(135deg, #00e0ff, #2356d6)"
+                    : "transparent",
+                }}
               >
                 {on ? (
-                  <span className="h-2 w-2 rounded-full bg-white" />
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: "#05070f" }}
+                  />
                 ) : null}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">
-                  {opt.label}
+                <p className="aw-text text-[14px] font-semibold">{opt.label}</p>
+                <p className="aw-text-mute mt-1 text-[12px] leading-relaxed">
+                  {opt.desc}
                 </p>
-                <p className="mt-0.5 text-xs text-gray-500">{opt.desc}</p>
               </div>
-            </button>
+            </motion.button>
           );
         })}
       </div>

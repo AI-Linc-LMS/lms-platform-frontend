@@ -157,11 +157,14 @@ export function SetupWizard({ initialState }: Props) {
       title={STEP_TITLES[step - 1]}
       description={STEP_DESCRIPTIONS[step - 1]}
       saving={saving}
+      onJumpToStep={jumpTo}
     >
       {step === 1 ? (
         <WelcomeStep state={state} data={data} onChange={updateData} />
       ) : null}
-      {step === 2 ? <BrandStep data={data} onChange={updateData} /> : null}
+      {step === 2 ? (
+        <BrandStep state={state} data={data} onChange={updateData} />
+      ) : null}
       {step === 3 ? <UrlStep state={state} data={data} onChange={updateData} /> : null}
       {step === 4 ? <ThemeStep data={data} onChange={updateData} /> : null}
       {step === 5 ? <FeaturesStep data={data} onChange={updateData} /> : null}
@@ -172,7 +175,20 @@ export function SetupWizard({ initialState }: Props) {
       ) : null}
 
       {launchError ? (
-        <p className="mt-6 text-sm text-red-600">{launchError}</p>
+        <div
+          className="mt-6 rounded-xl px-4 py-3"
+          style={{
+            border: "1px solid rgba(248, 113, 113, 0.3)",
+            background: "rgba(248, 113, 113, 0.08)",
+          }}
+        >
+          <p className="aw-mono text-[11px] uppercase tracking-[0.22em] text-[#ff8a8a]">
+            Launch failed
+          </p>
+          <p className="aw-text-dim mt-1 text-[13px] leading-relaxed">
+            {launchError}
+          </p>
+        </div>
       ) : null}
 
       <WizardNav

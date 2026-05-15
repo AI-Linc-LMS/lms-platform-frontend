@@ -8,11 +8,23 @@ import { SetupWizard } from "@/components/setup/SetupWizard";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 
+const FRAUNCES_HREF =
+  "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap";
+
 export default function SetupPage() {
   const router = useRouter();
   const { isAuthenticated, loading: isLoading } = useAuth();
   const [state, setState] = useState<WizardState | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Inject Fraunces (the AI Linc display serif) only while the wizard is mounted.
+  useEffect(() => {
+    if (document.querySelector(`link[href="${FRAUNCES_HREF}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = FRAUNCES_HREF;
+    document.head.appendChild(link);
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
@@ -39,8 +51,7 @@ export default function SetupPage() {
       } catch (e: any) {
         if (!cancelled) {
           setError(
-            e?.response?.data?.detail ||
-              "Could not load the setup wizard."
+            e?.response?.data?.detail || "Could not load the setup wizard."
           );
         }
       }
@@ -52,10 +63,10 @@ export default function SetupPage() {
 
   if (error) {
     return (
-      <div className="grid min-h-screen place-items-center px-6">
-        <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-700">
-          <h2 className="text-lg font-semibold">Setup unavailable</h2>
-          <p className="mt-2 text-sm">{error}</p>
+      <div className="ailinc-wizard grid place-items-center px-6">
+        <div className="aw-card max-w-md text-center">
+          <span className="aw-kicker mb-3">Setup unavailable</span>
+          <p className="aw-text-dim mt-2 text-[14px] leading-relaxed">{error}</p>
         </div>
       </div>
     );
@@ -63,13 +74,50 @@ export default function SetupPage() {
 
   if (!state) {
     return (
-      <div className="grid min-h-screen place-items-center">
-        <p className="font-mono text-xs uppercase tracking-widest text-gray-500">
-          Loading setup wizard…
-        </p>
+      <div className="ailinc-wizard grid place-items-center">
+        <div className="aw-grid-bg" aria-hidden />
+        <div className="relative flex flex-col items-center gap-6">
+          <div className="aw-bracket inline-block px-6 py-4">
+            <span
+              className="aw-serif"
+              style={{
+                fontSize: "clamp(48px, 6vw, 80px)",
+                background:
+                  "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+                lineHeight: 1,
+              }}
+            >
+              AI LINC
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="aw-pulse-dot" aria-hidden />
+            <p className="aw-mono aw-text-dim text-[11px] uppercase tracking-[0.32em]">
+              Preparing your launch sequence
+            </p>
+          </div>
+          <div className="mt-2 h-[2px] w-48 overflow-hidden rounded-full bg-white/[0.06]">
+            <div
+              className="h-full"
+              style={{
+                width: "40%",
+                background:
+                  "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)",
+                animation: "aw-marquee-scroll 1.6s ease-in-out infinite",
+              }}
+            />
+          </div>
+        </div>
       </div>
     );
   }
 
-  return <SetupWizard initialState={state} />;
+  return (
+    <div className="ailinc-wizard">
+      <SetupWizard initialState={state} />
+    </div>
+  );
 }

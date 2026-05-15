@@ -1,7 +1,22 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { WizardState } from "@/lib/services/wizard.service";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
 interface Props {
   state: WizardState;
@@ -12,32 +27,54 @@ interface Props {
 export function UrlStep({ state, data, onChange }: Props) {
   const url = data.url || {};
   return (
-    <div className="space-y-8">
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
+      <motion.div variants={itemVariants} className="aw-card aw-card-hover">
+        <span className="aw-card-top-line" aria-hidden />
+        <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
           Your AI Linc subdomain
         </p>
-        <p className="mt-3 text-lg font-mono text-[var(--primary-700,#1e3a8a)]">
+        <p
+          className="aw-mono mt-4 text-[clamp(20px,3vw,28px)]"
+          style={{
+            background: "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
+        >
           {state.subdomain}.ailinc.com
         </p>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="aw-text-dim mt-3 text-[13px] leading-[1.65]">
           Assigned by your AI Linc super-admin. This URL is permanent.
         </p>
-      </div>
+      </motion.div>
 
-      <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+      <motion.div
+        variants={itemVariants}
+        className="rounded-2xl p-7"
+        style={{
+          border: "1px dashed rgba(255, 255, 255, 0.12)",
+          background: "rgba(255, 255, 255, 0.015)",
+        }}
+      >
+        <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
           Bring your own domain (optional)
         </p>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="aw-text-dim mt-3 text-[14px] leading-[1.65]">
           Point a domain you own at AI Linc. You can do this now or anytime
           later from Settings → Domain.
         </p>
-        <label className="mt-4 block">
-          <span className="text-sm font-medium text-gray-700">
+        <div className="mt-5">
+          <label className="aw-label" htmlFor="custom-domain">
             Custom domain
-          </span>
+          </label>
           <input
+            id="custom-domain"
             type="text"
             placeholder="learn.your-org.com"
             value={url.custom_domain || ""}
@@ -46,21 +83,34 @@ export function UrlStep({ state, data, onChange }: Props) {
                 url: { ...url, custom_domain: e.target.value.trim() },
               })
             }
-            className="mt-1.5 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-[var(--primary-500,#2356d6)] focus:ring-1 focus:ring-[var(--primary-500,#2356d6)]"
+            className="aw-input"
           />
-        </label>
+        </div>
         {url.custom_domain ? (
-          <div className="mt-4 rounded-lg bg-white border border-gray-200 p-3 text-xs text-gray-600">
-            <p className="font-medium text-gray-800">DNS instructions</p>
-            <p className="mt-1">
+          <div
+            className="mt-5 rounded-[14px] p-4"
+            style={{
+              border: "1px solid rgba(0, 224, 255, 0.18)",
+              background: "rgba(0, 224, 255, 0.04)",
+            }}
+          >
+            <p className="aw-mono text-[10px] uppercase tracking-[0.3em] text-[#00e0ff]">
+              DNS instructions
+            </p>
+            <p className="aw-text-dim mt-2 text-[12px] leading-relaxed">
               Add a CNAME record pointing{" "}
-              <code className="rounded bg-gray-100 px-1">{url.custom_domain}</code>{" "}
-              → <code className="rounded bg-gray-100 px-1">tenants.ailinc.com</code>.
-              We&apos;ll auto-provision an SSL certificate once DNS resolves.
+              <code className="aw-mono rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] text-[rgb(var(--aw-fg))]">
+                {url.custom_domain}
+              </code>{" "}
+              →{" "}
+              <code className="aw-mono rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] text-[rgb(var(--aw-fg))]">
+                tenants.ailinc.com
+              </code>
+              . We&apos;ll auto-provision an SSL certificate once DNS resolves.
             </p>
           </div>
         ) : null}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

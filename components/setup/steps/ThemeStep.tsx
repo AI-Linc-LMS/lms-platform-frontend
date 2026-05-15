@@ -1,8 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { wizardService } from "@/lib/services/wizard.service";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
 interface Props {
   data: WizardData;
@@ -27,71 +42,93 @@ export function ThemeStep({ data, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-3">Template</p>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
+      <motion.div variants={itemVariants}>
+        <p className="aw-label">Template</p>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {TEMPLATES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => set({ template: t.value })}
-              className={`rounded-xl border p-4 text-left transition ${
-                theme.template === t.value
-                  ? "border-[var(--primary-500,#2356d6)] bg-[var(--primary-50,#eff6ff)]"
-                  : "border-gray-200 bg-white hover:border-gray-300"
-              }`}
-            >
-              <p className="text-sm font-semibold text-gray-900">{t.label}</p>
-              <p className="mt-1 text-xs text-gray-500">{t.desc}</p>
-            </button>
-          ))}
+          {TEMPLATES.map((t) => {
+            const active = theme.template === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => set({ template: t.value })}
+                className={`aw-option aw-card-hover text-left ${active ? "aw-option-active" : ""}`}
+              >
+                <p className="aw-text text-[14px] font-semibold">{t.label}</p>
+                <p className="aw-text-mute mt-1.5 text-[11px] leading-relaxed">
+                  {t.desc}
+                </p>
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </motion.div>
 
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-3">Default mode</p>
-        <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-          {(["light", "dark"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => set({ default_mode: mode })}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-                (theme.default_mode || "light") === mode
-                  ? "bg-white shadow-sm text-gray-900"
-                  : "text-gray-600"
-              }`}
-            >
-              {mode === "light" ? "Light" : "Dark"}
-            </button>
-          ))}
+      <motion.div variants={itemVariants}>
+        <p className="aw-label">Default mode</p>
+        <div
+          className="inline-flex rounded-full p-1"
+          style={{
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.02)",
+          }}
+        >
+          {(["light", "dark"] as const).map((mode) => {
+            const active = (theme.default_mode || "light") === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => set({ default_mode: mode })}
+                className="aw-mono px-4 py-1.5 rounded-full text-[11px] uppercase tracking-[0.22em] transition-colors"
+                style={{
+                  color: active ? "#05070f" : "rgb(154,163,192)",
+                  background: active
+                    ? "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)"
+                    : "transparent",
+                }}
+              >
+                {mode}
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </motion.div>
 
-      <div>
-        <label className="block">
-          <span className="text-sm font-medium text-gray-700">
-            Welcome message
-          </span>
-          <p className="text-xs text-gray-500">
-            Shown on the login screen and learner dashboard.
-          </p>
-          <textarea
-            rows={3}
-            maxLength={200}
-            placeholder="Welcome to Acme Learning. Build real skills with AI tutors."
-            value={theme.welcome_message || ""}
-            onChange={(e) => set({ welcome_message: e.target.value })}
-            className="mt-1.5 block w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-[var(--primary-500,#2356d6)] focus:ring-1 focus:ring-[var(--primary-500,#2356d6)]"
-          />
+      <motion.div variants={itemVariants}>
+        <label className="aw-label" htmlFor="welcome-message">
+          Welcome message
         </label>
-      </div>
+        <p className="aw-help -mt-1 mb-2">
+          Shown on the login screen and learner dashboard.
+        </p>
+        <textarea
+          id="welcome-message"
+          rows={3}
+          maxLength={200}
+          placeholder="Welcome to Acme Learning. Build real skills with AI tutors."
+          value={theme.welcome_message || ""}
+          onChange={(e) => set({ welcome_message: e.target.value })}
+          className="aw-textarea"
+        />
+      </motion.div>
 
-      <div>
-        <p className="text-sm font-medium text-gray-700">Hero image (optional)</p>
-        <div className="mt-2 flex items-center gap-4">
-          <div className="grid h-20 w-32 place-items-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+      <motion.div variants={itemVariants}>
+        <p className="aw-label">Hero image (optional)</p>
+        <div className="mt-3 flex items-center gap-4">
+          <div
+            className="grid h-20 w-32 place-items-center overflow-hidden rounded-[14px]"
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.02)",
+            }}
+          >
             {theme.hero_image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -100,10 +137,12 @@ export function ThemeStep({ data, onChange }: Props) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-xs text-gray-400">No image</span>
+              <span className="aw-mono aw-text-mute text-[11px] uppercase tracking-[0.22em]">
+                No image
+              </span>
             )}
           </div>
-          <label className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+          <label className="aw-btn aw-btn-ghost cursor-pointer">
             {uploading ? "Uploading…" : theme.hero_image_url ? "Replace" : "Upload"}
             <input
               type="file"
@@ -127,7 +166,7 @@ export function ThemeStep({ data, onChange }: Props) {
             />
           </label>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
