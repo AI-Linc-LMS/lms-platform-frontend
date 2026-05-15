@@ -51,15 +51,20 @@ interface ThreadCardProps {
   onBookmark?: (threadId: number) => Promise<void>;
   onPollVote?: (threadId: number, optionIndex: number) => Promise<void>;
   onComment?: (threadId: number, body: string) => Promise<void>;
+  onOfferBounty?: (threadId: number) => void;
+  currentUserName?: string | null;
 }
 
-export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment }: ThreadCardProps) {
+export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, onOfferBounty, currentUserName }: ThreadCardProps) {
   const router = useRouter();
   const { t } = useTranslation("common");
 
   const isSaving = thread.id < 0;
   const isPoll = thread.post_type === "poll" && !!thread.poll_options?.length;
   const isBodyLong = (thread.body?.length ?? 0) > 400;
+  const hasBounty = !!thread.bounty && thread.bounty.status === "active";
+  const isAuthor = !!currentUserName && thread.author.user_name === currentUserName;
+  const canOfferBounty = isAuthor && thread.post_type === "question" && !hasBounty && !isSaving;
 
   const handleThreadClick = () => {
     if (isSaving) return;
@@ -140,6 +145,20 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment }
                 <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", whiteSpace: "nowrap", flexShrink: 0 }}>
                   Saving…
                 </Typography>
+              )}
+              {hasBounty && (
+                <Box
+                  sx={{
+                    display: "flex", alignItems: "center", gap: 0.4, flexShrink: 0,
+                    backgroundColor: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)",
+                    borderRadius: "20px", px: 0.9, py: 0.2,
+                  }}
+                >
+                  <IconWrapper icon="mdi:fire" size={12} color="#f59e0b" />
+                  <Typography variant="caption" fontWeight={700} sx={{ color: "#f59e0b", fontSize: "0.7rem" }}>
+                    +{thread.bounty!.points} IP
+                  </Typography>
+                </Box>
               )}
             </Box>
 
@@ -247,6 +266,23 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment }
                   </Box>
                 </Tooltip>
 
+                {canOfferBounty && onOfferBounty && (
+                  <Tooltip title="Offer a bounty to get answers faster">
+                    <Box
+                      onClick={() => onOfferBounty(thread.id)}
+                      sx={{
+                        display: "flex", alignItems: "center", gap: 0.4, cursor: "pointer",
+                        px: 0.9, py: 0.3, borderRadius: "6px",
+                        "&:hover": { backgroundColor: "rgba(245,158,11,0.08)" },
+                      }}
+                    >
+                      <IconWrapper icon="mdi:fire-outline" size={15} color="var(--font-secondary)" />
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.73rem" }}>
+                        Bounty
+                      </Typography>
+                    </Box>
+                  </Tooltip>
+                )}
                 {onBookmark && !isSaving && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                     <Tooltip title={thread.user_bookmarked ? t("community.removeBookmark") : t("community.bookmark")}>

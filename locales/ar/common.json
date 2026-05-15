@@ -1064,7 +1064,8 @@
     "createThread": "إنشاء النقاش",
     "reply": "رد",
     "writeReplyPlaceholder": "اكتب ردك...",
-    "postReply": "نشر الرد"
+    "postReply": "نشر الرد",
+    "failedToAcceptAnswer": "فشل تحديث الإجابة المقبولة"
   },
   "manageStudents": {
     "failedToLoadStudent": "فشل تحميل تفاصيل الطالب",
