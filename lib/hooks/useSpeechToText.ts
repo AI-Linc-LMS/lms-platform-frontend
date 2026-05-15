@@ -164,6 +164,11 @@ export function useSpeechToText(
   const wantsListeningRef = useRef(false);
   const startedRef = useRef(false);
   const whisperFailedRef = useRef(false);
+  // True once Whisper has been PROMOTED to the active transcriber — i.e. browser STT either
+  // isn't available (Safari/Firefox) or has exhausted its retry budget. Whisper is "on hold"
+  // until this flips to true, which avoids burning OpenAI quota on every working Chrome
+  // session. Once active, the watchdog keeps Whisper alive the same way it used to.
+  const whisperActiveRef = useRef(false);
   const pausedRef = useRef(paused);
   const onFinalRef = useRef(onFinal);
   const onInterimRef = useRef(onInterim);
@@ -255,19 +260,29 @@ export function useSpeechToText(
     if (browserSttDisabledRef.current || !wantsListeningRef.current) return;
     const attempt = consecutiveErrorsRef.current;
     if (attempt > MAX_BROWSER_STT_RETRIES) {
+      // Browser STT exhausted retries. Promote Whisper to active transcriber if allowed,
+      // otherwise drop to typing fallback. This is the main "Edge gives `network` repeatedly,
+      // so switch to OpenAI's Whisper" path — exactly the case the user asked us to handle.
       browserSttDisabledRef.current = true;
-      setNeedsTypingFallback(true);
-      // If Whisper is also unavailable, fully unavailable. Otherwise hand off.
-      setMode(whisperFailedRef.current ? "unavailable" : "whisper-only");
       const wasNetwork = lastErrorTypeRef.current === "network";
+
+      if (preferWhisper && !whisperFailedRef.current) {
+        whisperActiveRef.current = true;
+        setMode("whisper-only");
+        // Kick Whisper on in the background. The recorder will start producing chunks
+        // every WHISPER_CHUNK_MS and pipe transcripts through the same onFinal callback.
+        void startWhisperRecording();
+        // No UI error — Whisper is taking over silently. The user keeps talking.
+        return;
+      }
+
+      // Whisper isn't an option (disabled or already failed) — surface the typing fallback.
+      setNeedsTypingFallback(true);
+      setMode("unavailable");
       setError(
-        whisperFailedRef.current
-          ? wasNetwork
-            ? "Speech recognition needs internet. Check your connection and type your answer."
-            : "Speech recognition unavailable — please type your answer."
-          : wasNetwork
-            ? "Speech recognition is offline — your typed answer or recorded voice will still be saved."
-            : "Speech recognition is having trouble — your typed answer or recorded voice will still be saved."
+        wasNetwork
+          ? "Speech recognition needs internet. Check your connection and type your answer."
+          : "Speech recognition unavailable — please type your answer."
       );
       return;
     }
@@ -278,7 +293,11 @@ export function useSpeechToText(
       if (!rec || !wantsListeningRef.current || pausedRef.current) return;
       tryStartRecognition(rec);
     }, delay);
-  }, [clearRetryTimeout, tryStartRecognition]);
+    // `startWhisperRecording` is referenced in the body above but defined LATER in this
+    // component scope. JS closures resolve names at call time, so it works at runtime
+    // (matches the existing `attachRecorder` ↔ `ensureWhisperRunning` pattern in this file).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearRetryTimeout, tryStartRecognition, preferWhisper]);
 
   const startBrowserStt = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -325,7 +344,10 @@ export function useSpeechToText(
       const combined = final || interim;
       if (combined) {
         onInterimRef.current?.(combined);
-        if (final && (!preferWhisper || whisperFailedRef.current)) {
+        // Browser STT is the PRIMARY transcriber now — accept its final transcript
+        // unconditionally. Whisper runs as a fallback only after browser STT exhausts its
+        // retry budget, so the two never both emit finals for the same speech window.
+        if (final) {
           setTranscript((prev) => (prev ? `${prev} ${final.trim()}` : final.trim()));
           onFinalRef.current?.(final.trim());
         }
@@ -606,11 +628,43 @@ export function useSpeechToText(
     lastErrorTypeRef.current = null;
     whisperFailedRef.current = false;
     whisperConsecutiveFailuresRef.current = 0;
-    if (!pausedRef.current) {
+    whisperActiveRef.current = false;
+    if (pausedRef.current) return;
+
+    // Browser STT is the primary path; Whisper stays on hold and only takes over if
+    // browser STT is unsupported (Safari/Firefox) or fails permanently (Edge `network`
+    // bug, exhausted retries, etc.). This keeps OpenAI cost at zero for the common case
+    // while preserving the fallback for browsers that need it.
+    const Win = typeof window !== "undefined"
+      ? (window as Window & {
+          SpeechRecognition?: new () => SpeechRecognitionInstance;
+          webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+        })
+      : null;
+    const hasBrowserStt = !!(Win?.SpeechRecognition ?? Win?.webkitSpeechRecognition);
+
+    if (hasBrowserStt) {
       startBrowserStt();
-      startWhisperRecording();
+      // Whisper deliberately NOT started here. It is promoted later by `scheduleRetry`
+      // (after MAX_BROWSER_STT_RETRIES) or by the explicit no-support branch below.
+      return;
     }
-  }, [startBrowserStt, startWhisperRecording]);
+
+    if (preferWhisper) {
+      // No native STT in this browser — promote Whisper to active transcriber immediately.
+      browserSttDisabledRef.current = true;
+      whisperActiveRef.current = true;
+      setMode("whisper-only");
+      startWhisperRecording();
+      return;
+    }
+
+    // No browser STT and Whisper not allowed — the user must type their answer.
+    browserSttDisabledRef.current = true;
+    setMode("unavailable");
+    setError("Speech recognition is not supported in this browser. Please type your answer.");
+    setNeedsTypingFallback(true);
+  }, [startBrowserStt, startWhisperRecording, preferWhisper]);
 
   const stop = useCallback(() => {
     startedRef.current = false;
@@ -642,9 +696,12 @@ export function useSpeechToText(
     const timer = setTimeout(() => {
       if (cancelled || pausedRef.current) return;
       if (!browserSttDisabledRef.current) startBrowserStt();
-      // ensureWhisperRunning handles every case: existing live stream, dead
-      // stream that needs re-acquisition, fresh start.
-      void ensureWhisperRunning();
+      // Whisper only resumes when it's the active fallback. If browser STT is still
+      // healthy, Whisper stays idle and the avatar's TTS-driven pause doesn't trigger
+      // an unnecessary Whisper start.
+      if (whisperActiveRef.current && !whisperFailedRef.current) {
+        void ensureWhisperRunning();
+      }
     }, 0);
     return () => {
       cancelled = true;
@@ -669,8 +726,9 @@ export function useSpeechToText(
           }
         } catch {}
       }
-      // Whisper — only if it hasn't permanently failed
-      if (preferWhisper && !whisperFailedRef.current) {
+      // Whisper — only if it's been PROMOTED to active fallback. Whisper stays on hold
+      // when browser STT is healthy, so the watchdog doesn't spin it up speculatively.
+      if (whisperActiveRef.current && !whisperFailedRef.current) {
         const rec = mediaRecorderRef.current;
         const streamLive = streamIsAlive(streamRef.current);
         if (!rec || rec.state !== "recording" || !streamLive) {
