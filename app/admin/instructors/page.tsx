@@ -416,6 +416,7 @@ export default function InstructorsPage() {
       t("adminInstructors.columns.fullName"),
       t("adminInstructors.columns.phone"),
       t("adminInstructors.columns.createdAt"),
+      "CV",
     ];
     if (activeTab === "approved") cols.push(t("adminInstructors.columns.assignedCourses"));
     if (activeTab === "rejected") {
@@ -842,6 +843,43 @@ export default function InstructorsPage() {
                     </TableCell>
                     <TableCell sx={{ color: "var(--font-secondary)" }}>
                       {formatDate(row.created_at)}
+                    </TableCell>
+                    <TableCell>
+                      {row.instructor_cv_url ? (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          component="a"
+                          href={row.instructor_cv_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          startIcon={
+                            <IconWrapper icon="mdi:file-pdf-box" size={16} />
+                          }
+                          sx={{
+                            textTransform: "none",
+                            color: "var(--accent-indigo)",
+                            borderColor:
+                              "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                            "&:hover": {
+                              borderColor: "var(--accent-indigo)",
+                              backgroundColor:
+                                "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                            },
+                          }}
+                        >
+                          View CV
+                        </Button>
+                      ) : (
+                        <Typography
+                          sx={{
+                            color: "var(--font-secondary)",
+                            fontSize: "0.8125rem",
+                          }}
+                        >
+                          —
+                        </Typography>
+                      )}
                     </TableCell>
                     {activeTab === "approved" && (
                       <TableCell>
