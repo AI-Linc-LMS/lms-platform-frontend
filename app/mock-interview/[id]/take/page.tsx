@@ -8,6 +8,7 @@ import mockInterviewService, {
   MockInterviewDetail,
   InterviewQuestion,
   InterviewResponse,
+  NextQuestionResponse,
 } from "@/lib/services/mock-interview.service";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
@@ -45,6 +46,22 @@ export default function TakeMockInterviewPage() {
   const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
   const [showEndInterviewDialog, setShowEndInterviewDialog] = useState(false);
   const [isEndingInterview, setIsEndingInterview] = useState(false);
+
+  // Dynamic (turn-based) interview state. For legacy interviews these stay null/false and the
+  // page falls back to the existing 5-question, index-driven flow.
+  const [dynamicCurrentQuestion, setDynamicCurrentQuestion] =
+    useState<InterviewQuestion | null>(null);
+  const [dynamicTurnNumber, setDynamicTurnNumber] = useState<number>(1);
+  const [dynamicMaxTurns, setDynamicMaxTurns] = useState<number>(5);
+  const [dynamicIsFinalQuestion, setDynamicIsFinalQuestion] =
+    useState<boolean>(false);
+  // True after the backend has handed us the closing remark (a natural verbal wrap-up,
+  // NOT a question). When set:
+  //   - silence-based auto-advance is suppressed (we're not waiting for another answer)
+  //   - the action button reads "Submit Interview"
+  //   - the avatar speaks the closing remark via existing TTS pipeline
+  const [isClosingRemark, setIsClosingRemark] = useState<boolean>(false);
+  const [isFetchingNext, setIsFetchingNext] = useState(false);
 
   const isInitializingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -217,10 +234,55 @@ export default function TakeMockInterviewPage() {
   const { enterFullscreen, violations: fullscreenViolations } =
     useFullscreenMonitor();
 
+  // Whisper hallucinates well-known phrases on silent / very-quiet audio segments because
+  // its training corpus was YouTube/social-media-heavy. The candidate's transcript would
+  // get polluted with "Thank you for watching", "I hate that", "Please like and subscribe"
+  // etc. — exact phrases that never came out of the candidate's mouth. This sanitizer runs
+  // on every final STT chunk before it's appended to currentAnswer.
+  const sanitizeSttFragment = useCallback((raw: string): string => {
+    if (!raw) return "";
+    let cleaned = raw;
+    // Phrase-level removals. Case-insensitive, with optional surrounding punctuation. Order
+    // matters: remove longer multi-word phrases before single fragments so the latter don't
+    // shadow the former.
+    const hallucinationPatterns: RegExp[] = [
+      // YouTube boilerplate
+      /\b(?:thanks?|thank\s+you)\s+(?:so\s+much\s+)?for\s+watch(?:ing)?(?:\s+(?:this\s+video|the\s+video|today))?[!.]*/gi,
+      /\b(?:please\s+)?(?:don'?t\s+forget\s+to\s+)?(?:like\s+and\s+)?subscribe(?:\s+(?:to\s+(?:my|the|our)\s+channel|to\s+the\s+channel|now))?[!.]*/gi,
+      /\b(?:hit\s+the\s+)?(?:bell\s+icon|notification\s+bell)\b[!.]*/gi,
+      /\bclick\s+the\s+(?:link|button)\s+(?:below|in\s+the\s+description)\b[!.]*/gi,
+      /\bsee\s+you\s+(?:in\s+the\s+)?next\s+(?:video|time)[!.]*/gi,
+      // Social-media / chat hallucinations
+      /\bi\s+hate\s+that[!.]*/gi,
+      /\bi\s+love\s+you[!.]*/gi,
+      // Captioner placeholder noise
+      /[\[(](?:music|applause|laughter|silence|inaudible|sound\s+effect)[\])][!.]*/gi,
+      /^\s*(?:music|applause|laughter|silence|inaudible)\s*$/gim,
+      // Standalone "Bye." / "Bye-bye." sign-offs on a near-silent segment
+      /^\s*(?:bye[-\s]?bye|bye|goodbye)[!.]*\s*$/gim,
+    ];
+    for (const rx of hallucinationPatterns) {
+      cleaned = cleaned.replace(rx, " ");
+    }
+    // Collapse the whitespace left behind by removals, then trim. Multiple sequential
+    // hallucinations might leave 3+ spaces; we normalize to single spaces.
+    cleaned = cleaned.replace(/\s{2,}/g, " ").trim();
+    // If the entire chunk was a hallucination (e.g., the user was silent and Whisper just
+    // returned "Thank you for watching"), the cleaned text is empty — return "" so onFinal
+    // appends nothing instead of " " (which would otherwise widen the currentAnswer).
+    return cleaned;
+  }, []);
+
   const speechToText = useSpeechToText({
     onFinal: (text) => {
+      const cleaned = sanitizeSttFragment(text || "");
+      if (!cleaned) {
+        // Whole chunk was hallucinated boilerplate — discard, don't append.
+        setInterimTranscript("");
+        return;
+      }
       setCurrentAnswer((prev) =>
-        prev ? `${prev.trim()} ${text}`.trim() : text
+        prev ? `${prev.trim()} ${cleaned}`.trim() : cleaned
       );
       setInterimTranscript("");
     },
@@ -265,6 +327,26 @@ export default function TakeMockInterviewPage() {
 
   // Load interview data on mount: use sessionStorage if coming from device-check, else call start API
   useEffect(() => {
+    // Seed dynamic-mode state from a /start/ response. For legacy (non-dynamic) interviews
+    // this is a no-op and the existing index-driven flow takes over.
+    const applyDynamicSeed = (started: MockInterviewDetail) => {
+      if (!started.is_dynamic) return;
+      if (started.current_question) {
+        setDynamicCurrentQuestion(started.current_question);
+      }
+      if (typeof started.turn_number === "number") {
+        setDynamicTurnNumber(started.turn_number);
+      }
+      if (typeof started.max_turns === "number") {
+        setDynamicMaxTurns(started.max_turns);
+      }
+      // On a fresh dynamic interview, /start/ only returns the OPENING question. The opening
+      // is final only if max_turns is 1 (degenerate case).
+      const turnNo = started.turn_number ?? 1;
+      const maxT = started.max_turns ?? 5;
+      setDynamicIsFinalQuestion(turnNo >= maxT);
+    };
+
     const storageKey = `mockInterviewStarted_${interviewId}`;
     const cached = typeof window !== "undefined" ? sessionStorage.getItem(storageKey) : null;
 
@@ -275,6 +357,7 @@ export default function TakeMockInterviewPage() {
           sessionStorage.removeItem(storageKey);
           setInterview(startedInterview);
           setStartTime(new Date(startedInterview.started_at || new Date()));
+          applyDynamicSeed(startedInterview);
           return;
         }
       } catch {
@@ -290,7 +373,34 @@ export default function TakeMockInterviewPage() {
         );
         setInterview(startedInterview);
         setStartTime(new Date(startedInterview.started_at || new Date()));
+        applyDynamicSeed(startedInterview);
       } catch (error) {
+        // The /start/ endpoint returns 400 with a clear `error` field when the interview
+        // is already completed or has been cancelled. Route the candidate to the right
+        // place instead of showing a generic "Failed to load" + bounce. We use Axios's
+        // structured response shape; a non-Axios error or unexpected shape still falls
+        // through to the generic handler at the bottom.
+        const axiosErr = error as {
+          response?: { status?: number; data?: { error?: string } };
+        };
+        const status = axiosErr?.response?.status;
+        const serverMessage = (axiosErr?.response?.data?.error || "").toLowerCase();
+
+        if (status === 400 && serverMessage.includes("completed")) {
+          showToast(
+            "This interview is already complete — opening your results.",
+            "info"
+          );
+          router.push(`/mock-interview/${interviewId}/result`);
+          return;
+        }
+
+        if (status === 400 && serverMessage.includes("cancelled")) {
+          showToast("This interview was cancelled.", "warning");
+          router.push("/mock-interview");
+          return;
+        }
+
         showToast("Failed to load interview", "error");
         router.push("/mock-interview");
       } finally {
@@ -371,6 +481,8 @@ export default function TakeMockInterviewPage() {
     };
   }, [interviewStarted, isProctoringActive, showToast]);
 
+  const isDynamicInterview = !!interview?.is_dynamic;
+
   // Handle start interview
   const handleStartInterview = useCallback(async () => {
     if (isInitializingRef.current || !interview) return;
@@ -408,10 +520,17 @@ export default function TakeMockInterviewPage() {
         );
       });
 
-      // Auto-read first question
-      const questions =
-        interview.questions_for_interview || interview.questions;
-      if (questions && questions.length > 0) {
+      // Auto-read first question. For dynamic interviews `questions_for_interview` is
+      // intentionally empty (so the candidate can't see future questions); the opening
+      // question lives on `interview.current_question` and is mirrored into
+      // `dynamicCurrentQuestion`. Check `currentQuestion` (which resolves to either source
+      // via the useMemo) so the avatar speaks in both modes.
+      const hasOpeningQuestion = isDynamicInterview
+        ? !!dynamicCurrentQuestion
+        : !!(
+            (interview.questions_for_interview || interview.questions)?.length
+          );
+      if (hasOpeningQuestion) {
         setIsSpeaking(true);
       }
     } catch (error: any) {
@@ -420,17 +539,35 @@ export default function TakeMockInterviewPage() {
       setInterviewStarted(false);
       isInitializingRef.current = false;
     }
-  }, [interview, startProctoring, enterFullscreen, showToast, startStt]);
+  }, [
+    interview,
+    isDynamicInterview,
+    dynamicCurrentQuestion,
+    startProctoring,
+    enterFullscreen,
+    showToast,
+    startStt,
+  ]);
 
   // Speech recognition is always active - no toggle needed
 
-  // Get current question - support both questions_for_interview and questions
-  const currentQuestion = useMemo(() => {
+  // Get current question. Dynamic interviews drive from a single in-memory question that the
+  // backend hands us turn-by-turn via /next-question/ — the candidate never sees future ones.
+  // Legacy interviews continue to index into the pre-generated questions array.
+  const currentQuestion = useMemo<InterviewQuestion | null>(() => {
+    if (isDynamicInterview) {
+      return dynamicCurrentQuestion;
+    }
     const questions =
       interview?.questions_for_interview || interview?.questions;
     if (!questions) return null;
     return questions[currentQuestionIndex] || null;
-  }, [interview, currentQuestionIndex]);
+  }, [
+    isDynamicInterview,
+    dynamicCurrentQuestion,
+    interview,
+    currentQuestionIndex,
+  ]);
 
   // Get question text (support both question and question_text)
   const getQuestionText = useCallback((question: InterviewQuestion | null) => {
@@ -472,6 +609,42 @@ export default function TakeMockInterviewPage() {
       }
     });
   }, [currentQuestion, currentAnswer]);
+
+  // Refs for silence-based auto-advance state. These are NOT React state because we don't
+  // want the JSX to re-render on every audio tick.
+  const silenceAdvanceTimerRef = useRef<number | null>(null);
+  const lastTranscriptChangeAtRef = useRef<number>(0);
+  const handleNextQuestionRef = useRef<(() => Promise<void>) | null>(null);
+  // Live mic energy mirrored into a ref so the silence interval can read it without making
+  // the page re-render. We bump lastTranscriptChangeAtRef whenever audio crosses a "user is
+  // speaking" threshold — that way, an "umm" or a half-second of resumed speech (which won't
+  // produce STT output until the recognizer chunks it) still defers the auto-advance.
+  const audioLevelRef = useRef<number>(0);
+  // Snapshot of the answer text at the moment we fire /next-question/. Used to detect words
+  // the candidate spoke DURING the fetch so we can append them to the previous answer
+  // instead of discarding them when we reset currentAnswer for the new question.
+  const answerAtAdvanceRef = useRef<string>("");
+  const previousQuestionIdAtAdvanceRef = useRef<number | null>(null);
+  const [conversationStatus, setConversationStatus] = useState<string>("");
+
+  useEffect(() => {
+    audioLevelRef.current = audioLevel;
+    if (audioLevel > 0.06) {
+      // Treat "I can hear noise from the mic" as a transcript change, even if STT hasn't
+      // finalized yet. Without this, a candidate who resumes speaking JUST as the silence
+      // threshold elapses can still get auto-advanced before their next chunk lands.
+      lastTranscriptChangeAtRef.current = Date.now();
+    }
+  }, [audioLevel]);
+
+  // Live mirror of currentAnswer into a ref. handleNextQuestion is an async function and the
+  // value of `currentAnswer` it closed over is stale by the time the /next-question/ POST
+  // resolves — we need to read whatever the candidate has TYPED OR SPOKEN since the advance
+  // fired, so we can preserve their continuation instead of discarding it.
+  const currentAnswerRef = useRef<string>("");
+  useEffect(() => {
+    currentAnswerRef.current = currentAnswer;
+  }, [currentAnswer]);
 
   // Auto-save answer when it changes (debounced)
   useEffect(() => {
@@ -611,6 +784,10 @@ export default function TakeMockInterviewPage() {
       router.push(`/mock-interview/${interviewId}/submission-success`);
     } catch (error) {
       showToast("Failed to submit interview", "error");
+      // Reset the "ending" lock so End Interview stays clickable. Without this, a failed
+      // submit (e.g., a transient 500 from the eval LLM call) would trap the candidate with
+      // a permanently disabled End button.
+      setIsEndingInterview(false);
     }
   }, [
     interview,
@@ -628,16 +805,189 @@ export default function TakeMockInterviewPage() {
   ]);
 
   // Handle next question
-  const handleNextQuestion = useCallback(() => {
-    const questions =
-      interview?.questions_for_interview || interview?.questions;
-    if (!questions) return;
-
-    // Clear auto-save timer and save immediately before moving
+  const handleNextQuestion = useCallback(async () => {
+    // Clear auto-save timer; we want to record the answer for THIS question right now.
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
+
+    // ===== Dynamic (turn-based) flow =====
+    if (isDynamicInterview) {
+      if (!currentQuestion) return;
+      if (isFetchingNext) return; // guard against double-tap
+
+      // Capture the answer text for this turn and record it locally so the transcript stays
+      // in sync with what the backend will receive at submit time.
+      const answerForThisTurn = currentAnswer.trim();
+      const questionTextForThisTurn =
+        currentQuestion.question_text || currentQuestion.question || "";
+
+      setResponses((prev) => {
+        const existingIndex = prev.findIndex(
+          (r) => r.question_id === currentQuestion.id
+        );
+        const entry: InterviewResponse = {
+          question_id: currentQuestion.id,
+          answer: answerForThisTurn,
+        };
+        if (existingIndex >= 0) {
+          const copy = [...prev];
+          copy[existingIndex] = entry;
+          return copy;
+        }
+        return [...prev, entry];
+      });
+
+      // End-interview verbal command. If the candidate's "answer" is actually a request to
+      // stop the interview, submit instead of asking another question. This mirrors how
+      // ChatGPT voice mode lets you say "okay we can stop" and the conversation ends. We
+      // match common phrasings against the trimmed answer (case-insensitive). The regex is
+      // anchored to whole-phrase matches so a CANDIDATE who just SAYS "stop" mid-sentence
+      // ("hash and stop using…") doesn't trigger; only if the *answer overall* is an
+      // explicit end-request.
+      const lowerAnswer = answerForThisTurn.toLowerCase();
+      const endPhrases = [
+        /\bi\s+want\s+to\s+end\s+(this\s+)?interview\b/,
+        /\b(let'?s|can\s+we)\s+(end|stop|finish|wrap\s*up)\s+(this\s+)?(interview)?\b/,
+        /\bno\s+more\s+questions?\b/,
+        /\b(end|stop|finish|exit)\s+(the\s+)?interview\b/,
+        /\bthat'?s\s+(all|enough)\s+for\s+(me|today|now)\b/,
+        /\bi'?m\s+done\s+(with\s+)?(this\s+)?(interview|now)\b/,
+      ];
+      const isEndRequest =
+        // Only allow the end-request match for short utterances; if the candidate gave a
+        // long answer that happens to contain "end the interview" as a side reference,
+        // they probably didn't mean to actually end it.
+        lowerAnswer.length > 0 &&
+        lowerAnswer.length < 200 &&
+        endPhrases.some((rx) => rx.test(lowerAnswer));
+      if (isEndRequest) {
+        showToast("Okay — wrapping up the interview now.", "info");
+        handleSubmitInterview();
+        return;
+      }
+
+      // If the question we just answered was the FINAL question of the interview, we don't
+      // ask for another follow-up — we submit.
+      if (dynamicIsFinalQuestion) {
+        handleSubmitInterview();
+        return;
+      }
+
+      // Snapshot what we're advancing FROM so we can preserve any continuation spoken
+      // during the next-question fetch (see below).
+      answerAtAdvanceRef.current = answerForThisTurn;
+      previousQuestionIdAtAdvanceRef.current = currentQuestion.id;
+
+      // Otherwise ask the backend for the next conversational follow-up. The backend uses the
+      // candidate's answer + the interview plan to generate a real follow-up.
+      //
+      // Perceived-latency trick: flip conversationStatus to "Got it — following up…" and
+      // clear the interim transcript IMMEDIATELY, before awaiting the API. The OpenAI call
+      // typically takes 1-3 seconds; without this the candidate sees no visible reaction
+      // between clicking the Follow-up button and the new question arriving, which feels
+      // laggy even though the system is working. With it, the UI confirms the click on the
+      // same paint as the click itself.
+      setConversationStatus("Got it — following up…");
+      setInterimTranscript("");
+      setIsFetchingNext(true);
+      try {
+        const next: NextQuestionResponse =
+          await mockInterviewService.getNextQuestion(interviewId, {
+            previous_question_id: currentQuestion.id,
+            candidate_answer: answerForThisTurn,
+          });
+
+        // Closing-remark path: backend says we're in the final minute, hands us a natural
+        // verbal wrap-up text instead of another question. We surface it to the candidate
+        // by treating it as a "question" the avatar speaks, but mark dynamicIsFinalQuestion
+        // and a separate isClosingRemark flag so:
+        //   - silence-detection auto-advance is suppressed (no answer expected)
+        //   - the action button reads "Submit Interview" (already gated on
+        //     dynamicIsFinalQuestion via isLastQuestion)
+        //   - the candidate hears the close, then taps Submit when ready
+        if (next.is_closing_remark && next.closing_remark) {
+          const closingTurn: InterviewQuestion = {
+            id: (currentQuestion.id ?? 0) + 1,
+            question_text: next.closing_remark,
+            type: "behavioral",
+          };
+          setDynamicCurrentQuestion(closingTurn);
+          setDynamicIsFinalQuestion(true);
+          setIsClosingRemark(true);
+          setCurrentAnswer("");
+          setInterimTranscript("");
+          setIsSpeaking(true); // avatar reads the close out loud
+          setConversationStatus(
+            "Interview complete — submit when you're ready."
+          );
+          return;
+        }
+
+        // Safety: backend signaled the interview is done WITHOUT a closing remark — fall
+        // back to immediate submit (legacy path; should be rare now that the backend
+        // always tries to generate a remark first).
+        if (next.interview_complete || !next.question) {
+          handleSubmitInterview();
+          return;
+        }
+
+        // ===== Preserve user's continuation =====
+        // /next-question/ takes ~1-3s. If the candidate keeps speaking during that window
+        // (they thought of more to say), STT appends to currentAnswer. Without this block,
+        // we'd setCurrentAnswer("") below and silently discard those words — the next
+        // question would land while the candidate is still finishing the previous answer.
+        // Instead, we append the delta to the PREVIOUS question's response so the full
+        // answer is preserved both for the final transcript and (next time around) for the
+        // AI's follow-up context.
+        const answerNow = currentAnswerRef.current.trim();
+        const previousAnswered = answerAtAdvanceRef.current;
+        const previousQid = previousQuestionIdAtAdvanceRef.current;
+        if (
+          previousQid !== null &&
+          answerNow.length > previousAnswered.length &&
+          answerNow.startsWith(previousAnswered)
+        ) {
+          const continuation = answerNow.slice(previousAnswered.length).trim();
+          if (continuation) {
+            setResponses((prev) =>
+              prev.map((r) =>
+                r.question_id === previousQid
+                  ? {
+                      ...r,
+                      answer: `${r.answer} ${continuation}`.trim(),
+                    }
+                  : r
+              )
+            );
+          }
+        }
+
+        setDynamicCurrentQuestion(next.question);
+        setDynamicTurnNumber(next.turn_number);
+        setDynamicMaxTurns(next.max_turns);
+        setDynamicIsFinalQuestion(!!next.is_final_question);
+        setCurrentAnswer("");
+        setInterimTranscript("");
+        setIsSpeaking(true); // Avatar narrates the new question (drives facial movement).
+        // Reset the snapshot so a future advance doesn't accidentally treat stale state as
+        // "continuation."
+        answerAtAdvanceRef.current = "";
+        previousQuestionIdAtAdvanceRef.current = null;
+        void questionTextForThisTurn;
+      } catch (error) {
+        showToast("Couldn't load the next question — please try again.", "error");
+      } finally {
+        setIsFetchingNext(false);
+      }
+      return;
+    }
+
+    // ===== Legacy (pre-generated 5-questions) flow =====
+    const questions =
+      interview?.questions_for_interview || interview?.questions;
+    if (!questions) return;
 
     // Save current answer before moving
     if (currentQuestion) {
@@ -660,12 +1010,137 @@ export default function TakeMockInterviewPage() {
       setIsSpeaking(true); // Auto-read next question
     }
   }, [
+    isDynamicInterview,
+    isFetchingNext,
+    dynamicIsFinalQuestion,
     interview,
     currentQuestionIndex,
     currentQuestion,
+    currentAnswer,
     responses,
+    interviewId,
     handleSaveAnswer,
     handleSubmitInterview,
+    showToast,
+  ]);
+
+  // Keep a ref to handleNextQuestion so the silence-detection effect can call the *current*
+  // version without itself needing to re-run on every render (which would clobber the timer).
+  useEffect(() => {
+    handleNextQuestionRef.current = handleNextQuestion;
+  }, [handleNextQuestion]);
+
+  // Bump the "last transcript change" timestamp whenever the candidate types or speaks.
+  useEffect(() => {
+    if (!isDynamicInterview) return;
+    if (!currentAnswer && !interimTranscript) return;
+    lastTranscriptChangeAtRef.current = Date.now();
+  }, [isDynamicInterview, currentAnswer, interimTranscript]);
+
+  // Silence-based auto-advance, ChatGPT-voice-mode style. While the candidate is answering
+  // we poll: if there's been no transcript change for SILENCE_THRESHOLD_MS and the avatar
+  // isn't currently speaking the question, treat that as "candidate is done" and advance.
+  // The threshold is generous (3.5s) so a thinking pause doesn't trip auto-advance — if the
+  // candidate resumes speaking, the change-bump above resets the clock.
+  useEffect(() => {
+    if (!isDynamicInterview) return;
+    if (!interviewStarted) return;
+    if (!currentQuestion) return;
+    // Don't auto-advance while the avatar is speaking the question, while we're waiting on
+    // the next question API call, or while a manual submit is already in flight.
+    if (isSpeaking || isFetchingNext || isEndingInterview) return;
+    // Closing-remark mode: backend already told us the interview is over and the avatar is
+    // delivering a wrap-up. We're not waiting for another answer, so auto-advance is moot —
+    // the candidate just hits Submit when ready.
+    if (isClosingRemark) return;
+
+    // Silence threshold tuning:
+    // - 500ms feels snappy — matches the cadence of a real interviewer who jumps in the
+    //   instant they hear the candidate finish a thought. Risk of cutting off a thinking
+    //   pause is mitigated by (a) the audio-level gate below — if the candidate is still
+    //   making sound (mid-word, breathing), we don't count that as silence; and (b) the
+    //   noise-floor calibration from device-check, so background hum doesn't fool it.
+    // - CONFIRM_PAUSE_MS (150) flips the status hint to "Wrapping up…" at ~350ms elapsed,
+    //   giving the candidate a brief visual cue before the advance fires.
+    const SILENCE_THRESHOLD_MS = 500;
+    const CONFIRM_PAUSE_MS = 150;
+    const POLL_INTERVAL_MS = 100;
+
+    // Audio activity gate: anything below this level is treated as silence. By default we
+    // use 0.06 (the previous static threshold), but if the device-check page calibrated the
+    // user's voice and ambient noise, we use a calibrated value that filters out background
+    // noise specific to *this* user's environment.
+    let audioGateThreshold = 0.06;
+    if (typeof window !== "undefined") {
+      const cal = (window as any).__mockInterviewMicCalibration as
+        | { noise_floor?: number; voice_peak?: number }
+        | undefined;
+      if (cal && typeof cal.noise_floor === "number" && typeof cal.voice_peak === "number") {
+        // Threshold = noise_floor + ~25% of the floor-to-voice gap. This lets through real
+        // speech (which is well above the floor) while ignoring whatever bumps the room has
+        // (HVAC, keyboard taps, distant chatter).
+        const gap = Math.max(0, cal.voice_peak - cal.noise_floor);
+        audioGateThreshold = Math.min(
+          0.5,
+          Math.max(0.04, cal.noise_floor + gap * 0.25)
+        );
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      const text = currentAnswer.trim();
+      // Need at least *something* spoken before we count silence as "done." Otherwise the
+      // very moment the avatar finishes speaking we'd auto-advance with an empty answer.
+      if (!text) {
+        setConversationStatus("Listening — speak when you're ready.");
+        return;
+      }
+      // STT might still have an interim chunk in flight; don't advance until it settles.
+      if (interimTranscript) {
+        setConversationStatus("Listening…");
+        return;
+      }
+      // Live audio: if the candidate is currently making noise above the calibrated
+      // threshold, they're probably still talking — STT just hasn't chunked the words yet.
+      if (audioLevelRef.current > audioGateThreshold) {
+        setConversationStatus("Listening…");
+        return;
+      }
+      const sinceLastChange = Date.now() - lastTranscriptChangeAtRef.current;
+      const remaining = SILENCE_THRESHOLD_MS - sinceLastChange;
+      if (remaining <= 0) {
+        // Fire once, then let the next render's guard (isFetchingNext) suppress re-entry.
+        window.clearInterval(intervalId);
+        silenceAdvanceTimerRef.current = null;
+        setConversationStatus("Got it — following up.");
+        const fn = handleNextQuestionRef.current;
+        if (fn) {
+          void fn();
+        }
+      } else if (remaining <= CONFIRM_PAUSE_MS) {
+        setConversationStatus("Wrapping up — speak now if you want to add more.");
+      } else {
+        setConversationStatus("Listening…");
+      }
+    }, POLL_INTERVAL_MS);
+
+    silenceAdvanceTimerRef.current = intervalId;
+    return () => {
+      window.clearInterval(intervalId);
+      silenceAdvanceTimerRef.current = null;
+    };
+  }, [
+    isDynamicInterview,
+    interviewStarted,
+    currentQuestion,
+    isSpeaking,
+    isFetchingNext,
+    isEndingInterview,
+    isClosingRemark,
+    // Re-bind when these change so the threshold check sees fresh values without depending
+    // on a stale closure.
+    currentAnswer,
+    interimTranscript,
   ]);
 
   // Handle previous question
@@ -817,6 +1292,38 @@ export default function TakeMockInterviewPage() {
     [latestViolation?.type, latestViolation?.message]
   );
 
+  // Stable handler passed to InterviewTimer. The timer's effect deps include this callback
+  // and the parent re-renders many times per second from audioLevel/STT state. Without a
+  // stable reference the timer would clear+recreate its setInterval every render and the
+  // 1-second tick would never fire — that's why the on-screen timer froze at 6:58.
+  // We use the "latest ref" pattern: handleTimeUp's identity stays stable across renders,
+  // but it always invokes the current handleSubmitInterview through the ref.
+  const submitInterviewRef = useRef(handleSubmitInterview);
+  useEffect(() => {
+    submitInterviewRef.current = handleSubmitInterview;
+  }, [handleSubmitInterview]);
+
+  const showToastRef = useRef(showToast);
+  useEffect(() => {
+    showToastRef.current = showToast;
+  }, [showToast]);
+
+  const isDynamicRef = useRef<boolean>(!!interview?.is_dynamic);
+  useEffect(() => {
+    isDynamicRef.current = !!interview?.is_dynamic;
+  }, [interview?.is_dynamic]);
+
+  const handleTimeUp = useCallback(() => {
+    if (isDynamicRef.current) {
+      showToastRef.current(
+        "You're past the suggested time — wrap up your current answer.",
+        "info"
+      );
+      return;
+    }
+    submitInterviewRef.current();
+  }, []);
+
   if (!interview) {
     return null;
   }
@@ -850,7 +1357,12 @@ export default function TakeMockInterviewPage() {
           startTime ||
           (interview.started_at ? new Date(interview.started_at) : null)
         }
-        onTimeUp={handleSubmitInterview}
+        // For dynamic interviews the timer is advisory — we just nudge the candidate to wrap
+        // up instead of auto-submitting. CRITICAL: this must reference a stable callback. The
+        // page re-renders ~60×/sec (audio level updates) and InterviewTimer keys its
+        // setInterval on the onTimeUp ref — a new arrow each render would clear+recreate the
+        // interval before its 1-second tick fires, freezing the timer. See handleTimeUp below.
+        onTimeUp={handleTimeUp}
         onEndInterview={handleEndInterview}
         endInterviewDisabled={showEndInterviewDialog || isEndingInterview}
         isProctoringActive={isProctoringActive}
@@ -901,15 +1413,30 @@ export default function TakeMockInterviewPage() {
               onPreviousQuestion={handlePreviousQuestion}
               onNextQuestion={handleNextQuestion}
               isQuestionAnswered={isQuestionAnswered}
-              canGoPrevious={currentQuestionIndex > 0}
-              isLastQuestion={currentQuestionIndex >= totalQuestions - 1}
+              // Dynamic interviews are real conversations — going back to "edit" a previous
+              // answer doesn't match how a real interview works, so Previous is disabled.
+              canGoPrevious={!isDynamicInterview && currentQuestionIndex > 0}
+              isLastQuestion={
+                isDynamicInterview
+                  ? dynamicIsFinalQuestion
+                  : currentQuestionIndex >= totalQuestions - 1
+              }
               isListening={isListening}
               typingFallback={false}
+              // Dynamic interviews are driven by silence-detection auto-advance, so we hide
+              // the Previous / Save / Next buttons entirely — the candidate just speaks and
+              // pauses, ChatGPT-voice-mode style.
+              hideNavigationButtons={isDynamicInterview}
+              conversationStatus={
+                isDynamicInterview ? conversationStatus : undefined
+              }
             />
           )}
         </Box>
 
-        {interviewStarted && (
+        {/* Dynamic interviews intentionally hide the question list — the candidate should not
+            see upcoming questions; the AI generates each follow-up from the prior answer. */}
+        {interviewStarted && !isDynamicInterview && (
           <QuestionListSidebar
             questions={questions || []}
             currentQuestionIndex={currentQuestionIndex}

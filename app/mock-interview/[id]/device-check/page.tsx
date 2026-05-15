@@ -70,6 +70,20 @@ export default function MockInterviewDeviceCheckPage() {
   const speechStreamRef = useRef<MediaStream | null>(null);
   const speechRecorderRef = useRef<MediaRecorder | null>(null);
   const speechStopTimeoutRef = useRef<number | null>(null);
+  // Mic calibration captured during this page's lifetime. micNoiseFloorRef tracks the
+  // rolling minimum audio level (~ambient room noise); micVoicePeakRef tracks the rolling
+  // maximum (~user's actual speech). Both are handed off to the take page on Proceed so the
+  // interview's silence-detection can ignore background noise specific to this environment.
+  const micNoiseFloorRef = useRef<number>(1);
+  const micVoicePeakRef = useRef<number>(0);
+  const calibrationSamplesRef = useRef<number>(0);
+  // Native window.SpeechRecognition (Chrome). When available we use it as the primary path so
+  // OPENAI_API_KEY is NOT required for the mic check; the MediaRecorder + /api/transcribe path
+  // below is only used as a fallback for browsers without native STT (Safari) or when native
+  // fails with a transient error (Edge's `network` error in particular).
+  const speechRecognitionRef = useRef<any>(null);
+  // Set when a fallback is already in flight; prevents native onerror + onend from racing.
+  const fallbackInFlightRef = useRef(false);
 
   const normalize = useCallback(
     (text: string) => text.toLowerCase().replace(/[^\w\s]/g, "").trim(),
@@ -258,6 +272,28 @@ export default function MockInterviewDeviceCheckPage() {
               dataArray.reduce((a, b) => a + b) / dataArray.length;
             const normalizedLevel = Math.min(average / 100, 1);
             setAudioLevel(normalizedLevel);
+
+            // Mic calibration:
+            // - First ~5 samples (~500ms) are warm-up / mic-priming garbage — skip them.
+            // - Noise floor uses an exponential-moving-min (sticky-low) of the current
+            //   level: ambient HVAC / fans / breathing don't push it up, but a moment of
+            //   true silence below the running floor will pull it down.
+            // - Voice peak is just the running max — captures the loudest moment, which
+            //   should be the user reading the test sentence.
+            calibrationSamplesRef.current += 1;
+            if (calibrationSamplesRef.current > 5) {
+              // EMA-min: floor only decreases or drifts slowly upward. The 0.9 coefficient
+              // means the floor very gradually adapts if the room gets louder.
+              micNoiseFloorRef.current = Math.min(
+                micNoiseFloorRef.current,
+                Math.max(normalizedLevel, 0.005) // hard zero is meaningless; clamp tiny
+              );
+              micVoicePeakRef.current = Math.max(
+                micVoicePeakRef.current,
+                normalizedLevel
+              );
+            }
+
             animationFrameRef.current =
               requestAnimationFrame(updateAudioLevel);
           };
@@ -355,6 +391,14 @@ export default function MockInterviewDeviceCheckPage() {
         }
         speechRecorderRef.current = null;
       }
+      if (speechRecognitionRef.current) {
+        try {
+          speechRecognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+        speechRecognitionRef.current = null;
+      }
       if (speechStreamRef.current) {
         speechStreamRef.current.getTracks().forEach((track) => track.stop());
         speechStreamRef.current = null;
@@ -368,10 +412,16 @@ export default function MockInterviewDeviceCheckPage() {
     if (isListening || isTranscribing) return;
     setRecognizedText("");
     setTtsMatch(false);
-    setIsListening(true);
-    setIsTranscribing(false);
+    fallbackInFlightRef.current = false;
 
-    const startRecording = async () => {
+    // MediaRecorder + /api/transcribe (Whisper) fallback. Requires OPENAI_API_KEY on the
+    // Next.js server. Used when native window.SpeechRecognition is unavailable (Safari) or
+    // fails with a transient/permanent error (Edge's `network` quirk, etc.).
+    const startRecorderFallback = async () => {
+      if (fallbackInFlightRef.current) return;
+      fallbackInFlightRef.current = true;
+      setIsListening(true);
+      setIsTranscribing(false);
       try {
         const stream =
           speechStreamRef.current ||
@@ -473,7 +523,76 @@ export default function MockInterviewDeviceCheckPage() {
       }
     };
 
-    startRecording();
+    // Native window.SpeechRecognition is the primary path (Chrome / Chromium). It does NOT
+    // need OPENAI_API_KEY and gives instant transcription. We fall through to the Whisper
+    // recorder only when the native API doesn't exist or signals it won't deliver (`network`,
+    // `service-not-allowed`, `audio-capture`, or onend without a result).
+    const SpeechRecognitionCtor =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognitionCtor) {
+      void startRecorderFallback();
+      return;
+    }
+
+    let nativeSettled = false;
+    try {
+      const recognition = new SpeechRecognitionCtor();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+      speechRecognitionRef.current = recognition;
+
+      recognition.onresult = (event: any) => {
+        nativeSettled = true;
+        const transcript = event?.results?.[0]?.[0]?.transcript ?? "";
+        if (!transcript) {
+          setIsListening(false);
+          showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+          return;
+        }
+        setRecognizedText(transcript);
+        evaluateSpeechMatch(transcript);
+      };
+
+      recognition.onerror = (event: any) => {
+        nativeSettled = true;
+        const code = event?.error;
+        if (code === "not-allowed" || code === "permission-denied") {
+          setIsListening(false);
+          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
+          return;
+        }
+        if (code === "no-speech") {
+          setIsListening(false);
+          showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+          return;
+        }
+        if (code === "aborted") {
+          setIsListening(false);
+          return;
+        }
+        // network / service-not-allowed / audio-capture — native won't deliver. Fall back.
+        void startRecorderFallback();
+      };
+
+      recognition.onend = () => {
+        // Some Edge versions end without ever firing onresult/onerror; recover via fallback.
+        if (!nativeSettled && !fallbackInFlightRef.current) {
+          void startRecorderFallback();
+        }
+      };
+
+      setIsListening(true);
+      setIsTranscribing(false);
+      recognition.start();
+    } catch {
+      // Synchronous throw constructing/starting native recognition — fall through to Whisper.
+      void startRecorderFallback();
+    }
   };
 
   const handleProceed = async () => {
@@ -492,6 +611,21 @@ export default function MockInterviewDeviceCheckPage() {
 
       if (streamRef.current) {
         (window as any).__mockInterviewStream = streamRef.current;
+      }
+
+      // Hand off mic calibration to the take page so its silence detector can ignore this
+      // user's background noise. Only stash if the floor actually drifted below the initial
+      // sentinel (1) and the peak captured a real voice signal (>0.1); otherwise the take
+      // page falls back to its built-in default threshold.
+      if (
+        typeof window !== "undefined" &&
+        micVoicePeakRef.current > 0.1 &&
+        micNoiseFloorRef.current < 1
+      ) {
+        (window as any).__mockInterviewMicCalibration = {
+          noise_floor: micNoiseFloorRef.current,
+          voice_peak: micVoicePeakRef.current,
+        };
       }
 
       const startedInterview = await mockInterviewService.startInterview(

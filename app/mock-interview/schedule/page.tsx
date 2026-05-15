@@ -55,7 +55,7 @@ export default function ScheduleInterviewPage() {
               },
             }}
           >
-            Back to Mock Interviews
+            Back to Interviews
           </Button>
         </Box>
 

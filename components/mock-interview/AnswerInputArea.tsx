@@ -20,6 +20,17 @@ export interface AnswerInputAreaProps {
   isListening?: boolean;
   /** True when speech recognition has failed and user must type. */
   typingFallback?: boolean;
+  /**
+   * When true, the Previous/Save/Next buttons are hidden — the parent is driving the
+   * conversation via silence-based auto-advance (ChatGPT voice-mode style) and an explicit
+   * Next button would just confuse the user. A subtle status hint replaces them.
+   */
+  hideNavigationButtons?: boolean;
+  /**
+   * Optional status text shown in place of the navigation buttons when hideNavigationButtons
+   * is true (e.g., "Listening…", "Moving on…").
+   */
+  conversationStatus?: string;
 }
 
 export const AnswerInputArea = memo(function AnswerInputArea({
@@ -34,6 +45,8 @@ export const AnswerInputArea = memo(function AnswerInputArea({
   isLastQuestion,
   isListening = false,
   typingFallback = false,
+  hideNavigationButtons = false,
+  conversationStatus,
 }: AnswerInputAreaProps) {
   const { t } = useTranslation("common");
   const displayValue =
@@ -166,6 +179,78 @@ export const AnswerInputArea = memo(function AnswerInputArea({
           },
         }}
       />
+      {hideNavigationButtons ? (
+        // Silence-driven mode is the PRIMARY way to advance, but speech recognition isn't
+        // perfect — sometimes the candidate finishes and the silence threshold doesn't fire
+        // (e.g., audio level still bouncing from background noise). We keep a single
+        // explicit button as a manual fallback so the candidate can always advance even when
+        // auto-detect misses.
+        <Box
+          sx={{
+            mt: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+            minHeight: 36,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1 }}>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: isListening
+                  ? "var(--ats-success)"
+                  : "var(--font-tertiary)",
+                animation: isListening
+                  ? "convStatusPulse 1.2s ease-in-out infinite"
+                  : undefined,
+                "@keyframes convStatusPulse": {
+                  "0%, 100%": { opacity: 1, transform: "scale(1)" },
+                  "50%": { opacity: 0.5, transform: "scale(1.3)" },
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+              {conversationStatus ||
+                "Speak naturally — pause when you're done and the interviewer will follow up."}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            onClick={onNextQuestion}
+            // For mid-interview "Follow up" turns we require some answer text before
+            // letting the candidate skip. For the FINAL action ("Submit Interview" — fired
+            // either after the last question OR after the closing remark) we always allow
+            // the click: the candidate may have nothing to say to a thank-you, and we
+            // don't want to trap them in a disabled-button limbo.
+            disabled={!isLastQuestion && !currentAnswer.trim()}
+            sx={{
+              backgroundColor: isLastQuestion
+                ? "var(--ats-success)"
+                : "var(--accent-indigo)",
+              color: "var(--font-light)",
+              textTransform: "none",
+              fontWeight: 600,
+              px: 2.5,
+              py: 0.75,
+              "&:hover": {
+                backgroundColor: isLastQuestion
+                  ? "var(--ats-success-muted)"
+                  : "var(--accent-indigo-dark)",
+              },
+              "&.Mui-disabled": {
+                backgroundColor: "var(--surface)",
+                color: "var(--font-tertiary)",
+              },
+            }}
+          >
+            {isLastQuestion ? "Submit Interview" : "Follow up"}
+          </Button>
+        </Box>
+      ) : (
       <Box
         sx={{
           display: "flex",
@@ -223,6 +308,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
           {isLastQuestion ? "Submit Interview" : "Next Question"}
         </Button>
       </Box>
+      )}
     </Paper>
   );
 });

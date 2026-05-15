@@ -78,7 +78,17 @@ const PerformanceSummaryComponent = ({
             </Typography>
           </Box>
           <Typography variant="h5" sx={{ fontWeight: 800, color: "#1e40af" }}>
-            {completed_questions}/{total_questions}
+            {/*
+             * For dynamic (turn-based) interviews the total isn't known up front — the AI
+             * picks how many follow-ups to ask based on the candidate's pacing. In that
+             * case `total_questions` arrives as 0 from the submit metadata, so showing
+             * "7/0" is meaningless. Only render the fraction when we actually have a
+             * non-zero target larger than what was completed; otherwise just show the
+             * raw count of questions the candidate answered.
+             */}
+            {total_questions > 0 && total_questions >= completed_questions
+              ? `${completed_questions}/${total_questions}`
+              : completed_questions}
           </Typography>
         </Box>
 
