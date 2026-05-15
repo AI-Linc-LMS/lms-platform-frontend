@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Box, Button, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -40,6 +41,7 @@ const DEFAULT_FILTERS: InterviewFiltersState = {
 export default function AdminMockInterviewPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const router = useRouter();
   const [tab, setTab] = useState<TabValue>("overview");
   const [days, setDays] = useState(30);
 
@@ -348,6 +350,25 @@ export default function AdminMockInterviewPage() {
               alignItems: "center",
             }}
           >
+            {/* Create-interview workflow: admin defines a reusable interview and maps it
+                to one or more courses to publish it to enrolled students. Lives on its own
+                page because it's CRUD vs. the existing tabs which are analytics. */}
+            <Button
+              variant="contained"
+              onClick={() =>
+                router.push("/admin/admin-mock-interview/templates")
+              }
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              }}
+            >
+              Create Interview
+            </Button>
             <FormControl
               size="small"
               sx={{ minWidth: 220 }}

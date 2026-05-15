@@ -30,9 +30,21 @@ interface QuestionScore {
   improvements: string[];
 }
 
+interface TranscriptResponse {
+  question_id: number;
+  answer?: string;
+  question_text?: string;
+}
+
 interface QuestionPerformanceProps {
   questions: Question[];
   question_scores: Record<string, QuestionScore>;
+  /**
+   * The candidate's recorded responses, keyed by question_id. Used to render the candidate's
+   * actual answer alongside the AI feedback so a reviewer can see what the candidate said,
+   * not just how it scored.
+   */
+  responses?: TranscriptResponse[];
   expandedQuestion: number | false;
   onQuestionToggle: (id: number) => void;
   getScoreColor: (percentage: number) => { bg: string; color: string; main: string };
@@ -41,10 +53,15 @@ interface QuestionPerformanceProps {
 const QuestionPerformanceComponent = ({
   questions,
   question_scores,
+  responses,
   expandedQuestion,
   onQuestionToggle,
   getScoreColor,
 }: QuestionPerformanceProps) => {
+  const responseById = new Map<number, TranscriptResponse>();
+  (responses || []).forEach((r) => {
+    if (typeof r.question_id === "number") responseById.set(r.question_id, r);
+  });
   return (
     <Paper
       elevation={0}
@@ -142,6 +159,41 @@ const QuestionPerformanceComponent = ({
               </AccordionSummary>
               <AccordionDetails sx={{ pt: 0 }}>
                 <Divider sx={{ mb: 3 }} />
+
+                {/* Candidate's actual answer (what the user said in response to this
+                    question). Pulled from interview_transcript.responses keyed by question id. */}
+                {(() => {
+                  const candidateAnswer = responseById.get(question.id)?.answer?.trim();
+                  if (!candidateAnswer) return null;
+                  return (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: 700, mb: 1, color: "var(--font-primary-dark)" }}
+                      >
+                        Your Answer
+                      </Typography>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          backgroundColor: "var(--surface-indigo-light)",
+                          border:
+                            "1px solid color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+                          borderRadius: 2,
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "var(--font-primary-dark)" }}
+                        >
+                          {candidateAnswer}
+                        </Typography>
+                      </Paper>
+                    </Box>
+                  );
+                })()}
 
                 {/* Feedback */}
                 <Box sx={{ mb: 3 }}>

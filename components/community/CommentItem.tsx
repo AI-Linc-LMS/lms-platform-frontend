@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 
 import { useTranslation } from "react-i18next";
-import { Box, Typography, Avatar, Chip, Button, TextField, IconButton, Collapse } from "@mui/material";
+import { Box, Typography, Avatar, Chip, Button, TextField, IconButton, Collapse, Tooltip } from "@mui/material";
 
 import type { Comment } from "@/lib/services/community.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -11,20 +11,40 @@ import { VoteButtons } from "./VoteButtons";
 
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 
+const XP_TIER_COLORS: Record<string, string> = {
+  bronze: "#cd7f32",
+  silver: "#94a3b8",
+  gold: "#fbbf24",
+  platinum: "#a78bfa",
+};
+
+function getAvatarRingStyle(tier?: string) {
+  if (!tier || tier === "bronze") return {};
+  const color = XP_TIER_COLORS[tier] ?? XP_TIER_COLORS.bronze;
+  return {
+    outline: `2.5px solid ${color}`,
+    outlineOffset: "1.5px",
+  };
+}
+
 interface CommentItemProps {
   comment: Comment;
   threadId: number;
   onVote: (commentId: number, type: "upvote" | "downvote") => Promise<void>;
   onReply: (commentId: number, body: string) => Promise<void>;
+  onAccept?: (commentId: number) => Promise<void>;
+  isThreadAuthor?: boolean;
   depth?: number;
   parentAuthorName?: string;
 }
 
-export function CommentItem({
+export const CommentItem = memo(function CommentItem({
   comment,
   threadId,
   onVote,
   onReply,
+  onAccept,
+  isThreadAuthor = false,
   depth = 0,
   parentAuthorName,
 }: CommentItemProps) {
@@ -32,10 +52,12 @@ export function CommentItem({
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [accepting, setAccepting] = useState(false);
 
   const hasReplies = comment.replies && comment.replies.length > 0;
   const maxDepth = 4;
   const isMaxDepth = depth >= maxDepth;
+  const isAccepted = !!comment.is_accepted;
 
   const handleSubmitReply = async () => {
     if (!replyBody.trim()) return;
@@ -51,21 +73,51 @@ export function CommentItem({
     }
   };
 
+  const handleAccept = async () => {
+    if (!onAccept) return;
+    setAccepting(true);
+    try {
+      await onAccept(comment.id);
+    } finally {
+      setAccepting(false);
+    }
+  };
+
   const avatarSize = depth === 0 ? 34 : 28;
+  const tier = comment.author.xp_tier;
+  const ringStyle = getAvatarRingStyle(tier);
 
   return (
-    <Box>
-      {/* Comment row: avatar column + content column */}
+    <Box
+      sx={
+        isAccepted
+          ? {
+              borderRadius: "10px",
+              border: "1.5px solid #22c55e",
+              backgroundColor: "rgba(34,197,94,0.04)",
+              p: 1.25,
+              mx: -1.25,
+            }
+          : {}
+      }
+    >
+      {isAccepted && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.75 }}>
+          <IconWrapper icon="mdi:check-circle" size={14} color="#22c55e" />
+          <Typography variant="caption" fontWeight={700} sx={{ color: "#22c55e", fontSize: "0.7rem", letterSpacing: "0.03em" }}>
+            Accepted Answer
+          </Typography>
+        </Box>
+      )}
+
       <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
-        {/* Left column: avatar + thread line */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: avatarSize }}>
           <Avatar
             src={comment.author.profile_pic_url}
-            sx={{ width: avatarSize, height: avatarSize, fontSize: depth === 0 ? "0.9rem" : "0.75rem" }}
+            sx={{ width: avatarSize, height: avatarSize, fontSize: depth === 0 ? "0.9rem" : "0.75rem", ...ringStyle }}
           >
             {comment.author.name.charAt(0)}
           </Avatar>
-          {/* Thread line going down to replies */}
           {hasReplies && (
             <Box
               sx={{
@@ -80,13 +132,20 @@ export function CommentItem({
           )}
         </Box>
 
-        {/* Right column: header + body + actions */}
         <Box sx={{ flex: 1, minWidth: 0, pb: hasReplies ? 1.5 : 0 }}>
-          {/* Header */}
           <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75, mb: 0.4 }}>
             <Typography variant={depth === 0 ? "body2" : "caption"} fontWeight={700} sx={{ color: "var(--font-primary)" }}>
               {comment.author.name}
             </Typography>
+            {tier && tier !== "bronze" && (
+              <Box
+                sx={{
+                  width: 8, height: 8, borderRadius: "50%",
+                  backgroundColor: XP_TIER_COLORS[tier],
+                  flexShrink: 0,
+                }}
+              />
+            )}
             <Chip
               label={comment.author.role}
               size="small"
@@ -101,7 +160,6 @@ export function CommentItem({
             </Typography>
           </Box>
 
-          {/* Reply-to indicator */}
           {depth > 0 && parentAuthorName && (
             <Typography
               variant="caption"
@@ -111,7 +169,6 @@ export function CommentItem({
             </Typography>
           )}
 
-          {/* Body */}
           <Typography
             variant="body2"
             sx={{
@@ -126,7 +183,6 @@ export function CommentItem({
             {comment.body}
           </Typography>
 
-          {/* Actions */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <VoteButtons
               upvotes={comment.upvotes}
@@ -155,9 +211,30 @@ export function CommentItem({
                 {t("community.reply")}
               </Button>
             )}
+
+            {isThreadAuthor && depth === 0 && onAccept && (
+              <Tooltip title={isAccepted ? "Unmark as accepted" : "Mark as accepted answer"}>
+                <IconButton
+                  size="small"
+                  onClick={handleAccept}
+                  disabled={accepting}
+                  sx={{
+                    p: 0.5,
+                    color: isAccepted ? "#22c55e" : "var(--font-tertiary)",
+                    "&:hover": { color: "#22c55e", backgroundColor: "rgba(34,197,94,0.08)" },
+                    transition: "color 0.15s",
+                  }}
+                >
+                  <IconWrapper
+                    icon={isAccepted ? "mdi:star" : "mdi:star-outline"}
+                    size={17}
+                    color={isAccepted ? "#22c55e" : undefined}
+                  />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
 
-          {/* Reply form */}
           <Collapse in={showReplyForm}>
             <Box sx={{ mt: 1.25 }}>
               <TextField
@@ -203,7 +280,6 @@ export function CommentItem({
         </Box>
       </Box>
 
-      {/* Nested replies — connected via thread line from parent avatar */}
       {hasReplies && (
         <Box
           sx={{
@@ -223,6 +299,8 @@ export function CommentItem({
               threadId={threadId}
               onVote={onVote}
               onReply={onReply}
+              onAccept={onAccept}
+              isThreadAuthor={isThreadAuthor}
               depth={depth + 1}
               parentAuthorName={comment.author.name}
             />
@@ -231,4 +309,4 @@ export function CommentItem({
       )}
     </Box>
   );
-}
+});

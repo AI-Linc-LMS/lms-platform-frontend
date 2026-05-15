@@ -464,6 +464,40 @@ export interface ExportCSVParams {
 }
 
 const BASE_URL = `/admin-dashboard/api/clients/${config.clientId}/mock-interviews`;
+// Templates live in the mock_interview app's URL space, not under admin-dashboard. They're
+// still admin-gated server-side, just routed alongside the student-facing interview URLs.
+const TEMPLATES_BASE_URL = `/mock-interview/api/clients/${config.clientId}/interview-templates`;
+
+export type InterviewTemplateDifficulty = "Easy" | "Medium" | "Hard";
+
+export interface InterviewTemplate {
+  id: number;
+  title: string;
+  topic: string;
+  subtopic: string;
+  difficulty: InterviewTemplateDifficulty;
+  duration_minutes: number;
+  description: string;
+  is_active: boolean;
+  course_ids: number[];
+  courses: Array<{ id: number; title: string }>;
+  attempt_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InterviewTemplateCreatePayload {
+  title: string;
+  topic: string;
+  subtopic: string;
+  difficulty: InterviewTemplateDifficulty;
+  duration_minutes: number;
+  description?: string;
+  is_active?: boolean;
+  course_ids?: number[];
+}
+
+export type InterviewTemplateUpdatePayload = Partial<InterviewTemplateCreatePayload>;
 
 const adminMockInterviewService = {
   /**
@@ -556,6 +590,59 @@ const adminMockInterviewService = {
       },
     });
     return response.data as Blob;
+  },
+
+  // ----- Interview templates (course mapping) -----
+
+  /**
+   * List interview templates for this client. Pass `courseId` to narrow to templates on a
+   * specific course.
+   */
+  listTemplates: async (
+    courseId?: number
+  ): Promise<InterviewTemplate[]> => {
+    const params: { course_id?: number } = {};
+    if (courseId != null) params.course_id = courseId;
+    const response = await apiClient.get(`${TEMPLATES_BASE_URL}/`, { params });
+    return response.data;
+  },
+
+  getTemplate: async (templateId: number): Promise<InterviewTemplate> => {
+    const response = await apiClient.get(
+      `${TEMPLATES_BASE_URL}/${templateId}/`
+    );
+    return response.data;
+  },
+
+  /**
+   * Create a new template. If `course_ids` is non-empty, every student already enrolled in
+   * any of those courses gets an `interview_assigned` notification fired server-side.
+   */
+  createTemplate: async (
+    payload: InterviewTemplateCreatePayload
+  ): Promise<InterviewTemplate> => {
+    const response = await apiClient.post(`${TEMPLATES_BASE_URL}/`, payload);
+    return response.data;
+  },
+
+  /**
+   * Update an existing template. `course_ids` REPLACES the M2M when provided; omit the field
+   * entirely to leave course attachments unchanged. Newly-added courses fire notifications;
+   * removed or unchanged courses do not.
+   */
+  updateTemplate: async (
+    templateId: number,
+    payload: InterviewTemplateUpdatePayload
+  ): Promise<InterviewTemplate> => {
+    const response = await apiClient.patch(
+      `${TEMPLATES_BASE_URL}/${templateId}/`,
+      payload
+    );
+    return response.data;
+  },
+
+  deleteTemplate: async (templateId: number): Promise<void> => {
+    await apiClient.delete(`${TEMPLATES_BASE_URL}/${templateId}/`);
   },
 };
 
