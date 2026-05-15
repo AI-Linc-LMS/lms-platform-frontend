@@ -162,7 +162,9 @@ export function SetupWizard({ initialState }: Props) {
       {step === 1 ? (
         <WelcomeStep state={state} data={data} onChange={updateData} />
       ) : null}
-      {step === 2 ? <BrandStep data={data} onChange={updateData} /> : null}
+      {step === 2 ? (
+        <BrandStep state={state} data={data} onChange={updateData} />
+      ) : null}
       {step === 3 ? <UrlStep state={state} data={data} onChange={updateData} /> : null}
       {step === 4 ? <ThemeStep data={data} onChange={updateData} /> : null}
       {step === 5 ? <FeaturesStep data={data} onChange={updateData} /> : null}

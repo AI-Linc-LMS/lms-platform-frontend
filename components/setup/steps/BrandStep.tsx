@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
-import { wizardService } from "@/lib/services/wizard.service";
+import { wizardService, type WizardState } from "@/lib/services/wizard.service";
 
 const containerVariants = {
   hidden: {},
@@ -20,6 +20,7 @@ const itemVariants = {
 };
 
 interface Props {
+  state: WizardState;
   data: WizardData;
   onChange: (patch: Partial<WizardData>) => void;
 }
@@ -38,25 +39,60 @@ function AssetField({
   hint,
   kind,
   value,
+  prefilled,
   onUploaded,
 }: {
   label: string;
   hint?: string;
   kind: string;
   value?: string;
+  /** True when the displayed value is the intake-form upload, not a user upload. */
+  prefilled?: boolean;
   onUploaded: (url: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
   return (
     <div>
-      <p className="aw-label">{label}</p>
+      <div className="flex items-center gap-2">
+        <p className="aw-label" style={{ marginBottom: 0 }}>
+          {label}
+        </p>
+        {prefilled && value ? (
+          <span
+            className="aw-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.22em]"
+            style={{
+              color: "#00e0ff",
+              border: "1px solid rgba(0, 224, 255, 0.25)",
+              background: "rgba(0, 224, 255, 0.05)",
+            }}
+          >
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            From application
+          </span>
+        ) : null}
+      </div>
       {hint ? <p className="aw-help">{hint}</p> : null}
       <div className="mt-3 flex items-center gap-4">
         <div
           className="grid h-16 w-16 place-items-center overflow-hidden rounded-[14px]"
           style={{
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(255,255,255,0.02)",
+            border: prefilled
+              ? "1px solid rgba(0, 224, 255, 0.3)"
+              : "1px solid rgba(255,255,255,0.08)",
+            background: prefilled
+              ? "rgba(0, 224, 255, 0.04)"
+              : "rgba(255,255,255,0.02)",
           }}
         >
           {value ? (
@@ -128,10 +164,16 @@ function ColorField({
   );
 }
 
-export function BrandStep({ data, onChange }: Props) {
+export function BrandStep({ state, data, onChange }: Props) {
   const brand = data.brand || {};
   const set = (patch: Partial<WizardData["brand"]>) =>
     onChange({ brand: { ...brand, ...patch } });
+
+  // Fall back to the logo the user uploaded during the intake form
+  // (Client.app_logo_url, surfaced as state.logo_url) until they replace it.
+  const lightLogoDisplay = brand.light_logo_url || state.logo_url || undefined;
+  const lightLogoIsPrefilled =
+    !brand.light_logo_url && Boolean(state.logo_url);
 
   return (
     <motion.div
@@ -145,7 +187,8 @@ export function BrandStep({ data, onChange }: Props) {
           label="Light-mode logo"
           hint="Used on the main app shell. PNG or SVG, transparent background works best."
           kind="light_logo"
-          value={brand.light_logo_url}
+          value={lightLogoDisplay}
+          prefilled={lightLogoIsPrefilled}
           onUploaded={(url) => set({ light_logo_url: url })}
         />
         <AssetField
@@ -201,10 +244,10 @@ export function BrandStep({ data, onChange }: Props) {
             style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
             <div className="flex items-center gap-2">
-              {brand.light_logo_url ? (
+              {lightLogoDisplay ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={brand.light_logo_url}
+                  src={lightLogoDisplay}
                   alt=""
                   className="h-6 w-auto"
                 />
