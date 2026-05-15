@@ -21,6 +21,8 @@ export interface InstructorRow {
   pending_reviewed_at?: string | null;
   pending_rejection_reason?: string | null;
   assigned_courses?: InstructorAssignedCourse[];
+  /** Presigned S3 URL to the instructor's uploaded CV, when one was provided at signup. */
+  instructor_cv_url?: string | null;
 }
 
 export interface InstructorCoursesPayload {
