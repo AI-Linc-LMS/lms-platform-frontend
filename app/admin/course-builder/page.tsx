@@ -26,7 +26,10 @@ import {
 } from "@/components/admin/course-builder/CourseCard";
 import { CreateCourseModal } from "@/components/admin/course-builder/CreateCourseModal";
 import { CourseBuilderHeader } from "@/components/admin/course-builder/CourseBuilderHeader";
-import { CourseStatsSection } from "@/components/admin/course-builder/CourseStatsSection";
+import {
+  CourseStatsSection,
+  CourseFilter,
+} from "@/components/admin/course-builder/CourseStatsSection";
 import { CourseSearchBar } from "@/components/admin/course-builder/CourseSearchBar";
 import { CourseStatisticsCards } from "@/components/admin/course-builder/CourseStatisticsCards";
 import { SearchResultsInfo } from "@/components/admin/course-builder/SearchResultsInfo";
@@ -43,6 +46,7 @@ export default function CourseBuilderPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<CourseFilter>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -66,10 +70,30 @@ export default function CourseBuilderPage() {
   };
 
   const filteredCourses = useMemo(() => {
-    if (!searchQuery.trim()) return courses;
+    let result = courses;
+
+    switch (activeFilter) {
+      case "drafts":
+        result = result.filter((course) => !course.published);
+        break;
+      case "published":
+        result = result.filter((course) => course.published);
+        break;
+      case "free":
+        result = result.filter((course) => course.is_free);
+        break;
+      case "paid":
+        result = result.filter((course) => !course.is_free);
+        break;
+      case "all":
+      default:
+        break;
+    }
+
+    if (!searchQuery.trim()) return result;
 
     const query = searchQuery.toLowerCase();
-    return courses.filter(
+    return result.filter(
       (course) =>
         course.title.toLowerCase().includes(query) ||
         course.description.toLowerCase().includes(query) ||
@@ -77,7 +101,7 @@ export default function CourseBuilderPage() {
         course.subtitle?.toLowerCase().includes(query) ||
         course.tags?.some((tag) => tag.toLowerCase().includes(query))
     );
-  }, [courses, searchQuery]);
+  }, [courses, searchQuery, activeFilter]);
 
   const handleCreateCourse = async (formData: {
     name: string;
@@ -165,6 +189,8 @@ export default function CourseBuilderPage() {
 
   const draftCount = courses.filter((course) => !course.published).length;
   const publishedCount = courses.filter((course) => course.published).length;
+  const freeCount = courses.filter((course) => course.is_free).length;
+  const paidCount = courses.filter((course) => !course.is_free).length;
 
   if (loading) {
     return (
@@ -215,6 +241,10 @@ export default function CourseBuilderPage() {
               draftCount={draftCount}
               publishedCount={publishedCount}
               totalCount={courses.length}
+              freeCount={freeCount}
+              paidCount={paidCount}
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
             />
 
             <CourseSearchBar
@@ -242,10 +272,14 @@ export default function CourseBuilderPage() {
           />
 
           {/* Courses Grid */}
-          {filteredCourses.length === 0 && searchQuery ? (
+          {filteredCourses.length === 0 &&
+          (searchQuery || activeFilter !== "all") ? (
             <EmptyState
               type="no-results"
-              onClearSearch={() => setSearchQuery("")}
+              onClearSearch={() => {
+                setSearchQuery("");
+                setActiveFilter("all");
+              }}
             />
           ) : filteredCourses.length === 0 ? (
             <EmptyState
