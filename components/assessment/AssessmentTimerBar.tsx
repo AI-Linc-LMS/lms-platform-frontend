@@ -116,8 +116,10 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
           </Typography>
         </Box>
 
-        {/* Hidden video element for proctoring only (no preview) */}
-        {proctoringVideoRef && (
+        {/* Hidden video element for proctoring only (no preview).
+            Suppressed during submission: the proctoring detector is torn down as part of
+            submit cleanup, which flips faceCount to 0 and would briefly flash "No Face". */}
+        {proctoringVideoRef && !submitting && (
           <Box
             sx={{
               display: "flex",

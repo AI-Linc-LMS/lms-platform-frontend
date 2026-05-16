@@ -64,6 +64,27 @@ export default function AssessmentDetailPage({
   const isAlreadySubmitted =
     assessment?.status === "submitted" || assessment?.status === "finalized";
 
+  const assessmentEndAt = useMemo(
+    () => parseAssessmentStartTime(assessment?.end_time),
+    [assessment?.end_time],
+  );
+
+  // Expired = end_time is in the past AND the learner did not submit before
+  // it closed. A submitted-then-expired assessment is "submitted", not expired.
+  const isExpired = useMemo(() => {
+    if (!assessmentEndAt) return false;
+    if (isAlreadySubmitted) return false;
+    return Date.now() > assessmentEndAt.getTime();
+  }, [assessmentEndAt, isAlreadySubmitted]);
+
+  const expiredOnLabel = useMemo(() => {
+    if (!assessmentEndAt) return "";
+    return assessmentEndAt.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }, [assessmentEndAt]);
+
   useEffect(() => {
     if (!assessmentStartAt) return;
     if (Date.now() >= assessmentStartAt.getTime()) return;
@@ -108,13 +129,17 @@ export default function AssessmentDetailPage({
     }
   };
 
+  const canReattempt = assessment?.can_reattempt === true;
+
   const handleStart = () => {
     if (!assessment) return;
 
     // SECURITY: never re-enter the take flow if this assessment is already
-    // submitted/finalized. Route to the success page so the user can view
-    // their result (or just be informed) instead.
-    if (isAlreadySubmitted) {
+    // submitted/finalized — UNLESS an admin has granted this learner a
+    // retake (can_reattempt). In that case fall through; the backend
+    // start-assessment endpoint consumes the grant atomically when a new
+    // submission is created.
+    if (isAlreadySubmitted && !canReattempt) {
       showToast("This assessment has already been submitted", "warning");
       router.replace(`/assessments/${slug}/submission-success`);
       return;
@@ -623,18 +648,75 @@ export default function AssessmentDetailPage({
             </Paper>
           )}
 
+          {isExpired && (
+            <Alert
+              severity="error"
+              icon={<IconWrapper icon="mdi:clock-alert-outline" size={22} />}
+              sx={{ mb: 3, borderRadius: 2, fontWeight: 500 }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {t("assessments.expiredHeading", {
+                  defaultValue: "This assessment has expired",
+                })}
+              </Typography>
+              <Typography variant="body2">
+                {expiredOnLabel
+                  ? t("assessments.expiredOn", {
+                      defaultValue: "The submission window closed on {{date}}.",
+                      date: expiredOnLabel,
+                    })
+                  : t("assessments.expiredGeneric", {
+                      defaultValue: "The submission window for this assessment has closed.",
+                    })}
+              </Typography>
+            </Alert>
+          )}
+
+          {canReattempt && isAlreadySubmitted && !isExpired && (
+            <Alert
+              severity="info"
+              icon={<IconWrapper icon="mdi:replay" size={22} />}
+              sx={{ mb: 3, borderRadius: 2 }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {t("assessments.reattemptHeading", {
+                  defaultValue: "Re-attempt available",
+                })}
+              </Typography>
+              <Typography variant="body2">
+                {t("assessments.reattemptHelp", {
+                  defaultValue:
+                    "An admin has granted you a re-attempt for this assessment. Starting again will replace your previous score with the new attempt's score.",
+                })}
+              </Typography>
+            </Alert>
+          )}
+
           <Button
             variant="contained"
             size="large"
             fullWidth
             startIcon={
               <IconWrapper
-                icon={isAlreadySubmitted ? "mdi:check-circle-outline" : "mdi:play-circle-outline"}
+                icon={
+                  isExpired
+                    ? "mdi:clock-alert-outline"
+                    : canReattempt && isAlreadySubmitted
+                    ? "mdi:replay"
+                    : isAlreadySubmitted
+                    ? "mdi:check-circle-outline"
+                    : "mdi:play-circle-outline"
+                }
                 size={24}
               />
             }
             onClick={handleStart}
-            disabled={isAlreadySubmitted || !deviceAllowed || !canStartAssessment}
+            disabled={
+              isExpired ||
+              (isAlreadySubmitted && !canReattempt) ||
+              !deviceAllowed ||
+              !canStartAssessment
+            }
             sx={{
               backgroundColor: "var(--accent-indigo)",
               color: "var(--font-light)",
@@ -650,7 +732,11 @@ export default function AssessmentDetailPage({
               },
             }}
           >
-            {isAlreadySubmitted
+            {isExpired
+              ? t("assessments.expired")
+              : canReattempt && isAlreadySubmitted
+              ? t("assessments.reattempt", { defaultValue: "Re-attempt" })
+              : isAlreadySubmitted
               ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
               : t("assessments.startAssessment")}
           </Button>

@@ -52,6 +52,8 @@
   --accent-teal: #319795;
   --accent-purple: #805ad5;
   --accent-pink: #d53f8c;
+  --accent-cyan: #06b6d4;
+  --accent-cyan-dark: #0891b2;
 
   /* Neutral Colors */
   --neutral-50: #f8f9fa;
@@ -175,6 +177,24 @@
   --assessment-catalog-psychometric-shadow-hover: 0 12px 32px color-mix(in srgb, var(--accent-purple) 28%, transparent);
   --assessment-catalog-psychometric-shadow-cta: 0 4px 14px color-mix(in srgb, var(--accent-purple) 42%, transparent);
   --assessment-catalog-psychometric-shadow-cta-hover: 0 6px 20px color-mix(in srgb, var(--accent-purple) 52%, transparent);
+
+  /* Re-attempt CTA (cyan): paired with the green "View Results" CTA on cards
+     where an admin has granted a learner one more attempt. Cyan vs green
+     differentiates the action (re-take vs view) while preserving paired-stack
+     proportions. Built from --accent-cyan / --accent-cyan-dark so it themes
+     consistently with the other catalog CTAs. */
+  --assessment-catalog-reattempt-cta-gradient: linear-gradient(
+    135deg,
+    var(--accent-cyan) 0%,
+    var(--accent-cyan-dark) 100%
+  );
+  --assessment-catalog-reattempt-cta-hover-gradient: linear-gradient(
+    135deg,
+    var(--accent-cyan-dark) 0%,
+    color-mix(in srgb, var(--accent-cyan-dark) 70%, var(--font-dark)) 100%
+  );
+  --assessment-catalog-reattempt-cta-shadow: 0 2px 6px color-mix(in srgb, var(--accent-cyan-dark) 28%, transparent);
+  --assessment-catalog-reattempt-cta-shadow-hover: 0 4px 10px color-mix(in srgb, var(--accent-cyan-dark) 40%, transparent);
 
   /* Manual-review cards: teal + pink (not indigo / orange / warning — reads as “instructor” vs auto) */
   --assessment-catalog-manual-stripe: var(--accent-teal);
