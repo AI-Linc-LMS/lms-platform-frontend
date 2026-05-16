@@ -26,6 +26,8 @@ export interface JobFilters {
   experience?: string;
   search?: string;
   skills?: string[];
+  /** Past 24 hours / week / month on posted date (client-side where supported). */
+  posted_within?: string;
   page?: number;
   page_size?: number;
 }

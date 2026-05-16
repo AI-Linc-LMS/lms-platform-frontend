@@ -15,6 +15,7 @@ import {
 import { JobV2, formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 import { jobsV2Service } from "@/lib/services/jobs-v2.service";
+import { getJobsV2JobDetailHref } from "@/lib/utils/jobs-v2-navigation";
 import { useToast } from "@/components/common/Toast";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import {
@@ -30,9 +31,11 @@ import {
 interface JobCardV2Props {
   job: JobV2;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
+  /** Query string (no `?`) for page / page_size — preserved on detail navigation. */
+  jobsListQuery?: string;
 }
 
-const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
+const JobCardV2Component = ({ job, onFavoriteChange, jobsListQuery }: JobCardV2Props) => {
   const { showToast } = useToast();
   const { isAdminMode } = useAdminMode();
   const [isFavorite, setIsFavorite] = useState(job.is_favourited ?? false);
@@ -306,7 +309,7 @@ const JobCardV2Component = ({ job, onFavoriteChange }: JobCardV2Props) => {
           >
             <Button
               component={Link}
-              href={`/jobs-v2/${job.id}`}
+              href={getJobsV2JobDetailHref(job.id, jobsListQuery ?? "")}
               variant="contained"
               endIcon={<ChevronRight size={16} />}
               sx={{
@@ -340,7 +343,8 @@ export const JobCardV2 = memo(JobCardV2Component, (prevProps, nextProps) => {
   return (
     prevProps.job.id === nextProps.job.id &&
     prevProps.job.is_favourited === nextProps.job.is_favourited &&
-    prevProps.job.applicable_passout_year === nextProps.job.applicable_passout_year
+    prevProps.job.applicable_passout_year === nextProps.job.applicable_passout_year &&
+    prevProps.jobsListQuery === nextProps.jobsListQuery
   );
 });
 JobCardV2.displayName = "JobCardV2";

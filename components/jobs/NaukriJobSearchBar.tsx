@@ -8,9 +8,11 @@ import {
   MenuItem,
   Button,
   Box,
+  Autocomplete,
+  createFilterOptions,
 } from "@mui/material";
 import { Search, X, MapPin, ChevronDown } from "lucide-react";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 
 const EXPERIENCE_OPTIONS = [
   { value: "", label: "Select experience" },
@@ -21,12 +23,17 @@ const EXPERIENCE_OPTIONS = [
   { value: "10+", label: "10+ years" },
 ];
 
+const LOCATION_FILTER_LIMIT = 50;
+
 interface NaukriJobSearchBarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onClear: () => void;
   location?: string;
-  onLocationChange?: (value: string) => void;
+  /** Typing in the location field — does not commit filters until onLocationCommit. */
+  onLocationInputChange?: (value: string) => void;
+  /** User picked a suggestion or confirmed free text (Enter) — commits location for API. */
+  onLocationCommit?: (value: string) => void;
   experience?: string;
   onExperienceChange?: (value: string) => void;
   locationOptions?: string[];
@@ -40,7 +47,8 @@ const NaukriJobSearchBarComponent = ({
   onSearchChange,
   onClear,
   location = "",
-  onLocationChange,
+  onLocationInputChange,
+  onLocationCommit,
   experience = "",
   onExperienceChange,
   locationOptions = [],
@@ -48,18 +56,20 @@ const NaukriJobSearchBarComponent = ({
   placeholder = "Enter skills / designations / companies",
   size = "medium",
 }: NaukriJobSearchBarProps) => {
+  const filterLocationOptions = useMemo(
+    () =>
+      createFilterOptions<string>({
+        limit: LOCATION_FILTER_LIMIT,
+        stringify: (option) => option,
+      }),
+    []
+  );
+
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onSearchChange(String(e.target.value || ""));
     },
     [onSearchChange]
-  );
-
-  const handleLocationChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      onLocationChange?.(String(e.target.value || ""));
-    },
-    [onLocationChange]
   );
 
   const handleExperienceChange = useCallback(
@@ -79,8 +89,8 @@ const NaukriJobSearchBarComponent = ({
         overflow: "hidden",
         backgroundColor: "var(--card-bg)",
         border: "1px solid",
-        borderColor: "var(--card-bg)",
-        boxShadow: "0 4px 14px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+        borderColor: "var(--border-default)",
+        boxShadow: "0 4px 14px color-mix(in srgb, var(--font-primary) 6%, transparent)",
         flexDirection: { xs: "column", sm: "row" },
       }}
     >
@@ -93,7 +103,7 @@ const NaukriJobSearchBarComponent = ({
           alignItems: "center",
           borderRight: { xs: "none", sm: "1px solid" },
           borderBottom: { xs: "1px solid", sm: "none" },
-          borderColor: "var(--card-bg)",
+          borderColor: "var(--border-default)",
           pl: 2,
           pr: 1,
           py: { xs: 1, sm: 0 },
@@ -122,7 +132,7 @@ const NaukriJobSearchBarComponent = ({
             "& .MuiInputBase-input": {
               fontSize: size === "small" ? "0.9rem" : "0.95rem",
               py: 1.5,
-              color: "var(--font-primary)",
+              color: "var(--font-primary-dark)",
               "&::placeholder": { color: "var(--font-tertiary)", opacity: 1 },
             },
           }}
@@ -139,7 +149,7 @@ const NaukriJobSearchBarComponent = ({
             alignItems: "center",
             borderRight: { xs: "none", sm: "1px solid" },
             borderBottom: { xs: "1px solid", sm: "none" },
-            borderColor: "var(--card-bg)",
+            borderColor: "var(--border-default)",
           }}
         >
           <TextField
@@ -159,7 +169,7 @@ const NaukriJobSearchBarComponent = ({
                 px: 2,
                 py: 1.5,
                 fontSize: size === "small" ? "0.9rem" : "0.95rem",
-                color: experience ? "var(--font-primary)" : "var(--font-tertiary)",
+                color: experience ? "var(--font-primary-dark)" : "var(--font-tertiary)",
               },
               endAdornment: (
                 <InputAdornment position="end" sx={{ mr: 0.5 }}>
@@ -183,7 +193,7 @@ const NaukriJobSearchBarComponent = ({
         </Box>
       )}
 
-      {/* Location */}
+      {/* Location — Autocomplete typeahead */}
       <Box
         sx={{
           width: { xs: "100%", sm: onExperienceChange ? 240 : 260 },
@@ -191,91 +201,67 @@ const NaukriJobSearchBarComponent = ({
           display: "flex",
           alignItems: "center",
           borderRight: { xs: "none", sm: "1px solid" },
-          borderColor: "var(--card-bg)",
+          borderColor: "var(--border-default)",
+          px: 1,
         }}
       >
-        {locationOptions.length > 0 ? (
-          <TextField
-            select
-            fullWidth
-            value={location || ""}
-            onChange={handleLocationChange}
-            variant="standard"
-            SelectProps={{
-              displayEmpty: true,
-              renderValue: (v) => (v ? String(v) : "Enter location"),
-              IconComponent: () => null,
-            }}
-            InputProps={{
-              disableUnderline: true,
-              startAdornment: (
-                <InputAdornment position="start" sx={{ ml: 1.5 }}>
-                  <MapPin size={18} style={{ color: "var(--font-tertiary)" }} />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end" sx={{ mr: 0.5 }}>
-                  <ChevronDown size={18} style={{ color: "var(--font-tertiary)" }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              "& .MuiInputBase-root": { alignItems: "center" },
-              "& .MuiSelect-select": { pr: 2 },
-              "& .MuiInputBase-input": {
-                fontSize: size === "small" ? "0.9rem" : "0.95rem",
-                py: 1.5,
-                pl: 0.5,
-                color: location ? "var(--font-primary)" : "var(--font-tertiary)",
-              },
-            }}
-          >
-            <MenuItem value="">All locations</MenuItem>
-            {locationOptions.map((loc) => (
-              <MenuItem key={loc} value={loc}>
-                {loc}
-              </MenuItem>
-            ))}
-          </TextField>
-        ) : (
-          <TextField
-            fullWidth
-            placeholder="Enter location"
-            value={location || ""}
-            onChange={handleLocationChange}
-            variant="standard"
-            InputProps={{
-              disableUnderline: true,
-              startAdornment: (
-                <InputAdornment position="start" sx={{ ml: 1.5 }}>
-                  <MapPin size={18} style={{ color: "var(--font-tertiary)" }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              "& .MuiInputBase-root": { alignItems: "center" },
-              "& .MuiInputBase-input": {
-                fontSize: size === "small" ? "0.9rem" : "0.95rem",
-                py: 1.5,
-                pl: 0.5,
-                color: location ? "var(--font-primary)" : "var(--font-tertiary)",
-                "&::placeholder": { color: "var(--font-tertiary)", opacity: 1 },
-              },
-            }}
-          />
-        )}
+        <MapPin size={18} style={{ color: "var(--font-tertiary)", flexShrink: 0, marginLeft: 8 }} />
+        <Autocomplete
+          freeSolo
+          fullWidth
+          options={locationOptions}
+          value={location}
+          inputValue={location}
+          onInputChange={(_, v) => onLocationInputChange?.(v)}
+          onChange={(_, v) =>
+            onLocationCommit?.(typeof v === "string" ? v : "")
+          }
+          filterOptions={filterLocationOptions}
+          getOptionLabel={(o) => o}
+          isOptionEqualToValue={(a, b) => a === b}
+          size="small"
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+            "& .MuiAutocomplete-inputRoot": {
+              py: 1,
+              fontSize: size === "small" ? "0.9rem" : "0.95rem",
+              color: location ? "var(--font-primary-dark)" : "var(--font-tertiary)",
+            },
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder="Location"
+              variant="standard"
+              inputProps={{
+                ...params.inputProps,
+                onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                  params.inputProps?.onKeyDown?.(e);
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    onLocationCommit?.(location);
+                  }
+                },
+              }}
+              InputProps={{
+                ...params.InputProps,
+                disableUnderline: true,
+              }}
+            />
+          )}
+        />
       </Box>
 
-      {/* Search button */}
+      {/* Search — outlined primary to align with admin toolbars */}
       <Button
-        variant="contained"
+        variant="outlined"
         onClick={onSearch}
         sx={{
           minWidth: { xs: "100%", sm: 120 },
           height: { xs: 48, sm: "auto" },
           borderRadius: 0,
-          backgroundColor: "var(--accent-indigo)",
-          color: "var(--font-light)",
+          borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+          color: "var(--accent-indigo)",
           fontWeight: 600,
           fontSize: "1rem",
           textTransform: "none",
@@ -283,7 +269,8 @@ const NaukriJobSearchBarComponent = ({
           py: 1.5,
           boxShadow: "none",
           "&:hover": {
-            backgroundColor: "var(--accent-indigo-dark)",
+            borderColor: "var(--accent-indigo)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
             boxShadow: "none",
           },
         }}

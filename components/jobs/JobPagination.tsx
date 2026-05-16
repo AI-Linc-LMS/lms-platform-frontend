@@ -53,7 +53,7 @@ const JobPaginationComponent = ({
         size="small"
         showFirstButton
         showLastButton
-        siblingCount={0}
+        siblingCount={1}
         sx={{
           '& .MuiPaginationItem-root': {
             fontSize: { xs: '0.75rem', sm: '0.875rem' },

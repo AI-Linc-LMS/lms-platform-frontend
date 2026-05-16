@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Box,
@@ -15,22 +15,31 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
-import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
+import { formatJobPassoutYear, jobsV2Service } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
+import {
+  getAdminJobsV2ListBackHref,
+  getAdminJobsV2ListQuerySuffix,
+} from "@/lib/utils/jobs-v2-navigation";
+import {
+  isExternalJsonFeedJob,
+  isLikelyExternalJsonSyntheticId,
+} from "@/lib/jobs/external-json-jobs-store";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { MapPin, Briefcase, Tag, Calendar, Clock, ExternalLink, Users, FileText, Heart, GraduationCap } from "lucide-react";
 const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  active: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
-  inactive: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
-  closed: { bg: "color-mix(in srgb, var(--font-secondary) 16%, transparent)", color: "var(--font-secondary)" },
-  completed: { bg: "color-mix(in srgb, var(--success-500) 10%, transparent)", color: "var(--success-500)" },
-  on_hold: { bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)", color: "var(--warning-500)" },
+  active: { bg: "color-mix(in srgb, var(--success-500) 12%, transparent)", color: "var(--success-500)" },
+  inactive: { bg: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)", color: "var(--accent-indigo)" },
+  closed: { bg: "color-mix(in srgb, var(--font-secondary) 12%, transparent)", color: "var(--font-secondary)" },
+  completed: { bg: "color-mix(in srgb, var(--success-500) 8%, transparent)", color: "var(--primary-700)" },
+  on_hold: { bg: "color-mix(in srgb, var(--warning-500) 12%, transparent)", color: "var(--warning-500)" },
 };
 
 const formatDate = (d?: string) => {
@@ -61,25 +70,25 @@ const SectionCard = ({
       p: 2.5,
       borderRadius: 2.5,
       border: "1px solid",
-      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+      borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
       backgroundColor: "var(--card-bg)",
       mb: 2,
       overflow: "hidden",
       transition: "all 0.2s ease",
       "&:hover": {
-        borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
-        boxShadow: "0 8px 24px color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+        borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+        boxShadow: "0 8px 24px color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
       },
     }}
   >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, pb: 1.5, borderBottom: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, pb: 1.5, borderBottom: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 4%, transparent)" }}>
       {icon && (
         <Box
           sx={{
             width: 36,
             height: 36,
             borderRadius: 1.5,
-            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -88,7 +97,7 @@ const SectionCard = ({
           <IconWrapper icon={icon} size={20} style={{ color: "var(--accent-indigo)" }} />
         </Box>
       )}
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--font-primary-dark)", letterSpacing: "-0.01em" }}>
         {title}
       </Typography>
     </Box>
@@ -118,14 +127,14 @@ const InfoPill = ({
       borderRadius: 2,
       backgroundColor: "var(--card-bg)",
       border: "1px solid",
-      borderColor: multiline ? "color-mix(in srgb, var(--accent-indigo) 24%, transparent)" : "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+      borderColor: multiline ? "color-mix(in srgb, var(--accent-indigo) 18%, transparent)" : "color-mix(in srgb, var(--font-primary) 6%, transparent)",
       flex: multiline ? "1 1 100%" : "1 1 160px",
       minWidth: multiline ? "100%" : 0,
       maxWidth: multiline ? "100%" : undefined,
       transition: "all 0.2s ease",
       "&:hover": {
-        borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
-        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
+        borderColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 2%, transparent)",
       },
     }}
   >
@@ -149,7 +158,7 @@ const InfoPill = ({
         variant="body2"
         sx={{
           fontWeight: 600,
-          color: "var(--font-primary)",
+          color: "var(--font-primary-dark)",
           mt: 0.25,
           ...(multiline
             ? {
@@ -174,12 +183,22 @@ const InfoPill = ({
 export default function JobDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const jobId = Number(params?.id);
   const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [updating, setUpdating] = useState(false);
+
+  const adminJobsListBackHref = useMemo(
+    () => getAdminJobsV2ListBackHref(searchParams),
+    [searchParams]
+  );
+  const listQuerySuffix = useMemo(
+    () => getAdminJobsV2ListQuerySuffix(searchParams),
+    [searchParams]
+  );
 
   const JOB_STATUS_OPTIONS = [
     { value: "active", label: "Active" },
@@ -193,34 +212,42 @@ export default function JobDetailPage() {
     if (!jobId || isNaN(jobId)) return;
     try {
       setLoading(true);
-      const data = await adminJobsV2Service.getJob(jobId, config.clientId);
-      setJob(data);
+      if (isLikelyExternalJsonSyntheticId(jobId)) {
+        const data = await jobsV2Service.getJobById(jobId);
+        setJob(data);
+        if (!data) {
+          showToast("This feed listing could not be loaded.", "error");
+        }
+      } else {
+        const data = await adminJobsV2Service.getJob(jobId, config.clientId);
+        setJob(data);
+      }
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to load job", "error");
-      router.push("/admin/jobs-v2");
+      router.push(adminJobsListBackHref);
     } finally {
       setLoading(false);
     }
-  }, [jobId, showToast, router]);
+  }, [jobId, showToast, router, adminJobsListBackHref]);
 
   useEffect(() => {
     loadJob();
   }, [loadJob]);
 
   const handleDelete = async () => {
-    if (!job) return;
+    if (!job || isExternalJsonFeedJob(job)) return;
     try {
       await adminJobsV2Service.deleteJob(job.id, config.clientId);
       showToast("Job deleted successfully", "success");
       setDeleteConfirm(false);
-      router.push("/admin/jobs-v2");
+      router.push(adminJobsListBackHref);
     } catch (err) {
       showToast((err as Error)?.message ?? "Failed to delete", "error");
     }
   };
 
   const handleStatusChange = async (status: string) => {
-    if (!job) return;
+    if (!job || isExternalJsonFeedJob(job)) return;
     try {
       setUpdating(true);
       await adminJobsV2Service.updateJob(job.id, { status: status as JobV2["status"] }, config.clientId);
@@ -233,7 +260,7 @@ export default function JobDetailPage() {
     }
   };
 
-  if (loading || !job) {
+  if (loading) {
     return (
       <MainLayout>
         <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
@@ -254,6 +281,39 @@ export default function JobDetailPage() {
     );
   }
 
+  if (!job) {
+    return (
+      <MainLayout>
+        <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto" }}>
+          <Button
+            component={Link}
+            href={adminJobsListBackHref}
+            startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
+            sx={{ mb: 2, textTransform: "none", color: "var(--font-secondary)" }}
+          >
+            Jobs
+          </Button>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+            Job not found
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            This job may have been removed, or the feed data is not available.
+          </Typography>
+          <Button component={Link} variant="contained" href={adminJobsListBackHref} sx={{ textTransform: "none" }}>
+            Back to job list
+          </Button>
+        </Box>
+      </MainLayout>
+    );
+  }
+
+  const isFeedListing = isExternalJsonFeedJob(job);
+  const importAsPlatformHref = (() => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.set("seedId", String(job.id));
+    return `/admin/jobs-v2/new?${p.toString()}`;
+  })();
+
   const skills = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])].filter(Boolean);
   const courses = job.courses ?? [];
   const collegeMappings = job.college_mappings ?? [];
@@ -266,14 +326,14 @@ export default function JobDetailPage() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3, flexWrap: "wrap" }}>
           <Button
             component={Link}
-            href="/admin/jobs-v2"
+            href={adminJobsListBackHref}
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
             sx={{
               textTransform: "none",
               color: "var(--font-secondary)",
               fontWeight: 500,
               fontSize: "0.875rem",
-              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)", color: "var(--accent-indigo)" },
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", color: "var(--accent-indigo)" },
             }}
           >
             Jobs
@@ -283,7 +343,7 @@ export default function JobDetailPage() {
             variant="body2"
             sx={{
               fontWeight: 600,
-              color: "var(--font-primary)",
+              color: "var(--font-primary-dark)",
               flex: 1,
               minWidth: 0,
               lineHeight: 1.35,
@@ -297,6 +357,13 @@ export default function JobDetailPage() {
           </Typography>
         </Box>
 
+        {isFeedListing && (
+          <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+            This is a student feed listing (not stored as a platform job). Import it as a platform job to
+            edit status, track applications, or delete it from the server.
+          </Alert>
+        )}
+
         {/* Hero header */}
         <Paper
           elevation={0}
@@ -309,8 +376,8 @@ export default function JobDetailPage() {
             mb: 3,
             borderRadius: 2.5,
             border: "1px solid",
-            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
-            background: "linear-gradient(160deg, var(--surface) 0%, var(--surface) 50%, var(--border-default) 100%)",
+            borderColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
+            background: "linear-gradient(160deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 88%, var(--border-default) 12%) 50%, color-mix(in srgb, var(--surface) 75%, var(--border-default) 25%) 100%)",
             overflow: "hidden",
           }}
         >
@@ -325,8 +392,8 @@ export default function JobDetailPage() {
                     height: 64,
                     borderRadius: 2,
                     backgroundColor: "var(--accent-indigo)",
-                    border: "3px solid var(--font-light)",
-                    boxShadow: "0 4px 14px color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
+                    border: "3px solid var(--card-bg)",
+                    boxShadow: "0 4px 14px color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
                     fontSize: "1.4rem",
                     flexShrink: 0,
                   }}
@@ -334,7 +401,7 @@ export default function JobDetailPage() {
                   {job.company_name?.[0]?.toUpperCase() || "C"}
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary)", lineHeight: 1.3, letterSpacing: "-0.02em" }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary-dark)", lineHeight: 1.3, letterSpacing: "-0.02em" }}>
                     {job.job_title}
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500, fontSize: "1rem" }}>
@@ -344,13 +411,13 @@ export default function JobDetailPage() {
                     <Chip
                       label={job.job_type ?? "Job"}
                       size="small"
-                      sx={{ backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)", fontWeight: 600, height: 26 }}
+                      sx={{ backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)", color: "var(--accent-indigo)", fontWeight: 600, height: 26 }}
                     />
                     <Chip
                       label={job.is_published ? "Published" : "Draft"}
                       size="small"
                       sx={{
-                        backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 16%, transparent)" : "color-mix(in srgb, var(--font-secondary) 16%, transparent)",
+                        backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 12%, transparent)" : "color-mix(in srgb, var(--font-secondary) 12%, transparent)",
                         color: job.is_published ? "var(--success-500)" : "var(--font-secondary)",
                         fontWeight: 600,
                         height: 26,
@@ -361,9 +428,9 @@ export default function JobDetailPage() {
                         label={job.employment_type}
                         size="small"
                         sx={{
-                          backgroundColor: "color-mix(in srgb, var(--font-light) 90%, transparent)",
+                          backgroundColor: "color-mix(in srgb, var(--card-bg) 90%, transparent)",
                           color: "var(--accent-indigo)",
-                          border: "1px solid color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                          border: "1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
                           fontWeight: 500,
                           height: 26,
                         }}
@@ -376,7 +443,7 @@ export default function JobDetailPage() {
                         value={job.status ?? "active"}
                         label="Job Status"
                         onChange={(e) => handleStatusChange(e.target.value)}
-                        disabled={updating}
+                        disabled={updating || isFeedListing}
                         sx={{
                           fontWeight: 600,
                           height: 36,
@@ -385,7 +452,7 @@ export default function JobDetailPage() {
                           backgroundColor: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).bg,
                           color: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).color,
                           "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                            borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
                             borderWidth: 1.5,
                           },
                           "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
@@ -427,65 +494,86 @@ export default function JobDetailPage() {
                     sx={{
                       textTransform: "none",
                       fontWeight: 600,
-                      borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--accent-indigo) 50%, transparent)",
                       color: "var(--accent-indigo)",
                       borderRadius: 2,
-                      "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
+                      "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" },
                     }}
                   >
                     View JD
                   </Button>
                 )}
-                <Button
-                  component={Link}
-                  href={`/admin/jobs-v2/${job.id}/applications`}
-                  variant="contained"
-                  startIcon={<Users size={18} />}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    backgroundColor: "var(--accent-indigo)",
-                    px: 2.5,
-                    borderRadius: 2,
-                    boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
-                    "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
-                  }}
-                >
-                  Applications
-                </Button>
-                <Button
-                  component={Link}
-                  href={`/admin/jobs-v2/${job.id}/edit`}
-                  variant="outlined"
-                  startIcon={<IconWrapper icon="mdi:pencil" size={18} />}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
-                    color: "var(--accent-indigo)",
-                    borderRadius: 2,
-                    "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
-                  }}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={() => setDeleteConfirm(true)}
-                  startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    "&:hover": {
-                      backgroundColor:
-                        "color-mix(in srgb, var(--error-500) 6%, transparent)",
-                    },
-                  }}
-                >
-                  Delete
-                </Button>
+                {!isFeedListing && (
+                  <Button
+                    component={Link}
+                    href={`/admin/jobs-v2/${job.id}/applications${listQuerySuffix}`}
+                    variant="contained"
+                    startIcon={<Users size={18} />}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      backgroundColor: "var(--accent-indigo)",
+                      px: 2.5,
+                      borderRadius: 2,
+                      boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                      "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
+                    }}
+                  >
+                    Applications
+                  </Button>
+                )}
+                {isFeedListing ? (
+                  <Button
+                    component={Link}
+                    href={importAsPlatformHref}
+                    variant="contained"
+                    startIcon={<IconWrapper icon="mdi:database-import" size={18} />}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      backgroundColor: "var(--accent-indigo)",
+                      px: 2.5,
+                      borderRadius: 2,
+                      boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                      "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
+                    }}
+                  >
+                    Import as platform job
+                  </Button>
+                ) : (
+                  <Button
+                    component={Link}
+                    href={`/admin/jobs-v2/${job.id}/edit${listQuerySuffix}`}
+                    variant="outlined"
+                    startIcon={<IconWrapper icon="mdi:pencil" size={18} />}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      borderColor: "color-mix(in srgb, var(--accent-indigo) 50%, transparent)",
+                      color: "var(--accent-indigo)",
+                      borderRadius: 2,
+                      "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" },
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )}
+                {!isFeedListing && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => setDeleteConfirm(true)}
+                    startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      borderRadius: 2,
+                      "&:hover": { backgroundColor: "color-mix(in srgb, var(--error-500) 4%, transparent)" },
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
               </Box>
             </Box>
           </Box>
@@ -529,7 +617,7 @@ export default function JobDetailPage() {
           <Box>
             {job.job_description && (
               <SectionCard title="Job Description" icon="mdi:text-box-outline">
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-secondary)", fontSize: "0.9375rem" }}>
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-muted)", fontSize: "0.9375rem" }}>
                   {job.job_description}
                 </Typography>
               </SectionCard>
@@ -537,7 +625,7 @@ export default function JobDetailPage() {
 
             {job.role_process && (
               <SectionCard title="Role Process" icon="mdi:format-list-checks">
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-secondary)", fontSize: "0.9375rem" }}>
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-muted)", fontSize: "0.9375rem" }}>
                   {job.role_process}
                 </Typography>
               </SectionCard>
@@ -545,7 +633,7 @@ export default function JobDetailPage() {
 
             {job.company_info && (
               <SectionCard title="About Company" icon="mdi:information-outline">
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-secondary)", fontSize: "0.9375rem" }}>
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8, color: "var(--font-muted)", fontSize: "0.9375rem" }}>
                   {job.company_info}
                 </Typography>
               </SectionCard>
@@ -561,12 +649,12 @@ export default function JobDetailPage() {
                   mb: 2,
                   borderRadius: 2.5,
                   border: "1px solid",
-                  borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   },
                 }}
               >
@@ -603,12 +691,12 @@ export default function JobDetailPage() {
                   mb: 2,
                   borderRadius: 2.5,
                   border: "1px solid",
-                  borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                  borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   },
                 }}
               >
@@ -647,11 +735,11 @@ export default function JobDetailPage() {
                       label={s}
                       size="small"
                       sx={{
-                        borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                        borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
                         color: "var(--accent-indigo)",
                         fontWeight: 500,
-                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
-                        "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)" },
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                        "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
                       }}
                       variant="outlined"
                     />
@@ -663,27 +751,27 @@ export default function JobDetailPage() {
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
               {job.industry_type && (
                 <SectionCard title="Industry" icon="mdi:factory">
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.industry_type}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-muted)", fontWeight: 500 }}>{job.industry_type}</Typography>
                 </SectionCard>
               )}
               {job.department && (
                 <SectionCard title="Department" icon="mdi:domain">
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.department}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-muted)", fontWeight: 500 }}>{job.department}</Typography>
                 </SectionCard>
               )}
               {job.education && (
                 <SectionCard title="Education" icon="mdi:school-outline">
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.education}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-muted)", fontWeight: 500 }}>{job.education}</Typography>
                 </SectionCard>
               )}
               {passoutYearDisplay && (
                 <SectionCard title="Applicable passout year" icon="mdi:calendar-outline">
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-muted)", fontWeight: 500 }}>{passoutYearDisplay}</Typography>
                 </SectionCard>
               )}
               {job.role_category && (
                 <SectionCard title="Role Category" icon="mdi:briefcase-outline">
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>{job.role_category}</Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-muted)", fontWeight: 500 }}>{job.role_category}</Typography>
                 </SectionCard>
               )}
             </Box>
@@ -694,13 +782,13 @@ export default function JobDetailPage() {
                   {job.ug_requirements && (
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>UG</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}>{job.ug_requirements}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-muted)", display: "block", mt: 0.25 }}>{job.ug_requirements}</Typography>
                     </Box>
                   )}
                   {job.pg_requirements && (
                     <Box>
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>PG</Typography>
-                      <Typography variant="body2" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}>{job.pg_requirements}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--font-muted)", display: "block", mt: 0.25 }}>{job.pg_requirements}</Typography>
                     </Box>
                   )}
                 </Box>
@@ -715,7 +803,7 @@ export default function JobDetailPage() {
                       key={c.id}
                       label={c.title}
                       size="small"
-                      sx={{ backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)", color: "var(--accent-indigo)", fontWeight: 500 }}
+                      sx={{ backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)", color: "var(--accent-indigo)", fontWeight: 500 }}
                     />
                   ))}
                 </Box>
@@ -726,7 +814,7 @@ export default function JobDetailPage() {
               <SectionCard title="Targeted Colleges" icon="mdi:domain">
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
                   {collegeMappings.map((m, i) => (
-                    <Chip key={i} label={m.college_name} size="small" variant="outlined" sx={{ borderColor: "color-mix(in srgb, var(--font-primary) 15%, transparent)" }} />
+                    <Chip key={i} label={m.college_name} size="small" variant="outlined" sx={{ borderColor: "color-mix(in srgb, var(--font-primary) 12%, transparent)" }} />
                   ))}
                 </Box>
               </SectionCard>
