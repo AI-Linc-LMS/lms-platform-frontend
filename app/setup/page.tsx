@@ -77,21 +77,24 @@ export default function SetupPage() {
       <div className="ailinc-wizard grid place-items-center">
         <div className="aw-grid-bg" aria-hidden />
         <div className="relative flex flex-col items-center gap-6">
-          <div className="aw-bracket inline-block px-6 py-4">
-            <span
-              className="aw-serif"
+          <div
+            className="aw-bracket inline-block px-6 py-4"
+            style={{ animation: "aw-mark-breathe 2.4s ease-in-out infinite" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logos/ai-linc-lockup-darkmode.svg"
+              alt="AI LINC"
+              width={220}
+              height={84}
+              decoding="async"
+              loading="eager"
               style={{
-                fontSize: "clamp(48px, 6vw, 80px)",
-                background:
-                  "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-                lineHeight: 1,
+                width: "clamp(160px, 22vw, 240px)",
+                height: "auto",
+                display: "block",
               }}
-            >
-              AI LINC
-            </span>
+            />
           </div>
           <div className="flex items-center gap-3">
             <span className="aw-pulse-dot" aria-hidden />
@@ -111,6 +114,12 @@ export default function SetupPage() {
             />
           </div>
         </div>
+        <style jsx>{`
+          @keyframes aw-mark-breathe {
+            0%, 100% { transform: scale(1); opacity: 0.95; }
+            50% { transform: scale(1.04); opacity: 1; }
+          }
+        `}</style>
       </div>
     );
   }
