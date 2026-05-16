@@ -1,7 +1,10 @@
 import html2canvas from "html2canvas";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_CAPTURE_WIDTH = 1280;
+// Lowered from 1280 → 900: html2canvas runs on the main thread and time scales with
+// captured area. On a weak laptop, a 1280-wide capture pinned the CPU for seconds
+// per attempt. 900px still produces a recognisable proof image.
+const MAX_CAPTURE_WIDTH = 900;
 
 /**
  * html2canvas often leaves cloned `video` nodes blank (MediaStream does not paint in
@@ -136,9 +139,19 @@ export async function captureViolationScreenshotFile(
   let quality = 0.82;
   let captureScale = scale;
 
-  const HTML2CANVAS_TIMEOUT_MS = 22_000;
+  // html2canvas runs synchronously on the main thread. Old budget was 8 attempts ×
+  // 22s = up to ~3 minutes of main-thread blocking per violation when the browser
+  // can't render the page (e.g. unsupported `color-mix()` CSS). That alone could be
+  // the dominant cause of "page is unresponsive" complaints. New budget: 3 × 7s ≈
+  // 21s worst-case, then placeholder. We also short-circuit on the early-fail
+  // signature (instant throws), since CSS-incompatibility doesn't get better by retrying.
+  const HTML2CANVAS_TIMEOUT_MS = 7_000;
+  const MAX_ATTEMPTS = 3;
+  const FAST_FAIL_MS = 250;
+  let consecutiveFastFails = 0;
 
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const attemptStart = Date.now();
     try {
       const canvasOrTimeout = await withTimeout(
         html2canvas(body, {
@@ -168,14 +181,22 @@ export async function captureViolationScreenshotFile(
         return out.file;
       }
     } catch {
-      // Keep trying lower quality / scale — a single html2canvas error must not skip remaining attempts.
+      // Detect "this browser/page combo can't ever render" — html2canvas typically
+      // throws within tens of ms when a CSS feature it doesn't understand is hit
+      // (e.g. color-mix()). Two fast-fails in a row → skip remaining retries.
+      if (Date.now() - attemptStart < FAST_FAIL_MS) {
+        consecutiveFastFails += 1;
+        if (consecutiveFastFails >= 2) break;
+      } else {
+        consecutiveFastFails = 0;
+      }
     }
 
     if (quality > 0.52) {
-      quality -= 0.1;
+      quality -= 0.15;
     } else {
-      captureScale = Math.round(captureScale * 850) / 1000;
-      if (captureScale < 0.28) {
+      captureScale = Math.round(captureScale * 800) / 1000;
+      if (captureScale < 0.3) {
         break;
       }
     }
