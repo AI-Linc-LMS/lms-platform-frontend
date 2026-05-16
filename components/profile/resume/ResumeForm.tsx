@@ -44,6 +44,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
     "certifications",
   ]);
 
+
   const handleAccordionChange =
     (panel: string) => (_: React.SyntheticEvent, isExpanded: boolean) => {
       setExpanded(isExpanded ? panel : "");

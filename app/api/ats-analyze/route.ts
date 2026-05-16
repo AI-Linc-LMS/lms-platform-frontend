@@ -149,21 +149,19 @@ export interface ATSAnalysisResponse {
     scopeForImprovement: string[];
     suggestions: string[];
     executiveSummary?: string;
-    authenticityScore?: number;
-    authenticityConcerns?: string[];
-    resumeGoodFor?: string[];
   };
   linkValidation?: { label: string; url: string; ok: boolean; status?: number; errorPage?: boolean }[];
+  /** Industry-standard ATS-relevant checks only. Pseudo-metrics like tone/grammar
+   *  removed — those are recruiter-feel, not what real ATS scanners check. */
   qualityChecks?: {
-    spacingAlignment?: { score: number; note?: string };
-    tone?: { score: number; note?: string };
-    languageFluency?: { score: number; note?: string };
-    grammar?: { score: number; note?: string };
-    consistency?: { score: number; note?: string };
-    evidenceAuthentication?: { score: number; note?: string };
+    keywordMatch?: { score: number; note?: string };
+    sectionPresence?: { score: number; note?: string };
+    contactCompleteness?: { score: number; note?: string };
+    bulletQuality?: { score: number; note?: string };
+    dateConsistency?: { score: number; note?: string };
+    length?: { score: number; note?: string };
   };
   feedback: {
-    toneAndStyle: FeedbackCategory;
     content: FeedbackCategory;
     structure: FeedbackCategory;
     skills: FeedbackCategory;
@@ -264,17 +262,11 @@ function extractJsonFromResponse(text: string): ATSAnalysisResponse | null {
     : typeof parsed.executiveSummary === "string" ? parsed.executiveSummary
     : typeof parsed.briefInsight === "string" ? parsed.briefInsight
     : "";
-  const authenticityScore = typeof dr?.authenticityScore === "number" ? dr.authenticityScore : undefined;
-  const authenticityConcerns = Array.isArray(dr?.authenticityConcerns) ? (dr.authenticityConcerns as string[]) : [];
-  const resumeGoodFor = Array.isArray(dr?.resumeGoodFor) ? (dr.resumeGoodFor as string[]) : undefined;
   const detailedReport = {
     goodThings: Array.isArray(dr?.goodThings) ? (dr.goodThings as string[]) : Array.isArray(parsed.strengths) ? (parsed.strengths as string[]) : [],
     scopeForImprovement: Array.isArray(dr?.scopeForImprovement) ? (dr.scopeForImprovement as string[]) : [],
     suggestions: Array.isArray(dr?.suggestions) ? (dr.suggestions as string[]) : Array.isArray(parsed.improvements) ? (parsed.improvements as string[]) : tips,
     executiveSummary,
-    authenticityScore,
-    authenticityConcerns,
-    resumeGoodFor,
   };
 
   const ensureCategory = (feedback: Record<string, unknown>, key: string): FeedbackCategory => {
@@ -297,15 +289,24 @@ function extractJsonFromResponse(text: string): ATSAnalysisResponse | null {
 
   const qc = parsed.qualityChecks as Record<string, { score?: number; note?: string }> | undefined;
   const clamp = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
+  const pickCheck = (
+    item: { score?: number; note?: string } | undefined
+  ): { score: number; note?: string } | undefined => {
+    if (!item || typeof item.score !== "number") return undefined;
+    return {
+      score: clamp(item.score),
+      note: typeof item.note === "string" ? item.note : undefined,
+    };
+  };
   const qualityChecks =
     qc && typeof qc === "object"
       ? {
-          spacingAlignment: qc.spacingAlignment && typeof qc.spacingAlignment.score === "number" ? { score: clamp(qc.spacingAlignment.score), note: typeof qc.spacingAlignment.note === "string" ? qc.spacingAlignment.note : undefined } : undefined,
-          tone: qc.tone && typeof qc.tone.score === "number" ? { score: clamp(qc.tone.score), note: typeof qc.tone.note === "string" ? qc.tone.note : undefined } : undefined,
-          languageFluency: qc.languageFluency && typeof qc.languageFluency.score === "number" ? { score: clamp(qc.languageFluency.score), note: typeof qc.languageFluency.note === "string" ? qc.languageFluency.note : undefined } : undefined,
-          grammar: qc.grammar && typeof qc.grammar.score === "number" ? { score: clamp(qc.grammar.score), note: typeof qc.grammar.note === "string" ? qc.grammar.note : undefined } : undefined,
-          consistency: qc.consistency && typeof qc.consistency.score === "number" ? { score: clamp(qc.consistency.score), note: typeof qc.consistency.note === "string" ? qc.consistency.note : undefined } : undefined,
-          evidenceAuthentication: qc.evidenceAuthentication && typeof qc.evidenceAuthentication.score === "number" ? { score: clamp(qc.evidenceAuthentication.score), note: typeof qc.evidenceAuthentication.note === "string" ? qc.evidenceAuthentication.note : undefined } : undefined,
+          keywordMatch: pickCheck(qc.keywordMatch),
+          sectionPresence: pickCheck(qc.sectionPresence),
+          contactCompleteness: pickCheck(qc.contactCompleteness),
+          bulletQuality: pickCheck(qc.bulletQuality),
+          dateConsistency: pickCheck(qc.dateConsistency),
+          length: pickCheck(qc.length),
         }
       : undefined;
 
@@ -316,7 +317,6 @@ function extractJsonFromResponse(text: string): ATSAnalysisResponse | null {
     detailedReport,
     qualityChecks,
     feedback: {
-      toneAndStyle: defaultCategory("toneAndStyle"),
       content: defaultCategory("content"),
       structure: defaultCategory("structure"),
       skills: defaultCategory("skills"),
@@ -388,33 +388,55 @@ ${resumeSummary}`;
 
   const hasJob = jobText.length > 0;
 
-  const atsWeightsPreamble = `You are a rigorous technical evaluator. Apply this weighting logic strictly:
+  const atsWeightsPreamble = `You are a rigorous evaluator emulating real industry ATS scanners (Workday, Greenhouse, Lever, iCIMS, Taleo).
 
-1. TECHNICAL CONTENT & EVIDENCE (80% weight): Depth and accuracy of technical proficiency; evidence of skill (specific examples, data, quantifiable results); correctness of claims. Include: keyword/skills match to role, experience level and recency, education and certifications, content depth (bullet quality, metrics), and evidence/authenticity (real names, working links—use LINK VALIDATION). If technical evidence is poor or shallow (e.g. weak skills, thin experience, placeholder data, broken links), the maximum total score the user can receive is 30, regardless of how well-written the document is.
+Score the resume on what those systems actually measure — NOT on subjective writing-feel. Apply this weighting:
 
-2. PRESENTATION & PROFESSIONALISM (20% weight): Consolidate ALL non-technical criteria into this single dimension—formatting, grammar, spacing, alignment, tone, syntax. This is polish only. It must NOT carry a failing technical performance to a passing grade.
+1. TECHNICAL FIT (80% weight): keyword/skills match to role (or general technical depth if no JD), years/recency of relevant experience, education/certifications, content depth (specific tools, concrete outcomes, quantified bullets). If skills are thin, experience shallow, or bullets unspecific, the maximum score is 30.
 
-Your goal: Ensure the final score reflects lag in technical aspects. Be critical. If skills or evidence are missing or poor, the score must stay low (at most 30 when technical is poor).`;
+2. PARSEABILITY (20% weight): the resume can be parsed by an ATS — standard section headings present (Experience/Education/Skills/Contact), contact info complete (name + email + phone + location), dates parseable, length appropriate (1-2 pages). This is binary-ish: either the ATS can extract structured data or it can't.
+
+Do NOT score: tone, voice, grammar style, language fluency, "spacing/alignment", or "authenticity" — these are recruiter-feel categories that real ATS scanners do not evaluate. Focus on what gets a candidate to the next stage.`;
+
+  const sharedTail =
+    "\n\nReturn ONLY a valid JSON object — no markdown, no code fences, no extra text.\n\n" +
+    "Return JSON with these exact keys. Keep each string under 150 chars.\n" +
+    "- overallScore, atsScore: numbers 0-100 (80% technical fit, 20% parseability; cap atsScore at 30 if technical fit is poor)\n" +
+    "- executiveSummary: one paragraph\n" +
+    "- detailedReport: { goodThings: [4 items], scopeForImprovement: [4 items], suggestions: [5 actionable items] }\n" +
+    "- qualityChecks: { keywordMatch: { score, note }, sectionPresence: { score, note }, contactCompleteness: { score, note }, bulletQuality: { score, note }, dateConsistency: { score, note }, length: { score, note } }\n" +
+    "  - keywordMatch: how well the resume's hard skills/tools align (vs JD if provided; vs general role-relevant terms otherwise)\n" +
+    "  - sectionPresence: are standard ATS-parseable sections present (Experience, Education, Skills, Contact)\n" +
+    "  - contactCompleteness: is contact info parseable (name, email, phone, location)\n" +
+    "  - bulletQuality: % of bullets with strong action verbs + quantified outcomes\n" +
+    "  - dateConsistency: are all dates present and chronologically consistent\n" +
+    "  - length: is the resume an appropriate 1-2 pages worth of content (penalize too short OR padded)\n" +
+    "- tips: [3 short actionable items]\n" +
+    "- feedback: { content, structure, skills } — each has score 0-100, message, positivePoints[], improvementPoints[]\n" +
+    "  - content: bullet quality, quantification, evidence\n" +
+    "  - structure: section presence, date hygiene, length, ATS-parseability\n" +
+    "  - skills: density, specificity, alignment to target role\n\n" +
+    "Be strict on skills, experience, and bullet quality. Use LINK VALIDATION when judging contactCompleteness.";
 
   const promptWithJob =
-    "You are an expert ATS and HR analyst. Analyze this resume against the job description. " +
+    "You are an expert ATS analyst. Analyze this resume against the job description as a real ATS scanner would. " +
     atsWeightsPreamble +
-    "\n\nEvaluate: (1) Keyword match—hard skills, tools, job title alignment, context. (2) Experience—years, recency. (3) Education and certifications. (4) Content depth—quantifiable bullets, evidence. (5) Authenticity and link validation (use LINK VALIDATION below). Then one combined presentation score (formatting, grammar, spacing, tone). Return ONLY a valid JSON object—no markdown, no code fences, no extra text.\n\nRESUME:\n" +
+    "\n\nRESUME:\n" +
     resumeSummary +
     "\n\nJOB DESCRIPTION:\n" +
     jobText +
     "\n\nLINK VALIDATION (server-checked; failed = unreachable, 404/5xx, or redirects to error page): " +
     linkSummary +
-    "\n\nReturn JSON with these exact keys. Keep each string under 150 chars.\n- overallScore, atsScore: numbers 0-100 (80% technical, 20% presentation; if technical is poor, atsScore at most 30)\n- executiveSummary: one paragraph\n- detailedReport: { goodThings: [4 items], scopeForImprovement: [4 items], suggestions: [5 items], authenticityScore: number 0-100 (use LINK VALIDATION), authenticityConcerns: [specific concerns if any] }\n- qualityChecks: { spacingAlignment: { score, note }, tone: { score, note }, languageFluency: { score, note }, grammar: { score, note }, consistency: { score, note }, evidenceAuthentication: { score, note } }\n- tips: [3 items]\n- feedback: { toneAndStyle, content, structure, skills } — each has score, message, positivePoints[], improvementPoints[]\n\nGuidelines: Apply the 30 cap when technical/evidence is poor. Use LINK VALIDATION. Be strict on skills and experience.";
+    sharedTail;
 
   const promptNoJob =
-    "You are an expert ATS and HR analyst. Analyze this resume WITHOUT a specific job description. " +
+    "You are an expert ATS analyst. Analyze this resume WITHOUT a specific job description (use general role-relevant terms inferred from the candidate's title/experience). " +
     atsWeightsPreamble +
-    "\n\nEvaluate: (1) Keyword density and hard skills. (2) Experience level and recency. (3) Education and certifications. (4) Content depth and evidence. (5) Authenticity and link validation (use LINK VALIDATION below). Then one combined presentation score. Infer what roles/levels this resume fits. Return ONLY a valid JSON object—no markdown, no code fences, no extra text.\n\nRESUME:\n" +
+    "\n\nRESUME:\n" +
     resumeSummary +
     "\n\nLINK VALIDATION (server-checked; failed = unreachable, 404/5xx, or redirects to error page): " +
     linkSummary +
-    "\n\nReturn JSON with these exact keys. Keep each string under 150 chars.\n- overallScore, atsScore: numbers 0-100 (80% technical, 20% presentation; if technical is poor, atsScore at most 30)\n- executiveSummary: one paragraph; include what roles/levels this resume fits best\n- detailedReport: { goodThings: [4 items], scopeForImprovement: [4 items], suggestions: [5 items], resumeGoodFor: [3-5 short strings], authenticityScore: number 0-100, authenticityConcerns: [specific concerns if any] }\n- qualityChecks: { spacingAlignment: { score, note }, tone: { score, note }, languageFluency: { score, note }, grammar: { score, note }, consistency: { score, note }, evidenceAuthentication: { score, note } }\n- tips: [3 items]\n- feedback: { toneAndStyle, content, structure, skills } — each has score, message, positivePoints[], improvementPoints[]\n\nGuidelines: Apply the 30 cap when technical/evidence is poor. Use LINK VALIDATION. Be strict.";
+    sharedTail;
 
   const prompt = hasJob ? promptWithJob : promptNoJob;
 
@@ -431,10 +453,11 @@ Your goal: Ensure the final score reflects lag in technical aspects. Be critical
       );
     }
 
-    const evidenceScore = parsed.qualityChecks?.evidenceAuthentication?.score ?? 100;
+    // Cap score when technical fit is poor (skills/content weak OR keyword match very low).
+    const keywordScore = parsed.qualityChecks?.keywordMatch?.score ?? 100;
     const skillsScore = parsed.feedback?.skills?.score ?? 100;
     const contentScore = parsed.feedback?.content?.score ?? 100;
-    const technicalLow = evidenceScore < 50 || skillsScore < 50 || contentScore < 50;
+    const technicalLow = keywordScore < 40 || skillsScore < 50 || contentScore < 50;
     if (technicalLow && parsed.atsScore > 30) {
       parsed.overallScore = Math.min(parsed.overallScore, 30);
       parsed.atsScore = Math.min(parsed.atsScore, 30);
