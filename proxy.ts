@@ -15,13 +15,13 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Public routes that don't require authentication
   const publicRoutes = [
     "/signup",
     "/verify-email",
     "/login",
     "/forgot-password",
     "/reset-password",
+    "/auth/handoff",
   ];
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route)
@@ -34,8 +34,16 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If accessing auth pages while authenticated, redirect to dashboard
-  if (isPublicRoute && token && pathname !== "/verify-email") {
+  // If accessing auth pages while authenticated, redirect to dashboard.
+  // Exceptions: /verify-email still needs to load for email confirmation
+  // links, and /auth/* needs to load so an already-signed-in user can
+  // consume a new handoff token (e.g. switching tenants).
+  if (
+    isPublicRoute &&
+    token &&
+    pathname !== "/verify-email" &&
+    !pathname.startsWith("/auth/")
+  ) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
