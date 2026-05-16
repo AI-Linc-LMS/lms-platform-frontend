@@ -778,6 +778,58 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           </Box>
         </Box>
 
+        {/* Re-attempt CTA (admin-granted, shown above primary CTA).
+            Styled to match the primary CTA's height/font/radius so the two
+            buttons read as a paired action stack; outlined variant
+            differentiates "secondary action" without breaking alignment. */}
+        {submissionComplete && assessment.can_reattempt && (
+          <Box sx={{ mt: 1 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              size="large"
+              disableRipple
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/assessments/${assessment.slug}`);
+              }}
+              endIcon={<IconWrapper icon="mdi:replay" size={18} color="currentColor" />}
+              sx={{
+                flexDirection: isRtl ? "row-reverse" : "row",
+                mb: 1,
+                py: 1,
+                borderRadius: 2,
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                textTransform: "none",
+                // Cyan-filled, contained: matches View Results' solid look so
+                // the two CTAs read as a paired stack; cyan vs green
+                // differentiates the action (re-take vs view).
+                background: "var(--assessment-catalog-reattempt-cta-gradient)",
+                color: "var(--font-light)",
+                border: "none",
+                boxShadow: "var(--assessment-catalog-reattempt-cta-shadow)",
+                WebkitTapHighlightColor: "transparent",
+                transition: "box-shadow 0.22s ease, transform 0.2s ease, background 0.2s ease",
+                "& .MuiButton-endIcon": { color: "inherit" },
+                "&&:hover": {
+                  background: "var(--assessment-catalog-reattempt-cta-hover-gradient)",
+                  color: "var(--font-light)",
+                  boxShadow: "var(--assessment-catalog-reattempt-cta-shadow-hover)",
+                  transform: "translateY(-2px)",
+                  border: "none",
+                },
+                "&&:active": {
+                  transform: "translateY(0)",
+                  background: "var(--assessment-catalog-reattempt-cta-hover-gradient)",
+                },
+              }}
+            >
+              {t("assessments.reattempt", { defaultValue: "Re-attempt" })}
+            </Button>
+          </Box>
+        )}
+
         {/* CTA Button */}
         <Box sx={{ mt: "1" }}>
           {!isClickable && startDate && remainingTime && !showResults ? (

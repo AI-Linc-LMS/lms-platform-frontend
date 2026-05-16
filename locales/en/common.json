@@ -633,6 +633,7 @@
     "durationMin": "min",
     "resume": "Resume",
     "ended": "Ended",
+    "expired": "Expired",
     "availableNow": "Available now",
     "availableFrom": "Available from {{date}}",
     "starting": "Starting...",
