@@ -96,6 +96,17 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   useEffect(() => {
     if (!isMounted) return;
 
+    // Central auth proxy handles Google sign-in via a server-side redirect, so
+    // loading the in-page GSI library here is unnecessary AND actively harmful:
+    // the GSI button iframe checks the page origin against the OAuth client's
+    // "Authorized JavaScript origins" list, and per-tenant domains aren't
+    // (and shouldn't be) on that list. Bailing prevents the console errors
+    // "The given origin is not allowed for the given client ID" and
+    // "google.accounts.id.initialize() is called multiple times".
+    if (config.tenantSlug && config.authProxyUrl) {
+      return;
+    }
+
     if (!config.googleClientId) {
       return;
     }
