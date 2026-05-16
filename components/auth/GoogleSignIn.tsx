@@ -176,6 +176,24 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   }
 
   const handleClick = () => {
+    // Central auth proxy path: when this Netlify site was provisioned by the
+    // backend, NEXT_PUBLIC_TENANT_SLUG + NEXT_PUBLIC_AUTH_PROXY_URL are set, so
+    // no per-tenant Google Console origin is needed. One Django backend route
+    // (/central-auth/...) is the ONLY registered redirect URI globally.
+    if (config.tenantSlug && config.authProxyUrl) {
+      const returnTo =
+        searchParams.get("redirect") ||
+        (typeof window !== "undefined" ? window.location.pathname : "/");
+      const params = new URLSearchParams({
+        tenant: config.tenantSlug,
+        return_to: returnTo,
+      });
+      window.location.href = `${config.authProxyUrl}/central-auth/oauth/google/start?${params.toString()}`;
+      return;
+    }
+
+    // Legacy in-page flow: pre-proxy tenants still ship their own
+    // GOOGLE_CLIENT_ID and authorized origin in Google Console.
     if (!config.googleClientId) {
       showToast("Google sign-in is not configured", "error");
       return;
@@ -186,15 +204,12 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       return;
     }
 
-    // Click the hidden Google button to trigger the credential flow
-    // This will call handleGoogleSignIn with the credential (ID token)
     const googleButton = googleButtonRef.current?.querySelector(
       'div[role="button"]'
     ) as HTMLElement;
     if (googleButton) {
       googleButton.click();
     } else {
-      // Fallback: use prompt for One Tap
       window.google.accounts.id.prompt();
     }
   };
@@ -218,7 +233,10 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         fullWidth
         variant="outlined"
         onClick={handleClick}
-        disabled={disabled || !config.googleClientId}
+        disabled={
+          disabled ||
+          (!config.googleClientId && !(config.tenantSlug && config.authProxyUrl))
+        }
         size="small"
         sx={{
           mt: 0,

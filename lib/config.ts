@@ -10,6 +10,21 @@ export const config = {
   ),
   clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "1",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+  /**
+   * Tenant slug (subdomain) — passed to the central auth proxy so it can route
+   * the OAuth callback back to the correct tenant. Set per-Netlify-site by the
+   * backend provisioning task (provisioning/tasks.py).
+   */
+  tenantSlug: process.env.NEXT_PUBLIC_TENANT_SLUG || "",
+  /**
+   * Central Google OAuth proxy origin. One Google Cloud Console entry covers
+   * every tenant; the proxy hands a short-lived JWT back to this app via
+   * /auth/handoff. Default points to the production backend that hosts the
+   * /central-auth routes.
+   */
+  authProxyUrl: (
+    process.env.NEXT_PUBLIC_AUTH_PROXY_URL || "https://be-app.ailinc.com"
+  ).replace(/\/$/, ""),
   /** Fallback WebSocket URL when token API does not return `livekit_url` */
   livekitUrl: (process.env.NEXT_PUBLIC_LIVEKIT_URL || "").replace(/\/$/, ""),
   /** OpenTelemetry: service name for traces */

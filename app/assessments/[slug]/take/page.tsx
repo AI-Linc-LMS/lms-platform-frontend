@@ -49,11 +49,8 @@ import {
 import { LiveAssessmentNavigation } from "@/components/assessment/LiveAssessmentNavigation";
 import { StartAssessmentButton } from "@/components/assessment/StartAssessmentButton";
 import { AssessmentQuizLayout } from "@/components/assessment/AssessmentQuizLayout";
-import {
-  AssessmentCodingLayout,
-  type AssessmentCodingLayoutProps,
-} from "@/components/assessment/AssessmentCodingLayout";
-import { AssessmentSubjectiveLayout } from "@/components/assessment/AssessmentSubjectiveLayout";
+// Coding (Monaco ~1.5MB) and Subjective (video recorder + math toolbar) layouts are
+// loaded lazily below so quiz-only assessments don't pay for them.
 import {
   getSectionTimeCapTotalSeconds,
   mergeAssessmentSections,
@@ -86,7 +83,8 @@ type QuizTakeQuestion = {
   [key: string]: unknown;
 };
 
-// Lazy load dialogs only
+// Lazy load dialogs and heavy section layouts (coding/subjective). Quiz layout stays
+// eager because it's the most common section type and the smallest of the three.
 const SubmissionDialog = lazy(() =>
   import("@/components/assessment/SubmissionDialog").then((m) => ({
     default: m.SubmissionDialog,
@@ -100,6 +98,16 @@ const FullscreenWarningDialog = lazy(() =>
 const FullscreenExitConfirmDialog = lazy(() =>
   import("@/components/assessment/FullscreenExitConfirmDialog").then((m) => ({
     default: m.FullscreenExitConfirmDialog,
+  }))
+);
+const AssessmentCodingLayout = lazy(() =>
+  import("@/components/assessment/AssessmentCodingLayout").then((m) => ({
+    default: m.AssessmentCodingLayout,
+  }))
+);
+const AssessmentSubjectiveLayout = lazy(() =>
+  import("@/components/assessment/AssessmentSubjectiveLayout").then((m) => ({
+    default: m.AssessmentSubjectiveLayout,
   }))
 );
 
@@ -173,10 +181,10 @@ function trimViolationScreenshotEvidence(
   }
 }
 
-// Memoized question component to prevent unnecessary re-renders
+// AssessmentQuizLayout already wraps itself in memo() with a custom comparator at
+// the bottom of its file — no need to re-memo here. Coding/subjective layouts are
+// rendered via React.lazy + Suspense (declared above).
 const MemoizedQuizLayout = memo(AssessmentQuizLayout);
-const MemoizedCodingLayout = memo<AssessmentCodingLayoutProps>(AssessmentCodingLayout);
-const MemoizedSubjectiveLayout = memo(AssessmentSubjectiveLayout);
 
 export default function TakeAssessmentPage({
   params,
@@ -2049,12 +2057,12 @@ export default function TakeAssessmentPage({
   );
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Stabilized props for memoized layout children
+  // Stabilized props for the lazy-loaded coding / subjective layouts
   //
   // Without these, every page rerender (proctoring/face detection, debounced
-  // text commits, etc.) would build new object/arrow JSX props, breaking
-  // React.memo on MemoizedCodingLayout / MemoizedSubjectiveLayout — meaning
-  // Monaco and the subjective TextField would reconcile every page render.
+  // text commits, etc.) would build new object/arrow JSX props, breaking the
+  // memoization inside the section components — meaning Monaco and the
+  // subjective TextField would reconcile every page render.
   // ───────────────────────────────────────────────────────────────────────────
 
   const codingProblemData = useMemo(() => {
@@ -2477,43 +2485,59 @@ export default function TakeAssessmentPage({
                 )}
 
                 {sectionType === "coding" && currentCodingQuestion && (
-                  <MemoizedCodingLayout
-                    key={`coding-${currentCodingQuestion.id}-${currentQuestionIndex}`}
-                    slug={slug}
-                    remoteAutosave={remoteAutosave}
-                    questionId={currentCodingQuestion.id}
-                    problemData={codingProblemData}
-                    initialCode={codingInitialCode}
-                    initialLanguage={codingInitialLanguage}
-                    questions={codingQuestions}
-                    totalQuestions={codingQuestions.length}
-                    currentQuestionIndex={currentQuestionIndex}
-                    onQuestionClick={handleCodingQuestionClick}
-                    onNextQuestion={navigation.handleNext}
-                    onPreviousQuestion={navigation.handlePrevious}
-                    onCodeChange={handleCodingCodeChange}
-                    onCodeSubmit={handleCodingCodeSubmit}
-                  />
+                  <Suspense
+                    fallback={
+                      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+                        <CircularProgress size={32} />
+                      </Box>
+                    }
+                  >
+                    <AssessmentCodingLayout
+                      key={`coding-${currentCodingQuestion.id}-${currentQuestionIndex}`}
+                      slug={slug}
+                      remoteAutosave={remoteAutosave}
+                      questionId={currentCodingQuestion.id}
+                      problemData={codingProblemData}
+                      initialCode={codingInitialCode}
+                      initialLanguage={codingInitialLanguage}
+                      questions={codingQuestions}
+                      totalQuestions={codingQuestions.length}
+                      currentQuestionIndex={currentQuestionIndex}
+                      onQuestionClick={handleCodingQuestionClick}
+                      onNextQuestion={navigation.handleNext}
+                      onPreviousQuestion={navigation.handlePrevious}
+                      onCodeChange={handleCodingCodeChange}
+                      onCodeSubmit={handleCodingCodeSubmit}
+                    />
+                  </Suspense>
                 )}
 
                 {sectionType === "subjective" &&
                   currentSubjectiveQuestion &&
                   subjectiveCurrentQuestionForLayout && (
-                    <MemoizedSubjectiveLayout
-                      key={`subjective-${currentSubjectiveQuestion.id}-${currentQuestionIndex}`}
-                      currentQuestionIndex={currentQuestionIndex}
-                      currentQuestion={subjectiveCurrentQuestionForLayout}
-                      value={currentSubjectiveValue}
-                      questions={mappedSubjectiveQuestions}
-                      totalQuestions={subjectiveQuestions.length}
-                      onChange={handleSubjectiveValueChange}
-                      onNextQuestion={navigation.handleNext}
-                      onPreviousQuestion={navigation.handlePrevious}
-                      onQuestionClick={handleSubjectiveQuestionClick}
-                      assessmentUploadClientId={uploadClientId}
-                      onSubjectiveImageUploadError={handleSubjectiveImageUploadError}
-                      onNativeFilePickerWillOpen={onNativeFilePickerWillOpen}
-                    />
+                    <Suspense
+                      fallback={
+                        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+                          <CircularProgress size={32} />
+                        </Box>
+                      }
+                    >
+                      <AssessmentSubjectiveLayout
+                        key={`subjective-${currentSubjectiveQuestion.id}-${currentQuestionIndex}`}
+                        currentQuestionIndex={currentQuestionIndex}
+                        currentQuestion={subjectiveCurrentQuestionForLayout}
+                        value={currentSubjectiveValue}
+                        questions={mappedSubjectiveQuestions}
+                        totalQuestions={subjectiveQuestions.length}
+                        onChange={handleSubjectiveValueChange}
+                        onNextQuestion={navigation.handleNext}
+                        onPreviousQuestion={navigation.handlePrevious}
+                        onQuestionClick={handleSubjectiveQuestionClick}
+                        assessmentUploadClientId={uploadClientId}
+                        onSubjectiveImageUploadError={handleSubjectiveImageUploadError}
+                        onNativeFilePickerWillOpen={onNativeFilePickerWillOpen}
+                      />
+                    </Suspense>
                   )}
 
                 {/* Show message if section exists but has no questions */}
