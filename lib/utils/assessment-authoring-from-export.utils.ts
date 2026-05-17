@@ -173,7 +173,13 @@ export function applyAssessmentDetailToBasicFields(
   setters.setColleges(Array.isArray(anyData.colleges) ? (anyData.colleges as string[]) : []);
   setters.setProctoringEnabled((anyData.proctoring_enabled as boolean) ?? true);
   setters.setLiveStreaming((anyData.live_streaming as boolean) ?? false);
-  setters.setSendCommunication((anyData.send_communication as boolean) ?? false);
+  // Prefer the new `email_notification_enabled` field, fall back to the
+  // legacy `send_communication` key for older saved assessments / drafts.
+  setters.setSendCommunication(
+    ((anyData.email_notification_enabled as boolean | undefined) ??
+      (anyData.send_communication as boolean | undefined) ??
+      false) === true
+  );
   setters.setShowResult((anyData.show_result as boolean) ?? true);
   setters.setEvaluationMode(anyData.evaluation_mode === "manual" ? "manual" : "auto");
   setters.setAllowMovementAcrossSections(anyData.allow_movement !== false);

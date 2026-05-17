@@ -4,7 +4,10 @@
       "Bash(npx tsc *)",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")",
       "Bash(echo \"EXIT=$?\")",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(tee /tmp/tsc.out)",
+      "Bash(echo \"----exit: $?\")",
+      "Read(//tmp/**)"
     ]
   }
 }

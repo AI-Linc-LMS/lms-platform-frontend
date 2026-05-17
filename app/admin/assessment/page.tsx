@@ -43,6 +43,8 @@ import {
 import { config } from "@/lib/config";
 import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
 import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPagination";
+import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
+import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 
 export default function AssessmentPage() {
   const { t } = useTranslation("common");
@@ -452,17 +454,31 @@ export default function AssessmentPage() {
     }
   };
 
-  const buildEmailSubject = (assessment: Assessment) =>
-    `Important Notification - ${assessment.title}`;
+  // The admin authors the subject + body during create/edit — prefer those
+  // saved values. Fall back to a static template only when the assessment
+  // doesn't have them (legacy records).
+  const buildEmailSubject = (assessment: Assessment) => {
+    const saved = (assessment as Assessment & { email_subject?: string })
+      .email_subject;
+    if (saved && saved.trim()) return saved;
+    return `Important Notification - ${assessment.title}`;
+  };
 
   const buildEmailBody = (assessment: Assessment) => {
-    const baseUrl =
-      typeof window !== "undefined" ? window.location.origin : "";
-    const link = `${baseUrl}/assessments/${assessment.slug}`;
     const assessmentDetail = assessment as Assessment & {
+      email_body?: string;
       start_time?: string | null;
       end_time?: string | null;
     };
+    if (assessmentDetail.email_body && assessmentDetail.email_body.trim()) {
+      return assessmentDetail.email_body;
+    }
+
+    // Fallback template for assessments saved before the editable email body
+    // feature shipped.
+    const baseUrl =
+      typeof window !== "undefined" ? window.location.origin : "";
+    const link = `${baseUrl}/assessments/${assessment.slug}`;
     const formatDateTime = (s: string | undefined | null) => {
       if (!s) return "";
       try {
@@ -487,17 +503,17 @@ export default function AssessmentPage() {
 
     return `
       <p>Dear {name},</p>
-      
+
       <p>All set! Your assessment details are below—good luck 👍.</p>
-      
+
       <p>
         ${lines.join("<br>\n        ")}
       </p>
-      
+
       <p>
         <a href="${link}"><strong>Click here to take the assessment</strong></a>
       </p>
-      
+
       <p>Best regards,<br></p>
       `;
   };
@@ -519,12 +535,18 @@ export default function AssessmentPage() {
     if (!assessmentToTriggerEmail) return;
     try {
       setTriggeringEmailJobId(assessmentToTriggerEmail.id);
+      // Pull any saved attachment URL off the assessment so the job carries
+      // it to the backend. Same fallback chain the editor uses.
+      const att = extractSavedEmailAttachment(
+        assessmentToTriggerEmail as unknown as Record<string, unknown>
+      );
       const result = await adminAssessmentEmailJobsService.createAssessmentEmailJob(
         config.clientId,
         {
           assessment_id: assessmentToTriggerEmail.id,
           subject: buildEmailSubject(assessmentToTriggerEmail),
           email_body: buildEmailBody(assessmentToTriggerEmail),
+          ...(att.url ? { attachment_url: att.url } : {}),
         }
       );
       showToast("Email job triggered. Redirecting to status...", "success");
@@ -1117,10 +1139,10 @@ export default function AssessmentPage() {
         <Dialog
           open={emailTriggerDialogOpen}
           onClose={handleCloseEmailTriggerDialog}
-          maxWidth="sm"
+          maxWidth="md"
           fullWidth
           PaperProps={{
-            sx: { borderRadius: 2, minWidth: 400 },
+            sx: { borderRadius: 2 },
           }}
         >
           <DialogTitle sx={{ fontWeight: 600 }}>
@@ -1130,7 +1152,7 @@ export default function AssessmentPage() {
             {assessmentToTriggerEmail && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <DialogContentText>
-                  Send notification emails to students for this assessment. Review the details below.
+                  Send notification emails to students for this assessment. Review the full template below — this is what each recipient will receive.
                 </DialogContentText>
                 <Box>
                   <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
@@ -1140,26 +1162,28 @@ export default function AssessmentPage() {
                     {buildEmailSubject(assessmentToTriggerEmail)}
                   </Typography>
                 </Box>
-                <Box>
-                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
-                    Email content preview
-                  </Typography>
-                  <Box
-                    sx={{
-                      mt: 0.5,
-                      p: 2,
-                      bgcolor: "var(--surface)",
-                      borderRadius: 1,
-                      maxHeight: 200,
-                      overflow: "auto",
-                      fontSize: "0.875rem",
-                      "& a": { color: "var(--accent-indigo)" },
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: buildEmailBody(assessmentToTriggerEmail).replace(/\{name\}/g, "[Recipient Name]"),
-                    }}
-                  />
-                </Box>
+                {(() => {
+                  const att = extractSavedEmailAttachment(
+                    assessmentToTriggerEmail as unknown as Record<string, unknown>
+                  );
+                  return (
+                    <EmailTemplatePreview
+                      subject={buildEmailSubject(assessmentToTriggerEmail)}
+                      showPreviewChip={false}
+                      attachmentUrl={att.url}
+                      attachmentName={att.name}
+                    >
+                      <Box
+                        sx={{ "& a": { color: "var(--accent-indigo)" } }}
+                        dangerouslySetInnerHTML={{
+                          __html: buildEmailBody(
+                            assessmentToTriggerEmail
+                          ).replace(/\{name\}/g, "[Recipient Name]"),
+                        }}
+                      />
+                    </EmailTemplatePreview>
+                  );
+                })()}
                 <Typography variant="body2" color="text.secondary">
                   Are you sure you want to send this notification?
                 </Typography>

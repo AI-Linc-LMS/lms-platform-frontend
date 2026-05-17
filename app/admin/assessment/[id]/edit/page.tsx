@@ -62,6 +62,9 @@ import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
+import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
+import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { generateAssessmentAnalyticsPdfVector } from "@/lib/utils/assessment-analytics-pdf.utils";
 import { AssessmentAnalyticsCharts } from "@/components/admin/assessment/AssessmentAnalyticsCharts";
@@ -398,6 +401,19 @@ export default function AssessmentEditPage() {
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
+  // Email subject/body/attachment are owned by <EmailNotificationEditor /> to
+  // keep typing snappy. We snapshot them through this ref at submit time.
+  const emailEditorRef = useRef<EmailNotificationEditorHandle>(null);
+  const [emailEditorHasData, setEmailEditorHasData] = useState(false);
+  const emailNotificationEnabled = sendCommunication && emailEditorHasData;
+  // Previously-saved attachment surfaced as a chip in the editor on reload.
+  // If the admin doesn't replace it, we won't re-send `email_attachment` and
+  // the backend keeps the existing file.
+  const [existingEmailAttachmentUrl, setExistingEmailAttachmentUrl] = useState<
+    string | null
+  >(null);
+  const [existingEmailAttachmentName, setExistingEmailAttachmentName] =
+    useState<string | null>(null);
   const [showResult, setShowResult] = useState(true);
   const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
@@ -428,6 +444,36 @@ export default function AssessmentEditPage() {
       setShowResult(false);
     }
   }, [evaluationMode, showResult]);
+
+  // Live-built default subject/body for the student notification email.
+  const defaultEmailSubject = useMemo(
+    () => `Important Notification - ${title.trim() || "New Assessment"}`,
+    [title]
+  );
+  const defaultEmailBody = useMemo(() => {
+    const formatDateTime = (s: string | undefined) => {
+      if (!s) return "";
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? "" : d.toLocaleString();
+    };
+    const detailLines: string[] = [
+      `<strong>Assessment:</strong> ${title.trim() || "New Assessment"}`,
+      ...(durationMinutes
+        ? [`<strong>Duration:</strong> ${durationMinutes} minutes`]
+        : []),
+      ...(startTime
+        ? [`<strong>Start time:</strong> ${formatDateTime(startTime)}`]
+        : []),
+      ...(endTime
+        ? [`<strong>End time:</strong> ${formatDateTime(endTime)}`]
+        : []),
+    ];
+    return [
+      "<p>Dear {name},</p>",
+      "<p>All set! Your assessment details are below — good luck 👍.</p>",
+      `<p>${detailLines.join("<br>")}</p>`,
+    ].join("");
+  }, [title, durationMinutes, startTime, endTime]);
 
   const [previewMCQ, setPreviewMCQ] = useState<{
     section: { section_title: string };
@@ -505,7 +551,19 @@ export default function AssessmentEditPage() {
       setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
       setLiveStreaming((data as any).live_streaming ?? false);
-      setSendCommunication((data as any).send_communication ?? false);
+      // Prefer the new `email_notification_enabled` field, fall back to the
+      // legacy `send_communication` key for older saved assessments.
+      setSendCommunication(
+        ((data as any).email_notification_enabled ??
+          (data as any).send_communication ??
+          false) === true
+      );
+      // Capture any previously-saved attachment so the editor can show it.
+      // Backend has used a few different field names over time — accept any.
+      const dAny = data as unknown as Record<string, unknown>;
+      const savedAttachment = extractSavedEmailAttachment(dAny);
+      setExistingEmailAttachmentUrl(savedAttachment.url);
+      setExistingEmailAttachmentName(savedAttachment.name);
       setShowResult((data as any).show_result ?? true);
       setEvaluationMode((data as any).evaluation_mode === "manual" ? "manual" : "auto");
       setAllowMovementAcrossSections(anyData.allow_movement !== false);
@@ -705,7 +763,12 @@ export default function AssessmentEditPage() {
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
-        send_communication: sendCommunication,
+        // Populated below from the email editor snapshot.
+        email_notification_enabled: false,
+        email_subject: undefined,
+        email_body: undefined,
+        email_html: undefined,
+        attachment_url: undefined,
         show_result: evaluationMode === "manual" ? false : showResult,
         evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
@@ -728,13 +791,35 @@ export default function AssessmentEditPage() {
         (payload as CreateAssessmentPayload).pass_band_upper_min_percent =
           passUpper;
       }
+      // Snapshot the email editor (subject/body/attachment live there). The
+      // editor ref is null when notifications are off or the editor hasn't
+      // mounted yet — both translate to "don't send an email".
+      const emailSnapshot = emailNotificationEnabled
+        ? emailEditorRef.current?.getValues() ?? null
+        : null;
+      payload.email_notification_enabled = emailNotificationEnabled;
+      payload.email_subject = emailSnapshot?.subject;
+      payload.email_body = emailSnapshot?.body;
+      payload.email_html = emailSnapshot
+        ? buildAssessmentNotificationEmailHtml({
+            subject: emailSnapshot.subject,
+            bodyHtml: emailSnapshot.body,
+            clientName: clientInfo?.name?.trim() || "Your team",
+            logoUrl: clientInfo?.app_logo_url ?? null,
+          })
+        : undefined;
+      const emailAttachment = emailSnapshot?.attachment ?? null;
+      // Keep the saved attachment when no new file is picked.
+      payload.attachment_url = emailSnapshot?.attachmentUrl ?? undefined;
+
       Object.keys(payload).forEach((k) => {
         if ((payload as any)[k] === undefined) delete (payload as any)[k];
       });
       await adminAssessmentService.updateAssessment(
         config.clientId,
         assessmentId,
-        payload
+        payload,
+        emailAttachment
       );
       showToast("Assessment updated successfully", "success");
       await loadAssessment();
@@ -1413,6 +1498,13 @@ export default function AssessmentEditPage() {
                   liveStreaming={liveStreaming}
                   showLiveStreamingToggle={canConfigureLiveStreaming}
                   sendCommunication={sendCommunication}
+                  emailNotificationEnabled={emailNotificationEnabled}
+                  onEmailEnabledChange={setEmailEditorHasData}
+                  emailEditorRef={emailEditorRef}
+                  defaultEmailSubject={defaultEmailSubject}
+                  defaultEmailBody={defaultEmailBody}
+                  existingEmailAttachmentUrl={existingEmailAttachmentUrl}
+                  existingEmailAttachmentName={existingEmailAttachmentName}
                   showResult={showResult}
                   evaluationMode={evaluationMode}
                   allowMovementAcrossSections={allowMovementAcrossSections}
@@ -1437,7 +1529,15 @@ export default function AssessmentEditPage() {
                   onCollegesChange={setColleges}
                   onProctoringEnabledChange={setProctoringEnabled}
                   onLiveStreamingChange={setLiveStreaming}
-                  onSendCommunicationChange={setSendCommunication}
+                  onSendCommunicationChange={(value) => {
+                    setSendCommunication(value);
+                    if (value) {
+                      // Make sure the editor has data when enabling so the
+                      // derived flag flips true. seedDefaults is a no-op when
+                      // content is already present.
+                      emailEditorRef.current?.seedDefaults();
+                    }
+                  }}
                   onShowResultChange={setShowResult}
                   onEvaluationModeChange={setEvaluationMode}
                   onAllowMovementAcrossSectionsChange={

@@ -31,6 +31,12 @@ export interface AssessmentEmailJobDetail {
   subject?: string;
   emails?: Array<{ name: string; email: string }>;
   email_body?: string;
+  /** Full rendered email HTML (header + body + footer). */
+  email_html?: string;
+  /** URL of the attachment that was sent with this job, if any. */
+  email_attachment_url?: string | null;
+  /** Display name for the attachment. */
+  email_attachment_name?: string | null;
   successful_emails?: Array<{ name: string; email: string }>;
   failed_emails?: Array<{ name: string; email: string }>;
   status: string;
@@ -96,6 +102,13 @@ export interface CreateAssessmentEmailJobParams {
   assessment_id: number;
   subject: string;
   email_body: string;
+  /** Fully-rendered email HTML (header + body + footer). Optional. */
+  email_html?: string;
+  /**
+   * URL of the attachment to include with this email job. Backend should
+   * fetch this and attach it to every outgoing message.
+   */
+  attachment_url?: string | null;
 }
 
 /**
