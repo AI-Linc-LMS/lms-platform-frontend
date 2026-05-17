@@ -308,6 +308,16 @@
   --interview-badge-speaking-bg: rgba(99, 102, 241, 0.9);
   --interview-overlay-bg: rgba(248, 250, 252, 0.85);
   --interview-spinner-border: #e2e8f0;
+
+  /* AI Linc brand gradient — matches the gradient stops in the dark-mode mark SVG
+     at /public/logos/ai-linc-mark-darkmode.svg. Used by the AiLincLoader (and any
+     future brand-mark renderers) so the brand identity is centralized here and the
+     loader doesn't carry inline hex literals. */
+  --ailinc-brand-gradient-start: #5b86ff;
+  --ailinc-brand-gradient-end: #00e0ff;
+  /* White shimmer that travels along the mark while the loader is alive. Kept as a
+     token (rather than a literal #FFFFFF) so any future contrast tweak is one edit. */
+  --ailinc-brand-highlight: #ffffff;
 }
 
 @theme inline {

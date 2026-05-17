@@ -10,10 +10,11 @@ import {
   FormControl,
   InputLabel,
   Select,
-  CircularProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useMemo } from "react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 
 interface QuickStartFormProps {
   onSubmit: (data: QuickStartFormData) => void;
@@ -26,7 +27,8 @@ export interface QuickStartFormData {
   scheduled_date_time: string;
   subtopic: string;
   // Candidate-chosen interview length in minutes. The backend scales the number of AI turns
-  // so the conversation wraps naturally within this window. Valid range 5..20.
+  // so the conversation wraps naturally within this window. Valid range 5..20 for normal
+  // users; admins can additionally pick 2 from the form for testing (see `useAdminDurations`).
   duration_minutes: number;
 }
 
@@ -36,6 +38,7 @@ const interviewTopics = [
   "TypeScript",
   "Node.js",
   "Python",
+  "SQL",
   "System Design",
   "Data Structures & Algorithms",
   "Algorithms",
@@ -49,19 +52,23 @@ const CUSTOM_TOPIC_VALUE = "__CUSTOM__";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"];
 
-// Duration options shown to the candidate. The backend accepts any integer 5..20; this list
-// is just the preset choices we expose in the UI. Default is 7 to match the natural
-// 5-7-minute "real interview" feel from earlier product feedback.
-const durationOptions = [5, 7, 10, 15, 20];
+const DURATION_OPTIONS_REGULAR = [5, 7, 10, 15, 20];
+const DURATION_OPTIONS_ADMIN = [2, ...DURATION_OPTIONS_REGULAR];
 const DEFAULT_DURATION_MINUTES = 7;
 
 const QuickStartFormComponent = ({
   onSubmit,
   loading,
 }: QuickStartFormProps) => {
-  // Set default date to today
   const defaultDate = new Date();
-  defaultDate.setHours(9, 0, 0, 0); // Set to 9 AM today
+  defaultDate.setHours(9, 0, 0, 0);
+
+  const { user } = useAuth();
+  const isAdmin = isClientOrgAdminRole(user?.role);
+  const durationOptions = useMemo(
+    () => (isAdmin ? DURATION_OPTIONS_ADMIN : DURATION_OPTIONS_REGULAR),
+    [isAdmin],
+  );
 
   const [formData, setFormData] = useState<QuickStartFormData>({
     topic: "",
@@ -133,33 +140,6 @@ const QuickStartFormComponent = ({
 
   return (
     <Box sx={{ position: "relative" }}>
-      {loading && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            insetInlineStart: 0,
-            insetInlineEnd: 0,
-            bottom: 0,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 2,
-            zIndex: 1000,
-            borderRadius: 3,
-          }}
-        >
-          <CircularProgress size={48} sx={{ color: "#10b981" }} />
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937" }}>
-            Creating Interview...
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280" }}>
-            Please wait while we set up your interview
-          </Typography>
-        </Box>
-      )}
       <Paper
         elevation={0}
         sx={{
@@ -305,6 +285,7 @@ const QuickStartFormComponent = ({
             >
               {durationOptions.map((mins) => {
                 const selected = formData.duration_minutes === mins;
+                const isAdminOnlyOption = mins < 5;
                 return (
                   <Box
                     key={mins}
@@ -322,6 +303,7 @@ const QuickStartFormComponent = ({
                       cursor: "pointer",
                       textAlign: "center",
                       transition: "all 0.2s ease",
+                      position: "relative",
                       "&:hover": {
                         borderColor: "var(--course-cta)",
                         backgroundColor:
@@ -338,6 +320,27 @@ const QuickStartFormComponent = ({
                     >
                       {mins} min
                     </Typography>
+                    {isAdminOnlyOption && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          px: 0.75,
+                          py: 0.1,
+                          borderRadius: 999,
+                          fontSize: "0.6rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          backgroundColor: "var(--accent-indigo)",
+                          color: "var(--font-light)",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        Admin · Test
+                      </Box>
+                    )}
                   </Box>
                 );
               })}

@@ -93,15 +93,37 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
             p: 2,
           }}
         >
-          {/* User Video Preview */}
+          {/* User Video Preview. The border becomes a Google-Meet-style speaking ring
+              (animated outer glow + bright border) when the user is speaking. Subtle when
+              idle so the layout doesn't shift. */}
           <Box
             sx={{
               flex: 1,
               borderRadius: 2,
               overflow: "hidden",
               backgroundColor: "var(--interview-user-video-bg)",
-              border: "2px solid var(--border-default)",
+              border: "2px solid",
+              borderColor: isUserSpeaking
+                ? "var(--ats-success)"
+                : "var(--border-default)",
+              boxShadow: isUserSpeaking
+                ? "0 0 0 4px color-mix(in srgb, var(--ats-success) 32%, transparent), 0 0 24px color-mix(in srgb, var(--ats-success) 28%, transparent)"
+                : "none",
+              transition: "border-color 0.2s ease, box-shadow 0.2s ease",
               position: "relative",
+              animation: isUserSpeaking
+                ? "meet-speaking-pulse 1.6s ease-in-out infinite"
+                : "none",
+              "@keyframes meet-speaking-pulse": {
+                "0%, 100%": {
+                  boxShadow:
+                    "0 0 0 4px color-mix(in srgb, var(--ats-success) 32%, transparent), 0 0 24px color-mix(in srgb, var(--ats-success) 28%, transparent)",
+                },
+                "50%": {
+                  boxShadow:
+                    "0 0 0 7px color-mix(in srgb, var(--ats-success) 22%, transparent), 0 0 32px color-mix(in srgb, var(--ats-success) 36%, transparent)",
+                },
+              },
             }}
           >
             <video
@@ -144,7 +166,9 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               visible={isProctoringActive}
             />
           </Box>
-          {/* AI Avatar — fills column for classy full-panel look */}
+          {/* AI Avatar — fills column for classy full-panel look. Border glows indigo
+              while the avatar is delivering a question, matching the Meet-style speaking
+              ring on the user tile so the active speaker is always visually obvious. */}
           <Box
             sx={{
               flex: 1,
@@ -152,8 +176,28 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               borderRadius: 2,
               overflow: "hidden",
               backgroundColor: "var(--interview-surface)",
-              border: "2px solid var(--border-default)",
+              border: "2px solid",
+              borderColor: isSpeaking
+                ? "var(--accent-indigo)"
+                : "var(--border-default)",
+              boxShadow: isSpeaking
+                ? "0 0 0 4px color-mix(in srgb, var(--accent-indigo) 32%, transparent), 0 0 24px color-mix(in srgb, var(--accent-indigo) 28%, transparent)"
+                : "none",
+              transition: "border-color 0.2s ease, box-shadow 0.2s ease",
               position: "relative",
+              animation: isSpeaking
+                ? "meet-ai-speaking-pulse 1.6s ease-in-out infinite"
+                : "none",
+              "@keyframes meet-ai-speaking-pulse": {
+                "0%, 100%": {
+                  boxShadow:
+                    "0 0 0 4px color-mix(in srgb, var(--accent-indigo) 32%, transparent), 0 0 24px color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                },
+                "50%": {
+                  boxShadow:
+                    "0 0 0 7px color-mix(in srgb, var(--accent-indigo) 22%, transparent), 0 0 32px color-mix(in srgb, var(--accent-indigo) 36%, transparent)",
+                },
+              },
             }}
           >
             <AIAvatar

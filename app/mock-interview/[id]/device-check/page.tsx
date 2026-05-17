@@ -817,7 +817,15 @@ export default function MockInterviewDeviceCheckPage() {
                   }
                 }}
               />
-              {deviceStatus.camera && (
+              {/* Face-detection chip stack. Hidden once the candidate has clicked
+                  "Start Interview" — at that point the "Starting interview…" overlay
+                  covers the camera feed, so the model momentarily sees a black frame and
+                  starts reporting `faceCount === 0`. Showing a "No face" chip + warning
+                  in that exact window made the candidate think they were being told to
+                  fix something even though the camera pre-flight had already passed and
+                  the interview was already kicking off. We freeze the post-Start state
+                  to whatever the validation showed at the moment of click. */}
+              {deviceStatus.camera && !isNavigatingToInterview && (
                 <Box
                   sx={{
                     position: "absolute",
@@ -882,7 +890,7 @@ export default function MockInterviewDeviceCheckPage() {
                 </Box>
               )}
             </Box>
-            {deviceStatus.camera && !isFaceDetectionInitializing && (
+            {deviceStatus.camera && !isFaceDetectionInitializing && !isNavigatingToInterview && (
               <Box sx={{ mt: 2 }}>
                 {faceValidationPassed ? (
                   <Alert severity="success" sx={{ mt: 1 }}>
