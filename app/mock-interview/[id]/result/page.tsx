@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Container, CircularProgress } from "@mui/material";
+import { Box, Container, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { AiLincLoader } from "@/components/common/AiLincLoader";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useToast } from "@/components/common/Toast";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
@@ -32,6 +33,21 @@ interface InterviewResult {
     type: string;
     question_text: string;
     expected_key_points: string[];
+    // Structured-question payloads — present only on the turns where the AI inserted a
+    // coding problem or an MCQ during the live interview. The QuestionPerformance row
+    // surfaces a "View problem" / "View MCQ" button that re-renders these via
+    // StructuredQuestionViewModal so the candidate / reviewer can revisit the exact
+    // problem statement, sample I/O, options, etc.
+    coding_problem?: {
+      statement: string;
+      starter_code: string;
+      language: string;
+      sample_input?: string;
+      sample_output?: string;
+    };
+    mcq_options?: { id: string; text: string }[];
+    mcq_multi_select?: boolean;
+    mcq_correct_option_ids?: string[];
   }>;
   grading_scheme: Record<
     string,
@@ -102,29 +118,85 @@ export default function InterviewResultPage() {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<InterviewResult | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<number | false>(1);
+  // True while we're polling for the LLM evaluation to finish. The submit endpoint now
+  // returns 202 immediately and runs evaluation in a background thread on the server —
+  // the result page polls /detail/ until `evaluation_score.overall_percentage` shows up.
+  const [evaluationPending, setEvaluationPending] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Stop any active camera streams on this page
   useStopCameraOnMount();
 
   useEffect(() => {
-    const loadResult = async () => {
+    const interviewId = Number(params.id);
+    if (!interviewId) return;
+
+    let cancelled = false;
+
+    const isEvaluationReady = (data: { evaluation_score?: { overall_percentage?: number } } | null) => {
+      return (
+        !!data &&
+        !!data.evaluation_score &&
+        typeof data.evaluation_score.overall_percentage === "number"
+      );
+    };
+
+    const fetchOnce = async () => {
       try {
-        setLoading(true);
-        const data = await mockInterviewService.getInterviewDetail(
-          Number(params.id)
-        );
-        setResult(data as any);
+        const data = await mockInterviewService.getInterviewDetail(interviewId);
+        if (cancelled) return;
+        setResult(data as InterviewResult);
+        if (isEvaluationReady(data as { evaluation_score?: { overall_percentage?: number } })) {
+          setEvaluationPending(false);
+          setLoading(false);
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+        } else {
+          // Server has the row but the background evaluation worker hasn't finished
+          // writing the score yet. Stay in pending mode and let the interval re-poll.
+          setEvaluationPending(true);
+          setLoading(false);
+        }
       } catch (error) {
+        if (cancelled) return;
         showToast("Failed to load interview result", "error");
         router.push("/mock-interview");
-      } finally {
-        setLoading(false);
       }
     };
 
-    if (params.id) {
-      loadResult();
-    }
+    // First load — always blocks the page with the loader until we know whether the
+    // evaluation is ready or pending.
+    void fetchOnce();
+
+    // Polling — fires every 1s while we're still waiting on the evaluation worker. The
+    // background worker typically finishes in 5-12s with the slimmed eval prompt, so a 1s
+    // poll catches it within a second of completion instead of up to 2s of staring at the
+    // loader. We give up after ~90s; at that point the worker probably crashed or the LLM
+    // is permanently failing, and the page renders whatever's there.
+    const maxAttempts = 90;
+    let attempt = 0;
+    pollIntervalRef.current = setInterval(() => {
+      attempt += 1;
+      if (attempt > maxAttempts) {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        setEvaluationPending(false);
+        return;
+      }
+      void fetchOnce();
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
   }, [params.id, router, showToast]);
 
   const getScoreColor = useCallback((percentage: number) => {
@@ -182,7 +254,11 @@ export default function InterviewResultPage() {
             py: 8,
           }}
         >
-          <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+          <AiLincLoader
+            variant="inline"
+            label="AI LINC · LOADING"
+            subMessage="Loading your interview result…"
+          />
         </Box>
       </MainLayout>
     );
@@ -190,6 +266,53 @@ export default function InterviewResultPage() {
 
   if (!result) {
     return null;
+  }
+
+  // Evaluation is still being computed by the backend worker — render a loading screen
+  // with friendly copy. The poller (set up in the effect above) will keep checking and
+  // flip evaluationPending → false once the score is written.
+  if (evaluationPending) {
+    return (
+      <MainLayout>
+        <Container maxWidth="md" sx={{ py: 8, textAlign: "center" }}>
+          <AiLincLoader
+            variant="inline"
+            label="EVALUATING YOUR INTERVIEW"
+            subMessage="Our AI is reviewing your answers and preparing detailed feedback. This usually takes 5–15 seconds."
+            size={260}
+          />
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 3,
+              color: "var(--font-tertiary)",
+              fontStyle: "italic",
+            }}
+          >
+            You can safely keep this page open — your result will appear here as soon as it's ready.
+          </Typography>
+        </Container>
+      </MainLayout>
+    );
+  }
+
+  // Defensive: if the poller timed out without an evaluation, the backend evaluator
+  // probably crashed for this interview. Show a friendly recovery screen instead of
+  // crashing on `result.evaluation_score.overall_percentage`.
+  if (!result.evaluation_score || typeof result.evaluation_score.overall_percentage !== "number") {
+    return (
+      <MainLayout>
+        <Container maxWidth="md" sx={{ py: 8, textAlign: "center" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+            Evaluation taking longer than usual
+          </Typography>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
+            Our scoring service is busy. Your transcript is saved — please check back in a minute.
+          </Typography>
+        </Container>
+      </MainLayout>
+    );
   }
 
   const scoreColors = getScoreColor(result.evaluation_score.overall_percentage);

@@ -12,6 +12,8 @@ export type { AnswerInputAreaProps } from "./AnswerInputArea";
 export { QuestionListSidebar } from "./QuestionListSidebar";
 export { FullscreenWarningDialog } from "./FullscreenWarningDialog";
 export { EndInterviewDialog } from "./EndInterviewDialog";
+export { CodingQuestionModal } from "./CodingQuestionModal";
+export { MCQQuestionModal } from "./MCQQuestionModal";
 export type { QuickStartFormData } from "./QuickStartForm";
 export type { ScheduleInterviewFormData } from "./ScheduleInterviewForm";
 

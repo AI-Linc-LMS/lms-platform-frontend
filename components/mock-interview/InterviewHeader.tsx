@@ -4,6 +4,7 @@ import { Box, Typography, Button, IconButton } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { InterviewTimer } from "./InterviewTimer";
 import { memo } from "react";
+import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 
 interface InterviewHeaderProps {
   title: string;
@@ -24,6 +25,17 @@ interface InterviewHeaderProps {
     type: string;
     message: string;
   } | null;
+  /**
+   * When true, the embedded `InterviewTimer` is visually paused (no tick, "PAUSED" badge).
+   * Set by the take page while a coding-question modal is open.
+   */
+  timerPaused?: boolean;
+  /**
+   * Extra seconds added to the timer's effective budget (e.g. +5/+7/+10 min credited when
+   * a coding question fires). Forwarded into `InterviewTimer.bonusSeconds` so the visible
+   * countdown stays in lock-step with the backend's effective budget.
+   */
+  bonusSeconds?: number;
 }
 
 export const InterviewHeader = memo(function InterviewHeader({
@@ -41,6 +53,8 @@ export const InterviewHeader = memo(function InterviewHeader({
   proctoringStatus,
   faceCount,
   latestViolation,
+  timerPaused = false,
+  bonusSeconds = 0,
 }: InterviewHeaderProps) {
   return (
     <Box
@@ -66,7 +80,7 @@ export const InterviewHeader = memo(function InterviewHeader({
             variant="h6"
             sx={{ fontWeight: 700, fontSize: "1.25rem", color: "#111827" }}
           >
-            {title}
+            {cleanInterviewTitle(title)}
           </Typography>
           <Typography
             variant="caption"
@@ -140,6 +154,8 @@ export const InterviewHeader = memo(function InterviewHeader({
             durationMinutes={durationMinutes}
             startedAt={startedAt || new Date()}
             onTimeUp={onTimeUp}
+            paused={timerPaused}
+            bonusSeconds={bonusSeconds}
           />
         )}
 

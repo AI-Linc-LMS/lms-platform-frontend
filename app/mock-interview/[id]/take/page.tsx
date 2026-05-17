@@ -15,6 +15,7 @@ import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { stopAllMediaTracks, registerMediaStream } from "@/lib/utils/cameraUtils";
+import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 import {
   InterviewHeader,
   VideoPreviewArea,
@@ -23,6 +24,8 @@ import {
   FullscreenWarningDialog,
   EndInterviewDialog,
 } from "@/components/mock-interview";
+import { CodingQuestionModal } from "@/components/mock-interview/CodingQuestionModal";
+import { MCQQuestionModal } from "@/components/mock-interview/MCQQuestionModal";
 
 const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
 
@@ -63,6 +66,20 @@ export default function TakeMockInterviewPage() {
   const [isClosingRemark, setIsClosingRemark] = useState<boolean>(false);
   const [isFetchingNext, setIsFetchingNext] = useState(false);
 
+  const [isCodingModalOpen, setIsCodingModalOpen] = useState<boolean>(false);
+  const [isMCQModalOpen, setIsMCQModalOpen] = useState<boolean>(false);
+  const lastStructuredQuestionIdRef = useRef<number | null>(null);
+
+  const [closingRemarkIdleStartedAt, setClosingRemarkIdleStartedAt] = useState<
+    number | null
+  >(null);
+  const [autoSubmitSecondsLeft, setAutoSubmitSecondsLeft] = useState<number | null>(
+    null,
+  );
+
+  const [codingTimeBudgetSeconds, setCodingTimeBudgetSeconds] = useState<number>(0);
+  const [interviewBonusSeconds, setInterviewBonusSeconds] = useState<number>(0);
+
   const isInitializingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -72,6 +89,17 @@ export default function TakeMockInterviewPage() {
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const eyeMovementCountRef = useRef(0);
   const lastEyeMovementWarningRef = useRef(0);
+  // Timestamp recorded when proctoring starts. Used to silently drop NO_FACE /
+  // POOR_LIGHTING violation toasts during the first PROCTORING_WARMUP_MS while the
+  // camera stream is still attaching + the face-detection model is warming up. The
+  // shared ProctoringService also has its own warmup (5.5s) but that only activates
+  // after videoElement.readyState >= 2 — on the take page the video is sometimes still
+  // at readyState 1 when proctoring kicks off, so the service-level warmup never
+  // arms and the first detection tick fires a "no face" toast at the candidate. This
+  // consumer-level grace period mirrors what the assessment proctoring stack does
+  // implicitly and fixes the reported "click Proceed → no face detected toast" bug.
+  const proctoringStartedAtRef = useRef<number | null>(null);
+  const PROCTORING_WARMUP_MS = 6000;
 
   // Proctoring hooks with enhanced configuration
   const {
@@ -92,6 +120,19 @@ export default function TakeMockInterviewPage() {
     detectionInterval: 250, // Check every 500ms for faster updates
     violationCooldown: 1000, // 1 second cooldown between same violation
     onViolation: (violation) => {
+      // Suppress face-detection violations during the startup warmup so a slow camera
+      // attach doesn't toast the candidate "no face detected!" the moment they click
+      // Proceed. The ProctoringService has its own internal grace period but it only
+      // arms after videoElement.readyState >= 2; this consumer-level filter is a
+      // belt-and-suspenders catch for the readyState-1-at-startup case.
+      const isStartupNoiseViolation =
+        violation.type === "NO_FACE" || violation.type === "POOR_LIGHTING";
+      const startedAt = proctoringStartedAtRef.current;
+      const inWarmup =
+        startedAt !== null && Date.now() - startedAt < PROCTORING_WARMUP_MS;
+      if (isStartupNoiseViolation && inWarmup) {
+        return;
+      }
       // Show toast for high severity violations
       if (violation.severity === "high") {
         showToast(violation.message, "error");
@@ -218,6 +259,7 @@ export default function TakeMockInterviewPage() {
 
         // Video element is ready, start proctoring immediately
         // Proctoring service will reuse existing stream if available
+        proctoringStartedAtRef.current = Date.now();
         startProctoring().catch((error) => {
           // Silently fail - will retry or user will see error when starting interview
         });
@@ -273,6 +315,17 @@ export default function TakeMockInterviewPage() {
     return cleaned;
   }, []);
 
+  // EVALUATION TRANSCRIPT NOTE:
+  // `useSpeechToText` is configured with `preferWhisper: true` below — that means
+  // browser STT drives transcripts whenever it's working (free, fast, accurate enough
+  // for most Chrome users), and Whisper takes over as a fallback when browser STT
+  // fails (Edge `network` errors, Safari/Firefox without native STT, etc.). Whichever
+  // engine is active for a given utterance pipes its `final` chunk through `onFinal`
+  // here → `setCurrentAnswer` → ultimately the `transcript.responses[].answer` field
+  // the backend evaluator reads. So the evaluation transcript IS Whisper-quality
+  // whenever browser STT is unreliable. To upgrade ALL evaluations to Whisper-quality
+  // (at the cost of additional OpenAI spend or a separate audio-upload pipeline), see
+  // the "Whisper-on-recorded-audio" architectural note in the project README.
   const speechToText = useSpeechToText({
     onFinal: (text) => {
       const cleaned = sanitizeSttFragment(text || "");
@@ -302,9 +355,11 @@ export default function TakeMockInterviewPage() {
     needsTypingFallback,
   } = speechToText;
 
-  // Disable ESC and right-click
+  const isAdminClipboardWindow =
+    isCodingModalOpen && interview?.duration_minutes === 2;
   useKeyboardShortcuts({
     enabled: interviewStarted,
+    suspend: isAdminClipboardWindow,
     onEscape: () => {
       showToast("ESC key is disabled during the interview", "warning");
     },
@@ -339,6 +394,12 @@ export default function TakeMockInterviewPage() {
       }
       if (typeof started.max_turns === "number") {
         setDynamicMaxTurns(started.max_turns);
+      }
+      // Seed the visible timer's bonus accumulator from the backend so a mid-interview
+      // reload preserves the correct effective budget. /start/ surfaces it as
+      // `bonus_seconds` on the MockInterview row.
+      if (typeof started.bonus_seconds === "number") {
+        setInterviewBonusSeconds(started.bonus_seconds);
       }
       // On a fresh dynamic interview, /start/ only returns the OPENING question. The opening
       // is final only if max_turns is 1 (degenerate case).
@@ -512,7 +573,9 @@ export default function TakeMockInterviewPage() {
         showToast("Failed to enter fullscreen mode", "warning");
       });
 
-      // Start proctoring immediately
+      // Start proctoring immediately. Reset the warmup window so the camera
+      // re-attach doesn't surface a stale "no face" toast (see onViolation suppression).
+      proctoringStartedAtRef.current = Date.now();
       await startProctoring().catch((error) => {
         showToast(
           "Camera initialization failed. Please ensure camera permissions are granted.",
@@ -575,6 +638,50 @@ export default function TakeMockInterviewPage() {
     return question.question_text || question.question || "";
   }, []);
 
+  useEffect(() => {
+    if (!currentQuestion) return;
+    if (lastStructuredQuestionIdRef.current === currentQuestion.id) return;
+    const qtype = (currentQuestion.type || "").toLowerCase();
+    if (qtype === "coding" && currentQuestion.coding_problem) {
+      setIsCodingModalOpen(true);
+      setIsMCQModalOpen(false);
+      lastStructuredQuestionIdRef.current = currentQuestion.id;
+    } else if (qtype === "mcq" && (currentQuestion.mcq_options?.length ?? 0) >= 2) {
+      setIsMCQModalOpen(true);
+      setIsCodingModalOpen(false);
+      lastStructuredQuestionIdRef.current = currentQuestion.id;
+    } else {
+      setIsCodingModalOpen(false);
+      setIsMCQModalOpen(false);
+    }
+  }, [currentQuestion]);
+
+
+  // Build the "conversation so far" list shown in place of the live transcript textarea.
+  // Pulls from the candidate's already-answered turns (each `responses` entry has the
+  // question_text we stamped on it) and appends the current question if it hasn't been
+  // recorded yet. Closing-remark turns are excluded — those aren't questions, they're the
+  // interviewer's wrap-up speech.
+  const questionHistory = useMemo(() => {
+    const seen = new Set<number>();
+    const out: Array<{ id: number; question_text: string }> = [];
+    for (const r of responses) {
+      if (typeof r.question_id !== "number" || seen.has(r.question_id)) continue;
+      seen.add(r.question_id);
+      out.push({
+        id: r.question_id,
+        question_text: r.question_text || "",
+      });
+    }
+    if (currentQuestion && !seen.has(currentQuestion.id) && !isClosingRemark) {
+      out.push({
+        id: currentQuestion.id,
+        question_text: getQuestionText(currentQuestion),
+      });
+    }
+    return out;
+  }, [responses, currentQuestion, isClosingRemark, getQuestionText]);
+
   // Handle question read complete
   const handleSpeakComplete = useCallback(() => {
     setIsSpeaking(false);
@@ -598,6 +705,10 @@ export default function TakeMockInterviewPage() {
       const newResponse: InterviewResponse = {
         question_id: currentQuestion.id,
         answer: currentAnswer,
+        // Stamp the question text so the question-history panel can render the full
+        // conversation without a separate id→text lookup.
+        question_text:
+          currentQuestion.question_text || currentQuestion.question || "",
       };
 
       if (existingIndex >= 0) {
@@ -614,7 +725,13 @@ export default function TakeMockInterviewPage() {
   // want the JSX to re-render on every audio tick.
   const silenceAdvanceTimerRef = useRef<number | null>(null);
   const lastTranscriptChangeAtRef = useRef<number>(0);
-  const handleNextQuestionRef = useRef<(() => Promise<void>) | null>(null);
+  const handleNextQuestionRef = useRef<
+    | ((
+        overrideAnswerText?: unknown,
+        options?: { forceClose?: boolean },
+      ) => Promise<void>)
+    | null
+  >(null);
   // Live mic energy mirrored into a ref so the silence interval can read it without making
   // the page re-render. We bump lastTranscriptChangeAtRef whenever audio crosses a "user is
   // speaking" threshold — that way, an "umm" or a half-second of resumed speech (which won't
@@ -626,6 +743,12 @@ export default function TakeMockInterviewPage() {
   const answerAtAdvanceRef = useRef<string>("");
   const previousQuestionIdAtAdvanceRef = useRef<number | null>(null);
   const [conversationStatus, setConversationStatus] = useState<string>("");
+  // 0-1 value the answer-input area renders as the "Interviewer is waiting" bar.
+  // Updated by the silence detector on every poll — climbs from 0 → 1 over the
+  // SILENCE_THRESHOLD_MS window of quiet, drops back to 0 when the candidate speaks
+  // again. Gives the candidate a visible thinking budget instead of an invisible
+  // countdown.
+  const [pauseProgress, setPauseProgress] = useState<number>(0);
 
   useEffect(() => {
     audioLevelRef.current = audioLevel;
@@ -667,12 +790,13 @@ export default function TakeMockInterviewPage() {
     };
   }, [currentAnswer, currentQuestion, handleSaveAnswer]);
 
-  // Handle submit interview
+  const submitInFlightRef = useRef(false);
   const handleSubmitInterview = useCallback(async () => {
     if (!interview || !startTime) return;
+    if (submitInFlightRef.current) return;
+    submitInFlightRef.current = true;
 
     try {
-      // Get latest responses (including any unsaved answer)
       let finalResponses = [...responses];
       if (currentAnswer && currentQuestion) {
         const existingIndex = finalResponses.findIndex(
@@ -681,6 +805,8 @@ export default function TakeMockInterviewPage() {
         const newResponse: InterviewResponse = {
           question_id: currentQuestion.id,
           answer: currentAnswer,
+          question_text:
+            currentQuestion.question_text || currentQuestion.question || "",
         };
         if (existingIndex >= 0) {
           finalResponses[existingIndex] = newResponse;
@@ -779,14 +905,24 @@ export default function TakeMockInterviewPage() {
       await new Promise((resolve) => setTimeout(resolve, 50));
       stopAllMediaTracks();
 
-      // Navigate to success page
-      showToast("Interview submitted successfully!", "success");
+      // Backend now returns 202 immediately and runs LLM evaluation in a background
+      // thread, so this navigation is instant. The submission-success page shows a quick
+      // confirmation, then the candidate clicks through to /result/ which polls for the
+      // evaluation to finish (typically 5–15s).
+      showToast(
+        "Interview submitted. Your evaluation is being prepared.",
+        "success"
+      );
       router.push(`/mock-interview/${interviewId}/submission-success`);
     } catch (error) {
+      const statusCode =
+        (error as { response?: { status?: number } })?.response?.status;
+      if (statusCode === 400) {
+        router.push(`/mock-interview/${interviewId}/submission-success`);
+        return;
+      }
       showToast("Failed to submit interview", "error");
-      // Reset the "ending" lock so End Interview stays clickable. Without this, a failed
-      // submit (e.g., a transient 500 from the eval LLM call) would trap the candidate with
-      // a permanently disabled End button.
+      submitInFlightRef.current = false;
       setIsEndingInterview(false);
     }
   }, [
@@ -804,22 +940,58 @@ export default function TakeMockInterviewPage() {
     showToast,
   ]);
 
-  // Handle next question
-  const handleNextQuestion = useCallback(async () => {
-    // Clear auto-save timer; we want to record the answer for THIS question right now.
+  useEffect(() => {
+    if (!isClosingRemark) return;
+    if (isSpeaking) return;
+    if (closingRemarkIdleStartedAt !== null) return;
+    setClosingRemarkIdleStartedAt(Date.now());
+  }, [isClosingRemark, isSpeaking, closingRemarkIdleStartedAt]);
+
+  useEffect(() => {
+    if (closingRemarkIdleStartedAt === null) return;
+    const IDLE_GRACE_SECONDS = 30;
+    const COUNTDOWN_SECONDS = 10;
+    const intervalId = window.setInterval(() => {
+      const elapsedSeconds = (Date.now() - closingRemarkIdleStartedAt) / 1000;
+      if (elapsedSeconds >= IDLE_GRACE_SECONDS + COUNTDOWN_SECONDS) {
+        window.clearInterval(intervalId);
+        setAutoSubmitSecondsLeft(0);
+        handleSubmitInterview();
+        return;
+      }
+      if (elapsedSeconds >= IDLE_GRACE_SECONDS) {
+        const remaining = Math.max(
+          0,
+          Math.ceil(IDLE_GRACE_SECONDS + COUNTDOWN_SECONDS - elapsedSeconds),
+        );
+        setAutoSubmitSecondsLeft(remaining);
+      }
+    }, 250);
+    return () => window.clearInterval(intervalId);
+  }, [closingRemarkIdleStartedAt, handleSubmitInterview]);
+
+  const handleNextQuestion = useCallback(async (
+    overrideAnswerText?: unknown,
+    options?: { forceClose?: boolean },
+  ) => {
+    const overrideString =
+      typeof overrideAnswerText === "string" ? overrideAnswerText : undefined;
+    const forceClose = !!options?.forceClose;
+
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
 
-    // ===== Dynamic (turn-based) flow =====
     if (isDynamicInterview) {
       if (!currentQuestion) return;
       if (isFetchingNext) return; // guard against double-tap
 
       // Capture the answer text for this turn and record it locally so the transcript stays
-      // in sync with what the backend will receive at submit time.
-      const answerForThisTurn = currentAnswer.trim();
+      // in sync with what the backend will receive at submit time. Structured-question
+      // modals pass their formatted text via `overrideString` so we don't rely on the
+      // stale `currentAnswer` state.
+      const answerForThisTurn = (overrideString ?? currentAnswer).trim();
       const questionTextForThisTurn =
         currentQuestion.question_text || currentQuestion.question || "";
 
@@ -830,6 +1002,7 @@ export default function TakeMockInterviewPage() {
         const entry: InterviewResponse = {
           question_id: currentQuestion.id,
           answer: answerForThisTurn,
+          question_text: questionTextForThisTurn,
         };
         if (existingIndex >= 0) {
           const copy = [...prev];
@@ -868,9 +1041,13 @@ export default function TakeMockInterviewPage() {
         return;
       }
 
-      // If the question we just answered was the FINAL question of the interview, we don't
-      // ask for another follow-up — we submit.
-      if (dynamicIsFinalQuestion) {
+      // If we already finished the closing remark and the candidate is hitting Submit, do
+      // exactly that. Note we DON'T short-circuit on `dynamicIsFinalQuestion` — even when
+      // the LLM marked its last question as final, we still want to call /next-question/
+      // so the backend can hand back the closing remark (thank-you + light feedback +
+      // "you can submit when you're ready"). The candidate would otherwise lose the
+      // wrap-up speech entirely.
+      if (isClosingRemark) {
         handleSubmitInterview();
         return;
       }
@@ -897,15 +1074,17 @@ export default function TakeMockInterviewPage() {
           await mockInterviewService.getNextQuestion(interviewId, {
             previous_question_id: currentQuestion.id,
             candidate_answer: answerForThisTurn,
+            force_close: forceClose,
           });
 
-        // Closing-remark path: backend says we're in the final minute, hands us a natural
-        // verbal wrap-up text instead of another question. We surface it to the candidate
-        // by treating it as a "question" the avatar speaks, but mark dynamicIsFinalQuestion
-        // and a separate isClosingRemark flag so:
+        // Closing-remark path: backend says we're at the wrap-up, hands us a natural
+        // verbal close instead of another question. We surface it to the candidate by
+        // treating it as a "question" the avatar speaks, but mark a separate
+        // `isClosingRemark` flag (which is what now drives the "Submit Interview" button
+        // label via `isLastQuestion`) so:
         //   - silence-detection auto-advance is suppressed (no answer expected)
-        //   - the action button reads "Submit Interview" (already gated on
-        //     dynamicIsFinalQuestion via isLastQuestion)
+        //   - the action button reads "Submit Interview"
+        //   - the closing-remark grace timer starts once the avatar finishes speaking
         //   - the candidate hears the close, then taps Submit when ready
         if (next.is_closing_remark && next.closing_remark) {
           const closingTurn: InterviewQuestion = {
@@ -968,11 +1147,21 @@ export default function TakeMockInterviewPage() {
         setDynamicTurnNumber(next.turn_number);
         setDynamicMaxTurns(next.max_turns);
         setDynamicIsFinalQuestion(!!next.is_final_question);
+        // Capture per-coding-turn budget (5/7/10 min based on interview difficulty). The
+        // backend always sends 0 for non-coding turns, so this resets cleanly when the
+        // candidate finishes a coding modal and the AI moves on. The CodingQuestionModal
+        // reads this via its `budgetSeconds` prop to render its own countdown.
+        setCodingTimeBudgetSeconds(
+          typeof next.coding_time_budget_seconds === "number"
+            ? next.coding_time_budget_seconds
+            : 0,
+        );
+        if (typeof next.bonus_seconds === "number") {
+          setInterviewBonusSeconds(next.bonus_seconds);
+        }
         setCurrentAnswer("");
         setInterimTranscript("");
-        setIsSpeaking(true); // Avatar narrates the new question (drives facial movement).
-        // Reset the snapshot so a future advance doesn't accidentally treat stale state as
-        // "continuation."
+        setIsSpeaking(true);
         answerAtAdvanceRef.current = "";
         previousQuestionIdAtAdvanceRef.current = null;
         void questionTextForThisTurn;
@@ -1030,6 +1219,30 @@ export default function TakeMockInterviewPage() {
     handleNextQuestionRef.current = handleNextQuestion;
   }, [handleNextQuestion]);
 
+  const handleCodingModalSubmit = useCallback(
+    (payload: { code: string; language: string }) => {
+      const formatted = `[Coding answer · ${payload.language}]\n${payload.code}`;
+      setIsCodingModalOpen(false);
+      setCurrentAnswer(formatted);
+      void handleNextQuestion(formatted);
+    },
+    [handleNextQuestion],
+  );
+
+  const handleMCQModalSubmit = useCallback(
+    (payload: { ids: string[]; labels: string[] }) => {
+      const selectionText = payload.labels.length
+        ? payload.labels.join(", ")
+        : "(no option selected)";
+      const idsText = payload.ids.length ? payload.ids.join(", ") : "—";
+      const formatted = `[MCQ answer] Selected: ${selectionText} (ids: ${idsText})`;
+      setIsMCQModalOpen(false);
+      setCurrentAnswer(formatted);
+      void handleNextQuestion(formatted);
+    },
+    [handleNextQuestion],
+  );
+
   // Bump the "last transcript change" timestamp whenever the candidate types or speaks.
   useEffect(() => {
     if (!isDynamicInterview) return;
@@ -1053,17 +1266,20 @@ export default function TakeMockInterviewPage() {
     // delivering a wrap-up. We're not waiting for another answer, so auto-advance is moot —
     // the candidate just hits Submit when ready.
     if (isClosingRemark) return;
+    // Structured-question mode (coding / mcq popup is open). The answer comes from the
+    // modal's Submit button, not from STT — so silence here is meaningless and we mustn't
+    // auto-advance with an empty STT buffer.
+    if (isCodingModalOpen || isMCQModalOpen) return;
 
     // Silence threshold tuning:
-    // - 500ms feels snappy — matches the cadence of a real interviewer who jumps in the
-    //   instant they hear the candidate finish a thought. Risk of cutting off a thinking
-    //   pause is mitigated by (a) the audio-level gate below — if the candidate is still
-    //   making sound (mid-word, breathing), we don't count that as silence; and (b) the
-    //   noise-floor calibration from device-check, so background hum doesn't fool it.
-    // - CONFIRM_PAUSE_MS (150) flips the status hint to "Wrapping up…" at ~350ms elapsed,
-    //   giving the candidate a brief visual cue before the advance fires.
-    const SILENCE_THRESHOLD_MS = 500;
-    const CONFIRM_PAUSE_MS = 150;
+    // - 3000ms (3 seconds) is intentionally generous so the candidate has a VISIBLE
+    //   thinking budget. A quick 500ms detector ate thinking pauses with no warning,
+    //   which is what the user reported as "if I think for 4-5 seconds it jumps". Now
+    //   the progress bar gives them 3s of visible "Interviewer is waiting" before the
+    //   advance fires — and any speech resets the bar to 0 instantly.
+    // - The bar's `pauseProgress` (0..1) is computed every tick from
+    //   sinceLastChange / SILENCE_THRESHOLD_MS so the candidate sees the wait elapsing.
+    const SILENCE_THRESHOLD_MS = 3000;
     const POLL_INTERVAL_MS = 100;
 
     // Audio activity gate: anything below this level is treated as silence. By default we
@@ -1093,32 +1309,44 @@ export default function TakeMockInterviewPage() {
       // very moment the avatar finishes speaking we'd auto-advance with an empty answer.
       if (!text) {
         setConversationStatus("Listening — speak when you're ready.");
+        setPauseProgress(0);
         return;
       }
       // STT might still have an interim chunk in flight; don't advance until it settles.
       if (interimTranscript) {
         setConversationStatus("Listening…");
+        setPauseProgress(0);
         return;
       }
       // Live audio: if the candidate is currently making noise above the calibrated
       // threshold, they're probably still talking — STT just hasn't chunked the words yet.
       if (audioLevelRef.current > audioGateThreshold) {
         setConversationStatus("Listening…");
+        setPauseProgress(0);
         return;
       }
       const sinceLastChange = Date.now() - lastTranscriptChangeAtRef.current;
-      const remaining = SILENCE_THRESHOLD_MS - sinceLastChange;
-      if (remaining <= 0) {
-        // Fire once, then let the next render's guard (isFetchingNext) suppress re-entry.
+      // 0..1 progress into the silence window — drives the visible "Interviewer is
+      // waiting" bar in AnswerInputArea. The candidate can interrupt by speaking again,
+      // which resets the bar above.
+      const progress = Math.min(1, sinceLastChange / SILENCE_THRESHOLD_MS);
+      setPauseProgress(progress);
+      if (sinceLastChange >= SILENCE_THRESHOLD_MS) {
+        // Bar filled — auto-advance. Fire once and stop the interval; the next
+        // handleNextQuestion call (via the ref) will set isFetchingNext which prevents
+        // re-entry until the new question is mounted.
         window.clearInterval(intervalId);
         silenceAdvanceTimerRef.current = null;
         setConversationStatus("Got it — following up.");
+        setPauseProgress(0);
         const fn = handleNextQuestionRef.current;
         if (fn) {
           void fn();
         }
-      } else if (remaining <= CONFIRM_PAUSE_MS) {
-        setConversationStatus("Wrapping up — speak now if you want to add more.");
+      } else if (progress >= 0.55) {
+        // Halfway through the wait — switch the status text to "Interviewer is waiting"
+        // so the candidate knows the bar's about to fill.
+        setConversationStatus("Interviewer is waiting…");
       } else {
         setConversationStatus("Listening…");
       }
@@ -1137,6 +1365,8 @@ export default function TakeMockInterviewPage() {
     isFetchingNext,
     isEndingInterview,
     isClosingRemark,
+    isCodingModalOpen,
+    isMCQModalOpen,
     // Re-bind when these change so the threshold check sees fresh values without depending
     // on a stale closure.
     currentAnswer,
@@ -1313,16 +1543,38 @@ export default function TakeMockInterviewPage() {
     isDynamicRef.current = !!interview?.is_dynamic;
   }, [interview?.is_dynamic]);
 
+  const [needsTimerWrapUp, setNeedsTimerWrapUp] = useState(false);
+  const isClosingRemarkRef = useRef(isClosingRemark);
+  useEffect(() => {
+    isClosingRemarkRef.current = isClosingRemark;
+  }, [isClosingRemark]);
+
   const handleTimeUp = useCallback(() => {
-    if (isDynamicRef.current) {
-      showToastRef.current(
-        "You're past the suggested time — wrap up your current answer.",
-        "info"
-      );
+    if (!isDynamicRef.current) {
+      submitInterviewRef.current();
       return;
     }
-    submitInterviewRef.current();
+    if (isClosingRemarkRef.current) return;
+    showToastRef.current(
+      "Time's up — wrapping up the interview now.",
+      "info"
+    );
+    setNeedsTimerWrapUp(true);
   }, []);
+
+  useEffect(() => {
+    if (!needsTimerWrapUp) return;
+    if (isClosingRemark) {
+      setNeedsTimerWrapUp(false);
+      return;
+    }
+    if (isFetchingNext) {
+      return;
+    }
+    setNeedsTimerWrapUp(false);
+    const fn = handleNextQuestionRef.current;
+    if (fn) void fn(undefined, { forceClose: true });
+  }, [needsTimerWrapUp, isFetchingNext, isClosingRemark]);
 
   if (!interview) {
     return null;
@@ -1357,11 +1609,6 @@ export default function TakeMockInterviewPage() {
           startTime ||
           (interview.started_at ? new Date(interview.started_at) : null)
         }
-        // For dynamic interviews the timer is advisory — we just nudge the candidate to wrap
-        // up instead of auto-submitting. CRITICAL: this must reference a stable callback. The
-        // page re-renders ~60×/sec (audio level updates) and InterviewTimer keys its
-        // setInterval on the onTimeUp ref — a new arrow each render would clear+recreate the
-        // interval before its 1-second tick fires, freezing the timer. See handleTimeUp below.
         onTimeUp={handleTimeUp}
         onEndInterview={handleEndInterview}
         endInterviewDisabled={showEndInterviewDialog || isEndingInterview}
@@ -1369,7 +1616,48 @@ export default function TakeMockInterviewPage() {
         proctoringStatus={proctoringStatus}
         faceCount={faceCount}
         latestViolation={latestViolationProp}
+        timerPaused={isCodingModalOpen}
+        bonusSeconds={interviewBonusSeconds}
       />
+
+      {autoSubmitSecondsLeft !== null && autoSubmitSecondsLeft > 0 && (
+        <Box
+          sx={{
+            position: "sticky",
+            top: 0,
+            zIndex: 1100,
+            px: 3,
+            py: 1.25,
+            backgroundColor: "var(--accent-indigo)",
+            color: "var(--font-light)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1.5,
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            letterSpacing: "0.02em",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 32,
+              height: 32,
+              borderRadius: "50%",
+              backgroundColor: "rgba(255,255,255,0.2)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {autoSubmitSecondsLeft}
+          </Box>
+          <span>Auto-submitting in {autoSubmitSecondsLeft}s — click Submit Interview to send now.</span>
+        </Box>
+      )}
 
       {/* Main Content */}
       <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -1399,7 +1687,7 @@ export default function TakeMockInterviewPage() {
             onSpeakComplete={handleSpeakComplete}
             isUserSpeaking={isListening}
             interviewVideoSrc={INTERVIEW_AVATAR_SRC}
-            interviewTitle={interview?.title}
+            interviewTitle={cleanInterviewTitle(interview?.title)}
             questionsCount={questions?.length}
             durationMinutes={interview.duration_minutes}
           />
@@ -1417,8 +1705,14 @@ export default function TakeMockInterviewPage() {
               // answer doesn't match how a real interview works, so Previous is disabled.
               canGoPrevious={!isDynamicInterview && currentQuestionIndex > 0}
               isLastQuestion={
+                // The "Submit Interview" button label is reserved for the closing-remark
+                // phase only — every QUESTION (even the LLM's final synthesizing one) keeps
+                // the "Follow up" affordance so the candidate's last answer routes through
+                // /next-question/, which then returns the closing remark for the avatar to
+                // speak. Without this guard the AI's last question would submit immediately
+                // without the wrap-up speech the user asked for.
                 isDynamicInterview
-                  ? dynamicIsFinalQuestion
+                  ? isClosingRemark
                   : currentQuestionIndex >= totalQuestions - 1
               }
               isListening={isListening}
@@ -1430,6 +1724,15 @@ export default function TakeMockInterviewPage() {
               conversationStatus={
                 isDynamicInterview ? conversationStatus : undefined
               }
+              pauseProgress={
+                isDynamicInterview && !isClosingRemark ? pauseProgress : 0
+              }
+              // Dynamic interviews hide the live transcript on screen and show the
+              // running question history instead. Legacy interviews keep the textarea
+              // since they still rely on the candidate seeing/editing their answer text.
+              showAnswerTextarea={!isDynamicInterview}
+              questionHistory={isDynamicInterview ? questionHistory : []}
+              submitDisabled={isClosingRemark && isSpeaking}
             />
           )}
         </Box>
@@ -1462,6 +1765,22 @@ export default function TakeMockInterviewPage() {
         open={showEndInterviewDialog}
         onConfirm={handleConfirmEndInterview}
         onCancel={handleCancelEndInterview}
+      />
+
+      <CodingQuestionModal
+        open={isCodingModalOpen}
+        problem={currentQuestion?.coding_problem ?? null}
+        spokenIntro={getQuestionText(currentQuestion)}
+        budgetSeconds={codingTimeBudgetSeconds}
+        allowClipboard={interview?.duration_minutes === 2}
+        onSubmit={handleCodingModalSubmit}
+      />
+      <MCQQuestionModal
+        open={isMCQModalOpen}
+        options={currentQuestion?.mcq_options ?? []}
+        multiSelect={!!currentQuestion?.mcq_multi_select}
+        spokenIntro={getQuestionText(currentQuestion)}
+        onSubmit={handleMCQModalSubmit}
       />
     </Box>
   );
