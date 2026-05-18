@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { motion } from "framer-motion";
 import apiClient from "@/lib/services/api";
 import { WizardData } from "@/lib/setup/wizardData";
@@ -98,7 +98,7 @@ interface SectionConfig {
   description: string;
   iconBg: string;
   accent: string;
-  icon: JSX.Element;
+  icon: ReactElement;
 }
 
 const SECTIONS: SectionConfig[] = [

@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Paper, Typography, Button, Tooltip, IconButton, Chip } from "@mui/material";
+import { Box, Paper, Typography, Button, Tooltip, IconButton, Chip, CircularProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useRouter } from "next/navigation";
 import { memo, useState } from "react";
@@ -11,12 +11,22 @@ const InterviewModeSelectorComponent = () => {
   const router = useRouter();
   const [quickStartHover, setQuickStartHover] = useState(false);
   const [scheduleHover, setScheduleHover] = useState(false);
+  // "Which card is the user navigating away from?" — set the instant they click so the UI
+  // gives them feedback before Next.js finishes loading the destination chunk. Addresses
+  // the "slight delay on first click of mode selection cards" complaint: previously the
+  // button looked frozen until the route changed; now it visibly switches to a loading
+  // state on the same paint as the click.
+  const [navigatingTo, setNavigatingTo] = useState<"quick-start" | "schedule" | null>(null);
 
   const handleQuickStart = () => {
+    if (navigatingTo) return;
+    setNavigatingTo("quick-start");
     router.push("/mock-interview/quick-start");
   };
 
   const handleSchedule = () => {
+    if (navigatingTo) return;
+    setNavigatingTo("schedule");
     router.push("/mock-interview/schedule");
   };
 
@@ -208,7 +218,14 @@ const InterviewModeSelectorComponent = () => {
             fullWidth
             variant="contained"
             onClick={handleQuickStart}
-            endIcon={<IconWrapper icon="mdi:arrow-right" size={22} />}
+            disabled={navigatingTo !== null}
+            endIcon={
+              navigatingTo === "quick-start" ? (
+                <CircularProgress size={18} sx={{ color: "var(--font-light)" }} />
+              ) : (
+                <IconWrapper icon="mdi:arrow-right" size={22} />
+              )
+            }
             sx={{
               backgroundColor: "var(--success-500)",
               color: "var(--font-light)",
@@ -225,9 +242,16 @@ const InterviewModeSelectorComponent = () => {
                 boxShadow: "0 6px 20px color-mix(in srgb, var(--success-500) 50%, transparent)",
                 transform: "scale(1.02)",
               },
+              "&.Mui-disabled": {
+                backgroundColor: "var(--success-500)",
+                color: "var(--font-light)",
+                opacity: 0.8,
+              },
             }}
           >
-            {t("mockInterview.modeSelector.goQuick")}
+            {navigatingTo === "quick-start"
+              ? "Loading…"
+              : t("mockInterview.modeSelector.goQuick")}
           </Button>
         </Paper>
 
@@ -362,7 +386,14 @@ const InterviewModeSelectorComponent = () => {
             fullWidth
             variant="outlined"
             onClick={handleSchedule}
-            endIcon={<IconWrapper icon="mdi:arrow-right" size={22} />}
+            disabled={navigatingTo !== null}
+            endIcon={
+              navigatingTo === "schedule" ? (
+                <CircularProgress size={18} sx={{ color: "var(--accent-indigo)" }} />
+              ) : (
+                <IconWrapper icon="mdi:arrow-right" size={22} />
+              )
+            }
             sx={{
               borderColor: "var(--accent-indigo)",
               color: "var(--accent-indigo)",
@@ -384,9 +415,16 @@ const InterviewModeSelectorComponent = () => {
                   "0 6px 20px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
                 transform: "scale(1.02)",
               },
+              "&.Mui-disabled": {
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
+                opacity: 0.8,
+              },
             }}
           >
-            {t("mockInterview.modeSelector.scheduleNow")}
+            {navigatingTo === "schedule"
+              ? "Loading…"
+              : t("mockInterview.modeSelector.scheduleNow")}
           </Button>
         </Paper>
       </Box>
