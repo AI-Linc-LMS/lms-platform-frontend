@@ -11,6 +11,7 @@ import {
   Paper,
   Alert,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -92,6 +93,16 @@ export default function SubmissionSuccessPage() {
     }
   }, [slug]);
 
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Container sx={{ py: 8, display: "flex", justifyContent: "center" }}>
+          <CircularProgress />
+        </Container>
+      </MainLayout>
+    );
+  }
 
   if (!assessment) {
     return (

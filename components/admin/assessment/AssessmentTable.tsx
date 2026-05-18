@@ -30,6 +30,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { Assessment } from "@/lib/services/admin/admin-assessment.service";
 import { isProctoredAssessmentInLiveWindow } from "@/lib/utils/assessment-live-window.utils";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useToast } from "@/components/common/Toast";
+import { RetakeGrantsDialog } from "./RetakeGrantsDialog";
 
 export interface AssessmentEmailJobInfo {
   task_id: string;
@@ -81,6 +83,11 @@ export function AssessmentTable({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [anchorEl, setAnchorEl] = useState<{ [key: number]: HTMLElement | null }>({});
+  const [retakeDialog, setRetakeDialog] = useState<{
+    open: boolean;
+    assessmentId: number | null;
+    title: string;
+  }>({ open: false, assessmentId: null, title: "" });
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, assessmentId: number) => {
     setAnchorEl({ ...anchorEl, [assessmentId]: event.currentTarget });
@@ -88,6 +95,35 @@ export function AssessmentTable({
 
   const handleMenuClose = (assessmentId: number) => {
     setAnchorEl({ ...anchorEl, [assessmentId]: null });
+  };
+
+  const { showToast } = useToast();
+
+  const handleCopyShareLink = async (assessment: Assessment) => {
+    if (!assessment.slug) {
+      showToast("This assessment has no share link yet.", "error");
+      return;
+    }
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/assessments/${assessment.slug}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // Fallback for non-secure contexts (e.g. http://localhost over LAN)
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      showToast("Assessment link copied to clipboard", "success");
+    } catch {
+      showToast("Could not copy link. Copy manually: " + url, "error");
+    }
   };
 
 
@@ -142,6 +178,7 @@ export function AssessmentTable({
   // Mobile Card View
   if (isMobile) {
     return (
+      <>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: { xs: 1, sm: 0 } }}>
         {assessments.length === 0 ? (
           <Paper
@@ -436,7 +473,20 @@ export function AssessmentTable({
 
               {/* Actions */}
               <Divider sx={{ my: 1.5 }} />
-              <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+              <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 0.5 }}>
+                <Tooltip title="Copy share link">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleCopyShareLink(assessment)}
+                    sx={{
+                      color: "var(--font-secondary)",
+                      "&:hover": { bgcolor: "var(--surface)", color: "var(--accent-indigo)" },
+                    }}
+                    aria-label="Copy assessment share link"
+                  >
+                    <IconWrapper icon="mdi:link-variant" size={18} />
+                  </IconButton>
+                </Tooltip>
                 <IconButton
                   size="small"
                   onClick={(e) => handleMenuOpen(e, assessment.id)}
@@ -517,6 +567,23 @@ export function AssessmentTable({
                     </ListItemIcon>
                     <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
                   </MenuItem>
+                  {!actionsReadOnly && (
+                    <MenuItem
+                      onClick={() => {
+                        handleMenuClose(assessment.id);
+                        setRetakeDialog({
+                          open: true,
+                          assessmentId: assessment.id,
+                          title: assessment.title,
+                        });
+                      }}
+                    >
+                      <ListItemIcon>
+                        <IconWrapper icon="mdi:replay" size={18} color="var(--accent-indigo)" />
+                      </ListItemIcon>
+                      <ListItemText>Manage re-attempts</ListItemText>
+                    </MenuItem>
+                  )}
                   {!actionsReadOnly && onTriggerEmailJob && (() => {
                     const job = assessmentEmailJobMap[assessment.id];
                     const isTriggering = triggeringEmailJobId === assessment.id;
@@ -660,6 +727,13 @@ export function AssessmentTable({
           ))
         )}
       </Box>
+      <RetakeGrantsDialog
+        open={retakeDialog.open}
+        onClose={() => setRetakeDialog({ open: false, assessmentId: null, title: "" })}
+        assessmentId={retakeDialog.assessmentId}
+        assessmentTitle={retakeDialog.title}
+      />
+      </>
     );
   }
 
@@ -1171,6 +1245,25 @@ export function AssessmentTable({
                       justifyContent: "center",
                     }}
                   >
+                    <Tooltip title="Copy share link">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleCopyShareLink(assessment)}
+                        sx={{
+                          color: "var(--font-secondary)",
+                          "&:hover": {
+                            bgcolor:
+                              "color-mix(in srgb, var(--surface) 82%, var(--card-bg) 18%)",
+                            color: "var(--accent-indigo)",
+                          },
+                          transition: "all 0.2s ease",
+                          mr: 0.5,
+                        }}
+                        aria-label="Copy assessment share link"
+                      >
+                        <IconWrapper icon="mdi:link-variant" size={18} />
+                      </IconButton>
+                    </Tooltip>
                     <IconButton
                       size="small"
                       onClick={(e) => handleMenuOpen(e, assessment.id)}
@@ -1257,6 +1350,23 @@ export function AssessmentTable({
                         </ListItemIcon>
                         <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
                       </MenuItem>
+                      {!actionsReadOnly && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            setRetakeDialog({
+                              open: true,
+                              assessmentId: assessment.id,
+                              title: assessment.title,
+                            });
+                          }}
+                        >
+                          <ListItemIcon>
+                            <IconWrapper icon="mdi:replay" size={18} color="var(--accent-indigo)" />
+                          </ListItemIcon>
+                          <ListItemText>Manage re-attempts</ListItemText>
+                        </MenuItem>
+                      )}
                       {!actionsReadOnly && onTriggerEmailJob && (() => {
                         const job = assessmentEmailJobMap[assessment.id];
                         const isTriggering = triggeringEmailJobId === assessment.id;
@@ -1403,6 +1513,12 @@ export function AssessmentTable({
         </TableBody>
       </Table>
     </TableContainer>
+    <RetakeGrantsDialog
+      open={retakeDialog.open}
+      onClose={() => setRetakeDialog({ open: false, assessmentId: null, title: "" })}
+      assessmentId={retakeDialog.assessmentId}
+      assessmentTitle={retakeDialog.title}
+    />
     </>
   );
 }

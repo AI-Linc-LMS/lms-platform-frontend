@@ -99,6 +99,11 @@ export default function DeviceCheckPage({
     poorLightingThreshold: 0.4,
     minConfidenceForValidFace: 0.82, // Stricter on device check: reject hand covering face
     onViolation: (violation) => {
+      // Once the user has committed to starting the assessment, freeze
+      // validation state — stopping the detector for hand-off to the take
+      // page produces transient "no face / violation" events that would
+      // otherwise flash a misleading error during the countdown.
+      if (isNavigatingToAssessmentRef.current) return;
       setFaceValidationPassed(false);
       setFaceValidationMessage(violation.message);
     },
@@ -106,6 +111,7 @@ export default function DeviceCheckPage({
       // Status change will trigger useEffect below to update validation
     },
     onFaceCountChange: (count) => {
+      if (isNavigatingToAssessmentRef.current) return;
       if (count === 0) {
         setFaceValidationPassed(false);
         setFaceValidationMessage(t("assessments.deviceCheck.noFaceDetected"));
@@ -119,6 +125,7 @@ export default function DeviceCheckPage({
 
   // Update face validation status when faceCount or faceStatus changes
   useEffect(() => {
+    if (isNavigatingToAssessmentRef.current) return;
     if (faceCount === 1 && faceStatus === "NORMAL" && !latestViolation) {
       setFaceValidationPassed(true);
       setFaceValidationMessage("Face detected and positioned correctly");
@@ -419,7 +426,14 @@ export default function DeviceCheckPage({
         // Check if assessment is already submitted — block re-entry.
         // (`is_attempted` is true for in-progress too; only redirect when
         // actually submitted so resume-in-progress still works.)
-        if (data.status === "submitted" || data.status === "finalized") {
+        // EXCEPTION: if admin has granted an unconsumed retake, the
+        // start-assessment endpoint will consume it and create a fresh
+        // in-progress submission once the user reaches the take page, so we
+        // let the device-check flow proceed.
+        if (
+          (data.status === "submitted" || data.status === "finalized") &&
+          !data.can_reattempt
+        ) {
           showToast("This assessment has already been submitted", "warning");
           // replace, not push: don't leave device-check in history so
           // back-navigation can't return here.
@@ -759,7 +773,7 @@ export default function DeviceCheckPage({
               />
               
               {/* Face Detection Status Overlay */}
-              {deviceStatus.camera && (
+              {deviceStatus.camera && !isNavigatingToAssessment && (
                 <Box
                   sx={{
                     position: "absolute",
@@ -826,7 +840,7 @@ export default function DeviceCheckPage({
             </Box>
 
             {/* Face Validation Message */}
-            {deviceStatus.camera && !isFaceDetectionInitializing && (
+            {deviceStatus.camera && !isFaceDetectionInitializing && !isNavigatingToAssessment && (
               <Box sx={{ mt: 2 }}>
                 {faceValidationPassed ? (
                   <Alert severity="success" sx={{ mt: 1 }}>
