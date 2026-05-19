@@ -3,6 +3,7 @@
 import { ReactNode, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { STEP_TITLES, TOTAL_WIZARD_STEPS } from "@/lib/setup/wizardData";
+import { useWizardTheme } from "./WizardThemeProvider";
 
 interface WizardLayoutProps {
   step: number; // 1..8
@@ -36,18 +37,20 @@ export function WizardLayout({
   const stepNumber = step.toString().padStart(2, "0");
   const totalNumber = TOTAL_WIZARD_STEPS.toString().padStart(2, "0");
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const { theme, toggle } = useWizardTheme();
 
   return (
     <>
       {/* Background grid */}
       <div className="aw-grid-bg" aria-hidden />
 
-      {/* Slim, single-row header */}
+      {/* Slim, single-row header. All chroma is var-driven so the same markup
+          works in both wizard themes without per-prop branching. */}
       <header
-        className="sticky top-0 z-30 backdrop-blur-xl"
+        className="aw-header sticky top-0 z-30 backdrop-blur-xl"
         style={{
-          background: "rgba(5, 7, 15, 0.72)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+          background: "rgb(var(--aw-bg-0) / 0.72)",
+          borderBottom: "1px solid rgb(var(--aw-line) / var(--aw-line-alpha))",
         }}
       >
         <div className="aw-aurora" aria-hidden />
@@ -61,28 +64,36 @@ export function WizardLayout({
                 boxShadow: "0 0 8px rgba(0, 224, 255, 0.7)",
               }}
             />
-            <span className="aw-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(233,236,246,0.55)]">
+            <span
+              className="aw-mono text-[10px] uppercase tracking-[0.32em]"
+              style={{ color: "rgb(var(--aw-fg) / 0.55)" }}
+            >
               AI Linc
             </span>
-            <span className="aw-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(255,255,255,0.18)]">
+            <span
+              className="aw-mono text-[10px] uppercase tracking-[0.32em]"
+              style={{ color: "rgb(var(--aw-line) / 0.32)" }}
+            >
               /
             </span>
-            <span className="aw-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(233,236,246,0.4)]">
+            <span
+              className="aw-mono text-[10px] uppercase tracking-[0.32em]"
+              style={{ color: "rgb(var(--aw-fg) / 0.4)" }}
+            >
               Setup
             </span>
           </div>
 
           <div className="aw-mono flex items-center gap-3 text-[10px] uppercase tracking-[0.3em]">
             <span
-              className={
-                saving
-                  ? "aw-saving text-[#00e0ff]"
-                  : "text-[rgba(233,236,246,0.4)]"
+              className={saving ? "aw-saving text-[#00e0ff]" : ""}
+              style={
+                saving ? undefined : { color: "rgb(var(--aw-fg) / 0.4)" }
               }
             >
               {saving ? "Saving" : "Autosaved"}
             </span>
-            <span className="text-[rgba(255,255,255,0.16)]">·</span>
+            <span style={{ color: "rgb(var(--aw-line) / 0.28)" }}>·</span>
             <span
               className="font-semibold"
               style={{
@@ -95,11 +106,69 @@ export function WizardLayout({
             >
               {progress}%
             </span>
+            <button
+              type="button"
+              onClick={toggle}
+              aria-label={
+                theme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              title={
+                theme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              className="aw-theme-toggle ml-1 inline-grid h-7 w-7 place-items-center rounded-full"
+              style={{
+                border: "1px solid rgb(var(--aw-line) / var(--aw-line-2-alpha))",
+                background: "rgb(var(--aw-line) / 0.025)",
+                color: "rgb(var(--aw-fg))",
+                transition:
+                  "background 0.2s, border-color 0.2s, color 0.2s",
+              }}
+            >
+              {theme === "dark" ? (
+                // Sun — currently dark, click to switch to light
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                </svg>
+              ) : (
+                // Moon — currently light, click to switch to dark
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
         <div
           className="aw-progress-track"
-          style={{ height: "1px", background: "rgba(255,255,255,0.04)" }}
+          style={{
+            height: "1px",
+            background: "rgb(var(--aw-line) / 0.08)",
+          }}
         >
           <div className="aw-progress-fill" style={{ width: `${progress}%` }} />
         </div>
@@ -161,7 +230,7 @@ export function WizardLayout({
             {/* Label line below bars */}
             <div
               className="aw-mono mt-3 flex h-[14px] items-center text-[10px] uppercase tracking-[0.32em]"
-              style={{ color: "rgba(233,236,246,0.4)" }}
+              style={{ color: "rgb(var(--aw-fg) / 0.5)" }}
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -178,16 +247,16 @@ export function WizardLayout({
                         hoveredBar && hoveredBar < step
                           ? "#00e0ff"
                           : hoveredBar === step || (!hoveredBar && step)
-                            ? "rgba(233,236,246,0.7)"
+                            ? "rgb(var(--aw-fg) / 0.85)"
                             : undefined,
                     }}
                   >
                     {(hoveredBar ?? step).toString().padStart(2, "0")}
                   </span>
-                  <span style={{ color: "rgba(255,255,255,0.18)" }}>·</span>
+                  <span style={{ color: "rgb(var(--aw-line) / 0.32)" }}>·</span>
                   <span>{STEP_TITLES[(hoveredBar ?? step) - 1]}</span>
                   {hoveredBar && hoveredBar < step ? (
-                    <span style={{ color: "rgba(0,224,255,0.6)" }}>
+                    <span style={{ color: "rgba(0,224,255,0.7)" }}>
                       · Click to revisit
                     </span>
                   ) : null}
@@ -205,16 +274,25 @@ export function WizardLayout({
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
               className="mt-12"
             >
-              <p className="aw-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(233,236,246,0.4)]">
+              <p
+                className="aw-mono text-[10px] uppercase tracking-[0.32em]"
+                style={{ color: "rgb(var(--aw-fg) / 0.5)" }}
+              >
                 Step {stepNumber}{" "}
-                <span className="text-[rgba(255,255,255,0.18)]">/</span>{" "}
+                <span style={{ color: "rgb(var(--aw-line) / 0.32)" }}>/</span>{" "}
                 {totalNumber}
               </p>
-              <h1 className="aw-serif aw-shimmer mt-3 text-[clamp(42px,6vw,80px)] leading-[0.98]">
+              <h1
+                className="aw-serif aw-shimmer mt-3 text-[clamp(42px,6vw,80px)] leading-[0.98]"
+                style={{ color: "rgb(var(--aw-fg))" }}
+              >
                 {title}
               </h1>
               {description ? (
-                <p className="mt-6 max-w-[620px] text-[15px] leading-[1.7] text-[rgba(233,236,246,0.6)]">
+                <p
+                  className="mt-6 max-w-[620px] text-[15px] leading-[1.7]"
+                  style={{ color: "rgb(var(--aw-fg) / 0.75)" }}
+                >
                   {description}
                 </p>
               ) : null}
@@ -222,7 +300,7 @@ export function WizardLayout({
               {/* Single thin meta line */}
               <div
                 className="aw-mono mt-7 flex items-center gap-3 text-[10px] uppercase tracking-[0.32em]"
-                style={{ color: "rgba(233,236,246,0.32)" }}
+                style={{ color: "rgb(var(--aw-fg) / 0.42)" }}
               >
                 <span className="inline-flex items-center gap-1.5">
                   <svg
@@ -239,7 +317,7 @@ export function WizardLayout({
                   </svg>
                   {STEP_HINTS[step - 1]}
                 </span>
-                <span style={{ color: "rgba(255,255,255,0.12)" }}>·</span>
+                <span style={{ color: "rgb(var(--aw-line) / 0.24)" }}>·</span>
                 <span>Changes save automatically</span>
               </div>
             </motion.div>

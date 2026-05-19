@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { wizardService, type WizardState } from "@/lib/services/wizard.service";
 import { SetupWizard } from "@/components/setup/SetupWizard";
+import { WizardThemeProvider } from "@/components/setup/WizardThemeProvider";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 
@@ -125,8 +126,8 @@ export default function SetupPage() {
   }
 
   return (
-    <div className="ailinc-wizard">
+    <WizardThemeProvider>
       <SetupWizard initialState={state} />
-    </div>
+    </WizardThemeProvider>
   );
 }

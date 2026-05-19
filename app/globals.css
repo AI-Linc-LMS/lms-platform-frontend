@@ -728,6 +728,249 @@ body {
 }
 .ailinc-wizard .aw-step-bar-done { background: rgba(0, 224, 255, 0.5); }
 
+/* =========================================================================
+ * WIZARD LIGHT THEME
+ * Activated by `data-aw-theme="light"` on the .ailinc-wizard wrapper
+ * (managed by WizardThemeProvider). Re-points the colour tokens AND
+ * overrides every place an `rgba(255,255,255,…)` hardcoded tint would
+ * vanish on a light background (cards, inputs, chips, option tiles,
+ * ghost buttons, step bars, etc.). Specificity is bumped via the
+ * compound selector so these wins against the dark base rules without
+ * needing !important anywhere.
+ *
+ * Contrast target: WCAG AA across all text styles. Headings (aw-serif)
+ * stay weight=300 (Fraunces' optical 144 has plenty of presence at large
+ * sizes), but `aw-text` colour now lands at ~17:1 on the page bg so body
+ * copy reads bold-enough without restyling fonts.
+ * ======================================================================= */
+.ailinc-wizard[data-aw-theme="light"] {
+  --aw-bg-0: 248 250 253;
+  --aw-bg-1: 240 244 251;
+  --aw-bg-2: 234 240 250;
+  --aw-bg-3: 226 233 246;
+  /* Deep navy near-black: ~17:1 on the light page bg (AAA) */
+  --aw-fg: 11 18 38;
+  /* Steel slate: ~7:1 (AAA) — used for paragraph copy */
+  --aw-fg-dim: 56 70 102;
+  /* Muted slate: ~5:1 (AA) — used for tertiary text like step hints */
+  --aw-fg-mute: 94 108 138;
+  /* Borders/lines: switch from white-on-dark to dark-on-light at the
+     same alpha values so existing rgba(line)/alpha selectors still work. */
+  --aw-line: 11 18 38;
+  --aw-line-alpha: 0.10;
+  --aw-line-2-alpha: 0.16;
+  --aw-radial-1: rgba(0, 224, 255, 0.10);
+  --aw-radial-2: rgba(35, 86, 214, 0.06);
+}
+
+/* Dampen the heavy grain overlay — mix-blend-overlay reads as muddy
+   noise on a near-white surface. Almost invisible is the goal. */
+.ailinc-wizard[data-aw-theme="light"]::after {
+  opacity: 0.018;
+}
+
+/* The wizard's small Inter body copy looks visibly bolder on light when
+   we lean weight 400 → 500. Headings already use Fraunces 300 with the
+   144 optical axis, which carries enough presence on light. */
+.ailinc-wizard[data-aw-theme="light"] {
+  font-weight: 500;
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-serif {
+  font-weight: 400;
+}
+
+/* Selection — black-on-cyan reads too harsh, soften */
+.ailinc-wizard[data-aw-theme="light"] *::selection {
+  background: rgba(0, 130, 175, 0.18);
+  color: #05070f;
+}
+
+/* Kicker pill: cyan #00e0ff on near-white is ~2.6:1 (fails AA). Switch
+   to the deeper accent blue (~8:1 AAA) and bump tint opacities so the
+   chip still reads as a distinct element. */
+.ailinc-wizard[data-aw-theme="light"] .aw-kicker {
+  color: #1d4dc7;
+  background: rgba(35, 86, 214, 0.08);
+  border-color: rgba(35, 86, 214, 0.25);
+}
+
+/* Card: the dark base has a near-invisible white→white tint gradient on
+   light. Switch to opaque white + subtle navy border + soft drop shadow
+   so the panel reads as a real surface lifted above the page. */
+.ailinc-wizard[data-aw-theme="light"] .aw-card {
+  background: #ffffff;
+  border-color: rgba(11, 18, 38, 0.10);
+  box-shadow:
+    0 1px 2px -1px rgba(11, 18, 38, 0.06),
+    0 8px 24px -10px rgba(11, 18, 38, 0.08);
+}
+
+/* Inputs / selects / textareas — opaque white with the same theme-aware
+   border. Keep cyan focus so users still know what's active. */
+.ailinc-wizard[data-aw-theme="light"] .aw-input,
+.ailinc-wizard[data-aw-theme="light"] .aw-textarea,
+.ailinc-wizard[data-aw-theme="light"] .aw-select {
+  background: #ffffff;
+  color: rgb(var(--aw-fg));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-input::placeholder,
+.ailinc-wizard[data-aw-theme="light"] .aw-textarea::placeholder {
+  color: rgb(var(--aw-fg-mute));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-input:focus,
+.ailinc-wizard[data-aw-theme="light"] .aw-textarea:focus,
+.ailinc-wizard[data-aw-theme="light"] .aw-select:focus {
+  background: #f7fbff;
+  border-color: rgba(0, 130, 175, 0.55);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-select option {
+  background: #ffffff;
+  color: rgb(var(--aw-fg));
+}
+
+/* Chip: matches input/option pattern */
+.ailinc-wizard[data-aw-theme="light"] .aw-chip {
+  background: rgba(11, 18, 38, 0.03);
+  color: rgb(var(--aw-fg-dim));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-chip:hover {
+  background: rgba(11, 18, 38, 0.05);
+  color: rgb(var(--aw-fg));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-chip-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #2356d6 0%, #00a4c4 100%);
+  border-color: rgba(0, 130, 175, 0.55);
+}
+
+/* Option/radio cards used by FeaturesStep, AdminCapsStep, ThemeStep, etc. */
+.ailinc-wizard[data-aw-theme="light"] .aw-option {
+  background: rgba(11, 18, 38, 0.025);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-option:hover {
+  background: rgba(11, 18, 38, 0.04);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-option-active {
+  background: rgba(0, 130, 175, 0.06);
+  border-color: rgba(0, 130, 175, 0.5);
+  box-shadow: 0 8px 30px -10px rgba(0, 130, 175, 0.25);
+}
+
+/* Ghost button (Back / Use a different account / etc.) */
+.ailinc-wizard[data-aw-theme="light"] .aw-btn-ghost {
+  color: rgb(var(--aw-fg-dim));
+  border-color: rgba(11, 18, 38, 0.14);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-btn-ghost:hover:not(:disabled) {
+  color: rgb(var(--aw-fg));
+  background: rgba(11, 18, 38, 0.04);
+  border-color: rgba(11, 18, 38, 0.22);
+}
+
+/* Step bars — TODO state was rgba(255,255,255,0.08) which is invisible on white */
+.ailinc-wizard[data-aw-theme="light"] .aw-step-bar-todo {
+  background: rgba(11, 18, 38, 0.10);
+}
+
+/* Watermark "02"-style serif on the side. The cyan→blue gradient stays
+   but we tone it down so it doesn't visually compete with the body copy
+   on the now-bright background. */
+.ailinc-wizard[data-aw-theme="light"] .aw-watermark {
+  background: linear-gradient(180deg,
+    rgba(35, 86, 214, 0.20) 0%,
+    rgba(0, 224, 255, 0.10) 40%,
+    rgba(35, 86, 214, 0.03) 75%,
+    transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 60px rgba(35, 86, 214, 0.06));
+}
+
+/* Theme toggle button in the header gets a slightly stronger border so
+   it doesn't disappear on the white background. */
+.ailinc-wizard[data-aw-theme="light"] .aw-theme-toggle:hover {
+  background: rgba(35, 86, 214, 0.06);
+  border-color: rgba(35, 86, 214, 0.35);
+}
+.ailinc-wizard[data-aw-theme="dark"] .aw-theme-toggle:hover {
+  background: rgba(0, 224, 255, 0.06);
+  border-color: rgba(0, 224, 255, 0.4);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Inline-style overrides for the step components. The wizard steps
+   (BrandStep, AdminCapsStep, FeaturesStep, ThemeStep, CourseLibraryStep)
+   were authored against the dark theme and inline-style their surfaces
+   with `rgba(255,255,255,0.0X)` tints. On light those become invisible
+   (white on white). The attribute-substring selectors below match those
+   exact inline values and rewrite them with the ink-tinted equivalent.
+
+   Why `!important`: inline styles have higher specificity than any
+   external CSS rule. `!important` is the only way to override them
+   without touching every step component's TSX.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Background tints */
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.02)"],
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255, 255, 255, 0.02)"] {
+  background-color: rgba(11, 18, 38, 0.03) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.03)"] {
+  background-color: rgba(11, 18, 38, 0.04) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.04)"] {
+  background-color: rgba(11, 18, 38, 0.05) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.06)"] {
+  background-color: rgba(11, 18, 38, 0.06) !important;
+}
+
+/* Border overrides — only fire when the inline style has a 1px-solid-rgba
+   border with the matching alpha. CSS sets border-color (not the whole
+   shorthand) so the width and style from the original inline survive. */
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.06)"] {
+  border-color: rgba(11, 18, 38, 0.10) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.08)"] {
+  border-color: rgba(11, 18, 38, 0.14) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.10)"] {
+  border-color: rgba(11, 18, 38, 0.15) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.12)"] {
+  border-color: rgba(11, 18, 38, 0.18) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.18)"] {
+  border-color: rgba(11, 18, 38, 0.24) !important;
+}
+
+/* AdminCapsStep toggle knob: dark mode shows a near-white pill on a dark
+   track. On light bg the white pill vanishes — use the deep navy ink
+   instead so the knob stays visible against the on-track gradient. */
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.7)"] {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(11, 18, 38, 0.25) !important;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Hardcoded text-color escapes used by individual step components.
+   These bypass `--aw-fg-*` tokens (arbitrary Tailwind like text-[#00e0ff]
+   or inline color: "#fff") so the theme switch doesn't reach them.
+   `!important` because Tailwind's arbitrary-class output and inline
+   styles outrank scoped CSS without it.
+   ──────────────────────────────────────────────────────────────────── */
+.ailinc-wizard[data-aw-theme="light"] .text-\[\#00e0ff\] {
+  color: #1d4dc7 !important;
+}
+.ailinc-wizard[data-aw-theme="light"] .text-\[\#ffc66d\] {
+  color: #b45309 !important;
+}
+/* `hover:text-white` → white-on-light is invisible. Bring it back to the
+   deep ink fg colour so the hover state still reads as "emphasised". */
+.ailinc-wizard[data-aw-theme="light"] .hover\:text-white:hover {
+  color: rgb(var(--aw-fg)) !important;
+}
+
 /* ---- Enhancements: cinematic motion + flourishes ------------------- */
 
 /* Massive serif step watermark (e.g. "02" pinned to the side) */
