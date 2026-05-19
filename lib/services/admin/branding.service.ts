@@ -26,6 +26,7 @@ export interface BrandingGetResponse {
   theme_settings: Record<string, string>;
   login_img_url: string | null;
   login_logo_url: string | null;
+  app_icon_url: string | null;
   theme_preset_id: string | null;
 }
 
@@ -34,6 +35,7 @@ export interface BrandingPatchBody {
   theme_settings?: Record<string, string>;
   login_img_url?: string | null;
   login_logo_url?: string | null;
+  app_icon_url?: string | null;
 }
 
 const clientId = () => Number(config.clientId);
@@ -203,6 +205,7 @@ export async function patchClientBranding(
   const normalizedBody: BrandingPatchBody = { ...body };
   normalizedBody.login_img_url = normalizeBrandingUrl(body.login_img_url);
   normalizedBody.login_logo_url = normalizeBrandingUrl(body.login_logo_url);
+  normalizedBody.app_icon_url = normalizeBrandingUrl(body.app_icon_url);
   normalizedBody.theme_settings = sanitizeThemeSettings(body.theme_settings);
 
   if (
@@ -219,6 +222,14 @@ export async function patchClientBranding(
   ) {
     throw new Error(
       `login_logo_url is too long after normalization (max ${BRANDING_URL_MAX_LEN} chars).`
+    );
+  }
+  if (
+    typeof normalizedBody.app_icon_url === "string" &&
+    normalizedBody.app_icon_url.length > BRANDING_URL_MAX_LEN
+  ) {
+    throw new Error(
+      `app_icon_url is too long after normalization (max ${BRANDING_URL_MAX_LEN} chars).`
     );
   }
 
@@ -243,4 +254,12 @@ export async function uploadLoginBackground(file: File) {
     module: string;
   }>(`/admin-dashboard/api/clients/${clientId()}/branding/login-background/`, fd);
   return data;
+}
+
+/**
+ * Reuses the login-background upload endpoint (it stores any image and
+ * returns a URL — the field name on Client decides how it's used).
+ */
+export async function uploadFavicon(file: File) {
+  return uploadLoginBackground(file);
 }

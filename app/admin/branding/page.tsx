@@ -32,6 +32,7 @@ import {
   fetchBrandingPresetDetail,
   fetchClientBranding,
   patchClientBranding,
+  uploadFavicon,
   uploadLoginBackground,
   type BrandingPresetSummary,
 } from "@/lib/services/admin/branding.service";
@@ -56,6 +57,7 @@ type BrandingBaseline = {
   selectedPreset: string;
   loginImgUrl: string;
   loginLogoUrl: string;
+  appIconUrl: string;
   draftThemeRaw: Record<string, string>;
 };
 
@@ -69,10 +71,12 @@ export default function AdminBrandingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [presets, setPresets] = useState<BrandingPresetSummary[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [loginImgUrl, setLoginImgUrl] = useState("");
   const [loginLogoUrl, setLoginLogoUrl] = useState("");
+  const [appIconUrl, setAppIconUrl] = useState("");
   const [draftThemeRaw, setDraftThemeRaw] = useState<Record<string, string>>({});
   const [baseline, setBaseline] = useState<BrandingBaseline | null>(null);
   const [presetApplyingId, setPresetApplyingId] = useState<string | null>(null);
@@ -94,8 +98,9 @@ export default function AdminBrandingPage() {
     if (selectedPreset !== baseline.selectedPreset) return true;
     if (loginImgUrl.trim() !== baseline.loginImgUrl.trim()) return true;
     if (loginLogoUrl.trim() !== baseline.loginLogoUrl.trim()) return true;
+    if (appIconUrl.trim() !== baseline.appIconUrl.trim()) return true;
     return themeFingerprint(draftThemeRaw) !== themeFingerprint(baseline.draftThemeRaw);
-  }, [baseline, selectedPreset, loginImgUrl, loginLogoUrl, draftThemeRaw]);
+  }, [baseline, selectedPreset, loginImgUrl, loginLogoUrl, appIconUrl, draftThemeRaw]);
 
   const hasBrandingFeature = useMemo(() => {
     const features = clientInfo?.features ?? [];
@@ -114,6 +119,7 @@ export default function AdminBrandingPage() {
     setSelectedPreset(b.selectedPreset);
     setLoginImgUrl(b.loginImgUrl);
     setLoginLogoUrl(b.loginLogoUrl);
+    setAppIconUrl(b.appIconUrl);
     setDraftThemeRaw(JSON.parse(JSON.stringify(b.draftThemeRaw)));
   }, []);
 
@@ -133,6 +139,7 @@ export default function AdminBrandingPage() {
         selectedPreset: b.theme_preset_id || "",
         loginImgUrl: b.login_img_url?.trim() || "",
         loginLogoUrl: b.login_logo_url?.trim() || "",
+        appIconUrl: b.app_icon_url?.trim() || "",
         draftThemeRaw: draft,
       };
       applyBaseline(nextBaseline);
@@ -189,6 +196,7 @@ export default function AdminBrandingPage() {
       const body: Parameters<typeof patchClientBranding>[0] = {
         login_img_url: loginImgUrl.trim() || null,
         login_logo_url: loginLogoUrl.trim() || null,
+        app_icon_url: appIconUrl.trim() || null,
       };
       if (selectedPreset) {
         body.theme_preset_id = selectedPreset;
@@ -202,6 +210,7 @@ export default function AdminBrandingPage() {
         selectedPreset,
         loginImgUrl: loginImgUrl.trim(),
         loginLogoUrl: loginLogoUrl.trim(),
+        appIconUrl: appIconUrl.trim(),
         draftThemeRaw: JSON.parse(JSON.stringify(draftThemeRaw)),
       };
       setBaseline(next);
@@ -240,6 +249,27 @@ export default function AdminBrandingPage() {
       );
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingFavicon(true);
+    try {
+      const res = await uploadFavicon(file);
+      if (res.url) {
+        setAppIconUrl(res.url);
+        showToast(t("branding.uploaded"), "success");
+      }
+    } catch (err: unknown) {
+      showToast(
+        err instanceof Error ? err.message : t("branding.uploadError"),
+        "error"
+      );
+    } finally {
+      setUploadingFavicon(false);
     }
   };
 
@@ -529,6 +559,91 @@ export default function AdminBrandingPage() {
                     onChange={(e) => setLoginLogoUrl(e.target.value)}
                     helperText={t("branding.loginLogoUrlHelp")}
                   />
+
+                  <Divider sx={{ my: 0.5 }} />
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    Browser favicon
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Square 32×32 PNG or ICO. Shows in browser tabs and bookmarks.
+                  </Typography>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                    alignItems={{ xs: "stretch", sm: "center" }}
+                  >
+                    {appIconUrl.trim() ? (
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          flexShrink: 0,
+                          borderRadius: 1,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          backgroundColor: "#ffffff",
+                          backgroundImage: `url("${appIconUrl.trim()}")`,
+                          backgroundSize: "contain",
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "center",
+                        }}
+                        aria-label="Favicon preview"
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          flexShrink: 0,
+                          borderRadius: 1,
+                          border: "1px dashed",
+                          borderColor: "divider",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "text.disabled",
+                        }}
+                      >
+                        <IconWrapper icon="mdi:image-outline" size={26} />
+                      </Box>
+                    )}
+                    <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Favicon URL"
+                        value={appIconUrl}
+                        onChange={(e) => setAppIconUrl(e.target.value)}
+                        helperText="Paste a hosted icon URL, or upload below."
+                      />
+                      <Box>
+                        <Button
+                          variant="outlined"
+                          component="label"
+                          disabled={uploadingFavicon}
+                          startIcon={
+                            uploadingFavicon ? (
+                              <CircularProgress size={18} color="inherit" />
+                            ) : (
+                              <IconWrapper
+                                icon="mdi:cloud-upload-outline"
+                                size={18}
+                              />
+                            )
+                          }
+                          sx={{ textTransform: "none", fontWeight: 600 }}
+                        >
+                          {uploadingFavicon ? t("branding.uploading") : "Upload favicon"}
+                          <input
+                            type="file"
+                            hidden
+                            accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml"
+                            onChange={handleFaviconUpload}
+                          />
+                        </Button>
+                      </Box>
+                    </Stack>
+                  </Stack>
                 </Stack>
               </BrandingSectionCard>
 
