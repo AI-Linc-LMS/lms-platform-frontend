@@ -347,6 +347,7 @@ export function useInterviewerVoice(
 
         await audio.play();
       } catch {
+        if (isStale()) return;
         await playBrowser(true);
       }
     };

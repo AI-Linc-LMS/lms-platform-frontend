@@ -148,6 +148,7 @@ export const AIAvatar = memo(function AIAvatar({
   const isListening = isUserSpeaking && !isAnimating;
 
   const isGif = interviewVideoSrc?.toLowerCase().endsWith(".gif");
+  const showSpinner = isSpeaking && !isAnimating && !question?.trim();
 
   return (
     <Box
@@ -215,6 +216,7 @@ export const AIAvatar = memo(function AIAvatar({
                 src={interviewVideoSrc}
                 muted
                 playsInline
+                preload="auto"
                 aria-label="AI interviewer video"
                 onLoadedMetadata={(e) => {
                   const v = e.currentTarget;
@@ -366,12 +368,6 @@ export const AIAvatar = memo(function AIAvatar({
               lineHeight: 1.45,
               fontWeight: 500,
               textShadow: "0 1px 4px rgba(0,0,0,0.6)",
-              // Limit to ~2 visual lines so long openings don't blanket the whole tile.
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
             }}
             aria-live="polite"
           >
@@ -380,7 +376,7 @@ export const AIAvatar = memo(function AIAvatar({
         </Box>
       )}
 
-      {isSpeaking && !isAnimating && (
+      {showSpinner && (
         <Box
           sx={{
             position: "absolute",
