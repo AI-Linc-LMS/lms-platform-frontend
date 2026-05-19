@@ -91,6 +91,41 @@ function formatAdminName(name: string): string {
     .join(" ");
 }
 
+/**
+ * Map a learner-facing feature → the admin-portal modules that exist to
+ * MANAGE it. Toggling either side of a pair toggles all of its counterparts
+ * — you can't have admins managing assessments when learners can't take
+ * any, and vice versa. Keys are exact `name` strings from the backend's
+ * AppFeatures table.
+ *
+ * Admin features that aren't anyone's counterpart (admin_branding,
+ * admin_pending_instructors, admin_verify_content, etc.) are NOT in this
+ * map — those toggle independently because they don't presume a paired
+ * learner module.
+ */
+const FEATURE_PAIRS: Record<string, string[]> = {
+  LMS: ["admin_course_builder", "admin_manage_students", "admin_dashboard"],
+  Assessment: ["admin_assessment", "admin_scorecard"],
+  "Live Class": ["admin_live_sessions", "admin_attendance"],
+  "Mock Interview": ["admin_mock_interview"],
+  "AI Tutor": ["admin_ai_course_builder"],
+  // Community Forum, Proctoring: intentionally no admin counterparts.
+};
+
+/**
+ * For a given feature (by name), return the full list of names that should
+ * toggle together. Works in both directions — pass either the learner name
+ * or any of its admin counterparts.
+ */
+function pairedFeatureNames(name: string): string[] {
+  const direct = FEATURE_PAIRS[name];
+  if (direct) return [name, ...direct];
+  for (const [learner, admins] of Object.entries(FEATURE_PAIRS)) {
+    if (admins.includes(name)) return [learner, ...admins];
+  }
+  return [name];
+}
+
 interface SectionConfig {
   key: "learner" | "admin";
   label: string;
@@ -98,6 +133,9 @@ interface SectionConfig {
   description: string;
   iconBg: string;
   accent: string;
+  // Was `JSX.Element` originally — TS 5 / React 19 dropped the global JSX
+  // namespace, so this needs a concrete React type. ReactElement is the
+  // strict form (single element), which is exactly what the SVG icons are.
   icon: ReactElement;
 }
 
@@ -194,10 +232,36 @@ export function FeaturesStep({ data, onChange }: Props) {
     return { learnerFeatures: learner, adminFeatures: admin };
   }, [features]);
 
+  /**
+   * Lookup table: feature name → feature object (for resolving paired names
+   * to their ids when toggling cascades fire). Lowercased keys so the
+   * comparison is case-insensitive against pair-map entries.
+   */
+  const featuresByName = useMemo(() => {
+    const m = new Map<string, Feature>();
+    for (const f of features) m.set(f.name.toLowerCase(), f);
+    return m;
+  }, [features]);
+
+  /**
+   * Toggle a single feature AND every feature it's paired with. Treats the
+   * clicked feature's resulting state as the source of truth — clicking
+   * an ON item turns the whole pair OFF; clicking an OFF item turns the
+   * whole pair ON.
+   */
   const toggle = (id: number) => {
+    const target = features.find((f) => f.id === id);
+    if (!target) return;
+    const willTurnOn = !selected.has(id);
+    const namesToToggle = pairedFeatureNames(target.name);
+    const idsToToggle = namesToToggle
+      .map((n) => featuresByName.get(n.toLowerCase())?.id)
+      .filter((x): x is number => typeof x === "number");
     const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    for (const fid of idsToToggle) {
+      if (willTurnOn) next.add(fid);
+      else next.delete(fid);
+    }
     onChange({
       features: {
         ...(data.features || {}),
@@ -210,9 +274,22 @@ export function FeaturesStep({ data, onChange }: Props) {
     const next = new Set(selected);
     const allOn = groupFeatures.every((f) => next.has(f.id));
     if (allOn) {
-      groupFeatures.forEach((f) => next.delete(f.id));
+      // Section-level deselect: turn off the whole section AND any paired
+      // features on the other side (so we don't strand admins managing
+      // nothing, or learners using a module with no admin tools).
+      groupFeatures.forEach((f) => {
+        for (const name of pairedFeatureNames(f.name)) {
+          const id = featuresByName.get(name.toLowerCase())?.id;
+          if (typeof id === "number") next.delete(id);
+        }
+      });
     } else {
-      groupFeatures.forEach((f) => next.add(f.id));
+      groupFeatures.forEach((f) => {
+        for (const name of pairedFeatureNames(f.name)) {
+          const id = featuresByName.get(name.toLowerCase())?.id;
+          if (typeof id === "number") next.add(id);
+        }
+      });
     }
     onChange({
       features: {
@@ -252,7 +329,31 @@ export function FeaturesStep({ data, onChange }: Props) {
           </p>
         </div>
       ) : (
-        <div className="space-y-7">
+        <div className="space-y-6">
+          {/* Pairing hint banner — explains the auto-toggle behaviour up
+              front so users aren't confused when ticking "Assessment" also
+              switches on the admin counterparts. */}
+          <div
+            className="rounded-[14px] p-3.5"
+            style={{
+              border: "1px solid rgba(0, 224, 255, 0.22)",
+              background: "rgba(0, 224, 255, 0.04)",
+            }}
+          >
+            <p className="aw-mono text-[10px] uppercase tracking-[0.28em] text-[#00e0ff]">
+              How pairing works
+            </p>
+            <p className="aw-text-dim mt-1.5 text-[12.5px] leading-relaxed">
+              Picking a learner module like{" "}
+              <span className="aw-text font-semibold">Assessment</span> also
+              switches on the admin tools needed to run it (
+              <span className="aw-text">Manage assessments</span>,{" "}
+              <span className="aw-text">Scorecard</span>). Untick either side
+              and both sides clear together — we don&apos;t leave admins
+              managing modules learners can&apos;t reach.
+            </p>
+          </div>
+
           {SECTIONS.map((section) => {
             const list =
               section.key === "learner" ? learnerFeatures : adminFeatures;
@@ -267,11 +368,25 @@ export function FeaturesStep({ data, onChange }: Props) {
                 initial="hidden"
                 animate="visible"
                 aria-labelledby={`features-section-${section.key}`}
+                className="relative overflow-hidden rounded-[18px] p-5 sm:p-6"
+                style={{
+                  // Strong section-level tint + accent left rail so the two
+                  // worlds (Student app vs Admin portal) feel different
+                  // surfaces, not just two lists on the same page.
+                  border: `1px solid ${section.accent}24`,
+                  background: `linear-gradient(135deg, ${section.accent}08 0%, transparent 40%), rgba(11, 18, 38, 0.02)`,
+                }}
               >
-                <div className="mb-3 flex items-end justify-between gap-3">
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 w-[3px]"
+                  style={{ background: section.iconBg }}
+                />
+
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <span
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px]"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px]"
                       style={{
                         background: section.iconBg,
                         boxShadow: `0 6px 18px -8px ${section.accent}`,
@@ -281,14 +396,14 @@ export function FeaturesStep({ data, onChange }: Props) {
                     </span>
                     <div>
                       <p
-                        className="aw-mono text-[10px] uppercase tracking-[0.3em]"
+                        className="aw-mono text-[10px] font-semibold uppercase tracking-[0.3em]"
                         style={{ color: section.accent }}
                       >
                         {section.kicker}
                       </p>
                       <h3
                         id={`features-section-${section.key}`}
-                        className="aw-text mt-0.5 text-[15px] font-semibold"
+                        className="aw-text mt-1 text-[16px] font-semibold"
                       >
                         {section.label}
                         <span className="aw-text-mute ml-2 text-[12px] font-normal">
@@ -300,24 +415,18 @@ export function FeaturesStep({ data, onChange }: Props) {
                   <button
                     type="button"
                     onClick={() => toggleSection(list)}
-                    className="aw-mono shrink-0 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.22em] transition-colors"
+                    className="aw-mono shrink-0 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] transition-colors"
                     style={{
-                      borderColor: allOn
-                        ? "rgba(255,255,255,0.18)"
-                        : `${section.accent}66`,
-                      color: allOn
-                        ? "rgb(154,163,192)"
-                        : section.accent,
-                      background: allOn
-                        ? "transparent"
-                        : `${section.accent}0d`,
+                      borderColor: `${section.accent}66`,
+                      color: section.accent,
+                      background: `${section.accent}0d`,
                     }}
                   >
                     {allOn ? "Deselect all" : "Select all"}
                   </button>
                 </div>
 
-                <p className="aw-text-mute mb-4 text-[12px] leading-relaxed">
+                <p className="aw-text-dim mb-5 text-[13px] leading-relaxed">
                   {section.description}
                 </p>
 
@@ -329,6 +438,11 @@ export function FeaturesStep({ data, onChange }: Props) {
                     const desc =
                       FEATURE_DESCRIPTIONS[f.name] ||
                       FEATURE_DESCRIPTIONS[displayName];
+                    // Resolve any paired counterparts so we can hint at them
+                    // on the card. Excludes the feature itself.
+                    const pairedNames = pairedFeatureNames(f.name).filter(
+                      (n) => n !== f.name
+                    );
                     return (
                       <motion.button
                         key={f.id}
@@ -338,27 +452,29 @@ export function FeaturesStep({ data, onChange }: Props) {
                         animate="visible"
                         type="button"
                         onClick={() => toggle(f.id)}
-                        className={`aw-option aw-card-hover flex items-start gap-3 text-left ${
+                        className={`group relative flex items-start gap-3 rounded-[14px] p-3.5 text-left transition-all ${
                           isOn ? "aw-option-active" : ""
                         }`}
                         style={
                           isOn
                             ? {
-                                borderColor: `${section.accent}66`,
-                                boxShadow: `inset 0 0 0 1px ${section.accent}33`,
+                                border: `1px solid ${section.accent}88`,
+                                background: `${section.accent}10`,
+                                boxShadow: `inset 0 0 0 1px ${section.accent}33, 0 6px 22px -10px ${section.accent}`,
                               }
-                            : undefined
+                            : {
+                                border: `1px solid rgb(var(--aw-line) / var(--aw-line-alpha))`,
+                                background: "rgb(var(--aw-line) / 0.02)",
+                              }
                         }
                       >
                         <div
-                          className="mt-0.5 grid h-5 w-5 place-items-center rounded transition"
+                          className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded transition"
                           style={{
                             border: isOn
                               ? `1px solid ${section.accent}`
-                              : "1px solid rgba(255,255,255,0.18)",
-                            background: isOn
-                              ? section.iconBg
-                              : "transparent",
+                              : `1px solid rgb(var(--aw-line) / var(--aw-line-2-alpha))`,
+                            background: isOn ? section.iconBg : "transparent",
                           }}
                         >
                           {isOn ? (
@@ -383,6 +499,27 @@ export function FeaturesStep({ data, onChange }: Props) {
                           {desc ? (
                             <p className="aw-text-mute mt-1 text-[12px] leading-relaxed">
                               {desc}
+                            </p>
+                          ) : null}
+                          {pairedNames.length > 0 ? (
+                            <p
+                              className="aw-mono mt-2 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em]"
+                              style={{
+                                color: section.accent,
+                                opacity: 0.85,
+                              }}
+                            >
+                              <span aria-hidden>↔</span>
+                              {section.key === "learner"
+                                ? "Auto-enables admin: "
+                                : "Pairs with learner: "}
+                              <span className="aw-text-dim normal-case tracking-normal">
+                                {pairedNames
+                                  .map((n) =>
+                                    isAdminFeature(n) ? formatAdminName(n) : n
+                                  )
+                                  .join(", ")}
+                              </span>
                             </p>
                           ) : null}
                         </div>

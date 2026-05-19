@@ -61,9 +61,14 @@ function Row({
 
 export function ReviewStep({ state, data, onJumpToStep }: Props) {
   const featureCount = data.features?.selected_feature_ids?.length || 0;
-  const capsOn = Object.entries(data.admin_caps || {})
-    .filter(([k, v]) => k !== "analytics_depth" && v)
-    .map(([k]) => k.replace(/_/g, " "));
+  const importedCount = data.course_library?.selected_course_ids?.length || 0;
+  // Pretty preset names mirror the four wizard tiles in ThemeStep.tsx.
+  const PRESET_LABEL: Record<string, string> = {
+    default: "Default · Blue Slate",
+    azure_bolt: "Azure Bolt",
+    graphite_night: "Graphite Night",
+    sky_paper: "Sky Paper",
+  };
 
   return (
     <motion.div
@@ -101,9 +106,8 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
                     className="h-6 w-auto"
                   />
                 ) : null}
-                <span className="aw-mono text-[12px]">
-                  {data.brand?.primary_color || "—"} ·{" "}
-                  {data.brand?.accent_color || "—"}
+                <span className="aw-mono aw-text-mute text-[12px]">
+                  Logo + favicon
                 </span>
               </div>
             }
@@ -123,9 +127,10 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
             label={STEP_TITLES[3]}
             value={
               <>
-                <span className="capitalize">
-                  {data.theme?.template || "Default"} ·{" "}
-                  {data.theme?.default_mode || "light"} mode
+                <span>
+                  {PRESET_LABEL[data.theme?.preset_id || ""] ||
+                    "Default · Blue Slate"}{" "}
+                  · {data.theme?.default_mode || "light"} mode
                 </span>
                 {data.theme?.welcome_message ? (
                   <p className="aw-text-mute mt-1.5 text-[12px] leading-relaxed">
@@ -145,28 +150,27 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
             label={STEP_TITLES[5]}
             value={
               <>
-                <span className="capitalize">
-                  {data.admin_caps?.analytics_depth || "basic"} analytics
-                </span>
-                {capsOn.length ? (
-                  <span className="aw-text-mute"> · {capsOn.join(", ")}</span>
-                ) : null}
+                {data.course_library?.choice === "import" ? (
+                  <>
+                    <span>Import from AI Linc catalogue</span>
+                    {importedCount > 0 ? (
+                      <span className="aw-text-mute">
+                        {" "}
+                        · {importedCount} course
+                        {importedCount === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
+                  </>
+                ) : data.course_library?.choice === "build" ? (
+                  "Build with AI"
+                ) : data.course_library?.choice === "skip" ? (
+                  "Skip for now"
+                ) : (
+                  "—"
+                )}
               </>
             }
             onEdit={() => onJumpToStep(6)}
-          />
-          <Row
-            label={STEP_TITLES[6]}
-            value={
-              data.course_library?.choice === "import"
-                ? "Import from AI Linc catalogue"
-                : data.course_library?.choice === "build"
-                  ? "Build with AI"
-                  : data.course_library?.choice === "skip"
-                    ? "Skip for now"
-                    : "—"
-            }
-            onEdit={() => onJumpToStep(7)}
           />
         </div>
       </motion.div>
