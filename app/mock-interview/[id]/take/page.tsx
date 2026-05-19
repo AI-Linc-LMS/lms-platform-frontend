@@ -44,7 +44,6 @@ export default function TakeMockInterviewPage() {
   const [currentAnswer, setCurrentAnswer] = useState<string>("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const [audioLevel, setAudioLevel] = useState<number>(0);
   const [interimTranscript, setInterimTranscript] = useState<string>("");
   const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
   const [showEndInterviewDialog, setShowEndInterviewDialog] = useState(false);
@@ -87,6 +86,8 @@ export default function TakeMockInterviewPage() {
   const animationFrameRef = useRef<number | null>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioLevelRef = useRef<number>(0);
+  const lastTranscriptChangeAtRef = useRef<number>(0);
   const eyeMovementCountRef = useRef(0);
   const lastEyeMovementWarningRef = useRef(0);
   // Timestamp recorded when proctoring starts. Used to silently drop NO_FACE /
@@ -225,7 +226,7 @@ export default function TakeMockInterviewPage() {
             const average =
               dataArray.reduce((a, b) => a + b) / dataArray.length;
             const normalizedLevel = Math.min(average / 100, 1);
-            setAudioLevel(normalizedLevel);
+            audioLevelRef.current = normalizedLevel;
             animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
           };
           updateAudioLevel();
@@ -244,6 +245,23 @@ export default function TakeMockInterviewPage() {
   useEffect(() => {
     testDevices();
   }, [testDevices]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const existing = document.querySelector(
+      `link[rel="preload"][href="${INTERVIEW_AVATAR_SRC}"]`
+    );
+    if (existing) return;
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "video";
+    link.href = INTERVIEW_AVATAR_SRC;
+    link.type = "video/mp4";
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
   // Initialize camera and start proctoring immediately on page load
   useEffect(() => {
     if (isProctoringActive || isProctoringInitializing) return;
@@ -513,7 +531,11 @@ export default function TakeMockInterviewPage() {
           if (!isActive || !analyserRef.current) return;
           analyserRef.current.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
-          setAudioLevel(average / 255);
+          const normalizedLevel = average / 255;
+          audioLevelRef.current = normalizedLevel;
+          if (normalizedLevel > 0.06) {
+            lastTranscriptChangeAtRef.current = Date.now();
+          }
           animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
         };
 
@@ -724,7 +746,6 @@ export default function TakeMockInterviewPage() {
   // Refs for silence-based auto-advance state. These are NOT React state because we don't
   // want the JSX to re-render on every audio tick.
   const silenceAdvanceTimerRef = useRef<number | null>(null);
-  const lastTranscriptChangeAtRef = useRef<number>(0);
   const handleNextQuestionRef = useRef<
     | ((
         overrideAnswerText?: unknown,
@@ -732,11 +753,6 @@ export default function TakeMockInterviewPage() {
       ) => Promise<void>)
     | null
   >(null);
-  // Live mic energy mirrored into a ref so the silence interval can read it without making
-  // the page re-render. We bump lastTranscriptChangeAtRef whenever audio crosses a "user is
-  // speaking" threshold — that way, an "umm" or a half-second of resumed speech (which won't
-  // produce STT output until the recognizer chunks it) still defers the auto-advance.
-  const audioLevelRef = useRef<number>(0);
   // Snapshot of the answer text at the moment we fire /next-question/. Used to detect words
   // the candidate spoke DURING the fetch so we can append them to the previous answer
   // instead of discarding them when we reset currentAnswer for the new question.
@@ -749,16 +765,6 @@ export default function TakeMockInterviewPage() {
   // again. Gives the candidate a visible thinking budget instead of an invisible
   // countdown.
   const [pauseProgress, setPauseProgress] = useState<number>(0);
-
-  useEffect(() => {
-    audioLevelRef.current = audioLevel;
-    if (audioLevel > 0.06) {
-      // Treat "I can hear noise from the mic" as a transcript change, even if STT hasn't
-      // finalized yet. Without this, a candidate who resumes speaking JUST as the silence
-      // threshold elapses can still get auto-advanced before their next chunk lands.
-      lastTranscriptChangeAtRef.current = Date.now();
-    }
-  }, [audioLevel]);
 
   // Live mirror of currentAnswer into a ref. handleNextQuestion is an async function and the
   // value of `currentAnswer` it closed over is stale by the time the /next-question/ POST
@@ -1523,7 +1529,7 @@ export default function TakeMockInterviewPage() {
   );
 
   // Stable handler passed to InterviewTimer. The timer's effect deps include this callback
-  // and the parent re-renders many times per second from audioLevel/STT state. Without a
+  // and the parent re-renders many times per second from STT updates. Without a
   // stable reference the timer would clear+recreate its setInterval every render and the
   // 1-second tick would never fire — that's why the on-screen timer froze at 6:58.
   // We use the "latest ref" pattern: handleTimeUp's identity stays stable across renders,
@@ -1727,6 +1733,7 @@ export default function TakeMockInterviewPage() {
               pauseProgress={
                 isDynamicInterview && !isClosingRemark ? pauseProgress : 0
               }
+              isFetchingNext={isFetchingNext}
               // Dynamic interviews hide the live transcript on screen and show the
               // running question history instead. Legacy interviews keep the textarea
               // since they still rely on the candidate seeing/editing their answer text.

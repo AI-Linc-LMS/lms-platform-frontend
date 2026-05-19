@@ -3,7 +3,7 @@
 import { Box, Paper, Typography, Button, Tooltip, IconButton, Chip, CircularProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useRouter } from "next/navigation";
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 const InterviewModeSelectorComponent = () => {
@@ -17,6 +17,11 @@ const InterviewModeSelectorComponent = () => {
   // button looked frozen until the route changed; now it visibly switches to a loading
   // state on the same paint as the click.
   const [navigatingTo, setNavigatingTo] = useState<"quick-start" | "schedule" | null>(null);
+
+  useEffect(() => {
+    router.prefetch("/mock-interview/quick-start");
+    router.prefetch("/mock-interview/schedule");
+  }, [router]);
 
   const handleQuickStart = () => {
     if (navigatingTo) return;

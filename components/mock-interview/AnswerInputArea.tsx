@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Paper, Typography, TextField, Button, Chip, Tooltip } from "@mui/material";
+import { Box, Paper, Typography, TextField, Button, Chip, Tooltip, CircularProgress } from "@mui/material";
 import { CheckCircle } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
@@ -52,6 +52,8 @@ export interface AnswerInputAreaProps {
    * most recent appears at the bottom.
    */
   questionHistory?: Array<{ id: number; question_text: string }>;
+  /** True while waiting for the next question to load (disables follow-up to avoid double taps). */
+  isFetchingNext?: boolean;
   submitDisabled?: boolean;
 }
 
@@ -72,6 +74,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
   pauseProgress = 0,
   showAnswerTextarea = true,
   questionHistory = [],
+  isFetchingNext = false,
   submitDisabled = false,
 }: AnswerInputAreaProps) {
   const { t } = useTranslation("common");
@@ -404,11 +407,13 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             </Box>
             <Tooltip
               title={
-                isLastQuestion
-                  ? submitDisabled
-                    ? "Available once the interviewer finishes their closing feedback."
-                    : "Finish the interview and view your evaluation."
-                  : "Tap if the interviewer doesn't pick up that you've finished. Asks them to move on to the next question right away."
+                isFetchingNext
+                  ? "Fetching the next question, one sec."
+                  : isLastQuestion
+                    ? submitDisabled
+                      ? "Available once the interviewer finishes their closing feedback."
+                      : "Finish the interview and view your evaluation."
+                    : "Tap if the interviewer doesn't pick up that you've finished. Asks them to move on to the next question right away."
               }
               arrow
               placement="top"
@@ -419,7 +424,13 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                   onClick={onNextQuestion}
                   disabled={
                     (isLastQuestion && submitDisabled) ||
-                    (!isLastQuestion && !currentAnswer.trim())
+                    (!isLastQuestion && !currentAnswer.trim()) ||
+                    isFetchingNext
+                  }
+                  endIcon={
+                    !isLastQuestion && isFetchingNext ? (
+                      <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
+                    ) : undefined
                   }
                   sx={{
                     backgroundColor: isLastQuestion
@@ -441,7 +452,11 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                     },
                   }}
                 >
-                  {isLastQuestion ? "Submit Interview" : "Follow up"}
+                  {isLastQuestion
+                    ? "Submit Interview"
+                    : isFetchingNext
+                      ? "Following up..."
+                      : "Follow up"}
                 </Button>
               </span>
             </Tooltip>
