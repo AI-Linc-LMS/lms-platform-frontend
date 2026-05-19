@@ -13,6 +13,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { MockInterview } from "@/lib/services/mock-interview.service";
 import { memo, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 
 interface PreviousInterviewsTableProps {
   interviews: MockInterview[];
@@ -179,7 +180,7 @@ const PreviousInterviewsTableComponent = ({
                       variant="h6"
                       sx={{ fontWeight: 700, fontSize: "1.1rem", mb: 0.5 }}
                     >
-                      {interview.title}
+                      {cleanInterviewTitle(interview.title)}
                     </Typography>
                     <Box
                       sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}

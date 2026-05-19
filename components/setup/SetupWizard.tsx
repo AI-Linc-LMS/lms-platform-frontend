@@ -9,20 +9,23 @@ import { BrandStep } from "./steps/BrandStep";
 import { UrlStep } from "./steps/UrlStep";
 import { ThemeStep } from "./steps/ThemeStep";
 import { FeaturesStep } from "./steps/FeaturesStep";
-import { AdminCapsStep } from "./steps/AdminCapsStep";
 import { CourseLibraryStep } from "./steps/CourseLibraryStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { STEP_TITLES, TOTAL_WIZARD_STEPS, WizardData } from "@/lib/setup/wizardData";
 import { wizardService, WizardState } from "@/lib/services/wizard.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
+// Step indices are 1-based, descriptions are 0-based. Keep this list in
+// lock-step with STEP_TITLES in lib/setup/wizardData.ts — the
+// "Admin capabilities" step was removed because every tenant ships with the
+// full admin capability set by default; admins can still refine permissions
+// post-launch via Settings → Admin permissions.
 const STEP_DESCRIPTIONS: string[] = [
   "Let's make sure we have your basics right before we customise the platform.",
-  "Upload your logos and pick colours that match your brand. You'll see a live preview on the right.",
+  "Upload your logo and favicon. The dark-mode logo defaults to your light-mode upload if you skip it. You'll see a live preview on the right.",
   "Your LMS URL is permanent. Optionally connect a custom domain you already own.",
   "Pick a starting template, default colour mode, and a welcome message for your learners.",
   "Toggle the modules your learners and admins will see in the sidebar.",
-  "Decide what your tenant admins are allowed to do day-to-day.",
   "Choose how your course library is seeded. You can always add more later.",
   "Final check before going live.",
 ];
@@ -130,26 +133,48 @@ export function SetupWizard({ initialState }: Props) {
     }
   };
 
-  const canGoNext = useMemo(() => {
+  /**
+   * For each blocking step, return the list of human-readable things still
+   * missing. Empty list means "Continue is allowed". The list also drives
+   * the helper message above the nav so users aren't left guessing why the
+   * button is disabled — replaces the old "just disabled, no explanation"
+   * UX that left people stuck on step 2 after uploading all three assets.
+   */
+  const missingForCurrentStep = useMemo<string[]>(() => {
     switch (step) {
-      case 1:
-        return Boolean(
-          (data.welcome?.confirmed_org_name || state.organisation_name || "")
-            .trim().length >= 2
-        );
-      case 2:
-        // Require at least a primary colour or logo to move on
-        return Boolean(
-          data.brand?.primary_color || data.brand?.light_logo_url
-        );
+      case 1: {
+        const name = (
+          data.welcome?.confirmed_org_name || state.organisation_name || ""
+        ).trim();
+        return name.length >= 2 ? [] : ["confirm your organisation name"];
+      }
+      case 2: {
+        const missing: string[] = [];
+        // Either logo slot is fine — uploads auto-mirror in BrandStep, so
+        // the practical effect is "at least one logo somewhere".
+        const hasAnyLogo =
+          Boolean(data.brand?.light_logo_url) ||
+          Boolean(data.brand?.dark_logo_url) ||
+          // Fall back to the intake-form logo if the user kept it as-is.
+          Boolean(state.logo_url);
+        if (!hasAnyLogo) missing.push("upload a logo");
+        if (!data.brand?.favicon_url) missing.push("upload a favicon");
+        return missing;
+      }
       case 5:
-        return (data.features?.selected_feature_ids?.length || 0) > 0;
-      case 7:
-        return Boolean(data.course_library?.choice);
+        return (data.features?.selected_feature_ids?.length || 0) > 0
+          ? []
+          : ["pick at least one feature module"];
+      case 6:
+        return data.course_library?.choice
+          ? []
+          : ["choose how to seed your course library"];
       default:
-        return true;
+        return [];
     }
-  }, [step, data, state.organisation_name]);
+  }, [step, data, state.organisation_name, state.logo_url]);
+
+  const canGoNext = missingForCurrentStep.length === 0;
 
   return (
     <WizardLayout
@@ -168,9 +193,10 @@ export function SetupWizard({ initialState }: Props) {
       {step === 3 ? <UrlStep state={state} data={data} onChange={updateData} /> : null}
       {step === 4 ? <ThemeStep data={data} onChange={updateData} /> : null}
       {step === 5 ? <FeaturesStep data={data} onChange={updateData} /> : null}
-      {step === 6 ? <AdminCapsStep data={data} onChange={updateData} /> : null}
-      {step === 7 ? <CourseLibraryStep data={data} onChange={updateData} /> : null}
-      {step === 8 ? (
+      {step === 6 ? (
+        <CourseLibraryStep data={data} onChange={updateData} />
+      ) : null}
+      {step === 7 ? (
         <ReviewStep state={state} data={data} onJumpToStep={jumpTo} />
       ) : null}
 
@@ -187,6 +213,37 @@ export function SetupWizard({ initialState }: Props) {
           </p>
           <p className="aw-text-dim mt-1 text-[13px] leading-relaxed">
             {launchError}
+          </p>
+        </div>
+      ) : missingForCurrentStep.length > 0 ? (
+        // Tells the user EXACTLY what's missing to enable Continue, instead of
+        // leaving them staring at a disabled button (step 2's old failure mode:
+        // upload all three assets and still get blocked because the only check
+        // was a `primary_color` boolean).
+        <div
+          className="mt-6 rounded-xl px-4 py-3"
+          style={{
+            border: "1px solid rgba(255, 209, 102, 0.28)",
+            background: "rgba(255, 209, 102, 0.06)",
+          }}
+          role="status"
+        >
+          <p className="aw-mono text-[11px] uppercase tracking-[0.22em] text-[#ffd166]">
+            Before you continue
+          </p>
+          <p className="aw-text-dim mt-1 text-[13px] leading-relaxed">
+            Please{" "}
+            {missingForCurrentStep.map((item, i) => (
+              <span key={item}>
+                <span className="text-text">{item}</span>
+                {i < missingForCurrentStep.length - 1
+                  ? i === missingForCurrentStep.length - 2
+                    ? " and "
+                    : ", "
+                  : ""}
+              </span>
+            ))}
+            .
           </p>
         </div>
       ) : null}

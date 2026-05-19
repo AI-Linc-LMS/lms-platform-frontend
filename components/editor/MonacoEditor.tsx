@@ -35,6 +35,14 @@ interface MonacoEditorProps {
   height?: string;
   readOnly?: boolean;
   theme?: "vs-dark" | "light";
+  /**
+   * When true, the editor's Ctrl/Cmd + X/C/V shortcuts and the right-click context menu
+   * are NOT intercepted — the candidate can paste code in. Off by default everywhere so
+   * we keep the standard "no copy-paste" interview hardening; the mock-interview flow
+   * flips this on ONLY for the admin-only 2-min test interview so the testing flow
+   * (paste a known-good answer, hit submit) is quick. See CodingQuestionModal.
+   */
+  allowClipboard?: boolean;
 }
 
 export function CodeEditor({
@@ -44,6 +52,7 @@ export function CodeEditor({
   height = "500px",
   readOnly = false,
   theme = "vs-dark",
+  allowClipboard = false,
 }: MonacoEditorProps) {
   const [mounted, setMounted] = useState(false);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -87,16 +96,21 @@ export function CodeEditor({
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
 
-    // Disable cut, copy, paste keyboard shortcuts
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyX, () => {
-      return null;
-    });
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
-      return null;
-    });
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => {
-      return null;
-    });
+    // Default: disable cut, copy, paste keyboard shortcuts so candidates can't paste a
+    // pre-written solution. When `allowClipboard` is true (admin-only 2-min test
+    // interview path), we leave the shortcuts alone so the tester can paste known-good
+    // code and exercise the rest of the flow quickly.
+    if (!allowClipboard) {
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyX, () => {
+        return null;
+      });
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
+        return null;
+      });
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => {
+        return null;
+      });
+    }
   };
 
   if (!mounted) {
@@ -151,7 +165,10 @@ export function CodeEditor({
           wordWrap: "on",
           formatOnPaste: true,
           formatOnType: true,
-          contextmenu: false,
+          // Right-click context menu (which includes Copy/Cut/Paste entries) is normally
+          // disabled to harden the interview against pasted solutions. Enabled only in
+          // admin-only test mode.
+          contextmenu: allowClipboard,
           fixedOverflowWidgets: true,
         }}
         onMount={handleEditorMount}

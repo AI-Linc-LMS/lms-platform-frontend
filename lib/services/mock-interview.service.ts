@@ -32,6 +32,13 @@ export interface MockInterviewDetail extends MockInterview {
   current_question?: InterviewQuestion | null;
   turn_number?: number;
   max_turns?: number;
+  /**
+   * Total accumulated bonus seconds across the interview (credited by past coding turns
+   * that fired the difficulty-scaled +5/+7/+10 min bump). The take page seeds its
+   * `interviewBonusSeconds` state from this when the page loads / re-loads mid-interview
+   * so the visible timer's effective budget stays correct across reloads.
+   */
+  bonus_seconds?: number;
 }
 
 export interface InterviewQuestion {
@@ -41,11 +48,43 @@ export interface InterviewQuestion {
   type: string;
   expected_key_points?: string[]; // Optional field
   follows_up_on?: string; // Dynamic-flow note: which prior answer this question builds on.
+
+  /**
+   * Present only when `type === "coding"`. The interviewer asks a code-writing question and
+   * the frontend opens a Monaco-editor modal sourced from this block. `question_text` is the
+   * spoken intro; the actual problem statement lives here. Auto-graded as text at submit
+   * time (no in-browser run button on purpose — see CodingQuestionModal).
+   */
+  coding_problem?: {
+    statement: string;
+    starter_code: string;
+    language: string;
+    sample_input?: string;
+    sample_output?: string;
+  };
+
+  /**
+   * Present only when `type === "mcq"`. Multiple-choice options shown in MCQQuestionModal.
+   * `mcq_multi_select` decides between radio (false) and checkbox (true) UX.
+   * `mcq_correct_option_ids` is included so the post-interview evaluator can score, but the
+   * frontend never reads it.
+   */
+  mcq_options?: { id: string; text: string }[];
+  mcq_multi_select?: boolean;
+  mcq_correct_option_ids?: string[];
 }
 
 export interface NextQuestionRequest {
   previous_question_id: number;
   candidate_answer: string;
+  /**
+   * Frontend signal that the candidate's VISIBLE timer hit zero — even if the backend's
+   * `wall_clock - started_at` math would say there's still time on the effective budget
+   * (which can happen when bonus_seconds from a coding turn doesn't perfectly equal the
+   * candidate's actual time in the modal). When true AND we have ≥2 prior responses, the
+   * backend skips the regular-question branch and returns the closing remark directly.
+   */
+  force_close?: boolean;
 }
 
 export interface NextQuestionResponse {
@@ -63,6 +102,19 @@ export interface NextQuestionResponse {
    */
   is_closing_remark?: boolean;
   closing_remark?: string;
+  /**
+   * Total accumulated `bonus_seconds` (across the whole interview) credited by coding
+   * turns. The on-screen interview timer adds this to its effective budget so wrap-up
+   * math stays in sync with the backend.
+   */
+  bonus_seconds?: number;
+  /**
+   * Seconds credited for THIS specific coding turn (5 / 7 / 10 min, scaled by interview
+   * difficulty). The CodingQuestionModal uses this to render its own per-question
+   * countdown so the candidate sees their remaining coding time, not just "TIMER PAUSED".
+   * Zero (or absent) for non-coding turns.
+   */
+  coding_time_budget_seconds?: number;
 }
 
 /**
@@ -86,6 +138,13 @@ export interface PendingCourseInterview {
 export interface InterviewResponse {
   question_id: number;
   answer: string;
+  /**
+   * Snapshot of the question text that this answer was given to. The backend serializer
+   * fills this in on /next-question/ records, and the take page now also stamps it on
+   * every locally-built response so the question-history UI can render the conversation
+   * without a separate lookup map.
+   */
+  question_text?: string;
   audio_url?: string;
 }
 

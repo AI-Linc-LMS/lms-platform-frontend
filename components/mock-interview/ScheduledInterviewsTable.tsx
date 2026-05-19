@@ -14,6 +14,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { MockInterview } from "@/lib/services/mock-interview.service";
 import { memo, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 
 interface ScheduledInterviewsTableProps {
   interviews: MockInterview[];
@@ -224,7 +225,7 @@ const ScheduledInterviewsTableComponent = ({
                           color: "var(--font-primary)",
                         }}
                       >
-                        {interview.title}
+                        {cleanInterviewTitle(interview.title)}
                       </Typography>
                       <Box
                         sx={{

@@ -42,6 +42,8 @@ export interface Assessment {
   review_status?: "not_required" | "pending_evaluation" | "evaluated" | "published";
   tab_switch_limit_enabled?: boolean;
   tab_switch_limit_count?: number | null;
+  /** True when admin has granted this learner an unconsumed retake. Drives the "Re-attempt" CTA above View Result. */
+  can_reattempt?: boolean;
 }
 
 export interface AssessmentDetail extends Assessment {
@@ -214,6 +216,10 @@ export interface AssessmentResult {
   /** When false, show evaluation-in-progress message instead of full result */
   show_result?: boolean;
   review_status?: string;
+  /** All submitted/finalized attempts for this learner, oldest first. Drives the attempt selector when length > 1. */
+  attempts?: AssessmentAttemptSummary[];
+  /** id of the attempt this response is for. Matches AssessmentAttemptSummary.id from `attempts`. */
+  current_attempt_id?: number;
   auto_submitted_reason?: string | null;
   auto_submitted_meta?: Record<string, any>;
   auto_submit_message?: string;
@@ -255,6 +261,16 @@ export interface AssessmentResult {
     coding_problem_responses?: CodingProblemResponseItem[];
     subjective_responses?: SubjectiveResponseItem[];
   };
+}
+
+export interface AssessmentAttemptSummary {
+  id: number;
+  attempt_number: number;
+  started_at: string | null;
+  submitted_at: string | null;
+  score: number | null;
+  status: string;
+  review_status: string | null;
 }
 
 export interface QuizResponseItem {
@@ -510,9 +526,12 @@ export const assessmentService = {
 
   getAssessmentResult: async (
     assessmentIdOrSlug: number | string,
+    attemptId?: number | string,
   ): Promise<AssessmentResult> => {
+    const params = attemptId != null ? { attempt: attemptId } : undefined;
     const response = await apiClient.get<AssessmentResult>(
       `/assessment/api/client/${config.clientId}/assessment-result/${assessmentIdOrSlug}/`,
+      params ? { params } : undefined,
     );
     return response.data;
   },

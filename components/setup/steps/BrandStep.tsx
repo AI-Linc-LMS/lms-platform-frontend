@@ -129,41 +129,6 @@ function AssetField({
   );
 }
 
-function ColorField({
-  label,
-  value,
-  onChange,
-  fallback,
-}: {
-  label: string;
-  value?: string;
-  onChange: (hex: string) => void;
-  fallback: string;
-}) {
-  const v = value || fallback;
-  return (
-    <div>
-      <span className="aw-label">{label}</span>
-      <div className="mt-2 flex items-center gap-3">
-        <input
-          type="color"
-          value={v}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-11 w-14 cursor-pointer rounded-[10px] bg-transparent"
-          style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-        />
-        <input
-          type="text"
-          value={v}
-          onChange={(e) => onChange(e.target.value)}
-          className="aw-input aw-mono"
-          style={{ width: "9rem", textTransform: "uppercase" }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export function BrandStep({ state, data, onChange }: Props) {
   const brand = data.brand || {};
   const set = (patch: Partial<WizardData["brand"]>) =>
@@ -174,6 +139,28 @@ export function BrandStep({ state, data, onChange }: Props) {
   const lightLogoDisplay = brand.light_logo_url || state.logo_url || undefined;
   const lightLogoIsPrefilled =
     !brand.light_logo_url && Boolean(state.logo_url);
+
+  /**
+   * Upload handlers auto-mirror the logo to the opposite-theme slot if it's
+   * still empty. So a user who only ever uploads a single logo gets it used
+   * for BOTH light and dark contexts in the app — matching the "by default
+   * use the dark-mode logo as the light-mode logo" UX we set on the
+   * marketing-site Logo component. Either slot can be replaced independently
+   * later by uploading a different file; we only mirror when the other side
+   * is empty.
+   */
+  const handleLightLogo = (url: string) => {
+    set({
+      light_logo_url: url,
+      dark_logo_url: brand.dark_logo_url || url,
+    });
+  };
+  const handleDarkLogo = (url: string) => {
+    set({
+      dark_logo_url: url,
+      light_logo_url: brand.light_logo_url || url,
+    });
+  };
 
   return (
     <motion.div
@@ -189,14 +176,14 @@ export function BrandStep({ state, data, onChange }: Props) {
           kind="light_logo"
           value={lightLogoDisplay}
           prefilled={lightLogoIsPrefilled}
-          onUploaded={(url) => set({ light_logo_url: url })}
+          onUploaded={handleLightLogo}
         />
         <AssetField
           label="Dark-mode logo"
-          hint="Optional. Same as above but tuned for dark backgrounds."
+          hint="Optional — used in dark mode. If you skip this, the light-mode logo is reused."
           kind="dark_logo"
           value={brand.dark_logo_url}
-          onUploaded={(url) => set({ dark_logo_url: url })}
+          onUploaded={handleDarkLogo}
         />
         <AssetField
           label="Favicon"
@@ -205,20 +192,6 @@ export function BrandStep({ state, data, onChange }: Props) {
           value={brand.favicon_url}
           onUploaded={(url) => set({ favicon_url: url })}
         />
-        <div className="grid grid-cols-2 gap-5">
-          <ColorField
-            label="Primary"
-            value={brand.primary_color}
-            onChange={(v) => set({ primary_color: v })}
-            fallback="#2356d6"
-          />
-          <ColorField
-            label="Accent"
-            value={brand.accent_color}
-            onChange={(v) => set({ accent_color: v })}
-            fallback="#00e0ff"
-          />
-        </div>
       </motion.div>
 
       <motion.aside variants={itemVariants} className="aw-card aw-card-hover">
