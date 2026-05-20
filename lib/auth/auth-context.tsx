@@ -15,6 +15,7 @@ import {
 import { authUtils } from "./auth-utils";
 import { clearResumeData } from "@/components/profile/resume/utils";
 import { clearTimeTrackingSession } from "../services/activity.service";
+import { setLoggingOut } from "../services/api";
 
 export type AuthLoginResult =
   | { profileActive: true }
@@ -170,6 +171,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [isMounted]);
 
   const login = async (email: string, password: string) => {
+    setLoggingOut(false);
     const response = await accountsService.login({ email, password });
 
     if (!isLoginResponseProfileActive(response)) {
@@ -192,6 +194,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const googleLogin = async (token: string) => {
+    setLoggingOut(false);
     const response = await accountsService.googleLogin(token);
 
     if (!isLoginResponseProfileActive(response)) {
@@ -214,6 +217,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
+    // Flag the in-progress logout before anything async or token-clearing
+    // happens. The axios interceptor uses this to swallow 401s from
+    // requests that were already in flight (dashboard widgets, polling
+    // notifications, etc.) so the user doesn't see a "credentials not
+    // provided" toast between clearTokens() and the /login redirect.
+    setLoggingOut(true);
     try {
       await accountsService.logout();
     } catch {

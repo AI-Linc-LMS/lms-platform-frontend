@@ -99,9 +99,14 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   };
 
   const handleLogout = async () => {
-    await logout();
-    router.push("/login");
     handleMenuClose();
+    await logout();
+    // Hard-replace rather than router.push so the current page (and any
+    // in-flight queries/toasts attached to it) is destroyed instead of
+    // re-rendering against a now-null user and triggering 401 toasts.
+    if (typeof window !== "undefined") {
+      window.location.replace("/login");
+    }
   };
 
   const handleLeaderboardHover = (event: React.MouseEvent<HTMLElement>) => {
