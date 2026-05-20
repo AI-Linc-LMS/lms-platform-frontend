@@ -930,6 +930,88 @@ export default function AdminBrandingPage() {
                   color="text.secondary"
                   sx={{ mt: 2.5, mb: 1, display: "block" }}
                 >
+                  Browser tab
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "stretch",
+                    borderRadius: "10px 10px 0 0",
+                    overflow: "hidden",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    bgcolor: "color-mix(in srgb, var(--font-primary) 6%, var(--surface) 94%)",
+                    px: 0.75,
+                    pt: 0.75,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      px: 1,
+                      py: 0.6,
+                      borderRadius: "8px 8px 0 0",
+                      bgcolor: "var(--surface)",
+                      maxWidth: 240,
+                      minWidth: 140,
+                      boxShadow:
+                        "0 -1px 2px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        flexShrink: 0,
+                        borderRadius: 0.5,
+                        backgroundColor: "#ffffff",
+                        backgroundImage: appIconUrl.trim()
+                          ? `url("${appIconUrl.trim()}")`
+                          : undefined,
+                        backgroundSize: "contain",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "center",
+                        border: appIconUrl.trim() ? "none" : "1px dashed",
+                        borderColor: "divider",
+                      }}
+                    />
+                    <Typography
+                      noWrap
+                      sx={{
+                        fontSize: "0.72rem",
+                        fontWeight: 500,
+                        color: "var(--font-primary)",
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      {clientInfo?.name || t("branding.loginPreviewClient")}
+                    </Typography>
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        color: "var(--font-secondary)",
+                        fontSize: "0.8rem",
+                        lineHeight: "10px",
+                        textAlign: "center",
+                        opacity: 0.5,
+                      }}
+                    >
+                      ×
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                  sx={{ mt: 2.5, mb: 1, display: "block" }}
+                >
                   {t("branding.previewAppTitle")}
                 </Typography>
                 <Box

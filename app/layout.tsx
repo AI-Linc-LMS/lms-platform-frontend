@@ -11,6 +11,7 @@ import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
 import { ClientThemeSync } from "@/components/providers/ClientThemeSync";
+import { ClientFaviconSync } from "@/components/providers/ClientFaviconSync";
 import { ClientFontLink } from "@/components/providers/ClientFontLink";
 import { AdminModeProvider } from "@/lib/contexts/AdminModeContext";
 import { AdminModeRoleSync } from "@/components/providers/AdminModeRoleSync";
@@ -85,6 +86,7 @@ export default async function RootLayout({
               <EmotionCacheProvider>
                 <ClientInfoProvider initialClient={client}>
                   <ClientThemeSync initialClient={client} />
+                  <ClientFaviconSync initialClient={client} />
                   <ClientFontLink initialClient={client} />
                   <ThemeProvider initialClient={client}>
                     <DirectionSync />
