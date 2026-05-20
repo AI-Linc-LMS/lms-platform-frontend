@@ -13,6 +13,19 @@ const apiClient: AxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
 });
 
+// Module flag so the response interceptor and any caller can tell that a
+// logout is in progress. While set, 401s from in-flight requests are
+// swallowed silently — the page is about to be replaced by /login anyway,
+// and surfacing "Authentication credentials were not provided" toasts from
+// half-completed dashboard fetches just confuses the user.
+let isLoggingOut = false;
+export function setLoggingOut(value: boolean) {
+  isLoggingOut = value;
+}
+export function getIsLoggingOut() {
+  return isLoggingOut;
+}
+
 // Request interceptor to add auth token and fix FormData uploads
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -69,6 +82,12 @@ apiClient.interceptors.response.use(
 
     // Handle 401 errors (unauthorized)
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // If a logout is in progress, drop the error silently. The page is
+      // already navigating to /login; a refresh attempt or a surfaced
+      // "credentials not provided" detail would just race the redirect.
+      if (isLoggingOut) {
+        return new Promise(() => {});
+      }
       originalRequest._retry = true;
 
       const refreshToken = Cookies.get("refresh_token");
