@@ -131,6 +131,22 @@ export interface SubModuleContentItem {
   obtainedMarks: number | null;
 }
 
+export interface ContentAttachmentInfo {
+  id: number;
+  content: number;
+  title: string;
+  file_url: string | null;
+  file_type: "pdf" | "image" | "document" | "text" | "other";
+  original_filename: string;
+  file_size: number;
+  mime_type: string;
+  order: number;
+  created_at: string;
+}
+
+// Back-compat alias for any existing consumers.
+export type SubmoduleAttachmentInfo = ContentAttachmentInfo;
+
 export interface SubModuleDetailResponse {
   status: string;
   courseId: number;
@@ -139,6 +155,8 @@ export interface SubModuleDetailResponse {
   submoduleId: number;
   submoduleName: string;
   data: SubModuleContentItem[];
+  /** Map of content_id → list of attachments for that content. */
+  attachments_by_content?: Record<number, ContentAttachmentInfo[]>;
 }
 
 export interface SubModuleDetail {

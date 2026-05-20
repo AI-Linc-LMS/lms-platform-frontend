@@ -4,6 +4,7 @@ import { Box, Typography } from "@mui/material";
 import {
   ContentDetail,
   SubModuleContentItem,
+  ContentAttachmentInfo,
 } from "@/lib/services/courses.service";
 import { ContentMarksInfo } from "./ContentMarksInfo";
 import { VideoContent } from "./VideoContent";
@@ -13,6 +14,7 @@ import { AssignmentContent } from "./AssignmentContent";
 import { ArticleContent } from "./ArticleContent";
 import { VideoTabs } from "./VideoTabs";
 import { SubjectiveQuestionContent } from "./SubjectiveQuestionContent";
+import { LessonAttachments } from "./LessonAttachments";
 
 interface SubmoduleContentViewerProps {
   content: ContentDetail;
@@ -25,6 +27,7 @@ interface SubmoduleContentViewerProps {
   comments?: any[];
   newComment?: string;
   submittingComment?: boolean;
+  attachments?: ContentAttachmentInfo[];
   onVideoStart: () => void;
   onVideoComplete?: () => void;
   onStartQuiz: () => void;
@@ -49,6 +52,7 @@ export function SubmoduleContentViewer({
   comments = [],
   newComment = "",
   submittingComment = false,
+  attachments = [],
   onVideoStart,
   onVideoComplete,
   onStartQuiz,
@@ -179,6 +183,9 @@ export function SubmoduleContentViewer({
           isCompleted={currentItem?.status === "complete"}
         />
       )}
+
+      {/* Submodule-level attachments — shared across all content items in the submodule */}
+      <LessonAttachments attachments={attachments} />
     </Box>
   );
 }
