@@ -116,7 +116,7 @@ export default function AdminStudentDetailPage() {
           onClick={handleBack}
           sx={{ mb: 2 }}
         >
-          Back to Mock Interview Admin
+          Back to Interview Admin
         </Button>
 
         <Paper
