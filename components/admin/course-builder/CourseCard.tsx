@@ -49,6 +49,7 @@ export interface Course {
     subjective_question?: { total: number };
   };
   thumbnail: string | null;
+  certificate_available?: boolean;
 }
 
 interface CourseCardProps {
@@ -79,6 +80,7 @@ export function CourseCard({
     tags: course.tags || [],
     rating: course.rating || 0,
     is_free: course.is_free ?? true,
+    certificate_available: course.certificate_available ?? false,
   });
 
   const getDifficultyColor = (level: string) => {
@@ -126,6 +128,7 @@ export function CourseCard({
         rating: editData.rating,
         tags: editData.tags,
         is_free: editData.is_free,
+        certificate_available: editData.certificate_available,
       };
 
       await adminCourseBuilderService.updateCourse(course.id, courseData);
@@ -146,6 +149,7 @@ export function CourseCard({
       tags: course.tags || [],
       rating: course.rating || 0,
       is_free: course.is_free ?? true,
+      certificate_available: course.certificate_available ?? false,
     });
     setEditing(false);
   };
@@ -450,6 +454,38 @@ export function CourseCard({
                   ? "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)"
                   : "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
                 color: course.is_free ? "var(--success-500)" : "var(--warning-500)",
+                fontSize: "0.75rem",
+              }}
+            />
+          </Box>
+        )}
+
+        {/* Certificate Available */}
+        {editing ? (
+          <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editData.certificate_available ?? false}
+                  onChange={(e) => setEditData({ ...editData, certificate_available: e.target.checked })}
+                  color="primary"
+                  size="small"
+                />
+              }
+              label={t("adminCourseBuilder.certificateAvailable")}
+              sx={{ "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
+            />
+          </Box>
+        ) : (
+          <Box sx={{ mb: 2 }}>
+            <Chip
+              label={course.certificate_available ? t("adminCourseBuilder.certificateAvailable") : t("adminCourseBuilder.noCertificate")}
+              size="small"
+              sx={{
+                bgcolor: course.certificate_available
+                  ? "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)"
+                  : "color-mix(in srgb, var(--font-secondary) 14%, var(--surface) 86%)",
+                color: course.certificate_available ? "var(--accent-indigo)" : "var(--font-secondary)",
                 fontSize: "0.75rem",
               }}
             />

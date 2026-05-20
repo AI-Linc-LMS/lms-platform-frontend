@@ -1879,7 +1879,10 @@
     "deleteModuleTitle": "Delete Module",
     "deleteModuleMessage": "Are you sure you want to delete \"{{title}}\" and all its submodules? This action cannot be undone.",
     "editModuleTooltip": "Edit module",
-    "deleteModuleTooltip": "Delete module"
+    "deleteModuleTooltip": "Delete module",
+    "certificateAvailable":"Certificate Available",
+  "noCertificate":"No Certificate"
+    
   },
   "courseBuilderAttachments": {
     "title": "Attached files",

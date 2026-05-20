@@ -1747,7 +1747,9 @@
     "deleteModuleTitle": "حذف الوحدة",
     "deleteModuleMessage": "هل أنت متأكد من حذف \"{{title}}\" وجميع وحداتها الفرعية؟ لا يمكن التراجع عن هذا الإجراء.",
     "editModuleTooltip": "تعديل الوحدة",
-    "deleteModuleTooltip": "حذف الوحدة"
+    "deleteModuleTooltip": "حذف الوحدة",
+    "certificateAvailable":"الشهادة متاحة",
+  "noCertificate":""
   },
   "courseBuilderAttachments": {
     "title": "الملفات المرفقة",
