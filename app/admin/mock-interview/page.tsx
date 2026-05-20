@@ -223,10 +223,10 @@ export default function AdminMockInterviewPage() {
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-            Mock Interview Admin
+            Interview Admin
           </Typography>
           <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
-            Monitor and analyze student mock interview performance
+            Monitor and analyze student interview performance
           </Typography>
         </Box>
 
