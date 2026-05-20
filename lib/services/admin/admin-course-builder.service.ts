@@ -12,6 +12,7 @@ export interface CourseData {
   is_pro?: boolean;
   is_free?: boolean;
   enrollment_enabled?: boolean;
+  certificate_available?: boolean;
   tags?: string | string[]; // Tags as comma-separated string or array
   [key: string]: string | number | boolean | string[] | undefined;
 }
