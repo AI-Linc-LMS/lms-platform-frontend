@@ -2,9 +2,10 @@
 
 import { Box, Paper, Typography, TextField, Button, Chip, Tooltip, CircularProgress } from "@mui/material";
 import { CheckCircle } from "lucide-react";
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PauseProgressBar } from "./PauseProgressBar";
 
 export interface AnswerInputAreaProps {
   currentAnswer: string;
@@ -32,12 +33,12 @@ export interface AnswerInputAreaProps {
    */
   conversationStatus?: string;
   /**
-   * Pause-detection progress in the range [0, 1]. Drives the visible "Interviewer is
-   * waiting" bar that fills while the candidate is silent. 0 = candidate is currently
-   * speaking (or no silence yet), 1 = fully expired (about to advance). The parent
-   * computes this from elapsed-silence vs the wait threshold.
+   * Pause-detection progress source — a ref pointing to a number in [0, 1]. The PauseProgressBar
+   * subcomponent reads this every animation frame and updates its DOM imperatively, so the
+   * parent never has to setState/re-render to drive the bar. The parent mutates the ref
+   * directly inside the silence-detector poll.
    */
-  pauseProgress?: number;
+  pauseProgressRef?: { current: number };
   /**
    * When false, hide the live-transcript textarea and the "Your Answer" header. The
    * candidate's STT stream still runs in the background (for the final evaluation
@@ -55,6 +56,12 @@ export interface AnswerInputAreaProps {
   /** True while waiting for the next question to load (disables follow-up to avoid double taps). */
   isFetchingNext?: boolean;
   submitDisabled?: boolean;
+  /**
+   * When set, the conversation-so-far panel scrolls this specific question into view
+   * (instead of just snapping to the latest). Used by the "repeat question N" voice
+   * command so the candidate sees which past question the AI is re-speaking.
+   */
+  focusedHistoryQuestionId?: number | null;
 }
 
 export const AnswerInputArea = memo(function AnswerInputArea({
@@ -71,15 +78,31 @@ export const AnswerInputArea = memo(function AnswerInputArea({
   typingFallback = false,
   hideNavigationButtons = false,
   conversationStatus,
-  pauseProgress = 0,
+  pauseProgressRef,
   showAnswerTextarea = true,
   questionHistory = [],
   isFetchingNext = false,
   submitDisabled = false,
+  focusedHistoryQuestionId = null,
 }: AnswerInputAreaProps) {
   const { t } = useTranslation("common");
   const displayValue =
     currentAnswer + (interimTranscript ? " " + interimTranscript : "");
+  const conversationScrollRef = useRef<HTMLDivElement | null>(null);
+  const questionRowRefs = useRef<Map<number, HTMLElement>>(new Map());
+  useEffect(() => {
+    const el = conversationScrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [questionHistory.length]);
+  useEffect(() => {
+    if (focusedHistoryQuestionId === null) return;
+    const node = questionRowRefs.current.get(focusedHistoryQuestionId);
+    if (!node) return;
+    // Smooth scroll the focused past-question into view so the candidate sees which
+    // question the AI is re-speaking. block: "center" keeps it visually anchored.
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusedHistoryQuestionId]);
   return (
     <Paper
       elevation={0}
@@ -133,12 +156,12 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             <IconWrapper icon="mdi:microphone" size={24} color="var(--accent-indigo)" />
             <Box sx={{ flex: 1 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--accent-indigo-dark)" }}>
-                Microphone on — listening
+                Listening
               </Typography>
               <Typography variant="caption" sx={{ color: "var(--accent-indigo)" }}>
                 {showAnswerTextarea
                   ? "Speak your answer; your words will appear in the box below. You can also type if you prefer."
-                  : "Speak naturally. Your answer is being recorded for evaluation."}
+                  : "Speak naturally — your answer is being recorded."}
               </Typography>
             </Box>
             <Box
@@ -281,6 +304,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             </Box>
           ) : (
             <Box
+              ref={conversationScrollRef}
               sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -288,7 +312,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                 maxHeight: 200,
                 overflowY: "auto",
                 pr: 1,
-                // Subtle styling for the scroll thumb so the panel reads as scrollable.
+                scrollBehavior: "smooth",
                 "&::-webkit-scrollbar": { width: 6 },
                 "&::-webkit-scrollbar-thumb": {
                   backgroundColor: "var(--border-light)",
@@ -298,10 +322,21 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             >
               {questionHistory.map((q, idx) => {
                 const isCurrent = idx === questionHistory.length - 1;
+                const isFocused = focusedHistoryQuestionId === q.id && !isCurrent;
                 return (
                   <Box
                     key={q.id}
+                    ref={(el: HTMLElement | null) => {
+                      if (el) questionRowRefs.current.set(q.id, el);
+                      else questionRowRefs.current.delete(q.id);
+                    }}
                     sx={{
+                      ...(isFocused
+                        ? {
+                            outline: "2px solid var(--accent-indigo)",
+                            outlineOffset: 2,
+                          }
+                        : {}),
                       display: "flex",
                       alignItems: "flex-start",
                       gap: 1.5,
@@ -360,141 +395,42 @@ export const AnswerInputArea = memo(function AnswerInputArea({
         </Box>
       )}
       {hideNavigationButtons ? (
-        // Dynamic interview mode. Two stacked rows:
-        //   1. Live status pill ("Listening…" while speaking, "Interviewer is waiting"
-        //      while paused), plus the explicit fallback button (Follow up / Submit).
-        //   2. Visible progress bar that fills during silence so the candidate SEES
-        //      the wait elapsing and can interrupt by speaking again (which resets it).
-        // The progress bar replaces the old invisible silence detector — candidates
-        // were thinking and getting auto-advanced with no warning. Now the pause is
-        // a deliberate, visible state.
         <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              gap: 2,
+              gap: 1.5,
               minHeight: 36,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1 }}>
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  backgroundColor: isListening
-                    ? "var(--ats-success)"
-                    : "var(--accent-indigo)",
-                  animation: isListening
-                    ? "convStatusPulse 1.2s ease-in-out infinite"
-                    : pauseProgress > 0
-                      ? "convStatusPulse 1.2s ease-in-out infinite"
-                      : undefined,
-                  "@keyframes convStatusPulse": {
-                    "0%, 100%": { opacity: 1, transform: "scale(1)" },
-                    "50%": { opacity: 0.5, transform: "scale(1.3)" },
-                  },
-                }}
-              />
-              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                {conversationStatus ||
-                  (isListening
-                    ? "Listening…"
-                    : "Speak naturally — pause when you're done and the interviewer will follow up.")}
-              </Typography>
-            </Box>
-            <Tooltip
-              title={
-                isFetchingNext
-                  ? "Fetching the next question, one sec."
-                  : isLastQuestion
-                    ? submitDisabled
-                      ? "Available once the interviewer finishes their closing feedback."
-                      : "Finish the interview and view your evaluation."
-                    : "Tap if the interviewer doesn't pick up that you've finished. Asks them to move on to the next question right away."
-              }
-              arrow
-              placement="top"
-            >
-              <span>
-                <Button
-                  variant="contained"
-                  onClick={onNextQuestion}
-                  disabled={
-                    (isLastQuestion && submitDisabled) ||
-                    (!isLastQuestion && !currentAnswer.trim()) ||
-                    isFetchingNext
-                  }
-                  endIcon={
-                    !isLastQuestion && isFetchingNext ? (
-                      <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
-                    ) : undefined
-                  }
-                  sx={{
-                    backgroundColor: isLastQuestion
-                      ? "var(--ats-success)"
-                      : "var(--accent-indigo)",
-                    color: "var(--font-light)",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: 2.5,
-                    py: 0.75,
-                    "&:hover": {
-                      backgroundColor: isLastQuestion
-                        ? "var(--ats-success-muted)"
-                        : "var(--accent-indigo-dark)",
-                    },
-                    "&.Mui-disabled": {
-                      backgroundColor: "var(--surface)",
-                      color: "var(--font-tertiary)",
-                    },
-                  }}
-                >
-                  {isLastQuestion
-                    ? "Submit Interview"
-                    : isFetchingNext
-                      ? "Following up..."
-                      : "Follow up"}
-                </Button>
-              </span>
-            </Tooltip>
-          </Box>
-          {/* Pause progress bar. Width animates from 0% → 100% based on the parent's
-              pauseProgress prop. When the candidate resumes speaking, the parent sets
-              pauseProgress back to 0 — the bar visibly collapses, signalling "you have
-              the floor again". When it reaches 100% the parent auto-advances. */}
-          <Box
-            sx={{
-              position: "relative",
-              height: 6,
-              borderRadius: 999,
-              backgroundColor: "var(--surface)",
-              overflow: "hidden",
-              border: "1px solid var(--border-default)",
             }}
           >
             <Box
               sx={{
-                position: "absolute",
-                inset: 0,
-                width: `${Math.min(100, Math.max(0, pauseProgress * 100))}%`,
-                background:
-                  pauseProgress > 0
-                    ? "linear-gradient(90deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)"
-                    : "var(--ats-success)",
-                opacity: pauseProgress > 0 || isListening ? 1 : 0.25,
-                // Smooth growth during silence; instant collapse when the candidate
-                // resumes speaking (transition off when pauseProgress drops to 0 so the
-                // reset isn't laggy).
-                transition:
-                  pauseProgress > 0
-                    ? "width 150ms linear"
-                    : "width 0ms linear, opacity 200ms ease",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: isListening
+                  ? "var(--ats-success)"
+                  : "var(--accent-indigo)",
+                animation: isListening
+                  ? "convStatusPulse 1.2s ease-in-out infinite"
+                  : undefined,
+                "@keyframes convStatusPulse": {
+                  "0%, 100%": { opacity: 1, transform: "scale(1)" },
+                  "50%": { opacity: 0.5, transform: "scale(1.3)" },
+                },
               }}
             />
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+              {conversationStatus || "Listening"}
+            </Typography>
           </Box>
+          {pauseProgressRef ? (
+            <PauseProgressBar
+              progressRef={pauseProgressRef}
+              isListening={isListening}
+            />
+          ) : null}
         </Box>
       ) : (
       <Box

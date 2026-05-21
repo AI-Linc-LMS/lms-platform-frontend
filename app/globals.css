@@ -329,6 +329,31 @@
   --interview-overlay-bg: rgba(248, 250, 252, 0.85);
   --interview-spinner-border: #e2e8f0;
 
+  /* Additional tokens used by recent mock-interview UI changes */
+  --surface-success-light: #f0fdf4;
+  --surface-error-light: #fef2f2;
+  --warning-amber: #f59e0b;
+  --overlay-dark: rgba(0, 0, 0, 0.7);
+
+  /* Proctoring / integrity report colors */
+  --proctoring-gradient-start: #fef3c7;
+  --proctoring-gradient-end: #fde68a;
+  --proctoring-strong: #f59e0b;
+  --proctoring-strong-dark: #d97706;
+  --proctoring-heading: #78350f;
+  --proctoring-subheading: #92400e;
+  /* Info / notification */
+  --info-surface: #eff6ff;
+  --info-border: #bfdbfe;
+  --info-strong: #1e40af;
+  --info-accent: #3b82f6;
+  /* Result evaluation color tokens */
+  --success-strong: #065f46;
+  --warning-surface: #fed7aa;
+  --warning-strong: #9a3412;
+  --error-surface: #fecaca;
+  --error-strong: #991b1b;
+
   /* AI Linc brand gradient — matches the gradient stops in the dark-mode mark SVG
      at /public/logos/ai-linc-mark-darkmode.svg. Used by the AiLincLoader (and any
      future brand-mark renderers) so the brand identity is centralized here and the

@@ -180,10 +180,38 @@ export interface AdminInterviewDetail {
   student_email: string;
   student_id: number;
   questions_for_interview: AdminQuestionForInterview[];
+  /**
+   * Full raw question data from the backend — preserves `type`, `expected_key_points`,
+   * `coding_problem`, `mcq_options`, etc. The admin-side result page renders this
+   * through the SAME QuestionPerformance component as the student side, so the
+   * View-problem buttons + per-question feedback structure look identical.
+   */
+  questions_full?: RawQuestionForInterview[];
+  /**
+   * Per-question scores keyed by question_id (as string). Mirrors the student-side
+   * evaluation_score.question_scores shape. Empty/absent if the evaluator hasn't
+   * finished or didn't produce per-question detail.
+   */
+  question_scores?: Record<string, RawQuestionScore>;
+  /** Raw response objects (with answer text), keyed against question_id. */
+  responses_full?: Array<{
+    question_id: number;
+    answer?: string;
+    question_text?: string;
+  }>;
   grading_scheme?: GradingScheme;
   evaluation_score?: EvaluationScore;
   interview_transcript?: InterviewTranscript;
   time_taken_minutes?: number;
+}
+
+export interface RawQuestionScore {
+  score: number;
+  max_score: number;
+  percentage?: number;
+  feedback?: string;
+  strengths?: string[];
+  improvements?: string[];
 }
 
 // Raw API response shape for interview detail (backend may use different field names)
@@ -292,6 +320,18 @@ export function mapInterviewDetailResponse(raw: RawInterviewDetail): AdminInterv
     criteria: { total: maxPossible },
   };
 
+  const responses_full = rawResponses.map((r) => {
+    const item = r as RawTranscriptResponse & { question_text?: string };
+    return {
+      question_id: item.question_id,
+      answer: item.answer ?? "",
+      question_text: item.question_text ?? "",
+    };
+  });
+
+  const question_scores =
+    (raw.evaluation_score?.question_scores as Record<string, RawQuestionScore> | undefined) ?? {};
+
   return {
     id: raw.id,
     title: raw.title,
@@ -309,6 +349,9 @@ export function mapInterviewDetailResponse(raw: RawInterviewDetail): AdminInterv
     student_email: raw.student_email,
     student_id: raw.student_id,
     questions_for_interview,
+    questions_full: rawQuestions,
+    question_scores,
+    responses_full,
     grading_scheme,
     evaluation_score,
     interview_transcript: {
@@ -470,6 +513,8 @@ const TEMPLATES_BASE_URL = `/mock-interview/api/clients/${config.clientId}/inter
 
 export type InterviewTemplateDifficulty = "Easy" | "Medium" | "Hard";
 
+export type InterviewResultReleaseMode = "immediate" | "manual" | "scheduled";
+
 export interface InterviewTemplate {
   id: number;
   title: string;
@@ -482,6 +527,10 @@ export interface InterviewTemplate {
   course_ids: number[];
   courses: Array<{ id: number; title: string }>;
   attempt_count: number;
+  num_coding_questions: number;
+  num_mcq_questions: number;
+  result_release_mode: InterviewResultReleaseMode;
+  result_release_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -495,9 +544,38 @@ export interface InterviewTemplateCreatePayload {
   description?: string;
   is_active?: boolean;
   course_ids?: number[];
+  num_coding_questions?: number;
+  num_mcq_questions?: number;
+  result_release_mode?: InterviewResultReleaseMode;
+  result_release_at?: string | null;
 }
 
 export type InterviewTemplateUpdatePayload = Partial<InterviewTemplateCreatePayload>;
+
+export interface AdminTemplateAttempt {
+  id: number;
+  student_id: number;
+  student_name: string;
+  student_email: string | null;
+  status: string;
+  submitted_at: string | null;
+  result_visible_to_student: boolean;
+  result_released_at: string | null;
+  has_evaluation: boolean;
+}
+
+export interface AdminReleaseSingleResponse {
+  id: number;
+  result_visible_to_student: true;
+  result_released_at: string | null;
+  message: string;
+}
+
+export interface AdminReleaseBulkResponse {
+  template_id: number;
+  released: number;
+  message: string;
+}
 
 const adminMockInterviewService = {
   /**
@@ -643,6 +721,33 @@ const adminMockInterviewService = {
 
   deleteTemplate: async (templateId: number): Promise<void> => {
     await apiClient.delete(`${TEMPLATES_BASE_URL}/${templateId}/`);
+  },
+
+  listTemplateAttempts: async (
+    templateId: number,
+  ): Promise<AdminTemplateAttempt[]> => {
+    const response = await apiClient.get(
+      `${TEMPLATES_BASE_URL}/${templateId}/attempts/`,
+    );
+    return response.data;
+  },
+
+  releaseTemplateResults: async (
+    templateId: number,
+  ): Promise<AdminReleaseBulkResponse> => {
+    const response = await apiClient.post(
+      `${TEMPLATES_BASE_URL}/${templateId}/release-results/`,
+    );
+    return response.data;
+  },
+
+  releaseSingleInterviewResult: async (
+    interviewId: number,
+  ): Promise<AdminReleaseSingleResponse> => {
+    const response = await apiClient.post(
+      `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/admin/release-result/`,
+    );
+    return response.data;
   },
 };
 

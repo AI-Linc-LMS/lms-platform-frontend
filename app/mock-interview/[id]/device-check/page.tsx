@@ -25,6 +25,14 @@ import {
   type BrowserName,
   type PlatformName,
 } from "@/lib/utils/browser-detect";
+import { getAudioConstraints } from "@/lib/utils/audio-constraints";
+import {
+  getNoiseSuppressionPreference,
+  setNoiseSuppressionPreference,
+  isNoiseSuppressionSupported,
+  prewarmNoiseSuppression,
+} from "@/lib/utils/noise-suppression";
+import { Switch } from "@mui/material";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 interface DeviceStatus {
@@ -59,6 +67,16 @@ export default function MockInterviewDeviceCheckPage() {
   const [platformName, setPlatformName] = useState<PlatformName>("other");
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [noiseSuppressionEnabled, setNoiseSuppressionEnabledState] = useState(true);
+  useEffect(() => {
+    setNoiseSuppressionEnabledState(getNoiseSuppressionPreference());
+    void prewarmNoiseSuppression();
+  }, []);
+  const handleNoiseSuppressionToggle = useCallback((next: boolean) => {
+    setNoiseSuppressionEnabledState(next);
+    setNoiseSuppressionPreference(next);
+    if (next) void prewarmNoiseSuppression();
+  }, []);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -182,10 +200,7 @@ export default function MockInterviewDeviceCheckPage() {
           height: { ideal: 480 },
           facingMode: "user",
         },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
+        audio: getAudioConstraints(),
       });
 
       streamRef.current = stream;
@@ -426,7 +441,7 @@ export default function MockInterviewDeviceCheckPage() {
         const stream =
           speechStreamRef.current ||
           (await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true },
+            audio: getAudioConstraints(),
           }));
         speechStreamRef.current = stream;
 
@@ -664,7 +679,7 @@ export default function MockInterviewDeviceCheckPage() {
               width: 80,
               height: 80,
               borderRadius: "50%",
-              backgroundColor: "#6366f1",
+              backgroundColor: "var(--accent-indigo)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -672,7 +687,7 @@ export default function MockInterviewDeviceCheckPage() {
               mb: 2,
             }}
           >
-            <IconWrapper icon="mdi:camera" size={40} color="#ffffff" />
+            <IconWrapper icon="mdi:camera" size={40} color="var(--font-light)" />
           </Box>
           <Typography
             variant="h4"
@@ -686,7 +701,7 @@ export default function MockInterviewDeviceCheckPage() {
           </Typography>
           <Typography
             variant="body1"
-            sx={{ color: "#6b7280", maxWidth: 500, mx: "auto" }}
+            sx={{ color: "var(--font-secondary)", maxWidth: 500, mx: "auto" }}
           >
             {t("mockInterview.deviceCheck.description")}
           </Typography>
@@ -717,21 +732,21 @@ export default function MockInterviewDeviceCheckPage() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              backgroundColor: deviceStatus.camera ? "#f0fdf4" : "#fef2f2",
+              border: "1px solid var(--border-default)",
+              backgroundColor: deviceStatus.camera ? "var(--surface-success-light)" : "var(--surface-error-light)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               {deviceStatus.camera ? (
-                <CheckCircle size={32} color="#10b981" />
+                <CheckCircle size={32} color="var(--course-cta)" />
               ) : (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--ats-error)" />
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                   {t("mockInterview.deviceCheck.camera")}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {deviceStatus.camera
                     ? t("mockInterview.deviceCheck.cameraWorking")
                     : t("mockInterview.deviceCheck.cameraRequired")}
@@ -750,10 +765,10 @@ export default function MockInterviewDeviceCheckPage() {
                 overflow: "hidden",
                 border: deviceStatus.camera
                   ? faceValidationPassed
-                    ? "2px solid #10b981"
-                    : "2px solid #f59e0b"
-                  : "2px solid #e5e7eb",
-                backgroundColor: "#000000",
+                    ? "2px solid var(--course-cta)"
+                    : "2px solid var(--warning-amber)"
+                  : "2px solid var(--border-default)",
+                backgroundColor: "var(--font-dark)",
                 minHeight: deviceStatus.camera ? "auto" : "200px",
                 display: "flex",
                 alignItems: "center",
@@ -769,11 +784,11 @@ export default function MockInterviewDeviceCheckPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "rgba(0, 0, 0, 0.7)",
+                    backgroundColor: "var(--overlay-dark)",
                     zIndex: 1,
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#ffffff" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-light)" }}>
                     {t("mockInterview.deviceCheck.cameraPreview")}
                   </Typography>
                 </Box>
@@ -838,12 +853,12 @@ export default function MockInterviewDeviceCheckPage() {
                   }}
                 >
                   {isFaceDetectionInitializing && (
-                    <Chip
-                      icon={<CircularProgress size={16} />}
-                      label={t("mockInterview.deviceCheck.initializingFaceDetection")}
-                      size="small"
-                      sx={{ backgroundColor: "#6366f1", color: "#ffffff" }}
-                    />
+                      <Chip
+                        icon={<CircularProgress size={16} />}
+                        label={t("mockInterview.deviceCheck.initializingFaceDetection")}
+                        size="small"
+                        sx={{ backgroundColor: "var(--accent-indigo)", color: "var(--font-light)" }}
+                      />
                   )}
                   {!isFaceDetectionInitializing && (
                     <>
@@ -867,9 +882,9 @@ export default function MockInterviewDeviceCheckPage() {
                         size="small"
                         sx={{
                           backgroundColor: faceValidationPassed
-                            ? "#10b981"
-                            : "#ef4444",
-                          color: "#ffffff",
+                            ? "var(--course-cta)"
+                            : "var(--ats-error)",
+                          color: "var(--font-light)",
                         }}
                       />
                       {faceStatus !== "NORMAL" && latestViolation && (
@@ -878,8 +893,8 @@ export default function MockInterviewDeviceCheckPage() {
                           label={latestViolation.message}
                           size="small"
                           sx={{
-                            backgroundColor: "#f59e0b",
-                            color: "#ffffff",
+                            backgroundColor: "var(--warning-amber)",
+                            color: "var(--font-light)",
                             fontSize: "0.7rem",
                             maxWidth: "200px",
                           }}
@@ -969,6 +984,37 @@ export default function MockInterviewDeviceCheckPage() {
                         ? t("mockInterview.deviceCheck.speakToTest")
                         : t("mockInterview.deviceCheck.microphoneReady")}
                     </Typography>
+                    {isNoiseSuppressionSupported() && (
+                      <Box
+                        sx={{
+                          mt: 2,
+                          py: 1,
+                          px: 1.5,
+                          borderRadius: 2,
+                          border: "1px solid var(--border-default)",
+                          backgroundColor: "var(--card-bg)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 1.5,
+                          minHeight: 44,
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: "var(--font-primary-dark)" }}
+                        >
+                          Noise cancellation
+                        </Typography>
+                        <Switch
+                          checked={noiseSuppressionEnabled}
+                          onChange={(_, checked) => handleNoiseSuppressionToggle(checked)}
+                          inputProps={{
+                            "aria-label": "Toggle noise cancellation",
+                          }}
+                        />
+                      </Box>
+                    )}
                   </Box>
                 )}
               </Box>

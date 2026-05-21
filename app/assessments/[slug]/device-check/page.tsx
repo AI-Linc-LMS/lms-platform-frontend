@@ -24,7 +24,7 @@ import {
 import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
-import { CheckCircle, XCircle, Video, Mic, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 interface DeviceStatus {
   camera: boolean;
@@ -54,8 +54,7 @@ export default function DeviceCheckPage({
   const [micError, setMicError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
 
-    // ✅ INTERNET STATE
-    const [networkSpeed, setNetworkSpeed] = useState<number | null>(null);
+  const [networkSpeed, setNetworkSpeed] = useState<number | null>(null);
     const [networkStatus, setNetworkStatus] = useState<
       "good" | "moderate" | "poor" | "testing" | null
     >(null);
@@ -148,29 +147,51 @@ export default function DeviceCheckPage({
   const testInternetSpeed = useCallback(async () => {
     setNetworkStatus("testing");
 
-    try {
-      const startTime = performance.now();
+    const TEST_URL = "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg";
+    const ATTEMPTS = 2;
+    const MAX_BYTES = 150 * 1024;
+    const ATTEMPT_TIMEOUT_MS = 4000;
+    const speeds: number[] = [];
 
-      const response = await fetch(
-        "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
-        { cache: "no-store" }
-      );
+    for (let i = 0; i < ATTEMPTS; i++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
+      try {
+        const start = performance.now();
+        const res = await fetch(TEST_URL, {
+          cache: "no-store",
+          headers: { Range: `bytes=0-${MAX_BYTES - 1}` },
+          signal: controller.signal,
+        });
 
-      const blob = await response.blob();
-      const endTime = performance.now();
-
-      const duration = (endTime - startTime) / 1000;
-      const bitsLoaded = blob.size * 8;
-      const speedMbps = bitsLoaded / duration / (1024 * 1024);
-
-      setNetworkSpeed(speedMbps);
-
-      if (speedMbps > 5) setNetworkStatus("good");
-      else if (speedMbps > 1.5) setNetworkStatus("moderate");
-      else setNetworkStatus("poor");
-    } catch {
-      setNetworkStatus("poor");
+        // some servers may ignore Range — read what we get and measure length
+        const buf = await res.arrayBuffer();
+        const end = performance.now();
+        const duration = (end - start) / 1000;
+        if (duration > 0 && buf && buf.byteLength > 0) {
+          const bits = buf.byteLength * 8;
+          const mbps = bits / duration / (1024 * 1024);
+          if (isFinite(mbps) && mbps > 0) speeds.push(mbps);
+        }
+      } catch (e) {
+      } finally {
+        clearTimeout(timeout);
+      }
     }
+
+    if (speeds.length === 0) {
+      setNetworkStatus("poor");
+      setNetworkSpeed(null);
+      return;
+    }
+
+    speeds.sort((a, b) => a - b);
+    const median = speeds[Math.floor(speeds.length / 2)];
+    setNetworkSpeed(median);
+
+    if (median > 5) setNetworkStatus("good");
+    else if (median >= 1.0) setNetworkStatus("moderate");
+    else setNetworkStatus("poor");
   }, []);
 
 
@@ -471,9 +492,14 @@ export default function DeviceCheckPage({
       return;
     }
 
-    if (networkStatus !== "good" && networkStatus !== "moderate") {
-      showToast(t("assessments.deviceCheck.networkToastBlocked"), "error");
+    const networkTooSlow = networkSpeed !== null && networkSpeed < 0.1;
+    if (networkTooSlow) {
+      showToast("Connection too slow (<100 kbps). Please switch network.", "error");
       return;
+    }
+
+    if (networkStatus === "poor") {
+      showToast("Your connection is slow — you may start, but video may buffer.", "warning");
     }
 
     // Mark that we're navigating to assessment (so cleanup won't stop camera)
@@ -497,8 +523,7 @@ export default function DeviceCheckPage({
     router.push(`/assessments/${slug}/take`);
   };
 
-  const networkAllowsProceed =
-    networkStatus === "good" || networkStatus === "moderate";
+  const networkAllowsProceed = !(networkSpeed !== null && networkSpeed < 0.1);
 
   const devicesAndBrowserReady =
     deviceStatus.camera &&
@@ -749,12 +774,13 @@ export default function DeviceCheckPage({
                   </Typography>
                 </Box>
               )}
-              <video
+              <Box
+                component="video"
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                style={{
+                sx={{
                   width: "100%",
                   height: "auto",
                   display: "block",
@@ -967,8 +993,8 @@ export default function DeviceCheckPage({
             </Box>
 
             {networkStatus === "poor" && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                Poor internet connection. Please switch network.
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Your connection is slow — you may start, but video may buffer.
               </Alert>
             )}
             {networkStatus === "moderate" && (

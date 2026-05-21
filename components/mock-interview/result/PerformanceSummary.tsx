@@ -48,17 +48,17 @@ const PerformanceSummaryComponent = ({
           sx={{
             p: 2,
             borderRadius: 2,
-            backgroundColor: "#f0fdf4",
-            border: "1px solid #bbf7d0",
+            backgroundColor: "color-mix(in srgb, var(--course-cta) 8%, var(--card-bg))",
+            border: "1px solid color-mix(in srgb, var(--course-cta) 28%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <IconWrapper icon="mdi:check-circle" size={20} color="#16a34a" />
-            <Typography variant="caption" sx={{ color: "#16a34a", fontWeight: 600 }}>
+            <IconWrapper icon="mdi:check-circle" size={20} color="var(--course-cta)" />
+            <Typography variant="caption" sx={{ color: "var(--course-cta)", fontWeight: 600 }}>
               Total Score
             </Typography>
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: "#15803d" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--course-cta)" }}>
             {overall_score}/{max_possible_score}
           </Typography>
         </Box>
@@ -67,17 +67,17 @@ const PerformanceSummaryComponent = ({
           sx={{
             p: 2,
             borderRadius: 2,
-            backgroundColor: "#eff6ff",
-            border: "1px solid #bfdbfe",
+            backgroundColor: "var(--info-surface)",
+            border: "1px solid var(--info-border)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <IconWrapper icon="mdi:format-list-checks" size={20} color="#2563eb" />
-            <Typography variant="caption" sx={{ color: "#2563eb", fontWeight: 600 }}>
+            <IconWrapper icon="mdi:format-list-checks" size={20} color="var(--info-accent)" />
+            <Typography variant="caption" sx={{ color: "var(--info-accent)", fontWeight: 600 }}>
               Questions
             </Typography>
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: "#1e40af" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--info-strong)" }}>
             {/*
              * For dynamic (turn-based) interviews the total isn't known up front — the AI
              * picks how many follow-ups to ask based on the candidate's pacing. In that
@@ -96,17 +96,17 @@ const PerformanceSummaryComponent = ({
           sx={{
             p: 2,
             borderRadius: 2,
-            backgroundColor: "#fef3c7",
-            border: "1px solid #fde68a",
+            backgroundColor: "color-mix(in srgb, var(--warning-amber) 12%, var(--card-bg))",
+            border: "1px solid color-mix(in srgb, var(--warning-amber) 32%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <IconWrapper icon="mdi:chart-line" size={20} color="#d97706" />
-            <Typography variant="caption" sx={{ color: "#d97706", fontWeight: 600 }}>
+            <IconWrapper icon="mdi:chart-line" size={20} color="var(--warning-amber)" />
+            <Typography variant="caption" sx={{ color: "var(--warning-amber)", fontWeight: 600 }}>
               Percentage
             </Typography>
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: "#b45309" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--warning-strong)" }}>
             {overall_percentage}%
           </Typography>
         </Box>
@@ -115,17 +115,17 @@ const PerformanceSummaryComponent = ({
           sx={{
             p: 2,
             borderRadius: 2,
-            backgroundColor: "#fce7f3",
-            border: "1px solid #fbcfe8",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, var(--card-bg))",
+            border: "1px solid color-mix(in srgb, var(--accent-indigo) 24%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <IconWrapper icon="mdi:trophy" size={20} color="#db2777" />
-            <Typography variant="caption" sx={{ color: "#db2777", fontWeight: 600 }}>
+            <IconWrapper icon="mdi:trophy" size={20} color="var(--accent-indigo)" />
+            <Typography variant="caption" sx={{ color: "var(--accent-indigo)", fontWeight: 600 }}>
               Grade
             </Typography>
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: "#be185d" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--accent-indigo-dark)" }}>
             {performanceLabel}
           </Typography>
         </Box>
