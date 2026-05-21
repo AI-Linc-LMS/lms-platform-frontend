@@ -162,14 +162,17 @@ function JobsTable({
         <Paper
           sx={{
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             overflow: "hidden",
           }}
         >
           <TableContainer>
             <Table size="small" sx={{ minWidth: 500 }}>
               <TableHead>
-                <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                   <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
                     {isAssessment ? t("adminEmailJobs.assessmentSubject") : t("adminEmailJobs.taskSubject")}
                   </TableCell>
@@ -193,7 +196,7 @@ function JobsTable({
                   paginatedJobs.map((job) => (
                     <TableRow
                       key={job.task_id}
-                      sx={{ "&:hover": { backgroundColor: "#f9fafb" } }}
+                      sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}
                     >
                       <TableCell sx={{ py: 1.5 }}>
                         <Typography
@@ -265,7 +268,7 @@ function JobsTable({
             <Box
               sx={{
                 p: { xs: 1.5, sm: 2 },
-                borderTop: "1px solid #e5e7eb",
+                borderTop: "1px solid var(--border-default)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -276,7 +279,10 @@ function JobsTable({
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                 <Typography
                   variant="body2"
-                  sx={{ color: "#6b7280", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  }}
                 >
                   {t("adminEmailJobs.showing", {
                     start: (page - 1) * limit + 1,
@@ -426,10 +432,11 @@ export default function AdminEmailsPage() {
 
   const getStatusColor = (status: string) => {
     const s = (status || "").toLowerCase();
-    if (s === "completed" || s === "success" || s === "sent") return "#10b981";
-    if (s === "failed" || s === "error") return "#ef4444";
-    if (s === "pending" || s === "queued") return "#f59e0b";
-    return "#6b7280";
+    if (s === "completed" || s === "success" || s === "sent")
+      return "var(--success-500)";
+    if (s === "failed" || s === "error") return "var(--error-500)";
+    if (s === "pending" || s === "queued") return "var(--warning-500)";
+    return "var(--font-secondary)";
   };
 
   return (
@@ -439,7 +446,7 @@ export default function AdminEmailsPage() {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1.5rem", sm: "2rem" },
             mb: 3,
           }}

@@ -25,7 +25,10 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
         mb: 0,
       }}
     >
@@ -44,7 +47,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
@@ -53,8 +56,9 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Chip
             label={activity.code}
             sx={{
-              bgcolor: "#eef2ff",
-              color: "#6366f1",
+              bgcolor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               fontFamily: "monospace",
               mt: 0.5,
@@ -68,7 +72,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
@@ -89,7 +93,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
@@ -105,8 +109,10 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
                 fontWeight: 600,
                 fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 height: { xs: 20, sm: 24 },
-                bgcolor: activity.is_active ? "#d1fae5" : "#fee2e2",
-                color: activity.is_active ? "#065f46" : "#991b1b",
+                bgcolor: activity.is_active
+                  ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                  : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                color: activity.is_active ? "var(--success-500)" : "var(--error-500)",
               }}
             />
             {activity.is_valid && (
@@ -117,8 +123,9 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
                   fontWeight: 600,
                   fontSize: { xs: "0.7rem", sm: "0.75rem" },
                   height: { xs: 20, sm: 24 },
-                  bgcolor: "#dbeafe",
-                  color: "#1e40af",
+                  bgcolor:
+                    "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                  color: "var(--accent-indigo)",
                 }}
               />
             )}
@@ -128,7 +135,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
@@ -148,7 +155,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
@@ -168,7 +175,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
@@ -188,7 +195,7 @@ export function ActivityDetailsCard({ activity }: ActivityDetailsCardProps) {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >

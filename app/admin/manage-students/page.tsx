@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Box, Collapse, IconButton, Paper, Typography } from "@mui/material";
+import { Box, Paper, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -16,7 +16,7 @@ import { adminCoursesService } from "@/lib/services/admin/admin-courses.service"
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isClientOrgAdminRole,
-  isCourseManagerRole,
+  isScopedAdminRole,
 } from "@/lib/auth/role-utils";
 import { ManageStudentsHeader } from "../../../components/admin/manage-students/ManageStudentsHeader";
 import { StudentsFilters } from "../../../components/admin/manage-students/StudentsFilters";
@@ -60,8 +60,12 @@ export default function ManageStudentsPage() {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const { user } = useAuth();
-  const showOrgAdminEnrollmentTools = isClientOrgAdminRole(user?.role);
-  const courseManagerUser = isCourseManagerRole(user?.role);
+  const courseManagerUser = isScopedAdminRole(user?.role);
+  // Bulk enrollment and job history are available to org admins AND scoped admins
+  // (instructor / course_manager). Backend validates that target courses are in
+  // the user's scope, so this only exposes the UI.
+  const showOrgAdminEnrollmentTools =
+    isClientOrgAdminRole(user?.role) || courseManagerUser;
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -89,7 +93,7 @@ export default function ManageStudentsPage() {
 
   // Bulk Enrollment
   const [bulkEnrollDialogOpen, setBulkEnrollDialogOpen] = useState(false);
-  const [showJobHistory, setShowJobHistory] = useState(false);
+  const enrollmentJobSectionRef = useRef<HTMLDivElement | null>(null);
   const loadStudentsSeqRef = useRef(0);
 
   // Load courses for filter
@@ -124,16 +128,8 @@ export default function ManageStudentsPage() {
     const seq = ++loadStudentsSeqRef.current;
     const courseManager = courseManagerUser;
 
-    // Course managers: empty course filter = load all students the API allows (scoped server-side).
-    // Admins: keep original behavior — require at least one selected course before loading.
+    // Empty course selection = all courses (load full student list; API scopes by role).
     if (selectedCourses.length === 0) {
-      if (!courseManager) {
-        setAllStudents([]);
-        setCompletionStats({});
-        setLoading(false);
-        setLoadingStats(false);
-        return;
-      }
       try {
         setLoading(true);
         const response = await adminStudentService.getManageStudents({
@@ -549,9 +545,13 @@ export default function ManageStudentsPage() {
   };
 
   const handleBulkEnrollSuccess = () => {
-    // Refresh student list after successful enrollment
     loadStudents();
-    setShowJobHistory(true); // Show job history after successful enrollment
+    requestAnimationFrame(() => {
+      enrollmentJobSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   };
 
   const escapeCsvValue = (value: string | number): string => {
@@ -602,7 +602,17 @@ export default function ManageStudentsPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      <Box
+        sx={{
+          p: { xs: 2, sm: 3, md: 4 },
+          maxWidth: 1320,
+          mx: "auto",
+          width: "100%",
+          minHeight: "100%",
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 4%, var(--background)) 0%, var(--background) 220px, var(--background) 100%)",
+        }}
+      >
         <ManageStudentsHeader
           totalCount={totalCount}
           onBulkEnrollClick={
@@ -611,17 +621,14 @@ export default function ManageStudentsPage() {
               : undefined
           }
           onDownloadCsv={
-            allStudents.length > 0 &&
-            (courseManagerUser || selectedCourses.length > 0)
-              ? handleDownloadCsv
-              : undefined
+            allStudents.length > 0 ? handleDownloadCsv : undefined
           }
         />
 
         <StudentsFilters
           courses={courses}
           selectedCourses={selectedCourses}
-          emptySelectionMeansAllCourses={courseManagerUser}
+          emptySelectionMeansAllCourses
           status={status}
           resumeFilter={resumeFilter}
           searchTerm={searchTerm}
@@ -631,44 +638,65 @@ export default function ManageStudentsPage() {
           onSearchChange={handleSearchChange}
         />
 
-        {showOrgAdminEnrollmentTools ? (
-          <Box sx={{ mb: 4 }}>
-            <Paper
-              sx={{
-                p: 2,
-                mb: 2,
-                cursor: "pointer",
-                "&:hover": {
-                  backgroundColor: "#f9fafb",
-                },
-              }}
-              onClick={() => setShowJobHistory(!showJobHistory)}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Typography variant="h6" fontWeight={600}>
-                  {t("adminManageStudents.enrollmentJobHistory")}
-                </Typography>
-                <IconButton size="small">
-                  <IconWrapper
-                    icon={showJobHistory ? "mdi:chevron-up" : "mdi:chevron-down"}
-                    size={20}
-                  />
-                </IconButton>
-              </Box>
-            </Paper>
-            <Collapse in={showJobHistory}>
-              <EnrollmentJobHistory />
-            </Collapse>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 44,
+              height: 44,
+              borderRadius: 2,
+              flexShrink: 0,
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+              color: "var(--accent-indigo)",
+            }}
+            aria-hidden
+          >
+            <IconWrapper icon="mdi:view-list-outline" size={24} />
           </Box>
-        ) : null}
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="subtitle1"
+              component="h2"
+              sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+            >
+              {t("adminManageStudents.studentDirectoryTitle")}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "var(--font-secondary)",
+                mt: 0.5,
+                maxWidth: 640,
+                lineHeight: 1.5,
+              }}
+            >
+              {t("adminManageStudents.studentDirectoryHint")}
+            </Typography>
+          </Box>
+        </Box>
 
-        <Box>
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            overflow: "hidden",
+            border: "1px solid var(--border-default)",
+            boxShadow:
+              "0 4px 24px color-mix(in srgb, var(--font-primary) 7%, transparent)",
+            backgroundColor: "var(--card-bg)",
+            mb: 2,
+          }}
+        >
           <StudentsTable
             students={paginatedStudents}
             completionStats={completionStats}
@@ -677,6 +705,7 @@ export default function ManageStudentsPage() {
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={handleSort}
+            wrapInPaper={false}
           />
           <StudentsPagination
             totalPages={totalPages}
@@ -686,7 +715,79 @@ export default function ManageStudentsPage() {
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
           />
-        </Box>
+        </Paper>
+
+        {showOrgAdminEnrollmentTools ? (
+          <Box
+            ref={enrollmentJobSectionRef}
+            id="enrollment-job-history-section"
+            component="section"
+            aria-labelledby="enrollment-job-history-heading"
+            sx={{ mt: { xs: 4, sm: 5 } }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 2,
+                mb: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  flexShrink: 0,
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+                  color: "var(--accent-indigo)",
+                }}
+                aria-hidden
+              >
+                <IconWrapper icon="mdi:clipboard-flow-outline" size={24} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  id="enrollment-job-history-heading"
+                  variant="subtitle1"
+                  component="h2"
+                  sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+                >
+                  {t("adminManageStudents.enrollmentJobHistory")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    mt: 0.5,
+                    maxWidth: 640,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {t("adminManageStudents.enrollmentJobHistorySubtitle")}
+                </Typography>
+              </Box>
+            </Box>
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                overflow: "hidden",
+                border: "1px solid var(--border-default)",
+                boxShadow:
+                  "0 4px 24px color-mix(in srgb, var(--font-primary) 7%, transparent)",
+                backgroundColor: "var(--card-bg)",
+                p: { xs: 1.5, sm: 2 },
+              }}
+            >
+              <EnrollmentJobHistory embedded />
+            </Paper>
+          </Box>
+        ) : null}
 
         <BulkEnrollmentDialog
           open={bulkEnrollDialogOpen}

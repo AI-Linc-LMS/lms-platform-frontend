@@ -120,7 +120,7 @@ export const StreakHolders = () => {
         sx={{
           fontSize: "1.125rem",
           fontWeight: 600,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 2,
         }}
       >
@@ -146,8 +146,8 @@ export const StreakHolders = () => {
         sx={{
           borderRadius: 2,
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
           display: "flex",
           flexDirection: "column",
           maxHeight: 320,
@@ -157,7 +157,7 @@ export const StreakHolders = () => {
         {streakHolders.length === 0 ? (
           <Typography
             variant="body2"
-            sx={{ color: "#6B7280", textAlign: "center", py: 2, p: 2 }}
+            sx={{ color: "var(--font-secondary)", textAlign: "center", py: 2, p: 2 }}
           >
             {t("dashboard.noStreakData")}
           </Typography>
@@ -242,20 +242,20 @@ export const StreakHolders = () => {
                       p: 1,
                       borderRadius: 1,
                       backgroundColor:
-                        index < 3 ? "#F9FAFB" : "transparent",
+                        index < 3 ? "var(--surface)" : "transparent",
                       border:
-                        index < 3 ? "1px solid #E5E7EB" : "none",
+                        index < 3 ? "1px solid var(--border-default)" : "none",
                       flexShrink: 0,
                       cursor: linkedinUrl ? "pointer" : "default",
                       transition: "all 0.2s ease",
                       "&:hover": {
-                        backgroundColor: linkedinUrl ? "rgba(245, 158, 11, 0.08)" : undefined,
+                        backgroundColor: linkedinUrl ? "color-mix(in srgb, var(--warning-500) 12%, transparent)" : undefined,
                         transform: linkedinUrl ? "translateX(2px)" : undefined,
                         boxShadow: linkedinUrl ? "0 2px 4px rgba(0,0,0,0.1)" : undefined,
                       },
                       "&:focus": linkedinUrl
                         ? {
-                            outline: "2px solid #f59e0b",
+                            outline: "2px solid var(--warning-500)",
                             outlineOffset: "2px",
                           }
                         : {},
@@ -290,7 +290,7 @@ export const StreakHolders = () => {
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "#111827",
+                        color: "var(--font-primary)",
                         fontSize: "0.8125rem",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -311,12 +311,12 @@ export const StreakHolders = () => {
                       <IconWrapper
                         icon="mdi:fire"
                         size={14}
-                        style={{ color: "#F59E0B" }}
+                        style={{ color: "var(--warning-500)" }}
                       />
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "#6B7280",
+                          color: "var(--font-secondary)",
                           fontSize: "0.6875rem",
                           lineHeight: 1.2,
                         }}

@@ -24,6 +24,28 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   return null;
 }
 
+function relativeLuminance({ r, g, b }: { r: number; g: number; b: number }): number {
+  const channel = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const rr = channel(r);
+  const gg = channel(g);
+  const bb = channel(b);
+  return 0.2126 * rr + 0.7152 * gg + 0.0722 * bb;
+}
+
+function contrastRatio(aHex: string, bHex: string): number {
+  const a = hexToRgb(aHex);
+  const b = hexToRgb(bHex);
+  if (!a || !b) return 0;
+  const l1 = relativeLuminance(a);
+  const l2 = relativeLuminance(b);
+  const light = Math.max(l1, l2);
+  const dark = Math.min(l1, l2);
+  return (light + 0.05) / (dark + 0.05);
+}
+
 /**
  * Resolved sidebar / mobile-nav colors from tenant `clientInfo.theme_settings`.
  * Uses explicit values (not inherited CSS vars) so MUI drawers re-render correctly when branding changes.
@@ -39,6 +61,10 @@ export function useTenantShellTheme() {
     const p400 = (t.primary400 || "").trim() || "#2a8cb0";
     const p500 = (t.primary500 || "").trim() || "#255c79";
     const rgb = hexToRgb(p500);
+    const candidates = [p300, p500, nav, "#ffffff", "#000000"];
+    const activeText = candidates
+      .map((color) => ({ color, score: contrastRatio(color, shellBg) }))
+      .sort((a, b) => b.score - a.score)[0]?.color || nav;
 
     const dropHover = rgb
       ? `drop-shadow(0 3px 6px rgba(${rgb.r},${rgb.g},${rgb.b},0.5)) drop-shadow(0 2px 4px rgba(${rgb.r},${rgb.g},${rgb.b},0.4))`
@@ -56,6 +82,7 @@ export function useTenantShellTheme() {
     return {
       shellBg,
       nav,
+      activeText,
       p300,
       p400,
       p500,

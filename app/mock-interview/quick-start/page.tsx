@@ -8,6 +8,7 @@ import {
   QuickStartFormData,
 } from "@/components/mock-interview/QuickStartForm";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AiLincLoader } from "@/components/common/AiLincLoader";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useToast } from "@/components/common/Toast";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,35 @@ export default function QuickStartPage() {
     [showToast, router]
   );
 
+  // While the create call is in flight, REPLACE the entire page with a clean loader
+  // screen — no form behind it, no header, no breadcrumb. The previous inline overlay
+  // looked busy because the loader's caption visibly overlapped form text underneath
+  // (translucent backdrop didn't fully mask the dense form content). This separated
+  // "creating" view gives the loader its own canvas and reads as a quiet transition
+  // beat between picking preferences and landing on the device-check page.
+  if (loading) {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            minHeight: "calc(100vh - 96px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            px: 2,
+          }}
+        >
+          <AiLincLoader
+            variant="inline"
+            label="AI LINC · CREATING YOUR INTERVIEW"
+            subMessage="Setting things up — this usually takes a few seconds…"
+            size={260}
+          />
+        </Box>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -55,7 +85,7 @@ export default function QuickStartPage() {
               },
             }}
           >
-            Back to Mock Interviews
+            Back to Interviews
           </Button>
         </Box>
 

@@ -47,6 +47,8 @@ export function SubmoduleProgress({
         return "mdi:file-document-outline";
       case "CodingProblem":
         return "mdi:code-tags";
+      case "SubjectiveQuestion":
+        return "mdi:text-box-outline";
       case "Assignment":
         return "mdi:file-check-outline";
       default:
@@ -64,6 +66,8 @@ export function SubmoduleProgress({
         return "Articles";
       case "CodingProblem":
         return "Problems";
+      case "SubjectiveQuestion":
+        return t("courses.subjectiveProgressShort");
       case "Assignment":
         return "Assignments";
       default:
@@ -81,6 +85,8 @@ export function SubmoduleProgress({
         return "#3b82f6";
       case "CodingProblem":
         return "#10b981";
+      case "SubjectiveQuestion":
+        return "#0d9488";
       case "Assignment":
         return "#8b5cf6";
       default:

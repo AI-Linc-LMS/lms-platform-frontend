@@ -142,7 +142,7 @@ export function ProfileSectionsContainer({
           variant="h6"
           sx={{
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: "1.125rem",
           }}
         >
@@ -159,11 +159,11 @@ export function ProfileSectionsContainer({
             px: 2.5,
             py: 1.25,
             borderRadius: 2,
-            borderColor: "#0a66c2",
-            color: "#0a66c2",
+            borderColor: "var(--accent-indigo)",
+            color: "var(--accent-indigo)",
             "&:hover": {
-              borderColor: "#004182",
-              backgroundColor: "rgba(10, 102, 194, 0.06)",
+              borderColor: "var(--accent-indigo-dark)",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
             },
           }}
         >
@@ -177,9 +177,9 @@ export function ProfileSectionsContainer({
           sx={{
             p: 6,
             textAlign: "center",
-            border: "2px dashed #e2e8f0",
+            border: "2px dashed var(--border-default)",
             borderRadius: 3,
-            backgroundColor: "#f8fafc",
+            backgroundColor: "color-mix(in srgb, var(--surface) 78%, var(--background))",
           }}
         >
           <Box
@@ -188,7 +188,7 @@ export function ProfileSectionsContainer({
               height: 80,
               borderRadius: "50%",
               background:
-                "linear-gradient(135deg, rgba(10, 102, 194, 0.08) 0%, rgba(10, 102, 194, 0.04) 100%)",
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 6%, transparent) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -199,14 +199,14 @@ export function ProfileSectionsContainer({
             <IconWrapper
               icon="mdi:format-list-bulleted"
               size={40}
-              color="#0a66c2"
+              color="var(--accent-indigo)"
             />
           </Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#1e293b",
+              color: "var(--font-primary)",
               fontSize: "1.125rem",
               mb: 0.5,
             }}
@@ -216,7 +216,7 @@ export function ProfileSectionsContainer({
           <Typography
             variant="body2"
             sx={{
-              color: "#64748b",
+              color: "var(--font-secondary)",
               fontSize: "0.9375rem",
               mb: 2,
               maxWidth: 360,
@@ -237,8 +237,8 @@ export function ProfileSectionsContainer({
               px: 3,
               py: 1.25,
               borderRadius: 2,
-              backgroundColor: "#0a66c2",
-              "&:hover": { backgroundColor: "#004182" },
+              backgroundColor: "var(--accent-indigo)",
+              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
             }}
           >
             Add Section

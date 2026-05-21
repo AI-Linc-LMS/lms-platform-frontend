@@ -20,47 +20,47 @@ function looksLikeMarkdown(text: string): boolean {
 
 const articleBodySx = {
   "& h1": {
-    color: "#1a1f2e",
+    color: "var(--font-primary)",
     fontWeight: 700,
     fontSize: "2rem",
     mb: 2,
     mt: 0,
   },
   "& h2": {
-    color: "#1a1f2e",
+    color: "var(--font-primary)",
     fontWeight: 600,
     fontSize: "1.5rem",
     mt: 3,
     mb: 1.5,
   },
   "& h3": {
-    color: "#1a1f2e",
+    color: "var(--font-primary)",
     fontWeight: 600,
     fontSize: "1.25rem",
     mt: 2,
     mb: 1,
   },
   "& h4, & h5, & h6": {
-    color: "#1a1f2e",
+    color: "var(--font-primary)",
     fontWeight: 600,
     mt: 2,
     mb: 1,
   },
   "& p": {
-    color: "#4b5563",
+    color: "var(--font-secondary)",
     lineHeight: 1.8,
     mb: 1.5,
     fontSize: "1rem",
   },
   "& ul, & ol": {
-    color: "#4b5563",
+    color: "var(--font-secondary)",
     pl: 3,
     mb: 1.5,
     lineHeight: 1.8,
   },
   "& li": { mb: 0.75 },
   "& a": {
-    color: "#3b82f6",
+    color: "var(--accent-indigo)",
     textDecoration: "none",
     "&:hover": { textDecoration: "underline" },
   },
@@ -72,24 +72,24 @@ const articleBodySx = {
     mt: 2,
   },
   "& blockquote": {
-    borderInlineStart: "4px solid #3b82f6",
+    borderInlineStart: "4px solid var(--accent-indigo)",
     paddingInlineStart: 16,
     marginInlineStart: 0,
     fontStyle: "italic",
-    color: "#6b7280",
+    color: "var(--font-secondary)",
     mb: 2,
   },
   "& code": {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "var(--surface)",
     padding: "2px 6px",
     borderRadius: "4px",
     fontSize: "0.875rem",
     fontFamily: "monospace",
-    color: "#1a1f2e",
+    color: "var(--font-primary)",
   },
   "& pre": {
-    backgroundColor: "#1a1f2e",
-    color: "#f9fafb",
+    backgroundColor: "color-mix(in srgb, var(--surface) 55%, var(--background) 45%)",
+    color: "var(--font-primary)",
     padding: 2,
     borderRadius: 1,
     overflowX: "auto",
@@ -97,7 +97,7 @@ const articleBodySx = {
     "& code": {
       backgroundColor: "transparent",
       padding: 0,
-      color: "#f9fafb",
+      color: "var(--font-primary)",
     },
   },
   "& table": {
@@ -106,14 +106,14 @@ const articleBodySx = {
     mb: 2,
   },
   "& th, & td": {
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--border-default)",
     padding: 1,
     textAlign: "start",
   },
   "& th": {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "var(--surface)",
     fontWeight: 600,
-    color: "#1a1f2e",
+    color: "var(--font-primary)",
   },
 } as const;
 
@@ -182,16 +182,16 @@ export function ArticleContent({
             sx={{
               height: 4,
               borderRadius: 2,
-              backgroundColor: "#e5e7eb",
+              backgroundColor: "var(--border-default)",
               "& .MuiLinearProgress-bar": {
                 borderRadius: 2,
-                backgroundColor: "#3b82f6",
+                backgroundColor: "var(--accent-indigo)",
               },
             }}
           />
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", mt: 0.5, display: "block" }}
+            sx={{ color: "var(--font-secondary)", mt: 0.5, display: "block" }}
           >
             {Math.round(readProgress)}% read
           </Typography>
@@ -205,8 +205,9 @@ export function ArticleContent({
           label={t("courses.minRead", { count: readingTimeMinutes })}
           size="small"
           sx={{
-            backgroundColor: "#eff6ff",
-            color: "#1e40af",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+            color: "var(--accent-indigo)",
             fontWeight: 500,
           }}
         />
@@ -216,8 +217,9 @@ export function ArticleContent({
             label="Completed"
             size="small"
             sx={{
-              backgroundColor: "#d1fae5",
-              color: "#065f46",
+              backgroundColor:
+                "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)",
+              color: "var(--success-500)",
               fontWeight: 500,
             }}
           />
@@ -228,11 +230,13 @@ export function ArticleContent({
             startIcon={<CheckCircleOutline />}
             onClick={handleMarkAsRead}
             sx={{
-              borderColor: "#10b981",
-              color: "#059669",
+              borderColor: "var(--success-500)",
+              color: "var(--success-500)",
               "&:hover": {
-                borderColor: "#059669",
-                backgroundColor: "rgba(5, 150, 105, 0.04)",
+                borderColor:
+                  "color-mix(in srgb, var(--success-500) 80%, var(--font-primary) 20%)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--success-500) 8%, transparent)",
               },
             }}
           >
@@ -246,23 +250,24 @@ export function ArticleContent({
         elevation={0}
         sx={{
           p: { xs: 2, sm: 3, md: 4 },
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--card-bg)",
           borderRadius: 2,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           maxHeight: "70vh",
           overflowY: "auto",
           "&::-webkit-scrollbar": {
             width: "8px",
           },
           "&::-webkit-scrollbar-track": {
-            backgroundColor: "#f3f4f6",
+            backgroundColor: "var(--surface)",
             borderRadius: "4px",
           },
           "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "#cbd5e1",
+            backgroundColor: "var(--border-default)",
             borderRadius: "4px",
             "&:hover": {
-              backgroundColor: "#94a3b8",
+              backgroundColor:
+                "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
             },
           },
         }}
@@ -282,7 +287,7 @@ export function ArticleContent({
             )}
           </Box>
         ) : (
-          <Typography variant="body1" sx={{ color: "#6b7280" }}>
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
             No content available for this article.
           </Typography>
         )}

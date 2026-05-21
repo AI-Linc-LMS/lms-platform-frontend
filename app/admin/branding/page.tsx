@@ -32,6 +32,7 @@ import {
   fetchBrandingPresetDetail,
   fetchClientBranding,
   patchClientBranding,
+  uploadFavicon,
   uploadLoginBackground,
   type BrandingPresetSummary,
 } from "@/lib/services/admin/branding.service";
@@ -56,6 +57,7 @@ type BrandingBaseline = {
   selectedPreset: string;
   loginImgUrl: string;
   loginLogoUrl: string;
+  appIconUrl: string;
   draftThemeRaw: Record<string, string>;
 };
 
@@ -64,15 +66,17 @@ export default function AdminBrandingPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
-  const { refreshClientInfo } = useClientInfo();
+  const { clientInfo, loading: loadingClientInfo, refreshClientInfo } = useClientInfo();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [presets, setPresets] = useState<BrandingPresetSummary[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [loginImgUrl, setLoginImgUrl] = useState("");
   const [loginLogoUrl, setLoginLogoUrl] = useState("");
+  const [appIconUrl, setAppIconUrl] = useState("");
   const [draftThemeRaw, setDraftThemeRaw] = useState<Record<string, string>>({});
   const [baseline, setBaseline] = useState<BrandingBaseline | null>(null);
   const [presetApplyingId, setPresetApplyingId] = useState<string | null>(null);
@@ -94,8 +98,16 @@ export default function AdminBrandingPage() {
     if (selectedPreset !== baseline.selectedPreset) return true;
     if (loginImgUrl.trim() !== baseline.loginImgUrl.trim()) return true;
     if (loginLogoUrl.trim() !== baseline.loginLogoUrl.trim()) return true;
+    if (appIconUrl.trim() !== baseline.appIconUrl.trim()) return true;
     return themeFingerprint(draftThemeRaw) !== themeFingerprint(baseline.draftThemeRaw);
-  }, [baseline, selectedPreset, loginImgUrl, loginLogoUrl, draftThemeRaw]);
+  }, [baseline, selectedPreset, loginImgUrl, loginLogoUrl, appIconUrl, draftThemeRaw]);
+
+  const hasBrandingFeature = useMemo(() => {
+    const features = clientInfo?.features ?? [];
+    // Backward-compatible fallback: if no features are configured, keep branding accessible.
+    if (features.length === 0) return true;
+    return features.some((f) => f.name === "admin_branding");
+  }, [clientInfo?.features]);
 
   useEffect(() => {
     const el = previewRef.current;
@@ -107,6 +119,7 @@ export default function AdminBrandingPage() {
     setSelectedPreset(b.selectedPreset);
     setLoginImgUrl(b.loginImgUrl);
     setLoginLogoUrl(b.loginLogoUrl);
+    setAppIconUrl(b.appIconUrl);
     setDraftThemeRaw(JSON.parse(JSON.stringify(b.draftThemeRaw)));
   }, []);
 
@@ -126,6 +139,7 @@ export default function AdminBrandingPage() {
         selectedPreset: b.theme_preset_id || "",
         loginImgUrl: b.login_img_url?.trim() || "",
         loginLogoUrl: b.login_logo_url?.trim() || "",
+        appIconUrl: b.app_icon_url?.trim() || "",
         draftThemeRaw: draft,
       };
       applyBaseline(nextBaseline);
@@ -182,6 +196,7 @@ export default function AdminBrandingPage() {
       const body: Parameters<typeof patchClientBranding>[0] = {
         login_img_url: loginImgUrl.trim() || null,
         login_logo_url: loginLogoUrl.trim() || null,
+        app_icon_url: appIconUrl.trim() || null,
       };
       if (selectedPreset) {
         body.theme_preset_id = selectedPreset;
@@ -195,6 +210,7 @@ export default function AdminBrandingPage() {
         selectedPreset,
         loginImgUrl: loginImgUrl.trim(),
         loginLogoUrl: loginLogoUrl.trim(),
+        appIconUrl: appIconUrl.trim(),
         draftThemeRaw: JSON.parse(JSON.stringify(draftThemeRaw)),
       };
       setBaseline(next);
@@ -236,11 +252,44 @@ export default function AdminBrandingPage() {
     }
   };
 
-  if (authLoading || !user || !isClientOrgAdminRole(user.role)) {
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingFavicon(true);
+    try {
+      const res = await uploadFavicon(file);
+      if (res.url) {
+        setAppIconUrl(res.url);
+        showToast(t("branding.uploaded"), "success");
+      }
+    } catch (err: unknown) {
+      showToast(
+        err instanceof Error ? err.message : t("branding.uploadError"),
+        "error"
+      );
+    } finally {
+      setUploadingFavicon(false);
+    }
+  };
+
+  if (authLoading || loadingClientInfo || !user || !isClientOrgAdminRole(user.role)) {
     return (
       <MainLayout>
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />
+        </Box>
+      </MainLayout>
+    );
+  }
+
+  if (!hasBrandingFeature) {
+    return (
+      <MainLayout>
+        <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, py: 4 }}>
+          <Alert severity="warning" sx={{ borderRadius: 2 }}>
+            Branding & Theme is disabled for this client. Enable `admin_branding` in the super admin feature selection to access this page.
+          </Alert>
         </Box>
       </MainLayout>
     );
@@ -354,23 +403,29 @@ export default function AdminBrandingPage() {
                 sx={{
                   borderRadius: 2,
                   alignItems: "flex-start",
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--font-primary)",
+                  "& .MuiAlert-icon": {
+                    color: "var(--accent-indigo)",
+                  },
                   "& .MuiAlert-message": { width: "100%" },
                 }}
               >
-                <Typography fontWeight={800} sx={{ mb: 1 }}>
+                <Typography fontWeight={800} sx={{ mb: 1, color: "var(--font-primary)" }}>
                   {t("branding.guideTitle")}
                 </Typography>
                 <Stack component="ul" spacing={0.75} sx={{ m: 0, pl: 2.25, listStyle: "disc" }}>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep1")}
                   </Typography>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep2")}
                   </Typography>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep3")}
                   </Typography>
-                  <Typography component="li" variant="body2" color="text.secondary">
+                  <Typography component="li" variant="body2" sx={{ color: "var(--font-secondary)" }}>
                     {t("branding.guideStep4")}
                   </Typography>
                 </Stack>
@@ -408,7 +463,7 @@ export default function AdminBrandingPage() {
                     onChange={(hex) =>
                       setDraftThemeRaw((prev) => ({ ...prev, secondary500: hex }))
                     }
-                    fallbackHex="#12293a"
+                    fallbackHex={normalizedPreview.secondary500}
                     helperText={t("branding.sidebarBgHelp")}
                   />
                   <BrandingColorField
@@ -418,7 +473,7 @@ export default function AdminBrandingPage() {
                     onChange={(hex) =>
                       setDraftThemeRaw((prev) => ({ ...prev, fontLightNav: hex }))
                     }
-                    fallbackHex="#ffffff"
+                    fallbackHex={normalizedPreview.fontLightNav}
                   />
                   <BrandingColorField
                     label={t("branding.brandPrimary")}
@@ -431,7 +486,7 @@ export default function AdminBrandingPage() {
                         muiPrimaryMain: hex,
                       }))
                     }
-                    fallbackHex="#255c79"
+                    fallbackHex={normalizedPreview.primary500}
                     helperText={t("branding.brandPrimaryHelp")}
                   />
                   <BrandingColorField
@@ -441,7 +496,7 @@ export default function AdminBrandingPage() {
                     onChange={(hex) =>
                       setDraftThemeRaw((prev) => ({ ...prev, primary300: hex }))
                     }
-                    fallbackHex="#63b6d3"
+                    fallbackHex={normalizedPreview.primary300}
                   />
                 </Stack>
               </BrandingSectionCard>
@@ -504,6 +559,91 @@ export default function AdminBrandingPage() {
                     onChange={(e) => setLoginLogoUrl(e.target.value)}
                     helperText={t("branding.loginLogoUrlHelp")}
                   />
+
+                  <Divider sx={{ my: 0.5 }} />
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    Browser favicon
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Square 32×32 PNG or ICO. Shows in browser tabs and bookmarks.
+                  </Typography>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                    alignItems={{ xs: "stretch", sm: "center" }}
+                  >
+                    {appIconUrl.trim() ? (
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          flexShrink: 0,
+                          borderRadius: 1,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          backgroundColor: "#ffffff",
+                          backgroundImage: `url("${appIconUrl.trim()}")`,
+                          backgroundSize: "contain",
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "center",
+                        }}
+                        aria-label="Favicon preview"
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          flexShrink: 0,
+                          borderRadius: 1,
+                          border: "1px dashed",
+                          borderColor: "divider",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "text.disabled",
+                        }}
+                      >
+                        <IconWrapper icon="mdi:image-outline" size={26} />
+                      </Box>
+                    )}
+                    <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Favicon URL"
+                        value={appIconUrl}
+                        onChange={(e) => setAppIconUrl(e.target.value)}
+                        helperText="Paste a hosted icon URL, or upload below."
+                      />
+                      <Box>
+                        <Button
+                          variant="outlined"
+                          component="label"
+                          disabled={uploadingFavicon}
+                          startIcon={
+                            uploadingFavicon ? (
+                              <CircularProgress size={18} color="inherit" />
+                            ) : (
+                              <IconWrapper
+                                icon="mdi:cloud-upload-outline"
+                                size={18}
+                              />
+                            )
+                          }
+                          sx={{ textTransform: "none", fontWeight: 600 }}
+                        >
+                          {uploadingFavicon ? t("branding.uploading") : "Upload favicon"}
+                          <input
+                            type="file"
+                            hidden
+                            accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml"
+                            onChange={handleFaviconUpload}
+                          />
+                        </Button>
+                      </Box>
+                    </Stack>
+                  </Stack>
                 </Stack>
               </BrandingSectionCard>
 
@@ -569,7 +709,7 @@ export default function AdminBrandingPage() {
                         hint={t("branding.loginSloganColorHint")}
                         value={draftThemeRaw.loginHeroSloganColor ?? ""}
                         onChange={(hex) => setHeroField("loginHeroSloganColor", hex)}
-                        fallbackHex="#0f172a"
+                        fallbackHex={normalizedPreview.loginHeroSloganColor}
                       />
                     </Box>
                   </Stack>
@@ -640,7 +780,7 @@ export default function AdminBrandingPage() {
                         onChange={(hex) =>
                           setHeroField("loginHeroBrandNameColor", hex)
                         }
-                        fallbackHex="#1e293b"
+                        fallbackHex={normalizedPreview.loginHeroBrandNameColor}
                       />
                     </Box>
                   </Stack>
@@ -736,11 +876,16 @@ export default function AdminBrandingPage() {
 
             <Box
               sx={{
-                position: { lg: "sticky" },
-                top: { lg: 16 },
+                position: { xs: "static", md: "sticky" },
+                top: { md: 84 },
+                width: { lg: 400 },
+                maxHeight: { md: "calc(100vh - 108px)" },
+                overflowY: { md: "auto" },
+                alignSelf: "start",
                 display: "flex",
                 flexDirection: "column",
                 gap: 2.5,
+                pr: { md: 0.5 },
               }}
             >
               <Paper
@@ -753,7 +898,11 @@ export default function AdminBrandingPage() {
                   bgcolor: (theme) =>
                     theme.palette.mode === "dark"
                       ? alpha(theme.palette.common.white, 0.04)
-                      : "#fafbfc",
+                      : "var(--surface)",
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? `0 10px 30px ${alpha(theme.palette.common.black, 0.28)}`
+                      : "0 12px 28px color-mix(in srgb, var(--font-primary) 10%, transparent)",
                 }}
               >
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
@@ -781,6 +930,88 @@ export default function AdminBrandingPage() {
                   color="text.secondary"
                   sx={{ mt: 2.5, mb: 1, display: "block" }}
                 >
+                  Browser tab
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "stretch",
+                    borderRadius: "10px 10px 0 0",
+                    overflow: "hidden",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    bgcolor: "color-mix(in srgb, var(--font-primary) 6%, var(--surface) 94%)",
+                    px: 0.75,
+                    pt: 0.75,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      px: 1,
+                      py: 0.6,
+                      borderRadius: "8px 8px 0 0",
+                      bgcolor: "var(--surface)",
+                      maxWidth: 240,
+                      minWidth: 140,
+                      boxShadow:
+                        "0 -1px 2px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        flexShrink: 0,
+                        borderRadius: 0.5,
+                        backgroundColor: "#ffffff",
+                        backgroundImage: appIconUrl.trim()
+                          ? `url("${appIconUrl.trim()}")`
+                          : undefined,
+                        backgroundSize: "contain",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "center",
+                        border: appIconUrl.trim() ? "none" : "1px dashed",
+                        borderColor: "divider",
+                      }}
+                    />
+                    <Typography
+                      noWrap
+                      sx={{
+                        fontSize: "0.72rem",
+                        fontWeight: 500,
+                        color: "var(--font-primary)",
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      {clientInfo?.name || t("branding.loginPreviewClient")}
+                    </Typography>
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        color: "var(--font-secondary)",
+                        fontSize: "0.8rem",
+                        lineHeight: "10px",
+                        textAlign: "center",
+                        opacity: 0.5,
+                      }}
+                    >
+                      ×
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                  sx={{ mt: 2.5, mb: 1, display: "block" }}
+                >
                   {t("branding.previewAppTitle")}
                 </Typography>
                 <Box
@@ -790,8 +1021,9 @@ export default function AdminBrandingPage() {
                     border: "1px solid",
                     borderColor: "divider",
                     p: 2.5,
-                    backgroundColor: "var(--background, #f8fafc)",
-                    boxShadow: "inset 0 1px 2px rgba(15,23,42,0.04)",
+                    backgroundColor: "var(--background)",
+                    boxShadow:
+                      "inset 0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent)",
                   }}
                 >
                   <Typography
@@ -806,7 +1038,7 @@ export default function AdminBrandingPage() {
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ color: "var(--font-secondary, #6b7280)", mb: 2 }}
+                    sx={{ color: "var(--font-secondary)", mb: 2 }}
                   >
                     {t("branding.previewBody")}
                   </Typography>
@@ -872,10 +1104,26 @@ export default function AdminBrandingPage() {
                 ) : null}
                 <Button
                   variant="outlined"
-                  color="inherit"
                   disabled={!isDirty || saving}
                   onClick={handleDiscard}
-                  sx={{ textTransform: "none", fontWeight: 600 }}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: "var(--border-default)",
+                    color: "var(--font-primary)",
+                    backgroundColor: "var(--surface)",
+                    "&:hover": {
+                      borderColor: "var(--accent-indigo)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                    },
+                    "&.Mui-disabled": {
+                      color: "var(--font-secondary)",
+                      borderColor: "var(--border-default)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--surface) 70%, var(--background) 30%)",
+                    },
+                  }}
                 >
                   {t("branding.discard")}
                 </Button>
@@ -892,7 +1140,7 @@ export default function AdminBrandingPage() {
                         component="span"
                         sx={{
                           display: "inline-flex",
-                          color: "primary.contrastText",
+                          color: "var(--font-light)",
                         }}
                       >
                         <IconWrapper
@@ -903,7 +1151,21 @@ export default function AdminBrandingPage() {
                       </Box>
                     )
                   }
-                  sx={{ textTransform: "none", fontWeight: 700, minWidth: 160 }}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 700,
+                    minWidth: 160,
+                    backgroundColor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
+                    "&:hover": {
+                      backgroundColor: "var(--accent-indigo-dark)",
+                    },
+                    "&.Mui-disabled": {
+                      color: "var(--font-secondary)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 26%, var(--surface) 74%)",
+                    },
+                  }}
                 >
                   {saving ? t("branding.saving") : t("branding.save")}
                 </Button>

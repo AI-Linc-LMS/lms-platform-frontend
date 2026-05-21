@@ -34,10 +34,11 @@ const TERMINAL_STATUSES = ["COMPLETED", "FAILED", "completed", "failed"];
 
 const getStatusColor = (status: string) => {
   const s = (status || "").toLowerCase();
-  if (s === "completed" || s === "success" || s === "sent") return "#10b981";
-  if (s === "failed" || s === "error") return "#ef4444";
-  if (s === "pending" || s === "queued") return "#f59e0b";
-  return "#6b7280";
+  if (s === "completed" || s === "success" || s === "sent")
+    return "var(--success-500)";
+  if (s === "failed" || s === "error") return "var(--error-500)";
+  if (s === "pending" || s === "queued") return "var(--warning-500)";
+  return "var(--font-secondary)";
 };
 
 const formatDate = (s: string) => {
@@ -81,7 +82,7 @@ function RecipientsTable({
       <TableContainer sx={{ maxHeight: 320, overflow: "auto" }}>
         <Table size="small" stickyHeader>
           <TableHead>
-            <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+            <TableRow sx={{ backgroundColor: "var(--surface)" }}>
               <TableCell sx={{ fontWeight: 600 }}>{t("adminEmailJobs.name")}</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>{t("adminEmailJobs.email")}</TableCell>
             </TableRow>
@@ -205,7 +206,7 @@ export default function AssessmentEmailJobDetailPage() {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1.5rem", sm: "2rem" },
             mb: 1,
           }}
@@ -235,7 +236,10 @@ export default function AssessmentEmailJobDetailPage() {
           sx={{
             p: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             mb: 2,
           }}
         >
@@ -273,7 +277,7 @@ export default function AssessmentEmailJobDetailPage() {
                 <Typography variant="caption" color="text.secondary">
                   {t("adminEmailJobs.successful")}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#10b981" }}>
+                <Typography variant="body2" sx={{ color: "var(--success-500)" }}>
                   {successfulCount}
                 </Typography>
               </Box>
@@ -283,7 +287,7 @@ export default function AssessmentEmailJobDetailPage() {
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: failedCount > 0 ? "#ef4444" : "inherit" }}
+                  sx={{ color: failedCount > 0 ? "var(--error-500)" : "inherit" }}
                 >
                   {failedCount}
                 </Typography>
@@ -303,7 +307,10 @@ export default function AssessmentEmailJobDetailPage() {
         <Paper
           sx={{
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             overflow: "hidden",
           }}
         >
@@ -351,11 +358,11 @@ export default function AssessmentEmailJobDetailPage() {
                   <Box
                     sx={{
                       p: 2,
-                      bgcolor: "#f9fafb",
+                      bgcolor: "var(--surface)",
                       borderRadius: 1,
                       maxHeight: 400,
                       overflow: "auto",
-                      "& a": { color: "#6366f1" },
+                      "& a": { color: "var(--accent-indigo)" },
                     }}
                     dangerouslySetInnerHTML={{ __html: data.email_body }}
                   />

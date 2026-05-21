@@ -282,7 +282,7 @@ export default function JobsV2Page() {
           display: { xs: "none", lg: "flex" },
           flexDirection: "column",
           minHeight: "calc(100vh - 64px)",
-          backgroundColor: "#f5f7fa",
+          backgroundColor: "var(--background)",
         }}
       >
         {/* Hero header - matches admin reports / courses style */}
@@ -293,7 +293,8 @@ export default function JobsV2Page() {
             alignItems: { xs: "stretch", md: "center" },
             gap: { xs: 2, md: 4 },
             p: 3,
-            background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)",
+            background:
+              "linear-gradient(135deg, var(--background) 0%, var(--surface) 50%, color-mix(in srgb, var(--accent-indigo) 10%, var(--surface)) 100%)",
             borderBottom: "1px solid",
             borderColor: "divider",
             position: "relative",
@@ -306,7 +307,7 @@ export default function JobsV2Page() {
               width: 200,
               height: 200,
               borderRadius: "50%",
-              background: "rgba(99, 102, 241, 0.06)",
+              background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
             },
           }}
         >
@@ -322,13 +323,16 @@ export default function JobsV2Page() {
               zIndex: 1,
             }}
           >
-            <JobSearchIllustration width={160} height={128} primaryColor="#6366f1" />
+            <JobSearchIllustration width={160} height={128} primaryColor="var(--accent-indigo)" />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: "#0f172a", letterSpacing: "-0.02em" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
               Find your next opportunity
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2.5 }}>
+            <Typography
+              variant="body1"
+              sx={{ mb: 2.5, color: "var(--font-secondary)" }}
+            >
               Search jobs by role, company, or skills. Filter by location and work type.
             </Typography>
             <Box sx={{ maxWidth: 960, width: "100%" }}>
@@ -359,12 +363,12 @@ export default function JobsV2Page() {
               width: 280,
               flexShrink: 0,
               p: 2.5,
-              backgroundColor: "#fff",
+              backgroundColor: "var(--card-bg)",
               borderInlineEnd: "1px solid",
               borderColor: "divider",
             }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, color: "#4338ca" }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5, color: "var(--accent-indigo-dark)" }}>
               Refine results
             </Typography>
             <JobFiltersSidebar
@@ -375,15 +379,15 @@ export default function JobsV2Page() {
             />
           </Box>
 
-          <Box sx={{ flex: 1, p: 3, backgroundColor: "#f8fafc", minWidth: 0 }}>
+          <Box sx={{ flex: 1, p: 3, backgroundColor: "var(--background)", minWidth: 0 }}>
             <Tabs
               value={activeTab}
               onChange={(_, v: "browse" | "applied") => setActiveTab(v)}
               sx={{
                 mb: 2,
                 "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
-                "& .Mui-selected": { color: "#6366f1" },
-                "& .MuiTabs-indicator": { backgroundColor: "#6366f1" },
+                "& .Mui-selected": { color: "var(--accent-indigo)" },
+                "& .MuiTabs-indicator": { backgroundColor: "var(--accent-indigo)" },
               }}
             >
               <Tab label="Browse Jobs" value="browse" />
@@ -402,7 +406,7 @@ export default function JobsV2Page() {
                   gap: 2,
                 }}
               >
-                <JobSearchIllustration width={100} height={80} primaryColor="#a5b4fc" />
+                <JobSearchIllustration width={100} height={80} primaryColor="var(--accent-indigo)" />
                 <Typography color="text.secondary">Loading jobs...</Typography>
                 <LinearProgress sx={{ width: "60%", height: 4, borderRadius: 2 }} />
               </Box>
@@ -414,14 +418,14 @@ export default function JobsV2Page() {
                   borderRadius: 2,
                   border: "1px solid",
                   borderColor: "divider",
-                  backgroundColor: "#fff",
+                  backgroundColor: "var(--card-bg)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                 }}
               >
-                <EmptyJobsIllustration width={160} height={125} primaryColor="#94a3b8" />
-                <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "#0f172a" }}>
+                <EmptyJobsIllustration width={160} height={125} primaryColor="var(--font-tertiary)" />
+                <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary)" }}>
                   No jobs found
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 360 }}>
@@ -462,7 +466,7 @@ export default function JobsV2Page() {
           flexDirection: "column",
           minHeight: "calc(100vh - 64px)",
           overflow: "hidden",
-          backgroundColor: "#f8fafc",
+          backgroundColor: "var(--background)",
         }}
       >
         <Box
@@ -481,9 +485,9 @@ export default function JobsV2Page() {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <JobSearchIllustration width={48} height={38} primaryColor="#6366f1" />
+            <JobSearchIllustration width={48} height={38} primaryColor="var(--accent-indigo)" />
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                 Jobs
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -517,7 +521,7 @@ export default function JobsV2Page() {
             overflowY: "auto",
             p: { xs: 2, sm: 3 },
             pb: { xs: 6, sm: 4 },
-            backgroundColor: "#f5f7fa",
+            backgroundColor: "var(--background)",
             WebkitOverflowScrolling: "touch",
           }}
         >
@@ -539,8 +543,8 @@ export default function JobsV2Page() {
             sx={{
               mb: 2,
               "& .MuiTab-root": { textTransform: "none", fontWeight: 600, minHeight: 40 },
-              "& .Mui-selected": { color: "#6366f1" },
-              "& .MuiTabs-indicator": { backgroundColor: "#6366f1" },
+              "& .Mui-selected": { color: "var(--accent-indigo)" },
+              "& .MuiTabs-indicator": { backgroundColor: "var(--accent-indigo)" },
             }}
           >
             <Tab label="Browse Jobs" value="browse" />
@@ -560,7 +564,7 @@ export default function JobsV2Page() {
                 gap: 2,
               }}
             >
-              <JobSearchIllustration width={80} height={64} primaryColor="#a5b4fc" />
+              <JobSearchIllustration width={80} height={64} primaryColor="var(--accent-indigo)" />
               <Typography variant="body2" color="text.secondary">Loading jobs...</Typography>
               <LinearProgress sx={{ width: "60%", height: 4, borderRadius: 2 }} />
             </Box>
@@ -572,14 +576,14 @@ export default function JobsV2Page() {
                 borderRadius: 2,
                 border: "1px solid",
                 borderColor: "divider",
-                backgroundColor: "#fff",
+                backgroundColor: "var(--card-bg)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
               }}
             >
-              <EmptyJobsIllustration width={140} height={110} primaryColor="#94a3b8" />
-              <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "#1e293b" }}>
+              <EmptyJobsIllustration width={140} height={110} primaryColor="var(--font-tertiary)" />
+              <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary)" }}>
                 No jobs found
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>

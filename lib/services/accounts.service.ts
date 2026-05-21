@@ -16,6 +16,8 @@ export interface SignupData {
   confirm_password: string;
   /** Sent on signup; use `"student"` when not registering as instructor. */
   signup_as?: "student" | "instructor";
+  /** Required when `signup_as === "instructor"`. PDF, ≤ 5MB. */
+  cv?: File | null;
 }
 
 export interface AuthResponse {
@@ -102,11 +104,30 @@ export const accountsService = {
 
   // Signup
   signup: async (data: SignupData): Promise<{ detail: string }> => {
-    const { signup_as, ...rest } = data;
-    const payload = {
-      ...rest,
-      signup_as: signup_as ?? "student",
-    };
+    const { signup_as, cv, ...rest } = data;
+    const role = signup_as ?? "student";
+
+    // Instructor signup carries a CV file → send as multipart so the backend
+    // can persist it before issuing the OTP. Student signup stays JSON.
+    if (role === "instructor" && cv) {
+      const form = new FormData();
+      form.append("first_name", rest.first_name);
+      form.append("last_name", rest.last_name);
+      form.append("email", rest.email);
+      form.append("phone", rest.phone);
+      form.append("password", rest.password);
+      form.append("confirm_password", rest.confirm_password);
+      form.append("signup_as", role);
+      form.append("cv", cv);
+      const response = await apiClient.post<{ detail: string }>(
+        `/accounts/clients/${config.clientId}/user/signup/`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return response.data;
+    }
+
+    const payload = { ...rest, signup_as: role };
     const response = await apiClient.post<{ detail: string }>(
       `/accounts/clients/${config.clientId}/user/signup/`,
       payload

@@ -14,13 +14,14 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
       sx={{
         p: 3.5,
         mb: 3,
-        border: "2px solid #c4b5fd",
+        border: "1px solid color-mix(in srgb, var(--accent-purple) 35%, var(--border-default))",
         borderRadius: 3,
-        background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+        background:
+          "linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 10%, var(--card-bg)) 0%, color-mix(in srgb, var(--accent-purple) 16%, var(--surface)) 100%)",
         transition: "all 0.3s ease",
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow: "0 8px 20px rgba(139, 92, 246, 0.15)",
+          boxShadow: "0 8px 20px color-mix(in srgb, var(--accent-purple) 22%, transparent)",
         },
       }}
     >
@@ -37,19 +38,19 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: "#8b5cf6",
+            backgroundColor: "var(--assessment-chart-violet)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:message-text" size={22} color="#ffffff" />
+          <IconWrapper icon="mdi:message-text" size={22} color="var(--font-light)" />
         </Box>
         <Typography
           variant="h6"
           sx={{
             fontWeight: 700,
-            color: "#5b21b6",
+            color: "var(--font-primary)",
           }}
         >
           Overall Feedback
@@ -71,13 +72,13 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
               <IconWrapper
                 icon="mdi:checkbox-marked-circle"
                 size={18}
-                color="#8b5cf6"
+                color="var(--assessment-chart-violet)"
                 style={{ marginTop: "2px", flexShrink: 0 }}
               />
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#5b21b6",
+                  color: "var(--font-primary)",
                   lineHeight: 1.6,
                   fontWeight: 500,
                 }}
@@ -90,7 +91,7 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontStyle: "italic",
             }}
           >

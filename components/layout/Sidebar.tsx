@@ -32,8 +32,10 @@ import {
   isAdminOnlyRole,
   isFullAdminRole,
   isCourseManagerRole,
+  isInstructorRole,
   isClientOrgAdminRole,
   COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES,
+  INSTRUCTOR_ADMIN_SIDEBAR_FEATURES,
 } from "@/lib/auth/role-utils";
 import { useTenantShellTheme } from "@/lib/theme/useTenantShellTheme";
 import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
@@ -49,6 +51,8 @@ interface NavigationItem {
   path: string;
   icon: string;
   featureName: string;
+  /** If set, show when any listed client admin feature is enabled (OR). */
+  featureNamesAny?: string[];
   /** If true, only org admins (admin / superadmin) see this link. */
   orgAdminOnly?: boolean;
 }
@@ -177,10 +181,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_manage_students",
     },
     {
-      label: "Pending instructors",
-      labelKey: "nav.pendingInstructors",
-      path: "/admin/pending-instructors",
-      icon: "mdi:account-clock",
+      label: "Instructors",
+      labelKey: "nav.instructors",
+      path: "/admin/instructors",
+      icon: "mdi:account-tie",
       featureName: "admin_manage_instructors",
       orgAdminOnly: true,
     },
@@ -189,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       labelKey: "nav.branding",
       path: "/admin/branding",
       icon: "mdi:palette-outline",
-      featureName: "admin_dashboard",
+      featureName: "admin_branding",
       orgAdminOnly: true,
     },
     {
@@ -280,12 +284,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_assessment",
     },
     {
-      label: "Scorecard",
-      labelKey: "nav.scorecard",
-      path: "/admin/scorecard",
-      icon: "mdi:chart-box-outline",
-      featureName: "admin_scorecard",
+      label: "Certificate uploads",
+      labelKey: "nav.certificateUploads",
+      path: "/admin/certificates",
+      icon: "mdi:certificate",
+      featureName: "admin_certificates",
     },
+   
     {
       label: "Jobs",
       labelKey: "nav.adminJobsV2",
@@ -355,6 +360,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         if (effectiveAdminMode && item.featureName === "admin_scorecard") {
           return true;
         }
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((n) => filteredFeatureNames.has(n));
+        }
         return filteredFeatureNames.has(item.featureName);
       });
     } else {
@@ -363,7 +372,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     if (isCourseManagerRole(role) && effectiveAdminMode) {
       const allow = new Set(COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES);
-      items = items.filter((item) => allow.has(item.featureName));
+      items = items.filter((item) => {
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((f) => allow.has(f));
+        }
+        return allow.has(item.featureName);
+      });
+    }
+
+    if (isInstructorRole(role) && effectiveAdminMode) {
+      const allow = new Set(INSTRUCTOR_ADMIN_SIDEBAR_FEATURES);
+      items = items.filter((item) => {
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((f) => allow.has(f));
+        }
+        return allow.has(item.featureName);
+      });
     }
 
     items = items.filter(
@@ -538,7 +564,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         backgroundColor: isActive
                           ? shell.activeBg
                           : "transparent",
-                        color: isActive ? shell.p300 : shell.navMuted,
+                        color: isActive ? shell.activeText : shell.navMuted,
                         py: 1,
                         px: collapsed ? 1.25 : 1.5,
                         justifyContent: collapsed ? "center" : rtl ? "flex-end" : "flex-start",
@@ -562,7 +588,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           backgroundColor: isActive
                             ? shell.activeBgHover
                             : shell.navHoverBg,
-                          color: isActive ? shell.p300 : shell.nav,
+                          color: isActive ? shell.activeText : shell.nav,
                           "& .MuiListItemIcon-root svg": {
                             transform: "translateY(-2px) scale(1.1)",
                             filter: shell.dropHover,
@@ -691,7 +717,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     borderColor: isAdminMode
                       ? shell.p500
                       : shell.navBorderMid,
-                    color: isAdminMode ? shell.p300 : shell.navMuted,
+                    color: isAdminMode ? shell.activeText : shell.navMuted,
                     "&:hover": {
                       backgroundColor: isAdminMode
                         ? shell.activeBgHover

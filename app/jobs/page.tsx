@@ -299,7 +299,7 @@ export default function JobsPage() {
         <Box
           sx={{
             flexShrink: 0,
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--card-bg)",
             borderBottom: "1px solid",
             borderColor: "divider",
             position: "sticky",
@@ -323,7 +323,7 @@ export default function JobsPage() {
             flex: 1,
             overflowY: "auto",
             p: { xs: 2, sm: 3 },
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--surface)",
           }}
         >
           {loading ? (

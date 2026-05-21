@@ -13,6 +13,7 @@ import mockInterviewService, {
 import { useToast } from "@/components/common/Toast";
 import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
+import { Chip } from "@mui/material";
 
 export default function MockInterviewPage() {
   const { t } = useTranslation("common");
@@ -20,6 +21,10 @@ export default function MockInterviewPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
+  // Just the count — used to render a badge on the "Courses" tab so a student can see at a
+  // glance how many assigned interviews are waiting. The full list lives on the
+  // /mock-interview/courses page.
+  const [pendingCoursesCount, setPendingCoursesCount] = useState(0);
   const hasLoadedRef = useRef(false);
 
   // Stop any active camera streams on this page
@@ -33,8 +38,15 @@ export default function MockInterviewPage() {
       try {
         hasLoadedRef.current = true;
         setLoading(true);
-        const data = await mockInterviewService.listInterviews();
-        setInterviews(data);
+        // Pending-templates call is best-effort: if it fails (no enrollment, network blip)
+        // we just don't show a count badge on the Courses tab. The dedicated /courses page
+        // does its own fetch and surfaces real errors there.
+        const [list, pending] = await Promise.all([
+          mockInterviewService.listInterviews(),
+          mockInterviewService.listPendingCourseInterviews().catch(() => []),
+        ]);
+        setInterviews(list);
+        setPendingCoursesCount(pending.length);
       } catch (error) {
         showToast(t("mockInterview.failedToLoad"), "error");
         hasLoadedRef.current = false;
@@ -44,7 +56,7 @@ export default function MockInterviewPage() {
     };
 
     loadInterviews();
-  }, [showToast]);
+  }, [showToast, t]);
 
   // Calculate statistics
   const total = interviews.length;
@@ -87,13 +99,13 @@ export default function MockInterviewPage() {
                 width: 56,
                 height: 56,
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <IconWrapper icon="mdi:account-voice" size={32} color="#ffffff" />
+              <IconWrapper icon="mdi:account-voice" size={32} color="var(--font-light)" />
             </Box>
             <Box>
               <Typography
@@ -102,7 +114,7 @@ export default function MockInterviewPage() {
               >
                 {t("mockInterview.practiceTitle")}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 {t("mockInterview.practiceSubtitle")}
               </Typography>
             </Box>
@@ -119,6 +131,12 @@ export default function MockInterviewPage() {
           />
         </Box>
 
+        {/* The "pending interviews from your courses" cards used to render inline here;
+            they now live on the /mock-interview/courses page (the "Courses" tab below) so
+            this landing page stays focused on Quick Start while the Courses tab gives
+            assigned interviews their own dedicated space. We still load the pending count
+            for the badge on the Courses tab. */}
+
         {/* Tabs Navigation */}
         <Box
           sx={{
@@ -126,7 +144,7 @@ export default function MockInterviewPage() {
             gap: 2,
             mb: 4,
             p: 1,
-            backgroundColor: "#f3f4f6",
+            backgroundColor: "var(--surface)",
             borderRadius: 3,
             width: "fit-content",
           }}
@@ -141,17 +159,17 @@ export default function MockInterviewPage() {
               borderRadius: 2.5,
               cursor: "pointer",
               transition: "all 0.3s ease",
-              backgroundColor: "#ffffff",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              backgroundColor: "var(--card-bg)",
+              boxShadow: "0 2px 8px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             }}
           >
-            <IconWrapper icon="mdi:lightning-bolt" size={20} color="#6366f1" />
+            <IconWrapper icon="mdi:lightning-bolt" size={20} color="var(--accent-indigo)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#1f2937",
+                color: "var(--font-primary)",
               }}
             >
               {t("mockInterview.newInterview")}
@@ -171,21 +189,73 @@ export default function MockInterviewPage() {
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
               "&:hover": {
-                backgroundColor: "#e5e7eb",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
               },
             }}
           >
-            <IconWrapper icon="mdi:history" size={20} color="#6b7280" />
+            <IconWrapper icon="mdi:history" size={20} color="var(--font-secondary)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               {t("mockInterview.previous")}
             </Typography>
+          </Box>
+
+          {/* "Courses" tab: assigned interviews from the student's enrolled courses. The
+              badge shows the count of pending items so a student knows at a glance whether
+              they have something waiting. */}
+          <Box
+            onClick={() => router.push("/mock-interview/courses")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              px: 3,
+              py: 1.5,
+              borderRadius: 2.5,
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              backgroundColor: "transparent",
+              "&:hover": {
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+              },
+            }}
+          >
+            <IconWrapper
+              icon="mdi:school-outline"
+              size={20}
+              color="var(--font-secondary)"
+            />
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                color: "var(--font-secondary)",
+              }}
+            >
+              Courses
+            </Typography>
+            {pendingCoursesCount > 0 && (
+              <Chip
+                label={pendingCoursesCount}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  backgroundColor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                }}
+              />
+            )}
           </Box>
 
           <Box
@@ -201,17 +271,18 @@ export default function MockInterviewPage() {
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
               "&:hover": {
-                backgroundColor: "#e5e7eb",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
               },
             }}
           >
-            <IconWrapper icon="mdi:calendar-clock" size={20} color="#6b7280" />
+            <IconWrapper icon="mdi:calendar-clock" size={20} color="var(--font-secondary)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               {t("mockInterview.scheduled")}

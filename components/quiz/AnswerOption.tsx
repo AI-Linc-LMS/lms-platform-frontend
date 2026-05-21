@@ -36,61 +36,49 @@ export const AnswerOption = memo(function AnswerOption({
   onSelect,
   compact,
 }: AnswerOptionProps) {
+  // Hot path: this component renders 4 instances per question and handles every
+  // click. Hover styles are kept cheap — only border + background animate, and the
+  // transform/box-shadow lift was removed because it forced GPU compositing on every
+  // pointer move and was a real cost on weak laptops with integrated graphics.
+  // The "selected" state still gets a subtle resting box-shadow for visual feedback.
+  const interactive = !isSubmitting && !isReadOnly;
+  const borderColor = isCorrect
+    ? "#10b981"
+    : isWrongSelection
+    ? "#ef4444"
+    : isSelected
+    ? "#6366f1"
+    : "#e5e7eb";
+  const backgroundColor = isCorrect
+    ? "#f0fdf4"
+    : isWrongSelection
+    ? "#fef2f2"
+    : isSelected
+    ? "#eff6ff"
+    : "#ffffff";
   return (
     <Paper
       elevation={0}
-      onClick={() => !isSubmitting && !isReadOnly && onSelect()}
+      onClick={() => interactive && onSelect()}
       sx={{
         p: compact ? { xs: 2, sm: 2.5, md: 3 } : { xs: 2.5, sm: 3, md: 3.5 },
-        border: isCorrect
-          ? "2px solid #10b981"
-          : isWrongSelection
-          ? "2px solid #ef4444"
-          : isSelected
-          ? "2px solid #6366f1"
-          : "1.5px solid #e5e7eb",
-        backgroundColor: isCorrect
-          ? "#f0fdf4"
-          : isWrongSelection
-          ? "#fef2f2"
-          : isSelected
-          ? "#eff6ff"
-          : "#ffffff",
+        border: `${isSelected || isCorrect || isWrongSelection ? 2 : 1.5}px solid ${borderColor}`,
+        backgroundColor,
         borderRadius: 2.5,
-        cursor: isSubmitting || isReadOnly ? "default" : "pointer",
-        transition: "all 0.2s ease-in-out",
+        cursor: interactive ? "pointer" : "default",
+        // Animate only cheap properties — `all` was triggering box-shadow & transform
+        // recomputes on every pointer move. Border + background-color are GPU-cheap.
+        transition: "border-color 0.15s ease-out, background-color 0.15s ease-out",
         position: "relative",
         boxShadow: isSelected
           ? "0 2px 8px 0 rgba(99, 102, 241, 0.15)"
-          : "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
-        "&:hover": {
-          borderColor:
-            isSubmitting || isReadOnly
-              ? isCorrect
-                ? "#10b981"
-                : isWrongSelection
-                ? "#ef4444"
-                : "#e5e7eb"
-              : isSelected
-              ? "#4f46e5"
-              : "#6366f1",
-          backgroundColor:
-            isSubmitting || isReadOnly
-              ? isCorrect
-                ? "#f0fdf4"
-                : isWrongSelection
-                ? "#fef2f2"
-                : "#ffffff"
-              : isSelected
-              ? "#dbeafe"
-              : "#f9fafb",
-          transform: isSubmitting || isReadOnly ? "none" : "translateY(-2px)",
-          boxShadow: isSubmitting || isReadOnly
-            ? (isSelected
-                ? "0 2px 8px 0 rgba(99, 102, 241, 0.15)"
-                : "0 1px 3px 0 rgba(0, 0, 0, 0.05)")
-            : "0 4px 12px 0 rgba(99, 102, 241, 0.2)",
-        },
+          : "none",
+        ...(interactive && {
+          "&:hover": {
+            borderColor: isSelected ? "#4f46e5" : "#6366f1",
+            backgroundColor: isSelected ? "#dbeafe" : "#f9fafb",
+          },
+        }),
       }}
     >
       <Box

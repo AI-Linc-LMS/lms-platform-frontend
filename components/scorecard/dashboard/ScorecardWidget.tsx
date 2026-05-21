@@ -265,7 +265,7 @@ export function ScorecardWidget() {
       key: "mock",
       label: "Mock interviews",
       icon: "mdi:account-voice" as const,
-      accent: "#8b5cf6",
+      accent: theme.palette.secondary.main,
       value: `${lc.mockInterviews.completed} / ${lc.mockInterviews.totalAssigned}`,
     },
     {
@@ -365,7 +365,7 @@ export function ScorecardWidget() {
                 }}
               />
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.9rem", lineHeight: 1.5 }}>
+            <Typography variant="body2" sx={{ fontSize: "0.9rem", lineHeight: 1.5, color: "var(--font-secondary)" }}>
               Performance ring, learning progress, and quick stats — tap below for the full report.
             </Typography>
           </Box>

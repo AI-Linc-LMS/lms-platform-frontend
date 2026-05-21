@@ -9,6 +9,7 @@ export const LANGUAGE_ID_MAPPING: Record<string, number> = {
   "c++": 54,
   c: 50,
   sql: 82,
+  'c#': 51,
 };
 
 // Map language names to Monaco Editor language identifiers
@@ -24,6 +25,7 @@ export const MONACO_LANGUAGE_MAPPING: Record<string, string> = {
   java: "java",
   c: "c",
   sql: "sql",
+  'c#': "c#",
 };
 
 // Map display names
@@ -39,6 +41,7 @@ export const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
   java: "Java",
   c: "C",
   sql: "SQL",
+  'c#': "C#",
 };
 
 export type LanguageOption = {
@@ -60,6 +63,7 @@ const ALL_LANGUAGES_CANONICAL_KEYS: string[] = [
   "cpp",
   "c",
   "sql",
+  "c#",
 ];
 
 /** Every language we support in the editor / Judge0, independent of problem template_code */

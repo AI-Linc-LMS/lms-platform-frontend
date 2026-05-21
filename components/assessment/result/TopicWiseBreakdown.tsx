@@ -33,10 +33,10 @@ export function TopicWiseBreakdown({
   };
 
   const getPerformanceColor = (accuracy: number) => {
-    if (accuracy >= 80) return "#10b981";
-    if (accuracy >= 60) return "#3b82f6";
-    if (accuracy >= 40) return "#f59e0b";
-    return "#ef4444";
+    if (accuracy >= 80) return "var(--course-cta)";
+    if (accuracy >= 60) return "var(--accent-blue-light)";
+    if (accuracy >= 40) return "var(--warning-500)";
+    return "var(--error-500)";
   };
 
   return (
@@ -45,9 +45,9 @@ export function TopicWiseBreakdown({
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
-        background: "#ffffff",
+        background: "var(--card-bg)",
       }}
     >
       <Box
@@ -63,20 +63,21 @@ export function TopicWiseBreakdown({
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:chart-box" size={24} color="#6366f1" />
+          <IconWrapper icon="mdi:chart-box" size={24} color="var(--accent-indigo)" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 0.25,
             }}
           >
@@ -85,7 +86,7 @@ export function TopicWiseBreakdown({
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
             }}
           >
@@ -107,8 +108,8 @@ export function TopicWiseBreakdown({
               sx={{
                 p: 2.5,
                 borderRadius: 2,
-                border: "1px solid #e5e7eb",
-                background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+                border: "1px solid var(--border-default)",
+                background: "linear-gradient(135deg, var(--card-bg) 0%, var(--surface) 100%)",
                 transition: "all 0.3s ease",
                 "&:hover": {
                   borderColor: color,
@@ -131,7 +132,7 @@ export function TopicWiseBreakdown({
                     variant="subtitle1"
                     sx={{
                       fontWeight: 700,
-                      color: "#1f2937",
+                      color: "var(--font-primary)",
                       mb: 1,
                       fontSize: "1rem",
                     }}
@@ -156,12 +157,12 @@ export function TopicWiseBreakdown({
                       <IconWrapper
                         icon="mdi:check-circle"
                         size={18}
-                        color="#10b981"
+                        color="var(--course-cta)"
                       />
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#10b981",
+                          color: "var(--course-cta)",
                           fontWeight: 600,
                           fontSize: "0.875rem",
                         }}
@@ -179,12 +180,12 @@ export function TopicWiseBreakdown({
                       <IconWrapper
                         icon="mdi:close-circle"
                         size={18}
-                        color="#ef4444"
+                        color="var(--error-500)"
                       />
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#ef4444",
+                          color: "var(--error-500)",
                           fontWeight: 600,
                           fontSize: "0.875rem",
                         }}
@@ -195,7 +196,7 @@ export function TopicWiseBreakdown({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         fontSize: "0.875rem",
                       }}
                     >
@@ -222,7 +223,7 @@ export function TopicWiseBreakdown({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontSize: "0.75rem",
                       fontWeight: 600,
                     }}
@@ -240,7 +241,7 @@ export function TopicWiseBreakdown({
                   sx={{
                     height: 10,
                     borderRadius: 5,
-                    backgroundColor: "#f3f4f6",
+                    backgroundColor: "var(--surface)",
                     "& .MuiLinearProgress-bar": {
                       borderRadius: 5,
                       backgroundColor: color,
@@ -262,14 +263,14 @@ export function TopicWiseBreakdown({
                     key={`full-${i}`}
                     icon="mdi:star"
                     size={16}
-                    color="#fbbf24"
+                    color="var(--accent-yellow)"
                   />
                 ))}
                 {hasHalfStar && (
                   <IconWrapper
                     icon="mdi:star-half-full"
                     size={16}
-                    color="#fbbf24"
+                    color="var(--accent-yellow)"
                   />
                 )}
                 {Array.from({ length: emptyStars }).map((_, i) => (
@@ -277,14 +278,14 @@ export function TopicWiseBreakdown({
                     key={`empty-${i}`}
                     icon="mdi:star-outline"
                     size={16}
-                    color="#d1d5db"
+                    color="var(--border-light)"
                   />
                 ))}
                 <Typography
                   variant="caption"
                   sx={{
                     ml: 1,
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontSize: "0.75rem",
                     fontWeight: 600,
                   }}

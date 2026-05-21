@@ -96,15 +96,16 @@ export function ResumeViewerModal({
           width: fullWidth ? "96vw" : { xs: "100%", sm: 900, md: 1000, lg: 1100 },
           height: "92vh",
           borderRadius: { xs: 0, sm: 2.5 },
-          boxShadow: "0 32px 64px rgba(0,0,0,0.2), 0 0 0 1px rgba(99, 102, 241, 0.08)",
+          boxShadow:
+            "0 32px 64px color-mix(in srgb, var(--font-primary) 32%, transparent), 0 0 0 1px color-mix(in srgb, var(--accent-purple) 16%, transparent)",
           overflow: "hidden",
-          border: "1px solid rgba(99, 102, 241, 0.12)",
+          border: "1px solid color-mix(in srgb, var(--accent-purple) 22%, transparent)",
         },
       }}
       slotProps={{
         backdrop: {
           sx: {
-            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backgroundColor: "color-mix(in srgb, var(--font-primary) 65%, transparent)",
             backdropFilter: "blur(4px)",
           },
         },
@@ -118,8 +119,9 @@ export function ResumeViewerModal({
           justifyContent: "space-between",
           px: { xs: 2, sm: 2.5 },
           py: 1.75,
-          background: "linear-gradient(180deg, #ffffff 0%, #fafbff 100%)",
-          borderBottom: "1px solid rgba(99, 102, 241, 0.1)",
+          background:
+            "linear-gradient(180deg, var(--card-bg) 0%, color-mix(in srgb, var(--surface) 45%, var(--card-bg)) 100%)",
+          borderBottom: "1px solid color-mix(in srgb, var(--accent-purple) 18%, transparent)",
           position: "relative",
           overflow: "hidden",
           "&::before": {
@@ -129,7 +131,8 @@ export function ResumeViewerModal({
             left: 0,
             right: 0,
             height: 3,
-            background: "linear-gradient(90deg, rgba(99, 102, 241, 0.4) 0%, rgba(99, 102, 241, 0.1) 100%)",
+            background:
+              "linear-gradient(90deg, color-mix(in srgb, var(--accent-purple) 50%, transparent) 0%, color-mix(in srgb, var(--accent-purple) 18%, transparent) 100%)",
           },
         }}
       >
@@ -139,22 +142,23 @@ export function ResumeViewerModal({
               width: 44,
               height: 44,
               borderRadius: 2,
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.06) 100%)",
-              border: "1px solid rgba(99, 102, 241, 0.2)",
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 20%, transparent) 0%, color-mix(in srgb, var(--accent-purple) 10%, transparent) 100%)",
+              border: "1px solid color-mix(in srgb, var(--accent-purple) 28%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <IconWrapper icon="mdi:file-pdf-box" size={26} color="#6366f1" />
+            <IconWrapper icon="mdi:file-pdf-box" size={26} color="var(--accent-purple)" />
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="subtitle1"
               sx={{
                 fontWeight: 700,
-                color: "#0f172a",
+                color: "var(--font-primary)",
                 fontSize: "1.05rem",
                 letterSpacing: "-0.02em",
                 overflow: "hidden",
@@ -164,7 +168,7 @@ export function ResumeViewerModal({
             >
               {resumeName}
             </Typography>
-            <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 500 }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.75rem", fontWeight: 500 }}>
               {context === "review" ? "Review before submitting" : "PDF preview"}
             </Typography>
           </Box>
@@ -180,14 +184,14 @@ export function ResumeViewerModal({
                 textTransform: "none",
                 fontWeight: 600,
                 borderRadius: 2,
-                borderColor: "#6366f1",
-                color: "#6366f1",
+                borderColor: "var(--accent-purple)",
+                color: "var(--accent-purple)",
                 fontSize: "0.8125rem",
                 py: 0.875,
                 px: 2,
                 "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "rgba(99, 102, 241, 0.08)",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-purple) 14%, transparent)",
                 },
               }}
             >
@@ -199,10 +203,10 @@ export function ResumeViewerModal({
               onClick={handleClose}
               size="medium"
               sx={{
-                color: "#64748b",
+                color: "var(--font-secondary)",
                 "&:hover": {
-                  backgroundColor: "rgba(99, 102, 241, 0.08)",
-                  color: "#6366f1",
+                  backgroundColor: "color-mix(in srgb, var(--accent-purple) 14%, transparent)",
+                  color: "var(--accent-purple)",
                 },
               }}
               aria-label="close"
@@ -220,7 +224,8 @@ export function ResumeViewerModal({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--surface) 84%, var(--background)) 0%, color-mix(in srgb, var(--border-default) 40%, var(--surface)) 100%)",
           overflow: "hidden",
           position: "relative",
         }}
@@ -240,7 +245,7 @@ export function ResumeViewerModal({
               }}
             >
               <Box sx={{ position: "relative" }}>
-                <CircularProgress size={56} sx={{ color: "#6366f1" }} />
+                <CircularProgress size={56} sx={{ color: "var(--accent-purple)" }} />
                 <Box
                   sx={{
                     position: "absolute",
@@ -250,14 +255,14 @@ export function ResumeViewerModal({
                     justifyContent: "center",
                   }}
                 >
-                  <IconWrapper icon="mdi:file-pdf-box" size={24} color="#6366f1" style={{ opacity: 0.6 }} />
+                  <IconWrapper icon="mdi:file-pdf-box" size={24} color="var(--accent-purple)" style={{ opacity: 0.6 }} />
                 </Box>
               </Box>
               <Box sx={{ textAlign: "center" }}>
-                <Typography variant="body2" sx={{ color: "#334155", fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
                   Loading your resume…
                 </Typography>
-                <Typography variant="caption" sx={{ color: "#64748b", display: "block", mt: 0.25 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.25 }}>
                   Preparing preview
                 </Typography>
               </Box>
@@ -283,22 +288,23 @@ export function ResumeViewerModal({
                   width: 72,
                   height: 72,
                   borderRadius: 2.5,
-                  background: "linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.06) 100%)",
-                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, var(--error-500) 16%, transparent) 0%, color-mix(in srgb, var(--error-500) 9%, transparent) 100%)",
+                  border: "1px solid color-mix(in srgb, var(--error-500) 28%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <IconWrapper icon="mdi:file-document-alert-outline" size={40} color="#ef4444" />
+                <IconWrapper icon="mdi:file-document-alert-outline" size={40} color="var(--error-500)" />
               </Box>
               <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#0f172a", fontSize: "1.05rem" }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "1.05rem" }}>
                   Couldn&apos;t load preview
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "#64748b", maxWidth: 320, lineHeight: 1.6, mt: 0.5 }}
+                  sx={{ color: "var(--font-secondary)", maxWidth: 320, lineHeight: 1.6, mt: 0.5 }}
                 >
                   Try downloading the file instead, or check your connection and try again.
                 </Typography>
@@ -314,11 +320,11 @@ export function ResumeViewerModal({
                   py: 1.25,
                   borderRadius: 2,
                   fontSize: "0.875rem",
-                  backgroundColor: "#6366f1",
-                  boxShadow: "0 2px 8px rgba(99, 102, 241, 0.35)",
+                  backgroundColor: "var(--accent-purple)",
+                  boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-purple) 45%, transparent)",
                   "&:hover": {
-                    backgroundColor: "#4f46e5",
-                    boxShadow: "0 4px 12px rgba(99, 102, 241, 0.4)",
+                    backgroundColor: "var(--accent-indigo-dark)",
+                    boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-purple) 48%, transparent)",
                   },
                 }}
               >
@@ -351,9 +357,10 @@ export function ResumeViewerModal({
                   maxHeight: "calc(92vh - 140px)",
                   borderRadius: 2.5,
                   overflow: "hidden",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
-                  backgroundColor: "#ffffff",
-                  border: "1px solid rgba(0,0,0,0.08)",
+                  boxShadow:
+                    "0 12px 40px color-mix(in srgb, var(--font-primary) 24%, transparent), 0 0 0 1px color-mix(in srgb, var(--font-primary) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--card-bg) 85%, transparent)",
+                  backgroundColor: "var(--card-bg)",
+                  border: "1px solid color-mix(in srgb, var(--border-default) 90%, transparent)",
                 }}
               >
                 <iframe
@@ -368,7 +375,7 @@ export function ResumeViewerModal({
                   }}
                 />
               </Box>
-              <Typography variant="caption" sx={{ color: "#94a3b8", fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 500 }}>
                 Press Esc to close
               </Typography>
             </motion.div>

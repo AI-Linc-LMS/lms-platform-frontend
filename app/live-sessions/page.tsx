@@ -28,7 +28,8 @@ export default function LiveSessionsPage() {
     handleCopyPassword,
     handleWatchRecording,
     formatDateTime,
-    formatTimeRemaining,
+    formatSessionDuration,
+    formatSessionStatusCaption,
   } = useLiveSessions();
 
   if (
@@ -62,11 +63,11 @@ export default function LiveSessionsPage() {
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="h4"
-            sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
+            sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 1 }}
           >
             {t("liveSessions.title")}
           </Typography>
-          <Typography variant="body1" sx={{ color: "#6b7280" }}>
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
             {t("liveSessions.subtitle")}
           </Typography>
         </Box>
@@ -87,7 +88,8 @@ export default function LiveSessionsPage() {
             onWatchRecording={handleWatchRecording}
             watchingRecordingId={watchingRecordingId}
             formatDateTime={formatDateTime}
-            formatTimeRemaining={formatTimeRemaining}
+            formatSessionDuration={formatSessionDuration}
+            formatSessionStatusCaption={formatSessionStatusCaption}
           />
         )}
       </Container>

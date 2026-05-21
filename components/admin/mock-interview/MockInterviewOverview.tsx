@@ -56,8 +56,8 @@ export function MockInterviewOverview({
           p: 6,
           textAlign: "center",
           borderRadius: 2,
-          border: "1px dashed #e5e7eb",
-          backgroundColor: "#f9fafb",
+          border: "1px dashed var(--border-default)",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box
@@ -65,7 +65,8 @@ export function MockInterviewOverview({
             width: 64,
             height: 64,
             borderRadius: "50%",
-            backgroundColor: "#eef2ff",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -73,12 +74,12 @@ export function MockInterviewOverview({
             mb: 2,
           }}
         >
-          <IconWrapper icon="mdi:chart-box-outline" size={32} color="#6366f1" />
+          <IconWrapper icon="mdi:chart-box-outline" size={32} color="var(--accent-indigo)" />
         </Box>
-        <Typography variant="body1" sx={{ fontWeight: 500, color: "#374151", mb: 0.5 }}>
+        <Typography variant="body1" sx={{ fontWeight: 500, color: "var(--font-primary)", mb: 0.5 }}>
           {t("adminMockInterview.noDashboardData")}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6b7280" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
           {t("adminMockInterview.dataWillAppear")}
         </Typography>
       </Paper>
@@ -118,25 +119,25 @@ export function MockInterviewOverview({
           title={t("adminMockInterview.totalInterviews")}
           value={overview.total_interviews}
           icon="mdi:clipboard-list-outline"
-          iconColor="#6366f1"
+          iconColor="var(--accent-indigo)"
         />
         <DashboardMetricCard
           title={t("adminMockInterview.uniqueStudents")}
           value={overview.total_unique_students}
           icon="mdi:account-group"
-          iconColor="#8b5cf6"
+          iconColor="var(--accent-purple)"
         />
         <DashboardMetricCard
           title={t("adminMockInterview.completionRate")}
           value={`${overview.completion_rate?.toFixed(1) ?? 0}%`}
           icon="mdi:check-circle"
-          iconColor="#22c55e"
+          iconColor="var(--success-500)"
         />
         <DashboardMetricCard
           title={t("adminMockInterview.averageScore")}
           value={score_statistics.average_score?.toFixed(1) ?? "-"}
           icon="mdi:chart-line"
-          iconColor="#f59e0b"
+          iconColor="var(--warning-500)"
         />
       </Box>
 
@@ -152,11 +153,13 @@ export function MockInterviewOverview({
           sx={{
             p: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            border: "1px solid #e5e7eb",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#111827" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
             {t("adminMockInterview.scoreStatistics")}
           </Typography>
           <Box
@@ -167,23 +170,23 @@ export function MockInterviewOverview({
             }}
           >
             <Box>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminMockInterview.highest")}
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#16a34a" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--success-500)" }}>
                 {score_statistics.highest_score ?? "-"}
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminMockInterview.lowest")}
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#dc2626" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--error-500)" }}>
                 {score_statistics.lowest_score ?? "-"}
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminMockInterview.median")}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -191,7 +194,7 @@ export function MockInterviewOverview({
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminMockInterview.scoredInterviews")}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -204,10 +207,12 @@ export function MockInterviewOverview({
           sx={{
             p: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#111827" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
             {t("adminMockInterview.timeStatistics")}
           </Typography>
           <Box
@@ -218,7 +223,7 @@ export function MockInterviewOverview({
             }}
           >
             <Box>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminMockInterview.avgTimeMin")}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -226,7 +231,7 @@ export function MockInterviewOverview({
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminMockInterview.totalTimeMin")}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -243,22 +248,24 @@ export function MockInterviewOverview({
           sx={{
             p: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            border: "1px solid #e5e7eb",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#111827" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
             {t("adminMockInterview.dailyTrend", { days })}
           </Typography>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
               <XAxis dataKey="label" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="created" name={t("adminMockInterview.createdLegend")} fill="#6366f1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="completed" name={t("adminMockInterview.completedLegend")} fill="#22c55e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="created" name={t("adminMockInterview.createdLegend")} fill="var(--accent-indigo)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="completed" name={t("adminMockInterview.completedLegend")} fill="var(--success-500)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Paper>
@@ -270,11 +277,13 @@ export function MockInterviewOverview({
           sx={{
             p: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            border: "1px solid #e5e7eb",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "#111827" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
             {t("adminMockInterview.difficultyDistribution")}
           </Typography>
           <Box
@@ -290,17 +299,17 @@ export function MockInterviewOverview({
                 sx={{
                   p: 2,
                   borderRadius: 2,
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f9fafb",
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--surface)",
                 }}
               >
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151" }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                   {diff}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#6b7280", mt: 0.5 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
                   {t("adminMockInterview.completedCount", { completed: stats.completed, total: stats.total })}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {t("adminMockInterview.avg")}: {stats.average_score?.toFixed(1) ?? "-"}%
                 </Typography>
               </Box>
@@ -315,13 +324,15 @@ export function MockInterviewOverview({
           sx={{
             p: 3,
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            border: "1px solid #e5e7eb",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-            <IconWrapper icon="mdi:trophy" size={24} color="#f59e0b" />
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+            <IconWrapper icon="mdi:trophy" size={24} color="var(--warning-500)" />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
               {t("adminMockInterview.topPerformers")}
             </Typography>
           </Box>
@@ -346,8 +357,8 @@ export function MockInterviewOverview({
                   justifyContent: "space-between",
                   p: 1.5,
                   borderRadius: 1,
-                  backgroundColor: "#f9fafb",
-                  border: "1px solid #e5e7eb",
+                  backgroundColor: "var(--surface)",
+                  border: "1px solid var(--border-default)",
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -356,8 +367,10 @@ export function MockInterviewOverview({
                       width: 28,
                       height: 28,
                       borderRadius: "50%",
-                      backgroundColor: idx === 0 ? "#fef3c7" : "#f3f4f6",
-                      color: idx === 0 ? "#d97706" : "#6b7280",
+                      backgroundColor: idx === 0
+                        ? "color-mix(in srgb, var(--warning-500) 20%, transparent)"
+                        : "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+                      color: idx === 0 ? "var(--warning-500)" : "var(--font-secondary)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -371,16 +384,16 @@ export function MockInterviewOverview({
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {p.student_name}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                       {t("adminMockInterview.interviewsCount", { count: p.interviews_completed })}
                     </Typography>
                   </Box>
                 </Box>
                 <Box sx={{ textAlign: "right" }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: "#16a34a" }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--success-500)" }}>
                     {p.average_score?.toFixed(1)}%
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                     {t("adminMockInterview.best")}: {p.highest_score}%
                   </Typography>
                 </Box>

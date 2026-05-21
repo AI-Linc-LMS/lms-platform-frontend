@@ -43,8 +43,8 @@ export function EnhancedStatsBar({
       label: "Correct Answers",
       value: correctAnswers,
       total: attemptedQuestions,
-      color: "#10b981",
-      bgColor: "rgba(16, 185, 129, 0.1)",
+      color: "var(--course-cta)",
+      bgColor: "color-mix(in srgb, var(--course-cta) 12%, transparent)",
       progress: correctRate,
     },
     {
@@ -52,8 +52,8 @@ export function EnhancedStatsBar({
       label: "Incorrect Answers",
       value: incorrectAnswers,
       total: attemptedQuestions,
-      color: "#ef4444",
-      bgColor: "rgba(239, 68, 68, 0.1)",
+      color: "var(--error-500)",
+      bgColor: "color-mix(in srgb, var(--error-500) 12%, transparent)",
       progress: attemptedQuestions > 0 ? (incorrectAnswers / attemptedQuestions) * 100 : 0,
     },
     {
@@ -61,8 +61,8 @@ export function EnhancedStatsBar({
       label: "Attempted",
       value: attemptedQuestions,
       total: totalQuestions,
-      color: "#3b82f6",
-      bgColor: "rgba(59, 130, 246, 0.1)",
+      color: "var(--accent-blue-light)",
+      bgColor: "color-mix(in srgb, var(--accent-blue-light) 12%, transparent)",
       progress: attemptRate,
     },
     {
@@ -70,8 +70,8 @@ export function EnhancedStatsBar({
       label: "Time Used",
       value: formatTime(timeTakenMinutes),
       total: formatTime(totalTimeMinutes),
-      color: "#8b5cf6",
-      bgColor: "rgba(139, 92, 246, 0.1)",
+      color: "var(--assessment-chart-violet)",
+      bgColor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
       progress: timeUtilization,
       isTime: true,
     },
@@ -92,13 +92,13 @@ export function EnhancedStatsBar({
           elevation={0}
           sx={{
             p: 3,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 3,
-            background: "#ffffff",
+            background: "var(--card-bg)",
             transition: "all 0.3s ease",
             "&:hover": {
               transform: "translateY(-4px)",
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+              boxShadow: "0 10px 25px color-mix(in srgb, var(--font-dark) 10%, transparent)",
               borderColor: stat.color,
             },
           }}
@@ -129,7 +129,7 @@ export function EnhancedStatsBar({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -145,7 +145,7 @@ export function EnhancedStatsBar({
                   variant="h5"
                   sx={{
                     fontWeight: 700,
-                    color: "#1f2937",
+                    color: "var(--font-primary)",
                     fontSize: "1.5rem",
                   }}
                 >
@@ -155,7 +155,7 @@ export function EnhancedStatsBar({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#9ca3af",
+                      color: "var(--font-tertiary)",
                       fontWeight: 500,
                     }}
                   >
@@ -179,7 +179,7 @@ export function EnhancedStatsBar({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontSize: "0.6875rem",
                   fontWeight: 600,
                 }}
@@ -191,13 +191,13 @@ export function EnhancedStatsBar({
                   <IconWrapper
                     icon="mdi:alert"
                     size={14}
-                    color="#ef4444"
+                    color="var(--error-500)"
                   />
                 )}
                 <Typography
                   variant="caption"
                   sx={{
-                    color: stat.isTime && timeTakenMinutes > totalTimeMinutes ? "#ef4444" : stat.color,
+                    color: stat.isTime && timeTakenMinutes > totalTimeMinutes ? "var(--error-500)" : stat.color,
                     fontSize: "0.6875rem",
                     fontWeight: 700,
                   }}
@@ -213,10 +213,10 @@ export function EnhancedStatsBar({
               sx={{
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: "#f3f4f6",
+                backgroundColor: "var(--surface)",
                 "& .MuiLinearProgress-bar": {
                   borderRadius: 4,
-                  backgroundColor: stat.isTime && timeTakenMinutes > totalTimeMinutes ? "#ef4444" : stat.color,
+                  backgroundColor: stat.isTime && timeTakenMinutes > totalTimeMinutes ? "var(--error-500)" : stat.color,
                 },
               }}
             />

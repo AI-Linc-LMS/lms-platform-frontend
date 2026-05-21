@@ -26,7 +26,7 @@ const JobsV2PageHeaderComponent = ({
       }}
     >
       {showIllustration && (
-        <JobSearchIllustration width={56} height={45} primaryColor="#6366f1" />
+        <JobSearchIllustration width={56} height={45} primaryColor="var(--accent-indigo)" />
       )}
       <Box>
         <Typography variant="h4" sx={{ fontSize: { xs: "1.5rem", sm: fontSize || "1.75rem" }, fontWeight: 700 }}>

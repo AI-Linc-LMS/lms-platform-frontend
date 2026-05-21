@@ -32,6 +32,16 @@ export function isCourseManagerRole(role: string | undefined | null): boolean {
   return r === "course_manager" || r === "coursemanager";
 }
 
+/** Instructor role only. */
+export function isInstructorRole(role: string | undefined | null): boolean {
+  return normalizeRole(role) === "instructor";
+}
+
+/** Scoped admin — instructor or course manager. Used for UI gating around course-scoped admin features. */
+export function isScopedAdminRole(role: string | undefined | null): boolean {
+  return isCourseManagerRole(role) || isInstructorRole(role);
+}
+
 /** Organization admin / superadmin only (excludes instructor and course_manager). */
 export function isClientOrgAdminRole(role: string | undefined | null): boolean {
   const r = normalizeRole(role);
@@ -50,6 +60,23 @@ export const COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
   "admin_assessment",
   "admin_scorecard",
   "admin_jobs_v2",
+];
+
+/**
+ * Admin sidebar `featureName` values shown to instructors when in admin mode (subset of admin nav).
+ * Client feature flags still apply first; this list further restricts visible links.
+ */
+export const INSTRUCTOR_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
+  "admin_dashboard",
+  "admin_manage_students",
+  "admin_course_builder",
+  "admin_ai_course_builder",
+  "admin_assessment",
+  "admin_mock_interview",
+  "admin_scorecard",
+  "admin_live_sessions",
+  "admin_attendance",
+  "admin_notifications",
 ];
 
 /** May see /admin/* navigation (full or limited) */
@@ -84,11 +111,6 @@ export function resolvePostLoginPath(
   role: string | undefined | null,
   requestedRedirect: string | null | undefined
 ): string {
-  /** Instructors always land on the student dashboard (not admin default or deep redirects). */
-  if (normalizeRole(role) === "instructor") {
-    return DEFAULT_STUDENT_HOME;
-  }
-
   const raw = (requestedRedirect ?? "").trim();
   let path = raw || DEFAULT_STUDENT_HOME;
 

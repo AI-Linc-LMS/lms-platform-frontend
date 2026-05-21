@@ -20,6 +20,7 @@ import { useToast } from "@/components/common/Toast";
 import { computeATSScore, type ATSScoreResult } from "./atsScore";
 import { computeStandardATSScoreReport, type OfflineCriteriaBreakdown } from "./atsStandardReport";
 import type { ResumeData } from "./types";
+import { SectionTailorButton, type TailorSection } from "./SectionTailorButton";
 
 interface FeedbackCategory {
   score: number;
@@ -38,25 +39,18 @@ interface AIAnalysisResult {
     scopeForImprovement: string[];
     suggestions: string[];
     executiveSummary?: string;
-    authenticityScore?: number;
-    authenticityConcerns?: string[];
-    resumeGoodFor?: string[];
   };
   linkValidation?: { label: string; url: string; ok: boolean; status?: number; errorPage?: boolean }[];
+  /** Industry-standard ATS-relevant checks only. */
   qualityChecks?: {
-    spacingAlignment?: { score: number; note?: string };
-    tone?: { score: number; note?: string };
-    languageFluency?: { score: number; note?: string };
-    grammar?: { score: number; note?: string };
-    consistency?: { score: number; note?: string };
-    evidenceAuthentication?: { score: number; note?: string };
-    sectionBalance?: { score: number; note?: string };
+    keywordMatch?: { score: number; note?: string };
+    sectionPresence?: { score: number; note?: string };
     contactCompleteness?: { score: number; note?: string };
     bulletQuality?: { score: number; note?: string };
-    dateRecency?: { score: number; note?: string };
+    dateConsistency?: { score: number; note?: string };
+    length?: { score: number; note?: string };
   };
   feedback: {
-    toneAndStyle: FeedbackCategory;
     content: FeedbackCategory;
     structure: FeedbackCategory;
     skills: FeedbackCategory;
@@ -67,6 +61,10 @@ interface ATSScoreCardProps {
   resumeData: ResumeData;
   initialLiveScore?: number;
   dialogOpen?: boolean;
+  /** Apply tailor changes back to the live resume (passed to per-section Tailor buttons). */
+  onResumeChange?: (data: ResumeData) => void;
+  /** Notify parent of the latest AI-computed atsScore so the toolbar button can stay in sync. */
+  onAiScoreUpdate?: (score: number | null) => void;
 }
 
 function getScoreLabel(score: number): "strong" | "goodStart" | "needsWork" {
@@ -178,9 +176,9 @@ function ScoreBadge({
   );
 }
 
-const CATEGORY_KEYS = ["toneAndStyle", "content", "structure", "skills"] as const;
+const CATEGORY_KEYS = ["content", "structure", "skills"] as const;
 
-export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSScoreCardProps) {
+export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResumeChange, onAiScoreUpdate }: ATSScoreCardProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [jobDescription, setJobDescription] = useState("");
@@ -188,7 +186,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<AIAnalysisResult | null>(null);
-  const [detailsExpanded, setDetailsExpanded] = useState<string | false>("toneAndStyle");
+  const [detailsExpanded, setDetailsExpanded] = useState<string | false>("content");
   const hasAutoRunRef = useRef(false);
 
   const baseResult: ATSScoreResult = useMemo(
@@ -225,9 +223,6 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
             scopeForImprovement: Array.isArray((data.detailedReport as Record<string, unknown>).scopeForImprovement) ? (data.detailedReport as Record<string, unknown>).scopeForImprovement as string[] : [],
             suggestions: Array.isArray((data.detailedReport as Record<string, unknown>).suggestions) ? (data.detailedReport as Record<string, unknown>).suggestions as string[] : [],
             executiveSummary: ((data.detailedReport as Record<string, unknown>).executiveSummary as string) ?? "",
-            authenticityScore: typeof (data.detailedReport as Record<string, unknown>).authenticityScore === "number" ? (data.detailedReport as Record<string, unknown>).authenticityScore as number : undefined,
-            authenticityConcerns: Array.isArray((data.detailedReport as Record<string, unknown>).authenticityConcerns) ? (data.detailedReport as Record<string, unknown>).authenticityConcerns as string[] : [],
-            resumeGoodFor: Array.isArray((data.detailedReport as Record<string, unknown>).resumeGoodFor) ? (data.detailedReport as Record<string, unknown>).resumeGoodFor as string[] : undefined,
           }
         : undefined,
       linkValidation: Array.isArray(data.linkValidation) ? data.linkValidation : undefined,
@@ -246,7 +241,6 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
           };
         };
         return {
-          toneAndStyle: toCat(fb.toneAndStyle),
           content: toCat(fb.content),
           structure: toCat(fb.structure),
           skills: toCat(fb.skills),
@@ -273,7 +267,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
         return;
       }
       setAiResultFromData(data);
-      setDetailsExpanded("toneAndStyle");
+      setDetailsExpanded("content");
     } catch {
       const msg = t("profile.atsAIError");
       setAiError(msg);
@@ -293,6 +287,13 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
     hasAutoRunRef.current = true;
     runAIAnalysisWithoutJob();
   }, [dialogOpen, runAIAnalysisWithoutJob]);
+
+  // Notify the parent when the AI score changes so the toolbar button can stay in sync.
+  useEffect(() => {
+    if (onAiScoreUpdate) {
+      onAiScoreUpdate(aiResult ? Math.round(aiResult.atsScore) : null);
+    }
+  }, [aiResult, onAiScoreUpdate]);
 
   const runAIAnalysis = useCallback(async () => {
     const job = jobDescription.trim();
@@ -314,7 +315,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
         return;
       }
       setAiResultFromData(data);
-      setDetailsExpanded("toneAndStyle");
+      setDetailsExpanded("content");
     } catch {
       const msg = t("profile.atsAIError");
       setAiError(msg);
@@ -340,7 +341,6 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
   }, [aiResult, baseResult, resultWithJob, hasJobDesc, report.overallScore]);
 
   const categoryLabels: Record<string, string> = {
-    toneAndStyle: t("profile.atsToneAndStyle"),
     content: t("profile.atsContent"),
     structure: t("profile.atsStructure"),
     skills: t("profile.atsSkills"),
@@ -708,16 +708,12 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
           });
           if (report.qualityChecks) {
             const qualityKeyLabels: Record<string, string> = {
-              spacingAlignment: t("profile.atsQuality_spacingAlignment"),
-              tone: t("profile.atsQuality_tone"),
-              languageFluency: t("profile.atsQuality_languageFluency"),
-              grammar: t("profile.atsQuality_grammar"),
-              consistency: t("profile.atsQuality_consistency"),
-              evidenceAuthentication: t("profile.atsQuality_evidenceAuthentication"),
-              sectionBalance: t("profile.atsQuality_sectionBalance"),
-              contactCompleteness: t("profile.atsQuality_contactCompleteness"),
-              bulletQuality: t("profile.atsQuality_bulletQuality"),
-              dateRecency: t("profile.atsQuality_dateRecency"),
+              keywordMatch: "Keyword match",
+              sectionPresence: "Standard sections present",
+              contactCompleteness: "Contact info complete",
+              bulletQuality: "Bullet quality (verbs + numbers)",
+              dateConsistency: "Date consistency",
+              length: "Length appropriate",
             };
             (Object.keys(report.qualityChecks) as Array<keyof typeof report.qualityChecks>).forEach((key) => {
               const item = report.qualityChecks![key];
@@ -764,21 +760,25 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {(
                 [
-                  "spacingAlignment",
-                  "tone",
-                  "languageFluency",
-                  "grammar",
-                  "consistency",
-                  "evidenceAuthentication",
-                  "sectionBalance",
+                  "keywordMatch",
+                  "sectionPresence",
                   "contactCompleteness",
                   "bulletQuality",
-                  "dateRecency",
+                  "dateConsistency",
+                  "length",
                 ] as const
               ).map((key) => {
                 const item = report.qualityChecks![key];
                   if (!item || typeof item.score !== "number") return null;
-                  const label = t(`profile.atsQuality_${key}`);
+                  const labels: Record<string, string> = {
+                    keywordMatch: "Keyword match",
+                    sectionPresence: "Standard sections present",
+                    contactCompleteness: "Contact info complete",
+                    bulletQuality: "Bullet quality (verbs + numbers)",
+                    dateConsistency: "Date consistency",
+                    length: "Length appropriate",
+                  };
+                  const label = labels[key] ?? key;
                   const color = getScoreColor(item.score) === "success" ? "var(--ats-success-muted)" : getScoreColor(item.score) === "warning" ? "var(--ats-warning-muted)" : "var(--ats-error-muted)";
                   return (
                     <Box key={key} sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1, flexWrap: "wrap" }}>
@@ -806,21 +806,6 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
                 <Typography variant="body2" color="text.primary">
                   {report.detailedReport.executiveSummary}
                 </Typography>
-              </Box>
-            )}
-            {report.detailedReport.resumeGoodFor && report.detailedReport.resumeGoodFor.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
-                  {t("profile.atsResumeGoodFor")}
-                </Typography>
-                <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-                  {report.detailedReport.resumeGoodFor.map((item, i) => (
-                    <Box key={i} sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.5 }}>
-                      <Box component="span" sx={{ mt: 0.2, flexShrink: 0, display: "inline-flex" }}><IconWrapper icon="mdi:briefcase-check-outline" size={20} color="var(--accent-indigo)" /></Box>
-                      <Typography component="li" variant="body2" sx={{ listStyle: "none" }}>{item}</Typography>
-                    </Box>
-                  ))}
-                </Box>
               </Box>
             )}
             {report.detailedReport.goodThings.length > 0 && (
@@ -907,39 +892,18 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
             </Box>
           )}
 
-        {(report.detailedReport?.authenticityScore != null || (report.detailedReport?.authenticityConcerns?.length ?? 0) > 0) && (
-          <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid var(--border-default)" }}>
-            <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
-              {t("profile.atsAuthenticity")}
-            </Typography>
-            {report.detailedReport?.authenticityScore != null && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <Typography variant="body2">
-                  {t("profile.atsAuthenticityScore")}:{" "}
-                </Typography>
-                <Typography variant="body2" fontWeight={700} sx={{ color: getScoreColor(report.detailedReport.authenticityScore) === "success" ? "var(--ats-success-muted)" : getScoreColor(report.detailedReport.authenticityScore) === "warning" ? "var(--ats-warning-muted)" : "var(--ats-error-muted)" }}>
-                  {report.detailedReport.authenticityScore}/100
-                </Typography>
-              </Box>
-            )}
-            {report.detailedReport?.authenticityConcerns && report.detailedReport.authenticityConcerns.length > 0 && (
-              <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-                {report.detailedReport.authenticityConcerns.map((c, i) => (
-                  <Box key={i} sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.5 }}>
-                    <Box component="span" sx={{ mt: 0.25, flexShrink: 0, display: "inline-flex" }}><IconWrapper icon="mdi:alert-circle-outline" size={18} color="var(--ats-warning)" /></Box>
-                    <Typography component="li" variant="body2" sx={{ listStyle: "none" }}>{c}</Typography>
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-        )}
-
         <Typography variant="subtitle2" fontWeight={600} sx={{ mt: 2, mb: 1 }}>
           {t("profile.atsDetails")}
         </Typography>
         {CATEGORY_KEYS.map((key) => {
           const cat = report.feedback[key];
+          // Map each feedback category to the resume section that AI can rewrite.
+          const tailorMap: Partial<Record<typeof key, TailorSection>> = {
+            content: "experience",
+            structure: "summary",
+            skills: "skills",
+          };
+          const tailorSection = tailorMap[key];
             return (
               <Accordion
                 key={key}
@@ -964,6 +928,26 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen }: ATSSc
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
+                  {tailorSection && onResumeChange && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        mb: 1.5,
+                        pb: 1,
+                        borderBottom: "1px dashed color-mix(in srgb, var(--border-default) 70%, transparent)",
+                      }}
+                    >
+                      <SectionTailorButton
+                        section={tailorSection}
+                        resumeData={resumeData}
+                        onResumeChange={onResumeChange}
+                        initialJobDescription={jobDescription}
+                        onJobDescriptionChange={setJobDescription}
+                        variant="chip"
+                      />
+                    </Box>
+                  )}
                   {cat.message && (
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       {cat.message}

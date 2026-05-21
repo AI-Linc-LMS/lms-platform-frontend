@@ -28,7 +28,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         minHeight: "297mm",
         height: "297mm",
         width: "100%",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
         colorAdjust: "exact !important",
@@ -37,16 +37,16 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
       {/* Left: Main content */}
       <Box sx={{ width: "65%", p: 4, minWidth: 0 }}>
         <Box sx={{ mb: 3 }}>
-          <Typography sx={{ fontSize: "1.5rem", fontWeight: 700, color: "#1e293b", mb: 0.5 }}>
+          <Typography sx={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}>
             {data.basicInfo.firstName} {data.basicInfo.lastName}
           </Typography>
           {data.basicInfo.professionalTitle && (
-            <Typography sx={{ fontSize: "0.875rem", color: "#6366f1", fontWeight: 600, mb: 2 }}>
+            <Typography sx={{ fontSize: "0.875rem", color: "var(--accent-purple)", fontWeight: 600, mb: 2 }}>
               {data.basicInfo.professionalTitle}
             </Typography>
           )}
           {data.basicInfo.summary && (
-            <Typography sx={{ fontSize: "0.625rem", color: "#475569", lineHeight: 1.6 }}>
+            <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>
               {data.basicInfo.summary}
             </Typography>
           )}
@@ -59,10 +59,10 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 mb: 2,
                 pb: 0.5,
-                borderBottom: "2px solid #6366f1",
+                borderBottom: "2px solid var(--accent-purple)",
               }}
             >
               WORK EXPERIENCE
@@ -71,24 +71,24 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
               <Box key={exp.id} sx={{ mb: 2.5 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
                   <Box>
-                    <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>
+                    <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--font-primary)" }}>
                       {exp.position}
                     </Typography>
-                    <Typography sx={{ fontSize: "0.625rem", color: "#6366f1", fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: "0.625rem", color: "var(--accent-purple)", fontWeight: 500 }}>
                       {exp.company}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(exp.startDate, exp.endDate, exp.current)}
                   </Typography>
                 </Box>
                 {exp.location && (
-                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b", mb: 1 }}>{exp.location}</Typography>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mb: 1 }}>{exp.location}</Typography>
                 )}
                 {exp.description.filter((d) => d.trim()).length > 0 && (
                   <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
                     {exp.description.filter((d) => d.trim()).map((d, i) => (
-                      <Typography key={i} component="li" sx={{ fontSize: "0.625rem", color: "#475569", lineHeight: 1.5, mb: 0.5 }}>
+                      <Typography key={i} component="li" sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.5, mb: 0.5 }}>
                         {d}
                       </Typography>
                     ))}
@@ -106,10 +106,10 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 mb: 2,
                 pb: 0.5,
-                borderBottom: "2px solid #6366f1",
+                borderBottom: "2px solid var(--accent-purple)",
               }}
             >
               EDUCATION
@@ -118,21 +118,21 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
               <Box key={edu.id} sx={{ mb: 2 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <Box>
-                    <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>{edu.degree}</Typography>
-                    <Typography sx={{ fontSize: "0.625rem", color: "#6366f1" }}>{edu.institution}</Typography>
+                    <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--font-primary)" }}>{edu.degree}</Typography>
+                    <Typography sx={{ fontSize: "0.625rem", color: "var(--accent-purple)" }}>{edu.institution}</Typography>
                     {edu.location && (
-                      <Typography sx={{ fontSize: "0.625rem", color: "#64748b" }}>{edu.location}</Typography>
+                      <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)" }}>{edu.location}</Typography>
                     )}
                   </Box>
-                  <Typography sx={{ fontSize: "0.625rem", color: "#64748b", whiteSpace: "nowrap", ml: 2 }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", whiteSpace: "nowrap", ml: 2 }}>
                     {formatDate(edu.startDate, edu.endDate)}
                   </Typography>
                 </Box>
                 {edu.gpa && (
-                  <Typography sx={{ fontSize: "0.625rem", color: "#475569", mt: 0.5, whiteSpace: "nowrap" }}>GPA: {edu.gpa}</Typography>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mt: 0.5, whiteSpace: "nowrap" }}>GPA: {edu.gpa}</Typography>
                 )}
                 {edu.description && (
-                  <Typography sx={{ fontSize: "0.625rem", color: "#475569", mt: 0.5, lineHeight: 1.5 }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mt: 0.5, lineHeight: 1.5 }}>
                     {edu.description}
                   </Typography>
                 )}
@@ -148,10 +148,10 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
               sx={{
                 fontSize: "0.75rem",
                 fontWeight: 700,
-                color: "#1e293b",
+                color: "var(--font-primary)",
                 mb: 2,
                 pb: 0.5,
-                borderBottom: "2px solid #6366f1",
+                borderBottom: "2px solid var(--accent-purple)",
               }}
             >
               PROJECTS
@@ -159,7 +159,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
             {data.projects.map((project) => (
               <Box key={project.id} sx={{ mb: 2 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5, gap: 1 }}>
-                  <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>
+                  <Typography data-resume-nowrap sx={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--font-primary)" }}>
                     {project.name}
                   </Typography>
                   {project.link && (
@@ -168,14 +168,14 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                       href={project.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontSize: "0.625rem", color: "#6366f1", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
+                      sx={{ fontSize: "0.625rem", color: "var(--accent-purple)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }}
                     >
                       Link
                     </Typography>
                   )}
                 </Box>
                 {project.description && (
-                  <Typography sx={{ fontSize: "0.625rem", color: "#475569", lineHeight: 1.5, mb: 0.5 }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.5, mb: 0.5 }}>
                     {project.description}
                   </Typography>
                 )}
@@ -187,8 +187,9 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                         sx={{
                           px: 1,
                           py: 0.25,
-                          backgroundColor: "#f1f5f9 !important",
-                          color: "#475569",
+                          backgroundColor:
+                            "color-mix(in srgb, var(--surface) 85%, var(--background)) !important",
+                          color: "var(--font-secondary)",
                           fontSize: "0.625rem",
                           borderRadius: 1,
                           fontWeight: 500,
@@ -211,8 +212,8 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
       <Box
         sx={{
           width: "35%",
-          backgroundColor: "#1e293b !important",
-          color: "#ffffff",
+          backgroundColor: "var(--font-primary) !important",
+          color: "var(--background)",
           p: 4,
           WebkitPrintColorAdjust: "exact !important",
           printColorAdjust: "exact !important",
@@ -220,7 +221,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         }}
       >
         <Box sx={{ mb: 4 }}>
-          <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
+          <Typography sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "var(--font-tertiary)", whiteSpace: "nowrap" }}>
             CONTACT
           </Typography>
           {[
@@ -243,7 +244,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                 sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, textDecoration: "none", color: "inherit" }}
               >
                 <Box sx={{ flexShrink: 0, display: "flex" }}>
-                  <IconWrapper icon={item.icon} size={16} color="#94a3b8" />
+                  <IconWrapper icon={item.icon} size={16} color="var(--font-tertiary)" />
                 </Box>
                 <Typography
                   data-resume-contact-item
@@ -265,7 +266,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
 
         {data.skills.length > 0 && (
           <Box sx={{ mb: 4 }}>
-            <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
+            <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "var(--font-tertiary)", whiteSpace: "nowrap" }}>
               SKILLS
             </Typography>
             {data.skills.map((skill) => (
@@ -281,7 +282,10 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                         width: 24,
                         height: 6,
                         borderRadius: 2,
-                        backgroundColor: i <= (skill.level ?? 3) ? "#6366f1 !important" : "#334155 !important",
+                        backgroundColor:
+                          i <= (skill.level ?? 3)
+                            ? "var(--accent-purple) !important"
+                            : "color-mix(in srgb, var(--font-primary) 80%, var(--surface)) !important",
                         WebkitPrintColorAdjust: "exact !important",
                         printColorAdjust: "exact !important",
                         colorAdjust: "exact !important",
@@ -296,7 +300,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
 
         {data.certifications.length > 0 && (
           <Box>
-            <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "#94a3b8", whiteSpace: "nowrap" }}>
+            <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "var(--font-tertiary)", whiteSpace: "nowrap" }}>
               CERTIFICATIONS
             </Typography>
             {data.certifications.map((cert) => (
@@ -309,15 +313,15 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                       href={cert.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontSize: "0.55rem", color: "#6366f1", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
+                      sx={{ fontSize: "0.55rem", color: "var(--accent-purple)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
                     >
                       Link
                     </Typography>
                   )}
                 </Box>
-                <Typography sx={{ fontSize: "0.625rem", color: "#94a3b8" }}>{cert.issuer}</Typography>
+                <Typography sx={{ fontSize: "0.625rem", color: "var(--font-tertiary)" }}>{cert.issuer}</Typography>
                 {cert.date && (
-                  <Typography sx={{ fontSize: "0.625rem", color: "#94a3b8" }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: "var(--font-tertiary)" }}>
                     {formatDate(cert.date, "", false)}
                   </Typography>
                 )}

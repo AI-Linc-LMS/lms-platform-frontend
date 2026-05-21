@@ -10,18 +10,32 @@ import {
   Stack,
   Collapse,
   ButtonBase,
+  useTheme,
+  IconButton,
+  Tooltip,
+  CircularProgress,
 } from "@mui/material";
-import { memo, useMemo, useRef, useState, useCallback } from "react";
+import { memo, useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { QuizQuestionList } from "@/components/quiz";
 import { QuestionTitle } from "@/components/quiz/QuestionTitle";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { MathSymbolToolbar } from "@/components/assessment/MathSymbolToolbar";
+import { SubjectiveVideoRecorder } from "@/components/assessment/SubjectiveVideoRecorder";
+import { uploadFile } from "@/lib/services/file-upload.service";
+import {
+  parseSubjectiveAnswerPayload,
+  type SubjectiveAnswerPayload,
+} from "@/utils/assessment.utils";
+
+const MAX_SUBJECTIVE_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export interface SubjectiveQuestionItem {
   id: string | number;
   question_text: string;
   max_marks?: number;
   question_type?: string;
+  answer_mode?: string;
 }
 
 function formatQuestionTypeLabel(type: string) {
@@ -60,34 +74,170 @@ const WRITING_TIP_ITEMS = [
 interface AssessmentSubjectiveLayoutProps {
   currentQuestionIndex: number;
   currentQuestion: SubjectiveQuestionItem;
-  answerText: string;
+  /** Stored subjective value: string (legacy text) or rich payload object. */
+  value: unknown;
   questions: Array<{
     id: string | number;
     question: string;
     answered?: boolean;
   }>;
   totalQuestions: number;
-  onAnswerChange: (text: string) => void;
+  onChange: (next: unknown) => void;
   onNextQuestion?: () => void;
   onPreviousQuestion?: () => void;
   onQuestionClick?: (questionId: string | number) => void;
+  /** When set, students can paste or pick images; files upload and a markdown image line is inserted. */
+  assessmentUploadClientId?: number;
+  onSubjectiveImageUploadError?: (message: string) => void;
+  /**
+   * Call synchronously before opening a native file dialog so fullscreen exit
+   * from the picker can be treated as benign (assessment take page).
+   */
+  onNativeFilePickerWillOpen?: () => void;
 }
 
 export const AssessmentSubjectiveLayout = memo(
   function AssessmentSubjectiveLayout({
     currentQuestionIndex,
     currentQuestion,
-    answerText,
+    value,
     questions = [],
     totalQuestions,
-    onAnswerChange,
+    onChange,
     onNextQuestion,
     onPreviousQuestion,
     onQuestionClick,
+    assessmentUploadClientId,
+    onSubjectiveImageUploadError,
+    onNativeFilePickerWillOpen,
   }: AssessmentSubjectiveLayoutProps) {
+    const theme = useTheme();
     const { t } = useTranslation("common");
+    const mode = currentQuestion.answer_mode || "text";
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
     const isFirstQuestion = currentQuestionIndex === 0;
+
+    const payload = useMemo(
+      () => parseSubjectiveAnswerPayload(value),
+      [value],
+    );
+    const answerStr = payload.answer ?? "";
+
+    // Local text state so each keystroke does not bubble up to the parent page (and
+    // re-render the entire assessment tree). Commits are debounced; non-text patches
+    // flush local text first so they cannot drop pending characters.
+    const [localText, setLocalText] = useState<string>(answerStr);
+    const localTextRef = useRef(localText);
+    localTextRef.current = localText;
+    const lastCommittedTextRef = useRef<string>(answerStr);
+    const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // When the active question changes, snap local text to the new question's value.
+    const lastQuestionIdForTextRef = useRef(currentQuestion.id);
+    useEffect(() => {
+      if (lastQuestionIdForTextRef.current !== currentQuestion.id) {
+        lastQuestionIdForTextRef.current = currentQuestion.id;
+        if (commitTimerRef.current) {
+          clearTimeout(commitTimerRef.current);
+          commitTimerRef.current = null;
+        }
+        setLocalText(answerStr);
+        lastCommittedTextRef.current = answerStr;
+      }
+    }, [currentQuestion.id, answerStr]);
+
+    // If the parent value's text moves out of step with our local + last-committed
+    // (e.g. server hydrated existing draft, or another field updated the payload
+    // shape), accept the parent's text as the new source of truth.
+    useEffect(() => {
+      if (
+        answerStr !== lastCommittedTextRef.current &&
+        answerStr !== localTextRef.current
+      ) {
+        setLocalText(answerStr);
+        lastCommittedTextRef.current = answerStr;
+      }
+    }, [answerStr]);
+
+    const mergePayload = useCallback(
+      (patch: Partial<SubjectiveAnswerPayload>) => {
+        const base = parseSubjectiveAnswerPayload(value);
+        const { awarded_marks: _a, max_marks: _m, feedback: _f, ...rest } =
+          base as SubjectiveAnswerPayload & {
+            awarded_marks?: number;
+            max_marks?: number;
+            feedback?: string;
+          };
+        // Always carry pending local text into a non-text commit so image/file/video
+        // patches don't overwrite typed-but-uncommitted characters. A `patch.answer`
+        // (text commit) overrides via the trailing spread.
+        const merged: Partial<SubjectiveAnswerPayload> = {
+          ...rest,
+          answer: localTextRef.current,
+          ...patch,
+        };
+        if (typeof merged.answer === "string") {
+          lastCommittedTextRef.current = merged.answer;
+        }
+        onChange(merged);
+      },
+      [value, onChange],
+    );
+
+    const flushTextNow = useCallback(() => {
+      if (commitTimerRef.current) {
+        clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = null;
+      }
+      const text = localTextRef.current;
+      if (text === lastCommittedTextRef.current) return;
+      mergePayload({ answer: text });
+    }, [mergePayload]);
+
+    const scheduleTextCommit = useCallback(
+      (text: string) => {
+        if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = setTimeout(() => {
+          commitTimerRef.current = null;
+          if (text !== lastCommittedTextRef.current) {
+            mergePayload({ answer: text });
+          }
+        }, 250);
+      },
+      [mergePayload],
+    );
+
+    const handleTextChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const next = e.target.value;
+        setLocalText(next);
+        scheduleTextCommit(next);
+      },
+      [scheduleTextCommit],
+    );
+
+    // Flush any pending text on unmount so navigation away never silently drops chars.
+    useEffect(() => {
+      return () => {
+        if (commitTimerRef.current) {
+          clearTimeout(commitTimerRef.current);
+          commitTimerRef.current = null;
+          const text = localTextRef.current;
+          if (text !== lastCommittedTextRef.current) {
+            // mergePayload identity may have moved on, but onChange + value are captured
+            // by closure; we intentionally rely on the latest mergePayload via ref of
+            // localTextRef + lastCommittedTextRef for next tick — synchronous call here:
+            try {
+              const flush = flushTextNow;
+              flush();
+            } catch {
+              // best-effort flush
+            }
+          }
+        }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const answeredCountRef = useRef<number>(0);
     const lastQuestionsHashRef = useRef<string>("");
@@ -108,22 +258,216 @@ export const AssessmentSubjectiveLayout = memo(
     }, [questions]);
 
     const { charCount, wordCount } = useMemo(() => {
-      const trimmed = answerText.trim();
+      const trimmed = localText.trim();
       const words = trimmed ? trimmed.split(/\s+/).filter(Boolean) : [];
-      return { charCount: answerText.length, wordCount: words.length };
-    }, [answerText]);
+      return { charCount: localText.length, wordCount: words.length };
+    }, [localText]);
 
-    const hasDraft = charCount > 0;
+    const hasDraft =
+      charCount > 0 ||
+      (payload.images?.length ?? 0) > 0 ||
+      (payload.files?.length ?? 0) > 0 ||
+      !!(payload.video && payload.video.url);
     const [writingTipsOpen, setWritingTipsOpen] = useState(false);
     const toggleWritingTips = useCallback(() => {
       setWritingTipsOpen((o) => !o);
     }, []);
+
+    const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+    const pendingCaretRef = useRef<number | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const fileDocInputRef = useRef<HTMLInputElement | null>(null);
+    const imageUploadLockRef = useRef(false);
+    const [imageUploadBusy, setImageUploadBusy] = useState(false);
+    const [fileDocBusy, setFileDocBusy] = useState(false);
+
+    useEffect(() => {
+      pendingCaretRef.current = null;
+    }, [currentQuestion.id]);
+
+    const insertChunkAt = useCallback(
+      (start: number, end: number, chunk: string) => {
+        const base = localTextRef.current;
+        const s = Math.max(0, Math.min(start, base.length));
+        const e = Math.max(s, Math.min(end, base.length));
+        const next = base.slice(0, s) + chunk + base.slice(e);
+        pendingCaretRef.current = s + chunk.length;
+        setLocalText(next);
+        scheduleTextCommit(next);
+      },
+      [localTextRef, scheduleTextCommit],
+    );
+
+    const insertAtCaret = useCallback(
+      (text: string) => {
+        const el = textAreaRef.current;
+        const len = localTextRef.current.length;
+        const start = el ? el.selectionStart : len;
+        const end = el ? el.selectionEnd : len;
+        insertChunkAt(start, end, text);
+      },
+      [insertChunkAt],
+    );
+
+    const uploadAndInsertImage = useCallback(
+      async (file: File) => {
+        if (!assessmentUploadClientId || imageUploadLockRef.current) return;
+        if (!file.type.startsWith("image/")) {
+          onSubjectiveImageUploadError?.(
+            t("assessments.take.subjectiveImageTypeInvalid"),
+          );
+          return;
+        }
+        if (file.size > MAX_SUBJECTIVE_IMAGE_BYTES) {
+          onSubjectiveImageUploadError?.(
+            t("assessments.take.subjectiveImageTooLarge"),
+          );
+          return;
+        }
+        const el = textAreaRef.current;
+        const baseLen = localTextRef.current.length;
+        const start = el ? el.selectionStart : baseLen;
+        const end = el ? el.selectionEnd : baseLen;
+        imageUploadLockRef.current = true;
+        setImageUploadBusy(true);
+        try {
+          const result = await uploadFile(
+            assessmentUploadClientId,
+            file,
+            "other",
+          );
+          if (mode === "text_image") {
+            const prev = parseSubjectiveAnswerPayload(value);
+            mergePayload({
+              images: [
+                ...(prev.images || []),
+                {
+                  url: result.url,
+                  name: file.name,
+                  content_type: file.type,
+                },
+              ],
+            });
+          } else {
+            const md = `\n![image](${result.url})\n`;
+            insertChunkAt(start, end, md);
+          }
+        } catch (err) {
+          onSubjectiveImageUploadError?.(
+            err instanceof Error ? err.message : t("assessments.take.subjectiveImageUploadFailed"),
+          );
+        } finally {
+          imageUploadLockRef.current = false;
+          setImageUploadBusy(false);
+        }
+      },
+      [
+        assessmentUploadClientId,
+        insertChunkAt,
+        mergePayload,
+        mode,
+        onSubjectiveImageUploadError,
+        t,
+        value,
+      ],
+    );
+
+    const handleAnswerPaste = useCallback(
+      (e: React.ClipboardEvent) => {
+        if (!assessmentUploadClientId || mode !== "text_image") return;
+        const cd = e.clipboardData;
+        if (!cd) return;
+        let imageFile: File | null = null;
+        for (let i = 0; i < cd.items.length; i++) {
+          const it = cd.items[i];
+          if (it?.kind === "file" && it.type.startsWith("image/")) {
+            const f = it.getAsFile();
+            if (f && f.size > 0) {
+              imageFile = f;
+              break;
+            }
+          }
+        }
+        if (!imageFile && cd.files?.length) {
+          for (let i = 0; i < cd.files.length; i++) {
+            const f = cd.files[i];
+            if (f && f.type.startsWith("image/")) {
+              imageFile = f;
+              break;
+            }
+          }
+        }
+        if (!imageFile) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void uploadAndInsertImage(imageFile);
+      },
+      [assessmentUploadClientId, mode, uploadAndInsertImage],
+    );
+
+    const handleImageFileChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const f = e.target.files?.[0];
+        e.target.value = "";
+        if (f) void uploadAndInsertImage(f);
+      },
+      [uploadAndInsertImage],
+    );
+
+    const handleFileDocChange = useCallback(
+      async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const f = e.target.files?.[0];
+        e.target.value = "";
+        if (!f || !assessmentUploadClientId || fileDocBusy) return;
+        setFileDocBusy(true);
+        try {
+          const result = await uploadFile(assessmentUploadClientId, f, "other");
+          const prev = parseSubjectiveAnswerPayload(value);
+          mergePayload({
+            files: [
+              ...(prev.files || []),
+              {
+                url: result.url,
+                name: f.name,
+                content_type: f.type,
+              },
+            ],
+          });
+        } catch (err) {
+          onSubjectiveImageUploadError?.(
+            err instanceof Error ? err.message : "Upload failed",
+          );
+        } finally {
+          setFileDocBusy(false);
+        }
+      },
+      [
+        assessmentUploadClientId,
+        fileDocBusy,
+        mergePayload,
+        onSubjectiveImageUploadError,
+        value,
+      ],
+    );
+
+    useEffect(() => {
+      const pos = pendingCaretRef.current;
+      if (pos === null) return;
+      pendingCaretRef.current = null;
+      const el = textAreaRef.current;
+      if (!el) return;
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(pos, pos);
+      });
+    }, [localText]);
 
     return (
       <Box
         sx={{
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
+          alignItems: { md: "stretch" },
           gap: { xs: 2, md: 3 },
           maxWidth: "100%",
         }}
@@ -134,14 +478,25 @@ export const AssessmentSubjectiveLayout = memo(
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
-            gap: 2,
+            gap: 0,
             order: { xs: 1, md: 0 },
+            alignSelf: { xs: "stretch", md: "flex-start" },
+            minHeight: { md: 0 },
+            position: { md: "sticky" },
+            top: { md: theme.spacing(18.5) },
+            maxHeight: {
+              md: `calc(100vh - ${theme.spacing(18.5)} - 16px)`,
+            },
+            zIndex: { md: 1 },
           }}
         >
           <QuizQuestionList
             questions={questions}
             currentQuestionId={currentQuestion.id}
-            onQuestionClick={onQuestionClick}
+            onQuestionClick={(qid) => {
+              flushTextNow();
+              onQuestionClick?.(qid);
+            }}
             listTitle={t("quiz.writtenListTitle")}
             listSubtitle={t("quiz.writtenListSubtitle")}
             variant="subjective"
@@ -164,9 +519,12 @@ export const AssessmentSubjectiveLayout = memo(
               display: "flex",
               flexDirection: "column",
               p: { xs: 2, sm: 3, md: 4 },
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--font-light)",
               borderRadius: 2,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
+              minHeight: { md: "min(520px, 70vh)" },
+              boxShadow:
+                "0 10px 40px color-mix(in srgb, var(--primary-900) 9%, transparent), 0 1px 0 color-mix(in srgb, var(--primary-900) 6%, transparent)",
             }}
           >
             <Box
@@ -184,7 +542,7 @@ export const AssessmentSubjectiveLayout = memo(
                   variant="caption"
                   sx={{
                     display: "block",
-                    color: "#6366f1",
+                    color: "var(--accent-indigo)",
                     fontWeight: 600,
                     fontSize: "0.7rem",
                     letterSpacing: "0.06em",
@@ -196,7 +554,7 @@ export const AssessmentSubjectiveLayout = memo(
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "#6b7280", fontWeight: 500 }}
+                  sx={{ color: "var(--font-secondary)", fontWeight: 500 }}
                 >
                   Question {currentQuestionIndex + 1} of {totalQuestions}
                 </Typography>
@@ -210,9 +568,9 @@ export const AssessmentSubjectiveLayout = memo(
                       height: 28,
                       fontSize: "0.75rem",
                       fontWeight: 600,
-                      backgroundColor: "#f0fdf4",
-                      color: "#166534",
-                      border: "1px solid #bbf7d0",
+                      backgroundColor: "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))",
+                      color: "color-mix(in srgb, var(--course-cta) 78%, var(--font-dark))",
+                      border: "1px solid color-mix(in srgb, var(--course-cta) 22%, transparent)",
                     }}
                   />
                 )}
@@ -225,8 +583,8 @@ export const AssessmentSubjectiveLayout = memo(
                       height: 28,
                       fontSize: "0.75rem",
                       fontWeight: 600,
-                      borderColor: "#e5e7eb",
-                      color: "#374151",
+                      borderColor: "var(--border-default)",
+                      color: "var(--font-muted)",
                     }}
                   />
                 ) : null}
@@ -237,15 +595,58 @@ export const AssessmentSubjectiveLayout = memo(
                     height: 28,
                     fontSize: "0.75rem",
                     fontWeight: 600,
-                    backgroundColor: "#f9fafb",
-                    color: "#4b5563",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--neutral-500)",
+                    border: "1px solid var(--border-default)",
                   }}
                 />
               </Stack>
             </Box>
 
             <QuestionTitle question={currentQuestion.question_text} />
+
+            {mode === "text_image" ? (
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1.5,
+                  color: "var(--font-secondary)",
+                  lineHeight: 1.55,
+                  pl: 1.25,
+                  borderLeft: "3px solid color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
+                }}
+              >
+                {t("assessments.take.subjectiveModeHintTextImage")}
+              </Typography>
+            ) : null}
+            {mode === "file_upload" ? (
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1.5,
+                  color: "var(--font-secondary)",
+                  lineHeight: 1.55,
+                  pl: 1.25,
+                  borderLeft: "3px solid color-mix(in srgb, var(--accent-teal) 55%, transparent)",
+                }}
+              >
+                {t("assessments.take.subjectiveModeHintFileUpload")}
+              </Typography>
+            ) : null}
+            {mode === "video" ? (
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1.5,
+                  color: "var(--font-secondary)",
+                  lineHeight: 1.55,
+                  pl: 1.25,
+                  borderLeft: "3px solid color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
+                }}
+              >
+                {t("assessments.take.subjectiveModeHintVideo")}
+              </Typography>
+            ) : null}
 
             <Typography
               component="label"
@@ -256,18 +657,18 @@ export const AssessmentSubjectiveLayout = memo(
                 mt: 1,
                 mb: 1,
                 fontWeight: 600,
-                color: "#111827",
+                color: "var(--font-primary-dark)",
                 fontSize: "0.875rem",
               }}
             >
               Your answer
             </Typography>
             {hasDraft ? (
-              <Typography variant="caption" sx={{ display: "block", mb: 1, color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ display: "block", mb: 1, color: "var(--font-secondary)" }}>
                 Draft saved automatically with your attempt.
               </Typography>
             ) : (
-              <Typography variant="caption" sx={{ display: "block", mb: 1, color: "#9ca3af" }}>
+              <Typography variant="caption" sx={{ display: "block", mb: 1, color: "var(--font-tertiary)" }}>
                 Start typing — your work is saved as you go.
               </Typography>
             )}
@@ -275,15 +676,20 @@ export const AssessmentSubjectiveLayout = memo(
             <TextField
               id={`subjective-answer-${currentQuestion.id}`}
               multiline
-              minRows={10}
+              minRows={mode === "video" ? 3 : 10}
               maxRows={26}
               fullWidth
-              value={answerText}
-              onChange={(e) => onAnswerChange(e.target.value)}
+              value={localText}
+              onChange={handleTextChange}
+              onBlur={flushTextNow}
+              inputRef={textAreaRef}
+              onPaste={handleAnswerPaste}
               placeholder="Write a clear, structured answer. Use paragraphs where it helps readability."
               variant="outlined"
               inputProps={{
                 "aria-describedby": `subjective-answer-stats-${currentQuestion.id}`,
+                "data-assessment-allow-paste": "true",
+                "data-assessment-answer-field": "true",
                 style: {
                   userSelect: "text",
                   WebkitUserSelect: "text",
@@ -291,19 +697,19 @@ export const AssessmentSubjectiveLayout = memo(
               }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--font-light)",
                   borderRadius: 2,
                   fontSize: "0.9375rem",
                   lineHeight: 1.65,
                   fontFamily: "var(--font-family-primary)",
                   "& fieldset": {
-                    borderColor: "#e5e7eb",
+                    borderColor: "var(--border-default)",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#d1d5db",
+                    borderColor: "var(--border-light)",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
                     borderWidth: "1px",
                   },
                 },
@@ -313,11 +719,176 @@ export const AssessmentSubjectiveLayout = memo(
                   py: 1.5,
                 },
                 "& .MuiInputBase-input::placeholder": {
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   opacity: 1,
                 },
               }}
             />
+
+            {mode === "video" && assessmentUploadClientId ? (
+              <Box sx={{ mt: 2 }}>
+                <SubjectiveVideoRecorder
+                  clientId={assessmentUploadClientId}
+                  existingUrl={payload.video?.url ?? null}
+                  onUploaded={(meta) => mergePayload({ video: meta })}
+                  onError={onSubjectiveImageUploadError}
+                />
+              </Box>
+            ) : null}
+
+            {mode === "file_upload" && assessmentUploadClientId ? (
+              <Box sx={{ mt: 2 }}>
+                <input
+                  ref={fileDocInputRef}
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={handleFileDocChange}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    onNativeFilePickerWillOpen?.();
+                    fileDocInputRef.current?.click();
+                  }}
+                  disabled={fileDocBusy}
+                  sx={{ textTransform: "none" }}
+                >
+                  {fileDocBusy
+                    ? t("assessments.take.subjectiveAttachFileUploading")
+                    : t("assessments.take.subjectiveAttachFile")}
+                </Button>
+                <Stack spacing={0.75} sx={{ mt: 1 }}>
+                  {(payload.files || []).map((f, i) => (
+                    <Box
+                      key={`${f.url}-${i}`}
+                      sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
+                    >
+                      <Typography variant="caption">
+                        <Box
+                          component="a"
+                          href={f.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ color: "var(--accent-indigo-dark)" }}
+                        >
+                          {f.name || "Attachment"}
+                        </Box>
+                      </Typography>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          const next = [...(payload.files || [])];
+                          next.splice(i, 1);
+                          mergePayload({ files: next });
+                        }}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+            ) : null}
+
+            {mode === "text_image" && (payload.images?.length ?? 0) > 0 ? (
+              <Stack spacing={0.75} sx={{ mt: 1 }}>
+                {(payload.images || []).map((im, i) => (
+                  <Box
+                    key={`${im.url}-${i}`}
+                    sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
+                  >
+                    <Typography variant="caption">
+                      <Box
+                        component="a"
+                        href={im.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ color: "var(--accent-indigo-dark)" }}
+                      >
+                        {im.name || "Image"}
+                      </Box>
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        const next = [...(payload.images || [])];
+                        next.splice(i, 1);
+                        mergePayload({ images: next });
+                      }}
+                      sx={{ textTransform: "none" }}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
+                ))}
+              </Stack>
+            ) : null}
+
+            <Box
+              sx={{
+                mt: 1.5,
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { sm: "center" },
+                gap: 1.5,
+                flexWrap: "wrap",
+              }}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                {(mode === "text" || mode === "text_image") && (
+                  <MathSymbolToolbar onInsert={insertAtCaret} />
+                )}
+              </Box>
+              {assessmentUploadClientId && mode === "text_image" ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                    style={{ display: "none" }}
+                    onChange={handleImageFileChange}
+                  />
+                  <Tooltip title={t("assessments.take.subjectiveInsertImageTooltip")}>
+                    <span>
+                      <IconButton
+                        type="button"
+                        size="small"
+                        disabled={imageUploadBusy}
+                        onClick={() => {
+                          onNativeFilePickerWillOpen?.();
+                          fileInputRef.current?.click();
+                        }}
+                        aria-label={t("assessments.take.subjectiveInsertImage")}
+                        sx={{
+                          border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                          borderRadius: 2,
+                          bgcolor: "var(--font-light)",
+                          color: "var(--accent-indigo-dark)",
+                          "&:hover": { bgcolor: "var(--surface-indigo-light)" },
+                        }}
+                      >
+                        {imageUploadBusy ? (
+                          <CircularProgress size={22} color="inherit" />
+                        ) : (
+                          <IconWrapper icon="mdi:image-plus-outline" size={22} color="currentColor" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", maxWidth: 220, lineHeight: 1.45 }}>
+                    {t("assessments.take.subjectiveImagePasteHint")}
+                  </Typography>
+                </Box>
+              ) : null}
+            </Box>
 
             <Box
               id={`subjective-answer-stats-${currentQuestion.id}`}
@@ -330,12 +901,12 @@ export const AssessmentSubjectiveLayout = memo(
                 mt: 1.5,
               }}
             >
-              <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                 {charCount.toLocaleString()} characters · {wordCount.toLocaleString()} words
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:cloud-check-outline" size={16} color="#10b981" />
-                <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 500 }}>
+                <IconWrapper icon="mdi:cloud-check-outline" size={16} color="var(--course-cta)" />
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                   Autosaved
                 </Typography>
               </Box>
@@ -348,9 +919,9 @@ export const AssessmentSubjectiveLayout = memo(
                 mt: 3,
                 borderRadius: 2,
                 overflow: "hidden",
-                border: "1px solid #c7d2fe",
-                backgroundColor: "#f8fafc",
-                boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+                border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                backgroundColor: "var(--surface)",
+                boxShadow: "0 1px 2px color-mix(in srgb, var(--primary-900) 6%, transparent)",
               }}
             >
               <ButtonBase
@@ -371,13 +942,13 @@ export const AssessmentSubjectiveLayout = memo(
                   pr: 1.5,
                   borderRadius: 0,
                   transition: "background-color 0.15s ease",
-                  backgroundColor: writingTipsOpen ? "#eef2ff" : "#f1f5f9",
-                  borderBottom: writingTipsOpen ? "1px solid #c7d2fe" : "none",
+                  backgroundColor: writingTipsOpen ? "var(--surface-indigo-light)" : "var(--neutral-100)",
+                  borderBottom: writingTipsOpen ? "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)" : "none",
                   "&:hover": {
-                    backgroundColor: "#e0e7ff",
+                    backgroundColor: "color-mix(in srgb, var(--surface-indigo-light) 85%, var(--accent-indigo))",
                   },
                   "&.Mui-focusVisible": {
-                    outline: "2px solid #6366f1",
+                    outline: "2px solid var(--accent-indigo)",
                     outlineOffset: -2,
                     zIndex: 1,
                   },
@@ -392,12 +963,13 @@ export const AssessmentSubjectiveLayout = memo(
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #c7d2fe",
-                    boxShadow: "0 1px 2px rgba(79, 70, 229, 0.08)",
+                    backgroundColor: "var(--font-light)",
+                    border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                    boxShadow:
+                      "0 1px 2px color-mix(in srgb, var(--accent-indigo-dark) 10%, transparent)",
                   }}
                 >
-                  <IconWrapper icon="mdi:lightbulb-on-outline" size={24} color="#4f46e5" />
+                  <IconWrapper icon="mdi:lightbulb-on-outline" size={24} color="var(--accent-indigo-dark)" />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0, py: 0.25 }}>
                   <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" sx={{ mb: 0.25 }}>
@@ -406,7 +978,7 @@ export const AssessmentSubjectiveLayout = memo(
                       variant="subtitle2"
                       sx={{
                         fontWeight: 800,
-                        color: "#312e81",
+                        color: "var(--accent-indigo-dark)",
                         fontSize: "0.9375rem",
                         letterSpacing: "-0.01em",
                       }}
@@ -420,8 +992,8 @@ export const AssessmentSubjectiveLayout = memo(
                         fontWeight: 700,
                         letterSpacing: "0.06em",
                         textTransform: "uppercase",
-                        color: "#4f46e5",
-                        bgcolor: "rgba(99, 102, 241, 0.12)",
+                        color: "var(--accent-indigo-dark)",
+                        bgcolor: "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
                         px: 0.75,
                         py: 0.25,
                         borderRadius: 1,
@@ -430,7 +1002,7 @@ export const AssessmentSubjectiveLayout = memo(
                       Quick guide
                     </Box>
                   </Stack>
-                  <Typography variant="caption" sx={{ color: "#64748b", display: "block", lineHeight: 1.5 }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", lineHeight: 1.5 }}>
                     {writingTipsOpen
                       ? "Tap the header again anytime to hide this panel and focus on your answer."
                       : `${WRITING_TIP_ITEMS.length} short ideas — expand when you want a refresher.`}
@@ -445,7 +1017,7 @@ export const AssessmentSubjectiveLayout = memo(
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#4f46e5",
+                    color: "var(--accent-indigo-dark)",
                     mt: 0.25,
                   }}
                   aria-hidden
@@ -453,7 +1025,7 @@ export const AssessmentSubjectiveLayout = memo(
                   <IconWrapper
                     icon={writingTipsOpen ? "mdi:chevron-up" : "mdi:chevron-down"}
                     size={28}
-                    color="#4f46e5"
+                    color="var(--accent-indigo-dark)"
                   />
                 </Box>
               </ButtonBase>
@@ -465,7 +1037,7 @@ export const AssessmentSubjectiveLayout = memo(
                   sx={{
                     p: 2,
                     pt: 1.75,
-                    bgcolor: "#ffffff",
+                    bgcolor: "var(--font-light)",
                   }}
                 >
                   {WRITING_TIP_ITEMS.map((item, index) => (
@@ -476,12 +1048,12 @@ export const AssessmentSubjectiveLayout = memo(
                         gap: 1.5,
                         p: 1.5,
                         borderRadius: 2,
-                        border: "1px solid #e2e8f0",
-                        backgroundColor: "#fafbff",
+                        border: "1px solid var(--border-light)",
+                        backgroundColor: "var(--card-bg)",
                         transition: "border-color 0.15s ease, box-shadow 0.15s ease",
                         "&:hover": {
-                          borderColor: "#c7d2fe",
-                          boxShadow: "0 2px 8px rgba(79, 70, 229, 0.06)",
+                          borderColor: "color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                          boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo-dark) 8%, transparent)",
                         },
                       }}
                     >
@@ -495,12 +1067,12 @@ export const AssessmentSubjectiveLayout = memo(
                           alignItems: "center",
                           justifyContent: "center",
                           flexShrink: 0,
-                          backgroundColor: "#eef2ff",
-                          border: "1px solid #e0e7ff",
+                          backgroundColor: "var(--surface-indigo-light)",
+                          border: "1px solid color-mix(in srgb, var(--surface-indigo-light) 85%, var(--accent-indigo))",
                         }}
                         aria-hidden
                       >
-                        <IconWrapper icon={item.icon} size={22} color="#4f46e5" />
+                        <IconWrapper icon={item.icon} size={22} color="var(--accent-indigo-dark)" />
                       </Box>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography
@@ -508,13 +1080,13 @@ export const AssessmentSubjectiveLayout = memo(
                           variant="subtitle2"
                           sx={{
                             fontWeight: 700,
-                            color: "#1e1b4b",
+                            color: "color-mix(in srgb, var(--accent-indigo-dark) 88%, var(--font-dark))",
                             fontSize: "0.8125rem",
                             lineHeight: 1.35,
                             mb: 0.5,
                           }}
                         >
-                          <Box component="span" sx={{ color: "#6366f1", fontWeight: 800, mr: 0.75 }}>
+                          <Box component="span" sx={{ color: "var(--accent-indigo)", fontWeight: 800, mr: 0.75 }}>
                             {index + 1}.
                           </Box>
                           {item.title}
@@ -522,7 +1094,7 @@ export const AssessmentSubjectiveLayout = memo(
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#475569",
+                            color: "var(--font-muted)",
                             fontSize: "0.8125rem",
                             lineHeight: 1.6,
                           }}
@@ -555,7 +1127,7 @@ export const AssessmentSubjectiveLayout = memo(
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontWeight: 500,
                   }}
                 >
@@ -575,12 +1147,15 @@ export const AssessmentSubjectiveLayout = memo(
               >
                 <Button
                   variant="outlined"
-                  onClick={onPreviousQuestion}
+                  onClick={() => {
+                    flushTextNow();
+                    onPreviousQuestion?.();
+                  }}
                   disabled={isFirstQuestion}
                   startIcon={<IconWrapper icon="mdi:chevron-left" size={20} />}
                   sx={{
-                    borderColor: "#6366f1",
-                    color: "#6366f1",
+                    borderColor: "var(--accent-indigo)",
+                    color: "var(--accent-indigo)",
                     px: { xs: 2, sm: 3 },
                     py: 1.5,
                     fontSize: "0.9375rem",
@@ -590,12 +1165,12 @@ export const AssessmentSubjectiveLayout = memo(
                     flex: { xs: 1, sm: "none" },
                     minWidth: { xs: "auto", sm: "120px" },
                     "&:hover": {
-                      borderColor: "#4f46e5",
-                      backgroundColor: "#6366f115",
+                      borderColor: "var(--accent-indigo-dark)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 9%, transparent)",
                     },
                     "&:disabled": {
-                      borderColor: "#d1d5db",
-                      color: "#9ca3af",
+                      borderColor: "var(--border-light)",
+                      color: "var(--font-tertiary)",
                     },
                   }}
                 >
@@ -613,7 +1188,7 @@ export const AssessmentSubjectiveLayout = memo(
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontWeight: 500,
                     }}
                   >
@@ -623,12 +1198,15 @@ export const AssessmentSubjectiveLayout = memo(
 
                 <Button
                   variant="contained"
-                  onClick={onNextQuestion}
+                  onClick={() => {
+                    flushTextNow();
+                    onNextQuestion?.();
+                  }}
                   disabled={isLastQuestion}
                   endIcon={<IconWrapper icon="mdi:chevron-right" size={20} />}
                   sx={{
-                    backgroundColor: "#6366f1",
-                    color: "#ffffff",
+                    backgroundColor: "var(--accent-indigo)",
+                    color: "var(--font-light)",
                     px: { xs: 2, sm: 4 },
                     py: 1.5,
                     fontSize: "0.9375rem",
@@ -638,11 +1216,11 @@ export const AssessmentSubjectiveLayout = memo(
                     flex: { xs: 1, sm: "none" },
                     minWidth: { xs: "auto", sm: "140px" },
                     "&:hover": {
-                      backgroundColor: "#4f46e5",
+                      backgroundColor: "var(--accent-indigo-dark)",
                     },
                     "&:disabled": {
-                      backgroundColor: "#d1d5db",
-                      color: "#9ca3af",
+                      backgroundColor: "var(--border-light)",
+                      color: "var(--font-tertiary)",
                     },
                   }}
                 >
@@ -658,7 +1236,7 @@ export const AssessmentSubjectiveLayout = memo(
   (prevProps, nextProps) => {
     if (prevProps.currentQuestionIndex !== nextProps.currentQuestionIndex) return false;
     if (prevProps.currentQuestion.id !== nextProps.currentQuestion.id) return false;
-    if (prevProps.answerText !== nextProps.answerText) return false;
+    if (JSON.stringify(prevProps.value) !== JSON.stringify(nextProps.value)) return false;
     if (prevProps.totalQuestions !== nextProps.totalQuestions) return false;
     if (prevProps.questions.length !== nextProps.questions.length) return false;
 
@@ -670,6 +1248,11 @@ export const AssessmentSubjectiveLayout = memo(
     const prevAnswered = prevProps.questions.filter((q) => q.answered).length;
     const nextAnswered = nextProps.questions.filter((q) => q.answered).length;
     if (prevAnswered !== nextAnswered) return false;
+
+    if (prevProps.assessmentUploadClientId !== nextProps.assessmentUploadClientId)
+      return false;
+    if (prevProps.onSubjectiveImageUploadError !== nextProps.onSubjectiveImageUploadError)
+      return false;
 
     return true;
   }

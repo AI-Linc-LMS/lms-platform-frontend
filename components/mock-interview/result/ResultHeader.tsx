@@ -2,6 +2,7 @@
 
 import { Box, Container, Typography, Button, Chip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 import { memo } from "react";
 
 interface ResultHeaderProps {
@@ -22,13 +23,31 @@ const ResultHeaderComponent = ({
   topic,
   subtopic,
   difficulty,
-  duration_minutes,
+  duration_minutes: _duration_minutes,
   overall_percentage,
   performanceLabel,
   scoreColors,
   onBack,
   backLabel = "Back to Previous Interviews",
 }: ResultHeaderProps) => {
+  void _duration_minutes;
+
+  // The backend stamps `title` as "{topic} - {subtopic} Interview", which collapses to
+  // "System Design - System Design Interview" for quick-start interviews where the user
+  // didn't pick a distinct subtopic. `cleanInterviewTitle` strips that duplication so the
+  // header reads as "System Design Interview" / "Behavioral Questions Interview" etc.
+  // We fall back to `"{topic} Interview"` for safety in case the backend ever omits title.
+  const displayTitle =
+    cleanInterviewTitle(title) || (topic ? `${topic} Interview` : "Interview");
+
+  // Only render the subtopic chip when it actually adds information. Quick-start interviews
+  // set subtopic = topic, which would otherwise render an identical chip twice in the
+  // header.
+  const hasMeaningfulSubtopic = !!(
+    subtopic &&
+    subtopic.trim() &&
+    subtopic.trim().toLowerCase() !== topic.trim().toLowerCase()
+  );
   return (
     <Box
       sx={{
@@ -66,19 +85,10 @@ const ResultHeaderComponent = ({
                 fontSize: { xs: "1.5rem", md: "2rem" },
               }}
             >
-              {title}
+              {displayTitle}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
-              <Chip
-                label={topic}
-                size="small"
-                sx={{
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                }}
-              />
-              {subtopic && (
+              {hasMeaningfulSubtopic && (
                 <Chip
                   label={subtopic}
                   size="small"
@@ -91,18 +101,6 @@ const ResultHeaderComponent = ({
               )}
               <Chip
                 label={difficulty}
-                size="small"
-                sx={{
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                }}
-              />
-              <Chip
-                icon={
-                  <IconWrapper icon="mdi:clock-outline" size={14} color="#ffffff" />
-                }
-                label={`${duration_minutes} mins`}
                 size="small"
                 sx={{
                   backgroundColor: "rgba(255, 255, 255, 0.2)",
@@ -124,8 +122,8 @@ const ResultHeaderComponent = ({
           >
             <Box
               sx={{
-                width: 120,
-                height: 120,
+                width: 140,
+                height: 140,
                 borderRadius: "50%",
                 backgroundColor: "#ffffff",
                 display: "flex",
@@ -134,19 +132,40 @@ const ResultHeaderComponent = ({
                 justifyContent: "center",
                 boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
                 border: `6px solid ${scoreColors.main}`,
+                // Defensive: keep contents from spilling out of the circle when the
+                // percentage hits 100 with the inherited h3 font size.
+                overflow: "hidden",
+                px: 1,
               }}
             >
               <Typography
-                variant="h3"
-                sx={{ color: scoreColors.main, fontWeight: 800, lineHeight: 1 }}
+                sx={{
+                  color: scoreColors.main,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  // Scales with viewport so even very wide values fit inside the
+                  // circle on small screens. Caps at 2.25rem so the digits stay
+                  // legible on desktop without overflowing the 140px container.
+                  fontSize: "clamp(1.5rem, 4vw, 2.25rem)",
+                  whiteSpace: "nowrap",
+                  textAlign: "center",
+                }}
               >
-                {overall_percentage}%
+                {/* Round to an integer for a clean display. Defensive Math.round in
+                    case the backend ever returns 100.0 + tiny FP noise like 100.0001. */}
+                {Math.round(overall_percentage)}%
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: "#6b7280", fontSize: "0.7rem", mt: 0.5 }}
+                sx={{
+                  color: "var(--font-secondary)",
+                  fontSize: "0.65rem",
+                  mt: 0.5,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
               >
-                OVERALL SCORE
+                Overall Score
               </Typography>
             </Box>
             <Chip

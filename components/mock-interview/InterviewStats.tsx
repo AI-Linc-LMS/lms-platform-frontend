@@ -24,29 +24,29 @@ const InterviewStatsComponent = ({
       label: t("mockInterview.totalInterviews"),
       value: totalInterviews,
       icon: "mdi:briefcase-outline",
-      color: "#6366f1",
-      bgColor: "#eff6ff",
+      color: "var(--accent-indigo)",
+      bgColor: "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
     },
     {
       label: "Completed",
       value: completedInterviews,
       icon: "mdi:check-circle",
-      color: "#10b981",
-      bgColor: "#ecfdf5",
+      color: "var(--success-500)",
+      bgColor: "color-mix(in srgb, var(--success-500) 14%, transparent)",
     },
     {
       label: t("mockInterview.scheduled"),
       value: scheduledInterviews,
       icon: "mdi:calendar-clock",
-      color: "#f59e0b",
-      bgColor: "#fef3c7",
+      color: "var(--warning-500)",
+      bgColor: "color-mix(in srgb, var(--warning-500) 16%, transparent)",
     },
     {
       label: t("mockInterview.averageScore"),
       value: `${averageScore}%`,
       icon: "mdi:chart-line",
-      color: "#8b5cf6",
-      bgColor: "#f5f3ff",
+      color: "var(--accent-purple)",
+      bgColor: "color-mix(in srgb, var(--accent-purple) 14%, transparent)",
     },
   ];
 
@@ -70,11 +70,12 @@ const InterviewStatsComponent = ({
               p: 3,
               borderRadius: 2,
               border: "1px solid",
-              borderColor: "#e5e7eb",
-              backgroundColor: "#ffffff",
+              borderColor: "var(--border-default)",
+              backgroundColor: "var(--card-bg)",
               transition: "all 0.3s ease",
               "&:hover": {
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+                boxShadow:
+                  "0 4px 12px color-mix(in srgb, var(--font-primary) 12%, transparent)",
                 transform: "translateY(-2px)",
               },
             }}
@@ -96,13 +97,13 @@ const InterviewStatsComponent = ({
               <Box>
                 <Typography
                   variant="h4"
-                  sx={{ fontWeight: 700, color: "#1f2937", mb: 0.5 }}
+                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}
                 >
                   {stat.value}
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "#6b7280", fontSize: "0.875rem" }}
+                  sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
                 >
                   {stat.label}
                 </Typography>

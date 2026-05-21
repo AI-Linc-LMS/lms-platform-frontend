@@ -11,6 +11,7 @@ interface VoteButtonsProps {
   onVote: (type: "upvote" | "downvote") => Promise<void>;
   size?: "small" | "medium";
   orientation?: "vertical" | "horizontal";
+  disabled?: boolean;
 }
 
 export function VoteButtons({
@@ -20,6 +21,7 @@ export function VoteButtons({
   onVote,
   size = "medium",
   orientation = "vertical",
+  disabled = false,
 }: VoteButtonsProps) {
   const [voting, setVoting] = useState(false);
 
@@ -58,15 +60,16 @@ export function VoteButtons({
         <IconButton
           size={size}
           onClick={() => handleVote("upvote")}
-          disabled={voting}
+          disabled={voting || disabled}
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             backgroundColor: "transparent",
             "&:hover": {
-              backgroundColor: "rgba(0, 0, 0, 0.04)",
+              backgroundColor:
+                "color-mix(in srgb, var(--font-primary) 8%, transparent)",
             },
             "&:disabled": {
-              color: "#d1d5db",
+              color: "var(--font-tertiary)",
             },
           }}
         >
@@ -85,7 +88,7 @@ export function VoteButtons({
           variant="caption"
           fontWeight={600}
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: size === "small" ? "0.75rem" : "0.875rem",
           }}
         >
@@ -106,13 +109,14 @@ export function VoteButtons({
           onClick={() => handleVote("downvote")}
           disabled={voting}
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             backgroundColor: "transparent",
             "&:hover": {
-              backgroundColor: "rgba(0, 0, 0, 0.04)",
+              backgroundColor:
+                "color-mix(in srgb, var(--font-primary) 8%, transparent)",
             },
             "&:disabled": {
-              color: "#d1d5db",
+              color: "var(--font-tertiary)",
             },
           }}
         >
@@ -133,7 +137,7 @@ export function VoteButtons({
           variant="caption"
           fontWeight={600}
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: size === "small" ? "0.75rem" : "0.875rem",
           }}
         >

@@ -201,7 +201,7 @@ export default function GenerateStructuredPlanPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               textDecoration: "none",
               fontSize: "0.875rem",
             }}
@@ -213,11 +213,11 @@ export default function GenerateStructuredPlanPage() {
 
         <Typography
           variant="h5"
-          sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
+          sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 1 }}
         >
           {t("adminAICourseBuilder.generateFromStructuredPlanTitle")}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
           {t("adminAICourseBuilder.generateFromStructuredPlanSubtitle")}
         </Typography>
 
@@ -225,7 +225,10 @@ export default function GenerateStructuredPlanPage() {
           sx={{
             p: { xs: 2, sm: 3 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             maxWidth: 900,
           }}
         >
@@ -262,14 +265,14 @@ export default function GenerateStructuredPlanPage() {
                       gap: 1,
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ color: "#6b7280" }}>
+                    <Typography variant="subtitle2" sx={{ color: "var(--font-secondary)" }}>
                       {t("adminAICourseBuilder.moduleLabel", { num: modIndex + 1 })}
                     </Typography>
                     <IconButton
                       size="small"
                       onClick={() => removeModule(modIndex)}
                       disabled={modules.length === 1}
-                      sx={{ color: "#ef4444" }}
+                      sx={{ color: "var(--error-500)" }}
                     >
                       <IconWrapper icon="mdi:delete-outline" size={20} />
                     </IconButton>
@@ -318,7 +321,7 @@ export default function GenerateStructuredPlanPage() {
 
                   <Typography
                     variant="caption"
-                    sx={{ color: "#6b7280", display: "block", mb: 1 }}
+                    sx={{ color: "var(--font-secondary)", display: "block", mb: 1 }}
                   >
                     {t("adminAICourseBuilder.submodules")}
                   </Typography>
@@ -374,7 +377,7 @@ export default function GenerateStructuredPlanPage() {
                           )
                         }
                         disabled={mod.submodules.length <= 1}
-                        sx={{ color: "#ef4444" }}
+                      sx={{ color: "var(--error-500)" }}
                       >
                         <IconWrapper icon="mdi:close" size={18} />
                       </IconButton>
@@ -423,8 +426,12 @@ export default function GenerateStructuredPlanPage() {
                 variant="contained"
                 disabled={submitting}
                 sx={{
-                  bgcolor: "#10b981",
-                  "&:hover": { bgcolor: "#059669" },
+                  bgcolor: "var(--success-500)",
+                  color: "var(--font-light)",
+                  "&:hover": {
+                    bgcolor:
+                      "color-mix(in srgb, var(--success-500) 85%, black 15%)",
+                  },
                 }}
               >
                 {submitting ? (

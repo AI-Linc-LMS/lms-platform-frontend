@@ -12,6 +12,14 @@ import { getLiveSessionErrorMessage, copyToClipboard } from "@/lib/utils/live-se
 
 const LIVE_SESSIONS_FEATURE = "live_sessions";
 
+function formatCompactMinutes(totalMinutes: number): string {
+  if (totalMinutes <= 0) return "";
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 export function useLiveSessions() {
   const { t } = useTranslation("common");
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
@@ -80,12 +88,25 @@ export function useLiveSessions() {
     });
   };
 
-  const formatTimeRemaining = (minutes: number) => {
-    if (minutes <= 0) return "Expired";
-    if (minutes < 60) return `${minutes} min left`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}m left` : `${hours}h left`;
+  const formatSessionDuration = (minutes: number | undefined) => {
+    if (minutes == null || minutes <= 0) return "—";
+    return formatCompactMinutes(minutes);
+  };
+
+  const formatSessionStatusCaption = (
+    activity: StudentLiveSession
+  ): string | null => {
+    const m = activity.time_remaining_minutes ?? 0;
+    if (m <= 0) return null;
+    const compact = formatCompactMinutes(m);
+    if (!compact) return null;
+    if (activity.meeting_status === "scheduled") {
+      return t("liveSessions.startsInCountdown", { time: compact });
+    }
+    if (activity.meeting_status === "live") {
+      return t("liveSessions.sessionTimeLeft", { time: compact });
+    }
+    return null;
   };
 
   return {
@@ -102,6 +123,7 @@ export function useLiveSessions() {
     handleCopyPassword,
     handleWatchRecording,
     formatDateTime,
-    formatTimeRemaining,
+    formatSessionDuration,
+    formatSessionStatusCaption,
   };
 }

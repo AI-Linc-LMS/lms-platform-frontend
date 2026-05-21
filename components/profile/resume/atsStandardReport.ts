@@ -36,23 +36,17 @@ export interface StandardATSScoreReport {
     scopeForImprovement: string[];
     suggestions: string[];
     executiveSummary: string;
-    authenticityScore: number;
-    authenticityConcerns: string[];
   };
+  /** Industry-standard ATS-relevant checks. Pseudo-metrics like tone/grammar
+   *  removed — those are recruiter-feel, not what real ATS scanners check. */
   qualityChecks: {
-    spacingAlignment: { score: number; note?: string };
-    tone: { score: number; note?: string };
-    languageFluency: { score: number; note?: string };
-    grammar: { score: number; note?: string };
-    consistency: { score: number; note?: string };
-    evidenceAuthentication: { score: number; note?: string };
-    sectionBalance: { score: number; note?: string };
+    sectionPresence: { score: number; note?: string };
     contactCompleteness: { score: number; note?: string };
     bulletQuality: { score: number; note?: string };
-    dateRecency: { score: number; note?: string };
+    dateConsistency: { score: number; note?: string };
+    length: { score: number; note?: string };
   };
   feedback: {
-    toneAndStyle: StandardReportFeedbackCategory;
     content: StandardReportFeedbackCategory;
     structure: StandardReportFeedbackCategory;
     skills: StandardReportFeedbackCategory;
@@ -254,60 +248,75 @@ const SUGGESTION_TEMPLATES = [
   { condition: () => true, text: "Paste a job description and run 'Analyze with AI' for tailored feedback." },
 ] as const;
 
+function scoreLength(data: ResumeData): { score: number; note?: string } {
+  // Approximate "page count" by total content characters. ~3000 chars/page is a rough guide.
+  let chars = 0;
+  chars += (data.basicInfo?.summary ?? "").length;
+  for (const e of data.workExperience ?? []) {
+    chars += (e.position ?? "").length + (e.company ?? "").length;
+    chars += (e.description ?? []).reduce((a, b) => a + (b ?? "").length, 0);
+  }
+  for (const e of data.education ?? []) {
+    chars += (e.degree ?? "").length + (e.institution ?? "").length + (e.description ?? "").length;
+  }
+  for (const p of data.projects ?? []) {
+    chars += (p.name ?? "").length + (p.description ?? "").length;
+  }
+  for (const s of data.skills ?? []) chars += (s.name ?? "").length + 4;
+
+  const pages = chars / 3000;
+  if (pages < 0.5) {
+    return { score: 40, note: "Resume looks very short. Aim for 1 well-filled page." };
+  }
+  if (pages >= 0.5 && pages <= 2.2) {
+    return { score: 90, note: pages < 1 ? "Slightly short but acceptable." : "Length is appropriate." };
+  }
+  if (pages > 2.2 && pages <= 3) {
+    return { score: 65, note: "Tightens better at 1-2 pages. Consider removing older or less-relevant content." };
+  }
+  return { score: 40, note: "Resume is too long — cut down to 1-2 focused pages." };
+}
+
 export function computeStandardATSScoreReport(data: ResumeData): StandardATSScoreReport {
   const base = computeATSScore(data, "");
-  const { score: authenticityScore, concerns: authenticityConcerns } = detectPlaceholders(data);
-
-  const spacing = scoreSpacingAlignment(data);
-  const tone = scoreTone(data);
-  const fluency = scoreLanguageFluency(data);
-  const grammar = scoreGrammar(data);
-  const consistency = scoreConsistency(data);
-  const evidence = scoreEvidenceAuthentication(data, authenticityScore, authenticityConcerns);
-  const sectionBalance = scoreSectionBalance(data);
+  const sectionPresence = scoreSectionBalance(data);
   const contactCompleteness = scoreContactCompleteness(data);
   const bulletQuality = scoreBulletQuality(data);
-  const dateRecency = scoreDateRecency(data);
+  const dateConsistency = scoreDateRecency(data);
+  const length = scoreLength(data);
 
-  const presentationAvgRaw = (spacing.score + tone.score + grammar.score + consistency.score + base.breakdown.format + base.breakdown.completeness) / 6;
+  // Parseability = how well an ATS can extract structured data (the 20% portion).
+  const parseabilityAvg = (sectionPresence.score + contactCompleteness.score + dateConsistency.score + length.score) / 4;
 
   const breakdown: OfflineCriteriaBreakdown = {
     format: base.breakdown.format,
     completeness: base.breakdown.completeness,
     contentDepth: base.breakdown.contentDepth,
-    sectionBalance: sectionBalance.score,
+    sectionBalance: sectionPresence.score,
     contactCompleteness: contactCompleteness.score,
     bulletQuality: bulletQuality.score,
-    dateConsistency: dateRecency.score,
+    dateConsistency: dateConsistency.score,
     experienceLevel: base.breakdown.experienceLevel,
     educationCerts: base.breakdown.educationCerts,
-    presentation: Math.round(presentationAvgRaw),
+    presentation: Math.round(parseabilityAvg),
   };
 
   const goodThings: string[] = [];
-  if (base.breakdown.format >= 80) goodThings.push("Clear section structure with experience, education, and skills.");
-  if (base.breakdown.completeness >= 80) goodThings.push("Contact info and summary are present.");
-  if (base.breakdown.contentDepth >= 70) goodThings.push("Good content depth with multiple bullets and skills.");
-  if (sectionBalance.score >= 85) goodThings.push("All key sections (summary, work, education, skills) are present.");
-  if (contactCompleteness.score >= 80) goodThings.push("Contact and profile links are complete.");
-  if (bulletQuality.score >= 70) goodThings.push("Bullet points show impact and use action-oriented language.");
-  if (dateRecency.score >= 80) goodThings.push("Dates are consistent and include recent experience.");
+  if (sectionPresence.score >= 85) goodThings.push("Standard ATS-parseable sections (Experience, Education, Skills, Contact) are present.");
+  if (contactCompleteness.score >= 80) goodThings.push("Contact info is complete and recruiter-reachable.");
+  if (bulletQuality.score >= 70) goodThings.push("Bullet points use action verbs and convey impact.");
+  if (dateConsistency.score >= 80) goodThings.push("Dates are consistent and parseable.");
+  if (length.score >= 80) goodThings.push("Resume length is appropriate.");
   if (data.projects?.length) goodThings.push("Projects section adds credibility.");
   if (data.certifications?.length) goodThings.push("Certifications strengthen the profile.");
-  if (authenticityConcerns.length === 0) goodThings.push("No obvious placeholder or fake-looking entries detected.");
   if (goodThings.length === 0) goodThings.push("Resume has the basic sections; add more detail for a stronger report.");
 
   const scopeForImprovement: string[] = [];
-  if (base.breakdown.format < 80) scopeForImprovement.push("Add or complete work experience, education, and skills sections.");
-  if (base.breakdown.completeness < 80) scopeForImprovement.push("Include email, phone, and a professional summary (50+ characters).");
-  if (base.breakdown.contentDepth < 70) scopeForImprovement.push("Add more bullet points per role and list 5+ relevant skills.");
-  if (sectionBalance.score < 85) scopeForImprovement.push("Fill in missing sections (e.g. projects or certifications).");
-  if (contactCompleteness.score < 70) scopeForImprovement.push("Add phone, location, or LinkedIn/GitHub for recruiters.");
-  if (bulletQuality.score < 70) scopeForImprovement.push("Improve bullet quality: use action verbs and quantify impact where possible.");
-  if (dateRecency.score < 70) scopeForImprovement.push("Use consistent date format (YYYY-MM) and include current or recent roles.");
-  if (authenticityConcerns.length > 0) scopeForImprovement.push("Replace placeholder or generic names with real company and institution names.");
-  if (spacing.score < 70) scopeForImprovement.push("Improve spacing and alignment for a cleaner layout.");
-  if (tone.score < 70) scopeForImprovement.push("Strengthen professional tone in the summary.");
+  if (sectionPresence.score < 85) scopeForImprovement.push("Fill in missing standard sections (Experience, Education, Skills, Contact).");
+  if (contactCompleteness.score < 70) scopeForImprovement.push("Complete contact info: name, email, phone, location, plus LinkedIn or GitHub.");
+  if (bulletQuality.score < 70) scopeForImprovement.push("Improve bullet quality: lead with action verbs and quantify impact (numbers, %, scale).");
+  if (dateConsistency.score < 70) scopeForImprovement.push("Use consistent date format (YYYY-MM) across all work and education entries.");
+  if (length.score < 70) scopeForImprovement.push(length.note ?? "Tighten the resume to 1-2 focused pages.");
   if (scopeForImprovement.length === 0) scopeForImprovement.push("Minor refinements can further improve ATS compatibility.");
 
   const suggestions: string[] = [];
@@ -330,15 +339,10 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
   ];
 
   const executiveSummary =
-    authenticityConcerns.length > 0
-      ? "Your resume has the right structure, but some entries look like placeholders. Replacing them with real company and institution names will improve credibility. Use 'Analyze with AI' with a job description for a detailed match report."
-      : base.overall >= 70
-        ? "Your resume has solid structure and completeness. Adding more bullet points and skills will strengthen it further. For job-specific feedback, paste a job description and run AI analysis."
-        : "Your resume has room to improve in content depth and completeness. Follow the suggestions below and consider running AI analysis with a job description for tailored advice.";
+    base.overall >= 70
+      ? "Your resume has solid structure and completeness. Adding more bullet points and skills will strengthen it further. For job-specific feedback, paste a job description and run AI analysis."
+      : "Your resume has room to improve in content depth and completeness. Follow the suggestions below and consider running AI analysis with a job description for tailored advice.";
 
-  const avgFeedback = Math.round(
-    (spacing.score + tone.score + fluency.score + grammar.score + consistency.score) / 5
-  );
   const feedbackCategory = (
     score: number,
     positive: string[],
@@ -355,10 +359,9 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
     breakdown.experienceLevel ?? breakdown.contentDepth,
     breakdown.educationCerts ?? breakdown.contentDepth,
     breakdown.bulletQuality,
-    evidence.score,
   ];
   const technicalAvg = technicalScores.reduce((a, b) => a + b, 0) / technicalScores.length;
-  let blendedOverall = technicalAvg * TECHNICAL_WEIGHT + presentationAvgRaw * PRESENTATION_WEIGHT;
+  let blendedOverall = technicalAvg * TECHNICAL_WEIGHT + parseabilityAvg * PRESENTATION_WEIGHT;
   if (technicalAvg < POOR_TECHNICAL_THRESHOLD) {
     blendedOverall = Math.min(blendedOverall, POOR_TECHNICAL_CAP);
   }
@@ -374,25 +377,25 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
       scopeForImprovement,
       suggestions,
       executiveSummary,
-      authenticityScore,
-      authenticityConcerns,
     },
     qualityChecks: {
-      spacingAlignment: spacing,
-      tone,
-      languageFluency: fluency,
-      grammar,
-      consistency,
-      evidenceAuthentication: evidence,
-      sectionBalance,
+      sectionPresence,
       contactCompleteness,
       bulletQuality,
-      dateRecency,
+      dateConsistency,
+      length,
     },
     feedback: {
-      toneAndStyle: feedbackCategory(tone.score, tone.score >= 70 ? ["Professional tone"] : [], tone.score < 70 ? ["Strengthen summary tone"] : []),
-      content: feedbackCategory(fluency.score, fluency.score >= 70 ? ["Adequate content depth"] : [], fluency.score < 70 ? ["Add more descriptive bullets"] : []),
-      structure: feedbackCategory(spacing.score, spacing.score >= 70 ? ["Clear structure"] : [], spacing.score < 70 ? ["Improve section spacing"] : []),
+      content: feedbackCategory(
+        bulletQuality.score,
+        bulletQuality.score >= 70 ? ["Bullets are specific and outcome-focused"] : [],
+        bulletQuality.score < 70 ? ["Lead with action verbs and quantify impact (numbers, %)."] : []
+      ),
+      structure: feedbackCategory(
+        Math.round((sectionPresence.score + dateConsistency.score + length.score) / 3),
+        sectionPresence.score >= 80 ? ["Standard sections present"] : [],
+        sectionPresence.score < 80 ? ["Add missing standard sections"] : dateConsistency.score < 70 ? ["Fix inconsistent dates"] : []
+      ),
       skills: feedbackCategory(
         base.breakdown.contentDepth >= 60 ? 75 : 55,
         (data.skills?.length ?? 0) >= 5 ? ["Good skills list"] : [],

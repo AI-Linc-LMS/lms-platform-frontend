@@ -80,11 +80,15 @@ export function ProfileHeader({
             sx={{
               width: { xs: 104, sm: 132, md: 180 },
               height: { xs: 104, sm: 132, md: 180 },
-              border: { xs: "4px solid #ffffff", sm: "5px solid #ffffff" },
-              boxShadow: "0 4px 24px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06)",
+              border: {
+                xs: "4px solid color-mix(in srgb, var(--background) 95%, transparent)",
+                sm: "5px solid color-mix(in srgb, var(--background) 95%, transparent)",
+              },
+              boxShadow:
+                "0 4px 24px color-mix(in srgb, var(--font-primary) 22%, transparent), 0 0 0 1px color-mix(in srgb, var(--font-primary) 8%, transparent)",
               cursor: onEditProfilePicUrl ? "pointer" : "default",
-              backgroundColor: "#0f172a",
-              color: "#ffffff",
+              backgroundColor: "var(--surface)",
+              color: "var(--font-light)",
             }}
           >
             {userName?.[0]?.toUpperCase()}
@@ -98,21 +102,21 @@ export function ProfileHeader({
                 width: { xs: 40, sm: 44, md: 52 },
                 height: { xs: 40, sm: 44, md: 52 },
                 borderRadius: "50%",
-                backgroundColor: "#0a66c2",
+                backgroundColor: "var(--accent-indigo)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: "3px solid #ffffff",
+                border: "3px solid color-mix(in srgb, var(--background) 95%, transparent)",
                 cursor: "pointer",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                boxShadow: "0 2px 4px color-mix(in srgb, var(--font-primary) 20%, transparent)",
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  backgroundColor: "#004182",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
               }}
               onClick={() => setProfilePicDialogOpen(true)}
             >
-              <IconWrapper icon="mdi:link-variant" size={20} color="#ffffff" />
+              <IconWrapper icon="mdi:link-variant" size={20} color="var(--font-light)" />
             </Box>
           )}
         </Box>
@@ -136,7 +140,7 @@ export function ProfileHeader({
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#000000",
+              color: "var(--font-primary)",
               fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" },
               mb: { xs: 0.25, sm: 0.5 },
               lineHeight: 1.2,
@@ -160,7 +164,7 @@ export function ProfileHeader({
             <Typography
               variant="body1"
               sx={{
-                color: headline ? "#666666" : "#9ca3af",
+                color: headline ? "var(--font-secondary)" : "var(--font-tertiary)",
                 fontSize: { xs: "0.8125rem", sm: "0.875rem", md: "1rem" },
                 fontWeight: 400,
                 lineHeight: 1.4,
@@ -181,12 +185,12 @@ export function ProfileHeader({
                   height: { xs: 28, sm: 32 },
                   minWidth: { xs: 28, sm: 32 },
                   flexShrink: 0,
-                  color: "#0a66c2",
+                  color: "var(--accent-indigo)",
                   opacity: headlineHovered || !headline ? 1 : 0,
                   pointerEvents: headlineHovered || !headline ? "auto" : "none",
                   transition: "opacity 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "rgba(10, 102, 194, 0.08)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                   },
                 }}
               >
@@ -203,11 +207,11 @@ export function ProfileHeader({
                 mt: { xs: 0.25, sm: 0.5 },
               }}
             >
-              <IconWrapper icon="mdi:map-marker" size={16} color="#666666" />
+              <IconWrapper icon="mdi:map-marker" size={16} color="var(--font-secondary)" />
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: { xs: "0.8125rem", sm: "0.9375rem" },
                   fontWeight: 400,
                 }}
@@ -235,15 +239,15 @@ export function ProfileHeader({
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: { xs: "0.875rem", sm: "0.9375rem" },
-                color: "#0a66c2",
-                borderColor: "#0a66c2",
+                color: "var(--accent-indigo)",
+                borderColor: "var(--accent-indigo)",
                 borderRadius: "24px",
                 px: { xs: 1.5, sm: 2 },
                 py: { xs: 0.5, sm: 0.75 },
                 minWidth: { xs: "auto", sm: "auto" },
                 "&:hover": {
-                  borderColor: "#004182",
-                  backgroundColor: "rgba(10, 102, 194, 0.05)",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                   borderWidth: "2px",
                 },
                 transition: "all 0.2s ease",
@@ -272,7 +276,7 @@ export function ProfileHeader({
         PaperProps={{
           sx: {
             borderRadius: { xs: 0, sm: 2 },
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+            boxShadow: "0 8px 24px color-mix(in srgb, var(--font-primary) 16%, transparent)",
             m: { xs: 0, sm: 2 },
             maxHeight: { xs: "100vh", sm: "90vh" },
             display: "flex",
@@ -286,8 +290,8 @@ export function ProfileHeader({
             pb: { xs: 1.5, sm: 2 },
             px: { xs: 2.5, sm: 3 },
             pt: { xs: 2.5, sm: 3 },
-            borderBottom: "1px solid rgba(0,0,0,0.08)",
-            backgroundColor: "#f9fafb",
+            borderBottom: "1px solid var(--border-default)",
+            backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
             display: "flex",
             alignItems: "center",
             gap: { xs: 1.25, sm: 1.5 },
@@ -298,21 +302,21 @@ export function ProfileHeader({
               width: { xs: 36, sm: 40 },
               height: { xs: 36, sm: 40 },
               borderRadius: "50%",
-              backgroundColor: "rgba(10, 102, 194, 0.1)",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <IconWrapper icon="mdi:format-text" size={20} color="#0a66c2" />
+            <IconWrapper icon="mdi:format-text" size={20} color="var(--accent-indigo)" />
           </Box>
           <Box sx={{ flex: 1 }}>
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 600,
-                color: "#000000",
+                color: "var(--font-primary)",
                 fontSize: { xs: "1.125rem", sm: "1.25rem" },
                 mb: 0.25,
               }}
@@ -322,7 +326,7 @@ export function ProfileHeader({
             <Typography
               variant="caption"
               sx={{
-                color: "#666666",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 fontWeight: 400,
               }}
@@ -367,7 +371,7 @@ export function ProfileHeader({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "#666666",
+                    color: "var(--font-secondary)",
                     fontSize: "0.8125rem",
                     flex: 1,
                   }}
@@ -377,7 +381,10 @@ export function ProfileHeader({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: headlineValue.length > 120 ? "#d32f2f" : "#9ca3af",
+                    color:
+                      headlineValue.length > 120
+                        ? "var(--error-500)"
+                        : "var(--font-tertiary)",
                     fontSize: "0.8125rem",
                     fontWeight: 500,
                     ml: 2,
@@ -401,7 +408,7 @@ export function ProfileHeader({
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,
                 fontSize: "0.9375rem",
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--background)",
                 padding: "12px 14px",
                 "& textarea": {
                   overflow: "auto !important",
@@ -415,12 +422,12 @@ export function ProfileHeader({
                 },
                 "&:hover": {
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#0a66c2",
+                    borderColor: "var(--accent-indigo)",
                   },
                 },
                 "&.Mui-focused": {
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#0a66c2",
+                    borderColor: "var(--accent-indigo)",
                     borderWidth: "2px",
                   },
                 },
@@ -428,9 +435,9 @@ export function ProfileHeader({
               "& .MuiInputLabel-root": {
                 fontSize: "0.9375rem",
                 fontWeight: 500,
-                color: "#666666",
+                color: "var(--font-secondary)",
                 "&.Mui-focused": {
-                  color: "#0a66c2",
+                  color: "var(--accent-indigo)",
                 },
               },
               "& .MuiFormHelperText-root": {
@@ -446,16 +453,16 @@ export function ProfileHeader({
               mt: 2.5,
               p: 2,
               borderRadius: 1.5,
-              backgroundColor: "#f9fafb",
-              border: "1px solid rgba(0,0,0,0.08)",
+              backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
+              border: "1px solid var(--border-default)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <IconWrapper icon="mdi:lightbulb-outline" size={18} color="#0a66c2" />
+              <IconWrapper icon="mdi:lightbulb-outline" size={18} color="var(--accent-indigo)" />
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#000000",
+                  color: "var(--font-primary)",
                   fontSize: "0.8125rem",
                   fontWeight: 600,
                 }}
@@ -467,7 +474,7 @@ export function ProfileHeader({
               <Box
                 component="li"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.8125rem",
                   mb: 0.75,
                   position: "relative",
@@ -475,7 +482,7 @@ export function ProfileHeader({
                     content: '"•"',
                     position: "absolute",
                     left: -16,
-                    color: "#0a66c2",
+                    color: "var(--accent-indigo)",
                     fontWeight: "bold",
                   },
                 }}
@@ -485,7 +492,7 @@ export function ProfileHeader({
               <Box
                 component="li"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.8125rem",
                   mb: 0.75,
                   position: "relative",
@@ -493,7 +500,7 @@ export function ProfileHeader({
                     content: '"•"',
                     position: "absolute",
                     left: -16,
-                    color: "#0a66c2",
+                    color: "var(--accent-indigo)",
                     fontWeight: "bold",
                   },
                 }}
@@ -503,14 +510,14 @@ export function ProfileHeader({
               <Box
                 component="li"
                 sx={{
-                  color: "#666666",
+                  color: "var(--font-secondary)",
                   fontSize: "0.8125rem",
                   position: "relative",
                   "&::before": {
                     content: '"•"',
                     position: "absolute",
                     left: -16,
-                    color: "#0a66c2",
+                    color: "var(--accent-indigo)",
                     fontWeight: "bold",
                   },
                 }}
@@ -524,10 +531,10 @@ export function ProfileHeader({
           sx={{
             px: { xs: 2.5, sm: 3 },
             py: { xs: 2, sm: 2.5 },
-            borderTop: "1px solid rgba(0,0,0,0.08)",
+            borderTop: "1px solid var(--border-default)",
             gap: { xs: 1, sm: 1.25 },
             flexDirection: { xs: "column-reverse", sm: "row" },
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--background)",
           }}
         >
           <Button
@@ -539,16 +546,16 @@ export function ProfileHeader({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              color: "#666666",
+              color: "var(--font-secondary)",
               borderRadius: "24px",
               px: { xs: 3, sm: 3 },
               py: { xs: 1.125, sm: 0.875 },
               width: { xs: "100%", sm: "auto" },
               minWidth: { xs: "auto", sm: 100 },
-              border: "1px solid rgba(0,0,0,0.12)",
+              border: "1px solid var(--border-default)",
               "&:hover": {
-                backgroundColor: "#f3f2ef",
-                borderColor: "rgba(0,0,0,0.2)",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background))",
+                borderColor: "color-mix(in srgb, var(--border-default) 85%, var(--font-secondary))",
               },
               transition: "all 0.2s ease",
             }}
@@ -574,20 +581,20 @@ export function ProfileHeader({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              backgroundColor: "#0a66c2",
+              backgroundColor: "var(--accent-indigo)",
               borderRadius: "24px",
               px: { xs: 3, sm: 3.5 },
               py: { xs: 1.125, sm: 0.875 },
               width: { xs: "100%", sm: "auto" },
               minWidth: { xs: "auto", sm: 120 },
-              boxShadow: "0 2px 4px rgba(10, 102, 194, 0.2)",
+              boxShadow: "0 2px 4px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
               "&:hover": {
-                backgroundColor: "#004182",
-                boxShadow: "0 4px 8px rgba(10, 102, 194, 0.3)",
+                backgroundColor: "var(--accent-indigo-dark)",
+                boxShadow: "0 4px 8px color-mix(in srgb, var(--accent-indigo) 36%, transparent)",
               },
               "&:disabled": {
-                backgroundColor: "#e5e7eb",
-                color: "#9ca3af",
+                backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--border-default))",
+                color: "var(--font-tertiary)",
                 boxShadow: "none",
               },
               transition: "all 0.2s ease",
@@ -599,8 +606,8 @@ export function ProfileHeader({
                   sx={{
                     width: 16,
                     height: 16,
-                    border: "2px solid rgba(255,255,255,0.3)",
-                    borderTop: "2px solid #ffffff",
+                    border: "2px solid color-mix(in srgb, var(--font-light) 35%, transparent)",
+                    borderTop: "2px solid var(--font-light)",
                     borderRadius: "50%",
                     animation: "spin 0.8s linear infinite",
                     "@keyframes spin": {

@@ -129,7 +129,7 @@ export const StreakTable = ({
           sx={{
             fontSize: "1.125rem",
             fontWeight: 600,
-            color: "#111827",
+            color: "var(--font-primary)",
           }}
           >
             {t("dashboard.myStreak")}
@@ -143,20 +143,20 @@ export const StreakTable = ({
               px: 2,
               py: 0.5,
               borderRadius: 2,
-              backgroundColor: "#FEF3C7",
+              backgroundColor: "color-mix(in srgb, var(--warning-500) 24%, transparent)",
             }}
           >
             <IconWrapper
               icon="mdi:fire"
               size={18}
-              style={{ color: "#F59E0B" }}
+              style={{ color: "var(--warning-500)" }}
             />
             <Typography
               variant="body2"
               sx={{
                 fontSize: "0.875rem",
                 fontWeight: 600,
-                color: "#92400E",
+                color: "var(--font-primary)",
               }}
             >
               {t("dashboard.dayStreak", { count: currentStreak })}
@@ -169,8 +169,8 @@ export const StreakTable = ({
           p: 3,
           borderRadius: 2,
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
         }}
       >
         {loading ? (
@@ -184,7 +184,7 @@ export const StreakTable = ({
               sx={{
                 fontSize: "0.875rem",
                 fontWeight: 600,
-                color: "#111827",
+                color: "var(--font-primary)",
                 mb: 2,
               }}
             >
@@ -207,7 +207,7 @@ export const StreakTable = ({
                     textAlign: "center",
                     fontSize: "0.75rem",
                     fontWeight: 600,
-                    color: "#6B7280",
+                    color: "var(--font-secondary)",
                     py: 0.5,
                   }}
                 >
@@ -242,22 +242,22 @@ export const StreakTable = ({
                       justifyContent: "center",
                       borderRadius: 1,
                       backgroundColor: hasStreak
-                        ? "#F59E0B"
+                        ? "var(--warning-500)"
                         : isCurrentDay
-                        ? "#FEF3C7"
+                        ? "color-mix(in srgb, var(--warning-500) 24%, transparent)"
                         : "transparent",
                       color: hasStreak
                         ? "#ffffff"
                         : isCurrentDay
-                        ? "#92400E"
+                        ? "var(--font-primary)"
                         : isFuture
-                        ? "#9CA3AF"
-                        : "#111827",
+                        ? "var(--font-tertiary)"
+                        : "var(--font-primary)",
                       fontWeight: hasStreak || isCurrentDay ? 600 : 400,
                       fontSize: "0.75rem",
                       border:
                         isCurrentDay && !hasStreak
-                          ? "1px solid #F59E0B"
+                          ? "1px solid var(--warning-500)"
                           : "none",
                       cursor: isFuture ? "not-allowed" : "pointer",
                       opacity: isFuture ? 0.5 : 1,
@@ -265,10 +265,10 @@ export const StreakTable = ({
                       "&:hover": !isFuture
                         ? {
                             backgroundColor: hasStreak
-                              ? "#D97706"
+                              ? "color-mix(in srgb, var(--warning-500) 88%, black)"
                               : isCurrentDay
-                              ? "#FDE68A"
-                              : "#F3F4F6",
+                              ? "color-mix(in srgb, var(--warning-500) 38%, transparent)"
+                              : "var(--surface)",
                             transform: "scale(1.05)",
                           }
                         : {},

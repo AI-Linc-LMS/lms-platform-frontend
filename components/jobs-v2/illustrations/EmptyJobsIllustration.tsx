@@ -12,7 +12,7 @@ interface EmptyJobsIllustrationProps {
 const EmptyJobsIllustrationComponent = ({
   width = 180,
   height = 140,
-  primaryColor = "#9ca3af",
+  primaryColor = "var(--font-tertiary)",
 }: EmptyJobsIllustrationProps) => (
   <Box
     component="svg"

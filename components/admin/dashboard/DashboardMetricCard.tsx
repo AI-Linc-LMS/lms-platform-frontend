@@ -15,7 +15,7 @@ export function DashboardMetricCard({
   title,
   value,
   icon,
-  iconColor = "#6366f1",
+  iconColor = "var(--accent-indigo)",
   tooltip,
 }: DashboardMetricCardProps) {
   return (
@@ -23,14 +23,18 @@ export function DashboardMetricCard({
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         height: "100%",
         display: "flex",
         flexDirection: "column",
         transition: "transform 0.2s, box-shadow 0.2s",
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          boxShadow:
+            "0 4px 12px color-mix(in srgb, var(--font-primary) 15%, transparent)",
         },
       }}
     >
@@ -39,7 +43,7 @@ export function DashboardMetricCard({
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: { xs: "0.75rem", sm: "0.875rem" },
               fontWeight: 500,
             }}
@@ -55,9 +59,9 @@ export function DashboardMetricCard({
                   minWidth: "auto",
                   width: "16px",
                   height: "16px",
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   "&:hover": {
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     backgroundColor: "transparent",
                   },
                 }}
@@ -85,7 +89,7 @@ export function DashboardMetricCard({
         variant="h4"
         sx={{
           fontWeight: 700,
-          color: "#111827",
+          color: "var(--font-primary)",
           fontSize: { xs: "1.5rem", sm: "2rem" },
         }}
       >

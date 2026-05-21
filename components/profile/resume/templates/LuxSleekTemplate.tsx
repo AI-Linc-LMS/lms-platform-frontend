@@ -4,7 +4,11 @@ import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-const CVBLUE = "#304263";
+const CVBLUE = "var(--accent-indigo-dark)";
+const WHITE_TEXT = "var(--font-light)";
+const SIDEBAR_TEXT_SOFT = "color-mix(in srgb, var(--font-light) 92%, transparent)";
+const BODY_TEXT = "var(--font-primary)";
+const BODY_TEXT_SOFT = "var(--font-secondary)";
 
 interface LuxSleekTemplateProps {
   data: ResumeData;
@@ -20,7 +24,7 @@ function HeadLeft({ children }: { children: string }) {
           fontWeight: 700,
           fontVariant: "small-caps",
           letterSpacing: "0.06em",
-          color: "#ffffff",
+          color: WHITE_TEXT,
           whiteSpace: "nowrap",
         }}
       >
@@ -30,7 +34,7 @@ function HeadLeft({ children }: { children: string }) {
         sx={{
           mt: 0.25,
           height: "1px",
-          backgroundColor: "rgba(255,255,255,0.5) !important",
+          backgroundColor: "color-mix(in srgb, var(--font-light) 55%, transparent) !important",
           WebkitPrintColorAdjust: "exact !important",
           printColorAdjust: "exact !important",
         }}
@@ -96,7 +100,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
         minHeight: "297mm",
         height: "297mm",
         width: "100%",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         fontFamily: "'Fira Sans', 'Segoe UI', 'Roboto', sans-serif",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
@@ -128,8 +132,8 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
         <Box
           sx={{
             flex: 1,
-            backgroundColor: "rgba(48,66,99,0.92) !important",
-            color: "#ffffff",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo-dark) 92%, transparent) !important",
+            color: WHITE_TEXT,
             px: 2,
             pt: 2,
             pb: 2,
@@ -179,7 +183,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
               sx={{
                 fontSize: "0.62rem",
                 lineHeight: 1.55,
-                color: "rgba(255,255,255,0.92)",
+                color: SIDEBAR_TEXT_SOFT,
               }}
             >
               {data.basicInfo.summary}
@@ -208,7 +212,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5, textDecoration: "none", color: "inherit" }}
               >
                 <Box sx={{ flexShrink: 0, display: "flex" }}>
-                  <IconWrapper icon={item.icon} size={12} color="#ffffff" />
+                  <IconWrapper icon={item.icon} size={12} color={WHITE_TEXT} />
                 </Box>
                 <Typography
                   data-resume-contact-item
@@ -239,7 +243,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 fontSize: "0.62rem",
                 lineHeight: 1.5,
                 mb: 0.15,
-                color: "rgba(255,255,255,0.92)",
+                color: SIDEBAR_TEXT_SOFT,
                 "::marker": { fontSize: "0.55rem" },
               },
             }}
@@ -268,7 +272,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
           <Box key={exp.id} sx={{ mb: 1.25 }}>
             {/* Title line: SMALL-CAPS POSITION at *Company (Location).* **dates** */}
             <Typography
-              sx={{ fontSize: "0.72rem", color: "#1f2937", lineHeight: 1.4 }}
+              sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
             >
               <Box
                 component="span"
@@ -297,7 +301,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                       key={i}
                       sx={{
                         fontSize: "0.62rem",
-                        color: "#4b5563",
+                        color: BODY_TEXT_SOFT,
                         lineHeight: 1.45,
                       }}
                     >
@@ -315,7 +319,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
         {data.education.map((edu) => (
           <Box key={edu.id} sx={{ mb: 1.25 }}>
             <Typography
-              sx={{ fontSize: "0.72rem", color: "#1f2937", lineHeight: 1.4 }}
+              sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
             >
               <Box
                 component="span"
@@ -335,7 +339,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
             </Typography>
             {edu.description && (
               <Typography
-                sx={{ fontSize: "0.62rem", color: "#4b5563", lineHeight: 1.45 }}
+                sx={{ fontSize: "0.62rem", color: BODY_TEXT_SOFT, lineHeight: 1.45 }}
               >
                 <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
                 {edu.description}
@@ -351,7 +355,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
             {data.projects.map((proj) => (
               <Box key={proj.id} sx={{ mb: 1.25 }}>
                 <Typography
-                  sx={{ fontSize: "0.72rem", color: "#1f2937", lineHeight: 1.4 }}
+                  sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
                 >
                   <Box
                     component="span"
@@ -384,7 +388,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 </Typography>
                 {proj.description && (
                   <Typography
-                    sx={{ fontSize: "0.62rem", color: "#4b5563", lineHeight: 1.45 }}
+                    sx={{ fontSize: "0.62rem", color: BODY_TEXT_SOFT, lineHeight: 1.45 }}
                   >
                     <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
                     {proj.description}
@@ -392,7 +396,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 )}
                 {proj.technologies.filter((t) => t.trim()).length > 0 && (
                   <Typography
-                    sx={{ fontSize: "0.62rem", color: "#4b5563", lineHeight: 1.45 }}
+                    sx={{ fontSize: "0.62rem", color: BODY_TEXT_SOFT, lineHeight: 1.45 }}
                   >
                     <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
                     {proj.technologies.filter((t) => t.trim()).join(", ")}
@@ -410,7 +414,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 1.25 }}>
                 <Typography
-                  sx={{ fontSize: "0.72rem", color: "#1f2937", lineHeight: 1.4 }}
+                  sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
                 >
                   <Box
                     component="span"

@@ -36,7 +36,10 @@ export function StudentMetricCards({
         sx={{
           p: 3,
           borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow:
+            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           display: "flex",
           alignItems: "center",
           gap: 2,
@@ -47,7 +50,8 @@ export function StudentMetricCards({
             width: 56,
             height: 56,
             borderRadius: 2,
-            backgroundColor: "#dbeafe",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -56,19 +60,19 @@ export function StudentMetricCards({
           <IconWrapper
             icon="mdi:book-open-outline"
             size={28}
-            color="#3b82f6"
+            color="var(--accent-indigo)"
           />
         </Box>
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("manageStudents.enrollments")}
           </Typography>
           <Typography
             variant="h5"
-            sx={{ fontWeight: 700, color: "#111827", mt: 0.5 }}
+            sx={{ fontWeight: 700, color: "var(--font-primary)", mt: 0.5 }}
           >
             {enrollments}
           </Typography>
@@ -80,7 +84,10 @@ export function StudentMetricCards({
         sx={{
           p: 3,
           borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow:
+            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           display: "flex",
           alignItems: "center",
           gap: 2,
@@ -91,24 +98,25 @@ export function StudentMetricCards({
             width: 56,
             height: 56,
             borderRadius: 2,
-            backgroundColor: "#fef3c7",
+            backgroundColor:
+              "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:trophy-outline" size={28} color="#f59e0b" />
+          <IconWrapper icon="mdi:trophy-outline" size={28} color="var(--warning-500)" />
         </Box>
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("manageStudents.totalMarks")}
           </Typography>
           <Typography
             variant="h5"
-            sx={{ fontWeight: 700, color: "#111827", mt: 0.5 }}
+            sx={{ fontWeight: 700, color: "var(--font-primary)", mt: 0.5 }}
           >
             {totalMarks}
           </Typography>
@@ -120,7 +128,10 @@ export function StudentMetricCards({
         sx={{
           p: 3,
           borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow:
+            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           display: "flex",
           alignItems: "center",
           gap: 2,
@@ -131,24 +142,25 @@ export function StudentMetricCards({
             width: 56,
             height: 56,
             borderRadius: 2,
-            backgroundColor: "#ede9fe",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-purple) 16%, var(--surface) 84%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:chart-line" size={28} color="#8b5cf6" />
+          <IconWrapper icon="mdi:chart-line" size={28} color="var(--accent-purple)" />
         </Box>
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("manageStudents.activities")}
           </Typography>
           <Typography
             variant="h5"
-            sx={{ fontWeight: 700, color: "#111827", mt: 0.5 }}
+            sx={{ fontWeight: 700, color: "var(--font-primary)", mt: 0.5 }}
           >
             {activities}
           </Typography>
@@ -160,7 +172,10 @@ export function StudentMetricCards({
         sx={{
           p: 3,
           borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow:
+            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           display: "flex",
           alignItems: "center",
           gap: 2,
@@ -171,24 +186,25 @@ export function StudentMetricCards({
             width: 56,
             height: 56,
             borderRadius: 2,
-            backgroundColor: "#d1fae5",
+            backgroundColor:
+              "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:lightning-bolt" size={28} color="#10b981" />
+          <IconWrapper icon="mdi:lightning-bolt" size={28} color="var(--success-500)" />
         </Box>
         <Box>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {t("manageStudents.streak")}
           </Typography>
           <Typography
             variant="h5"
-            sx={{ fontWeight: 700, color: "#111827", mt: 0.5 }}
+            sx={{ fontWeight: 700, color: "var(--font-primary)", mt: 0.5 }}
           >
             {streak}
           </Typography>

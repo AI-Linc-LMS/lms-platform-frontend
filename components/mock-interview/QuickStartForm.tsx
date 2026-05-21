@@ -10,10 +10,11 @@ import {
   FormControl,
   InputLabel,
   Select,
-  CircularProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useMemo } from "react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 
 interface QuickStartFormProps {
   onSubmit: (data: QuickStartFormData) => void;
@@ -25,6 +26,10 @@ export interface QuickStartFormData {
   difficulty: string;
   scheduled_date_time: string;
   subtopic: string;
+  // Candidate-chosen interview length in minutes. The backend scales the number of AI turns
+  // so the conversation wraps naturally within this window. Valid range 5..20 for normal
+  // users; admins can additionally pick 2 from the form for testing (see `useAdminDurations`).
+  duration_minutes: number;
 }
 
 const interviewTopics = [
@@ -33,6 +38,7 @@ const interviewTopics = [
   "TypeScript",
   "Node.js",
   "Python",
+  "SQL",
   "System Design",
   "Data Structures & Algorithms",
   "Algorithms",
@@ -46,28 +52,44 @@ const CUSTOM_TOPIC_VALUE = "__CUSTOM__";
 
 const difficultyLevels = ["Easy", "Medium", "Hard"];
 
+const DURATION_OPTIONS_REGULAR = [5, 7, 10, 15, 20];
+const DURATION_OPTIONS_ADMIN = [2, ...DURATION_OPTIONS_REGULAR];
+const DEFAULT_DURATION_MINUTES = 7;
+
 const QuickStartFormComponent = ({
   onSubmit,
   loading,
 }: QuickStartFormProps) => {
-  // Set default date to today
   const defaultDate = new Date();
-  defaultDate.setHours(9, 0, 0, 0); // Set to 9 AM today
+  defaultDate.setHours(9, 0, 0, 0);
+
+  const { user } = useAuth();
+  const isAdmin = isClientOrgAdminRole(user?.role);
+  const durationOptions = useMemo(
+    () => (isAdmin ? DURATION_OPTIONS_ADMIN : DURATION_OPTIONS_REGULAR),
+    [isAdmin],
+  );
 
   const [formData, setFormData] = useState<QuickStartFormData>({
     topic: "",
     subtopic: "",
     difficulty: "Medium",
     scheduled_date_time: defaultDate.toISOString(),
+    duration_minutes: DEFAULT_DURATION_MINUTES,
   });
 
-  const [errors, setErrors] = useState<Partial<QuickStartFormData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof QuickStartFormData, string>>>({});
   const [customTopic, setCustomTopic] = useState<string>("");
+
+  const handleDurationChange = useCallback((minutes: number) => {
+    setFormData((prev) => ({ ...prev, duration_minutes: minutes }));
+    setErrors((prev) => ({ ...prev, duration_minutes: "" }));
+  }, []);
 
   const handleChange = useCallback(
     (field: keyof QuickStartFormData, value: string) => {
       setFormData((prev) => {
-        const updated = { ...prev, [field]: value };
+        const updated = { ...prev, [field]: value } as QuickStartFormData;
         // When topic changes, update subtopic to match
         if (field === "topic") {
           updated.subtopic = value;
@@ -89,7 +111,7 @@ const QuickStartFormComponent = ({
   }, []);
 
   const validate = useCallback(() => {
-    const newErrors: Partial<QuickStartFormData> = {};
+    const newErrors: Partial<Record<keyof QuickStartFormData, string>> = {};
 
     if (!formData.topic) {
       newErrors.topic = "Interview topic is required";
@@ -118,33 +140,6 @@ const QuickStartFormComponent = ({
 
   return (
     <Box sx={{ position: "relative" }}>
-      {loading && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            insetInlineStart: 0,
-            insetInlineEnd: 0,
-            bottom: 0,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 2,
-            zIndex: 1000,
-            borderRadius: 3,
-          }}
-        >
-          <CircularProgress size={48} sx={{ color: "#10b981" }} />
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937" }}>
-            Creating Interview...
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280" }}>
-            Please wait while we set up your interview
-          </Typography>
-        </Box>
-      )}
       <Paper
         elevation={0}
         sx={{
@@ -268,6 +263,94 @@ const QuickStartFormComponent = ({
                 {errors.difficulty}
               </Typography>
             )}
+          </Box>
+
+          {/* Duration picker. The AI scales the number of conversational turns it plans to fit
+              the chosen window, so a 5-min interview will feel tighter and a 20-min one will
+              go deeper. The candidate is never auto-cut-off — the timer is advisory only.
+              Uses theme tokens so admin branding-theme changes propagate. */}
+          <Box>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1.5, fontWeight: 600, color: "var(--font-muted)" }}
+            >
+              Interview Length
+            </Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${durationOptions.length}, 1fr)`,
+                gap: 1.5,
+              }}
+            >
+              {durationOptions.map((mins) => {
+                const selected = formData.duration_minutes === mins;
+                const isAdminOnlyOption = mins < 5;
+                return (
+                  <Box
+                    key={mins}
+                    onClick={() => handleDurationChange(mins)}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      border: "2px solid",
+                      borderColor: selected
+                        ? "var(--course-cta)"
+                        : "var(--border-default)",
+                      backgroundColor: selected
+                        ? "color-mix(in srgb, var(--course-cta) 8%, var(--card-bg))"
+                        : "var(--card-bg)",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      transition: "all 0.2s ease",
+                      position: "relative",
+                      "&:hover": {
+                        borderColor: "var(--course-cta)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--course-cta) 5%, var(--card-bg))",
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        color: selected ? "var(--course-cta)" : "var(--font-secondary)",
+                      }}
+                    >
+                      {mins} min
+                    </Typography>
+                    {isAdminOnlyOption && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          px: 0.75,
+                          py: 0.1,
+                          borderRadius: 999,
+                          fontSize: "0.6rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          backgroundColor: "var(--accent-indigo)",
+                          color: "var(--font-light)",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        Admin · Test
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
+            <Typography
+              variant="caption"
+              sx={{ display: "block", color: "var(--font-secondary)", mt: 1 }}
+            >
+              The AI will pace itself to wrap up naturally within this time — you won't be cut off mid-answer.
+            </Typography>
           </Box>
 
           <Box

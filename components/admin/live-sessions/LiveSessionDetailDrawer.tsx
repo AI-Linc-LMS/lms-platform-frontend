@@ -81,7 +81,14 @@ export function LiveSessionDetailDrawer({
 
   // Poll Zoom status when drawer is open and meeting is live
   useEffect(() => {
-    if (!open || liveClassId == null || activity?.meeting_status !== "live") return;
+    if (
+      !open ||
+      liveClassId == null ||
+      activity?.meeting_status !== "live" ||
+      activity?.is_google_meet
+    ) {
+      return;
+    }
     const interval = setInterval(async () => {
       try {
         const status = await adminLiveActivitiesService.getZoomStatus(liveClassId);
@@ -91,7 +98,7 @@ export function LiveSessionDetailDrawer({
       } catch (_) {}
     }, 45000);
     return () => clearInterval(interval);
-  }, [open, liveClassId, activity?.meeting_status]);
+  }, [open, liveClassId, activity?.meeting_status, activity?.is_google_meet]);
 
   const refreshDetail = async () => {
     if (liveClassId == null) return;
@@ -201,7 +208,7 @@ export function LiveSessionDetailDrawer({
         </Box>
       ) : sessionNotFound ? (
         <Box sx={{ px: 2, py: 4, textAlign: "center" }}>
-          <Typography variant="body1" sx={{ color: "#6b7280", mb: 2 }}>
+          <Typography variant="body1" sx={{ color: "var(--font-secondary)", mb: 2 }}>
             {t("adminLiveSessions.sessionNotFound")}
           </Typography>
           <Button variant="contained" onClick={onClose}>
@@ -213,53 +220,84 @@ export function LiveSessionDetailDrawer({
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
             {activity.topic_name ?? "—"}
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 0.5 }}>
             {formatDateTime(activity.class_datetime)} · {activity.duration_minutes} min
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
             {t("adminLiveSessions.course")}: {activity.course_detail?.title ?? t("adminLiveSessions.noCourse")}
           </Typography>
 
           <Chip
             label={
-              activity.meeting_status === "live"
-                ? t("liveSessions.live")
-                : activity.meeting_status === "ended"
-                  ? t("adminLiveSessions.ended")
-                  : activity.meeting_status === "expired"
-                    ? t("liveSessions.expired")
-                    : "—"
+              activity.meeting_status === "scheduled"
+                ? t("liveSessions.scheduled")
+                : activity.meeting_status === "live"
+                  ? t("liveSessions.live")
+                  : activity.meeting_status === "ended"
+                    ? t("adminLiveSessions.ended")
+                    : activity.meeting_status === "expired"
+                      ? t("liveSessions.expired")
+                      : "—"
             }
             size="small"
             sx={{
               mb: 2,
               bgcolor:
-                activity.meeting_status === "live"
-                  ? "#d1fae5"
-                  : activity.meeting_status === "ended"
-                    ? "#9ca3af"
-                    : "#fed7aa",
+                activity.meeting_status === "scheduled"
+                  ? "color-mix(in srgb, var(--accent-indigo) 16%, transparent)"
+                  : activity.meeting_status === "live"
+                    ? "color-mix(in srgb, var(--success-500) 16%, transparent)"
+                    : activity.meeting_status === "ended"
+                      ? "color-mix(in srgb, var(--font-tertiary) 45%, transparent)"
+                      : "color-mix(in srgb, var(--warning-500) 18%, transparent)",
               color:
-                activity.meeting_status === "live"
-                  ? "#065f46"
-                  : activity.meeting_status === "expired"
-                    ? "#9a3412"
-                    : "#1f2937",
+                activity.meeting_status === "scheduled"
+                  ? "var(--accent-indigo)"
+                  : activity.meeting_status === "live"
+                    ? "var(--success-500)"
+                    : activity.meeting_status === "expired"
+                      ? "var(--warning-500)"
+                      : "var(--font-primary)",
               fontWeight: 600,
               fontSize: "0.75rem",
             }}
           />
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
-            {activity.meeting_status === "live" && activity.zoom_start_url && (
+            {(activity.meeting_status === "scheduled" ||
+              activity.meeting_status === "live") &&
+              activity.is_google_meet &&
+              activity.join_link?.trim() && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<IconWrapper icon="mdi:video" size={18} />}
+                  onClick={() => window.open(activity.join_link!.trim(), "_blank")}
+                  sx={{
+                    bgcolor: "var(--success-500)",
+                    color: "var(--font-light)",
+                    "&:hover": {
+                      bgcolor:
+                        "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark))",
+                    },
+                    textTransform: "none",
+                  }}
+                >
+                  {t("adminLiveSessions.openGoogleMeet")}
+                </Button>
+              )}
+            {(activity.meeting_status === "scheduled" ||
+              activity.meeting_status === "live") &&
+              activity.zoom_start_url && (
               <Button
                 variant="contained"
                 size="small"
                 startIcon={<IconWrapper icon="mdi:video" size={18} />}
                 onClick={() => window.open(activity.zoom_start_url!, "_blank")}
                 sx={{
-                  bgcolor: "#6366f1",
-                  "&:hover": { bgcolor: "#4f46e5" },
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                   textTransform: "none",
                 }}
               >
@@ -267,7 +305,7 @@ export function LiveSessionDetailDrawer({
               </Button>
             )}
             {activity.zoom_password && (
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 {t("liveSessions.password")}: {activity.zoom_password}
               </Typography>
             )}
@@ -275,7 +313,7 @@ export function LiveSessionDetailDrawer({
 
           <Typography
             variant="subtitle2"
-            sx={{ fontWeight: 600, mb: 1, color: "#374151" }}
+            sx={{ fontWeight: 600, mb: 1, color: "var(--font-primary)" }}
           >
             {t("adminLiveSessions.recordingAndSync")}
           </Typography>
@@ -303,13 +341,29 @@ export function LiveSessionDetailDrawer({
                   startIcon={
                     <IconWrapper icon="mdi:play-circle-outline" size={18} />
                   }
-                  sx={{ textTransform: "none", alignSelf: "flex-start" }}
+                  sx={{
+                    textTransform: "none",
+                    alignSelf: "flex-start",
+                    color: "var(--font-secondary)",
+                    borderColor:
+                      "color-mix(in srgb, var(--border-default) 72%, var(--font-secondary) 28%)",
+                    "& .MuiButton-startIcon": {
+                      color: "inherit",
+                    },
+                    "&.Mui-disabled": {
+                      color: "var(--font-secondary)",
+                      WebkitTextFillColor: "var(--font-secondary)",
+                      borderColor:
+                        "color-mix(in srgb, var(--border-default) 72%, var(--font-secondary) 28%)",
+                      opacity: 0.88,
+                    },
+                  }}
                 >
                   {t("adminLiveSessions.openRecording")}
                 </Button>
                 <Typography
                   variant="caption"
-                  sx={{ color: "#6b7280", maxWidth: 360 }}
+                  sx={{ color: "var(--font-secondary)", maxWidth: 360 }}
                 >
                   {t("liveSessions.recordingNotAvailable")}
                 </Typography>
@@ -318,7 +372,9 @@ export function LiveSessionDetailDrawer({
           </Box>
 
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
-            {activity.meeting_status === "live" && !webhookConfigured && (
+            {activity.meeting_status === "live" &&
+              !webhookConfigured &&
+              !activity.is_google_meet && (
               <>
                 <Button
                   variant="outlined"
@@ -366,22 +422,24 @@ export function LiveSessionDetailDrawer({
                 </Dialog>
               </>
             )}
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={syncingRecording}
-              onClick={handleSyncRecording}
-              startIcon={
-                syncingRecording ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:cloud-download" size={16} />
-                )
-              }
-              sx={{ textTransform: "none" }}
-            >
-              {t("adminLiveSessions.syncRecording")}
-            </Button>
+            {!activity.is_google_meet && (
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={syncingRecording}
+                onClick={handleSyncRecording}
+                startIcon={
+                  syncingRecording ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <IconWrapper icon="mdi:cloud-download" size={16} />
+                  )
+                }
+                sx={{ textTransform: "none" }}
+              >
+                {t("adminLiveSessions.syncRecording")}
+              </Button>
+            )}
           </Box>
 
           {activity.is_zoom && (

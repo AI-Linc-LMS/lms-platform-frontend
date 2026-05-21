@@ -113,14 +113,14 @@ const JobFiltersSidebarComponent = ({
               fontSize: "0.75rem",
               minWidth: "auto",
               px: 1,
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               cursor: "pointer",
               pointerEvents: "auto",
               "&:hover": {
-                backgroundColor: "rgba(99, 102, 241, 0.08)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
               },
               "&:disabled": {
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
                 opacity: 1,
               },
             }}

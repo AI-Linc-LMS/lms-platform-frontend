@@ -61,19 +61,20 @@ export function MockInterviewStudentTable({
       <Paper
         sx={{
           borderRadius: 2,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          boxShadow:
+            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           overflow: "hidden",
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
         }}
       >
-        <Box sx={{ p: 3, borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 2 }}>
-          <Box sx={{ width: 120, height: 24, borderRadius: 1, bgcolor: "#f3f4f6" }} />
-          <Box sx={{ width: 80, height: 24, borderRadius: 1, bgcolor: "#f3f4f6" }} />
+        <Box sx={{ p: 3, borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ width: 120, height: 24, borderRadius: 1, bgcolor: "var(--surface)" }} />
+          <Box sx={{ width: 80, height: 24, borderRadius: 1, bgcolor: "var(--surface)" }} />
         </Box>
         <Box sx={{ p: 6, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-          <Box sx={{ width: 64, height: 64, borderRadius: "50%", bgcolor: "#f3f4f6" }} />
-          <Box sx={{ width: 200, height: 20, borderRadius: 1, bgcolor: "#f3f4f6" }} />
-          <Box sx={{ width: 160, height: 16, borderRadius: 1, bgcolor: "#f9fafb" }} />
+          <Box sx={{ width: 64, height: 64, borderRadius: "50%", bgcolor: "var(--surface)" }} />
+          <Box sx={{ width: 200, height: 20, borderRadius: 1, bgcolor: "var(--surface)" }} />
+          <Box sx={{ width: 160, height: 16, borderRadius: 1, bgcolor: "var(--background)" }} />
         </Box>
       </Paper>
     );
@@ -83,24 +84,26 @@ export function MockInterviewStudentTable({
     <Paper
       sx={{
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         overflow: "hidden",
-        backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
+        backgroundColor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          boxShadow:
+            "0 2px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
         },
       }}
     >
       <Box
         sx={{
           p: 2.5,
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--border-default)",
           display: "flex",
           alignItems: "center",
           gap: 2,
-          backgroundColor: "#fafafa",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box
@@ -108,19 +111,20 @@ export function MockInterviewStudentTable({
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "#eef2ff",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:account-group" size={22} color="#6366f1" />
+          <IconWrapper icon="mdi:account-group" size={22} color="var(--accent-indigo)" />
         </Box>
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
             {t("adminMockInterview.studentsSection")}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
             {t("adminMockInterview.clickRowForReport")}
           </Typography>
         </Box>
@@ -131,8 +135,9 @@ export function MockInterviewStudentTable({
               px: 1.5,
               py: 0.5,
               borderRadius: 1,
-              backgroundColor: "#eef2ff",
-              color: "#6366f1",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               fontSize: "0.8125rem",
             }}
@@ -146,7 +151,7 @@ export function MockInterviewStudentTable({
           sx={{
             p: 6,
             textAlign: "center",
-            borderTop: "1px solid #e5e7eb",
+            borderTop: "1px solid var(--border-default)",
           }}
         >
           <Box
@@ -154,21 +159,22 @@ export function MockInterviewStudentTable({
               width: 96,
               height: 96,
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%) 0%, color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               mx: "auto",
               mb: 2,
-              border: "2px solid #c7d2fe",
+              border: "2px solid color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
             }}
           >
-            <IconWrapper icon="mdi:account-group-outline" size={48} color="#6366f1" />
+            <IconWrapper icon="mdi:account-group-outline" size={48} color="var(--accent-indigo)" />
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#111827", mb: 0.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.5 }}>
             {t("adminMockInterview.noStudentsFound")}
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280", maxWidth: 360, mx: "auto", mb: 2 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", maxWidth: 360, mx: "auto", mb: 2 }}>
             {t("adminMockInterview.studentsAppearWhenComplete")}
           </Typography>
           <Box
@@ -177,11 +183,11 @@ export function MockInterviewStudentTable({
               gap: 1,
               p: 1.5,
               borderRadius: 2,
-              backgroundColor: "#f9fafb",
-              border: "1px dashed #e5e7eb",
+              backgroundColor: "var(--surface)",
+              border: "1px dashed var(--border-default)",
             }}
           >
-            <Typography variant="caption" sx={{ color: "#6b7280" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
               {t("adminMockInterview.tipSearchNameOrEmail")}
             </Typography>
           </Box>
@@ -197,28 +203,28 @@ export function MockInterviewStudentTable({
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.student")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.completedColumn")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.avgScore")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.highestColumn")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.completion")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.topics")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb" }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.lastInterview")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, backgroundColor: "#f9fafb", width: 100 }}>
+                  <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)", width: 100 }}>
                     {t("adminMockInterview.actions")}
                   </TableCell>
                 </TableRow>
@@ -233,7 +239,7 @@ export function MockInterviewStudentTable({
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "#6b7280", fontSize: "0.7rem" }}
+                          sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
                         >
                           {row.student_email}
                         </Typography>
@@ -251,17 +257,17 @@ export function MockInterviewStudentTable({
                           fontWeight: 600,
                           color:
                             row.average_score >= 70
-                              ? "#16a34a"
+                              ? "var(--success-500)"
                               : row.average_score >= 50
-                              ? "#d97706"
-                              : "#dc2626",
+                              ? "var(--warning-500)"
+                              : "var(--error-500)",
                         }}
                       >
                         {row.average_score?.toFixed(1)}%
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: "#16a34a" }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--success-500)" }}>
                         {row.highest_score}%
                       </Typography>
                     </TableCell>
@@ -270,8 +276,9 @@ export function MockInterviewStudentTable({
                         label={`${row.completion_rate?.toFixed(0) ?? 0}%`}
                         size="small"
                         sx={{
-                          backgroundColor: "#dcfce7",
-                          color: "#16a34a",
+                          backgroundColor:
+                            "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                          color: "var(--success-500)",
                           fontWeight: 600,
                           fontSize: "0.7rem",
                         }}
@@ -284,7 +291,7 @@ export function MockInterviewStudentTable({
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {formatDate(row.last_interview_date)}
                       </Typography>
                     </TableCell>
@@ -297,13 +304,14 @@ export function MockInterviewStudentTable({
                           handleRowClick(row.student_id);
                         }}
                         sx={{
-                          borderColor: "#6366f1",
-                          color: "#6366f1",
+                          borderColor: "var(--accent-indigo)",
+                          color: "var(--accent-indigo)",
                           textTransform: "none",
                           fontWeight: 600,
                           "&:hover": {
-                            borderColor: "#4f46e5",
-                            backgroundColor: "#eef2ff",
+                            borderColor: "var(--accent-indigo-dark)",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
                           },
                         }}
                       >

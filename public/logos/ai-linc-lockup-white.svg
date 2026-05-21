@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="600" viewBox="0 0 1600 600">
+  <defs>
+    <linearGradient id="l-white" x1="40" y1="120" x2="380" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"></stop>
+      <stop offset="1" stop-color="#FFFFFF"></stop>
+    </linearGradient>
+  </defs>
+  <g transform="translate(160 180)">
+    <g transform="rotate(-7 200 120)">
+      <path d="M 200 120 C 150 48.5, 105 48.5, 100 120 C 95 191.5, 150 191.5, 200 120 C 282.5 9.999999999999986, 356.75 9.999999999999986, 365 120 C 373.25 230, 282.5 230, 200 120 Z M 200 120 C 164 69, 129.6 69, 126 120 C 122.4 171, 164 171, 200 120 C 268.5 34, 332.15 34, 339 120 C 345.85 206, 268.5 206, 200 120 Z" fill="url(#l-white)" fill-rule="evenodd"></path>
+    </g>
+  </g>
+  <g transform="translate(620 280)" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="180" letter-spacing="3.6">
+    <text fill="#FFFFFF">AI <tspan fill="#FFFFFF">LINC</tspan></text>
+  </g>
+  <g transform="translate(622 360)" font-family="Arial, Helvetica, sans-serif" font-weight="500" font-size="34" letter-spacing="0.34">
+    <text fill="#FFFFFF">Empowering the world with infinite possibilities of AI</text>
+  </g>
+</svg>

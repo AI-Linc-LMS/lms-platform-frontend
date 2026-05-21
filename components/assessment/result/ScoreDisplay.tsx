@@ -31,34 +31,34 @@ export function ScoreDisplay({
     if (percentage >= 80) {
       return {
         level: "Excellent",
-        color: "#10b981",
-        bgGradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+        color: "var(--course-cta)",
+        bgGradient: "linear-gradient(135deg, var(--course-cta) 0%, var(--assessment-success-strong) 100%)",
         icon: "mdi:trophy",
-        textColor: "#065f46",
+        textColor: "color-mix(in srgb, var(--course-cta) 75%, var(--font-dark))",
       };
     } else if (percentage >= 60) {
       return {
         level: "Good",
-        color: "#3b82f6",
-        bgGradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+        color: "var(--accent-blue-light)",
+        bgGradient: "linear-gradient(135deg, var(--accent-blue-light) 0%, var(--assessment-chart-blue) 100%)",
         icon: "mdi:medal",
-        textColor: "#1e40af",
+        textColor: "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))",
       };
     } else if (percentage >= 40) {
       return {
         level: "Average",
-        color: "#f59e0b",
-        bgGradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+        color: "var(--warning-500)",
+        bgGradient: "linear-gradient(135deg, var(--warning-500) 0%, var(--ats-warning-muted) 100%)",
         icon: "mdi:chart-line",
-        textColor: "#92400e",
+        textColor: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))",
       };
     } else {
       return {
         level: "Needs Improvement",
-        color: "#ef4444",
-        bgGradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+        color: "var(--error-500)",
+        bgGradient: "linear-gradient(135deg, var(--error-500) 0%, var(--error-600) 100%)",
         icon: "mdi:alert-circle",
-        textColor: "#991b1b",
+        textColor: "color-mix(in srgb, var(--error-600) 88%, var(--font-dark))",
       };
     }
   };
@@ -73,7 +73,7 @@ export function ScoreDisplay({
         mb: 3,
         borderRadius: 4,
         background: performance.bgGradient,
-        color: "#ffffff",
+        color: "var(--font-light)",
         position: "relative",
         overflow: "hidden",
         "&::before": {
@@ -84,7 +84,7 @@ export function ScoreDisplay({
           width: 200,
           height: 200,
           borderRadius: "50%",
-          background: "rgba(255, 255, 255, 0.1)",
+          background: "color-mix(in srgb, var(--font-light) 12%, transparent)",
         },
         "&::after": {
           content: '""',
@@ -94,7 +94,7 @@ export function ScoreDisplay({
           width: 150,
           height: 150,
           borderRadius: "50%",
-          background: "rgba(255, 255, 255, 0.08)",
+          background: "color-mix(in srgb, var(--font-light) 10%, transparent)",
         },
       }}
     >
@@ -131,7 +131,7 @@ export function ScoreDisplay({
                   fontWeight: 800,
                   fontSize: { xs: "3rem", sm: "4rem", md: "5rem" },
                   lineHeight: 1,
-                  color: "#ffffff",
+                  color: "var(--font-light)",
                 }}
               >
                 {safeScore.toFixed(1)}
@@ -164,11 +164,11 @@ export function ScoreDisplay({
                 px: 2,
                 py: 1,
                 borderRadius: 2,
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                backgroundColor: "color-mix(in srgb, var(--font-light) 22%, transparent)",
                 backdropFilter: "blur(10px)",
               }}
             >
-              <IconWrapper icon={performance.icon} size={24} color="#ffffff" />
+              <IconWrapper icon={performance.icon} size={24} color="var(--font-light)" />
               <Typography
                 variant="body1"
                 sx={{
@@ -189,7 +189,7 @@ export function ScoreDisplay({
               width: "100%",
               height: 12,
               borderRadius: 6,
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
+              backgroundColor: "color-mix(in srgb, var(--font-light) 22%, transparent)",
               overflow: "hidden",
               position: "relative",
             }}
@@ -198,10 +198,10 @@ export function ScoreDisplay({
               sx={{
                 width: `${Math.min(percentage, 100)}%`,
                 height: "100%",
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--font-light)",
                 borderRadius: 6,
                 transition: "width 0.6s ease-in-out",
-                boxShadow: "0 0 10px rgba(255, 255, 255, 0.5)",
+                boxShadow: "0 0 10px color-mix(in srgb, var(--font-light) 52%, transparent)",
               }}
             />
           </Box>

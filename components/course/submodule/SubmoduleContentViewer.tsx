@@ -4,6 +4,7 @@ import { Box, Typography } from "@mui/material";
 import {
   ContentDetail,
   SubModuleContentItem,
+  ContentAttachmentInfo,
 } from "@/lib/services/courses.service";
 import { ContentMarksInfo } from "./ContentMarksInfo";
 import { VideoContent } from "./VideoContent";
@@ -12,6 +13,8 @@ import { CodingProblemLayout } from "@/components/coding/CodingProblemLayout";
 import { AssignmentContent } from "./AssignmentContent";
 import { ArticleContent } from "./ArticleContent";
 import { VideoTabs } from "./VideoTabs";
+import { SubjectiveQuestionContent } from "./SubjectiveQuestionContent";
+import { LessonAttachments } from "./LessonAttachments";
 
 interface SubmoduleContentViewerProps {
   content: ContentDetail;
@@ -24,6 +27,7 @@ interface SubmoduleContentViewerProps {
   comments?: any[];
   newComment?: string;
   submittingComment?: boolean;
+  attachments?: ContentAttachmentInfo[];
   onVideoStart: () => void;
   onVideoComplete?: () => void;
   onStartQuiz: () => void;
@@ -48,6 +52,7 @@ export function SubmoduleContentViewer({
   comments = [],
   newComment = "",
   submittingComment = false,
+  attachments = [],
   onVideoStart,
   onVideoComplete,
   onStartQuiz,
@@ -70,7 +75,7 @@ export function SubmoduleContentViewer({
             variant="h5"
             sx={{
               fontWeight: 700,
-              color: "#1a1f2e",
+              color: "var(--font-primary)",
               mb: 1,
               fontSize: { xs: "1.25rem", sm: "1.5rem", md: "1.75rem" },
             }}
@@ -148,6 +153,18 @@ export function SubmoduleContentViewer({
         />
       )}
 
+      {/* Subjective Question (written / AI-graded) */}
+      {content.content_type === "SubjectiveQuestion" && (
+        <SubjectiveQuestionContent
+          content={content}
+          courseId={courseId}
+          currentItem={currentItem}
+          pastSubmissions={pastSubmissions}
+          loadingSubmissions={loadingSubmissions}
+          onComplete={onQuizComplete}
+        />
+      )}
+
       {/* Assignment Content */}
       {content.content_type === "Assignment" && (
         <AssignmentContent
@@ -166,6 +183,9 @@ export function SubmoduleContentViewer({
           isCompleted={currentItem?.status === "complete"}
         />
       )}
+
+      {/* Submodule-level attachments — shared across all content items in the submodule */}
+      <LessonAttachments attachments={attachments} />
     </Box>
   );
 }

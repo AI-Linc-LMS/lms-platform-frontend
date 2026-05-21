@@ -23,6 +23,8 @@ import { CertificateButtons } from "@/components/course/CertificateButtons";
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
+import { config } from "@/lib/config";
+import { getUploadedFiles } from "@/lib/services/file-upload.service";
 
 export default function CourseDetailPage() {
   const { t } = useTranslation("common");
@@ -33,6 +35,8 @@ export default function CourseDetailPage() {
   const [dashboard, setDashboard] = useState<CourseDashboard | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasUploadedCourseCertificate, setHasUploadedCourseCertificate] = useState(false);
+  const [uploadedCourseCertificateUrl, setUploadedCourseCertificateUrl] = useState("");
   const [expandedModules, setExpandedModules] = useState<{
     [key: number]: boolean;
   }>({});
@@ -45,7 +49,30 @@ export default function CourseDetailPage() {
     loadCourseDetail();
     loadDashboard();
     loadLeaderboard();
+    loadCourseCertificateAvailability();
   }, [courseId]);
+
+  const loadCourseCertificateAvailability = async () => {
+    try {
+      const clientId = Number(config.clientId);
+      if (!Number.isFinite(clientId) || clientId <= 0 || !Number.isFinite(courseId) || courseId <= 0) {
+        setHasUploadedCourseCertificate(false);
+        setUploadedCourseCertificateUrl("");
+        return;
+      }
+
+      const res = await getUploadedFiles(clientId, "certificate");
+      const files = Array.isArray(res?.files) ? res.files?.filter((f) => f.module === "certificate") : [];
+      const pathNeedle = `/certificate/${clientId}/course/${courseId}/`;
+      const matched = files.find((f) => (f.url || "").toLowerCase().includes(pathNeedle));
+      const hasMatch = Boolean(matched?.url);
+      setHasUploadedCourseCertificate(hasMatch);
+      setUploadedCourseCertificateUrl((matched?.url || "").trim());
+    } catch {
+      setHasUploadedCourseCertificate(false);
+      setUploadedCourseCertificateUrl("");
+    }
+  };
 
   const loadCourseDetail = async () => {
     try {
@@ -232,7 +259,7 @@ export default function CourseDetailPage() {
             href="/courses"
             style={{
               textDecoration: "none",
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.875rem",
               display: "flex",
               alignItems: "center",
@@ -242,7 +269,10 @@ export default function CourseDetailPage() {
             <IconWrapper icon="mdi:chevron-left" size={24} />
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", "&:hover": { color: "#1a1f2e" } }}
+              sx={{
+                color: "var(--font-secondary)",
+                "&:hover": { color: "var(--font-primary)" },
+              }}
             >
               {t("courses.myCourses")} / {course.course_title}
             </Typography>
@@ -308,8 +338,9 @@ export default function CourseDetailPage() {
                 <CertificateButtons
                   courseId={course.course_id}
                   courseTitle={course.course_title}
-                  certificateAvailable={(course as any).is_certified}
-                  completionPercentage={course?.modules?.length === 0 ? 80 : dashboard?.total_progress ?? 0}
+                  uploadedTemplateUrl={uploadedCourseCertificateUrl}
+                  certificateAvailable={Boolean((course as any).is_certified) || hasUploadedCourseCertificate}
+                  completionPercentage={course?.modules?.length === 0 ? 100 : dashboard?.total_progress ?? 0}
                   score={
                     dashboard
                       ? `${Math.round(dashboard.total_progress ?? 0)}%`

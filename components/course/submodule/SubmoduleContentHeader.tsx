@@ -31,12 +31,12 @@ export function SubmoduleContentHeader({
       sx={{
         px: 3,
         py: 2,
-        borderBottom: "1px solid #e5e7eb",
+        borderBottom: "1px solid var(--border-default)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         flexShrink: 0,
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
         minHeight: "72px",
       }}
     >
@@ -52,7 +52,11 @@ export function SubmoduleContentHeader({
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem", display: "block" }}
+            sx={{
+              color: "var(--font-secondary)",
+              fontSize: "0.75rem",
+              display: "block",
+            }}
           >
             Content {currentIndex} of {totalContents}
           </Typography>
@@ -60,7 +64,7 @@ export function SubmoduleContentHeader({
             variant="h6"
             sx={{
               fontWeight: 600,
-              color: "#1a1f2e",
+              color: "var(--font-primary)",
               mt: 0.25,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -77,10 +81,11 @@ export function SubmoduleContentHeader({
           disabled={!hasPrevious}
           size="small"
           sx={{
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: "8px",
             "&:hover": {
-              backgroundColor: "#f9fafb",
+              backgroundColor:
+                "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
             },
             "&:disabled": {
               opacity: 0.3,
@@ -95,10 +100,11 @@ export function SubmoduleContentHeader({
           disabled={!hasNext}
           size="small"
           sx={{
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: "8px",
             "&:hover": {
-              backgroundColor: "#f9fafb",
+              backgroundColor:
+                "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
             },
             "&:disabled": {
               opacity: 0.3,

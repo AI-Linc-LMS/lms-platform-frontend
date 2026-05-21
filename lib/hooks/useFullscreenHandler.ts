@@ -1,8 +1,15 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type MutableRefObject,
+} from "react";
 import {
   hasNavigatorKeyboardLock,
   isFullscreenExitKeyEvent,
 } from "@/lib/fullscreen/fullscreenEscapePrompt";
+import { lockProctoringKeysInFullscreen } from "@/lib/utils/proctoring-keyboard-lock";
 
 function isDocumentFullscreen(): boolean {
   return (
@@ -11,24 +18,6 @@ function isDocumentFullscreen(): boolean {
     !!(document as any).mozFullScreenElement ||
     !!(document as any).msFullscreenElement
   );
-}
-
-/**
- * Chromium: while fullscreen, locks Escape so the browser does not exit
- * fullscreen; JS still receives keydown. Must be called from fullscreen
- * (e.g. after `fullscreenchange` when entering FS). Silently no-ops if unsupported.
- */
-function lockEscapeKey(): (() => void) | null {
-  const nav = navigator as Navigator & {
-    keyboard?: { lock?: (keys: string[]) => Promise<void>; unlock?: () => void };
-  };
-  if (typeof nav.keyboard?.lock !== "function") return null;
-  nav.keyboard.lock(["Escape"]).catch(() => {
-    /* unsupported, not fullscreen yet, or denied */
-  });
-  return () => {
-    nav.keyboard?.unlock?.();
-  };
 }
 
 interface UseFullscreenHandlerOptions {
@@ -52,6 +41,14 @@ interface UseFullscreenHandlerOptions {
    * can handle Escape / user can choose a button).
    */
   suppressEscapeInterceptor?: boolean;
+  /**
+   * Set to true synchronously before opening a native file picker (e.g. subjective
+   * image upload). The next fullscreen exit will not call `onLeftFullscreen`; the
+   * ref is cleared and `onBenignFullscreenLoss` runs instead (recovery / soft warning).
+   */
+  skipNextFullscreenExitPromptRef?: MutableRefObject<boolean>;
+  /** Invoked when a fullscreen exit was treated as benign (file picker path). */
+  onBenignFullscreenLoss?: () => void;
 }
 
 export function useFullscreenHandler({
@@ -62,10 +59,13 @@ export function useFullscreenHandler({
   onLeftFullscreen,
   onEscapePressed,
   suppressEscapeInterceptor = false,
+  skipNextFullscreenExitPromptRef,
+  onBenignFullscreenLoss,
 }: UseFullscreenHandlerOptions) {
   const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
   const onLeftFullscreenRef = useRef(onLeftFullscreen);
   const onEscapePressedRef = useRef(onEscapePressed);
+  const onBenignFullscreenLossRef = useRef(onBenignFullscreenLoss);
   const unlockEscapeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -75,6 +75,10 @@ export function useFullscreenHandler({
   useEffect(() => {
     onEscapePressedRef.current = onEscapePressed;
   }, [onEscapePressed]);
+
+  useEffect(() => {
+    onBenignFullscreenLossRef.current = onBenignFullscreenLoss;
+  }, [onBenignFullscreenLoss]);
 
   const handleReEnterFullscreen = useCallback(async () => {
     try {
@@ -110,7 +114,7 @@ export function useFullscreenHandler({
         return;
       }
       releaseEscapeLock();
-      unlockEscapeRef.current = lockEscapeKey();
+      unlockEscapeRef.current = lockProctoringKeysInFullscreen();
 
       // Chromium: second lock on the next frame improves reliability across
       // Chrome / Edge / Brave / Opera after the fullscreen transition settles.
@@ -124,7 +128,7 @@ export function useFullscreenHandler({
           return;
         }
         unlockEscapeRef.current?.();
-        unlockEscapeRef.current = lockEscapeKey();
+        unlockEscapeRef.current = lockProctoringKeysInFullscreen();
       });
     };
 
@@ -146,7 +150,12 @@ export function useFullscreenHandler({
           promptOnFullscreenExit &&
           typeof onLeftFullscreenRef.current === "function"
         ) {
-          onLeftFullscreenRef.current();
+          if (skipNextFullscreenExitPromptRef?.current) {
+            skipNextFullscreenExitPromptRef.current = false;
+            onBenignFullscreenLossRef.current?.();
+          } else {
+            onLeftFullscreenRef.current();
+          }
         } else {
           setShowFullscreenWarning(true);
         }
@@ -177,7 +186,7 @@ export function useFullscreenHandler({
       );
       releaseEscapeLock();
     };
-  }, [enabled, submitting, promptOnFullscreenExit]);
+  }, [enabled, submitting, promptOnFullscreenExit, skipNextFullscreenExitPromptRef]);
 
   // Escape → modal while still in fullscreen (pairs with Keyboard Lock on Chrome).
   useEffect(() => {

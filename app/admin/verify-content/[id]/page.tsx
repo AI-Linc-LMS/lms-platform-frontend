@@ -166,7 +166,7 @@ export default function ContentViewPage() {
           sx={{
             flex: 1,
             overflow: "hidden",
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--background)",
             display: "flex",
             flexDirection: "column",
           }}

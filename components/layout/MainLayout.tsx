@@ -77,7 +77,7 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
         height: fullPage ? "100vh" : "auto",
         maxHeight: fullPage ? "100vh" : "none",
         overflow: fullPage ? "hidden" : "auto",
-        backgroundColor: "#f9fafb",
+        backgroundColor: "var(--background)",
         width: "100%",
       }}
     >
@@ -112,7 +112,7 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
           height: fullPage ? "100vh" : "auto",
           maxHeight: fullPage ? "100vh" : "none",
           overflow: fullPage ? "hidden" : "auto",
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--background)",
           display: "flex",
           flexDirection: "column",
           marginInlineStart: { md: 0 },

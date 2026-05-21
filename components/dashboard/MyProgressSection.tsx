@@ -41,7 +41,7 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
         sx={{
           fontSize: "1.25rem",
           fontWeight: 700,
-          color: "#111827",
+          color: "var(--font-primary)",
           mb: 3,
         }}
       >
@@ -51,8 +51,8 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
         sx={{
           borderRadius: 3,
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
           p: 4,
         }}
       >
@@ -72,7 +72,7 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
               size={120}
               thickness={4}
               sx={{
-                color: "#6366f1",
+                color: "var(--accent-indigo)",
                 "& .MuiCircularProgress-circle": {
                   strokeLinecap: "round",
                 },
@@ -96,7 +96,7 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
                 sx={{
                   fontSize: "2rem",
                   fontWeight: 700,
-                  color: "#111827",
+                  color: "var(--font-primary)",
                 }}
               >
                 {stats.totalHours}
@@ -105,7 +105,7 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
                 variant="caption"
                 sx={{
                   fontSize: "0.75rem",
-                  color: "#6b7280",
+                  color: "var(--font-secondary)",
                   fontWeight: 500,
                 }}
               >
@@ -130,7 +130,7 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
                   sx={{
                     fontSize: "0.875rem",
                     fontWeight: 600,
-                    color: "#111827",
+                    color: "var(--font-primary)",
                   }}
                 >
                   {stats.visitedLectures}/{stats.totalLectures} Visited items
@@ -142,9 +142,9 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
                 sx={{
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: "#e5e7eb",
+                  backgroundColor: "var(--border-default)",
                   "& .MuiLinearProgress-bar": {
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "var(--accent-indigo)",
                     borderRadius: 4,
                   },
                 }}
@@ -164,7 +164,7 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
                   sx={{
                     fontSize: "0.875rem",
                     fontWeight: 600,
-                    color: "#111827",
+                    color: "var(--font-primary)",
                   }}
                 >
                   {stats.completedTasks}/{stats.totalTasks} Completed tasks
@@ -176,9 +176,9 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
                 sx={{
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: "#e5e7eb",
+                  backgroundColor: "var(--border-default)",
                   "& .MuiLinearProgress-bar": {
-                    backgroundColor: "#10b981",
+                    backgroundColor: "var(--success-500)",
                     borderRadius: 4,
                   },
                 }}
@@ -193,10 +193,10 @@ export const MyProgressSection: React.FC<MyProgressSectionProps> = ({
               sx={{
                 fontSize: "0.875rem",
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#e5e7eb",
+                  borderColor: "var(--border-default)",
                 },
                 "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#d1d5db",
+                  borderColor: "var(--border-light)",
                 },
               }}
             >

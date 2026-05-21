@@ -78,18 +78,18 @@ const MobileJobFiltersComponent = ({
     <Box
       sx={{
         width: "100%",
-        backgroundColor: hideSearch ? "#fff" : "#ffffff",
+        backgroundColor: hideSearch ? "var(--font-light)" : "var(--font-light)",
         p: hideSearch ? { xs: 1.5, sm: 2 } : { xs: 1.5, sm: 2 },
         borderBottom: "1px solid",
         borderColor: "divider",
         borderRadius: 2,
-        boxShadow: hideSearch ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+        boxShadow: hideSearch ? "0 1px 3px color-mix(in srgb, var(--font-primary) 8%, transparent)" : "none",
       }}
     >
       {!hideSearch && (
         <>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
-            <JobSearchIllustration width={40} height={32} primaryColor="#6366f1" />
+            <JobSearchIllustration width={40} height={32} primaryColor="var(--accent-indigo)" />
             <Box>
               <Typography
                 variant="h5"

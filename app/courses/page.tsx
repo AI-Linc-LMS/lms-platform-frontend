@@ -98,6 +98,7 @@ export default function CoursesPage() {
             coding_problem: course.stats?.coding_problem || { total: 0 },
             article: course.stats?.article || { total: 0 },
             assignment: course.stats?.assignment || { total: 0 },
+            subjective_question: course.stats?.subjective_question || { total: 0 },
           },
         })
       );

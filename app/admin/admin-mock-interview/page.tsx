@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Box, Button, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -40,6 +41,7 @@ const DEFAULT_FILTERS: InterviewFiltersState = {
 export default function AdminMockInterviewPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const router = useRouter();
   const [tab, setTab] = useState<TabValue>("overview");
   const [days, setDays] = useState(30);
 
@@ -305,7 +307,7 @@ export default function AdminMockInterviewPage() {
                     <IconWrapper
                       icon={item.icon}
                       size={20}
-                      color={isActive ? "#ffffff" : "#6366f1"}
+                      color={isActive ? "var(--font-light)" : "var(--accent-indigo)"}
                     />
                   }
                   sx={{
@@ -316,18 +318,20 @@ export default function AdminMockInterviewPage() {
                     py: 1.5,
                     borderRadius: 2,
                     boxShadow: isActive
-                      ? "0 2px 8px rgba(99, 102, 241, 0.35)"
+                      ? "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)"
                       : "none",
-                    backgroundColor: isActive ? "#6366f1" : "transparent",
-                    borderColor: "#6366f1",
-                    color: isActive ? "#ffffff" : "#6366f1",
+                    backgroundColor: isActive ? "var(--accent-indigo)" : "transparent",
+                    borderColor: "var(--accent-indigo)",
+                    color: isActive ? "var(--font-light)" : "var(--accent-indigo)",
                     "&:hover": {
-                      backgroundColor: isActive ? "#4f46e5" : "#eef2ff",
-                      borderColor: "#4f46e5",
-                      color: isActive ? "#ffffff" : "#4f46e5",
+                      backgroundColor: isActive
+                        ? "var(--accent-indigo-dark)"
+                        : "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                      borderColor: "var(--accent-indigo-dark)",
+                      color: isActive ? "var(--font-light)" : "var(--accent-indigo-dark)",
                       boxShadow: isActive
-                        ? "0 4px 12px rgba(99, 102, 241, 0.4)"
-                        : "0 2px 6px rgba(99, 102, 241, 0.2)",
+                        ? "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)"
+                        : "0 2px 6px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
                     },
                   }}
                 >
@@ -346,6 +350,25 @@ export default function AdminMockInterviewPage() {
               alignItems: "center",
             }}
           >
+            {/* Create-interview workflow: admin defines a reusable interview and maps it
+                to one or more courses to publish it to enrolled students. Lives on its own
+                page because it's CRUD vs. the existing tabs which are analytics. */}
+            <Button
+              variant="contained"
+              onClick={() =>
+                router.push("/admin/admin-mock-interview/templates")
+              }
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              }}
+            >
+              Create Interview
+            </Button>
             <FormControl
               size="small"
               sx={{ minWidth: 220 }}
@@ -389,9 +412,9 @@ export default function AdminMockInterviewPage() {
                 mb: 3,
                 p: 0.5,
                 borderRadius: 2,
-                backgroundColor: "#f9fafb",
+                backgroundColor: "var(--surface)",
                 width: "fit-content",
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--border-default)",
               }}
             >
               {[7, 14, 30, 90].map((d) => (
@@ -413,22 +436,25 @@ export default function AdminMockInterviewPage() {
                     borderRadius: 1.5,
                     cursor: "pointer",
                     userSelect: "none",
-                    backgroundColor: days === d ? "#6366f1" : "transparent",
-                    color: days === d ? "#ffffff" : "#6b7280",
+                    backgroundColor: days === d ? "var(--accent-indigo)" : "transparent",
+                    color: days === d ? "var(--font-light)" : "var(--font-secondary)",
                     fontWeight: days === d ? 600 : 500,
                     fontSize: "0.875rem",
-                    border: `1px solid ${days === d ? "#6366f1" : "transparent"}`,
+                    border: `1px solid ${days === d ? "var(--accent-indigo)" : "transparent"}`,
                     transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                     "&:hover": {
-                      backgroundColor: days === d ? "#4f46e5" : "#e5e7eb",
-                      color: days === d ? "#ffffff" : "#374151",
+                      backgroundColor: days === d
+                        ? "var(--accent-indigo-dark)"
+                        : "color-mix(in srgb, var(--font-secondary) 14%, var(--surface) 86%)",
+                      color: days === d ? "var(--font-light)" : "var(--font-primary)",
                     },
                     "&:active": {
                       transform: "scale(0.98)",
                     },
                     "&:focus-visible": {
                       outline: "none",
-                      boxShadow: "0 0 0 2px rgba(99, 102, 241, 0.5)",
+                      boxShadow:
+                        "0 0 0 2px color-mix(in srgb, var(--accent-indigo) 50%, transparent)",
                     },
                   }}
                 >

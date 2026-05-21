@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -28,7 +28,10 @@ import {
   getAxiosErrorDetail,
   getAxiosFieldError,
 } from "@/lib/utils/api-error";
-import { Eye, EyeOff, GraduationCap } from "lucide-react";
+import { Eye, EyeOff, FileText, GraduationCap, Upload, X } from "lucide-react";
+
+const CV_MAX_SIZE_MB = 5;
+const CV_MAX_SIZE_BYTES = CV_MAX_SIZE_MB * 1024 * 1024;
 
 interface SignupFormValues {
   first_name: string;
@@ -48,6 +51,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvError, setCvError] = useState<string | null>(null);
+  const cvInputRef = useRef<HTMLInputElement | null>(null);
 
   const allowInstructorSelfSignup = Boolean(
     clientInfo?.allow_instructor_self_signup
@@ -64,7 +70,41 @@ export default function SignupPage() {
     signup_as_instructor: false,
   };
 
+  const handleCvSelect = (file: File | null | undefined) => {
+    if (!file) {
+      setCvFile(null);
+      setCvError(null);
+      return;
+    }
+    const isPdfByType = file.type === "application/pdf";
+    const isPdfByName = file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdfByType || !isPdfByName) {
+      setCvFile(null);
+      setCvError("CV must be a PDF file.");
+      return;
+    }
+    if (file.size > CV_MAX_SIZE_BYTES) {
+      setCvFile(null);
+      setCvError(`CV file size must not exceed ${CV_MAX_SIZE_MB}MB.`);
+      return;
+    }
+    setCvFile(file);
+    setCvError(null);
+  };
+
+  const clearCv = () => {
+    setCvFile(null);
+    setCvError(null);
+    if (cvInputRef.current) {
+      cvInputRef.current.value = "";
+    }
+  };
+
   const onSubmit = async (values: SignupFormValues) => {
+    if (values.signup_as_instructor && !cvFile) {
+      setCvError("Please upload your CV before continuing.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -72,6 +112,7 @@ export default function SignupPage() {
       await accountsService.signup({
         ...rest,
         signup_as: signup_as_instructor ? "instructor" : "student",
+        cv: signup_as_instructor ? cvFile : null,
       });
       showToast(t("auth.otpSent"), "success");
       const signupAs = signup_as_instructor ? "instructor" : "student";
@@ -333,12 +374,13 @@ export default function SignupPage() {
                   <Box
                     component="button"
                     type="button"
-                    onClick={() =>
-                      setFieldValue(
-                        "signup_as_instructor",
-                        !values.signup_as_instructor
-                      )
-                    }
+                    onClick={() => {
+                      const next = !values.signup_as_instructor;
+                      setFieldValue("signup_as_instructor", next);
+                      if (!next) {
+                        clearCv();
+                      }
+                    }}
                     aria-pressed={values.signup_as_instructor}
                     sx={(theme) => {
                       const on = values.signup_as_instructor;
@@ -430,13 +472,14 @@ export default function SignupPage() {
                       </Typography>
                     </Box>
                     <Switch
-                      checked={values.signup_as_instructor}
-                      onChange={(e) =>
-                        setFieldValue(
-                          "signup_as_instructor",
-                          e.target.checked
-                        )
-                      }
+                      checked={values.signup_as_instructor ?? false}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setFieldValue("signup_as_instructor", next);
+                        if (!next) {
+                          clearCv();
+                        }
+                      }}
                       onClick={(e) => e.stopPropagation()}
                       inputProps={{
                         "aria-label": t("auth.signUpAsInstructor"),
@@ -457,47 +500,188 @@ export default function SignupPage() {
                     />
                   </Box>
                   {values.signup_as_instructor && (
-                    <Box
-                      sx={(theme) => ({
-                        mt: 1.25,
-                        pl: 1.75,
-                        pr: 1.5,
-                        py: 1.5,
-                        borderRadius: 2,
-                        borderLeft: `3px solid ${theme.palette.primary.main}`,
-                        background: `linear-gradient(90deg, ${alpha(
-                          theme.palette.primary.main,
-                          0.1
-                        )} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
-                      })}
-                    >
-                      <Typography
-                        variant="caption"
-                        component="p"
-                        sx={{
-                          display: "block",
-                          fontWeight: 700,
-                          fontSize: "0.8125rem",
-                          color: "primary.main",
-                          letterSpacing: "0.02em",
-                          textTransform: "uppercase",
-                          mb: 0.75,
-                        }}
+                    <>
+                      <Box
+                        sx={(theme) => ({
+                          mt: 1.25,
+                          pl: 1.75,
+                          pr: 1.5,
+                          py: 1.5,
+                          borderRadius: 2,
+                          borderLeft: `3px solid ${theme.palette.primary.main}`,
+                          background: `linear-gradient(90deg, ${alpha(
+                            theme.palette.primary.main,
+                            0.1
+                          )} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+                        })}
                       >
-                        {t("auth.instructorSignupApprovalTitle")}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          display: "block",
-                          color: "text.secondary",
-                          fontSize: "0.8125rem",
-                          lineHeight: 1.55,
-                        }}
-                      >
-                        {t("auth.instructorSignupApprovalNote")}
-                      </Typography>
-                    </Box>
+                        <Typography
+                          variant="caption"
+                          component="p"
+                          sx={{
+                            display: "block",
+                            fontWeight: 700,
+                            fontSize: "0.8125rem",
+                            color: "primary.main",
+                            letterSpacing: "0.02em",
+                            textTransform: "uppercase",
+                            mb: 0.75,
+                          }}
+                        >
+                          {t("auth.instructorSignupApprovalTitle")}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            display: "block",
+                            color: "text.secondary",
+                            fontSize: "0.8125rem",
+                            lineHeight: 1.55,
+                          }}
+                        >
+                          {t("auth.instructorSignupApprovalNote")}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ mt: 1.5 }}>
+                        <input
+                          ref={cvInputRef}
+                          type="file"
+                          accept="application/pdf,.pdf"
+                          hidden
+                          onChange={(e) =>
+                            handleCvSelect(e.target.files?.[0] ?? null)
+                          }
+                        />
+                        {cvFile ? (
+                          <Box
+                            sx={(theme) => ({
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1.25,
+                              p: 1.25,
+                              borderRadius: 2,
+                              border: `1.5px solid ${theme.palette.primary.main}`,
+                              background: alpha(
+                                theme.palette.primary.main,
+                                0.06
+                              ),
+                            })}
+                          >
+                            <Box
+                              sx={(theme) => ({
+                                flexShrink: 0,
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.5,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.16
+                                ),
+                                color: "primary.main",
+                              })}
+                            >
+                              <FileText size={18} strokeWidth={2.25} aria-hidden />
+                            </Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography
+                                sx={{
+                                  fontWeight: 600,
+                                  fontSize: "0.8125rem",
+                                  color: "text.primary",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {cvFile.name}
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontSize: "0.75rem",
+                                  color: "text.secondary",
+                                }}
+                              >
+                                {(cvFile.size / 1024 / 1024).toFixed(2)} MB · PDF
+                              </Typography>
+                            </Box>
+                            <IconButton
+                              size="small"
+                              onClick={clearCv}
+                              aria-label="Remove CV"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              <X size={16} />
+                            </IconButton>
+                          </Box>
+                        ) : (
+                          <Button
+                            type="button"
+                            fullWidth
+                            variant="outlined"
+                            onClick={() => cvInputRef.current?.click()}
+                            startIcon={<Upload size={18} />}
+                            sx={(theme) => ({
+                              py: 1.25,
+                              textTransform: "none",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                              borderStyle: "dashed",
+                              borderWidth: 2,
+                              borderColor: cvError
+                                ? theme.palette.error.main
+                                : alpha(theme.palette.primary.main, 0.55),
+                              color: cvError
+                                ? "error.main"
+                                : "primary.main",
+                              backgroundColor: alpha(
+                                theme.palette.primary.main,
+                                0.04
+                              ),
+                              "&:hover": {
+                                borderColor: cvError
+                                  ? theme.palette.error.main
+                                  : theme.palette.primary.main,
+                                backgroundColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.08
+                                ),
+                              },
+                            })}
+                          >
+                            Upload CV (PDF, max {CV_MAX_SIZE_MB}MB)
+                          </Button>
+                        )}
+                        {cvError && (
+                          <Typography
+                            sx={{
+                              mt: 0.75,
+                              color: "error.main",
+                              fontSize: "0.75rem",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {cvError}
+                          </Typography>
+                        )}
+                        {!cvError && !cvFile && (
+                          <Typography
+                            sx={{
+                              mt: 0.75,
+                              color: "text.secondary",
+                              fontSize: "0.75rem",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            Your CV is required so admins can review your
+                            application.
+                          </Typography>
+                        )}
+                      </Box>
+                    </>
                   )}
                 </Box>
               )}
@@ -508,7 +692,10 @@ export default function SignupPage() {
                 type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+                disabled={
+                  loading ||
+                  (values.signup_as_instructor && !cvFile)
+                }
                 aria-busy={loading}
                 sx={{
                   py: 1.25,
@@ -519,7 +706,7 @@ export default function SignupPage() {
                   gap: 1.25,
                   background:
                     "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                  color: "white",
+                  color: "var(--font-light)",
                   fontWeight: 600,
                   fontSize: "0.9375rem",
                   textTransform: "none",
@@ -534,7 +721,7 @@ export default function SignupPage() {
                     background:
                       "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
                     opacity: 0.6,
-                    color: "white",
+                    color: "var(--font-light)",
                   },
                 }}
               >

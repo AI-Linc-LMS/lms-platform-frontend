@@ -61,12 +61,12 @@ export function AssessmentCodeEditorPanel({
       <Box
         sx={{
           p: { xs: 1.5, md: 2 },
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--border-default)",
           display: "flex",
           gap: { xs: 1.5, md: 2 },
           alignItems: "center",
           flexWrap: "wrap",
-          backgroundColor: "#f9fafb",
+          backgroundColor: "var(--surface)",
           flexShrink: 0,
         }}
       >
@@ -104,11 +104,11 @@ export function AssessmentCodeEditorPanel({
             px: 2,
             py: 0.75,
             textTransform: "none",
-            borderColor: "#d1d5db",
-            color: "#6b7280",
+            borderColor: "var(--border-light)",
+            color: "var(--font-secondary)",
             "&:hover": {
-              borderColor: "#9ca3af",
-              backgroundColor: "#f9fafb",
+              borderColor: "var(--font-tertiary)",
+              backgroundColor: "var(--surface)",
             },
           }}
         >
@@ -128,20 +128,20 @@ export function AssessmentCodeEditorPanel({
             )
           }
           sx={{
-            borderColor: "#6366f1",
-            color: "#6366f1",
+            borderColor: "var(--accent-indigo)",
+            color: "var(--accent-indigo)",
             fontSize: "0.875rem",
             fontWeight: 600,
             px: 2.5,
             py: 0.75,
             textTransform: "none",
             "&:hover": {
-              borderColor: "#4f46e5",
-              backgroundColor: "#eff6ff",
+              borderColor: "var(--accent-indigo-dark)",
+              backgroundColor: "color-mix(in srgb, var(--surface-blue-light) 90%, var(--card-bg))",
             },
             "&:disabled": {
-              borderColor: "#e5e7eb",
-              color: "#9ca3af",
+              borderColor: "var(--border-default)",
+              color: "var(--font-tertiary)",
             },
           }}
         >
@@ -161,19 +161,19 @@ export function AssessmentCodeEditorPanel({
             )
           }
           sx={{
-            backgroundColor: canSubmit ? "#10b981" : "#6b7280",
-            color: "#ffffff",
+            backgroundColor: canSubmit ? "var(--course-cta)" : "var(--font-secondary)",
+            color: "var(--font-light)",
             fontSize: "0.875rem",
             fontWeight: 600,
             px: 2.5,
             py: 0.75,
             textTransform: "none",
             "&:hover": {
-              backgroundColor: canSubmit ? "#059669" : "#4b5563",
+              backgroundColor: canSubmit ? "var(--assessment-success-strong)" : "var(--neutral-500)",
             },
             "&:disabled": {
-              backgroundColor: "#d1d5db",
-              color: "#9ca3af",
+              backgroundColor: "var(--border-light)",
+              color: "var(--font-tertiary)",
             },
           }}
         >

@@ -19,10 +19,32 @@ interface AdminInterviewResultAdapterProps {
 }
 
 function getScoreColor(percentage: number) {
-  if (percentage >= 80) return { bg: "#d1fae5", color: "#065f46", main: "#10b981" };
-  if (percentage >= 60) return { bg: "#dbeafe", color: "#1e40af", main: "#3b82f6" };
-  if (percentage >= 40) return { bg: "#fed7aa", color: "#9a3412", main: "#f59e0b" };
-  return { bg: "#fecaca", color: "#991b1b", main: "#ef4444" };
+  if (percentage >= 80) {
+    return {
+      bg: "color-mix(in srgb, var(--success-500) 16%, transparent)",
+      color: "var(--success-500)",
+      main: "var(--success-500)",
+    };
+  }
+  if (percentage >= 60) {
+    return {
+      bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+      color: "var(--accent-indigo)",
+      main: "var(--accent-indigo)",
+    };
+  }
+  if (percentage >= 40) {
+    return {
+      bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+      color: "var(--warning-500)",
+      main: "var(--warning-500)",
+    };
+  }
+  return {
+    bg: "color-mix(in srgb, var(--error-500) 16%, transparent)",
+    color: "var(--error-500)",
+    main: "var(--error-500)",
+  };
 }
 
 function getPerformanceLabel(percentage: number, t: (key: string) => string) {

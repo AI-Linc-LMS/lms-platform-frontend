@@ -23,11 +23,11 @@ export function ProctoringStatusBar({
   const getStatusColor = () => {
     switch (status) {
       case "NORMAL":
-        return "#10b981";
+        return "var(--course-cta)";
       case "WARNING":
-        return "#f59e0b";
+        return "var(--warning-500)";
       case "VIOLATION":
-        return "#ef4444";
+        return "var(--error-500)";
     }
   };
 
@@ -49,7 +49,7 @@ export function ProctoringStatusBar({
         zIndex: 1300,
         p: 1.5,
         borderRadius: 0,
-        backgroundColor: "#fff",
+        backgroundColor: "var(--font-light)",
         borderBottom: `3px solid ${getStatusColor()}`,
         display: "flex",
         alignItems: "center",

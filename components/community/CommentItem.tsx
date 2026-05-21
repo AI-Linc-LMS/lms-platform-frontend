@@ -1,267 +1,312 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
+
 import { useTranslation } from "react-i18next";
-import {
-  Box,
-  Paper,
-  Typography,
-  Avatar,
-  Chip,
-  Button,
-  TextField,
-  IconButton,
-  Collapse,
-} from "@mui/material";
+import { Box, Typography, Avatar, Chip, Button, TextField, IconButton, Collapse, Tooltip } from "@mui/material";
+
+import type { Comment } from "@/lib/services/community.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { Comment } from "@/lib/services/community.service";
 import { VoteButtons } from "./VoteButtons";
+
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
-import { unescapeHtml } from "@/lib/utils/html-utils";
+
+const XP_TIER_COLORS: Record<string, string> = {
+  bronze: "#cd7f32",
+  silver: "#94a3b8",
+  gold: "#fbbf24",
+  platinum: "#a78bfa",
+};
+
+function getAvatarRingStyle(tier?: string) {
+  if (!tier || tier === "bronze") return {};
+  const color = XP_TIER_COLORS[tier] ?? XP_TIER_COLORS.bronze;
+  return {
+    outline: `2.5px solid ${color}`,
+    outlineOffset: "1.5px",
+  };
+}
 
 interface CommentItemProps {
   comment: Comment;
   threadId: number;
   onVote: (commentId: number, type: "upvote" | "downvote") => Promise<void>;
   onReply: (commentId: number, body: string) => Promise<void>;
+  onAccept?: (commentId: number) => Promise<void>;
+  isThreadAuthor?: boolean;
   depth?: number;
+  parentAuthorName?: string;
 }
 
-export function CommentItem({
+export const CommentItem = memo(function CommentItem({
   comment,
   threadId,
   onVote,
   onReply,
+  onAccept,
+  isThreadAuthor = false,
   depth = 0,
+  parentAuthorName,
 }: CommentItemProps) {
   const { t } = useTranslation("common");
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+
+  const hasReplies = comment.replies && comment.replies.length > 0;
+  const maxDepth = 4;
+  const isMaxDepth = depth >= maxDepth;
+  const isAccepted = !!comment.is_accepted;
 
   const handleSubmitReply = async () => {
     if (!replyBody.trim()) return;
-
     setSubmitting(true);
     try {
       await onReply(comment.id, replyBody.trim());
       setReplyBody("");
       setShowReplyForm(false);
-    } catch (error) {
-      // Silently handle reply error
+    } catch {
+      // silently handled
     } finally {
       setSubmitting(false);
     }
   };
 
-  const maxDepth = 3;
-  const isMaxDepth = depth >= maxDepth;
+  const handleAccept = async () => {
+    if (!onAccept) return;
+    setAccepting(true);
+    try {
+      await onAccept(comment.id);
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const avatarSize = depth === 0 ? 34 : 28;
+  const tier = comment.author.xp_tier;
+  const ringStyle = getAvatarRingStyle(tier);
 
   return (
     <Box
-      sx={{
-        paddingInlineStart: depth > 0 ? 32 : 0,
-        borderInlineStart: depth > 0 ? "2px solid #e5e7eb" : "none",
-      }}
+      sx={
+        isAccepted
+          ? {
+              borderRadius: "10px",
+              border: "1.5px solid #22c55e",
+              backgroundColor: "rgba(34,197,94,0.04)",
+              p: 1.25,
+              mx: -1.25,
+            }
+          : {}
+      }
     >
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2,
-          border: "1px solid #e5e7eb",
-          borderRadius: 2,
-          backgroundColor: depth % 2 === 0 ? "#ffffff" : "#fafafa",
-          width: "100%",
-          maxWidth: "100%",
-          overflow: "hidden",
-        }}
-      >
-        {/* Comment Header */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            mb: 1.5,
-          }}
-        >
+      {isAccepted && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.75 }}>
+          <IconWrapper icon="mdi:check-circle" size={14} color="#22c55e" />
+          <Typography variant="caption" fontWeight={700} sx={{ color: "#22c55e", fontSize: "0.7rem", letterSpacing: "0.03em" }}>
+            Accepted Answer
+          </Typography>
+        </Box>
+      )}
+
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: avatarSize }}>
           <Avatar
             src={comment.author.profile_pic_url}
-            sx={{ width: 32, height: 32 }}
+            sx={{ width: avatarSize, height: avatarSize, fontSize: depth === 0 ? "0.9rem" : "0.75rem", ...ringStyle }}
           >
             {comment.author.name.charAt(0)}
           </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2" fontWeight={600}>
-                {comment.author.name}
-              </Typography>
-              <Chip
-                label={comment.author.role}
-                size="small"
-                sx={{
-                  height: 18,
-                  fontSize: "0.65rem",
-                  backgroundColor: "#f3f4f6",
-                }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                {formatDistanceToNow(comment.created_at)}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Comment Body */}
-        <Box
-          dangerouslySetInnerHTML={{
-            __html: (() => {
-              // Check if HTML is escaped and unescape it before rendering
-              let body = comment.body || "";
-              if (body && (body.includes("&lt;") || body.includes("&gt;"))) {
-                body = unescapeHtml(body);
-              }
-              return body;
-            })(),
-          }}
-          sx={{
-            mb: 1.5,
-            color: "#374151",
-            fontSize: "0.875rem",
-            lineHeight: 1.6,
-            wordBreak: "break-word",
-            overflowWrap: "break-word",
-            overflow: "hidden",
-            width: "100%",
-            maxWidth: "100%",
-            "& p": {
-              margin: 0,
-              marginBottom: "0.5rem",
-              "&:last-child": {
-                marginBottom: 0,
-              },
-            },
-            "& b, & strong": {
-              fontWeight: 600,
-            },
-            "& i, & em": {
-              fontStyle: "italic",
-            },
-            "& img": {
-              maxWidth: "100%",
-              width: "100%",
-              height: "auto",
-              display: "block",
-              margin: "0.5rem 0",
-              borderRadius: "4px",
-              objectFit: "contain",
-            },
-            "& a": {
-              color: "#2563eb",
-              textDecoration: "none",
-              wordBreak: "break-all",
-              "&:hover": {
-                textDecoration: "underline",
-              },
-            },
-            "& code": {
-              backgroundColor: "#f3f4f6",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontSize: "0.875em",
-              fontFamily: "monospace",
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
-            },
-            "& pre": {
-              backgroundColor: "#f3f4f6",
-              padding: "0.75rem",
-              borderRadius: "4px",
-              overflow: "auto",
-              margin: "0.5rem 0",
-              maxWidth: "100%",
-              "& code": {
-                backgroundColor: "transparent",
-                padding: 0,
-              },
-            },
-          }}
-        />
-
-        {/* Actions */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <VoteButtons
-            upvotes={comment.upvotes}
-            downvotes={comment.downvotes}
-            userVote={comment.user_vote}
-            onVote={(type) => onVote(comment.id, type)}
-            size="small"
-            orientation="horizontal"
-          />
-
-          {!isMaxDepth && (
-            <Button
-              size="small"
-              startIcon={<IconWrapper icon="mdi:reply" size={16} />}
-              onClick={() => setShowReplyForm(!showReplyForm)}
-              sx={{ textTransform: "none", minWidth: "auto" }}
-            >
-              {t("community.reply")}
-            </Button>
+          {hasReplies && (
+            <Box
+              sx={{
+                width: 2,
+                flex: 1,
+                minHeight: 20,
+                mt: 0.5,
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 25%, var(--border-default) 75%)",
+                borderRadius: 1,
+              }}
+            />
           )}
         </Box>
 
-        {/* Reply Form */}
-        <Collapse in={showReplyForm}>
-          <Box sx={{ mt: 2 }}>
-            <TextField
-              placeholder={t("community.writeReplyPlaceholder")}
-              value={replyBody}
-              onChange={(e) => setReplyBody(e.target.value)}
-              fullWidth
-              multiline
-              rows={3}
+        <Box sx={{ flex: 1, minWidth: 0, pb: hasReplies ? 1.5 : 0 }}>
+          <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75, mb: 0.4 }}>
+            <Typography variant={depth === 0 ? "body2" : "caption"} fontWeight={700} sx={{ color: "var(--font-primary)" }}>
+              {comment.author.name}
+            </Typography>
+            {tier && tier !== "bronze" && (
+              <Box
+                sx={{
+                  width: 8, height: 8, borderRadius: "50%",
+                  backgroundColor: XP_TIER_COLORS[tier],
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            <Chip
+              label={comment.author.role}
               size="small"
+              sx={{
+                height: 16, fontSize: "0.62rem",
+                backgroundColor: "var(--surface)", border: "1px solid var(--border-default)",
+                color: "var(--font-secondary)",
+              }}
             />
-            <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+            <Typography variant="caption" color="var(--font-secondary)" sx={{ fontSize: "0.72rem" }}>
+              {formatDistanceToNow(comment.created_at)}
+            </Typography>
+          </Box>
+
+          {depth > 0 && parentAuthorName && (
+            <Typography
+              variant="caption"
+              sx={{ color: "var(--accent-indigo)", display: "block", mb: 0.4, fontSize: "0.72rem" }}
+            >
+              ↩ replying to @{parentAuthorName}
+            </Typography>
+          )}
+
+          <Typography
+            variant="body2"
+            sx={{
+              color: "var(--font-secondary)",
+              lineHeight: 1.65,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontSize: depth === 0 ? "0.875rem" : "0.85rem",
+              mb: 0.75,
+            }}
+          >
+            {comment.body}
+          </Typography>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <VoteButtons
+              upvotes={comment.upvotes}
+              downvotes={comment.downvotes}
+              userVote={comment.user_vote}
+              onVote={(type) => onVote(comment.id, type)}
+              size="small"
+              orientation="horizontal"
+            />
+
+            {!isMaxDepth && (
               <Button
                 size="small"
-                variant="contained"
-                onClick={handleSubmitReply}
-                disabled={!replyBody.trim() || submitting}
-              >
-                {submitting ? t("community.posting") : t("community.postReply")}
-              </Button>
-              <Button
-                size="small"
-                onClick={() => {
-                  setShowReplyForm(false);
-                  setReplyBody("");
+                startIcon={<IconWrapper icon="mdi:reply" size={14} />}
+                onClick={() => setShowReplyForm(!showReplyForm)}
+                sx={{
+                  textTransform: "none",
+                  fontSize: "0.78rem",
+                  minWidth: "auto",
+                  px: 1,
+                  py: 0.25,
+                  color: showReplyForm ? "var(--accent-indigo)" : "var(--font-secondary)",
+                  "&:hover": { color: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                 }}
               >
-                {t("common.cancel")}
+                {t("community.reply")}
               </Button>
-            </Box>
-          </Box>
-        </Collapse>
-      </Paper>
+            )}
 
-      {/* Nested Replies */}
-      {comment.replies && comment.replies.length > 0 && (
-        <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-          {comment.replies.map((reply) => (
+            {isThreadAuthor && depth === 0 && onAccept && (
+              <Tooltip title={isAccepted ? "Unmark as accepted" : "Mark as accepted answer"}>
+                <IconButton
+                  size="small"
+                  onClick={handleAccept}
+                  disabled={accepting}
+                  sx={{
+                    p: 0.5,
+                    color: isAccepted ? "#22c55e" : "var(--font-tertiary)",
+                    "&:hover": { color: "#22c55e", backgroundColor: "rgba(34,197,94,0.08)" },
+                    transition: "color 0.15s",
+                  }}
+                >
+                  <IconWrapper
+                    icon={isAccepted ? "mdi:star" : "mdi:star-outline"}
+                    size={17}
+                    color={isAccepted ? "#22c55e" : undefined}
+                  />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+
+          <Collapse in={showReplyForm}>
+            <Box sx={{ mt: 1.25 }}>
+              <TextField
+                placeholder={`Reply to ${comment.author.name}…`}
+                value={replyBody}
+                onChange={(e) => setReplyBody(e.target.value)}
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && replyBody.trim()) {
+                    e.preventDefault();
+                    handleSubmitReply();
+                  }
+                }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontSize: "0.875rem" } }}
+              />
+              <Box sx={{ display: "flex", gap: 1, mt: 0.75 }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={handleSubmitReply}
+                  disabled={!replyBody.trim() || submitting}
+                  sx={{
+                    textTransform: "none", fontSize: "0.78rem", borderRadius: "7px",
+                    backgroundColor: "var(--accent-indigo)", boxShadow: "none",
+                    "&:hover": { backgroundColor: "var(--accent-indigo)", filter: "brightness(0.9)", boxShadow: "none" },
+                  }}
+                >
+                  {submitting ? t("community.posting") : t("community.postReply")}
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => { setShowReplyForm(false); setReplyBody(""); }}
+                  sx={{ textTransform: "none", fontSize: "0.78rem", color: "var(--font-secondary)" }}
+                >
+                  {t("common.cancel")}
+                </Button>
+              </Box>
+            </Box>
+          </Collapse>
+        </Box>
+      </Box>
+
+      {hasReplies && (
+        <Box
+          sx={{
+            ml: `${avatarSize / 2 + 12}px`,
+            mt: 0,
+            pl: 2,
+            borderLeft: "2px solid color-mix(in srgb, var(--accent-indigo) 25%, var(--border-default) 75%)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          {comment.replies!.map((reply) => (
             <CommentItem
               key={reply.id}
               comment={reply}
               threadId={threadId}
               onVote={onVote}
               onReply={onReply}
+              onAccept={onAccept}
+              isThreadAuthor={isThreadAuthor}
               depth={depth + 1}
+              parentAuthorName={comment.author.name}
             />
           ))}
         </Box>
       )}
     </Box>
   );
-}
-
+});

@@ -36,6 +36,45 @@ export const getHtmlPreview = (html: string, maxLength: number = 150): string =>
 };
 
 /**
+ * Treat single newlines as paragraph breaks so user-entered Enter
+ * renders as visible line separation in ReactMarkdown output.
+ * Code fences are left untouched.
+ */
+export const softBreakMarkdown = (md: string): string => {
+  if (!md) return md;
+  const parts = md.split(/(```[\s\S]*?```)/g);
+  return parts
+    .map((chunk, i) =>
+      i % 2 === 1
+        ? chunk
+        : chunk.replace(/(?<!\n)\n(?!\n)/g, "\n\n")
+    )
+    .join("");
+};
+
+/**
+ * Strip markdown syntax for clean plain-text preview in feed cards.
+ */
+export const stripMarkdownForPreview = (md: string, maxLength = 160): string => {
+  if (!md) return "";
+  const text = md
+    .replace(/```[\s\S]*?```/g, "[code]")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/#{1,6}\s+(.+)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/^\s*>\s+/gm, "")
+    .replace(/!\[([^\]]*)\]\([^\)]+\)/g, "$1")
+    .replace(/\n+/g, " ")
+    .trim();
+  return text.length > maxLength ? text.slice(0, maxLength).trimEnd() + "…" : text;
+};
+
+/**
  * Check if HTML is escaped (contains &lt; or &gt;)
  */
 export const isHtmlEscaped = (text: string): boolean => {

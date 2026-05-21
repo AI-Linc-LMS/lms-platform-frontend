@@ -107,7 +107,8 @@ const ScheduleInterviewFormComponent = ({
             insetInlineStart: 0,
             insetInlineEnd: 0,
             bottom: 0,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            backgroundColor:
+              "color-mix(in srgb, var(--card-bg) 90%, transparent 10%)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -117,11 +118,14 @@ const ScheduleInterviewFormComponent = ({
             borderRadius: 3,
           }}
         >
-          <CircularProgress size={48} sx={{ color: "#6366f1" }} />
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937" }}>
+          <CircularProgress size={48} sx={{ color: "var(--accent-indigo)" }} />
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, color: "var(--font-primary)" }}
+          >
             Scheduling Interview...
           </Typography>
-          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
             Please wait while we schedule your interview
           </Typography>
         </Box>
@@ -131,7 +135,8 @@ const ScheduleInterviewFormComponent = ({
         sx={{
           p: 4,
           borderRadius: 3,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
           maxWidth: 600,
           mx: "auto",
           opacity: loading ? 0.5 : 1,
@@ -144,19 +149,26 @@ const ScheduleInterviewFormComponent = ({
               width: 56,
               height: 56,
               borderRadius: 2,
-              backgroundColor: "#6366f1",
+              backgroundColor: "var(--accent-indigo)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:calendar-clock" size={28} color="#ffffff" />
+            <IconWrapper
+              icon="mdi:calendar-clock"
+              size={28}
+              color="var(--font-light)"
+            />
           </Box>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary)" }}
+            >
               Schedule Interview
             </Typography>
-            <Typography variant="body2" sx={{ color: "#6b7280" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               Plan your interview ahead with detailed configuration
             </Typography>
           </Box>
@@ -190,7 +202,7 @@ const ScheduleInterviewFormComponent = ({
           <Box>
             <Typography
               variant="subtitle2"
-              sx={{ mb: 1.5, fontWeight: 600, color: "#374151" }}
+              sx={{ mb: 1.5, fontWeight: 600, color: "var(--font-primary)" }}
             >
               Difficulty Level
             </Typography>
@@ -210,15 +222,20 @@ const ScheduleInterviewFormComponent = ({
                     borderRadius: 2,
                     border: "2px solid",
                     borderColor:
-                      formData.difficulty === level ? "#6366f1" : "#e5e7eb",
+                      formData.difficulty === level
+                        ? "var(--accent-indigo)"
+                        : "var(--border-default)",
                     backgroundColor:
-                      formData.difficulty === level ? "#eff6ff" : "#ffffff",
+                      formData.difficulty === level
+                        ? "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)"
+                        : "var(--card-bg)",
                     cursor: "pointer",
                     textAlign: "center",
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      borderColor: "#6366f1",
-                      backgroundColor: "#f5f7ff",
+                      borderColor: "var(--accent-indigo)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 8%, var(--card-bg) 92%)",
                     },
                   }}
                 >
@@ -227,7 +244,9 @@ const ScheduleInterviewFormComponent = ({
                     sx={{
                       fontWeight: 600,
                       color:
-                        formData.difficulty === level ? "#6366f1" : "#6b7280",
+                        formData.difficulty === level
+                          ? "var(--accent-indigo)"
+                          : "var(--font-secondary)",
                     }}
                   >
                     {level}
@@ -238,7 +257,7 @@ const ScheduleInterviewFormComponent = ({
             {errors.difficulty && (
               <Typography
                 variant="caption"
-                sx={{ color: "#ef4444", mt: 0.5, display: "block" }}
+                sx={{ color: "var(--error-500)", mt: 0.5, display: "block" }}
               >
                 {errors.difficulty}
               </Typography>
@@ -280,11 +299,13 @@ const ScheduleInterviewFormComponent = ({
                 fontWeight: 600,
                 px: 3,
                 py: 1.25,
-                borderColor: "#e5e7eb",
-                color: "#6b7280",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
                 "&:hover": {
-                  borderColor: "#d1d5db",
-                  backgroundColor: "#f9fafb",
+                  borderColor:
+                    "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
                 },
               }}
             >
@@ -300,9 +321,10 @@ const ScheduleInterviewFormComponent = ({
                 fontWeight: 600,
                 px: 3,
                 py: 1.25,
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
               }}
             >
@@ -317,16 +339,22 @@ const ScheduleInterviewFormComponent = ({
           sx={{
             mt: 3,
             p: 2,
-            backgroundColor: "#eff6ff",
-            border: "1px solid #bfdbfe",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
             borderRadius: 2,
           }}
         >
           <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
-            <IconWrapper icon="mdi:information" size={20} color="#3b82f6" />
+            <IconWrapper
+              icon="mdi:information"
+              size={20}
+              color="var(--accent-indigo)"
+            />
             <Typography
               variant="body2"
-              sx={{ color: "#1e40af", fontSize: "0.875rem" }}
+              sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
             >
               You can start the interview at the scheduled time.
             </Typography>

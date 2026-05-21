@@ -28,12 +28,12 @@ export function TimeUtilizationChart({
     {
       name: "Time Used",
       value: percentageUsed,
-      fill: percentageUsed > 90 ? "#ef4444" : percentageUsed > 70 ? "#f59e0b" : "#10b981",
+      fill: percentageUsed > 90 ? "var(--error-500)" : percentageUsed > 70 ? "var(--warning-500)" : "var(--course-cta)",
     },
     {
       name: "Time Remaining",
       value: remaining,
-      fill: "#e5e7eb",
+      fill: "var(--border-default)",
     },
   ];
 
@@ -52,9 +52,9 @@ export function TimeUtilizationChart({
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
-        background: "#ffffff",
+        background: "var(--font-light)",
       }}
     >
       <Box
@@ -70,20 +70,20 @@ export function TimeUtilizationChart({
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "rgba(139, 92, 246, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:clock-time-four" size={24} color="#8b5cf6" />
+          <IconWrapper icon="mdi:clock-time-four" size={24} color="var(--assessment-chart-violet)" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               mb: 0.25,
             }}
           >
@@ -92,7 +92,7 @@ export function TimeUtilizationChart({
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
             }}
           >
@@ -114,7 +114,7 @@ export function TimeUtilizationChart({
             endAngle={-270}
           >
             <RadialBar
-              label={{ position: "insideStart", fill: "#fff", fontSize: 12 }}
+              label={{ position: "insideStart", fill: "var(--font-light)", fontSize: 12 }}
               background
               dataKey="value"
             >
@@ -146,14 +146,14 @@ export function TimeUtilizationChart({
           sx={{
             p: 2,
             borderRadius: 2,
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
-            border: "1px solid rgba(16, 185, 129, 0.2)",
+            backgroundColor: "color-mix(in srgb, var(--course-cta) 12%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--course-cta) 24%, transparent)",
           }}
         >
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mb: 0.5 }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}>
             Time Used
           </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#10b981" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--course-cta)" }}>
             {formatTime(timeTakenMinutes)}
           </Typography>
         </Box>
@@ -161,14 +161,14 @@ export function TimeUtilizationChart({
           sx={{
             p: 2,
             borderRadius: 2,
-            backgroundColor: "rgba(156, 163, 175, 0.1)",
-            border: "1px solid rgba(156, 163, 175, 0.2)",
+            backgroundColor: "color-mix(in srgb, var(--font-tertiary) 12%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--font-tertiary) 22%, transparent)",
           }}
         >
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block", mb: 0.5 }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}>
             Time Remaining
           </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#6b7280" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
             {formatTime(Math.max(totalTimeMinutes - timeTakenMinutes, 0))}
           </Typography>
         </Box>

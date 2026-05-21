@@ -40,10 +40,11 @@ export function SubmoduleContentList({
           backgroundColor: "transparent",
         },
         "&::-webkit-scrollbar-thumb": {
-          backgroundColor: "#cbd5e1",
+          backgroundColor: "var(--border-default)",
           borderRadius: "2px",
           "&:hover": {
-            backgroundColor: "#94a3b8",
+            backgroundColor:
+              "color-mix(in srgb, var(--border-default) 70%, var(--font-secondary) 30%)",
           },
         },
       }}
@@ -52,15 +53,15 @@ export function SubmoduleContentList({
       <Box
         sx={{
           p: 1.5,
-          borderBottom: "1px solid #e5e7eb",
-          backgroundColor: "#f9fafb",
+          borderBottom: "1px solid var(--border-default)",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Typography
           variant="subtitle2"
           sx={{
             fontWeight: 600,
-            color: "#1a1f2e",
+            color: "var(--font-primary)",
             fontSize: "0.8125rem",
             mb: 0.25,
             lineHeight: 1.4,
@@ -75,7 +76,7 @@ export function SubmoduleContentList({
         </Typography>
         <Typography
           variant="caption"
-          sx={{ color: "#6b7280", fontSize: "0.6875rem" }}
+          sx={{ color: "var(--font-secondary)", fontSize: "0.6875rem" }}
         >
           {moduleName}
         </Typography>
@@ -103,19 +104,23 @@ export function SubmoduleContentList({
                   py: 1.25,
                   px: 2,
                   backgroundColor: isActive
-                    ? "rgba(99, 102, 241, 0.08)"
+                    ? "color-mix(in srgb, var(--accent-indigo) 10%, transparent)"
                     : "transparent",
-                  borderInlineStart: isActive ? "3px solid #6366f1" : "none",
+                  borderInlineStart: isActive
+                    ? "3px solid var(--accent-indigo)"
+                    : "none",
                   cursor: "pointer",
                   "&:hover": {
                     backgroundColor: isActive
-                      ? "rgba(99, 102, 241, 0.12)"
-                      : "rgba(0, 0, 0, 0.03)",
+                      ? "color-mix(in srgb, var(--accent-indigo) 14%, transparent)"
+                      : "color-mix(in srgb, var(--font-primary) 3%, transparent)",
                   },
                   "&.Mui-selected": {
-                    backgroundColor: "rgba(99, 102, 241, 0.08)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                     "&:hover": {
-                      backgroundColor: "rgba(99, 102, 241, 0.12)",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
                     },
                   },
                 }}
@@ -132,17 +137,17 @@ export function SubmoduleContentList({
                           width: 14,
                           height: 14,
                           borderRadius: "50%",
-                          backgroundColor: "#10b981",
+                          backgroundColor: "var(--success-500)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          border: "1.5px solid #ffffff",
+                          border: "1.5px solid var(--card-bg)",
                         }}
                       >
                         <IconWrapper
                           icon="mdi:check"
                           size={8}
-                          color="#ffffff"
+                          color="var(--font-light)"
                         />
                       </Box>
                     )}
@@ -162,7 +167,9 @@ export function SubmoduleContentList({
                         variant="body2"
                         sx={{
                           fontWeight: isActive ? 600 : 500,
-                          color: isActive ? "#6366f1" : "#1a1f2e",
+                          color: isActive
+                            ? "var(--accent-indigo)"
+                            : "var(--font-primary)",
                           fontSize: "0.8125rem",
                           lineHeight: 1.4,
                           flex: 1,
@@ -185,16 +192,16 @@ export function SubmoduleContentList({
                             fontWeight: 600,
                             backgroundColor:
                               obtainedMarks >= contentItem.marks * 0.8
-                                ? "#d1fae5"
+                                ? "color-mix(in srgb, var(--success-500) 18%, var(--surface) 82%)"
                                 : obtainedMarks >= contentItem.marks * 0.6
-                                ? "#fef3c7"
-                                : "#fee2e2",
+                                ? "color-mix(in srgb, var(--warning-500) 18%, var(--surface) 82%)"
+                                : "color-mix(in srgb, var(--error-500) 18%, var(--surface) 82%)",
                             color:
                               obtainedMarks >= contentItem.marks * 0.8
-                                ? "#065f46"
+                                ? "var(--success-500)"
                                 : obtainedMarks >= contentItem.marks * 0.6
-                                ? "#92400e"
-                                : "#991b1b",
+                                ? "var(--warning-500)"
+                                : "var(--error-500)",
                             "& .MuiChip-label": {
                               px: 0.75,
                             },
@@ -212,7 +219,7 @@ export function SubmoduleContentList({
                         alignItems: "center",
                         gap: 0.75,
                         mt: 0.5,
-                        color: "#9ca3af",
+                        color: "var(--font-tertiary)",
                         fontSize: "0.6875rem",
                         flexWrap: "wrap",
                       }}
@@ -220,26 +227,58 @@ export function SubmoduleContentList({
                       <span>{contentItem.content_type}</span>
                       {contentItem.duration_in_minutes > 0 && (
                         <>
-                          <span style={{ color: "#d1d5db", fontSize: "0.625rem" }}>•</span>
+                          <span
+                            style={{
+                              color: "var(--border-default)",
+                              fontSize: "0.625rem",
+                            }}
+                          >
+                            •
+                          </span>
                           <span>{formatDuration(contentItem.duration_in_minutes)}</span>
                         </>
                       )}
                       {showMarksInfo && (
                         <>
-                          <span style={{ color: "#d1d5db", fontSize: "0.625rem" }}>•</span>
+                          <span
+                            style={{
+                              color: "var(--border-default)",
+                              fontSize: "0.625rem",
+                            }}
+                          >
+                            •
+                          </span>
                           <span>{t("courses.totalMarks")}: {contentItem.marks}</span>
                         </>
                       )}
                       {obtainedMarks !== null && (
                         <>
-                          <span style={{ color: "#d1d5db", fontSize: "0.625rem" }}>•</span>
-                          <span style={{ color: "#6b7280" }}>Obtained: {obtainedMarks}</span>
+                          <span
+                            style={{
+                              color: "var(--border-default)",
+                              fontSize: "0.625rem",
+                            }}
+                          >
+                            •
+                          </span>
+                          <span style={{ color: "var(--font-secondary)" }}>
+                            Obtained: {obtainedMarks}
+                          </span>
                         </>
                       )}
                       {submissions > 0 && obtainedMarks !== null && (
                         <>
-                          <span style={{ color: "#d1d5db", fontSize: "0.625rem" }}>•</span>
-                          <span style={{ color: "#6b7280" }}>{t("courses.submissions")}: {submissions}</span>
+                          <span
+                            style={{
+                              color: "var(--border-default)",
+                              fontSize: "0.625rem",
+                            }}
+                          >
+                            •
+                          </span>
+                          <span style={{ color: "var(--font-secondary)" }}>
+                            {t("courses.submissions")}: {submissions}
+                          </span>
                         </>
                       )}
                     </Typography>

@@ -91,10 +91,10 @@ const SkillsFilterComponent = ({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="mdi:tag-multiple-outline" size={18} color="#6366f1" />
+          <IconWrapper icon="mdi:tag-multiple-outline" size={18} color="var(--accent-indigo)" />
           <Typography
             variant="subtitle2"
-            sx={{ fontWeight: 600, fontSize: "0.875rem", color: "#0f172a" }}
+            sx={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--font-primary)" }}
           >
             Skills & Tags
           </Typography>
@@ -105,8 +105,8 @@ const SkillsFilterComponent = ({
                 px: 1,
                 py: 0.25,
                 borderRadius: 1,
-                backgroundColor: "rgba(99, 102, 241, 0.1)",
-                color: "#6366f1",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                color: "var(--accent-indigo)",
                 fontWeight: 500,
               }}
             >
@@ -123,10 +123,10 @@ const SkillsFilterComponent = ({
               fontSize: "0.75rem",
               minWidth: "auto",
               px: 1,
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
               fontWeight: 500,
               "&:hover": {
-                backgroundColor: "rgba(99, 102, 241, 0.08)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
               },
             }}
           >
@@ -146,12 +146,12 @@ const SkillsFilterComponent = ({
             mb: 1.5,
             "& .MuiOutlinedInput-root": {
               borderRadius: 1.5,
-              backgroundColor: "#fff",
+              backgroundColor: "var(--card-bg)",
               "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "rgba(99, 102, 241, 0.4)",
+                borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
               },
               "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#6366f1",
+                borderColor: "var(--accent-indigo)",
                 borderWidth: 1.5,
               },
             },
@@ -159,7 +159,7 @@ const SkillsFilterComponent = ({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <IconWrapper icon="mdi:magnify" size={18} color="#94a3b8" />
+                <IconWrapper icon="mdi:magnify" size={18} color="var(--font-tertiary)" />
               </InputAdornment>
             ),
           }}
@@ -179,12 +179,12 @@ const SkillsFilterComponent = ({
                 size="small"
                 onDelete={() => handleSkillToggle(skill)}
                 sx={{
-                  backgroundColor: "#6366f1",
-                  color: "#fff",
+                  backgroundColor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
                   fontWeight: 500,
                   "& .MuiChip-deleteIcon": {
-                    color: "rgba(255,255,255,0.8)",
-                    "&:hover": { color: "#fff" },
+                    color: "color-mix(in srgb, var(--font-light) 80%, transparent)",
+                    "&:hover": { color: "var(--font-light)" },
                   },
                 }}
               />
@@ -200,7 +200,7 @@ const SkillsFilterComponent = ({
           borderColor: "divider",
           borderRadius: 1.5,
           overflow: "hidden",
-          backgroundColor: "#fafafa",
+          backgroundColor: "var(--surface)",
         }}
       >
         <Box
@@ -215,17 +215,18 @@ const SkillsFilterComponent = ({
               backgroundColor: "transparent",
             },
             "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "rgba(99, 102, 241, 0.2)",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
               borderRadius: "3px",
               "&:hover": {
-                backgroundColor: "rgba(99, 102, 241, 0.35)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
               },
             },
           }}
         >
           {filteredSkills.length === 0 ? (
             <Box sx={{ py: 3, textAlign: "center" }}>
-              <IconWrapper icon="mdi:tag-off-outline" size={32} color="#cbd5e1" />
+              <IconWrapper icon="mdi:tag-off-outline" size={32} color="var(--border-default)" />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 {searchQuery.trim()
                   ? "No skills match your search"
@@ -248,17 +249,18 @@ const SkillsFilterComponent = ({
                       fontWeight: isSelected ? 600 : 500,
                       ...(isSelected
                         ? {
-                            backgroundColor: "rgba(99, 102, 241, 0.15)",
-                            color: "#6366f1",
-                            borderColor: "#6366f1",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
+                            color: "var(--accent-indigo)",
+                            borderColor: "var(--accent-indigo)",
                           }
                         : {
-                            borderColor: "#e2e8f0",
-                            color: "#64748b",
+                            borderColor: "var(--border-default)",
+                            color: "var(--font-secondary)",
                             "&:hover": {
-                              borderColor: "#6366f1",
-                              color: "#6366f1",
-                              backgroundColor: "rgba(99, 102, 241, 0.06)",
+                              borderColor: "var(--accent-indigo)",
+                              color: "var(--accent-indigo)",
+                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                             },
                           }),
                     }}

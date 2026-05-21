@@ -19,6 +19,10 @@ import type { CourseBuilderJobListItem } from "@/lib/services/admin/ai-course-bu
 import { AICourseBuilderHeader } from "@/components/admin/ai-course-builder/AICourseBuilderHeader";
 import { AICourseBuilderActions } from "@/components/admin/ai-course-builder/AICourseBuilderActions";
 import { AIJobCard } from "@/components/admin/ai-course-builder/AIJobCard";
+import {
+  AIJobStatsSection,
+  type AIJobFilter,
+} from "@/components/admin/ai-course-builder/AIJobStatsSection";
 
 const POLL_INTERVAL_MS = 10000;
 const DEFAULT_ROWS_PER_PAGE = 10;
@@ -46,6 +50,7 @@ export default function AICourseBuilderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [inputTypeFilter, setInputTypeFilter] = useState<string>("");
+  const [activeFilter, setActiveFilter] = useState<AIJobFilter>("all");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
 
@@ -100,9 +105,22 @@ export default function AICourseBuilderPage() {
   }, [jobs, searchQuery]);
 
   const filteredByStatus = useMemo(() => {
-    if (!statusFilter) return filteredBySearch;
-    return filteredBySearch.filter((job) => job.status === statusFilter);
-  }, [filteredBySearch, statusFilter]);
+    switch (activeFilter) {
+      case "outline_ready":
+        return filteredBySearch.filter((job) => job.status === "outline_ready");
+      case "in_progress":
+        return filteredBySearch.filter(
+          (job) => job.status === "generating_outline" || job.status === "generating_content"
+        );
+      case "completed":
+        return filteredBySearch.filter((job) => job.status === "completed");
+      case "failed":
+        return filteredBySearch.filter((job) => job.status === "failed");
+      case "all":
+      default:
+        return filteredBySearch;
+    }
+  }, [filteredBySearch, activeFilter]);
 
   const filteredJobs = useMemo(() => {
     if (!inputTypeFilter) return filteredByStatus;
@@ -146,6 +164,12 @@ export default function AICourseBuilderPage() {
     (j) => j.status === "generating_outline" || j.status === "generating_content"
   ).length;
   const completedCount = jobs.filter((j) => j.status === "completed").length;
+  const failedCount = jobs.filter((j) => j.status === "failed").length;
+
+  const handleActiveFilterChange = (filter: AIJobFilter) => {
+    setActiveFilter(filter);
+    setPage(1);
+  };
 
   if (loading) {
     return (
@@ -175,7 +199,10 @@ export default function AICourseBuilderPage() {
           sx={{
             p: { xs: 2, sm: 3, md: 4 },
             borderRadius: 2,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           <Box
@@ -188,102 +215,15 @@ export default function AICourseBuilderPage() {
               gap: 3,
             }}
           >
-            <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: "#111827",
-                  fontSize: { xs: "1.25rem", sm: "1.5rem" },
-                  mb: 1,
-                }}
-              >
-                {t("adminAICourseBuilder.generationJobs")}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
-                {t("adminAICourseBuilder.glimpseProgress")}
-              </Typography>
-              {jobs.length > 0 && (
-                <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        bgcolor: "#3b82f6",
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                      <Typography
-                        component="span"
-                        sx={{ fontWeight: 600, color: "#3b82f6" }}
-                      >
-                        {outlineReadyCount}
-                      </Typography>{" "}
-                      {t("adminAICourseBuilder.outlineReady")}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        bgcolor: "#f59e0b",
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                      <Typography
-                        component="span"
-                        sx={{ fontWeight: 600, color: "#f59e0b" }}
-                      >
-                        {generatingCount}
-                      </Typography>{" "}
-                      {t("adminAICourseBuilder.inProgress")}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        bgcolor: "#10b981",
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                      <Typography
-                        component="span"
-                        sx={{ fontWeight: 600, color: "#10b981" }}
-                      >
-                        {completedCount}
-                      </Typography>{" "}
-                      {t("adminAICourseBuilder.completed")}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        bgcolor: "#6b7280",
-                      }}
-                    />
-                    <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                      <Typography
-                        component="span"
-                        sx={{ fontWeight: 600, color: "#6b7280" }}
-                      >
-                        {jobs.length}
-                      </Typography>{" "}
-                      {t("adminAICourseBuilder.total")}
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
-            </Box>
+            <AIJobStatsSection
+              outlineReadyCount={outlineReadyCount}
+              inProgressCount={generatingCount}
+              completedCount={completedCount}
+              failedCount={failedCount}
+              totalCount={jobs.length}
+              activeFilter={activeFilter}
+              onFilterChange={handleActiveFilterChange}
+            />
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, alignItems: { lg: "flex-end" } }}>
               {hasGeneratingJobs && (
@@ -295,12 +235,14 @@ export default function AICourseBuilderPage() {
                     px: 1.5,
                     py: 0.5,
                     borderRadius: 1,
-                    bgcolor: "#ecfdf5",
-                    border: "1px solid #a7f3d0",
+                    bgcolor:
+                      "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--success-500) 35%, var(--border-default) 65%)",
                   }}
                 >
-                  <CircularProgress size={14} sx={{ color: "#059669" }} />
-                  <Typography variant="caption" sx={{ color: "#047857", fontWeight: 500 }}>
+                  <CircularProgress size={14} sx={{ color: "var(--success-500)" }} />
+                  <Typography variant="caption" sx={{ color: "var(--success-500)", fontWeight: 500 }}>
                     {t("adminAICourseBuilder.liveUpdating")}
                   </Typography>
                 </Box>
@@ -309,7 +251,7 @@ export default function AICourseBuilderPage() {
             </Box>
           </Box>
 
-          {/* Filter and search in one line */}
+          {/* Search and info in one line */}
           <Box
             sx={{
               display: "flex",
@@ -319,30 +261,14 @@ export default function AICourseBuilderPage() {
               mb: 2,
             }}
           >
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <Select
-                value={statusFilter}
-                onChange={(e) => handleStatusFilterChange(e.target.value)}
-                displayEmpty
-                sx={{ bgcolor: "background.paper" }}
-                renderValue={(v) => (v ? statusFilterLabel(v) : t("adminAICourseBuilder.allStatuses"))}
-              >
-                <MenuItem value="">{t("adminAICourseBuilder.allStatuses")}</MenuItem>
-                {Object.entries(STATUS_FILTER_KEYS).map(([value]) => (
-                  <MenuItem key={value} value={value}>
-                    {statusFilterLabel(value)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
             <AICourseBuilderActions
               searchQuery={searchQuery}
               onSearchChange={handleSearchChange}
             />
-            {(searchQuery || statusFilter || inputTypeFilter) && (
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+            {(searchQuery || activeFilter !== "all" || inputTypeFilter) && (
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminAICourseBuilder.jobsMatch", { count: filteredJobs.length })}
-                {(searchQuery || statusFilter || inputTypeFilter) && ` ${t("adminAICourseBuilder.filters")}`}
+                {(searchQuery || activeFilter !== "all" || inputTypeFilter) && ` ${t("adminAICourseBuilder.filters")}`}
               </Typography>
             )}
           </Box>
@@ -350,11 +276,39 @@ export default function AICourseBuilderPage() {
           {filteredJobs.length === 0 ? (
             <Box sx={{ textAlign: "center", py: 8 }}>
               <Typography variant="h6" sx={{ fontWeight: 500, mb: 1 }}>
-                {t("adminAICourseBuilder.noGenerationJobsYet")}
+                {searchQuery || activeFilter !== "all" || inputTypeFilter
+                  ? t("adminAICourseBuilder.noMatchingJobs")
+                  : t("adminAICourseBuilder.noGenerationJobsYet")}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-                {t("adminAICourseBuilder.getStartedDescription")}
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
+                {searchQuery || activeFilter !== "all" || inputTypeFilter
+                  ? t("adminAICourseBuilder.tryDifferentFilter")
+                  : t("adminAICourseBuilder.getStartedDescription")}
               </Typography>
+              {(searchQuery || activeFilter !== "all" || inputTypeFilter) && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    component="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setActiveFilter("all");
+                      setInputTypeFilter("");
+                      setPage(1);
+                    }}
+                    sx={{
+                      color: "var(--accent-indigo)",
+                      cursor: "pointer",
+                      textDecoration: "underline",
+                      border: "none",
+                      background: "none",
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {t("adminAICourseBuilder.clearAllFilters")}
+                  </Typography>
+                </Box>
+              )}
               <AICourseBuilderActions buttonsOnly />
             </Box>
           ) : (
@@ -386,7 +340,7 @@ export default function AICourseBuilderPage() {
                   gap: 2,
                 }}
               >
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {t("adminAICourseBuilder.showingJobs", {
                     start: (pageSafe - 1) * rowsPerPage + 1,
                     end: Math.min(pageSafe * rowsPerPage, totalFiltered),

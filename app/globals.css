@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Same file + family name as `app/api/certificate/generate/route.ts` (student name on canvas). */
+@font-face {
+  font-family: "Alex Brush";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/AlexBrush-Regular.ttf") format("truetype");
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -43,6 +52,8 @@
   --accent-teal: #319795;
   --accent-purple: #805ad5;
   --accent-pink: #d53f8c;
+  --accent-cyan: #06b6d4;
+  --accent-cyan-dark: #0891b2;
 
   /* Neutral Colors */
   --neutral-50: #f8f9fa;
@@ -120,6 +131,158 @@
   --assessment-subjective-shadow: color-mix(in srgb, var(--accent-teal) 18%, transparent);
   --assessment-subjective-shadow-lg: color-mix(in srgb, var(--accent-teal) 26%, transparent);
   --assessment-subjective-count: var(--accent-teal);
+
+  /*
+   * Learner assessment UI (catalog cards, list chrome, shared CTAs).
+   * All values derive from tenant branding tokens — change accents in Admin Branding, not here.
+   */
+  --assessment-success-strong: color-mix(in srgb, var(--course-cta) 86%, var(--font-dark));
+  --assessment-catalog-on-media: var(--font-light);
+  --assessment-catalog-chip-on-dark: color-mix(in srgb, var(--font-light) 92%, transparent);
+  --accent-indigo-muted-fill: color-mix(in srgb, var(--accent-indigo) 9%, transparent);
+
+  --assessment-catalog-auto-header-active: linear-gradient(
+    135deg,
+    var(--accent-indigo) 0%,
+    var(--accent-indigo-dark) 100%
+  );
+  --assessment-catalog-auto-header-done: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--course-cta) 10%, transparent) 0%,
+    color-mix(in srgb, var(--success-500) 8%, transparent) 100%
+  );
+
+  --assessment-catalog-psychometric-header-done: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-purple) 12%, transparent) 0%,
+    color-mix(in srgb, var(--accent-indigo) 8%, transparent) 100%
+  );
+  --assessment-catalog-psychometric-overlay: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-purple) 85%, transparent) 0%,
+    color-mix(in srgb, var(--accent-indigo) 85%, transparent) 100%
+  );
+  --assessment-catalog-psychometric-cta-gradient: linear-gradient(
+    135deg,
+    var(--accent-purple) 0%,
+    var(--accent-indigo) 100%
+  );
+  --assessment-catalog-psychometric-cta-solid: var(--accent-purple);
+  --assessment-catalog-psychometric-cta-hover: color-mix(in srgb, var(--accent-purple) 88%, var(--font-dark));
+  --assessment-catalog-psychometric-border-done: color-mix(in srgb, var(--accent-purple) 22%, transparent);
+  --assessment-catalog-psychometric-border-active: color-mix(in srgb, var(--accent-purple) 32%, transparent);
+  --assessment-catalog-psychometric-border-hover-done: color-mix(in srgb, var(--accent-purple) 42%, transparent);
+  --assessment-catalog-psychometric-border-hover-active: color-mix(in srgb, var(--accent-purple) 52%, transparent);
+  --assessment-catalog-psychometric-shadow: 0 4px 12px color-mix(in srgb, var(--accent-purple) 18%, transparent);
+  --assessment-catalog-psychometric-shadow-hover: 0 12px 32px color-mix(in srgb, var(--accent-purple) 28%, transparent);
+  --assessment-catalog-psychometric-shadow-cta: 0 4px 14px color-mix(in srgb, var(--accent-purple) 42%, transparent);
+  --assessment-catalog-psychometric-shadow-cta-hover: 0 6px 20px color-mix(in srgb, var(--accent-purple) 52%, transparent);
+
+  /* Re-attempt CTA (cyan): paired with the green "View Results" CTA on cards
+     where an admin has granted a learner one more attempt. Cyan vs green
+     differentiates the action (re-take vs view) while preserving paired-stack
+     proportions. Built from --accent-cyan / --accent-cyan-dark so it themes
+     consistently with the other catalog CTAs. */
+  --assessment-catalog-reattempt-cta-gradient: linear-gradient(
+    135deg,
+    var(--accent-cyan) 0%,
+    var(--accent-cyan-dark) 100%
+  );
+  --assessment-catalog-reattempt-cta-hover-gradient: linear-gradient(
+    135deg,
+    var(--accent-cyan-dark) 0%,
+    color-mix(in srgb, var(--accent-cyan-dark) 70%, var(--font-dark)) 100%
+  );
+  --assessment-catalog-reattempt-cta-shadow: 0 2px 6px color-mix(in srgb, var(--accent-cyan-dark) 28%, transparent);
+  --assessment-catalog-reattempt-cta-shadow-hover: 0 4px 10px color-mix(in srgb, var(--accent-cyan-dark) 40%, transparent);
+
+  /* Manual-review cards: teal + pink (not indigo / orange / warning — reads as “instructor” vs auto) */
+  --assessment-catalog-manual-stripe: var(--accent-teal);
+  --assessment-catalog-manual-accent: var(--accent-teal);
+  --assessment-catalog-manual-accent-secondary: var(--accent-pink);
+  --assessment-catalog-manual-header-active: linear-gradient(
+    148deg,
+    var(--secondary-700) 0%,
+    var(--primary-900) 42%,
+    color-mix(in srgb, var(--accent-pink) 58%, var(--primary-900)) 100%
+  );
+  --assessment-catalog-manual-header-done: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-teal) 14%, transparent) 0%,
+    color-mix(in srgb, var(--secondary-50) 52%, var(--card-bg)) 52%,
+    color-mix(in srgb, var(--accent-pink) 12%, transparent) 100%
+  );
+  --assessment-catalog-manual-border-done: color-mix(in srgb, var(--accent-pink) 34%, transparent);
+  --assessment-catalog-manual-border-active: color-mix(in srgb, var(--accent-teal) 48%, transparent);
+  --assessment-catalog-manual-shadow-done: 0 4px 14px color-mix(in srgb, var(--accent-pink) 14%, transparent);
+  --assessment-catalog-manual-shadow-active: 0 6px 20px color-mix(in srgb, var(--secondary-700) 22%, transparent);
+  --assessment-catalog-manual-shadow-hover-done: 0 12px 28px color-mix(in srgb, var(--accent-teal) 18%, transparent);
+  --assessment-catalog-manual-shadow-hover-active: 0 14px 36px color-mix(in srgb, var(--accent-pink) 20%, transparent);
+  --assessment-catalog-manual-border-hover-done: color-mix(in srgb, var(--accent-teal) 48%, transparent);
+  --assessment-catalog-manual-border-hover-active: color-mix(in srgb, var(--accent-pink) 55%, transparent);
+  --assessment-catalog-manual-stat-bg: color-mix(
+    in srgb,
+    var(--surface) 92%,
+    color-mix(in srgb, var(--accent-teal) 11%, transparent)
+  );
+  --assessment-catalog-manual-stat-border: color-mix(in srgb, var(--accent-teal) 28%, transparent);
+  --assessment-catalog-manual-chip-light-fg: color-mix(in srgb, var(--secondary-50) 96%, var(--font-light));
+  --assessment-catalog-manual-chip-light-border: color-mix(in srgb, var(--accent-teal) 42%, transparent);
+  --assessment-catalog-manual-chip-done-bg: color-mix(in srgb, var(--accent-teal) 20%, transparent);
+  --assessment-catalog-manual-chip-done-border: color-mix(in srgb, var(--accent-pink) 36%, transparent);
+  --assessment-catalog-manual-list-stat-bg: color-mix(in srgb, var(--accent-teal) 18%, transparent);
+
+  --assessment-catalog-cta-auto-solid: var(--accent-indigo);
+  --assessment-catalog-cta-auto-gradient: linear-gradient(
+    135deg,
+    var(--accent-indigo) 0%,
+    var(--accent-indigo-dark) 100%
+  );
+  --assessment-catalog-cta-auto-hover: var(--accent-indigo-dark);
+  --assessment-catalog-cta-auto-shadow: 0 4px 14px color-mix(in srgb, var(--accent-indigo) 40%, transparent);
+  --assessment-catalog-cta-auto-shadow-hover: 0 6px 20px color-mix(in srgb, var(--accent-indigo) 52%, transparent);
+
+  --assessment-catalog-cta-success-solid: var(--course-cta);
+  --assessment-catalog-cta-success-hover: var(--assessment-success-strong);
+  --assessment-catalog-cta-success-shadow: 0 4px 14px color-mix(in srgb, var(--course-cta) 40%, transparent);
+  --assessment-catalog-cta-success-shadow-hover: 0 6px 20px color-mix(in srgb, var(--course-cta) 52%, transparent);
+
+  --assessment-catalog-cta-manual-gradient: linear-gradient(
+    135deg,
+    var(--accent-teal) 0%,
+    color-mix(in srgb, var(--accent-pink) 72%, var(--font-dark)) 100%
+  );
+  --assessment-catalog-cta-manual-hover: color-mix(in srgb, var(--accent-teal) 68%, var(--font-dark));
+  --assessment-catalog-cta-manual-shadow: 0 4px 14px color-mix(in srgb, var(--accent-teal) 38%, transparent);
+  --assessment-catalog-cta-manual-shadow-hover: 0 6px 20px color-mix(in srgb, var(--accent-pink) 34%, transparent);
+
+  --assessment-catalog-cta-disabled: var(--font-tertiary);
+
+  --assessment-catalog-card-border-neutral: var(--border-default);
+  --assessment-catalog-card-border-auto-done: color-mix(in srgb, var(--course-cta) 22%, transparent);
+  --assessment-catalog-card-shadow-neutral: 0 2px 8px color-mix(in srgb, var(--font-dark) 10%, transparent);
+  --assessment-catalog-card-shadow-hover-neutral: 0 8px 24px color-mix(in srgb, var(--font-dark) 14%, transparent);
+  --assessment-catalog-card-border-hover-auto: var(--accent-indigo);
+  --assessment-catalog-card-border-hover-done: color-mix(in srgb, var(--course-cta) 42%, transparent);
+
+  --assessment-catalog-stat-icon-auto: var(--accent-indigo);
+  --assessment-catalog-stat-icon-manual: var(--accent-teal);
+
+  --assessment-page-header-gradient: linear-gradient(
+    135deg,
+    var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%
+  );
+
+  /** Letterbox / preview blacks — override in custom CSS if needed */
+  --assessment-video-letterbox-bg: #000000;
+
+  /** Chart fallbacks (Recharts); tie to branding accents */
+  --assessment-chart-grid-stroke: color-mix(in srgb, var(--neutral-300) 35%, transparent);
+  --assessment-chart-secondary-fill: color-mix(in srgb, var(--accent-indigo) 45%, transparent);
+  --assessment-chart-violet: var(--accent-purple);
+  --assessment-chart-blue: var(--accent-blue);
+  --assessment-chart-green: var(--course-cta);
+
   /* Subjective answer editor panel (nested surface inside card) */
   --assessment-subjective-answer-panel-bg: color-mix(
     in srgb,
@@ -165,6 +328,16 @@
   --interview-badge-speaking-bg: rgba(99, 102, 241, 0.9);
   --interview-overlay-bg: rgba(248, 250, 252, 0.85);
   --interview-spinner-border: #e2e8f0;
+
+  /* AI Linc brand gradient — matches the gradient stops in the dark-mode mark SVG
+     at /public/logos/ai-linc-mark-darkmode.svg. Used by the AiLincLoader (and any
+     future brand-mark renderers) so the brand identity is centralized here and the
+     loader doesn't carry inline hex literals. */
+  --ailinc-brand-gradient-start: #5b86ff;
+  --ailinc-brand-gradient-end: #00e0ff;
+  /* White shimmer that travels along the mark while the loader is alive. Kept as a
+     token (rather than a literal #FFFFFF) so any future contrast tweak is one edit. */
+  --ailinc-brand-highlight: #ffffff;
 }
 
 @theme inline {
@@ -272,4 +445,783 @@ body {
   50%, 100% {
     transform: scaleX(-1);
   }
+}
+
+/* =========================================================================
+ * AI Linc cinematic design system — scoped to the /setup wizard only.
+ * Mirrors the tokens & utilities from ailinc-web so the first-login
+ * experience matches the marketing site. Wrapper: <div class="ailinc-wizard">.
+ * ======================================================================= */
+.ailinc-wizard {
+  /* Theme tokens */
+  --aw-bg-0: 5 7 15;
+  --aw-bg-1: 10 14 28;
+  --aw-bg-2: 15 20 38;
+  --aw-bg-3: 22 28 51;
+  --aw-fg: 233 236 246;
+  --aw-fg-dim: 154 163 192;
+  --aw-fg-mute: 95 104 133;
+  --aw-line: 255 255 255;
+  --aw-line-alpha: 0.08;
+  --aw-line-2-alpha: 0.14;
+  --aw-grad: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  --aw-radial-1: rgba(0, 224, 255, 0.10);
+  --aw-radial-2: rgba(35, 86, 214, 0.18);
+  --aw-ease: cubic-bezier(.16, 1, .3, 1);
+
+  background: rgb(var(--aw-bg-0));
+  color: rgb(var(--aw-fg));
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+.ailinc-wizard *::selection { background: #00e0ff; color: #05070f; }
+
+/* Surface backdrop (radial glows behind everything) */
+.ailinc-wizard::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60% 50% at 80% 30%, var(--aw-radial-1) 0%, transparent 60%),
+    radial-gradient(50% 40% at 15% 70%, var(--aw-radial-2) 0%, transparent 60%);
+}
+
+/* Grain overlay */
+.ailinc-wizard::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+.ailinc-wizard > * { position: relative; z-index: 2; }
+
+/* Typography */
+.ailinc-wizard .aw-serif {
+  font-family: 'Fraunces', 'Times New Roman', Georgia, serif;
+  font-variation-settings: "opsz" 144;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+.ailinc-wizard .aw-mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
+
+/* Kicker pill */
+.ailinc-wizard .aw-kicker {
+  display: inline-flex;
+  align-items: center;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: #00e0ff;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 224, 255, 0.25);
+  background: rgba(0, 224, 255, 0.04);
+}
+
+/* Gradient text */
+.ailinc-wizard .aw-gradient-text {
+  background: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Generic dim/mute text */
+.ailinc-wizard .aw-text { color: rgb(var(--aw-fg)); }
+.ailinc-wizard .aw-text-dim { color: rgb(var(--aw-fg-dim)); }
+.ailinc-wizard .aw-text-mute { color: rgb(var(--aw-fg-mute)); }
+
+/* Card */
+.ailinc-wizard .aw-card {
+  position: relative;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(8px);
+}
+.ailinc-wizard .aw-card-thin { padding: 18px; }
+.ailinc-wizard .aw-card-top-line {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.4), transparent);
+  pointer-events: none;
+}
+
+/* Inputs */
+.ailinc-wizard .aw-input,
+.ailinc-wizard .aw-textarea,
+.ailinc-wizard .aw-select {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  color: rgb(var(--aw-fg));
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  border-radius: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  font-family: inherit;
+}
+.ailinc-wizard .aw-textarea { resize: vertical; min-height: 80px; }
+.ailinc-wizard .aw-input::placeholder,
+.ailinc-wizard .aw-textarea::placeholder { color: rgb(var(--aw-fg-mute)); }
+.ailinc-wizard .aw-input:focus,
+.ailinc-wizard .aw-textarea:focus,
+.ailinc-wizard .aw-select:focus {
+  border-color: rgba(0, 224, 255, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+}
+.ailinc-wizard .aw-select option {
+  background: rgb(var(--aw-bg-1));
+  color: rgb(var(--aw-fg));
+}
+
+/* Label above inputs */
+.ailinc-wizard .aw-label {
+  display: block;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: rgb(var(--aw-fg-dim));
+  margin-bottom: 8px;
+}
+.ailinc-wizard .aw-help {
+  font-size: 12px;
+  color: rgb(var(--aw-fg-mute));
+  margin-top: 6px;
+}
+
+/* Buttons */
+.ailinc-wizard .aw-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s var(--aw-ease);
+  white-space: nowrap;
+}
+.ailinc-wizard .aw-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ailinc-wizard .aw-btn-primary {
+  color: #05070f;
+  background: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  box-shadow: 0 6px 24px -8px rgba(0, 224, 255, 0.55);
+}
+.ailinc-wizard .aw-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px -8px rgba(0, 224, 255, 0.75);
+}
+.ailinc-wizard .aw-btn-ghost {
+  color: rgb(var(--aw-fg-dim));
+  background: transparent;
+  border-color: rgba(255, 255, 255, var(--aw-line-alpha));
+}
+.ailinc-wizard .aw-btn-ghost:hover:not(:disabled) {
+  color: rgb(var(--aw-fg));
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, var(--aw-line-2-alpha));
+}
+
+/* Toggle / selectable chip */
+.ailinc-wizard .aw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: rgb(var(--aw-fg-dim));
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s var(--aw-ease);
+  font-family: inherit;
+}
+.ailinc-wizard .aw-chip:hover {
+  color: rgb(var(--aw-fg));
+  border-color: rgba(255, 255, 255, var(--aw-line-2-alpha));
+}
+.ailinc-wizard .aw-chip-active {
+  color: #05070f;
+  background: linear-gradient(135deg, rgba(0, 224, 255, 0.95), rgba(35, 86, 214, 0.85));
+  border-color: rgba(0, 224, 255, 0.6);
+}
+
+/* Option / radio card */
+.ailinc-wizard .aw-option {
+  position: relative;
+  display: block;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, var(--aw-line-alpha));
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: all 0.2s var(--aw-ease);
+}
+.ailinc-wizard .aw-option:hover {
+  border-color: rgba(255, 255, 255, var(--aw-line-2-alpha));
+  background: rgba(255, 255, 255, 0.035);
+}
+.ailinc-wizard .aw-option-active {
+  border-color: rgba(0, 224, 255, 0.5);
+  background: rgba(0, 224, 255, 0.06);
+  box-shadow: 0 8px 30px -10px rgba(0, 224, 255, 0.25);
+}
+
+/* Borders */
+.ailinc-wizard .aw-border { border-color: rgba(255, 255, 255, var(--aw-line-alpha)) !important; }
+.ailinc-wizard .aw-border-2 { border-color: rgba(255, 255, 255, var(--aw-line-2-alpha)) !important; }
+
+/* Progress bar */
+.ailinc-wizard .aw-progress-track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.ailinc-wizard .aw-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  transition: width 0.6s var(--aw-ease);
+}
+
+/* Stepper dots */
+.ailinc-wizard .aw-step-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 9999px;
+  transition: background 0.3s var(--aw-ease), transform 0.3s var(--aw-ease);
+}
+.ailinc-wizard .aw-step-bar-todo { background: rgba(255, 255, 255, 0.08); }
+.ailinc-wizard .aw-step-bar-active-bg {
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.55);
+}
+.ailinc-wizard .aw-step-bar-active {
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 0 16px rgba(0, 224, 255, 0.55);
+}
+.ailinc-wizard .aw-step-bar-done { background: rgba(0, 224, 255, 0.5); }
+
+/* =========================================================================
+ * WIZARD LIGHT THEME
+ * Activated by `data-aw-theme="light"` on the .ailinc-wizard wrapper
+ * (managed by WizardThemeProvider). Re-points the colour tokens AND
+ * overrides every place an `rgba(255,255,255,…)` hardcoded tint would
+ * vanish on a light background (cards, inputs, chips, option tiles,
+ * ghost buttons, step bars, etc.). Specificity is bumped via the
+ * compound selector so these wins against the dark base rules without
+ * needing !important anywhere.
+ *
+ * Contrast target: WCAG AA across all text styles. Headings (aw-serif)
+ * stay weight=300 (Fraunces' optical 144 has plenty of presence at large
+ * sizes), but `aw-text` colour now lands at ~17:1 on the page bg so body
+ * copy reads bold-enough without restyling fonts.
+ * ======================================================================= */
+.ailinc-wizard[data-aw-theme="light"] {
+  --aw-bg-0: 248 250 253;
+  --aw-bg-1: 240 244 251;
+  --aw-bg-2: 234 240 250;
+  --aw-bg-3: 226 233 246;
+  /* Deep navy near-black: ~17:1 on the light page bg (AAA) */
+  --aw-fg: 11 18 38;
+  /* Steel slate: ~7:1 (AAA) — used for paragraph copy */
+  --aw-fg-dim: 56 70 102;
+  /* Muted slate: ~5:1 (AA) — used for tertiary text like step hints */
+  --aw-fg-mute: 94 108 138;
+  /* Borders/lines: switch from white-on-dark to dark-on-light at the
+     same alpha values so existing rgba(line)/alpha selectors still work. */
+  --aw-line: 11 18 38;
+  --aw-line-alpha: 0.10;
+  --aw-line-2-alpha: 0.16;
+  --aw-radial-1: rgba(0, 224, 255, 0.10);
+  --aw-radial-2: rgba(35, 86, 214, 0.06);
+}
+
+/* Dampen the heavy grain overlay — mix-blend-overlay reads as muddy
+   noise on a near-white surface. Almost invisible is the goal. */
+.ailinc-wizard[data-aw-theme="light"]::after {
+  opacity: 0.018;
+}
+
+/* The wizard's small Inter body copy looks visibly bolder on light when
+   we lean weight 400 → 500. Headings already use Fraunces 300 with the
+   144 optical axis, which carries enough presence on light. */
+.ailinc-wizard[data-aw-theme="light"] {
+  font-weight: 500;
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-serif {
+  font-weight: 400;
+}
+
+/* Selection — black-on-cyan reads too harsh, soften */
+.ailinc-wizard[data-aw-theme="light"] *::selection {
+  background: rgba(0, 130, 175, 0.18);
+  color: #05070f;
+}
+
+/* Kicker pill: cyan #00e0ff on near-white is ~2.6:1 (fails AA). Switch
+   to the deeper accent blue (~8:1 AAA) and bump tint opacities so the
+   chip still reads as a distinct element. */
+.ailinc-wizard[data-aw-theme="light"] .aw-kicker {
+  color: #1d4dc7;
+  background: rgba(35, 86, 214, 0.08);
+  border-color: rgba(35, 86, 214, 0.25);
+}
+
+/* Card: the dark base has a near-invisible white→white tint gradient on
+   light. Switch to opaque white + subtle navy border + soft drop shadow
+   so the panel reads as a real surface lifted above the page. */
+.ailinc-wizard[data-aw-theme="light"] .aw-card {
+  background: #ffffff;
+  border-color: rgba(11, 18, 38, 0.10);
+  box-shadow:
+    0 1px 2px -1px rgba(11, 18, 38, 0.06),
+    0 8px 24px -10px rgba(11, 18, 38, 0.08);
+}
+
+/* Inputs / selects / textareas — opaque white with the same theme-aware
+   border. Keep cyan focus so users still know what's active. */
+.ailinc-wizard[data-aw-theme="light"] .aw-input,
+.ailinc-wizard[data-aw-theme="light"] .aw-textarea,
+.ailinc-wizard[data-aw-theme="light"] .aw-select {
+  background: #ffffff;
+  color: rgb(var(--aw-fg));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-input::placeholder,
+.ailinc-wizard[data-aw-theme="light"] .aw-textarea::placeholder {
+  color: rgb(var(--aw-fg-mute));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-input:focus,
+.ailinc-wizard[data-aw-theme="light"] .aw-textarea:focus,
+.ailinc-wizard[data-aw-theme="light"] .aw-select:focus {
+  background: #f7fbff;
+  border-color: rgba(0, 130, 175, 0.55);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-select option {
+  background: #ffffff;
+  color: rgb(var(--aw-fg));
+}
+
+/* Chip: matches input/option pattern */
+.ailinc-wizard[data-aw-theme="light"] .aw-chip {
+  background: rgba(11, 18, 38, 0.03);
+  color: rgb(var(--aw-fg-dim));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-chip:hover {
+  background: rgba(11, 18, 38, 0.05);
+  color: rgb(var(--aw-fg));
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-chip-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #2356d6 0%, #00a4c4 100%);
+  border-color: rgba(0, 130, 175, 0.55);
+}
+
+/* Option/radio cards used by FeaturesStep, AdminCapsStep, ThemeStep, etc. */
+.ailinc-wizard[data-aw-theme="light"] .aw-option {
+  background: rgba(11, 18, 38, 0.025);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-option:hover {
+  background: rgba(11, 18, 38, 0.04);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-option-active {
+  background: rgba(0, 130, 175, 0.06);
+  border-color: rgba(0, 130, 175, 0.5);
+  box-shadow: 0 8px 30px -10px rgba(0, 130, 175, 0.25);
+}
+
+/* Ghost button (Back / Use a different account / etc.) */
+.ailinc-wizard[data-aw-theme="light"] .aw-btn-ghost {
+  color: rgb(var(--aw-fg-dim));
+  border-color: rgba(11, 18, 38, 0.14);
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-btn-ghost:hover:not(:disabled) {
+  color: rgb(var(--aw-fg));
+  background: rgba(11, 18, 38, 0.04);
+  border-color: rgba(11, 18, 38, 0.22);
+}
+
+/* Step bars — TODO state was rgba(255,255,255,0.08) which is invisible on white */
+.ailinc-wizard[data-aw-theme="light"] .aw-step-bar-todo {
+  background: rgba(11, 18, 38, 0.10);
+}
+
+/* Watermark "02"-style serif on the side. The cyan→blue gradient stays
+   but we tone it down so it doesn't visually compete with the body copy
+   on the now-bright background. */
+.ailinc-wizard[data-aw-theme="light"] .aw-watermark {
+  background: linear-gradient(180deg,
+    rgba(35, 86, 214, 0.20) 0%,
+    rgba(0, 224, 255, 0.10) 40%,
+    rgba(35, 86, 214, 0.03) 75%,
+    transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 60px rgba(35, 86, 214, 0.06));
+}
+
+/* Theme toggle button in the header gets a slightly stronger border so
+   it doesn't disappear on the white background. */
+.ailinc-wizard[data-aw-theme="light"] .aw-theme-toggle:hover {
+  background: rgba(35, 86, 214, 0.06);
+  border-color: rgba(35, 86, 214, 0.35);
+}
+.ailinc-wizard[data-aw-theme="dark"] .aw-theme-toggle:hover {
+  background: rgba(0, 224, 255, 0.06);
+  border-color: rgba(0, 224, 255, 0.4);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Inline-style overrides for the step components. The wizard steps
+   (BrandStep, AdminCapsStep, FeaturesStep, ThemeStep, CourseLibraryStep)
+   were authored against the dark theme and inline-style their surfaces
+   with `rgba(255,255,255,0.0X)` tints. On light those become invisible
+   (white on white). The attribute-substring selectors below match those
+   exact inline values and rewrite them with the ink-tinted equivalent.
+
+   Why `!important`: inline styles have higher specificity than any
+   external CSS rule. `!important` is the only way to override them
+   without touching every step component's TSX.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Background tints */
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.02)"],
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255, 255, 255, 0.02)"] {
+  background-color: rgba(11, 18, 38, 0.03) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.03)"] {
+  background-color: rgba(11, 18, 38, 0.04) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.04)"] {
+  background-color: rgba(11, 18, 38, 0.05) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.06)"] {
+  background-color: rgba(11, 18, 38, 0.06) !important;
+}
+
+/* Border overrides — only fire when the inline style has a 1px-solid-rgba
+   border with the matching alpha. CSS sets border-color (not the whole
+   shorthand) so the width and style from the original inline survive. */
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.06)"] {
+  border-color: rgba(11, 18, 38, 0.10) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.08)"] {
+  border-color: rgba(11, 18, 38, 0.14) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.10)"] {
+  border-color: rgba(11, 18, 38, 0.15) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.12)"] {
+  border-color: rgba(11, 18, 38, 0.18) !important;
+}
+.ailinc-wizard[data-aw-theme="light"] [style*="1px solid rgba(255,255,255,0.18)"] {
+  border-color: rgba(11, 18, 38, 0.24) !important;
+}
+
+/* AdminCapsStep toggle knob: dark mode shows a near-white pill on a dark
+   track. On light bg the white pill vanishes — use the deep navy ink
+   instead so the knob stays visible against the on-track gradient. */
+.ailinc-wizard[data-aw-theme="light"] [style*="rgba(255,255,255,0.7)"] {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(11, 18, 38, 0.25) !important;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Hardcoded text-color escapes used by individual step components.
+   These bypass `--aw-fg-*` tokens (arbitrary Tailwind like text-[#00e0ff]
+   or inline color: "#fff") so the theme switch doesn't reach them.
+   `!important` because Tailwind's arbitrary-class output and inline
+   styles outrank scoped CSS without it.
+   ──────────────────────────────────────────────────────────────────── */
+.ailinc-wizard[data-aw-theme="light"] .text-\[\#00e0ff\] {
+  color: #1d4dc7 !important;
+}
+.ailinc-wizard[data-aw-theme="light"] .text-\[\#ffc66d\] {
+  color: #b45309 !important;
+}
+/* `hover:text-white` → white-on-light is invisible. Bring it back to the
+   deep ink fg colour so the hover state still reads as "emphasised". */
+.ailinc-wizard[data-aw-theme="light"] .hover\:text-white:hover {
+  color: rgb(var(--aw-fg)) !important;
+}
+
+/* ---- Enhancements: cinematic motion + flourishes ------------------- */
+
+/* Massive serif step watermark (e.g. "02" pinned to the side) */
+.ailinc-wizard .aw-watermark {
+  position: absolute;
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: "opsz" 144;
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  font-size: clamp(120px, 18vw, 280px);
+  line-height: 0.85;
+  color: transparent;
+  background: linear-gradient(180deg,
+    rgba(0, 224, 255, 0.28) 0%,
+    rgba(35, 86, 214, 0.18) 40%,
+    rgba(0, 224, 255, 0.04) 75%,
+    transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  filter: drop-shadow(0 0 60px rgba(0, 224, 255, 0.08));
+}
+
+/* Step bar refinements — thinner, more refined */
+.ailinc-wizard .aw-step-bar {
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.ailinc-wizard .aw-step-bar-active {
+  width: 56px;
+  height: 3px;
+  transform: none;
+}
+.ailinc-wizard .aw-step-bar-done:hover {
+  background: linear-gradient(90deg, rgba(0, 224, 255, 0.85), rgba(35, 86, 214, 0.85));
+  width: 28px;
+  transition: all 0.3s var(--aw-ease);
+}
+
+/* Terminal-style corner bracket */
+.ailinc-wizard .aw-bracket {
+  position: relative;
+}
+.ailinc-wizard .aw-bracket::before,
+.ailinc-wizard .aw-bracket::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0, 224, 255, 0.6);
+  transition: all 0.4s var(--aw-ease);
+}
+.ailinc-wizard .aw-bracket::before {
+  top: -6px;
+  left: -8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.ailinc-wizard .aw-bracket::after {
+  bottom: -6px;
+  right: -8px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Marquee strip (continuous horizontal scroll) */
+@keyframes aw-marquee-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.ailinc-wizard .aw-marquee {
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+.ailinc-wizard .aw-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: aw-marquee-scroll 80s linear infinite;
+}
+.ailinc-wizard .aw-marquee:hover .aw-marquee-track {
+  animation-play-state: paused;
+}
+
+/* Pulse dot for "live" status */
+@keyframes aw-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+.ailinc-wizard .aw-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e0ff;
+  box-shadow: 0 0 8px rgba(0, 224, 255, 0.7);
+  animation: aw-pulse-dot 2s ease-in-out infinite;
+}
+
+/* Card hover glow (auto-applied on .aw-card-hover) */
+.ailinc-wizard .aw-card-hover {
+  transition:
+    transform 0.4s var(--aw-ease),
+    border-color 0.3s var(--aw-ease),
+    box-shadow 0.4s var(--aw-ease);
+}
+.ailinc-wizard .aw-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 224, 255, 0.25);
+  box-shadow: 0 12px 36px -16px rgba(0, 224, 255, 0.35);
+}
+
+/* Field group section divider */
+.ailinc-wizard .aw-divider {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  margin: 28px 0;
+}
+.ailinc-wizard .aw-divider-cyan {
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.32), transparent);
+}
+
+/* Mini kicker (inside a card, smaller than .aw-kicker) */
+.ailinc-wizard .aw-kicker-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: rgb(154, 163, 192);
+}
+
+/* Step shortcuts pill row (clickable mini-nav inside header) */
+.ailinc-wizard .aw-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  color: rgb(95, 104, 133);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s var(--aw-ease);
+}
+.ailinc-wizard .aw-shortcut-done {
+  color: rgba(0, 224, 255, 0.85);
+  border-color: rgba(0, 224, 255, 0.18);
+  background: rgba(0, 224, 255, 0.04);
+}
+.ailinc-wizard .aw-shortcut-done:hover {
+  color: #00e0ff;
+  border-color: rgba(0, 224, 255, 0.4);
+}
+.ailinc-wizard .aw-shortcut-active {
+  color: #05070f;
+  background: linear-gradient(90deg, #2356d6, #00e0ff);
+  box-shadow: 0 4px 16px -4px rgba(0, 224, 255, 0.55);
+  cursor: default;
+}
+.ailinc-wizard .aw-shortcut-todo {
+  cursor: not-allowed;
+}
+
+/* Aurora top accent (slowly drifting gradient line) */
+@keyframes aw-aurora-shift {
+  0%, 100% { transform: translateX(-30%); }
+  50% { transform: translateX(30%); }
+}
+.ailinc-wizard .aw-aurora {
+  position: absolute;
+  top: 0;
+  left: -10%;
+  right: -10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.65), rgba(35, 86, 214, 0.45), transparent);
+  animation: aw-aurora-shift 12s ease-in-out infinite;
+  filter: blur(0.5px);
+}
+
+/* Subtle background grid (under everything inside the scope) */
+.ailinc-wizard .aw-grid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);
+}
+
+/* Scanline shimmer on hero title (one-time on mount) */
+@keyframes aw-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.ailinc-wizard .aw-shimmer {
+  background: linear-gradient(110deg, rgb(var(--aw-fg)) 35%, rgba(0, 224, 255, 0.9) 50%, rgb(var(--aw-fg)) 65%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aw-shimmer 4s ease-out 0.4s 1;
+}
+
+/* Save status indicator with breathing animation */
+@keyframes aw-breath {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.ailinc-wizard .aw-saving {
+  animation: aw-breath 1.4s ease-in-out infinite;
+}
+
+/* Focus ring on inputs becomes cyan glow */
+.ailinc-wizard .aw-input:focus,
+.ailinc-wizard .aw-textarea:focus,
+.ailinc-wizard .aw-select:focus {
+  box-shadow: 0 0 0 4px rgba(0, 224, 255, 0.08), 0 0 24px -8px rgba(0, 224, 255, 0.5);
+}
+
+/* Tip card variant */
+.ailinc-wizard .aw-tip {
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(0, 224, 255, 0.06) 0%, rgba(0, 224, 255, 0.01) 100%);
+}
+.ailinc-wizard .aw-tip::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.4), transparent);
 }

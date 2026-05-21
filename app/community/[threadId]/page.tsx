@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
-  Container,
   Box,
   Typography,
   Paper,
@@ -12,7 +13,6 @@ import {
   Avatar,
   Button,
   TextField,
-  IconButton,
   CircularProgress,
   Breadcrumbs,
   Link,
@@ -25,9 +25,40 @@ import {
   communityService,
   ThreadDetail,
   Comment as CommentType,
+  PostType,
+  POST_TYPE_CONFIG,
+  UserXP,
 } from "@/lib/services/community.service";
+import { MilestoneWidget } from "@/components/community/MilestoneWidget";
 import { useToast } from "@/components/common/Toast";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
+import { softBreakMarkdown } from "@/lib/utils/html-utils";
+import { config } from "@/lib/config";
+
+const THREAD_EXTRAS_KEY = `community_thread_extras_${config.clientId}`;
+
+interface ThreadExtras {
+  post_type?: PostType;
+  image_urls?: string[];
+  poll_options?: string[];
+  resource_url?: string;
+  tried_steps?: string;
+  humor_tone?: string;
+  punchline?: string;
+  stance?: string;
+  tldr?: string;
+}
+
+function loadThreadExtras(threadId: number): ThreadExtras {
+  try {
+    const raw = localStorage.getItem(THREAD_EXTRAS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return (parsed[String(threadId)] as ThreadExtras) ?? {};
+    }
+  } catch {}
+  return {};
+}
 
 export default function ThreadDetailPage() {
   const params = useParams();
@@ -37,9 +68,11 @@ export default function ThreadDetailPage() {
   const threadId = Number(params.threadId);
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
+  const [extras, setExtras] = useState<ThreadExtras>({});
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [userXP, setUserXP] = useState<UserXP | null>(null);
   const optimisticCommentVotesRef = useRef<
     Map<number, "upvote" | "downvote" | null>
   >(new Map());
@@ -124,7 +157,9 @@ export default function ThreadDetailPage() {
       optimisticCommentVotesRef.current = loadCommentVotesFromStorage();
       optimisticThreadVoteRef.current = loadThreadVoteFromStorage();
       optimisticThreadBookmarkRef.current = loadThreadBookmarkFromStorage();
+      setExtras(loadThreadExtras(threadId));
       loadThread();
+      communityService.getUserXP().then(setUserXP).catch(() => {});
     }
   }, [threadId]);
 
@@ -263,6 +298,7 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.voteThread(threadId, type);
+      refreshXP();
       const updatedThread = await communityService.getThreadDetail(threadId);
 
       setThread((prev) => {
@@ -371,7 +407,7 @@ export default function ThreadDetailPage() {
     }
   };
 
-  const handleVoteComment = async (
+  const handleVoteComment = useCallback(async (
     commentId: number,
     type: "upvote" | "downvote"
   ) => {
@@ -457,6 +493,7 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.voteComment(threadId, commentId, type);
+      refreshXP();
       const updatedThread = await communityService.getThreadDetail(threadId);
 
       const mergeCommentVotes = (comments: CommentType[]): CommentType[] => {
@@ -511,18 +548,19 @@ export default function ThreadDetailPage() {
       await loadThread();
       showToast(t("community.failedToVote"), "error");
     }
-  };
+  }, [thread, threadId, showToast, t]);
+
+  const refreshXP = () => communityService.getUserXP().then(setUserXP).catch(() => {});
 
   const handleAddComment = async () => {
     if (!commentBody.trim()) return;
 
     setSubmitting(true);
     try {
-      await communityService.createComment(threadId, {
-        body: commentBody.trim(),
-      });
+      await communityService.createComment(threadId, { body: commentBody.trim() });
       setCommentBody("");
       await loadThread();
+      refreshXP();
       showToast(t("community.commentAdded"), "success");
     } catch (error) {
       showToast(t("community.failedToAddComment"), "error");
@@ -531,19 +569,36 @@ export default function ThreadDetailPage() {
     }
   };
 
-  const handleReply = async (parentId: number, body: string) => {
+  const handleReply = useCallback(async (parentId: number, body: string) => {
     try {
-      await communityService.createComment(threadId, {
-        body,
-        parent_id: parentId,
-      });
+      await communityService.createComment(threadId, { body, parent_id: parentId });
       await loadThread();
+      refreshXP();
       showToast(t("community.replyAdded"), "success");
     } catch (error) {
       showToast(t("community.failedToAddReply"), "error");
       throw error;
     }
-  };
+  }, [threadId, showToast, t]);
+
+  const handleAcceptComment = useCallback(async (commentId: number) => {
+    try {
+      const updated = await communityService.acceptComment(threadId, commentId);
+      setThread((prev) => {
+        if (!prev) return prev;
+        const updateComment = (comments: CommentType[]): CommentType[] =>
+          comments.map((c) => {
+            if (c.id === commentId) return { ...c, is_accepted: updated.is_accepted, accepted_at: updated.accepted_at };
+            if (c.id !== commentId && updated.is_accepted) return { ...c, is_accepted: false, accepted_at: null };
+            return { ...c, replies: c.replies ? updateComment(c.replies) : c.replies };
+          });
+        return { ...prev, comments: updateComment(prev.comments) };
+      });
+      communityService.getUserXP().then(setUserXP).catch(() => {});
+    } catch {
+      showToast(t("community.failedToAcceptAnswer"), "error");
+    }
+  }, [threadId, showToast, t]);
 
   const handleBookmark = async () => {
     if (!thread) return;
@@ -575,6 +630,7 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.bookmarkThread(threadId);
+      refreshXP();
       const updatedThread = await communityService.getThreadDetail(threadId);
 
       setThread((prev) => {
@@ -684,20 +740,20 @@ export default function ThreadDetailPage() {
 
   if (loading) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
-        </Container>
+        </Box>
       </MainLayout>
     );
   }
 
   if (!thread) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
           <Paper elevation={0} sx={{ p: 8, textAlign: "center" }}>
             <Typography variant="h6" color="text.secondary">
               {t("community.threadNotFound")}
@@ -706,14 +762,27 @@ export default function ThreadDetailPage() {
               {t("community.backToCommunity")}
             </Button>
           </Paper>
-        </Container>
+        </Box>
       </MainLayout>
     );
   }
 
+  const canAcceptAnswers = !!thread && (
+    !!thread.current_user_is_author ||
+    ['admin', 'superadmin', 'instructor'].includes(thread.current_user_role ?? '')
+  );
+
+  const sortedComments = thread
+    ? [...thread.comments].sort((a, b) => {
+        if (a.is_accepted && !b.is_accepted) return -1;
+        if (!a.is_accepted && b.is_accepted) return 1;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      })
+    : [];
+
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
           <Link
@@ -734,6 +803,11 @@ export default function ThreadDetailPage() {
           </Link>
           <Typography color="text.primary">{thread.title}</Typography>
         </Breadcrumbs>
+
+        {/* Two-column layout: main content + sidebar */}
+        <Box sx={{ display: "flex", gap: { md: 3, lg: 3.5 }, alignItems: "flex-start" }}>
+        {/* Main content column */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
 
         {/* Thread Content */}
         <Paper
@@ -762,93 +836,173 @@ export default function ThreadDetailPage() {
 
             {/* Content */}
             <Box sx={{ flex: 1 }}>
+              {/* Post type badge */}
+              {(() => {
+                const pt = (thread.post_type || extras.post_type || "question") as PostType;
+                const cfg = POST_TYPE_CONFIG[pt];
+                return (
+                  <Box sx={{ mb: 1 }}>
+                    <Chip
+                      icon={<IconWrapper icon={cfg.icon} size={12} color={cfg.color} />}
+                      label={cfg.label}
+                      size="small"
+                      sx={{
+                        height: 22,
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        backgroundColor: `${cfg.color}12`,
+                        color: cfg.color,
+                        border: `1px solid ${cfg.color}28`,
+                        "& .MuiChip-icon": { ml: 0.5 },
+                      }}
+                    />
+                  </Box>
+                );
+              })()}
+
               {/* Title */}
               <Typography variant="h4" fontWeight={700} gutterBottom>
                 {thread.title}
               </Typography>
 
               {/* Tags */}
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
-                {thread.tags.map((tag) => (
-                  <Chip
-                    key={tag.id}
-                    label={tag.name}
-                    size="small"
-                    sx={{
-                      backgroundColor: "#dbeafe",
-                      color: "#1e40af",
-                      fontWeight: 500,
-                    }}
-                  />
-                ))}
-              </Box>
+              {thread.tags.length > 0 && (
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
+                  {thread.tags.map((tag) => (
+                    <Chip
+                      key={tag.id}
+                      label={tag.name}
+                      size="small"
+                      sx={{
+                        backgroundColor:
+                          "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                        color: "var(--accent-indigo)",
+                        fontWeight: 500,
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
 
-              {/* Body */}
+              {/* Resource URL */}
+              {extras.resource_url && (
+                <Box
+                  sx={{
+                    mb: 2, p: 1.5, borderRadius: "8px",
+                    border: "1px solid #bfdbfe", backgroundColor: "#eff6ff",
+                    display: "flex", alignItems: "center", gap: 1,
+                  }}
+                >
+                  <IconWrapper icon="mdi:link-variant" size={16} color="#3b82f6" />
+                  <Link
+                    href={extras.resource_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ fontSize: "0.875rem", color: "#2563eb", wordBreak: "break-all" }}
+                  >
+                    {extras.resource_url}
+                  </Link>
+                </Box>
+              )}
+
+              {/* Tried steps (Question extra) */}
+              {extras.tried_steps && (
+                <Box sx={{ mb: 2.5, pl: 2, borderLeft: "3px solid #a5b4fc" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
+                    <IconWrapper icon="mdi:wrench-clock-outline" size={13} color="#6366f1" />
+                    <Typography variant="caption" fontWeight={700} sx={{ color: "#6366f1", letterSpacing: "0.02em", textTransform: "uppercase", fontSize: "0.68rem" }}>
+                      What they already tried
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                    {extras.tried_steps}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Body — rendered as markdown */}
               <Box
-                dangerouslySetInnerHTML={{ __html: thread.body }}
                 sx={{
                   mb: 3,
-                  color: "#374151",
-                  lineHeight: 1.7,
-                  fontSize: "1rem",
-                  wordBreak: "break-word",
-                  overflowWrap: "break-word",
-                  overflow: "hidden",
-                  width: "100%",
-                  maxWidth: "100%",
-                  "& p": {
-                    margin: 0,
-                    marginBottom: "1rem",
-                    "&:last-child": {
-                      marginBottom: 0,
-                    },
-                  },
-                  "& b, & strong": {
-                    fontWeight: 600,
-                  },
-                  "& i, & em": {
-                    fontStyle: "italic",
-                  },
-                  "& img": {
-                    maxWidth: "100%",
-                    width: "100%",
-                    height: "auto",
-                    display: "block",
-                    margin: "1rem 0",
-                    borderRadius: "4px",
-                    objectFit: "contain",
-                  },
-                  "& a": {
-                    color: "#2563eb",
-                    textDecoration: "none",
-                    wordBreak: "break-all",
-                    "&:hover": {
-                      textDecoration: "underline",
-                    },
-                  },
+                  "& p": { mb: 1, lineHeight: 1.8, color: "var(--font-primary)", fontSize: "0.95rem" },
+                  "& h1": { fontSize: "1.6rem", fontWeight: 700, mt: 2, mb: 1, color: "var(--font-primary)" },
+                  "& h2": { fontSize: "1.35rem", fontWeight: 700, mt: 2, mb: 1, color: "var(--font-primary)" },
+                  "& h3": { fontSize: "1.15rem", fontWeight: 600, mt: 1.5, mb: 0.75, color: "var(--font-primary)" },
+                  "& strong": { fontWeight: 700 },
+                  "& em": { fontStyle: "italic" },
                   "& code": {
-                    backgroundColor: "#f3f4f6",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    fontSize: "0.875em",
-                    fontFamily: "monospace",
-                    wordBreak: "break-word",
-                    overflowWrap: "break-word",
+                    fontFamily: "monospace", fontSize: "0.875em",
+                    backgroundColor: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)",
+                    borderRadius: "4px", px: "5px", py: "1px",
                   },
                   "& pre": {
-                    backgroundColor: "#f3f4f6",
-                    padding: "0.75rem",
-                    borderRadius: "4px",
-                    overflow: "auto",
-                    margin: "1rem 0",
-                    maxWidth: "100%",
-                    "& code": {
-                      backgroundColor: "transparent",
-                      padding: 0,
-                    },
+                    backgroundColor: "#1a1b26", color: "#c0caf5",
+                    borderRadius: "10px", p: 2, overflowX: "auto",
+                    my: 1.5, fontSize: "0.875rem", lineHeight: 1.6,
+                    "& code": { backgroundColor: "transparent", border: "none", color: "inherit", p: 0 },
                   },
+                  "& blockquote": {
+                    borderLeft: "3px solid var(--accent-indigo)", pl: 2, ml: 0,
+                    color: "var(--font-secondary)", fontStyle: "italic", my: 1.5,
+                  },
+                  "& ul, & ol": { pl: 3, mb: 1 },
+                  "& li": { mb: 0.4, fontSize: "0.95rem", color: "var(--font-primary)" },
+                  "& a": { color: "var(--accent-indigo)", textDecoration: "underline", wordBreak: "break-all" },
+                  "& hr": { border: "none", borderTop: "1px solid var(--border-default)", my: 2 },
+                  "& table": { borderCollapse: "collapse", width: "100%", mb: 1.5 },
+                  "& th, & td": { border: "1px solid var(--border-default)", px: 1.5, py: 0.75, fontSize: "0.9rem" },
+                  "& th": { backgroundColor: "var(--surface)", fontWeight: 700 },
+                  "& img": { maxWidth: "100%", borderRadius: "8px", my: 1 },
                 }}
-              />
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {softBreakMarkdown(thread.body)}
+                </ReactMarkdown>
+              </Box>
+
+              {/* Attached images */}
+              {(() => {
+                const imageUrls = thread.image_urls?.length ? thread.image_urls : extras.image_urls;
+                return imageUrls && imageUrls.length > 0 ? (
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2.5 }}>
+                    {imageUrls.map((url, i) => (
+                      <Box
+                        key={i}
+                        component="img"
+                        src={url}
+                        alt=""
+                        sx={{
+                          maxWidth: "100%",
+                          width: imageUrls.length === 1 ? "100%" : "calc(50% - 4px)",
+                          maxHeight: 360,
+                          objectFit: "cover",
+                          borderRadius: "10px",
+                          border: "1px solid var(--border-default)",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => window.open(url, "_blank")}
+                      />
+                    ))}
+                  </Box>
+                ) : null;
+              })()}
+
+              {/* Humorous extras */}
+              {extras.punchline && (
+                <Box sx={{ mb: 2, p: 1.5, borderRadius: "8px", backgroundColor: "#fffbeb", border: "1px solid #fde68a" }}>
+                  <Typography variant="body2" fontWeight={700} sx={{ color: "#b45309" }}>
+                    ⚡ {extras.punchline}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Discussion TL;DR */}
+              {extras.tldr && (
+                <Box sx={{ mb: 2, p: 1.5, borderRadius: "8px", backgroundColor: "#f0fdf8", border: "1px solid #6ee7b7" }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: "#065f46" }}>TL;DR</Typography>
+                  <Typography variant="body2" sx={{ color: "#065f46", mt: 0.25 }}>{extras.tldr}</Typography>
+                </Box>
+              )}
 
               {/* Author & Meta */}
               <Box
@@ -878,7 +1032,9 @@ export default function ThreadDetailPage() {
                         sx={{
                           height: 20,
                           fontSize: "0.7rem",
-                          backgroundColor: "#f3f4f6",
+                          backgroundColor: "var(--surface)",
+                          border: "1px solid var(--border-default)",
+                          color: "var(--font-secondary)",
                         }}
                       />
                     </Box>
@@ -947,6 +1103,21 @@ export default function ThreadDetailPage() {
               onClick={handleAddComment}
               disabled={!commentBody.trim() || submitting}
               startIcon={<IconWrapper icon="mdi:send" />}
+              sx={{
+                textTransform: "none",
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": {
+                  backgroundColor: "var(--accent-indigo-dark)",
+                },
+                "&.Mui-disabled": {
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 45%, var(--surface) 55%)",
+                  color: "var(--font-secondary)",
+                  WebkitTextFillColor: "var(--font-secondary)",
+                  opacity: 1,
+                },
+              }}
             >
               {submitting ? t("community.posting") : t("community.postAnswer")}
             </Button>
@@ -954,14 +1125,25 @@ export default function ThreadDetailPage() {
 
           {/* Comments List */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {thread.comments.map((comment) => (
-              <CommentItem
+            {sortedComments.map((comment) => (
+              <Box
                 key={comment.id}
-                comment={comment}
-                threadId={threadId}
-                onVote={handleVoteComment}
-                onReply={handleReply}
-              />
+                sx={{
+                  p: comment.is_accepted ? 0 : 2,
+                  border: comment.is_accepted ? "none" : "1px solid var(--border-default)",
+                  borderRadius: 2,
+                  backgroundColor: comment.is_accepted ? "transparent" : "var(--card-bg)",
+                }}
+              >
+                <CommentItem
+                  comment={comment}
+                  threadId={threadId}
+                  onVote={handleVoteComment}
+                  onReply={handleReply}
+                  onAccept={handleAcceptComment}
+                  isThreadAuthor={canAcceptAnswers}
+                />
+              </Box>
             ))}
 
             {thread.comments.length === 0 && (
@@ -978,7 +1160,7 @@ export default function ThreadDetailPage() {
                 <IconWrapper
                   icon="mdi:comment-outline"
                   size={48}
-                  color="#d1d5db"
+                  color="var(--font-tertiary)"
                   style={{ marginBottom: 8 }}
                 />
                 <Typography variant="body2" color="text.secondary">
@@ -988,7 +1170,26 @@ export default function ThreadDetailPage() {
             )}
           </Box>
         </Paper>
-      </Container>
+
+        </Box>{/* end main content column */}
+
+        {/* Sidebar — fluid width, sticky */}
+        <Box
+          sx={{
+            display: { xs: "none", md: "block" },
+            width: { md: "26%", lg: "23%", xl: "20%" },
+            maxWidth: 320,
+            minWidth: 220,
+            flexShrink: 0,
+            position: "sticky",
+            top: 80,
+          }}
+        >
+          {userXP && <MilestoneWidget xp={userXP} />}
+        </Box>
+
+        </Box>{/* end two-column layout */}
+      </Box>
     </MainLayout>
   );
 }

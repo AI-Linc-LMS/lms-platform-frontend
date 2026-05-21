@@ -36,12 +36,30 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  applying: { bg: "rgba(99, 102, 241, 0.12)", color: "#6366f1" },
-  applied: { bg: "rgba(59, 130, 246, 0.12)", color: "#2563eb" },
-  shortlisted: { bg: "rgba(34, 197, 94, 0.12)", color: "#16a34a" },
-  interview_stage: { bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" },
-  rejected: { bg: "rgba(239, 68, 68, 0.12)", color: "#dc2626" },
-  selected: { bg: "rgba(34, 197, 94, 0.2)", color: "#15803d" },
+  applying: {
+    bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+    color: "var(--accent-indigo)",
+  },
+  applied: {
+    bg: "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
+    color: "var(--accent-indigo)",
+  },
+  shortlisted: {
+    bg: "color-mix(in srgb, var(--success-500) 14%, transparent)",
+    color: "var(--success-500)",
+  },
+  interview_stage: {
+    bg: "color-mix(in srgb, var(--warning-500) 14%, transparent)",
+    color: "var(--warning-500)",
+  },
+  rejected: {
+    bg: "color-mix(in srgb, var(--error-500) 14%, transparent)",
+    color: "var(--error-500)",
+  },
+  selected: {
+    bg: "color-mix(in srgb, var(--success-500) 24%, transparent)",
+    color: "var(--success-500)",
+  },
 };
 
 function StatusIcon({ status }: { status: string }) {
@@ -139,7 +157,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
           gap: 2,
         }}
       >
-        <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+        <CircularProgress size={40} sx={{ color: "var(--accent-indigo)" }} />
         <Typography variant="body2" color="text.secondary">
           Loading your applications...
         </Typography>
@@ -155,9 +173,10 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
           p: 6,
           textAlign: "center",
           border: "1px dashed",
-          borderColor: "rgba(99, 102, 241, 0.3)",
+          borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
           borderRadius: 3,
-          backgroundColor: "rgba(99, 102, 241, 0.02)",
+          backgroundColor:
+            "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
         }}
       >
         <Box
@@ -165,7 +184,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
             width: 80,
             height: 80,
             borderRadius: "50%",
-            backgroundColor: "rgba(99, 102, 241, 0.08)",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -173,9 +192,9 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
             mb: 2,
           }}
         >
-          <Briefcase size={40} style={{ color: "#6366f1" }} />
+          <Briefcase size={40} style={{ color: "var(--accent-indigo)" }} />
         </Box>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 0.5 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}>
           No applications yet
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, mx: "auto", mb: 2 }}>
@@ -193,8 +212,8 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
             fontWeight: 600,
             borderRadius: 2,
             px: 3,
-            backgroundColor: "#6366f1",
-            "&:hover": { backgroundColor: "#4f46e5" },
+            backgroundColor: "var(--accent-indigo)",
+            "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
           Browse Jobs
@@ -213,8 +232,9 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
             p: 3,
             borderRadius: 3,
             border: "2px solid",
-            borderColor: "#16a34a",
-            background: "linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.02) 100%)",
+            borderColor: "var(--success-500)",
+            background:
+              "linear-gradient(135deg, color-mix(in srgb, var(--success-500) 10%, transparent) 0%, color-mix(in srgb, var(--success-500) 4%, transparent) 100%)",
             position: "relative",
             overflow: "hidden",
             "&::before": {
@@ -224,7 +244,8 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
               left: 0,
               right: 0,
               height: 4,
-              background: "linear-gradient(90deg, #16a34a, #22c55e)",
+              background:
+                "linear-gradient(90deg, var(--success-500), color-mix(in srgb, var(--success-500) 85%, var(--accent-indigo-dark)))",
             },
           }}
         >
@@ -234,19 +255,20 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                 width: 48,
                 height: 48,
                 borderRadius: 2,
-                backgroundColor: "rgba(34, 197, 94, 0.15)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--success-500) 18%, transparent)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Award size={28} style={{ color: "#16a34a" }} />
+              <Award size={28} style={{ color: "var(--success-500)" }} />
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#15803d" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--success-500)" }}>
                 Final Placement
               </Typography>
-              <Typography variant="caption" sx={{ color: "#16a34a", fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ color: "var(--success-500)", fontWeight: 500 }}>
                 Congratulations on your selection!
               </Typography>
             </Box>
@@ -264,29 +286,31 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                   py: 1.5,
                   px: 2,
                   borderRadius: 2,
-                  backgroundColor: "rgba(255,255,255,0.6)",
+                  backgroundColor: "color-mix(in srgb, var(--font-light) 60%, transparent)",
                   border: "1px solid",
-                  borderColor: "rgba(34, 197, 94, 0.2)",
+                  borderColor:
+                    "color-mix(in srgb, var(--success-500) 25%, transparent)",
                   textDecoration: "none",
                   color: "inherit",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "rgba(255,255,255,0.9)",
-                    borderColor: "#16a34a",
-                    boxShadow: "0 2px 8px rgba(34, 197, 94, 0.15)",
+                    backgroundColor: "color-mix(in srgb, var(--font-light) 90%, transparent)",
+                    borderColor: "var(--success-500)",
+                    boxShadow:
+                      "0 2px 8px color-mix(in srgb, var(--success-500) 20%, transparent)",
                   },
                 }}
               >
-                <CheckCircle2 size={24} style={{ color: "#16a34a", flexShrink: 0 }} />
+                <CheckCircle2 size={24} style={{ color: "var(--success-500)", flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600, color: "#0f172a" }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                     {app.job_title} at {app.company_name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Selected
                   </Typography>
                 </Box>
-                <ArrowRight size={18} style={{ color: "#94a3b8", flexShrink: 0 }} />
+                <ArrowRight size={18} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
               </Box>
             ))}
           </Box>
@@ -313,8 +337,8 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                   p: 1.5,
                   borderRadius: 2,
                   border: "1px solid",
-                  borderColor: count > 0 ? `${style.color}30` : "rgba(0,0,0,0.06)",
-                  backgroundColor: count > 0 ? `${style.bg}` : "#fafbfc",
+                  borderColor: count > 0 ? `${style.color}30` : "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+                  backgroundColor: count > 0 ? `${style.bg}` : "var(--surface)",
                   display: "flex",
                   alignItems: "center",
                   gap: 1,
@@ -324,10 +348,10 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                   <StatusIcon status={status} />
                 </Box>
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: count > 0 ? style.color : "#94a3b8", lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: count > 0 ? style.color : "var(--font-tertiary)", lineHeight: 1.2 }}>
                     {count}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.7rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}>
                     {STATUS_LABELS[status]}
                   </Typography>
                 </Box>
@@ -350,7 +374,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a" }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               Your Applications
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -367,12 +391,12 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                 py: 0.5,
                 borderRadius: 1.5,
                 border: "1px solid",
-                borderColor: "rgba(0,0,0,0.12)",
-                backgroundColor: "#fff",
+                borderColor: "color-mix(in srgb, var(--font-primary) 15%, transparent)",
+                backgroundColor: "var(--card-bg)",
               }}
             >
-              <TrendingUp size={14} style={{ color: "#64748b" }} />
-              <Typography variant="caption" sx={{ color: "#64748b" }}>
+              <TrendingUp size={14} style={{ color: "var(--font-secondary)" }} />
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 Sort:
               </Typography>
               <select
@@ -383,7 +407,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                   background: "transparent",
                   fontSize: "0.75rem",
                   fontWeight: 600,
-                  color: "#0f172a",
+                  color: "var(--font-primary)",
                   cursor: "pointer",
                   outline: "none",
                 }}
@@ -401,7 +425,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                 flexWrap: "wrap",
               }}
             >
-              <Filter size={16} style={{ color: "#64748b" }} />
+              <Filter size={16} style={{ color: "var(--font-secondary)" }} />
               {(["all", "applied", "shortlisted", "interview_stage", "selected", "rejected"] as const).map(
                 (status) => {
                   const count = status === "all" ? applications.length : statusCounts[status] ?? 0;
@@ -418,15 +442,17 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                         mb: 0.5,
                         fontWeight: isActive ? 600 : 500,
                         backgroundColor: isActive
-                          ? style?.bg ?? "rgba(99, 102, 241, 0.12)"
+                          ? style?.bg ??
+                            "color-mix(in srgb, var(--accent-indigo) 16%, transparent)"
                           : "transparent",
-                        color: isActive ? style?.color ?? "#6366f1" : "#64748b",
+                        color: isActive ? style?.color ?? "var(--accent-indigo)" : "var(--font-secondary)",
                         border: "1px solid",
-                        borderColor: isActive ? (style?.color ?? "#6366f1") : "rgba(0,0,0,0.12)",
+                        borderColor: isActive ? (style?.color ?? "var(--accent-indigo)") : "color-mix(in srgb, var(--font-primary) 15%, transparent)",
                         "&:hover": {
                           backgroundColor: isActive
-                            ? style?.bg ?? "rgba(99, 102, 241, 0.12)"
-                            : "rgba(0,0,0,0.04)",
+                            ? style?.bg ??
+                              "color-mix(in srgb, var(--accent-indigo) 16%, transparent)"
+                            : "color-mix(in srgb, var(--font-primary) 6%, transparent)",
                         },
                       }}
                     />
@@ -446,17 +472,17 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
               borderRadius: 2,
               border: "1px dashed",
               borderColor: "divider",
-              backgroundColor: "#fafbfc",
+              backgroundColor: "var(--surface)",
             }}
           >
-            <Filter size={32} style={{ color: "#94a3b8", marginBottom: 8 }} />
+            <Filter size={32} style={{ color: "var(--font-tertiary)", marginBottom: 8 }} />
             <Typography variant="body2" color="text.secondary">
               No applications with status &quot;{STATUS_LABELS[statusFilter] ?? statusFilter}&quot;
             </Typography>
             <Button
               size="small"
               onClick={() => setStatusFilter("all")}
-              sx={{ mt: 1.5, textTransform: "none", color: "#6366f1" }}
+              sx={{ mt: 1.5, textTransform: "none", color: "var(--accent-indigo)" }}
             >
               Show all ({applications.length})
             </Button>
@@ -478,8 +504,8 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                     p: 2.5,
                     borderRadius: 2,
                     border: "1px solid",
-                    borderColor: "rgba(0,0,0,0.08)",
-                    backgroundColor: "#fff",
+                    borderColor: "color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                    backgroundColor: "var(--card-bg)",
                     textDecoration: "none",
                     color: "inherit",
                     display: "block",
@@ -497,8 +523,8 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                       opacity: 0.6,
                     },
                     "&:hover": {
-                      borderColor: "rgba(99, 102, 241, 0.4)",
-                      boxShadow: "0 4px 16px rgba(99, 102, 241, 0.1)",
+                      borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                      boxShadow: "0 4px 16px color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                       "&::before": { opacity: 1 },
                     },
                   }}
@@ -516,7 +542,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography
                           variant="subtitle1"
-                          sx={{ fontWeight: 600, color: "#0f172a", mb: 0.25 }}
+                          sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.25 }}
                         >
                           {app.job_title}
                         </Typography>
@@ -528,7 +554,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                             Applied {formatDate(app.applied_at)}
                           </Typography>
                           {updatedRecently && (
-                            <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                               · Updated {formatDate(app.updated_at)}
                             </Typography>
                           )}
@@ -560,7 +586,7 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
                         />
                         <ArrowRight
                           size={18}
-                          style={{ color: "#94a3b8", opacity: 0.6, flexShrink: 0 }}
+                          style={{ color: "var(--font-tertiary)", opacity: 0.6, flexShrink: 0 }}
                         />
                       </Box>
                     </Box>
@@ -591,9 +617,9 @@ export function AppliedJobsSection({ onBrowseJobs }: AppliedJobsSectionProps) {
             textTransform: "none",
             fontWeight: 500,
             borderRadius: 2,
-            borderColor: "rgba(99, 102, 241, 0.4)",
-            color: "#6366f1",
-            "&:hover": { borderColor: "#6366f1", backgroundColor: "rgba(99, 102, 241, 0.06)" },
+            borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+            color: "var(--accent-indigo)",
+            "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
           }}
         >
           Browse more jobs

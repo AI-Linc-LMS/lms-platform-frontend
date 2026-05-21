@@ -141,11 +141,11 @@ export default function AdminLiveSessionsPage() {
           <Box>
             <Typography
               variant="h4"
-              sx={{ fontWeight: 700, color: "#111827", mb: 1 }}
+              sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 1 }}
             >
               {t("adminLiveSessions.title")}
             </Typography>
-            <Typography variant="body1" sx={{ color: "#6b7280" }}>
+            <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
               {t("adminLiveSessions.subtitle")}
             </Typography>
           </Box>
@@ -154,7 +154,15 @@ export default function AdminLiveSessionsPage() {
               variant="outlined"
               startIcon={<IconWrapper icon="mdi:video-account" size={20} />}
               onClick={() => setCredentialsDialogOpen(true)}
-              sx={{ borderColor: "#6366f1", color: "#6366f1" }}
+              sx={{
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
+                "&:hover": {
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                },
+              }}
             >
               {t("adminLiveSessions.zoomCredentials")}
             </Button>
@@ -163,8 +171,9 @@ export default function AdminLiveSessionsPage() {
               startIcon={<IconWrapper icon="mdi:plus" size={20} />}
               onClick={() => setCreateDialogOpen(true)}
               sx={{
-                bgcolor: "#6366f1",
-                "&:hover": { bgcolor: "#4f46e5" },
+                bgcolor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
               }}
             >
               {t("adminLiveSessions.createLiveSession")}

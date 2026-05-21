@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Typography,
@@ -36,6 +36,12 @@ import { ContentPreviewDialog } from "./ContentPreviewDialog";
 import {
   extractArticleBodyAndAttachments,
 } from "@/lib/utils/articleAttachments";
+import {
+  ATTACHMENT_ACCEPT_TYPES,
+  ATTACHMENT_MAX_FILE_SIZE,
+  formatBytes,
+} from "./SubmoduleAttachments";
+import { ContentAttachmentsSection } from "./ContentAttachmentsSection";
 
 interface ContentItem {
   id: number;
@@ -63,11 +69,36 @@ const CONTENT_TYPE_CONFIG: Record<
   ContentIdType,
   { label: string; icon: string; color: string; bg: string }
 > = {
-  video: { label: "Video", icon: "mdi:video", color: "#7c3aed", bg: "#f5f3ff" },
-  article: { label: "Article", icon: "mdi:file-document", color: "#2563eb", bg: "#eff6ff" },
-  quiz: { label: "Quiz", icon: "mdi:help-circle", color: "#d97706", bg: "#fffbeb" },
-  assignment: { label: "Assignment", icon: "mdi:clipboard-text", color: "#059669", bg: "#ecfdf5" },
-  coding_problem: { label: "Coding", icon: "mdi:code-tags", color: "#dc2626", bg: "#fef2f2" },
+  video: {
+    label: "Video",
+    icon: "mdi:video",
+    color: "var(--accent-purple)",
+    bg: "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
+  },
+  article: {
+    label: "Article",
+    icon: "mdi:file-document",
+    color: "var(--accent-indigo)",
+    bg: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
+  },
+  quiz: {
+    label: "Quiz",
+    icon: "mdi:help-circle",
+    color: "var(--warning-500)",
+    bg: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+  },
+  assignment: {
+    label: "Assignment",
+    icon: "mdi:clipboard-text",
+    color: "var(--success-500)",
+    bg: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)",
+  },
+  coding_problem: {
+    label: "Coding",
+    icon: "mdi:code-tags",
+    color: "var(--error-500)",
+    bg: "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+  },
 };
 
 const PICKABLE_CONTENT_TYPES: ContentIdType[] = [
@@ -106,6 +137,7 @@ interface ContentFormState {
   quiz_instructions: string;
   quiz_duration: number;
   quiz_mcqs: MCQDraft[];
+  attachment_files: File[];
 }
 
 interface MCQDraft {
@@ -204,6 +236,7 @@ const emptyForm = (): ContentFormState => ({
   quiz_instructions: "",
   quiz_duration: 30,
   quiz_mcqs: [],
+  attachment_files: [],
 });
 
 export function ContentList({
@@ -225,6 +258,36 @@ export function ContentList({
   const [deleting, setDeleting] = useState(false);
 
   const [previewContentId, setPreviewContentId] = useState<number | null>(null);
+
+  /**
+   * Sequentially uploads each attachment to a specific content item.
+   * Individual failures are reported via toast but don't abort the remaining
+   * uploads. Returns the count of successful uploads.
+   */
+  const uploadAttachmentsToContent = async (
+    contentId: number,
+    files: File[]
+  ): Promise<number> => {
+    let ok = 0;
+    for (const file of files) {
+      try {
+        await adminCourseBuilderService.uploadContentAttachment(
+          courseId,
+          contentId,
+          file
+        );
+        ok++;
+      } catch (error: unknown) {
+        showToast(
+          `${file.name}: ${
+            error instanceof Error ? error.message : "upload failed"
+          }`,
+          "error"
+        );
+      }
+    }
+    return ok;
+  };
 
   const loadContents = useCallback(async () => {
     try {
@@ -422,7 +485,8 @@ export function ContentList({
     /** Required for quiz: non-empty list from buildQuizMcqsForSave */
     quizMcqsForSave?: MCQDraft[]
   ) => {
-    const type = formData.content_type;
+    // Attachment is handled earlier in handleSave and never reaches this function.
+    const type = formData.content_type as ContentIdType;
     const backendType = contentTypeMap[type];
     const linkedId = existing ? resolveLinkedId(existing) : null;
 
@@ -540,7 +604,13 @@ export function ContentList({
       editingId === null &&
       formData.content_type === "coding_problem" &&
       formData.coding_questions.length > 0;
-    if (!formData.title.trim() && !isBatchCodingCreate) {
+    const hasAttachments =
+      editingId === null && formData.attachment_files.length > 0;
+    const hasContentTitle = !!formData.title.trim();
+
+    // Attachments are now tied to a Content item, so the user must always
+    // provide title + content (or batch coding).
+    if (!hasContentTitle && !isBatchCodingCreate) {
       showToast("Title is required", "error");
       return;
     }
@@ -582,6 +652,8 @@ export function ContentList({
           );
         }
         showToast(`${formData.coding_questions.length} coding content items added`, "success");
+        // Attachments aren't supported for batch-coding creation (which produces
+        // multiple Contents); the user should attach files per-content via Edit.
         closeDialog();
         loadContents();
         return;
@@ -611,6 +683,7 @@ export function ContentList({
           : undefined
       );
 
+      let savedContentId: number | null = null;
       if (editingId !== null) {
         await adminCourseBuilderService.updateSubmoduleContent(
           courseId,
@@ -618,14 +691,28 @@ export function ContentList({
           editingId,
           linkPayload
         );
+        savedContentId = editingId;
         showToast("Content updated", "success");
       } else {
-        await adminCourseBuilderService.addSubmoduleContent(
+        const created = await adminCourseBuilderService.addSubmoduleContent(
           courseId,
           submoduleId,
           linkPayload
         );
+        savedContentId = Number(created?.id) || null;
         showToast("Content added", "success");
+      }
+      if (hasAttachments && savedContentId) {
+        const okCount = await uploadAttachmentsToContent(
+          savedContentId,
+          formData.attachment_files
+        );
+        if (okCount > 0) {
+          showToast(
+            `${okCount} attachment${okCount > 1 ? "s" : ""} uploaded`,
+            "success"
+          );
+        }
       }
       closeDialog();
       loadContents();
@@ -723,7 +810,7 @@ export function ContentList({
   return (
     <Box sx={{ mt: 1 }}>
       {contents.length === 0 ? (
-        <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+        <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
           No content items yet
         </Typography>
       ) : (
@@ -740,9 +827,12 @@ export function ContentList({
                   px: 1.5,
                   py: 1,
                   borderRadius: 1,
-                  bgcolor: "#fafafa",
-                  border: "1px solid #f3f4f6",
-                  "&:hover": { bgcolor: "#f3f4f6" },
+                  bgcolor: "var(--surface)",
+                  border: "1px solid var(--border-default)",
+                  "&:hover": {
+                    bgcolor:
+                      "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
+                  },
                   transition: "background 0.15s",
                 }}
               >
@@ -792,7 +882,12 @@ export function ContentList({
                 >
                   <Typography
                     variant="body2"
-                    sx={{ fontWeight: 500, color: "#111827", fontSize: "0.8rem", lineHeight: 1.3 }}
+                    sx={{
+                      fontWeight: 500,
+                      color: "var(--font-primary)",
+                      fontSize: "0.8rem",
+                      lineHeight: 1.3,
+                    }}
                   >
                     {item.title}
                   </Typography>
@@ -809,7 +904,10 @@ export function ContentList({
                       }}
                     />
                     {Number(item.duration_in_minutes) > 0 && (
-                      <Typography variant="caption" sx={{ color: "#9ca3af", fontSize: "0.65rem" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "var(--font-tertiary)", fontSize: "0.65rem" }}
+                      >
                         {item.duration_in_minutes} min
                       </Typography>
                     )}
@@ -823,7 +921,7 @@ export function ContentList({
                         e.stopPropagation();
                         void openEdit(item);
                       }}
-                      sx={{ color: "#6366f1", p: 0.5 }}
+                      sx={{ color: "var(--accent-indigo)", p: 0.5 }}
                     >
                       <IconWrapper icon="mdi:pencil" size={14} />
                     </IconButton>
@@ -833,7 +931,7 @@ export function ContentList({
                         e.stopPropagation();
                         setDeleteTarget(item);
                       }}
-                      sx={{ color: "#ef4444", p: 0.5 }}
+                      sx={{ color: "var(--error-500)", p: 0.5 }}
                     >
                       <IconWrapper icon="mdi:delete" size={14} />
                     </IconButton>
@@ -850,7 +948,13 @@ export function ContentList({
           size="small"
           startIcon={<IconWrapper icon="mdi:plus" size={14} />}
           onClick={openAdd}
-          sx={{ mt: 0.75, color: "#6366f1", textTransform: "none", fontWeight: 600, fontSize: "0.75rem" }}
+          sx={{
+            mt: 0.75,
+            color: "var(--accent-indigo)",
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.75rem",
+          }}
         >
           Add Content
         </Button>
@@ -874,19 +978,25 @@ export function ContentList({
             <InputLabel>Content Type</InputLabel>
             <Select
               value={formData.content_type ?? "article"}
-              onChange={(e) => setFormData({ ...formData, content_type: (e.target.value as ContentIdType) || "article" })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  content_type:
+                    (e.target.value as ContentIdType) || "article",
+                })
+              }
               label="Content Type"
             >
               {PICKABLE_CONTENT_TYPES.map((key) => {
                 const cfg = CONTENT_TYPE_CONFIG[key];
                 return (
-                <MenuItem key={key} value={key}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <IconWrapper icon={cfg.icon} size={16} color={cfg.color} />
-                    {cfg.label}
-                  </Box>
-                </MenuItem>
-              );
+                  <MenuItem key={key} value={key}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <IconWrapper icon={cfg.icon} size={16} color={cfg.color} />
+                      {cfg.label}
+                    </Box>
+                  </MenuItem>
+                );
               })}
               {formData.content_type === "assignment" && (
                 <MenuItem value="assignment" disabled>
@@ -1091,7 +1201,7 @@ export function ContentList({
                     <Box
                       key={`${q.title}-${index}`}
                       sx={{
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid var(--border-default)",
                         borderRadius: 1,
                         p: 1,
                         display: "flex",
@@ -1100,7 +1210,7 @@ export function ContentList({
                         alignItems: "center",
                       }}
                     >
-                      <Typography variant="caption" sx={{ color: "#374151" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-primary)" }}>
                         Q{index + 1}: {q.title}
                       </Typography>
                       <IconButton
@@ -1228,7 +1338,7 @@ export function ContentList({
                     <Box
                       key={mcq.id ?? `new-${index}-${mcq.question_text.slice(0, 20)}`}
                       sx={{
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid var(--border-default)",
                         borderRadius: 1,
                         p: 1,
                         display: "flex",
@@ -1237,7 +1347,7 @@ export function ContentList({
                         alignItems: "center",
                       }}
                     >
-                      <Typography variant="caption" sx={{ color: "#374151" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-primary)" }}>
                         Q{index + 1}: {mcq.question_text}
                       </Typography>
                       <IconButton
@@ -1262,9 +1372,28 @@ export function ContentList({
               )}
             </>
           )}
+          {editingId === null ? (
+            <>
+              <Divider />
+              <AttachmentMultiFilePicker
+                files={formData.attachment_files}
+                onFilesChange={(files) =>
+                  setFormData({ ...formData, attachment_files: files })
+                }
+              />
+            </>
+          ) : (
+            <>
+              <Divider />
+              <ContentAttachmentsSection
+                courseId={courseId}
+                contentId={editingId}
+              />
+            </>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeDialog} disabled={saving} sx={{ color: "#6b7280" }}>
+          <Button onClick={closeDialog} disabled={saving} sx={{ color: "var(--font-secondary)" }}>
             Cancel
           </Button>
           <Button
@@ -1278,7 +1407,16 @@ export function ContentList({
             }
             variant="contained"
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
-            sx={{ bgcolor: "#6366f1" }}
+            sx={{
+              bgcolor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+              },
+            }}
           >
             {saving ? "Saving..." : editingId !== null ? "Update" : "Add"}
           </Button>
@@ -1300,6 +1438,441 @@ export function ContentList({
         contentId={previewContentId}
         onClose={() => setPreviewContentId(null)}
       />
+    </Box>
+  );
+}
+
+interface AttachmentMultiFilePickerProps {
+  files: File[];
+  onFilesChange: (files: File[]) => void;
+}
+
+function AttachmentMultiFilePicker({
+  files,
+  onFilesChange,
+}: AttachmentMultiFilePickerProps) {
+  const { showToast } = useToast();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const acceptFiles = (incoming: FileList | File[] | null | undefined) => {
+    if (!incoming) return;
+    const incomingArr = Array.from(incoming);
+    const accepted: File[] = [];
+    for (const f of incomingArr) {
+      if (f.size > ATTACHMENT_MAX_FILE_SIZE) {
+        showToast(`${f.name} exceeds 50 MB limit`, "error");
+        continue;
+      }
+      accepted.push(f);
+    }
+    if (accepted.length) onFilesChange([...files, ...accepted]);
+  };
+
+  const removeFile = (index: number) => {
+    onFilesChange(files.filter((_, i) => i !== index));
+  };
+
+  return (
+    <Box>
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}
+      >
+        <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
+          <IconWrapper icon="mdi:paperclip" size={16} color="var(--font-secondary)" />
+          Attachments (optional)
+        </Box>
+      </Typography>
+
+      <Box
+        onClick={() => inputRef.current?.click()}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragActive(false);
+          acceptFiles(e.dataTransfer.files);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragActive(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragActive(false);
+        }}
+        sx={{
+          border: `2px dashed ${
+            dragActive ? "var(--accent-indigo)" : "var(--border-default)"
+          }`,
+          borderRadius: 2,
+          p: 2.5,
+          textAlign: "center",
+          cursor: "pointer",
+          bgcolor: dragActive
+            ? "color-mix(in srgb, var(--accent-indigo) 6%, transparent)"
+            : "transparent",
+          transition: "all 0.15s",
+          "&:hover": {
+            borderColor: "var(--accent-indigo)",
+            bgcolor:
+              "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
+          },
+        }}
+      >
+        <IconWrapper
+          icon="mdi:cloud-upload-outline"
+          size={32}
+          color="var(--font-tertiary)"
+        />
+        <Typography
+          variant="body2"
+          sx={{ color: "var(--font-secondary)", mt: 0.5, fontWeight: 500 }}
+        >
+          Drop files here or click to choose
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{ color: "var(--font-tertiary)", display: "block", mt: 0.25 }}
+        >
+          PDF, images, Word, Excel, PowerPoint, text — up to 50 MB each
+        </Typography>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept={ATTACHMENT_ACCEPT_TYPES}
+          onChange={(e) => {
+            acceptFiles(e.target.files);
+            if (inputRef.current) inputRef.current.value = "";
+          }}
+          style={{ display: "none" }}
+        />
+      </Box>
+
+      {files.length > 0 && (
+        <Box sx={{ mt: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
+          {files.map((f, index) => (
+            <QueuedFileCard
+              key={`${f.name}-${index}-${f.size}`}
+              file={f}
+              onRemove={() => removeFile(index)}
+            />
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+type QueuedFileType = "pdf" | "image" | "document" | "text" | "other";
+
+const QUEUED_TYPE_META: Record<
+  QueuedFileType,
+  { icon: string; color: string; label: string }
+> = {
+  pdf: { icon: "mdi:file-pdf-box", color: "var(--error-500)", label: "PDF" },
+  image: { icon: "mdi:image", color: "var(--accent-purple)", label: "Image" },
+  document: {
+    icon: "mdi:file-word-box",
+    color: "var(--accent-indigo)",
+    label: "Document",
+  },
+  text: {
+    icon: "mdi:file-document",
+    color: "var(--success-500)",
+    label: "Text",
+  },
+  other: { icon: "mdi:file", color: "var(--font-secondary)", label: "File" },
+};
+
+function detectQueuedFileType(file: File): QueuedFileType {
+  const name = (file.name || "").toLowerCase();
+  const mt = (file.type || "").toLowerCase();
+  if (name.endsWith(".pdf") || mt.includes("pdf")) return "pdf";
+  if (
+    /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(name) ||
+    mt.startsWith("image/")
+  )
+    return "image";
+  if (
+    /\.(docx?|pptx?|xlsx?|odt)$/.test(name) ||
+    /word|spreadsheet|presentation|officedocument/.test(mt)
+  )
+    return "document";
+  if (/\.(txt|md|csv)$/.test(name) || mt.startsWith("text/")) return "text";
+  return "other";
+}
+
+interface QueuedFileCardProps {
+  file: File;
+  onRemove: () => void;
+}
+
+function QueuedFileCard({ file, onRemove }: QueuedFileCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const type = detectQueuedFileType(file);
+  const meta = QUEUED_TYPE_META[type];
+
+  // Create the object URL lazily when expanded; revoke when collapsed/unmounted.
+  useEffect(() => {
+    if (!expanded) return;
+    if (type !== "image" && type !== "pdf") return;
+    const url = URL.createObjectURL(file);
+    setObjectUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+      setObjectUrl(null);
+    };
+  }, [expanded, file, type]);
+
+  return (
+    <Box
+      sx={{
+        border: "1px solid var(--border-default)",
+        borderRadius: 1.5,
+        overflow: "hidden",
+        bgcolor: "var(--card-bg)",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          px: 1.5,
+          py: 1,
+        }}
+      >
+        <Box
+          sx={{
+            width: 32,
+            height: 32,
+            borderRadius: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: `color-mix(in srgb, ${meta.color} 12%, var(--surface) 88%)`,
+            flexShrink: 0,
+          }}
+        >
+          <IconWrapper icon={meta.icon} size={18} color={meta.color} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              color: "var(--font-primary)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {file.name}
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center", mt: 0.25 }}>
+            <Typography
+              variant="caption"
+              sx={{ color: meta.color, fontWeight: 600 }}
+            >
+              {meta.label}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+              · {formatBytes(file.size)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+              · queued
+            </Typography>
+          </Box>
+        </Box>
+        <Tooltip title={expanded ? "Hide preview" : "Show preview"}>
+          <IconButton
+            size="small"
+            onClick={() => setExpanded((v) => !v)}
+            sx={{ color: "var(--accent-indigo)" }}
+          >
+            <IconWrapper
+              icon={expanded ? "mdi:eye-off" : "mdi:eye"}
+              size={16}
+            />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Remove">
+          <IconButton
+            size="small"
+            onClick={onRemove}
+            sx={{ color: "var(--error-500)" }}
+          >
+            <IconWrapper icon="mdi:close" size={16} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      {expanded && (
+        <Box
+          sx={{
+            borderTop: "1px solid var(--border-default)",
+            p: 1.5,
+            bgcolor: "var(--surface)",
+          }}
+        >
+          <QueuedFilePreviewBody file={file} type={type} objectUrl={objectUrl} />
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+interface QueuedFilePreviewBodyProps {
+  file: File;
+  type: QueuedFileType;
+  objectUrl: string | null;
+}
+
+function QueuedFilePreviewBody({
+  file,
+  type,
+  objectUrl,
+}: QueuedFilePreviewBodyProps) {
+  const [text, setText] = useState<string | null>(null);
+  const [loadingText, setLoadingText] = useState(false);
+
+  useEffect(() => {
+    if (type !== "text") return;
+    let cancelled = false;
+    setLoadingText(true);
+    file
+      .text()
+      .then((value) => {
+        if (cancelled) return;
+        const max = 200 * 1024;
+        setText(
+          value.length > max
+            ? value.slice(0, max) + "\n\n... (truncated)"
+            : value
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingText(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [file, type]);
+
+  if (type === "image" && objectUrl) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          bgcolor: "var(--card-bg)",
+          borderRadius: 1,
+          p: 1,
+          maxHeight: 400,
+          overflow: "auto",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={objectUrl}
+          alt={file.name}
+          style={{
+            maxWidth: "100%",
+            maxHeight: 380,
+            objectFit: "contain",
+            borderRadius: 4,
+          }}
+        />
+      </Box>
+    );
+  }
+
+  if (type === "pdf" && objectUrl) {
+    return (
+      <Box
+        sx={{
+          width: "100%",
+          height: 400,
+          borderRadius: 1,
+          overflow: "hidden",
+          border: "1px solid var(--border-default)",
+          bgcolor: "var(--card-bg)",
+        }}
+      >
+        <iframe
+          src={objectUrl}
+          title={file.name}
+          width="100%"
+          height="100%"
+          style={{ border: 0, display: "block" }}
+        />
+      </Box>
+    );
+  }
+
+  if (type === "text") {
+    if (loadingText) {
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+          <CircularProgress size={18} />
+        </Box>
+      );
+    }
+    return (
+      <Box
+        component="pre"
+        sx={{
+          m: 0,
+          p: 1.5,
+          bgcolor: "var(--card-bg)",
+          border: "1px solid var(--border-default)",
+          borderRadius: 1,
+          maxHeight: 300,
+          overflow: "auto",
+          fontFamily: "'Fira Code', 'Source Code Pro', Menlo, Consolas, monospace",
+          fontSize: "0.8125rem",
+          color: "var(--font-primary)",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        }}
+      >
+        {text ?? ""}
+      </Box>
+    );
+  }
+
+  // Office docs / other types: inline preview not available before upload.
+  return (
+    <Box
+      sx={{
+        textAlign: "center",
+        py: 3,
+        bgcolor: "var(--card-bg)",
+        borderRadius: 1,
+        border: "1px dashed var(--border-default)",
+      }}
+    >
+      <IconWrapper
+        icon="mdi:eye-off"
+        size={32}
+        color="var(--font-tertiary)"
+      />
+      <Typography
+        variant="body2"
+        sx={{ color: "var(--font-secondary)", mt: 1 }}
+      >
+        Inline preview is available after upload
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{ color: "var(--font-tertiary)", display: "block" }}
+      >
+        ({file.name})
+      </Typography>
     </Box>
   );
 }

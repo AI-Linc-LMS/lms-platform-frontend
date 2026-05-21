@@ -13,6 +13,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { MockInterview } from "@/lib/services/mock-interview.service";
 import { memo, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 
 interface PreviousInterviewsTableProps {
   interviews: MockInterview[];
@@ -37,13 +38,22 @@ const PreviousInterviewsTableComponent = ({
   const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty?.toLowerCase()) {
       case "easy":
-        return { bg: "#d1fae5", color: "#065f46" };
+        return {
+          bg: "color-mix(in srgb, var(--success-500) 16%, transparent)",
+          color: "var(--success-500)",
+        };
       case "medium":
-        return { bg: "#fed7aa", color: "#9a3412" };
+        return {
+          bg: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+          color: "var(--warning-500)",
+        };
       case "hard":
-        return { bg: "#fecaca", color: "#991b1b" };
+        return {
+          bg: "color-mix(in srgb, var(--error-500) 16%, transparent)",
+          color: "var(--error-500)",
+        };
       default:
-        return { bg: "#f3f4f6", color: "#374151" };
+        return { bg: "var(--surface)", color: "var(--font-secondary)" };
     }
   }, []);
 
@@ -89,22 +99,22 @@ const PreviousInterviewsTableComponent = ({
             width: 80,
             height: 80,
             borderRadius: "50%",
-            backgroundColor: "#f3f4f6",
+            backgroundColor: "var(--surface)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             mb: 2,
           }}
         >
-          <IconWrapper icon="mdi:history" size={40} color="#9ca3af" />
+          <IconWrapper icon="mdi:history" size={40} color="var(--font-tertiary)" />
         </Box>
         <Typography
           variant="h6"
-          sx={{ color: "#6b7280", mb: 1, fontWeight: 600 }}
+          sx={{ color: "var(--font-secondary)", mb: 1, fontWeight: 600 }}
         >
           No Previous Interviews
         </Typography>
-        <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+        <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
           Complete your first interview to see results here
         </Typography>
       </Box>
@@ -121,11 +131,12 @@ const PreviousInterviewsTableComponent = ({
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border-default)",
               transition: "all 0.3s ease",
               "&:hover": {
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-                borderColor: "#10b981",
+                boxShadow:
+                  "0 4px 12px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+                borderColor: "var(--success-500)",
                 transform: "translateY(-2px)",
               },
             }}
@@ -138,18 +149,19 @@ const PreviousInterviewsTableComponent = ({
                   height: 80,
                   borderRadius: 3,
                   background:
-                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    "linear-gradient(135deg, var(--success-500) 0%, color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark)) 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                  boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+                  boxShadow:
+                    "0 4px 12px color-mix(in srgb, var(--success-500) 35%, transparent)",
                 }}
               >
                 <IconWrapper
                   icon="mdi:clipboard-check-outline"
                   size={40}
-                  color="#ffffff"
+                  color="var(--font-light)"
                 />
               </Box>
 
@@ -168,7 +180,7 @@ const PreviousInterviewsTableComponent = ({
                       variant="h6"
                       sx={{ fontWeight: 700, fontSize: "1.1rem", mb: 0.5 }}
                     >
-                      {interview.title}
+                      {cleanInterviewTitle(interview.title)}
                     </Typography>
                     <Box
                       sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}
@@ -177,8 +189,8 @@ const PreviousInterviewsTableComponent = ({
                         label={interview.topic}
                         size="small"
                         sx={{
-                          backgroundColor: "#f3f4f6",
-                          color: "#374151",
+                          backgroundColor: "var(--surface)",
+                          color: "var(--font-secondary)",
                           fontSize: "0.75rem",
                           height: 24,
                         }}
@@ -188,8 +200,9 @@ const PreviousInterviewsTableComponent = ({
                           label={interview.subtopic}
                           size="small"
                           sx={{
-                            backgroundColor: "#dbeafe",
-                            color: "#1e40af",
+                            backgroundColor:
+                              "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
+                            color: "var(--accent-indigo)",
                             fontSize: "0.75rem",
                             height: 24,
                           }}
@@ -215,8 +228,9 @@ const PreviousInterviewsTableComponent = ({
                         label={`${interview.duration_minutes} mins`}
                         size="small"
                         sx={{
-                          backgroundColor: "#fef3c7",
-                          color: "#92400e",
+                          backgroundColor:
+                            "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+                          color: "var(--warning-500)",
                           fontSize: "0.75rem",
                           height: 24,
                         }}
@@ -229,8 +243,9 @@ const PreviousInterviewsTableComponent = ({
                     label="Completed"
                     size="small"
                     sx={{
-                      backgroundColor: "#d1fae5",
-                      color: "#065f46",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                      color: "var(--success-500)",
                       fontWeight: 600,
                       fontSize: "0.75rem",
                       height: 26,
@@ -251,11 +266,11 @@ const PreviousInterviewsTableComponent = ({
                       <IconWrapper
                         icon="mdi:calendar"
                         size={16}
-                        color="#6b7280"
+                        color="var(--font-secondary)"
                       />
                       <Typography
                         variant="body2"
-                        sx={{ color: "#6b7280", fontSize: "0.875rem" }}
+                        sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
                       >
                         {formatDate(interview.scheduled_date_time || "")}
                       </Typography>
@@ -267,12 +282,13 @@ const PreviousInterviewsTableComponent = ({
                       size="small"
                       onClick={() => handleViewResult(interview.id)}
                       sx={{
-                        backgroundColor: "#10b981",
-                        color: "#ffffff",
+                        backgroundColor: "var(--success-500)",
+                        color: "var(--font-light)",
                         px: 2,
                         borderRadius: 2,
                         "&:hover": {
-                          backgroundColor: "#059669",
+                          backgroundColor:
+                            "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark))",
                         },
                       }}
                     >
@@ -320,10 +336,11 @@ const PreviousInterviewsTableComponent = ({
                 fontWeight: 600,
               },
               "& .Mui-selected": {
-                backgroundColor: "#10b981 !important",
-                color: "#ffffff",
+                backgroundColor: "var(--success-500) !important",
+                color: "var(--font-light)",
                 "&:hover": {
-                  backgroundColor: "#059669 !important",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark)) !important",
                 },
               },
             }}

@@ -126,7 +126,7 @@ export function ContentPreviewDialog({
         sx={{
           p: 0,
           minHeight: 320,
-          bgcolor: "#f9fafb",
+          bgcolor: "var(--surface)",
         }}
       >
         {loading ? (

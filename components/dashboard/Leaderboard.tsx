@@ -166,7 +166,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
           sx={{
             fontSize: "1.125rem",
             fontWeight: 600,
-            color: "#111827",
+            color: "var(--font-primary)",
           }}
           >
             {t("dashboard.leaderboard")}
@@ -188,7 +188,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
           <Typography
             variant="caption"
             sx={{
-              color: "#6366F1",
+              color: "var(--accent-indigo)",
               fontSize: "0.75rem",
               fontWeight: 500,
               display: "flex",
@@ -209,7 +209,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
               <IconWrapper
                 icon="mdi:refresh"
                 size={14}
-                color="#6366F1"
+                color="var(--accent-indigo)"
               />
             </Box>
             Fetching latest leaderboard...
@@ -221,8 +221,8 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
         sx={{
           borderRadius: 2,
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
           display: "flex",
           flexDirection: "column",
           maxHeight: 350,
@@ -244,7 +244,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
         ) : safeLeaderboard.length === 0 ? (
           <Typography
             variant="body2"
-            sx={{ color: "#6B7280", textAlign: "center", py: 2, p: 2 }}
+            sx={{ color: "var(--font-secondary)", textAlign: "center", py: 2, p: 2 }}
           >
             {t("dashboard.noLeaderboardData")}
           </Typography>
@@ -313,20 +313,20 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                       p: 1,
                       borderRadius: 1,
                       backgroundColor:
-                        rank > 0 && rank <= 3 ? "#F9FAFB" : "transparent",
+                        rank > 0 && rank <= 3 ? "var(--surface)" : "transparent",
                       border:
-                        rank > 0 && rank <= 3 ? "1px solid #E5E7EB" : "none",
+                        rank > 0 && rank <= 3 ? "1px solid var(--border-default)" : "none",
                       flexShrink: 0,
                       cursor: linkedinUrl ? "pointer" : "default",
                       transition: "all 0.2s ease",
                       "&:hover": {
-                        backgroundColor: linkedinUrl ? "rgba(99, 102, 241, 0.08)" : undefined,
+                        backgroundColor: linkedinUrl ? "color-mix(in srgb, var(--accent-indigo) 12%, transparent)" : undefined,
                         transform: linkedinUrl ? "translateX(2px)" : undefined,
                         boxShadow: linkedinUrl ? "0 2px 4px rgba(0,0,0,0.1)" : undefined,
                       },
                       "&:focus": linkedinUrl
                         ? {
-                            outline: "2px solid #6366f1",
+                            outline: "2px solid var(--accent-indigo)",
                             outlineOffset: "2px",
                           }
                         : {},
@@ -361,7 +361,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "#111827",
+                        color: "var(--font-primary)",
                         fontSize: "0.8125rem",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -374,7 +374,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "#6B7280",
+                        color: "var(--font-secondary)",
                         fontSize: "0.6875rem",
                         lineHeight: 1.2,
                       }}
@@ -386,7 +386,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                     variant="body2"
                     sx={{
                       fontWeight: 700,
-                      color: "#6366f1",
+                      color: "var(--accent-indigo)",
                       fontSize: "0.875rem",
                       flexShrink: 0,
                     }}
@@ -420,8 +420,8 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
               p: 1.5,
               borderRadius: 2,
               background:
-                "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%)",
-              border: "1px solid rgba(99, 102, 241, 0.2)",
+                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 0%, color-mix(in srgb, var(--accent-indigo-dark) 10%, transparent) 100%)",
+              border: "1px solid color-mix(in srgb, var(--accent-indigo) 32%, transparent)",
             }}
           >
             <Box
@@ -433,12 +433,12 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                 justifyContent: "center",
                 borderRadius: "50%",
                 background:
-                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
                 color: "#ffffff",
                 fontWeight: 700,
                 fontSize: "0.75rem",
                 flexShrink: 0,
-                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
+                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 34%, transparent)",
               }}
             >
               {currentUserEntry.rank ?? "?"}
@@ -454,8 +454,8 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                 width: 32,
                 height: 32,
                 flexShrink: 0,
-                border: "2px solid rgba(99, 102, 241, 0.3)",
-                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.15)",
+                border: "2px solid color-mix(in srgb, var(--accent-indigo) 34%, transparent)",
+                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
               }}
             >
               {(currentUserEntry.name ?? currentUserEntry.email ?? "U")[0]}
@@ -465,7 +465,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                 variant="body2"
                 sx={{
                   fontWeight: 700,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                   fontSize: "0.8125rem",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -478,7 +478,7 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#6366f1",
+                  color: "var(--accent-indigo)",
                   fontSize: "0.6875rem",
                   fontWeight: 500,
                   lineHeight: 1.2,
@@ -493,9 +493,9 @@ export const Leaderboard = ({ courseId: _courseId }: LeaderboardProps) => {
                 py: 0.5,
                 borderRadius: 1.5,
                 background:
-                  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
                 flexShrink: 0,
-                boxShadow: "0 2px 4px rgba(99, 102, 241, 0.2)",
+                boxShadow: "0 2px 4px color-mix(in srgb, var(--accent-indigo) 24%, transparent)",
               }}
             >
               <Typography

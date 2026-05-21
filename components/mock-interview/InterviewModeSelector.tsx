@@ -1,9 +1,9 @@
 "use client";
 
-import { Box, Paper, Typography, Button, Tooltip, IconButton, Chip } from "@mui/material";
+import { Box, Paper, Typography, Button, Tooltip, IconButton, Chip, CircularProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useRouter } from "next/navigation";
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 const InterviewModeSelectorComponent = () => {
@@ -11,37 +11,52 @@ const InterviewModeSelectorComponent = () => {
   const router = useRouter();
   const [quickStartHover, setQuickStartHover] = useState(false);
   const [scheduleHover, setScheduleHover] = useState(false);
+  // "Which card is the user navigating away from?" — set the instant they click so the UI
+  // gives them feedback before Next.js finishes loading the destination chunk. Addresses
+  // the "slight delay on first click of mode selection cards" complaint: previously the
+  // button looked frozen until the route changed; now it visibly switches to a loading
+  // state on the same paint as the click.
+  const [navigatingTo, setNavigatingTo] = useState<"quick-start" | "schedule" | null>(null);
+
+  useEffect(() => {
+    router.prefetch("/mock-interview/quick-start");
+    router.prefetch("/mock-interview/schedule");
+  }, [router]);
 
   const handleQuickStart = () => {
+    if (navigatingTo) return;
+    setNavigatingTo("quick-start");
     router.push("/mock-interview/quick-start");
   };
 
   const handleSchedule = () => {
+    if (navigatingTo) return;
+    setNavigatingTo("schedule");
     router.push("/mock-interview/schedule");
   };
 
   const quickStartTooltip = (
     <Box sx={{ p: 1 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: "#ffffff" }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: "var(--font-light)" }}>
         {t("mockInterview.modeSelector.chooseQuickStartIf")}
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2, listStyle: "disc" }}>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.quickStartTip1")}</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.quickStartTip2")}</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.quickStartTip3")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "var(--font-light)" }}>{t("mockInterview.modeSelector.quickStartTip1")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "var(--font-light)" }}>{t("mockInterview.modeSelector.quickStartTip2")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "var(--font-light)" }}>{t("mockInterview.modeSelector.quickStartTip3")}</Typography></li>
       </Box>
     </Box>
   );
 
   const scheduleTooltip = (
     <Box sx={{ p: 1 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: "#ffffff" }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: "var(--font-light)" }}>
         {t("mockInterview.modeSelector.chooseScheduleIf")}
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2, listStyle: "disc" }}>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.scheduleTip1")}</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.scheduleTip2")}</Typography></li>
-        <li><Typography variant="body2" sx={{ color: "#ffffff" }}>{t("mockInterview.modeSelector.scheduleTip3")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "var(--font-light)" }}>{t("mockInterview.modeSelector.scheduleTip1")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "var(--font-light)" }}>{t("mockInterview.modeSelector.scheduleTip2")}</Typography></li>
+        <li><Typography variant="body2" sx={{ color: "var(--font-light)" }}>{t("mockInterview.modeSelector.scheduleTip3")}</Typography></li>
       </Box>
     </Box>
   );
@@ -55,7 +70,8 @@ const InterviewModeSelectorComponent = () => {
             mb: 1.5,
             fontWeight: 700,
             fontSize: { xs: "1.75rem", md: "2.25rem" },
-            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+            background:
+              "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
             backgroundClip: "text",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
@@ -63,7 +79,7 @@ const InterviewModeSelectorComponent = () => {
         >
           {t("mockInterview.modeSelector.chooseInterviewMode")}
         </Typography>
-        <Typography variant="body1" sx={{ color: "#6b7280", fontSize: "1rem" }}>
+        <Typography variant="body1" sx={{ color: "var(--font-secondary)", fontSize: "1rem" }}>
           {t("mockInterview.modeSelector.selectModeSubtitle")}
         </Typography>
       </Box>
@@ -85,14 +101,14 @@ const InterviewModeSelectorComponent = () => {
             p: 4,
             borderRadius: 4,
             border: "2px solid",
-            borderColor: quickStartHover ? "#10b981" : "#a7f3d0",
-            backgroundColor: "#ecfdf5",
+            borderColor: quickStartHover ? "var(--success-500)" : "color-mix(in srgb, var(--success-500) 35%, var(--border-default))",
+            backgroundColor: "color-mix(in srgb, var(--success-500) 10%, var(--surface))",
             position: "relative",
             transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
             transform: quickStartHover ? "translateY(-8px)" : "translateY(0)",
             boxShadow: quickStartHover
-              ? "0 20px 40px rgba(16, 185, 129, 0.25)"
-              : "0 4px 12px rgba(16, 185, 129, 0.08)",
+              ? "0 20px 40px color-mix(in srgb, var(--success-500) 35%, transparent)"
+              : "0 4px 12px color-mix(in srgb, var(--success-500) 18%, transparent)",
             overflow: "visible",
           }}
         >
@@ -104,8 +120,8 @@ const InterviewModeSelectorComponent = () => {
               position: "absolute",
               top: -12,
               right: 20,
-              backgroundColor: "#10b981",
-              color: "#ffffff",
+              backgroundColor: "var(--success-500)",
+              color: "var(--font-light)",
               fontWeight: 700,
               fontSize: "0.65rem",
               letterSpacing: "0.5px",
@@ -120,16 +136,16 @@ const InterviewModeSelectorComponent = () => {
                 width: 72,
                 height: 72,
                 borderRadius: 2.5,
-                backgroundColor: "#10b981",
+                backgroundColor: "var(--success-500)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 8px 16px rgba(16, 185, 129, 0.3)",
+                boxShadow: "0 8px 16px color-mix(in srgb, var(--success-500) 35%, transparent)",
                 transition: "all 0.3s ease",
                 transform: quickStartHover ? "scale(1.05) rotate(5deg)" : "scale(1)",
               }}
             >
-              <IconWrapper icon="mdi:lightning-bolt" size={36} color="#ffffff" />
+              <IconWrapper icon="mdi:lightning-bolt" size={36} color="var(--font-light)" />
             </Box>
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
@@ -140,12 +156,12 @@ const InterviewModeSelectorComponent = () => {
                   <IconButton
                     size="small"
                     sx={{
-                      backgroundColor: "#d1fae5",
-                      color: "#059669",
+                      backgroundColor: "color-mix(in srgb, var(--success-500) 16%, transparent)",
+                      color: "var(--success-500)",
                       width: 24,
                       height: 24,
                       "&:hover": {
-                        backgroundColor: "#a7f3d0",
+                        backgroundColor: "color-mix(in srgb, var(--success-500) 24%, transparent)",
                       },
                     }}
                   >
@@ -153,7 +169,7 @@ const InterviewModeSelectorComponent = () => {
                   </IconButton>
                 </Tooltip>
               </Box>
-              <Typography variant="body2" sx={{ color: "#059669", fontWeight: 600, fontSize: "0.9rem" }}>
+              <Typography variant="body2" sx={{ color: "var(--success-500)", fontWeight: 600, fontSize: "0.9rem" }}>
                 {t("mockInterview.modeSelector.startImmediately")}
               </Typography>
             </Box>
@@ -175,10 +191,10 @@ const InterviewModeSelectorComponent = () => {
                   mb: 1.5,
                   p: 1.5,
                   borderRadius: 2,
-                  backgroundColor: "#d1fae5",
+                  backgroundColor: "color-mix(in srgb, var(--success-500) 16%, transparent)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#a7f3d0",
+                    backgroundColor: "color-mix(in srgb, var(--success-500) 24%, transparent)",
                     transform: "translateX(4px)",
                   },
                 }}
@@ -188,15 +204,15 @@ const InterviewModeSelectorComponent = () => {
                     width: 32,
                     height: 32,
                     borderRadius: 1,
-                    backgroundColor: "#10b981",
+                    backgroundColor: "var(--success-500)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <IconWrapper icon={item.icon} size={18} color="#ffffff" />
+                  <IconWrapper icon={item.icon} size={18} color="var(--font-light)" />
                 </Box>
-                <Typography variant="body2" sx={{ color: "#065f46", fontSize: "0.9rem", fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-primary)", fontSize: "0.9rem", fontWeight: 500 }}>
                   {item.text}
                 </Typography>
               </Box>
@@ -207,25 +223,40 @@ const InterviewModeSelectorComponent = () => {
             fullWidth
             variant="contained"
             onClick={handleQuickStart}
-            endIcon={<IconWrapper icon="mdi:arrow-right" size={22} />}
+            disabled={navigatingTo !== null}
+            endIcon={
+              navigatingTo === "quick-start" ? (
+                <CircularProgress size={18} sx={{ color: "var(--font-light)" }} />
+              ) : (
+                <IconWrapper icon="mdi:arrow-right" size={22} />
+              )
+            }
             sx={{
-              backgroundColor: "#10b981",
-              color: "#ffffff",
+              backgroundColor: "var(--success-500)",
+              color: "var(--font-light)",
               fontWeight: 700,
               py: 1.75,
               fontSize: "1.05rem",
               borderRadius: 2.5,
               textTransform: "none",
-              boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
+              boxShadow: "0 4px 14px color-mix(in srgb, var(--success-500) 40%, transparent)",
               transition: "all 0.3s ease",
               "&:hover": {
-                backgroundColor: "#059669",
-                boxShadow: "0 6px 20px rgba(16, 185, 129, 0.5)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark))",
+                boxShadow: "0 6px 20px color-mix(in srgb, var(--success-500) 50%, transparent)",
                 transform: "scale(1.02)",
+              },
+              "&.Mui-disabled": {
+                backgroundColor: "var(--success-500)",
+                color: "var(--font-light)",
+                opacity: 0.8,
               },
             }}
           >
-            {t("mockInterview.modeSelector.goQuick")}
+            {navigatingTo === "quick-start"
+              ? "Loading…"
+              : t("mockInterview.modeSelector.goQuick")}
           </Button>
         </Paper>
 
@@ -238,14 +269,14 @@ const InterviewModeSelectorComponent = () => {
             p: 4,
             borderRadius: 4,
             border: "2px solid",
-            borderColor: scheduleHover ? "#6366f1" : "#c7d2fe",
-            backgroundColor: "#f5f7ff",
+            borderColor: scheduleHover ? "var(--accent-indigo)" : "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default))",
+            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface))",
             position: "relative",
             transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
             transform: scheduleHover ? "translateY(-8px)" : "translateY(0)",
             boxShadow: scheduleHover
-              ? "0 20px 40px rgba(99, 102, 241, 0.25)"
-              : "0 4px 12px rgba(99, 102, 241, 0.08)",
+              ? "0 20px 40px color-mix(in srgb, var(--accent-indigo) 35%, transparent)"
+              : "0 4px 12px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
             overflow: "visible",
           }}
         >
@@ -257,8 +288,8 @@ const InterviewModeSelectorComponent = () => {
               position: "absolute",
               top: -12,
               right: 20,
-              backgroundColor: "#6366f1",
-              color: "#ffffff",
+              backgroundColor: "var(--accent-indigo)",
+              color: "var(--font-light)",
               fontWeight: 700,
               fontSize: "0.65rem",
               letterSpacing: "0.5px",
@@ -273,16 +304,16 @@ const InterviewModeSelectorComponent = () => {
                 width: 72,
                 height: 72,
                 borderRadius: 2.5,
-                backgroundColor: "#6366f1",
+                backgroundColor: "var(--accent-indigo)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 8px 16px rgba(99, 102, 241, 0.3)",
+                boxShadow: "0 8px 16px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                 transition: "all 0.3s ease",
                 transform: scheduleHover ? "scale(1.05) rotate(-5deg)" : "scale(1)",
               }}
             >
-              <IconWrapper icon="mdi:calendar-clock" size={36} color="#ffffff" />
+              <IconWrapper icon="mdi:calendar-clock" size={36} color="var(--font-light)" />
             </Box>
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
@@ -293,12 +324,12 @@ const InterviewModeSelectorComponent = () => {
                   <IconButton
                     size="small"
                     sx={{
-                      backgroundColor: "#e0e7ff",
-                      color: "#4f46e5",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                      color: "var(--accent-indigo-dark)",
                       width: 24,
                       height: 24,
                       "&:hover": {
-                        backgroundColor: "#c7d2fe",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 24%, transparent)",
                       },
                     }}
                   >
@@ -306,7 +337,7 @@ const InterviewModeSelectorComponent = () => {
                   </IconButton>
                 </Tooltip>
               </Box>
-              <Typography variant="body2" sx={{ color: "#6366f1", fontWeight: 600, fontSize: "0.9rem" }}>
+              <Typography variant="body2" sx={{ color: "var(--accent-indigo)", fontWeight: 600, fontSize: "0.9rem" }}>
                 {t("mockInterview.modeSelector.planAhead")}
               </Typography>
             </Box>
@@ -328,10 +359,10 @@ const InterviewModeSelectorComponent = () => {
                   mb: 1.5,
                   p: 1.5,
                   borderRadius: 2,
-                  backgroundColor: "#e0e7ff",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#c7d2fe",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 24%, transparent)",
                     transform: "translateX(4px)",
                   },
                 }}
@@ -341,15 +372,15 @@ const InterviewModeSelectorComponent = () => {
                     width: 32,
                     height: 32,
                     borderRadius: 1,
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "var(--accent-indigo)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <IconWrapper icon={item.icon} size={18} color="#ffffff" />
+                  <IconWrapper icon={item.icon} size={18} color="var(--font-light)" />
                 </Box>
-                <Typography variant="body2" sx={{ color: "#3730a3", fontSize: "0.9rem", fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-primary)", fontSize: "0.9rem", fontWeight: 500 }}>
                   {item.text}
                 </Typography>
               </Box>
@@ -360,28 +391,45 @@ const InterviewModeSelectorComponent = () => {
             fullWidth
             variant="outlined"
             onClick={handleSchedule}
-            endIcon={<IconWrapper icon="mdi:arrow-right" size={22} />}
+            disabled={navigatingTo !== null}
+            endIcon={
+              navigatingTo === "schedule" ? (
+                <CircularProgress size={18} sx={{ color: "var(--accent-indigo)" }} />
+              ) : (
+                <IconWrapper icon="mdi:arrow-right" size={22} />
+              )
+            }
             sx={{
-              borderColor: "#6366f1",
-              color: "#6366f1",
+              borderColor: "var(--accent-indigo)",
+              color: "var(--accent-indigo)",
               fontWeight: 700,
               py: 1.75,
               fontSize: "1.05rem",
               borderRadius: 2.5,
               textTransform: "none",
               borderWidth: 2,
-              boxShadow: "0 4px 14px rgba(99, 102, 241, 0.2)",
+              boxShadow:
+                "0 4px 14px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
               transition: "all 0.3s ease",
               "&:hover": {
-                borderColor: "#4f46e5",
-                backgroundColor: "rgba(99, 102, 241, 0.1)",
+                borderColor: "var(--accent-indigo-dark)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 borderWidth: 2,
-                boxShadow: "0 6px 20px rgba(99, 102, 241, 0.3)",
+                boxShadow:
+                  "0 6px 20px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
                 transform: "scale(1.02)",
+              },
+              "&.Mui-disabled": {
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
+                opacity: 0.8,
               },
             }}
           >
-            {t("mockInterview.modeSelector.scheduleNow")}
+            {navigatingTo === "schedule"
+              ? "Loading…"
+              : t("mockInterview.modeSelector.scheduleNow")}
           </Button>
         </Paper>
       </Box>

@@ -19,6 +19,8 @@ interface NavigationItem {
   featureName: string;
   labelKey?: string;
   orgAdminOnly?: boolean;
+  /** If set, show when any listed client admin feature is enabled (OR). */
+  featureNamesAny?: string[];
 }
 
 // Regular (non-admin) navigation items
@@ -108,6 +110,14 @@ const adminNavigationItems: NavigationItem[] = [
     featureName: "admin_assessment",
   },
   {
+    label: "Certificates",
+    path: "/admin/certificates",
+    icon: "mdi:certificate",
+    featureName: "admin_assessment",
+    featureNamesAny: ["admin_assessment", "admin_course_builder"],
+    labelKey: "nav.certificateUploads",
+  },
+  {
     label: "Verify Content",
     path: "/admin/verify-content",
     icon: "mdi:check-circle",
@@ -186,6 +196,10 @@ export const BottomNavigation: React.FC = () => {
         // Always show dashboard for regular users
         if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
+        }
+        const any = item.featureNamesAny;
+        if (any?.length) {
+          return any.some((n) => filteredFeatureNames.has(n));
         }
         return filteredFeatureNames.has(item.featureName);
       });
@@ -290,7 +304,7 @@ export const BottomNavigation: React.FC = () => {
                   justifyContent: "center",
                   position: "relative",
                   mb: 0.25,
-                  color: isActive ? shell.p300 : shell.navMuted,
+                  color: isActive ? shell.activeText : shell.navMuted,
                   "& svg": {
                     transition: "all 0.2s ease",
                     filter: isActive
@@ -315,7 +329,7 @@ export const BottomNavigation: React.FC = () => {
                 sx={{
                   fontSize: "0.7rem",
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? shell.p300 : shell.navMuted,
+                  color: isActive ? shell.activeText : shell.navMuted,
                   textAlign: "center",
                   lineHeight: 1.2,
                   mt: 0.25,

@@ -80,12 +80,12 @@ export function PersonalityRadarChart({ traits, traitInsights = [] }: Personalit
   const getBandColor = (band: string) => {
     const bandLower = band.toLowerCase();
     if (bandLower === "high" || bandLower === "analytical") {
-      return "#10b981";
+      return "var(--course-cta)";
     }
     if (bandLower === "balanced") {
-      return "#3b82f6";
+      return "var(--accent-blue-light)";
     }
-    return "#f59e0b";
+    return "var(--warning-500)";
   };
 
   return (
@@ -131,12 +131,12 @@ export function PersonalityRadarChart({ traits, traitInsights = [] }: Personalit
       <div className="w-full h-[300px] sm:h-[400px] md:h-[450px] mb-3 sm:mb-4">
         <ResponsiveContainer>
           <RadarChart data={chartData}>
-            <PolarGrid stroke="#e5e7eb" strokeWidth={1.5} />
+            <PolarGrid stroke="var(--border-default)" strokeWidth={1.5} />
             <PolarAngleAxis
               dataKey="trait"
               tick={{ 
                 fontSize: isMobile ? 9 : 11, 
-                fill: "#475569",
+                fill: "var(--font-muted)",
                 fontWeight: 600,
                 fontFamily: "system-ui, -apple-system, sans-serif"
               }}
@@ -164,12 +164,12 @@ export function PersonalityRadarChart({ traits, traitInsights = [] }: Personalit
             <Radar
               name="Trait Score"
               dataKey="score"
-              stroke="#2563EB"
+              stroke="var(--assessment-chart-blue)"
               strokeWidth={2.5}
-              fill="#2563EB"
+              fill="var(--assessment-chart-blue)"
               fillOpacity={0.6}
-              dot={{ fill: "#2563EB", r: 4 }}
-              activeDot={{ r: 6, fill: "#1d4ed8" }}
+              dot={{ fill: "var(--assessment-chart-blue)", r: 4 }}
+              activeDot={{ r: 6, fill: "color-mix(in srgb, var(--accent-blue) 85%, var(--font-dark))" }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 

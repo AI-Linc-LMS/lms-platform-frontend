@@ -31,7 +31,7 @@ export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) =>
           sx={{
             fontSize: "1.125rem",
             fontWeight: 600,
-            color: "#111827",
+            color: "var(--font-primary)",
           }}
         >
           {t("dashboard.myCourses")}
@@ -68,8 +68,8 @@ export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) =>
             alignItems: "center",
             justifyContent: "center",
             textAlign: "center",
-            backgroundColor: "#ffffff",
-            border: "1px dashed #e5e7eb",
+            backgroundColor: "var(--card-bg)",
+            border: "1px dashed var(--border-default)",
             borderRadius: 3,
             minHeight: 240,
           }}
@@ -79,7 +79,7 @@ export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) =>
               width: 64,
               height: 64,
               borderRadius: "50%",
-              backgroundColor: "rgba(99, 102, 241, 0.1)",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 14%, transparent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -89,7 +89,7 @@ export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) =>
             <IconWrapper
               icon="mdi:book-open-page-variant-outline"
               size={32}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
           </Box>
           <Typography
@@ -97,7 +97,7 @@ export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) =>
             sx={{
               fontSize: "1rem",
               fontWeight: 600,
-              color: "#374151",
+              color: "var(--font-primary)",
               mb: 1,
             }}
           >
@@ -106,7 +106,7 @@ export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) =>
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               mb: 3,
               maxWidth: 300,
             }}
@@ -123,11 +123,11 @@ export const MyCoursesSection = ({ courses, loading }: MyCoursesSectionProps) =>
               borderRadius: 2,
               px: 4,
               py: 1,
-              backgroundColor: "#6366f1",
-              boxShadow: "0 4px 12px rgba(99, 102, 241, 0.2)",
+              backgroundColor: "var(--accent-indigo)",
+              boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
               "&:hover": {
-                backgroundColor: "#4f46e5",
-                boxShadow: "0 6px 16px rgba(99, 102, 241, 0.3)",
+                backgroundColor: "var(--accent-indigo-dark)",
+                boxShadow: "0 6px 16px color-mix(in srgb, var(--accent-indigo) 36%, transparent)",
               },
             }}
           >

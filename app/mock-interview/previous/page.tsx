@@ -63,13 +63,13 @@ export default function PreviousInterviewsPage() {
                 width: 56,
                 height: 56,
                 borderRadius: 2,
-                backgroundColor: "#10b981",
+                backgroundColor: "var(--success-500)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <IconWrapper icon="mdi:history" size={32} color="#ffffff" />
+              <IconWrapper icon="mdi:history" size={32} color="var(--font-light)" />
             </Box>
             <Box>
               <Typography
@@ -78,7 +78,7 @@ export default function PreviousInterviewsPage() {
               >
                 {t("mockInterview.previousInterviews")}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 {interviews.length} interview
                 {interviews.length !== 1 ? "s" : ""} completed
               </Typography>
@@ -93,7 +93,7 @@ export default function PreviousInterviewsPage() {
             gap: 2,
             mb: 4,
             p: 1,
-            backgroundColor: "#f3f4f6",
+            backgroundColor: "var(--surface)",
             borderRadius: 3,
             width: "fit-content",
           }}
@@ -111,17 +111,18 @@ export default function PreviousInterviewsPage() {
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
               "&:hover": {
-                backgroundColor: "#e5e7eb",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
               },
             }}
           >
-            <IconWrapper icon="mdi:lightning-bolt" size={20} color="#6b7280" />
+            <IconWrapper icon="mdi:lightning-bolt" size={20} color="var(--font-secondary)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               {t("mockInterview.newInterview")}
@@ -138,17 +139,18 @@ export default function PreviousInterviewsPage() {
               borderRadius: 2.5,
               cursor: "pointer",
               transition: "all 0.3s ease",
-              backgroundColor: "#ffffff",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              backgroundColor: "var(--card-bg)",
+              boxShadow:
+                "0 2px 8px color-mix(in srgb, var(--font-primary) 10%, transparent)",
             }}
           >
-            <IconWrapper icon="mdi:history" size={20} color="#6366f1" />
+            <IconWrapper icon="mdi:history" size={20} color="var(--accent-indigo)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#1f2937",
+                color: "var(--font-primary)",
               }}
             >
               {t("mockInterview.previous")}
@@ -168,17 +170,18 @@ export default function PreviousInterviewsPage() {
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
               "&:hover": {
-                backgroundColor: "#e5e7eb",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
               },
             }}
           >
-            <IconWrapper icon="mdi:calendar-clock" size={20} color="#6b7280" />
+            <IconWrapper icon="mdi:calendar-clock" size={20} color="var(--font-secondary)" />
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
                 fontSize: "0.95rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
               }}
             >
               Scheduled

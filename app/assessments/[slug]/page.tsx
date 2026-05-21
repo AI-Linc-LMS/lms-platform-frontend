@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,20 +10,29 @@ import {
   Button,
   Paper,
   Alert,
-  Chip,
-  Divider,
-  TextField,
   CircularProgress,
-  LinearProgress,
+  Tooltip,
+  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
   AssessmentDetail,
-  ScholarshipStatus,
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
+import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
+
+function parseAssessmentStartTime(
+  s: string | undefined | null
+): Date | null {
+  if (!s || typeof s !== "string" || !s.trim()) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 export default function AssessmentDetailPage({
   params,
@@ -34,10 +43,62 @@ export default function AssessmentDetailPage({
   const { slug } = use(params);
   const router = useRouter();
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
-  const [scholarshipStatus, setScholarshipStatus] =
-    useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
   const { showToast } = useToast();
+  const [startTimeTick, setStartTimeTick] = useState(0);
+
+  const assessmentStartAt = useMemo(
+    () => parseAssessmentStartTime(assessment?.start_time),
+    [assessment?.start_time]
+  );
+
+  const canStartAssessment = useMemo(() => {
+    void startTimeTick;
+    if (!assessmentStartAt) return true;
+    return Date.now() >= assessmentStartAt.getTime();
+  }, [assessmentStartAt, startTimeTick]);
+
+  // Treat both 'submitted' and 'finalized' as "already submitted" — backend
+  // normalizes finalized→submitted in most responses but not all, so guard both.
+  const isAlreadySubmitted =
+    assessment?.status === "submitted" || assessment?.status === "finalized";
+
+  const assessmentEndAt = useMemo(
+    () => parseAssessmentStartTime(assessment?.end_time),
+    [assessment?.end_time],
+  );
+
+  // Expired = end_time is in the past AND the learner did not submit before
+  // it closed. A submitted-then-expired assessment is "submitted", not expired.
+  const isExpired = useMemo(() => {
+    if (!assessmentEndAt) return false;
+    if (isAlreadySubmitted) return false;
+    return Date.now() > assessmentEndAt.getTime();
+  }, [assessmentEndAt, isAlreadySubmitted]);
+
+  const expiredOnLabel = useMemo(() => {
+    if (!assessmentEndAt) return "";
+    return assessmentEndAt.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }, [assessmentEndAt]);
+
+  useEffect(() => {
+    if (!assessmentStartAt) return;
+    if (Date.now() >= assessmentStartAt.getTime()) return;
+
+    const id = setInterval(() => {
+      setStartTimeTick((n) => n + 1);
+      if (Date.now() >= assessmentStartAt.getTime()) {
+        clearInterval(id);
+      }
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [assessmentStartAt]);
+
 
   useEffect(() => {
     if (!slug) return;
@@ -68,9 +129,31 @@ export default function AssessmentDetailPage({
     }
   };
 
+  const canReattempt = assessment?.can_reattempt === true;
+
   const handleStart = () => {
-    // Skip device-check if proctoring is disabled
-    if (assessment && assessment.proctoring_enabled === false) {
+    if (!assessment) return;
+
+    // SECURITY: never re-enter the take flow if this assessment is already
+    // submitted/finalized — UNLESS an admin has granted this learner a
+    // retake (can_reattempt). In that case fall through; the backend
+    // start-assessment endpoint consumes the grant atomically when a new
+    // submission is created.
+    if (isAlreadySubmitted && !canReattempt) {
+      showToast("This assessment has already been submitted", "warning");
+      router.replace(`/assessments/${slug}/submission-success`);
+      return;
+    }
+
+    if (!isCurrentDeviceAllowedForAssessment(assessment)) {
+      if (isMobileOrTabletForAssessment()) {
+        setDesktopOnlyOpen(true);
+      }
+      showToast(t("assessmentDevice.toastBlocked"), "warning");
+      return;
+    }
+
+    if (assessment.proctoring_enabled === false) {
       router.push(`/assessments/${slug}/take`);
     } else {
       router.push(`/assessments/${slug}/device-check`);
@@ -89,7 +172,7 @@ export default function AssessmentDetailPage({
             py: 8,
           }}
         >
-          <CircularProgress size={40} sx={{ color: "#6366f1" }} />
+          <CircularProgress size={40} sx={{ color: "var(--accent-indigo)" }} />
         </Box>
       </MainLayout>
     );
@@ -105,8 +188,14 @@ export default function AssessmentDetailPage({
     );
   }
 
+  const deviceAllowed = isCurrentDeviceAllowedForAssessment(assessment);
+
   return (
     <MainLayout>
+      <AssessmentDesktopOnlyDialog
+        open={desktopOnlyOpen}
+        onClose={() => setDesktopOnlyOpen(false)}
+      />
       <Box
         sx={{
           width: "100%",
@@ -122,12 +211,13 @@ export default function AssessmentDetailPage({
           onClick={() => router.push("/assessments")}
           sx={{
             mb: 3,
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             textTransform: "none",
             fontWeight: 600,
             "&:hover": {
-              backgroundColor: "rgba(99, 102, 241, 0.08)",
-              color: "#6366f1",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+              color: "var(--accent-indigo)",
             },
           }}
         >
@@ -146,19 +236,24 @@ export default function AssessmentDetailPage({
           <Box
             sx={{
               p: 2,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
               display: "flex",
               alignItems: "center",
               gap: 1.5,
             }}
           >
-            <IconWrapper icon="mdi:clock-outline" size={24} color="#6366f1" />
+            <IconWrapper
+              icon="mdi:clock-outline"
+              size={24}
+              color="var(--accent-indigo)"
+            />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -171,7 +266,7 @@ export default function AssessmentDetailPage({
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                 }}
               >
@@ -183,7 +278,8 @@ export default function AssessmentDetailPage({
           <Box
             sx={{
               p: 2,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-default)",
               borderRadius: 2,
               display: "flex",
               alignItems: "center",
@@ -193,13 +289,13 @@ export default function AssessmentDetailPage({
             <IconWrapper
               icon="mdi:help-circle-outline"
               size={24}
-              color="#6366f1"
+              color="var(--accent-indigo)"
             />
             <Box>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#9ca3af",
+                  color: "var(--font-tertiary)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
@@ -212,7 +308,7 @@ export default function AssessmentDetailPage({
               <Typography
                 variant="body1"
                 sx={{
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   fontWeight: 600,
                 }}
               >
@@ -221,19 +317,23 @@ export default function AssessmentDetailPage({
             </Box>
           </Box>
         </Box>
+
+        <AssessmentDeviceStatusPanel assessment={assessment} />
+
         <Paper
           elevation={0}
           sx={{
             p: 4,
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--border-default)",
             borderRadius: 3,
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Typography
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary)",
               mb: 2,
             }}
           >
@@ -242,7 +342,7 @@ export default function AssessmentDetailPage({
           <Typography
             variant="body1"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               mb: 3,
               lineHeight: 1.6,
             }}
@@ -270,8 +370,8 @@ export default function AssessmentDetailPage({
                 p: 3,
                 mb: 3,
                 borderRadius: 2,
-                border: "2px solid #f59e0b",
-                backgroundColor: "#fffbeb",
+                border: "2px solid var(--warning-500)",
+                backgroundColor: "color-mix(in srgb, var(--warning-100) 95%, var(--card-bg))",
               }}
             >
               <Box
@@ -285,13 +385,13 @@ export default function AssessmentDetailPage({
                 <IconWrapper
                   icon="mdi:shield-account"
                   size={28}
-                  style={{ color: "#f59e0b" }}
+                  style={{ color: "var(--warning-500)" }}
                 />
                 <Typography
                   variant="h6"
                   sx={{
                     fontWeight: 700,
-                    color: "#92400e",
+                    color: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))",
                   }}
                 >
                   Proctored Assessment - Important Instructions
@@ -301,7 +401,7 @@ export default function AssessmentDetailPage({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#78350f",
+                  color: "color-mix(in srgb, var(--warning-500) 55%, var(--font-dark))",
                   mb: 2,
                   fontWeight: 600,
                 }}
@@ -318,7 +418,7 @@ export default function AssessmentDetailPage({
                   mb: 2,
                   "& li": {
                     mb: 1.5,
-                    color: "#92400e",
+                    color: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))",
                     lineHeight: 1.7,
                   },
                 }}
@@ -397,17 +497,17 @@ export default function AssessmentDetailPage({
                 icon={<IconWrapper icon="mdi:alert-circle" size={20} />}
                 sx={{
                   mt: 2,
-                  backgroundColor: "#fef3c7",
-                  border: "1px solid #f59e0b",
+                  backgroundColor: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+                  border: "1px solid var(--warning-500)",
                   "& .MuiAlert-icon": {
-                    color: "#d97706",
+                    color: "var(--ats-warning-muted)",
                   },
                 }}
               >
                 <Typography
                   variant="body2"
                   fontWeight={600}
-                  sx={{ color: "#92400e" }}
+                  sx={{ color: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))" }}
                 >
                   {t("assessments.startAcknowledgment")}
                 </Typography>
@@ -421,7 +521,7 @@ export default function AssessmentDetailPage({
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#1f2937",
+                  color: "var(--font-primary)",
                   mb: 2,
                 }}
               >
@@ -434,8 +534,8 @@ export default function AssessmentDetailPage({
                   sx={{
                     p: 2,
                     mb: 2,
-                    backgroundColor: "#f9fafb",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--border-default)",
                     borderRadius: 2,
                   }}
                 >
@@ -443,7 +543,7 @@ export default function AssessmentDetailPage({
                     variant="subtitle1"
                     sx={{
                       fontWeight: 600,
-                      color: "#374151",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {section.title || `Section ${index + 1}`}
@@ -452,7 +552,7 @@ export default function AssessmentDetailPage({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         mt: 0.5,
                       }}
                     >
@@ -464,28 +564,181 @@ export default function AssessmentDetailPage({
             </Box>
           )}
 
+          {assessment.allow_movement === false && (
+            <Paper
+              elevation={0}
+              sx={{
+                mb: 3,
+                p: 2.5,
+                borderRadius: 2,
+                border: "2px solid var(--accent-indigo)",
+                background: "linear-gradient(135deg, var(--surface-indigo-light) 0%, color-mix(in srgb, var(--surface-indigo-light) 85%, var(--accent-indigo)) 100%)",
+                boxShadow: "0 4px 20px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 2,
+                  mb: 1.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 2,
+                    bgcolor: "var(--accent-indigo-dark)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IconWrapper icon="mdi:routes" size={26} color="var(--font-light)" />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Chip
+                    label={t("assessments.take.strictNavImportantBadge")}
+                    size="small"
+                    sx={{
+                      mb: 1,
+                      fontWeight: 700,
+                      bgcolor: "var(--accent-indigo-dark)",
+                      color: "var(--font-light)",
+                      "& .MuiChip-label": { px: 1.25 },
+                    }}
+                  />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--accent-indigo-dark)",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {t("assessments.take.strictNavTitle")}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "var(--accent-indigo-dark)",
+                  fontWeight: 700,
+                  mb: 1.5,
+                  lineHeight: 1.5,
+                }}
+              >
+                {t("assessments.take.strictNavReadBeforeStart")}
+              </Typography>
+              <Typography
+                variant="body2"
+                component="div"
+                sx={{
+                  color: "color-mix(in srgb, var(--accent-indigo-dark) 88%, var(--font-dark))",
+                  whiteSpace: "pre-line",
+                  lineHeight: 1.75,
+                  fontWeight: 500,
+                }}
+              >
+                {t("assessments.take.strictNavInstructions")}
+              </Typography>
+            </Paper>
+          )}
+
+          {isExpired && (
+            <Alert
+              severity="error"
+              icon={<IconWrapper icon="mdi:clock-alert-outline" size={22} />}
+              sx={{ mb: 3, borderRadius: 2, fontWeight: 500 }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {t("assessments.expiredHeading", {
+                  defaultValue: "This assessment has expired",
+                })}
+              </Typography>
+              <Typography variant="body2">
+                {expiredOnLabel
+                  ? t("assessments.expiredOn", {
+                      defaultValue: "The submission window closed on {{date}}.",
+                      date: expiredOnLabel,
+                    })
+                  : t("assessments.expiredGeneric", {
+                      defaultValue: "The submission window for this assessment has closed.",
+                    })}
+              </Typography>
+            </Alert>
+          )}
+
+          {canReattempt && isAlreadySubmitted && !isExpired && (
+            <Alert
+              severity="info"
+              icon={<IconWrapper icon="mdi:replay" size={22} />}
+              sx={{ mb: 3, borderRadius: 2 }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {t("assessments.reattemptHeading", {
+                  defaultValue: "Re-attempt available",
+                })}
+              </Typography>
+              <Typography variant="body2">
+                {t("assessments.reattemptHelp", {
+                  defaultValue:
+                    "An admin has granted you a re-attempt for this assessment. Starting again will replace your previous score with the new attempt's score.",
+                })}
+              </Typography>
+            </Alert>
+          )}
+
           <Button
             variant="contained"
             size="large"
             fullWidth
-            startIcon={<IconWrapper icon="mdi:play-circle-outline" size={24} />}
+            startIcon={
+              <IconWrapper
+                icon={
+                  isExpired
+                    ? "mdi:clock-alert-outline"
+                    : canReattempt && isAlreadySubmitted
+                    ? "mdi:replay"
+                    : isAlreadySubmitted
+                    ? "mdi:check-circle-outline"
+                    : "mdi:play-circle-outline"
+                }
+                size={24}
+              />
+            }
             onClick={handleStart}
+            disabled={
+              isExpired ||
+              (isAlreadySubmitted && !canReattempt) ||
+              !deviceAllowed ||
+              !canStartAssessment
+            }
             sx={{
-              backgroundColor: "#6366f1",
-              color: "#ffffff",
+              backgroundColor: "var(--accent-indigo)",
+              color: "var(--font-light)",
               fontWeight: 600,
               py: 1.5,
               borderRadius: 2,
               textTransform: "none",
               fontSize: "1rem",
-              boxShadow: "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+              boxShadow: "var(--assessment-catalog-cta-auto-shadow)",
               "&:hover": {
-                backgroundColor: "#4f46e5",
-                boxShadow: "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                backgroundColor: "var(--accent-indigo-dark)",
+                boxShadow: "var(--assessment-catalog-cta-auto-shadow-hover)",
               },
             }}
           >
-            {t("assessments.startAssessment")}
+            {isExpired
+              ? t("assessments.expired")
+              : canReattempt && isAlreadySubmitted
+              ? t("assessments.reattempt", { defaultValue: "Re-attempt" })
+              : isAlreadySubmitted
+              ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
+              : t("assessments.startAssessment")}
           </Button>
         </Paper>
       </Box>

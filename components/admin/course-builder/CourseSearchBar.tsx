@@ -39,7 +39,7 @@ export function CourseSearchBar({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <IconWrapper icon="mdi:magnify" size={20} color="#9ca3af" />
+              <IconWrapper icon="mdi:magnify" size={20} color="var(--font-tertiary)" />
             </InputAdornment>
           ),
           endAdornment: searchQuery && (
@@ -47,7 +47,7 @@ export function CourseSearchBar({
               <IconButton
                 size="small"
                 onClick={() => onSearchChange("")}
-                sx={{ color: "#9ca3af" }}
+                sx={{ color: "var(--font-tertiary)" }}
               >
                 <IconWrapper icon="mdi:close" size={18} />
               </IconButton>
@@ -61,8 +61,9 @@ export function CourseSearchBar({
           startIcon={<IconWrapper icon="mdi:plus" size={20} />}
           onClick={onCreateClick}
           sx={{
-            bgcolor: "#6366f1",
-            "&:hover": { bgcolor: "#4f46e5" },
+            bgcolor: "var(--accent-indigo)",
+            color: "var(--font-light)",
+            "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
             whiteSpace: "nowrap",
           }}
         >

@@ -17,7 +17,12 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { assessmentService } from "@/lib/services/assessment.service";
+import {
+  assessmentService,
+  type AssessmentDetail,
+} from "@/lib/services/assessment.service";
+import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { CheckCircle, XCircle, Video, Mic, AlertCircle } from "lucide-react";
 
@@ -35,9 +40,11 @@ export default function DeviceCheckPage({
   const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
-  const [loading, setLoading] = useState(false); // Start with false - don't block initial render
+  const [, setLoading] = useState(false); // Start with false - don't block initial render
   const [checking, setChecking] = useState(false);
-  const [, setAssessment] = useState<any>(null);
+  const [deviceAccessDenied, setDeviceAccessDenied] = useState(false);
+  const [deniedAssessment, setDeniedAssessment] =
+    useState<AssessmentDetail | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>({
     camera: false,
     microphone: false,
@@ -46,6 +53,18 @@ export default function DeviceCheckPage({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
+
+    // ✅ INTERNET STATE
+    const [networkSpeed, setNetworkSpeed] = useState<number | null>(null);
+    const [networkStatus, setNetworkStatus] = useState<
+      "good" | "moderate" | "poor" | "testing" | null
+    >(null);
+
+  const [mobileAssessmentGate, setMobileAssessmentGate] = useState<
+    "pending" | "ok"
+  >("pending");
+
+  // ✅ FACE VALIDATION STATE
   const [faceValidationPassed, setFaceValidationPassed] = useState(false);
   const [faceValidationMessage, setFaceValidationMessage] = useState<string>("");
 
@@ -80,6 +99,11 @@ export default function DeviceCheckPage({
     poorLightingThreshold: 0.4,
     minConfidenceForValidFace: 0.82, // Stricter on device check: reject hand covering face
     onViolation: (violation) => {
+      // Once the user has committed to starting the assessment, freeze
+      // validation state — stopping the detector for hand-off to the take
+      // page produces transient "no face / violation" events that would
+      // otherwise flash a misleading error during the countdown.
+      if (isNavigatingToAssessmentRef.current) return;
       setFaceValidationPassed(false);
       setFaceValidationMessage(violation.message);
     },
@@ -87,6 +111,7 @@ export default function DeviceCheckPage({
       // Status change will trigger useEffect below to update validation
     },
     onFaceCountChange: (count) => {
+      if (isNavigatingToAssessmentRef.current) return;
       if (count === 0) {
         setFaceValidationPassed(false);
         setFaceValidationMessage(t("assessments.deviceCheck.noFaceDetected"));
@@ -100,6 +125,7 @@ export default function DeviceCheckPage({
 
   // Update face validation status when faceCount or faceStatus changes
   useEffect(() => {
+    if (isNavigatingToAssessmentRef.current) return;
     if (faceCount === 1 && faceStatus === "NORMAL" && !latestViolation) {
       setFaceValidationPassed(true);
       setFaceValidationMessage("Face detected and positioned correctly");
@@ -117,6 +143,36 @@ export default function DeviceCheckPage({
       }
     }
   }, [faceCount, faceStatus, latestViolation]);
+
+  // ✅ INTERNET SPEED TEST
+  const testInternetSpeed = useCallback(async () => {
+    setNetworkStatus("testing");
+
+    try {
+      const startTime = performance.now();
+
+      const response = await fetch(
+        "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+        { cache: "no-store" }
+      );
+
+      const blob = await response.blob();
+      const endTime = performance.now();
+
+      const duration = (endTime - startTime) / 1000;
+      const bitsLoaded = blob.size * 8;
+      const speedMbps = bitsLoaded / duration / (1024 * 1024);
+
+      setNetworkSpeed(speedMbps);
+
+      if (speedMbps > 5) setNetworkStatus("good");
+      else if (speedMbps > 1.5) setNetworkStatus("moderate");
+      else setNetworkStatus("poor");
+    } catch {
+      setNetworkStatus("poor");
+    }
+  }, []);
+
 
   // Test devices
   const testDevices = useCallback(async () => {
@@ -177,7 +233,12 @@ export default function DeviceCheckPage({
             };
             checkVideoReady();
           }
-        }).catch((err) => {
+        }).catch((err: unknown) => {
+          const name = (err as { name?: string })?.name;
+          // AbortError fires when the element is removed from the DOM
+          // mid-play (e.g. user navigates away); NotAllowedError fires
+          // when autoplay is blocked. Neither needs surfacing.
+          if (name === "AbortError" || name === "NotAllowedError") return;
           console.error("Failed to play video:", err);
         });
       }
@@ -237,6 +298,9 @@ export default function DeviceCheckPage({
         }
       }
 
+       testInternetSpeed();
+
+
       setLoading(false);
     } catch (error: any) {
       setLoading(false);
@@ -278,7 +342,7 @@ export default function DeviceCheckPage({
     } finally {
       setChecking(false);
     }
-  }, []);
+  }, [testInternetSpeed]);
 
   // Check browser support and auto-test devices on mount
   useEffect(() => {
@@ -352,12 +416,28 @@ export default function DeviceCheckPage({
     const loadAssessment = async () => {
       try {
         const data = await assessmentService.getAssessmentDetail(slug);
-        setAssessment(data);
 
-        // Check if assessment is already attempted
-        if (data.is_attempted) {
+        if (!isCurrentDeviceAllowedForAssessment(data)) {
+          setDeniedAssessment(data);
+          setDeviceAccessDenied(true);
+          return;
+        }
+
+        // Check if assessment is already submitted — block re-entry.
+        // (`is_attempted` is true for in-progress too; only redirect when
+        // actually submitted so resume-in-progress still works.)
+        // EXCEPTION: if admin has granted an unconsumed retake, the
+        // start-assessment endpoint will consume it and create a fresh
+        // in-progress submission once the user reaches the take page, so we
+        // let the device-check flow proceed.
+        if (
+          (data.status === "submitted" || data.status === "finalized") &&
+          !data.can_reattempt
+        ) {
           showToast("This assessment has already been submitted", "warning");
-          router.push(`/assessments/${slug}`);
+          // replace, not push: don't leave device-check in history so
+          // back-navigation can't return here.
+          router.replace(`/assessments/${slug}`);
           return;
         }
 
@@ -371,13 +451,14 @@ export default function DeviceCheckPage({
         showToast("Failed to load assessment details", "error");
       } finally {
         setLoading(false);
+        setMobileAssessmentGate("ok");
       }
     };
 
     if (slug) {
       loadAssessment();
     }
-  }, [slug, router, showToast]);
+  }, [slug, router, showToast, t]);
 
   const handleStartAssessment = () => {
     if (!deviceStatus.camera || !deviceStatus.microphone) {
@@ -387,6 +468,11 @@ export default function DeviceCheckPage({
 
     if (!faceValidationPassed) {
       showToast("Please position your face correctly before starting", "error");
+      return;
+    }
+
+    if (networkStatus !== "good" && networkStatus !== "moderate") {
+      showToast(t("assessments.deviceCheck.networkToastBlocked"), "error");
       return;
     }
 
@@ -411,13 +497,107 @@ export default function DeviceCheckPage({
     router.push(`/assessments/${slug}/take`);
   };
 
-  const canProceed =
+  const networkAllowsProceed =
+    networkStatus === "good" || networkStatus === "moderate";
+
+  const devicesAndBrowserReady =
     deviceStatus.camera &&
     deviceStatus.microphone &&
-    deviceStatus.browserSupported &&
-    faceValidationPassed;
+    deviceStatus.browserSupported;
+
+  const canProceed =
+    devicesAndBrowserReady && faceValidationPassed && networkAllowsProceed;
+
+  if (deviceAccessDenied && deniedAssessment) {
+    return (
+      <MainLayout>
+        <Container maxWidth="md" sx={{ py: { xs: 3, sm: 5 }, px: 2 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, sm: 4 },
+              borderRadius: 3,
+              border: "1px solid var(--border-default)",
+              textAlign: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                backgroundColor: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mx: "auto",
+                mb: 2,
+              }}
+            >
+              <IconWrapper
+                icon="mdi:cellphone-off"
+                size={40}
+                color="var(--ats-warning-muted)"
+              />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, color: "var(--font-primary-dark)", mb: 1 }}
+            >
+              {t("assessmentDevice.deviceCheckBlockedTitle")}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "var(--font-secondary)", mb: 3, maxWidth: 480, mx: "auto" }}
+            >
+              {t("assessmentDevice.deviceCheckBlockedSubtitle")}
+            </Typography>
+            <Box sx={{ textAlign: "left", mb: 3 }}>
+              <AssessmentDeviceStatusPanel
+                assessment={deniedAssessment}
+                sx={{ mb: 0 }}
+              />
+            </Box>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
+              onClick={() => router.push(`/assessments/${slug}`)}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                px: 3,
+                backgroundColor: "var(--accent-indigo)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              }}
+            >
+              {t("assessmentDevice.backToAssessment")}
+            </Button>
+          </Paper>
+        </Container>
+      </MainLayout>
+    );
+  }
 
   // Don't show loading screen - render immediately for better UX
+
+  if (mobileAssessmentGate === "pending") {
+    return (
+      <MainLayout>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: 360,
+            py: 8,
+          }}
+        >
+          <CircularProgress size={40} sx={{ color: "var(--accent-indigo)" }} />
+        </Box>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -429,7 +609,7 @@ export default function DeviceCheckPage({
               width: 80,
               height: 80,
               borderRadius: "50%",
-              backgroundColor: "#6366f1",
+              backgroundColor: "var(--accent-indigo)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -437,7 +617,7 @@ export default function DeviceCheckPage({
               mb: 2,
             }}
           >
-            <IconWrapper icon="mdi:camera" size={40} color="#ffffff" />
+            <IconWrapper icon="mdi:camera" size={40} color="var(--font-light)" />
           </Box>
           <Typography
             variant="h4"
@@ -451,7 +631,7 @@ export default function DeviceCheckPage({
           </Typography>
           <Typography
             variant="body1"
-            sx={{ color: "#6b7280", maxWidth: 500, mx: "auto" }}
+            sx={{ color: "var(--font-secondary)", maxWidth: 500, mx: "auto" }}
           >
             Before starting your assessment, we need to verify that your camera
             and microphone are working properly. This ensures a smooth
@@ -486,21 +666,21 @@ export default function DeviceCheckPage({
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              backgroundColor: deviceStatus.camera ? "#f0fdf4" : "#fef2f2",
+              border: "1px solid var(--border-default)",
+              backgroundColor: deviceStatus.camera ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))" : "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               {deviceStatus.camera ? (
-                <CheckCircle size={32} color="#10b981" />
+                <CheckCircle size={32} color="var(--course-cta)" />
               ) : (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--error-500)" />
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                   Camera
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {deviceStatus.camera
                     ? "Camera is working properly"
                     : "Camera check required"}
@@ -522,10 +702,10 @@ export default function DeviceCheckPage({
                 overflow: "hidden",
                 border: deviceStatus.camera
                   ? faceValidationPassed
-                    ? "2px solid #10b981"
-                    : "2px solid #f59e0b"
-                  : "2px solid #e5e7eb",
-                backgroundColor: "#000000",
+                    ? "2px solid var(--course-cta)"
+                    : "2px solid var(--warning-500)"
+                  : "2px solid var(--border-default)",
+                backgroundColor: "var(--assessment-video-letterbox-bg)",
                 minHeight: deviceStatus.camera ? "auto" : "200px",
                 display: "flex",
                 alignItems: "center",
@@ -541,11 +721,11 @@ export default function DeviceCheckPage({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "rgba(0, 0, 0, 0.7)",
+                    backgroundColor: "color-mix(in srgb, var(--font-dark) 72%, transparent)",
                     zIndex: 1,
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#ffffff" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-light)" }}>
                     Camera preview will appear here
                   </Typography>
                 </Box>
@@ -558,11 +738,11 @@ export default function DeviceCheckPage({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    backgroundColor: "color-mix(in srgb, var(--font-dark) 86%, transparent)",
                     zIndex: 1,
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#ffffff" }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-light)" }}>
                     {isNavigatingToAssessment
                       ? "Starting assessment..."
                       : "Initializing face detection..."}
@@ -581,7 +761,7 @@ export default function DeviceCheckPage({
                   maxHeight: "300px",
                   minHeight: "200px",
                   objectFit: "cover",
-                  backgroundColor: "#000000",
+                  backgroundColor: "var(--assessment-video-letterbox-bg)",
                 }}
                 onLoadedMetadata={() => {
                   if (videoRef.current) {
@@ -593,7 +773,7 @@ export default function DeviceCheckPage({
               />
               
               {/* Face Detection Status Overlay */}
-              {deviceStatus.camera && (
+              {deviceStatus.camera && !isNavigatingToAssessment && (
                 <Box
                   sx={{
                     position: "absolute",
@@ -610,7 +790,7 @@ export default function DeviceCheckPage({
                       icon={<CircularProgress size={16} />}
                       label="Initializing face detection..."
                       size="small"
-                      sx={{ backgroundColor: "#6366f1", color: "#ffffff" }}
+                      sx={{ backgroundColor: "var(--accent-indigo)", color: "var(--font-light)" }}
                     />
                   )}
                   {!isFaceDetectionInitializing && (
@@ -635,9 +815,9 @@ export default function DeviceCheckPage({
                         size="small"
                         sx={{
                           backgroundColor: faceValidationPassed
-                            ? "#10b981"
-                            : "#ef4444",
-                          color: "#ffffff",
+                            ? "var(--course-cta)"
+                            : "var(--error-500)",
+                          color: "var(--font-light)",
                         }}
                       />
                       {faceStatus !== "NORMAL" && latestViolation && (
@@ -646,8 +826,8 @@ export default function DeviceCheckPage({
                           label={latestViolation.message}
                           size="small"
                           sx={{
-                            backgroundColor: "#f59e0b",
-                            color: "#ffffff",
+                            backgroundColor: "var(--warning-500)",
+                            color: "var(--font-light)",
                             fontSize: "0.7rem",
                             maxWidth: "200px",
                           }}
@@ -660,7 +840,7 @@ export default function DeviceCheckPage({
             </Box>
 
             {/* Face Validation Message */}
-            {deviceStatus.camera && !isFaceDetectionInitializing && (
+            {deviceStatus.camera && !isFaceDetectionInitializing && !isNavigatingToAssessment && (
               <Box sx={{ mt: 2 }}>
                 {faceValidationPassed ? (
                   <Alert severity="success" sx={{ mt: 1 }}>
@@ -686,21 +866,21 @@ export default function DeviceCheckPage({
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              backgroundColor: deviceStatus.microphone ? "#f0fdf4" : "#fef2f2",
+              border: "1px solid var(--border-default)",
+              backgroundColor: deviceStatus.microphone ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))" : "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               {deviceStatus.microphone ? (
-                <CheckCircle size={32} color="#10b981" />
+                <CheckCircle size={32} color="var(--course-cta)" />
               ) : (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--error-500)" />
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                   Microphone
                 </Typography>
-                <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {deviceStatus.microphone
                     ? "Microphone is working properly"
                     : "Microphone check required"}
@@ -718,7 +898,7 @@ export default function DeviceCheckPage({
               <Box sx={{ mt: 2 }}>
                 <Typography
                   variant="caption"
-                  sx={{ color: "#6b7280", display: "block", mb: 1 }}
+                  sx={{ color: "var(--font-secondary)", display: "block", mb: 1 }}
                 >
                   Audio Level
                 </Typography>
@@ -728,16 +908,16 @@ export default function DeviceCheckPage({
                   sx={{
                     height: 8,
                     borderRadius: 1,
-                    backgroundColor: "#e5e7eb",
+                    backgroundColor: "var(--border-default)",
                     "& .MuiLinearProgress-bar": {
-                      backgroundColor: "#10b981",
+                      backgroundColor: "var(--course-cta)",
                       borderRadius: 1,
                     },
                   }}
                 />
                 <Typography
                   variant="caption"
-                  sx={{ color: "#6b7280", display: "block", mt: 0.5 }}
+                  sx={{ color: "var(--font-secondary)", display: "block", mt: 0.5 }}
                 >
                   {audioLevel > 0.1
                     ? "Speak to test your microphone"
@@ -746,7 +926,80 @@ export default function DeviceCheckPage({
               </Box>
             )}
           </Paper>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid var(--border-default)",
+              backgroundColor:
+                networkStatus === "good"
+                  ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))"
+                  : networkStatus === "moderate"
+                  ? "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg))"
+                  : networkStatus === "poor"
+                  ? "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))"
+                  : "var(--surface)",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              {networkStatus === "good" ? (
+                <CheckCircle size={32} color="var(--course-cta)" />
+              ) : networkStatus === "moderate" ? (
+                <AlertCircle size={32} color="var(--warning-500)" />
+              ) : networkStatus === "poor" ? (
+                <XCircle size={32} color="var(--error-500)" />
+              ) : (
+                <CircularProgress size={32} />
+              )}
+
+              <Box>
+                <Typography variant="h6">Internet</Typography>
+                <Typography variant="body2">
+                  {networkStatus === "testing"
+                    ? "Checking connection..."
+                    : networkSpeed
+                    ? `${networkSpeed.toFixed(2)} Mbps`
+                    : "Connection check required"}
+                </Typography>
+              </Box>
+            </Box>
+
+            {networkStatus === "poor" && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                Poor internet connection. Please switch network.
+              </Alert>
+            )}
+            {networkStatus === "moderate" && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                {t("assessments.deviceCheck.networkModerateHint")}
+              </Alert>
+            )}
+            {networkStatus === "good" && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                Internet connection is stable.
+              </Alert>
+            )}
+          </Paper>
         </Box>
+
+        {devicesAndBrowserReady &&
+          faceValidationPassed &&
+          !networkAllowsProceed && (
+            <Alert
+              severity={
+                networkStatus === "poor" ? "error" : "info"
+              }
+              sx={{ mb: 3, maxWidth: 640, mx: "auto" }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {networkStatus === "testing" || networkStatus === null
+                  ? t("assessments.deviceCheck.networkWaitTest")
+                  : t("assessments.deviceCheck.networkPoorCannotStart")}
+              </Typography>
+            </Alert>
+          )}
 
         {/* Action Buttons */}
         <Box
@@ -757,6 +1010,34 @@ export default function DeviceCheckPage({
             flexWrap: "wrap",
           }}
         >
+          {devicesAndBrowserReady &&
+            faceValidationPassed &&
+            !networkAllowsProceed && (
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => void testInternetSpeed()}
+                disabled={networkStatus === "testing"}
+                startIcon={
+                  networkStatus === "testing" ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <IconWrapper icon="mdi:wifi-refresh" size={22} />
+                  )
+                }
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.5,
+                  borderColor: "var(--accent-indigo)",
+                  color: "var(--accent-indigo-dark)",
+                }}
+              >
+                {t("assessments.deviceCheck.recheckInternet")}
+              </Button>
+            )}
+
           {!canProceed
             ? (!deviceStatus.camera || !deviceStatus.microphone) && (
                 <Button
@@ -776,9 +1057,9 @@ export default function DeviceCheckPage({
                     fontWeight: 600,
                     px: 4,
                     py: 1.5,
-                    backgroundColor: "#6366f1",
+                    backgroundColor: "var(--accent-indigo)",
                     "&:hover": {
-                      backgroundColor: "#4f46e5",
+                      backgroundColor: "var(--accent-indigo-dark)",
                     },
                   }}
                 >
@@ -795,25 +1076,18 @@ export default function DeviceCheckPage({
               size="large"
               onClick={handleStartAssessment}
               endIcon={<IconWrapper icon="mdi:arrow-right" size={24} />}
-              disabled={!faceValidationPassed}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
                 px: 4,
                 py: 1.5,
-                backgroundColor: faceValidationPassed ? "#10b981" : "#9ca3af",
+                backgroundColor: "var(--course-cta)",
                 "&:hover": {
-                  backgroundColor: faceValidationPassed ? "#059669" : "#9ca3af",
-                },
-                "&:disabled": {
-                  backgroundColor: "#9ca3af",
-                  color: "#ffffff",
+                  backgroundColor: "var(--assessment-success-strong)",
                 },
               }}
             >
-              {faceValidationPassed
-                ? "Start Assessment"
-                : "Position Face Correctly"}
+              {t("assessments.startAssessment")}
             </Button>
           )}
 
@@ -826,11 +1100,11 @@ export default function DeviceCheckPage({
               fontWeight: 600,
               px: 4,
               py: 1.5,
-              borderColor: "#e5e7eb",
-              color: "#6b7280",
+              borderColor: "var(--border-default)",
+              color: "var(--font-secondary)",
               "&:hover": {
-                borderColor: "#d1d5db",
-                backgroundColor: "#f9fafb",
+                borderColor: "var(--border-light)",
+                backgroundColor: "var(--surface)",
               },
             }}
           >
@@ -844,23 +1118,23 @@ export default function DeviceCheckPage({
           sx={{
             mt: 4,
             p: 3,
-            backgroundColor: "#eff6ff",
-            border: "1px solid #bfdbfe",
+            backgroundColor: "color-mix(in srgb, var(--surface-blue-light) 90%, var(--card-bg))",
+            border: "1px solid color-mix(in srgb, var(--accent-blue-light) 35%, transparent)",
             borderRadius: 2,
           }}
         >
           <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-            <IconWrapper icon="mdi:information" size={24} color="#3b82f6" />
+            <IconWrapper icon="mdi:information" size={24} color="var(--accent-blue-light)" />
             <Box>
               <Typography
                 variant="subtitle2"
-                sx={{ fontWeight: 600, color: "#1e40af", mb: 0.5 }}
+                sx={{ fontWeight: 600, color: "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))", mb: 0.5 }}
               >
                 Why do we need this?
               </Typography>
               <Typography
                 variant="body2"
-                sx={{ color: "#1e40af", fontSize: "0.875rem", lineHeight: 1.7 }}
+                sx={{ color: "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))", fontSize: "0.875rem", lineHeight: 1.7 }}
               >
                 Your camera and microphone are essential for the assessment
                 process. We use your camera to monitor the assessment session

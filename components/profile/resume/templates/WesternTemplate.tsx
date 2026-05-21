@@ -6,13 +6,13 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 
 // AltaCV-inspired "Western" style: two columns, serif/sans hierarchy, accent colors
 const COLORS = {
-  name: "#000000",
-  tagline: "#8F0D0D",
-  heading: "#450808",
-  headingRule: "#E7D192",
-  accent: "#8F0D0D",
-  emphasis: "#2E2E2E",
-  body: "#666666",
+  name: "var(--font-primary)",
+  tagline: "var(--error-500)",
+  heading: "var(--font-primary)",
+  headingRule: "var(--warning-500)",
+  accent: "var(--error-500)",
+  emphasis: "var(--font-primary)",
+  body: "var(--font-secondary)",
 };
 
 interface WesternTemplateProps {
@@ -68,7 +68,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
         minHeight: "297mm",
         height: "297mm",
         width: "100%",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
         colorAdjust: "exact !important",
@@ -307,7 +307,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                               px: 0.75,
                               py: 0.2,
                               fontSize: "0.6rem",
-                              backgroundColor: "#f5f5f5 !important",
+                              backgroundColor: "var(--surface) !important",
                               color: COLORS.body,
                               borderRadius: 0.5,
                               WebkitPrintColorAdjust: "exact !important",
@@ -417,7 +417,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                       py: 0.5,
                       fontSize: "0.65rem",
                       lineHeight: 1,
-                      backgroundColor: "#f0e6d8 !important",
+                      backgroundColor: "color-mix(in srgb, var(--warning-500) 12%, var(--surface)) !important",
                       color: COLORS.emphasis,
                       borderRadius: 0.5,
                       fontWeight: 500,
@@ -479,7 +479,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                             backgroundColor:
                               i <= (skill.level ?? 0)
                                 ? `${COLORS.accent} !important`
-                                : "#e0e0e0 !important",
+                                : "var(--border-default) !important",
                             WebkitPrintColorAdjust: "exact !important",
                             printColorAdjust: "exact !important",
                             colorAdjust: "exact !important",

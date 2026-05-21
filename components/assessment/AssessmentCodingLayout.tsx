@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Box, Paper } from "@mui/material";
+import { Box, Paper, Typography, CircularProgress } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/common/Toast";
+import { IconWrapper } from "@/components/common/IconWrapper";
+import type { AssessmentRemoteAutosaveState } from "@/lib/hooks/useAutoSave";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { TestResults } from "@/components/coding/TestResults";
 import { AssessmentCodeEditorPanel } from "./AssessmentCodeEditorPanel";
@@ -13,7 +16,7 @@ import {
   getLanguageId,
 } from "@/components/coding/utils/languageUtils";
 
-interface AssessmentCodingLayoutProps {
+export interface AssessmentCodingLayoutProps {
   slug: string;
   questionId: number;
   problemData: any;
@@ -37,6 +40,8 @@ interface AssessmentCodingLayoutProps {
   onNextQuestion?: () => void;
   onPreviousQuestion?: () => void;
   currentQuestionIndex?: number;
+  /** Server autosave status from `useAutoSave` (assessment take page). */
+  remoteAutosave?: AssessmentRemoteAutosaveState;
 }
 
 export function AssessmentCodingLayout({
@@ -53,8 +58,10 @@ export function AssessmentCodingLayout({
   onNextQuestion,
   onPreviousQuestion,
   currentQuestionIndex = 0,
+  remoteAutosave,
 }: AssessmentCodingLayoutProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   // Get available languages from problem data
   const availableLanguages = getAvailableLanguages(
@@ -580,6 +587,49 @@ export function AssessmentCodingLayout({
           order: { xs: 0, md: 1 },
         }}
       >
+        {remoteAutosave ? (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 1,
+              flexWrap: "wrap",
+              mb: 1,
+              minHeight: 24,
+            }}
+          >
+            {remoteAutosave.status === "idle" && (
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500, textAlign: "right" }}>
+                {t("assessments.take.codingAutosaveHint")}
+              </Typography>
+            )}
+            {remoteAutosave.status === "saving" && (
+              <>
+                <CircularProgress size={14} thickness={5} sx={{ color: "var(--accent-indigo)" }} />
+                <Typography variant="caption" sx={{ color: "var(--neutral-500)", fontWeight: 600 }}>
+                  {t("assessments.take.codingAutosaveSaving")}
+                </Typography>
+              </>
+            )}
+            {remoteAutosave.status === "saved" && (
+              <>
+                <IconWrapper icon="mdi:cloud-check-outline" size={16} color="var(--course-cta)" />
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
+                  {t("assessments.take.codingAutosaveSaved")}
+                </Typography>
+              </>
+            )}
+            {remoteAutosave.status === "error" && (
+              <>
+                <IconWrapper icon="mdi:cloud-alert-outline" size={16} color="var(--ats-warning-muted)" />
+                <Typography variant="caption" sx={{ color: "color-mix(in srgb, var(--accent-orange) 92%, var(--font-dark))", fontWeight: 600 }}>
+                  {t("assessments.take.codingAutosaveError")}
+                </Typography>
+              </>
+            )}
+          </Box>
+        ) : null}
         <Box
           sx={{
             height: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
@@ -587,8 +637,8 @@ export function AssessmentCodingLayout({
             maxHeight: { xs: "calc(100vh - 150px)", md: "calc(100vh - 180px)" },
             display: "flex",
             gap: 0,
-            backgroundColor: "#f9fafb",
-            border: "1px solid #e5e7eb",
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             overflow: "hidden",
             position: "relative",
@@ -602,9 +652,9 @@ export function AssessmentCodingLayout({
               height: "100%",
               display: "flex",
               flexDirection: "column",
-              borderRight: "2px solid #e5e7eb",
+              borderRight: "2px solid var(--border-default)",
               borderRadius: 0,
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--font-light)",
               overflow: "hidden",
               flexShrink: 0,
             }}
@@ -629,7 +679,7 @@ export function AssessmentCodingLayout({
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--font-light)",
           overflow: "hidden",
           minWidth: 0,
         }}
@@ -668,8 +718,8 @@ export function AssessmentCodingLayout({
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            backgroundColor: "#fafafa",
-            borderTop: "2px solid #e5e7eb",
+            backgroundColor: "var(--neutral-50)",
+            borderTop: "2px solid var(--border-default)",
           }}
         >
           <TestResults

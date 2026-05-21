@@ -87,6 +87,9 @@ export function CreateCodeAttendanceDialog({
         sx: {
           m: { xs: 1, sm: 2 },
           maxHeight: { xs: "calc(100% - 16px)", sm: "calc(100% - 32px)" },
+          backgroundColor: "var(--card-bg)",
+          color: "var(--font-primary)",
+          border: "1px solid var(--border-default)",
         },
       }}
     >
@@ -115,7 +118,7 @@ export function CreateCodeAttendanceDialog({
             mt: { xs: 0.5, sm: 1 },
           }}
         >
-          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
             {t("adminAttendance.createCodeAttendanceDescription")}
           </Typography>
           <TextField
@@ -145,7 +148,19 @@ export function CreateCodeAttendanceDialog({
           variant="contained"
           onClick={handleCreate}
           disabled={creating || !name.trim()}
-          sx={{ bgcolor: "#10b981", "&:hover": { bgcolor: "#059669" } }}
+          sx={{
+            bgcolor: "var(--success-500)",
+            color: "var(--font-light)",
+            "&:hover": {
+              bgcolor:
+                "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
+            },
+            "&.Mui-disabled": {
+              color: "var(--font-secondary)",
+              backgroundColor:
+                "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+            },
+          }}
         >
           {creating ? (
             <CircularProgress size={20} color="inherit" />

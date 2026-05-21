@@ -104,7 +104,13 @@ export function MCQSelectionSection({
           Select from Existing Questions
         </Typography>
         {selectedIds.length > 0 && (
-          <Paper sx={{ p: 1.5, bgcolor: "#eef2ff" }}>
+          <Paper
+            sx={{
+              p: 1.5,
+              bgcolor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+            }}
+          >
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               Selected: {selectedIds.length} MCQ(s) | Showing: {filteredMCQs.length} of {mcqs.length} total
             </Typography>
@@ -129,7 +135,7 @@ export function MCQSelectionSection({
       />
 
       {filteredMCQs.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: "center", bgcolor: "#f9fafb" }}>
+        <Paper sx={{ p: 3, textAlign: "center", bgcolor: "var(--surface)" }}>
           <Typography variant="body2" color="text.secondary">
             {searchTerm
               ? "No questions found matching your search"
@@ -137,11 +143,20 @@ export function MCQSelectionSection({
           </Typography>
         </Paper>
       ) : (
-        <Paper sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+        <Paper
+          sx={{
+            borderRadius: 2,
+            boxShadow:
+              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            overflow: "hidden",
+          }}
+        >
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                   <TableCell padding="checkbox" sx={{ width: 48 }}>
                     <Checkbox
                       checked={isAllSelected}
@@ -173,10 +188,10 @@ export function MCQSelectionSection({
                   <TableRow
                     key={mcq.id}
                     sx={{
-                      "&:hover": { backgroundColor: "#f9fafb" },
+                      "&:hover": { backgroundColor: "var(--surface)" },
                       backgroundColor: selectedIds.includes(mcq.id)
-                        ? "#eef2ff"
-                        : "white",
+                        ? "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)"
+                        : "var(--font-light)",
                     }}
                   >
                     <TableCell padding="checkbox">
@@ -188,7 +203,7 @@ export function MCQSelectionSection({
                     <TableCell>
                       <Typography
                         variant="body2"
-                        sx={{ color: "#6b7280", fontFamily: "monospace" }}
+                        sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}
                       >
                         #{mcq.id}
                       </Typography>
@@ -214,12 +229,12 @@ export function MCQSelectionSection({
                           sx={{
                             bgcolor:
                               mcq.correct_option === "A"
-                                ? "#d1fae5"
-                                : "#f3f4f6",
+                                ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                : "var(--surface)",
                             color:
                               mcq.correct_option === "A"
-                                ? "#065f46"
-                                : "#374151",
+                                ? "var(--success-500)"
+                                : "var(--font-primary)",
                             fontWeight: mcq.correct_option === "A" ? 600 : 400,
                             fontSize: "0.75rem",
                             height: 24,
@@ -231,12 +246,12 @@ export function MCQSelectionSection({
                           sx={{
                             bgcolor:
                               mcq.correct_option === "B"
-                                ? "#d1fae5"
-                                : "#f3f4f6",
+                                ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                : "var(--surface)",
                             color:
                               mcq.correct_option === "B"
-                                ? "#065f46"
-                                : "#374151",
+                                ? "var(--success-500)"
+                                : "var(--font-primary)",
                             fontWeight: mcq.correct_option === "B" ? 600 : 400,
                             fontSize: "0.75rem",
                             height: 24,
@@ -248,12 +263,12 @@ export function MCQSelectionSection({
                           sx={{
                             bgcolor:
                               mcq.correct_option === "C"
-                                ? "#d1fae5"
-                                : "#f3f4f6",
+                                ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                : "var(--surface)",
                             color:
                               mcq.correct_option === "C"
-                                ? "#065f46"
-                                : "#374151",
+                                ? "var(--success-500)"
+                                : "var(--font-primary)",
                             fontWeight: mcq.correct_option === "C" ? 600 : 400,
                             fontSize: "0.75rem",
                             height: 24,
@@ -265,12 +280,12 @@ export function MCQSelectionSection({
                           sx={{
                             bgcolor:
                               mcq.correct_option === "D"
-                                ? "#d1fae5"
-                                : "#f3f4f6",
+                                ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                                : "var(--surface)",
                             color:
                               mcq.correct_option === "D"
-                                ? "#065f46"
-                                : "#374151",
+                                ? "var(--success-500)"
+                                : "var(--font-primary)",
                             fontWeight: mcq.correct_option === "D" ? 600 : 400,
                             fontSize: "0.75rem",
                             height: 24,
@@ -283,8 +298,8 @@ export function MCQSelectionSection({
                         label={mcq.correct_option}
                         size="small"
                         sx={{
-                          bgcolor: "#10b981",
-                          color: "#ffffff",
+                          bgcolor: "var(--success-500)",
+                          color: "var(--font-light)",
                           fontWeight: 700,
                           fontSize: "0.875rem",
                           width: 32,
@@ -300,28 +315,28 @@ export function MCQSelectionSection({
                           sx={{
                             bgcolor:
                               mcq.difficulty_level === "Easy"
-                                ? "#fef3c7"
+                                ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                                 : mcq.difficulty_level === "Medium"
-                                ? "#fde68a"
-                                : "#fed7aa",
+                                ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
+                                : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
                             color:
                               mcq.difficulty_level === "Easy"
-                                ? "#92400e"
+                                ? "var(--success-500)"
                                 : mcq.difficulty_level === "Medium"
-                                ? "#78350f"
-                                : "#7c2d12",
+                                ? "var(--warning-500)"
+                                : "var(--warning-500)",
                             fontWeight: 600,
                             fontSize: "0.75rem",
                           }}
                         />
                       ) : (
-                        <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                        <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                           -
                         </Typography>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {mcq.topic || "-"}
                       </Typography>
                     </TableCell>
@@ -336,7 +351,7 @@ export function MCQSelectionSection({
             <Box
               sx={{
                 p: { xs: 1.5, sm: 2 },
-                borderTop: "1px solid #e5e7eb",
+                borderTop: "1px solid var(--border-default)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -355,7 +370,7 @@ export function MCQSelectionSection({
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#6b7280",
+                    color: "var(--font-secondary)",
                     fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   }}
                 >

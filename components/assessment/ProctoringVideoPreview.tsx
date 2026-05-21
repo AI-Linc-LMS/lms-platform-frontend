@@ -76,8 +76,8 @@ export function ProctoringVideoPreview({
   // Memoize status calculations to ensure they update immediately when props change
   const statusColor = useMemo(() => {
     // Use faceCount and violations for more accurate real-time color
-    if (faceCount === 0) return "#ef4444"; // Red for no face
-    if (faceCount > 1) return "#f59e0b"; // Orange for multiple faces
+    if (faceCount === 0) return "var(--error-500)"; // Red for no face
+    if (faceCount > 1) return "var(--warning-500)"; // Orange for multiple faces
 
     // If single face, check violations
     if (faceCount === 1 && latestViolation) {
@@ -86,26 +86,26 @@ export function ProctoringVideoPreview({
         latestViolation.type === "FACE_TOO_CLOSE" ||
         latestViolation.type === "FACE_TOO_FAR"
       ) {
-        return "#ef4444";
+        return "var(--error-500)";
       }
       // Medium severity = orange
       if (latestViolation.type === "LOOKING_AWAY") {
-        return "#f59e0b";
+        return "var(--warning-500)";
       }
       // Other violations = orange
-      return "#f59e0b";
+      return "var(--warning-500)";
     }
 
     // Use status prop as fallback
     switch (status) {
       case "NORMAL":
-        return "#10b981";
+        return "var(--course-cta)";
       case "WARNING":
-        return "#f59e0b";
+        return "var(--warning-500)";
       case "VIOLATION":
-        return "#ef4444";
+        return "var(--error-500)";
       default:
-        return "#10b981";
+        return "var(--course-cta)";
     }
   }, [faceCount, latestViolation, status]);
 
@@ -167,10 +167,10 @@ export function ProctoringVideoPreview({
         zIndex: 10,
       }}
     >
-      <IconWrapper icon={statusIcon} size={16} color="#ffffff" />
+      <IconWrapper icon={statusIcon} size={16} color="var(--font-light)" />
       <Typography
         variant="caption"
-        sx={{ color: "#ffffff", fontSize: "0.75rem", fontWeight: 500 }}
+        sx={{ color: "var(--font-light)", fontSize: "0.75rem", fontWeight: 500 }}
       >
         {statusText}
       </Typography>

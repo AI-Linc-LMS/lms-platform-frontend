@@ -42,7 +42,7 @@ export function FullscreenWarningDialog({
     >
       <DialogTitle>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="mdi:fullscreen" size={24} color="#374151" />
+          <IconWrapper icon="mdi:fullscreen" size={24} color="var(--font-muted)" />
           <Typography variant="h6" fontWeight={600}>
             Fullscreen Mode Required
           </Typography>
@@ -69,13 +69,13 @@ export function FullscreenWarningDialog({
           fullWidth
           startIcon={<IconWrapper icon="mdi:fullscreen" />}
           sx={{
-            backgroundColor: "#374151",
-            color: "#ffffff",
+            backgroundColor: "var(--font-muted)",
+            color: "var(--font-light)",
             py: 1.5,
             fontSize: "1rem",
             fontWeight: 600,
             "&:hover": {
-              backgroundColor: "#1f2937",
+              backgroundColor: "var(--font-primary-dark)",
             },
           }}
         >

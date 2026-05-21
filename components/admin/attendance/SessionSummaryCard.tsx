@@ -102,7 +102,10 @@ export function SessionSummaryCard({
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       <Box
@@ -119,7 +122,7 @@ export function SessionSummaryCard({
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#111827",
+            color: "var(--font-primary)",
             fontSize: { xs: "1rem", sm: "1.25rem" },
           }}
         >
@@ -132,8 +135,8 @@ export function SessionSummaryCard({
             onClick={() => setEditing(true)}
             size="small"
             sx={{
-              color: "#6366f1",
-              borderColor: "#6366f1",
+              color: "var(--accent-indigo)",
+              borderColor: "var(--accent-indigo)",
               fontSize: { xs: "0.75rem", sm: "0.875rem" },
               alignSelf: { xs: "flex-start", sm: "auto" },
             }}
@@ -232,7 +235,14 @@ export function SessionSummaryCard({
               size="small"
               fullWidth
               sx={{
-                bgcolor: "#6366f1",
+                bgcolor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                "&.Mui-disabled": {
+                  color: "var(--font-secondary)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                },
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
                 maxWidth: { xs: "100%", sm: "auto" },
               }}
@@ -247,14 +257,14 @@ export function SessionSummaryCard({
             <Box>
               <Typography
                 variant="subtitle2"
-                sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
+                sx={{ color: "var(--font-secondary)", fontWeight: 600, mb: 1 }}
               >
                 {t("adminAttendance.topicCovered")}
               </Typography>
               {formatPoints(activity.topic_covered)[0] && (
                 <Typography
                   variant="body1"
-                  sx={{ fontWeight: 600, mb: 1, color: "#111827" }}
+                  sx={{ fontWeight: 600, mb: 1, color: "var(--font-primary)" }}
                 >
                   {formatPoints(activity.topic_covered)[0]}
                 </Typography>
@@ -276,7 +286,7 @@ export function SessionSummaryCard({
             <Box>
               <Typography
                 variant="subtitle2"
-                sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
+                sx={{ color: "var(--font-secondary)", fontWeight: 600, mb: 1 }}
               >
                 {t("adminAttendance.assignmentsGiven")}
               </Typography>
@@ -295,7 +305,7 @@ export function SessionSummaryCard({
             <Box>
               <Typography
                 variant="subtitle2"
-                sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
+                sx={{ color: "var(--font-secondary)", fontWeight: 600, mb: 1 }}
               >
                 {t("adminAttendance.handsOnCoding")}
               </Typography>
@@ -312,7 +322,7 @@ export function SessionSummaryCard({
             <Box>
               <Typography
                 variant="subtitle2"
-                sx={{ color: "#6b7280", fontWeight: 600, mb: 1 }}
+                sx={{ color: "var(--font-secondary)", fontWeight: 600, mb: 1 }}
               >
                 {t("adminAttendance.additionalComments")}
               </Typography>

@@ -4,9 +4,9 @@ import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-const MAROON = "#6b1c1c";
-const GOLD = "#c5a03f";
-const BG = "#f0ebe4";
+const MAROON = "var(--error-500)";
+const GOLD = "var(--warning-500)";
+const BG = "var(--surface)";
 
 interface TwoColumnTemplateProps {
   data: ResumeData;
@@ -92,7 +92,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
             fontSize: "1.6rem",
             fontWeight: 400,
             fontFamily: "'Georgia', 'Times New Roman', serif",
-            color: "#1a1a1a",
+            color: "var(--font-primary)",
             letterSpacing: "0.02em",
           }}
         >
@@ -103,7 +103,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
             fontSize: "0.95rem",
             fontStyle: "italic",
             fontFamily: "'Georgia', 'Times New Roman', serif",
-            color: "#4a4a4a",
+            color: "var(--font-secondary)",
             mt: -0.25,
           }}
         >
@@ -133,7 +133,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   fontSize: "0.62rem",
                   fontVariant: "small-caps",
                   letterSpacing: "0.04em",
-                  color: "#4a4a4a",
+                  color: "var(--font-secondary)",
                   textAlign: "right",
                   mb: 0.25,
                 }}
@@ -143,7 +143,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
               <Typography
                 sx={{
                   fontSize: "0.65rem",
-                  color: "#1a1a1a",
+                  color: "var(--font-primary)",
                 }}
               >
                 {exp.company}
@@ -154,7 +154,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   fontSize: "0.72rem",
                   fontWeight: 700,
                   fontStyle: "italic",
-                  color: "#1a1a1a",
+                  color: "var(--font-primary)",
                   mb: 0.3,
                 }}
               >
@@ -164,7 +164,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                 <Typography
                   sx={{
                     fontSize: "0.6rem",
-                    color: "#3a3a3a",
+                    color: "var(--font-primary)",
                     lineHeight: 1.5,
                     textAlign: "justify",
                   }}
@@ -183,7 +183,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
               <Typography
                 sx={{
                   fontSize: "0.6rem",
-                  color: "#4a4a4a",
+                  color: "var(--font-secondary)",
                   whiteSpace: "nowrap",
                   minWidth: 55,
                   flexShrink: 0,
@@ -198,7 +198,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   sx={{
                     fontSize: "0.7rem",
                     fontWeight: 700,
-                    color: "#1a1a1a",
+                    color: "var(--font-primary)",
                   }}
                 >
                   {edu.degree}
@@ -209,7 +209,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                       fontSize: "0.6rem",
                       fontVariant: "small-caps",
                       letterSpacing: "0.03em",
-                      color: "#3a3a3a",
+                      color: "var(--font-primary)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -220,7 +220,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   sx={{
                     fontSize: "0.6rem",
                     fontStyle: "italic",
-                    color: "#4a4a4a",
+                    color: "var(--font-secondary)",
                   }}
                 >
                   {edu.institution}
@@ -236,7 +236,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
           {/* Contact info box */}
           <Box
             sx={{
-              border: "1px solid #d0c8be",
+              border: "1px solid var(--border-default)",
               borderRadius: 0.5,
               p: 1.25,
               mb: 0.5,
@@ -274,7 +274,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                     data-resume-contact-item
                     sx={{
                       fontSize: "0.58rem",
-                      color: "#1a1a1a",
+                      color: "var(--font-primary)",
                       lineHeight: 1.4,
                       ...(item.icon === "mdi:email-outline"
                         ? { wordBreak: "break-all" }
@@ -299,7 +299,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.6rem",
-                      color: "#4a4a4a",
+                      color: "var(--font-secondary)",
                       whiteSpace: "nowrap",
                       minWidth: 30,
                       flexShrink: 0,
@@ -315,7 +315,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                         sx={{
                           fontSize: "0.68rem",
                           fontWeight: 700,
-                          color: "#1a1a1a",
+                          color: "var(--font-primary)",
                         }}
                       >
                         {proj.name}
@@ -344,7 +344,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                         sx={{
                           fontSize: "0.6rem",
                           fontStyle: "italic",
-                          color: "#4a4a4a",
+                          color: "var(--font-secondary)",
                         }}
                       >
                         {proj.description}
@@ -369,7 +369,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                         fontSize: "0.6rem",
                         fontVariant: "small-caps",
                         letterSpacing: "0.04em",
-                        color: "#3a3a3a",
+                        color: "var(--font-primary)",
                         minWidth: 50,
                         flexShrink: 0,
                       }}
@@ -379,7 +379,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                     <Typography
                       sx={{
                         fontSize: "0.6rem",
-                        color: "#1a1a1a",
+                        color: "var(--font-primary)",
                       }}
                     >
                       {skill.category || ""}
@@ -396,7 +396,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                       fontSize: "0.6rem",
                       fontVariant: "small-caps",
                       letterSpacing: "0.04em",
-                      color: "#3a3a3a",
+                      color: "var(--font-primary)",
                       minWidth: 50,
                       flexShrink: 0,
                     }}
@@ -406,7 +406,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.6rem",
-                      color: "#1a1a1a",
+                      color: "var(--font-primary)",
                     }}
                   >
                     {skill.category || ""}
@@ -425,7 +425,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   <Typography
                     sx={{
                       fontSize: "0.6rem",
-                      color: "#4a4a4a",
+                      color: "var(--font-secondary)",
                       whiteSpace: "nowrap",
                       minWidth: 30,
                       flexShrink: 0,
@@ -440,7 +440,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                         sx={{
                           fontSize: "0.68rem",
                           fontWeight: 700,
-                          color: "#1a1a1a",
+                          color: "var(--font-primary)",
                           flex: 1,
                           minWidth: 0,
                         }}
@@ -470,7 +470,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                         sx={{
                           fontSize: "0.6rem",
                           fontStyle: "italic",
-                          color: "#4a4a4a",
+                          color: "var(--font-secondary)",
                         }}
                       >
                         {cert.issuer}
@@ -495,7 +495,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                         fontSize: "0.6rem",
                         fontVariant: "small-caps",
                         letterSpacing: "0.04em",
-                        color: "#3a3a3a",
+                        color: "var(--font-primary)",
                         minWidth: 55,
                         flexShrink: 0,
                       }}
@@ -509,7 +509,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                     <Typography
                       sx={{
                         fontSize: "0.6rem",
-                        color: "#1a1a1a",
+                        color: "var(--font-primary)",
                       }}
                     >
                       {skill.name}

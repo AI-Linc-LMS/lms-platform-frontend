@@ -130,7 +130,7 @@ export function ApplicationQuestionsModal({
         sx: {
           borderRadius: 4,
           overflow: "hidden",
-          boxShadow: "0 32px 64px -12px rgba(0,0,0,0.2)",
+          boxShadow: "0 32px 64px -12px color-mix(in srgb, var(--font-primary) 24%, transparent)",
         },
       }}
     >
@@ -147,7 +147,7 @@ export function ApplicationQuestionsModal({
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
             Add question
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
@@ -157,8 +157,8 @@ export function ApplicationQuestionsModal({
         <IconButton
           onClick={handleClose}
           sx={{
-            color: "#94a3b8",
-            "&:hover": { color: "#64748b", bgcolor: "rgba(0,0,0,0.04)" },
+            color: "var(--font-tertiary)",
+            "&:hover": { color: "var(--font-secondary)", bgcolor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
           }}
         >
           <IconWrapper icon="mdi:close" size={24} />
@@ -169,7 +169,7 @@ export function ApplicationQuestionsModal({
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Question input */}
           <Box>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1 }}>
               Question
             </Typography>
             <TextField
@@ -183,9 +183,9 @@ export function ApplicationQuestionsModal({
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  bgcolor: "#f8fafc",
-                  "&:hover": { bgcolor: "#f1f5f9" },
-                  "&.Mui-focused": { bgcolor: "#fff" },
+                  bgcolor: "var(--background)",
+                  "&:hover": { bgcolor: "var(--surface)" },
+                  "&.Mui-focused": { bgcolor: "var(--font-light)" },
                 },
               }}
             />
@@ -193,7 +193,7 @@ export function ApplicationQuestionsModal({
 
           {/* Type selector - cards */}
           <Box>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1.5 }}>
               Type
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
@@ -207,23 +207,23 @@ export function ApplicationQuestionsModal({
                     p: 1.5,
                     borderRadius: 2,
                     border: "2px solid",
-                    borderColor: questionType === t.value ? "#6366f1" : "#e2e8f0",
-                    bgcolor: questionType === t.value ? "rgba(99, 102, 241, 0.06)" : "#fff",
+                    borderColor: questionType === t.value ? "var(--accent-indigo)" : "var(--border-default)",
+                    bgcolor: questionType === t.value ? "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" : "var(--font-light)",
                     cursor: "pointer",
                     transition: "all 0.15s",
                     textAlign: "center",
                     "&:hover": {
-                      borderColor: questionType === t.value ? "#6366f1" : "#cbd5e1",
-                      bgcolor: questionType === t.value ? "rgba(99, 102, 241, 0.08)" : "#f8fafc",
+                      borderColor: questionType === t.value ? "var(--accent-indigo)" : "var(--border-default)",
+                      bgcolor: questionType === t.value ? "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" : "var(--background)",
                     },
                   }}
                 >
                   <IconWrapper
                     icon={t.icon}
                     size={22}
-                    style={{ color: questionType === t.value ? "#6366f1" : "#94a3b8" }}
+                    style={{ color: questionType === t.value ? "var(--accent-indigo)" : "var(--font-tertiary)" }}
                   />
-                  <Typography variant="caption" sx={{ display: "block", mt: 0.5, fontWeight: 600, color: questionType === t.value ? "#6366f1" : "#475569" }}>
+                  <Typography variant="caption" sx={{ display: "block", mt: 0.5, fontWeight: 600, color: questionType === t.value ? "var(--accent-indigo)" : "var(--font-secondary)" }}>
                     {t.label}
                   </Typography>
                 </Box>
@@ -234,7 +234,7 @@ export function ApplicationQuestionsModal({
           {/* Options - for MCQ / multichoice */}
           {needsOptions && (
             <Box>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1.5 }}>
                 Options
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -247,13 +247,13 @@ export function ApplicationQuestionsModal({
                       gap: 1.5,
                       p: 1.5,
                       borderRadius: 1.5,
-                      bgcolor: "#f8fafc",
+                      bgcolor: "var(--background)",
                       border: "1px solid",
                       borderColor: "transparent",
-                      "&:focus-within": { borderColor: "#6366f1", bgcolor: "#fff" },
+                      "&:focus-within": { borderColor: "var(--accent-indigo)", bgcolor: "var(--font-light)" },
                     }}
                   >
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: "#94a3b8", minWidth: 20 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-tertiary)", minWidth: 20 }}>
                       {String.fromCharCode(65 + i)}
                     </Typography>
                     <TextField
@@ -271,8 +271,8 @@ export function ApplicationQuestionsModal({
                       onClick={() => removeOption(i)}
                       disabled={options.length <= 2}
                       sx={{
-                        color: options.length <= 2 ? "#cbd5e1" : "#94a3b8",
-                        "&:hover": { color: "#dc2626", bgcolor: "rgba(239,68,68,0.08)" },
+                        color: options.length <= 2 ? "var(--border-default)" : "var(--font-tertiary)",
+                        "&:hover": { color: "var(--error-500)", bgcolor: "color-mix(in srgb, var(--error-500) 10%, transparent)" },
                       }}
                     >
                       <IconWrapper icon="mdi:close" size={18} />
@@ -285,10 +285,10 @@ export function ApplicationQuestionsModal({
                   onClick={addOption}
                   sx={{
                     textTransform: "none",
-                    color: "#6366f1",
+                    color: "var(--accent-indigo)",
                     fontWeight: 600,
                     justifyContent: "flex-start",
-                    "&:hover": { bgcolor: "rgba(99, 102, 241, 0.06)" },
+                    "&:hover": { bgcolor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                   }}
                 >
                   Add option
@@ -298,8 +298,18 @@ export function ApplicationQuestionsModal({
           )}
 
           {isYesNo && (
-            <Box sx={{ py: 1, px: 2, borderRadius: 1.5, bgcolor: "#f0fdf4", border: "1px solid rgba(34,197,94,0.2)" }}>
-              <Typography variant="body2" sx={{ color: "#15803d", fontWeight: 500 }}>
+            <Box
+              sx={{
+                py: 1,
+                px: 2,
+                borderRadius: 1.5,
+                bgcolor:
+                  "color-mix(in srgb, var(--success-500) 10%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, var(--success-500) 25%, transparent)",
+              }}
+            >
+              <Typography variant="body2" sx={{ color: "var(--success-500)", fontWeight: 500 }}>
                 Options: Yes, No
               </Typography>
             </Box>
@@ -311,15 +321,24 @@ export function ApplicationQuestionsModal({
               <Checkbox
                 checked={isRequired}
                 onChange={(e) => setIsRequired(e.target.checked)}
-                sx={{ color: "#94a3b8", "&.Mui-checked": { color: "#6366f1" } }}
+                sx={{ color: "var(--font-tertiary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
               />
             }
             label={<Typography variant="body2" color="text.secondary">Required</Typography>}
           />
 
           {error && (
-            <Box sx={{ py: 1.5, px: 2, borderRadius: 1.5, bgcolor: "#fef2f2", border: "1px solid #fecaca" }}>
-              <Typography variant="body2" sx={{ color: "#dc2626", fontWeight: 500 }}>
+            <Box
+              sx={{
+                py: 1.5,
+                px: 2,
+                borderRadius: 1.5,
+                bgcolor: "color-mix(in srgb, var(--error-500) 10%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, var(--error-500) 20%, transparent)",
+              }}
+            >
+              <Typography variant="body2" sx={{ color: "var(--error-500)", fontWeight: 500 }}>
                 {error}
               </Typography>
             </Box>
@@ -333,13 +352,13 @@ export function ApplicationQuestionsModal({
           px: 3,
           py: 2,
           borderTop: "1px solid",
-          borderColor: "#e2e8f0",
+          borderColor: "var(--border-default)",
           display: "flex",
           justifyContent: "flex-end",
           gap: 1.5,
         }}
       >
-        <Button onClick={handleClose} sx={{ textTransform: "none", color: "#64748b" }}>
+        <Button onClick={handleClose} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
           Cancel
         </Button>
         <Button
@@ -353,9 +372,9 @@ export function ApplicationQuestionsModal({
             px: 3,
             py: 1.25,
             borderRadius: 2,
-            bgcolor: "#6366f1",
-            boxShadow: "0 1px 3px rgba(99, 102, 241, 0.3)",
-            "&:hover": { bgcolor: "#4f46e5", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.35)" },
+            bgcolor: "var(--accent-indigo)",
+            boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+            "&:hover": { bgcolor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
           }}
         >
           {submitting ? "Adding…" : "Add question"}

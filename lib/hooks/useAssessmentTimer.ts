@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
 interface UseAssessmentTimerOptions {
   initialTimeSeconds: number;
@@ -15,34 +15,55 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
   const remainingSecondsRef = useRef(initialTimeSeconds);
+  // Wallclock target — Date.now() ms when timer should hit zero.
+  // Set on (re)start, cleared on pause/reset. Drives all remaining-time math
+  // so background-throttled intervals and system sleep can't cause drift.
+  const deadlineMsRef = useRef<number | null>(null);
+  const timeUpFiredRef = useRef(false);
 
-  // Keep refs updated
   useEffect(() => {
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
-  // Sync ref with state
   useEffect(() => {
     remainingSecondsRef.current = remainingSeconds;
   }, [remainingSeconds]);
 
-  // Track if timer has been initialized to prevent reset on initialTimeSeconds change
   const hasInitializedRef = useRef(false);
   const lastInitialTimeRef = useRef(initialTimeSeconds);
-  
-  // Update ref when initialTimeSeconds changes (for reset) - but only if not already initialized
-  // or if the value actually changed significantly
+
   useEffect(() => {
     const timeDiff = Math.abs(lastInitialTimeRef.current - initialTimeSeconds);
     if (!hasInitializedRef.current || timeDiff > 10) {
       hasInitializedRef.current = true;
       lastInitialTimeRef.current = initialTimeSeconds;
       remainingSecondsRef.current = initialTimeSeconds;
+      timeUpFiredRef.current = false;
       setRemainingSeconds(initialTimeSeconds);
+      if (isRunning) {
+        deadlineMsRef.current = Date.now() + initialTimeSeconds * 1000;
+      }
     }
-  }, [initialTimeSeconds]);
+  }, [initialTimeSeconds, isRunning]);
 
-  // Timer interval - only depends on isRunning to prevent resets
+  const computeRemaining = useCallback((): number => {
+    const deadline = deadlineMsRef.current;
+    if (deadline == null) return remainingSecondsRef.current;
+    return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+  }, []);
+
+  const tick = useCallback(() => {
+    const next = computeRemaining();
+    remainingSecondsRef.current = next;
+    setRemainingSeconds(next);
+    if (next <= 0 && !timeUpFiredRef.current) {
+      timeUpFiredRef.current = true;
+      deadlineMsRef.current = null;
+      setIsRunning(false);
+      onTimeUpRef.current?.();
+    }
+  }, [computeRemaining]);
+
   useEffect(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -50,20 +71,11 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     }
 
     if (isRunning && remainingSecondsRef.current > 0) {
-      intervalRef.current = setInterval(() => {
-        setRemainingSeconds((prev) => {
-          const current = remainingSecondsRef.current;
-          if (current <= 1) {
-            setIsRunning(false);
-            onTimeUpRef.current?.();
-            remainingSecondsRef.current = 0;
-            return 0;
-          }
-          const newValue = current - 1;
-          remainingSecondsRef.current = newValue;
-          return newValue;
-        });
-      }, 1000);
+      if (deadlineMsRef.current == null) {
+        deadlineMsRef.current = Date.now() + remainingSecondsRef.current * 1000;
+      }
+      timeUpFiredRef.current = false;
+      intervalRef.current = setInterval(tick, 1000);
     }
 
     return () => {
@@ -72,18 +84,40 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
         intervalRef.current = null;
       }
     };
-  }, [isRunning]); // Only depend on isRunning to prevent interval recreation
+  }, [isRunning, tick]);
+
+  // When the tab becomes visible after being hidden, browsers may have
+  // throttled the 1s interval. Recompute immediately from the wallclock
+  // deadline so the displayed time and any time-up callback are accurate.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && isRunning) {
+        tick();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [isRunning, tick]);
 
   const start = useCallback(() => {
     setIsRunning(true);
   }, []);
 
   const pause = useCallback(() => {
+    if (deadlineMsRef.current != null) {
+      const snapshot = Math.max(
+        0,
+        Math.ceil((deadlineMsRef.current - Date.now()) / 1000),
+      );
+      remainingSecondsRef.current = snapshot;
+      setRemainingSeconds(snapshot);
+    }
+    deadlineMsRef.current = null;
     setIsRunning(false);
   }, []);
 
   const reset = useCallback((newTimeSeconds: number) => {
-    // Clear any existing interval first
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -91,7 +125,9 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     remainingSecondsRef.current = newTimeSeconds;
     setRemainingSeconds(newTimeSeconds);
     setIsRunning(false);
-    hasInitializedRef.current = true; // Mark as initialized after manual reset
+    deadlineMsRef.current = null;
+    timeUpFiredRef.current = false;
+    hasInitializedRef.current = true;
   }, []);
 
   const formatTime = useCallback((seconds: number): string => {
@@ -105,20 +141,20 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   }, []);
 
-  // Memoize formatted time to prevent unnecessary string operations
-  const formattedTime = useRef(formatTime(remainingSeconds));
-  
-  useEffect(() => {
-    formattedTime.current = formatTime(remainingSeconds);
-  }, [remainingSeconds, formatTime]);
+  const formattedTime = useMemo(
+    () => formatTime(remainingSeconds),
+    [remainingSeconds, formatTime]
+  );
 
-  return {
-    remainingSeconds,
-    formattedTime: formattedTime.current,
-    isRunning,
-    start,
-    pause,
-    reset,
-  };
+  return useMemo(
+    () => ({
+      remainingSeconds,
+      formattedTime,
+      isRunning,
+      start,
+      pause,
+      reset,
+    }),
+    [remainingSeconds, formattedTime, isRunning, start, pause, reset]
+  );
 }
-

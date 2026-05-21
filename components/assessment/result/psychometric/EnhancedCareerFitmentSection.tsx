@@ -42,14 +42,14 @@ export function EnhancedCareerFitmentSection({ data }: EnhancedCareerFitmentSect
     name: career.role.length > 15 ? career.role.substring(0, 15) + "..." : career.role,
     value: career.score,
     fullRole: career.role,
-    fill: career.score >= 80 ? "#10b981" : career.score >= 65 ? "#3b82f6" : "#f59e0b",
+    fill: career.score >= 80 ? "var(--course-cta)" : career.score >= 65 ? "var(--accent-blue-light)" : "var(--warning-500)",
   }));
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#10b981";
-    if (score >= 65) return "#3b82f6";
-    if (score >= 50) return "#f59e0b";
-    return "#ef4444";
+    if (score >= 80) return "var(--course-cta)";
+    if (score >= 65) return "var(--accent-blue-light)";
+    if (score >= 50) return "var(--warning-500)";
+    return "var(--error-500)";
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -130,7 +130,7 @@ export function EnhancedCareerFitmentSection({ data }: EnhancedCareerFitmentSect
                   startAngle={90}
                   endAngle={-270}
                 >
-                  <RadialBar dataKey="value" cornerRadius={8} fill="#3b82f6">
+                  <RadialBar dataKey="value" cornerRadius={8} fill="var(--accent-blue-light)">
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}

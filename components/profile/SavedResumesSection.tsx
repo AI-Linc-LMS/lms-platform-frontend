@@ -106,15 +106,15 @@ function ResumePreviewCard({
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          border: "1px solid rgba(0,0,0,0.06)",
+          border: "1px solid color-mix(in srgb, var(--border-default) 85%, transparent)",
           borderRadius: 3,
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--card-bg)",
           cursor: "pointer",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           "&:hover": {
-            borderColor: "rgba(10, 102, 194, 0.25)",
-            boxShadow: "0 12px 32px rgba(10, 102, 194, 0.12)",
+            borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default))",
+            boxShadow: "0 12px 32px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
             transform: "translateY(-4px)",
             "& .resume-card-actions": { opacity: 1, pointerEvents: "auto" },
           },
@@ -125,7 +125,7 @@ function ResumePreviewCard({
           sx={{
             flex: 1,
             minHeight: 300,
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
             position: "relative",
             overflow: "hidden",
           }}
@@ -141,7 +141,8 @@ function ResumePreviewCard({
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 1.5,
-                background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+                background:
+                  "linear-gradient(180deg, color-mix(in srgb, var(--surface) 72%, var(--background)) 0%, color-mix(in srgb, var(--surface) 88%, var(--background)) 100%)",
               }}
             >
               <Box
@@ -149,15 +150,16 @@ function ResumePreviewCard({
                   width: 72,
                   height: 72,
                   borderRadius: 2,
-                  background: "linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%)",
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, var(--error-500) 14%, transparent) 0%, color-mix(in srgb, var(--error-500) 8%, transparent) 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <IconWrapper icon="mdi:file-pdf-box" size={40} color="#dc2626" />
+                <IconWrapper icon="mdi:file-pdf-box" size={40} color="var(--error-500)" />
               </Box>
-              <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                 Scroll to load preview
               </Typography>
             </Box>
@@ -172,11 +174,11 @@ function ResumePreviewCard({
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 2,
-                backgroundColor: "#f8fafc",
+                backgroundColor: "color-mix(in srgb, var(--surface) 74%, var(--background))",
               }}
             >
-              <CircularProgress size={40} sx={{ color: "#0a66c2" }} />
-              <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+              <CircularProgress size={40} sx={{ color: "var(--accent-indigo)" }} />
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
                 Loading preview…
               </Typography>
             </Box>
@@ -191,15 +193,15 @@ function ResumePreviewCard({
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 1.5,
-                backgroundColor: "#fef2f2",
+                backgroundColor: "color-mix(in srgb, var(--error-500) 14%, var(--card-bg))",
                 p: 2,
               }}
             >
-              <IconWrapper icon="mdi:file-document-alert-outline" size={44} color="#dc2626" />
-              <Typography variant="caption" sx={{ color: "#6b7280", textAlign: "center" }}>
+              <IconWrapper icon="mdi:file-document-alert-outline" size={44} color="var(--error-500)" />
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", textAlign: "center" }}>
                 Preview unavailable
               </Typography>
-              <Typography variant="caption" sx={{ color: "#9ca3af", fontSize: "0.75rem" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.75rem" }}>
                 Click to view or download
               </Typography>
             </Box>
@@ -218,7 +220,7 @@ function ResumePreviewCard({
                   height: "100%",
                   borderRadius: 2,
                   overflow: "hidden",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  boxShadow: "0 2px 8px color-mix(in srgb, var(--font-primary) 18%, transparent)",
                 }}
               >
                 <iframe
@@ -240,7 +242,8 @@ function ResumePreviewCard({
             sx={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%)",
+              background:
+                "linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--font-primary) 50%, transparent) 100%)",
               display: "flex",
               alignItems: "flex-end",
               justifyContent: "center",
@@ -259,9 +262,9 @@ function ResumePreviewCard({
                   onDownload();
                 }}
                 sx={{
-                  backgroundColor: "rgba(255,255,255,0.95)",
-                  color: "#0a66c2",
-                  "&:hover": { backgroundColor: "#ffffff", transform: "scale(1.08)" },
+                  backgroundColor: "color-mix(in srgb, var(--card-bg) 95%, transparent)",
+                  color: "var(--accent-indigo)",
+                  "&:hover": { backgroundColor: "var(--card-bg)", transform: "scale(1.08)" },
                 }}
               >
                 <IconWrapper icon="mdi:download" size={22} />
@@ -276,13 +279,13 @@ function ResumePreviewCard({
                 }}
                 disabled={deleting}
                 sx={{
-                  backgroundColor: "rgba(255,255,255,0.95)",
-                  color: "#dc2626",
-                  "&:hover": { backgroundColor: "#ffffff", transform: "scale(1.08)" },
+                  backgroundColor: "color-mix(in srgb, var(--card-bg) 95%, transparent)",
+                  color: "var(--error-500)",
+                  "&:hover": { backgroundColor: "var(--card-bg)", transform: "scale(1.08)" },
                 }}
               >
                 {deleting ? (
-                  <CircularProgress size={20} sx={{ color: "#dc2626" }} />
+                  <CircularProgress size={20} sx={{ color: "var(--error-500)" }} />
                 ) : (
                   <IconWrapper icon="mdi:delete-outline" size={22} />
                 )}
@@ -295,15 +298,15 @@ function ResumePreviewCard({
         <Box
           sx={{
             p: 2,
-            borderTop: "1px solid rgba(0,0,0,0.06)",
-            backgroundColor: "#ffffff",
+            borderTop: "1px solid color-mix(in srgb, var(--border-default) 85%, transparent)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           <Typography
             variant="subtitle1"
             sx={{
               fontWeight: 600,
-              color: "#111827",
+              color: "var(--font-primary)",
               fontSize: "0.9375rem",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -313,7 +316,7 @@ function ResumePreviewCard({
           >
             {resume.display_name || "Resume"}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.8125rem" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
             {formatRelativeTime(resume.created_at)}
           </Typography>
         </Box>
@@ -393,10 +396,10 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
         elevation={0}
         sx={{
           p: { xs: 2, sm: 3 },
-          border: "1px solid rgba(0,0,0,0.06)",
+          border: "1px solid color-mix(in srgb, var(--border-default) 85%, transparent)",
           borderRadius: 3,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-          backgroundColor: "#ffffff",
+          boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          backgroundColor: "var(--card-bg)",
           overflow: "hidden",
         }}
       >
@@ -417,14 +420,15 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                 width: 56,
                 height: 56,
                 borderRadius: 2,
-                background: "linear-gradient(135deg, rgba(10, 102, 194, 0.14) 0%, rgba(10, 102, 194, 0.06) 100%)",
+                background:
+                  "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 18%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 9%, transparent) 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                boxShadow: "inset 0 1px 0 color-mix(in srgb, var(--card-bg) 50%, transparent)",
               }}
             >
-              <IconWrapper icon="mdi:file-document-multiple-outline" size={30} color="#0a66c2" />
+              <IconWrapper icon="mdi:file-document-multiple-outline" size={30} color="var(--accent-indigo)" />
             </Box>
             <Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -432,7 +436,7 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                   variant="h6"
                   sx={{
                     fontWeight: 700,
-                    color: "#111827",
+                    color: "var(--font-primary)",
                     fontSize: "1.3125rem",
                     letterSpacing: "-0.02em",
                   }}
@@ -447,14 +451,14 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                       height: 26,
                       fontWeight: 700,
                       fontSize: "0.8125rem",
-                      backgroundColor: "rgba(10, 102, 194, 0.1)",
-                      color: "#0a66c2",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                      color: "var(--accent-indigo)",
                       "& .MuiChip-label": { px: 1.5 },
                     }}
                   />
                 )}
               </Box>
-              <Typography variant="body2" sx={{ color: "#6b7280", fontSize: "0.875rem", mt: 0.25 }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.875rem", mt: 0.25 }}>
                 {!loading &&
                   (resumes.length === 0
                     ? "Upload your first resume to get started"
@@ -481,10 +485,10 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                   fontWeight: 600,
                   fontSize: "0.9375rem",
                   px: 3,
-                  backgroundColor: "#6366f1",
-                  color: "#ffffff",
+                  backgroundColor: "var(--accent-purple)",
+                  color: "var(--font-light)",
                   "&:hover": {
-                    backgroundColor: "#4f46e5",
+                    backgroundColor: "var(--accent-indigo-dark)",
                   },
                 }}
               >
@@ -513,7 +517,8 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                   sx={{
                     height: 380,
                     borderRadius: 3,
-                    background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
+                    background:
+                      "linear-gradient(180deg, color-mix(in srgb, var(--surface) 84%, var(--background)) 0%, color-mix(in srgb, var(--border-default) 40%, var(--surface)) 100%)",
                     animation: "shimmer 1.5s ease-in-out infinite",
                     "@keyframes shimmer": {
                       "0%, 100%": { opacity: 0.7 },
@@ -557,14 +562,14 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                 textAlign: "center",
                 py: 10,
                 px: 4,
-                border: "2px dashed #e2e8f0",
+                border: "2px dashed color-mix(in srgb, var(--border-default) 88%, transparent)",
                 borderRadius: 3,
-                backgroundColor: "#fafbfc",
+                backgroundColor: "color-mix(in srgb, var(--surface) 60%, var(--background))",
                 transition: "all 0.25s ease",
                 cursor: "pointer",
                 "&:hover": {
-                  borderColor: "#0a66c2",
-                  backgroundColor: "rgba(10, 102, 194, 0.02)",
+                  borderColor: "var(--accent-indigo)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, var(--background))",
                   "& .upload-hint": { opacity: 1 },
                 },
               }}
@@ -575,7 +580,8 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                   width: 96,
                   height: 96,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, rgba(10, 102, 194, 0.12) 0%, rgba(10, 102, 194, 0.04) 100%)",
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 14%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -585,13 +591,13 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                   "&:hover": { transform: "scale(1.05)" },
                 }}
               >
-                <IconWrapper icon="mdi:file-document-plus-outline" size={48} color="#0a66c2" />
+                <IconWrapper icon="mdi:file-document-plus-outline" size={48} color="var(--accent-indigo)" />
               </Box>
               <Typography
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  color: "#1e293b",
+                  color: "var(--font-primary)",
                   fontSize: "1.25rem",
                   mb: 0.5,
                 }}
@@ -601,7 +607,7 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#64748b",
+                  color: "var(--font-secondary)",
                   fontSize: "0.9375rem",
                   maxWidth: 380,
                   mx: "auto",
@@ -615,7 +621,7 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                 className="upload-hint"
                 variant="caption"
                 sx={{
-                  color: "#0a66c2",
+                  color: "var(--accent-indigo)",
                   fontWeight: 600,
                   opacity: 0.8,
                   transition: "opacity 0.25s ease",
@@ -652,7 +658,7 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
           {t("profile.deleteResumeTitle")}
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ color: "#64748b", lineHeight: 1.6 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
             {t("profile.deleteResumeMessage", {
               name: resumeToDelete?.display_name || "Resume",
             })}
@@ -661,7 +667,7 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
           <Button
             onClick={() => setResumeToDelete(null)}
-            sx={{ textTransform: "none", color: "#64748b" }}
+            sx={{ textTransform: "none", color: "var(--font-secondary)" }}
           >
             {t("profile.cancel")}
           </Button>

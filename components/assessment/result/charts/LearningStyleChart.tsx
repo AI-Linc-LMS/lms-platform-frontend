@@ -30,17 +30,17 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
     {
       name: "Visual",
       value: learningStyle.visual_percentage,
-      color: "#6366f1",
+      color: "var(--accent-indigo)",
     },
     {
       name: "Auditory",
       value: learningStyle.auditory_percentage,
-      color: "#8b5cf6",
+      color: "var(--assessment-chart-violet)",
     },
     {
       name: "Kinesthetic",
       value: learningStyle.kinesthetic_percentage,
-      color: "#10b981",
+      color: "var(--course-cta)",
     },
   ];
 
@@ -50,17 +50,17 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
       return (
         <Box
           sx={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #e5e7eb",
+            backgroundColor: "var(--font-light)",
+            border: "1px solid var(--border-default)",
             borderRadius: 2,
             p: 1.5,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            boxShadow: "0 4px 12px color-mix(in srgb, var(--font-dark) 10%, transparent)",
           }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 700, color: "#1f2937" }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary-dark)" }}>
             {data.name}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280", display: "block" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
             Percentage: <strong>{data.value}%</strong>
           </Typography>
         </Box>
@@ -96,9 +96,9 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
       sx={{
         p: 3,
         mb: 3,
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 3,
-        background: "#ffffff",
+        background: "var(--font-light)",
       }}
     >
       <Box
@@ -114,20 +114,20 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
+            backgroundColor: "color-mix(in srgb, var(--course-cta) 12%, transparent)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:school" size={24} color="#10b981" />
+          <IconWrapper icon="mdi:school" size={24} color="var(--course-cta)" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#1f2937",
+              color: "var(--font-primary-dark)",
               mb: 0.25,
             }}
           >
@@ -136,7 +136,7 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
           <Typography
             variant="caption"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               fontSize: "0.8125rem",
             }}
           >
@@ -155,7 +155,7 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
               labelLine={false}
               label={CustomLabel}
               outerRadius={100}
-              fill="#8884d8"
+              fill="var(--assessment-chart-secondary-fill)"
               dataKey="value"
             >
               {data.map((entry, index) => (
@@ -177,17 +177,17 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
       </Box>
 
       {/* Additional Info */}
-      <Box sx={{ mt: 3, pt: 3, borderTop: "1px solid #e5e7eb" }}>
+      <Box sx={{ mt: 3, pt: 3, borderTop: "1px solid var(--border-default)" }}>
         <Box sx={{ mb: 2 }}>
           <Typography
             variant="body2"
-            sx={{ fontWeight: 600, color: "#6b7280", mb: 1 }}
+            sx={{ fontWeight: 600, color: "var(--font-secondary)", mb: 1 }}
           >
             Attention Pattern: {learningStyle.attention_pattern}
           </Typography>
           <Typography
             variant="body2"
-            sx={{ fontWeight: 600, color: "#6b7280" }}
+            sx={{ fontWeight: 600, color: "var(--font-secondary)" }}
           >
             Feedback Preference: {learningStyle.feedback_preference}
           </Typography>
@@ -195,7 +195,7 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
         <Box>
           <Typography
             variant="body2"
-            sx={{ fontWeight: 700, color: "#1f2937", mb: 1 }}
+            sx={{ fontWeight: 700, color: "var(--font-primary-dark)", mb: 1 }}
           >
             Recommended Content Formats:
           </Typography>
@@ -207,11 +207,11 @@ export function LearningStyleChart({ learningStyle }: LearningStyleChartProps) {
                   px: 1.5,
                   py: 0.5,
                   borderRadius: 1,
-                  backgroundColor: "rgba(99, 102, 241, 0.1)",
-                  border: "1px solid rgba(99, 102, 241, 0.2)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                  border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, transparent)",
                 }}
               >
-                <Typography variant="caption" sx={{ color: "#6366f1", fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: "var(--accent-indigo)", fontWeight: 600 }}>
                   {format}
                 </Typography>
               </Box>

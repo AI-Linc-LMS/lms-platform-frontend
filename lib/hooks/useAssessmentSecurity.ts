@@ -7,6 +7,12 @@ function isInsideFloatingToolUi(target: EventTarget | null): boolean {
   return !!el?.closest?.("[data-floating-tool], [data-assessment-tool]");
 }
 
+function isAssessmentAnswerField(target: EventTarget | null): boolean {
+  if (!target) return false;
+  const el = target instanceof Element ? target : (target as Node).parentElement;
+  return !!el?.closest?.("[data-assessment-answer-field]");
+}
+
 interface UseAssessmentSecurityOptions {
   enabled: boolean;
   submitting?: boolean; // Disable beforeunload during submission
@@ -15,9 +21,19 @@ interface UseAssessmentSecurityOptions {
 export function useAssessmentSecurity({ enabled, submitting = false }: UseAssessmentSecurityOptions) {
   const { showToast } = useToast();
   const hasWarnedRef = useRef(false);
+  // Tracks whether THIS effect run pushed a back-trap entry into history,
+  // so the cleanup can pop it. Without this, the dummy entry survives
+  // window.location.replace at submit time and back-navigation can return
+  // the user to the in-progress take page after submission.
+  const trapPushedRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
+    // When the user is submitting, we MUST NOT push a new back-trap entry —
+    // the navigation to /submission-success is imminent and any extra entry
+    // here would survive window.location.replace and let "back" return to
+    // an in-progress take page.
+    if (submitting) return;
 
     // Prevent refresh - but NOT during submission
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -33,8 +49,37 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       return event.returnValue;
     };
 
-    // Prevent keyboard shortcuts for refresh
+    const captureOpts: AddEventListenerOptions = { capture: true, passive: false };
+
+    // Prevent keyboard shortcuts for refresh and system-style combos (where the browser allows)
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.metaKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.ctrlKey && (event.key === "Tab" || event.code === "Tab")) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (
+        event.key === "Meta" ||
+        event.code === "MetaLeft" ||
+        event.code === "MetaRight" ||
+        event.code === "OSLeft" ||
+        event.code === "OSRight"
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
       // Prevent F5, Ctrl+R, Ctrl+Shift+R
       if (
         event.key === "F5" ||
@@ -52,6 +97,16 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         return false;
       }
 
+      // Close tab / window shortcuts
+      if (event.ctrlKey && (event.key === "w" || event.key === "W")) {
+        event.preventDefault();
+        return false;
+      }
+      if (event.ctrlKey && event.shiftKey && (event.key === "t" || event.key === "T")) {
+        event.preventDefault();
+        return false;
+      }
+
       // Prevent Ctrl+S (save page)
       if (event.ctrlKey && event.key === "s") {
         event.preventDefault();
@@ -64,23 +119,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
         return false;
       }
 
-      // Prevent F12 (dev tools)
-      if (event.key === "F12") {
-        event.preventDefault();
-        return false;
-      }
-
-      // Prevent Ctrl+Shift+I (dev tools)
-      if (event.ctrlKey && event.shiftKey && event.key === "I") {
-        event.preventDefault();
-        return false;
-      }
-
-      // Prevent Ctrl+Shift+J (console)
-      if (event.ctrlKey && event.shiftKey && event.key === "J") {
-        event.preventDefault();
-        return false;
-      }
+      // Devtools shortcut restrictions intentionally disabled.
     };
 
     // Prevent back navigation
@@ -97,13 +136,14 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
 
     // Push state to prevent back navigation
     window.history.pushState(null, "", window.location.href);
+    trapPushedRef.current = true;
     
     // Only add beforeunload listener if not submitting
     if (!submitting) {
       window.addEventListener("beforeunload", handleBeforeUnload);
     }
     
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, captureOpts);
     window.addEventListener("popstate", handlePopState);
 
     // Prevent right-click context menu
@@ -113,7 +153,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
     };
 
     const handleSelectStart = (event: Event) => {
-      if (isInsideFloatingToolUi(event.target)) return;
+      if (isInsideFloatingToolUi(event.target) || isAssessmentAnswerField(event.target))
+        return;
       event.preventDefault();
       return false;
     };
@@ -122,7 +163,8 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
     document.addEventListener("selectstart", handleSelectStart);
 
     const handleDragStart = (event: DragEvent) => {
-      if (isInsideFloatingToolUi(event.target)) return;
+      if (isInsideFloatingToolUi(event.target) || isAssessmentAnswerField(event.target))
+        return;
       event.preventDefault();
       return false;
     };
@@ -133,11 +175,21 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
       // Always try to remove, even if it wasn't added
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.onbeforeunload = null; // Also clear the property
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown, captureOpts);
       window.removeEventListener("popstate", handlePopState);
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("selectstart", handleSelectStart);
       document.removeEventListener("dragstart", handleDragStart);
+      // Pop the back-trap entry we pushed on mount so it doesn't survive
+      // navigation away (in particular, post-submit window.location.replace).
+      // This must happen AFTER the popstate listener is removed above, or
+      // our own handler would re-push the trap.
+      if (trapPushedRef.current) {
+        trapPushedRef.current = false;
+        try {
+          window.history.back();
+        } catch {}
+      }
     };
   }, [enabled, submitting, showToast]);
 }

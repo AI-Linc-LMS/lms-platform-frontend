@@ -21,7 +21,7 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
         variant="h4"
         sx={{
           fontWeight: 700,
-          color: "#111827",
+          color: "var(--font-primary)",
           fontSize: { xs: "1.5rem", sm: "1.75rem" },
           mb: 2,
         }}
@@ -31,7 +31,7 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
       {outline.course_description && (
         <Typography
           variant="body1"
-          sx={{ color: "#4b5563", lineHeight: 1.6, mb: 3 }}
+          sx={{ color: "var(--font-secondary)", lineHeight: 1.6, mb: 3 }}
         >
           {outline.course_description}
         </Typography>
@@ -41,14 +41,14 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
         <Box sx={{ mb: 2.5 }}>
           <Typography
             variant="subtitle1"
-            sx={{ fontWeight: 600, color: "#111827", mb: 1 }}
+            sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}
           >
             Learning objectives
           </Typography>
           <Box component="ul" sx={{ m: 0, pl: 2.5, "& li": { mb: 0.5 } }}>
             {outline.learning_objectives.map((obj, i) => (
               <li key={i}>
-                <Typography variant="body2" sx={{ color: "#4b5563" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {obj}
                 </Typography>
               </li>
@@ -61,14 +61,14 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
         <Box sx={{ mb: 2.5 }}>
           <Typography
             variant="subtitle1"
-            sx={{ fontWeight: 600, color: "#111827", mb: 1 }}
+            sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}
           >
             Prerequisites
           </Typography>
           <Box component="ul" sx={{ m: 0, pl: 2.5, "& li": { mb: 0.5 } }}>
             {outline.prerequisites.map((p, i) => (
               <li key={i}>
-                <Typography variant="body2" sx={{ color: "#4b5563" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                   {p}
                 </Typography>
               </li>
@@ -78,20 +78,20 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
       )}
 
       {outline.total_estimated_hours != null && (
-        <Typography variant="body2" sx={{ fontWeight: 500, color: "#374151", mb: 2 }}>
+        <Typography variant="body2" sx={{ fontWeight: 500, color: "var(--font-primary)", mb: 2 }}>
           Estimated total: {outline.total_estimated_hours} hours
         </Typography>
       )}
 
       {outline.skills_covered && outline.skills_covered.length > 0 && (
-        <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
           Skills covered: {outline.skills_covered.join(", ")}
         </Typography>
       )}
 
       <Typography
         variant="subtitle1"
-        sx={{ fontWeight: 600, color: "#111827", mb: 2 }}
+        sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 2 }}
       >
         Modules
       </Typography>
@@ -100,21 +100,21 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
         <Box
           key={i}
           sx={{
-            borderLeft: "3px solid #e5e7eb",
+            borderLeft: "3px solid var(--border-default)",
             pl: 2,
             mb: 2.5,
           }}
         >
           <Typography
             variant="subtitle1"
-            sx={{ fontWeight: 600, color: "#111827" }}
+            sx={{ fontWeight: 600, color: "var(--font-primary)" }}
           >
             Week {mod.week}: {mod.title}
           </Typography>
           {mod.description && (
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", mt: 0.5, mb: 0.5 }}
+              sx={{ color: "var(--font-secondary)", mt: 0.5, mb: 0.5 }}
             >
               {mod.description}
             </Typography>
@@ -122,7 +122,7 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
           {mod.learning_goals && mod.learning_goals.length > 0 && (
             <Typography
               variant="body2"
-              sx={{ color: "#6b7280", fontSize: "0.8125rem", mb: 1 }}
+              sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", mb: 1 }}
             >
               Goals: {mod.learning_goals.join("; ")}
             </Typography>
@@ -133,7 +133,7 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
                 <Typography
                   variant="body2"
                   component="span"
-                  sx={{ fontWeight: 600, color: "#374151" }}
+                  sx={{ fontWeight: 600, color: "var(--font-primary)" }}
                 >
                   {sub.title}
                 </Typography>
@@ -141,7 +141,7 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
                   <Typography
                     variant="body2"
                     component="span"
-                    sx={{ color: "#6b7280" }}
+                    sx={{ color: "var(--font-secondary)" }}
                   >
                     {" "}
                     — {sub.description}

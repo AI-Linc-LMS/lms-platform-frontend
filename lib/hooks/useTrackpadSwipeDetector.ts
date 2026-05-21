@@ -14,6 +14,13 @@ export interface TrackpadSwipeViolation {
 /** Minimum horizontal delta to count as trackpad swipe (pixels or line units). Mouse wheel rarely has deltaX. */
 const HORIZONTAL_SWIPE_THRESHOLD = 5;
 
+function isDominantHorizontalWheel(e: WheelEvent): boolean {
+  const absX = Math.abs(e.deltaX);
+  const absY = Math.abs(e.deltaY);
+  if (absX < HORIZONTAL_SWIPE_THRESHOLD) return false;
+  return absX > absY;
+}
+
 /** Cooldown between recording swipe violations (ms) to avoid burst from one gesture. */
 const SWIPE_VIOLATION_COOLDOWN_MS = 800;
 
@@ -42,8 +49,8 @@ interface UseTrackpadSwipeDetectorReturn {
  *   (1) Block the result of the swipe: preventDefault() stops browser back/forward navigation.
  *   (2) Detect, record, and show all trackpad swipe errors/toasts.
  * - Mouse wheel: typically deltaY only → allowed (no error).
- * - Trackpad horizontal swipe: deltaX significant → we preventDefault (no back/forward),
- *   record violation, and show warning. All trackpad errors are shown.
+ * - Trackpad horizontal swipe: deltaX is large *and* larger than deltaY → preventDefault,
+ *   record violation, and show warning.
  * Vertical scroll (mouse or trackpad) is not blocked so content stays scrollable.
  */
 const TRACKPAD_SWIPE_MESSAGE =
@@ -74,11 +81,9 @@ export function useTrackpadSwipeDetector(
     if (!active || typeof window === "undefined") return;
 
     const handleWheel = (e: WheelEvent) => {
-      const absX = Math.abs(e.deltaX);
-
-      // Horizontal swipe: significant deltaX indicates trackpad/touchpad gesture
-      // (mouse wheel almost never has deltaX). Prevents browser back/forward on macOS/Windows/Linux.
-      if (absX >= HORIZONTAL_SWIPE_THRESHOLD) {
+      // Horizontal swipe: deltaX must dominate deltaY (see isDominantHorizontalWheel).
+      // Prevents browser back/forward on macOS/Windows/Linux.
+      if (isDominantHorizontalWheel(e)) {
         e.preventDefault();
         e.stopPropagation();
 

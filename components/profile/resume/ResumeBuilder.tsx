@@ -1,13 +1,34 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Paper, Menu, MenuItem, Tooltip, Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
+import {
+  Box,
+  Button,
+  Paper,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+} from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeForm } from "./ResumeForm";
 import { ResumePreview } from "./ResumePreview";
 import { ATSScoreCard } from "./ATSScoreCard";
-import { ResumeData } from "./types";
+import { ATSQuickFixes } from "./ATSQuickFixes";
+import { computeStandardATSScoreReport } from "./atsStandardReport";
+import {
+  ResumeData,
+  WorkExperience,
+  Education,
+  Skill,
+  Project,
+  Certification,
+} from "./types";
+import { SAMPLE_RESUME_DATA } from "./sampleResumeData";
 import { useToast } from "@/components/common/Toast";
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
@@ -17,98 +38,23 @@ interface ResumeBuilderProps {
   initialData?: Partial<ResumeData>;
 }
 
-const MOCK_WORK: ResumeData["workExperience"] = [
-  {
-    id: "1",
-    position: "Senior Software Engineer",
-    company: "Tech Solutions Inc.",
-    location: "San Francisco, CA",
-    startDate: "2021-06",
-    endDate: "",
-    current: true,
-    description: [
-      "Led development of microservices architecture serving 1M+ users",
-      "Improved application performance by 40% through code optimization",
-      "Mentored team of 5 junior developers",
-    ],
-  },
-  {
-    id: "2",
-    position: "Software Engineer",
-    company: "Digital Innovations",
-    location: "Remote",
-    startDate: "2019-03",
-    endDate: "2021-05",
-    current: false,
-    description: [
-      "Developed and maintained React-based web applications",
-      "Implemented RESTful APIs using Node.js and Express",
-      "Collaborated with UX team to improve user experience",
-    ],
-  },
-];
-
-const MOCK_EDUCATION: ResumeData["education"] = [
-  {
-    id: "1",
-    degree: "Bachelor of Science in Computer Science",
-    institution: "University of California",
-    location: "Berkeley, CA",
-    startDate: "2015-09",
-    endDate: "2019-05",
-    gpa: "3.8/4.0",
-    description: "Focus on Software Engineering and Artificial Intelligence",
-  },
-];
-
-const MOCK_SKILLS: ResumeData["skills"] = [
-  { id: "1", name: "JavaScript/TypeScript", level: 5 },
-  { id: "2", name: "React & Next.js", level: 5 },
-  { id: "3", name: "Node.js & Express", level: 4 },
-  { id: "4", name: "Python", level: 4 },
-  { id: "5", name: "AWS & Cloud Services", level: 4 },
-  { id: "6", name: "Docker & Kubernetes", level: 3 },
-  { id: "7", name: "SQL & NoSQL Databases", level: 4 },
-  { id: "8", name: "Git & CI/CD", level: 5 },
-];
-
-const MOCK_PROJECTS: ResumeData["projects"] = [
-  {
-    id: "1",
-    name: "E-Commerce Platform",
-    description:
-      "Built a scalable e-commerce platform handling 10K+ daily transactions with real-time inventory management and payment processing.",
-    technologies: ["React", "Node.js", "MongoDB", "Stripe", "Redis"],
-    link: "https://github.com/johndoe/ecommerce",
-  },
-  {
-    id: "2",
-    name: "Task Management App",
-    description:
-      "Developed a collaborative task management application with real-time updates and team collaboration features.",
-    technologies: ["Next.js", "PostgreSQL", "WebSocket", "Tailwind CSS"],
-    link: "https://github.com/johndoe/taskmanager",
-  },
-];
-
-const MOCK_CERTS: ResumeData["certifications"] = [
-  {
-    id: "1",
-    name: "AWS Certified Solutions Architect",
-    issuer: "Amazon Web Services",
-    date: "2022-08",
-    link: "",
-  },
-  {
-    id: "2",
-    name: "Professional Scrum Master I",
-    issuer: "Scrum.org",
-    date: "2021-11",
-    link: "",
-  },
-];
-
-const hasContent = (arr?: unknown[]) => arr && arr.length > 0;
+const EMPTY_BASIC_INFO: ResumeData["basicInfo"] = {
+  firstName: "",
+  lastName: "",
+  professionalTitle: "",
+  email: "",
+  phone: "",
+  location: "",
+  photo: "",
+  summary: "",
+  github: "",
+  linkedin: "",
+  portfolio: "",
+  leetcode: "",
+  hackerrank: "",
+  kaggle: "",
+  medium: "",
+};
 
 const TEMPLATE_KEYS: Record<string, string> = {
   modern: "templateModern",
@@ -125,100 +71,168 @@ const TEMPLATE_KEYS: Record<string, string> = {
   bubble: "templateBubble",
 };
 
+/** Coerce null/undefined to empty string. Backend often returns null for blank fields,
+ *  but MUI TextFields warn loudly when value === null. */
+const s = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
+
+function dropNullish<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === null || v === undefined) continue;
+    out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
+function sanitizeWorkExperience(items?: WorkExperience[]): WorkExperience[] {
+  if (!Array.isArray(items)) return [];
+  return items.map((e, i) => ({
+    id: s(e.id) || String(i + 1),
+    position: s(e.position),
+    company: s(e.company),
+    location: s(e.location),
+    startDate: s(e.startDate),
+    endDate: s(e.endDate),
+    current: Boolean(e.current),
+    description: Array.isArray(e.description)
+      ? e.description.map((d) => s(d)).filter((d) => d.length > 0)
+      : [],
+  }));
+}
+
+function sanitizeEducation(items?: Education[]): Education[] {
+  if (!Array.isArray(items)) return [];
+  return items.map((e, i) => ({
+    id: s(e.id) || String(i + 1),
+    degree: s(e.degree),
+    institution: s(e.institution),
+    location: s(e.location),
+    startDate: s(e.startDate),
+    endDate: s(e.endDate),
+    gpa: s(e.gpa),
+    description: s(e.description),
+  }));
+}
+
+function sanitizeSkills(items?: Skill[]): Skill[] {
+  if (!Array.isArray(items)) return [];
+  return items.map((sk, i) => {
+    const out: Skill = {
+      id: s(sk.id) || String(i + 1),
+      name: s(sk.name),
+    };
+    if (sk.level != null && Number.isFinite(Number(sk.level))) out.level = Number(sk.level);
+    if (sk.category != null && sk.category !== "") out.category = s(sk.category);
+    return out;
+  });
+}
+
+function sanitizeProjects(items?: Project[]): Project[] {
+  if (!Array.isArray(items)) return [];
+  return items.map((p, i) => ({
+    id: s(p.id) || String(i + 1),
+    name: s(p.name),
+    description: s(p.description),
+    technologies: Array.isArray(p.technologies) ? p.technologies.map((t) => s(t)) : [],
+    link: s(p.link),
+  }));
+}
+
+function sanitizeCertifications(items?: Certification[]): Certification[] {
+  if (!Array.isArray(items)) return [];
+  return items.map((c, i) => ({
+    id: s(c.id) || String(i + 1),
+    name: s(c.name),
+    issuer: s(c.issuer),
+    date: s(c.date),
+    link: s(c.link),
+  }));
+}
+
+/** Build resume data from the user's profile. Empty profile = empty form (no mocks).
+ *  All null/undefined string fields are coerced to "" so MUI inputs stay controlled. */
 const buildResumeData = (d?: Partial<ResumeData>): ResumeData => ({
   basicInfo: {
-    firstName: d?.basicInfo?.firstName || "John",
-    lastName: d?.basicInfo?.lastName || "Doe",
-    professionalTitle: d?.basicInfo?.professionalTitle || "Senior Software Engineer",
-    email: d?.basicInfo?.email || "john.doe@example.com",
-    phone: d?.basicInfo?.phone || "+1 (555) 123-4567",
-    location: d?.basicInfo?.location || "San Francisco, CA",
-    photo: d?.basicInfo?.photo || "",
-    summary:
-      d?.basicInfo?.summary ||
-      "Experienced software engineer with 5+ years of expertise in full-stack development, specializing in React, Node.js, and cloud technologies. Proven track record of delivering scalable solutions and leading cross-functional teams.",
-    github: d?.basicInfo?.github ?? "",
-    linkedin: d?.basicInfo?.linkedin ?? "",
-    portfolio: d?.basicInfo?.portfolio ?? "",
-    leetcode: d?.basicInfo?.leetcode ?? "",
-    hackerrank: d?.basicInfo?.hackerrank ?? "",
-    kaggle: d?.basicInfo?.kaggle ?? "",
-    medium: d?.basicInfo?.medium ?? "",
+    ...EMPTY_BASIC_INFO,
+    ...(d?.basicInfo ? dropNullish(d.basicInfo as unknown as Record<string, unknown>) : {}),
   },
-  workExperience: hasContent(d?.workExperience) ? d!.workExperience! : MOCK_WORK,
-  education: hasContent(d?.education) ? d!.education! : MOCK_EDUCATION,
-  skills: hasContent(d?.skills) ? d!.skills! : MOCK_SKILLS,
-  projects: hasContent(d?.projects) ? d!.projects! : MOCK_PROJECTS,
-  certifications: hasContent(d?.certifications) ? d!.certifications! : MOCK_CERTS,
+  workExperience: sanitizeWorkExperience(d?.workExperience),
+  education: sanitizeEducation(d?.education),
+  skills: sanitizeSkills(d?.skills),
+  projects: sanitizeProjects(d?.projects),
+  certifications: sanitizeCertifications(d?.certifications),
 });
+
+type TemplateName =
+  | "modern"
+  | "classic"
+  | "minimal"
+  | "executive"
+  | "creative"
+  | "technical"
+  | "western"
+  | "luxsleek"
+  | "twocolumn"
+  | "accentbar"
+  | "rightsidebar"
+  | "bubble";
 
 export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
-  const [selectedTemplate, setSelectedTemplate] = useState<
-    "modern" | "classic" | "minimal" | "executive" | "creative" | "technical" | "western" | "luxsleek" | "twocolumn" | "accentbar" | "rightsidebar" | "bubble"
-  >("modern");
-  const [templateMenuAnchor, setTemplateMenuAnchor] =
-    useState<null | HTMLElement>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
+  const [templateMenuAnchor, setTemplateMenuAnchor] = useState<null | HTMLElement>(null);
   const [atsDialogOpen, setAtsDialogOpen] = useState(false);
-  const [atsScoreLive, setAtsScoreLive] = useState<number | null>(null);
-  const [atsScoreLoading, setAtsScoreLoading] = useState(false);
-  const atsScanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const [isProfileMode, setIsProfileMode] = useState(false);
-  const [resumeData, setResumeData] = useState<ResumeData>(() => buildResumeData());
+  // Profile data populates the form by default; sample data is opt-in via the toggle below.
+  const [isSampleMode, setIsSampleMode] = useState(false);
+  const [resumeData, setResumeData] = useState<ResumeData>(() => buildResumeData(initialData));
 
-  const runLightAtsScan = useCallback(async () => {
-    setAtsScoreLoading(true);
-    try {
-      const res = await fetch("/api/ats-analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeData, light: true }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && typeof data.atsScore === "number") {
-        setAtsScoreLive(Math.min(100, Math.max(0, Math.round(data.atsScore))));
-      } else {
-        setAtsScoreLive(null);
-      }
-    } catch {
-      setAtsScoreLive(null);
-    } finally {
-      setAtsScoreLoading(false);
+  // If the parent fetches profile data after mount (initialData arrives later), hydrate once.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current || isSampleMode) return;
+    if (initialData && Object.keys(initialData).length > 0) {
+      setResumeData(buildResumeData(initialData));
+      hydratedRef.current = true;
     }
+  }, [initialData, isSampleMode]);
+
+  // Rule-based score (deterministic). Shown on the toolbar until the AI analysis runs.
+  const ruleBasedAtsScore = useMemo(
+    () => computeStandardATSScoreReport(resumeData).atsScore,
+    [resumeData]
+  );
+
+  // AI-derived score (populated by ATSScoreCard once analysis completes). Reset whenever
+  // resumeData changes — the AI's verdict is for the version of the resume it analyzed.
+  const [aiAtsScore, setAiAtsScore] = useState<number | null>(null);
+  useEffect(() => {
+    setAiAtsScore(null);
   }, [resumeData]);
 
-  useEffect(() => {
-    if (atsScanTimeoutRef.current) clearTimeout(atsScanTimeoutRef.current);
-    atsScanTimeoutRef.current = setTimeout(() => {
-      runLightAtsScan();
-    }, 1500);
-    return () => {
-      if (atsScanTimeoutRef.current) clearTimeout(atsScanTimeoutRef.current);
-    };
-  }, [resumeData, runLightAtsScan]);
-
-  const handleSave = () => {
-    showToast(t("profile.resumeSaved"), "success");
-  };
+  // Toolbar button shows AI score if available (same one displayed in the dialog gauge),
+  // otherwise the rule-based score. Either way, button and dialog agree.
+  const atsScoreLive = aiAtsScore ?? ruleBasedAtsScore;
 
   const handleClearData = () => {
     setResumeData(buildResumeData());
-    setIsProfileMode(false);
+    setIsSampleMode(false);
+    hydratedRef.current = true;
     showToast(t("profile.resumeDataCleared"), "success");
   };
 
+  /** Toggle between user's profile data (default) and a sample resume (for preview/demo). */
   const handleToggleSource = () => {
-    if (isProfileMode) {
-      setResumeData(buildResumeData());
-      setIsProfileMode(false);
-      showToast(t("profile.switchedToMockData"), "info");
-    } else {
+    if (isSampleMode) {
       setResumeData(buildResumeData(initialData));
-      setIsProfileMode(true);
-      showToast(t("profile.profileDataImported"), "success");
+      setIsSampleMode(false);
+      showToast(t("profile.switchedToProfileData"), "info");
+    } else {
+      setResumeData(SAMPLE_RESUME_DATA);
+      setIsSampleMode(true);
+      showToast(t("profile.sampleDataLoaded"), "success");
     }
   };
 
@@ -310,7 +324,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
 
     const dataUrl = await toPng(clone, {
       pixelRatio: 3,
-      backgroundColor: "#ffffff",
+      backgroundColor: "var(--background)",
       cacheBust: true,
     });
     document.body.removeChild(wrapper);
@@ -351,10 +365,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
 
   const handleDownloadPDF = async () => {
     if (!previewRef.current) return;
-    const origDescriptor = Object.getOwnPropertyDescriptor(
-      CSSStyleSheet.prototype,
-      "cssRules"
-    );
+    const origDescriptor = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, "cssRules");
     let patched = false;
     try {
       Object.defineProperty(CSSStyleSheet.prototype, "cssRules", {
@@ -387,11 +398,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
     } finally {
       if (patched && origDescriptor) {
         try {
-          Object.defineProperty(
-            CSSStyleSheet.prototype,
-            "cssRules",
-            origDescriptor
-          );
+          Object.defineProperty(CSSStyleSheet.prototype, "cssRules", origDescriptor);
         } catch {
           /* ignore */
         }
@@ -402,10 +409,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   const [saveResumeLoading, setSaveResumeLoading] = useState(false);
   const handleSaveResume = async () => {
     if (!previewRef.current) return;
-    const origDescriptor = Object.getOwnPropertyDescriptor(
-      CSSStyleSheet.prototype,
-      "cssRules"
-    );
+    const origDescriptor = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, "cssRules");
     let patched = false;
     try {
       Object.defineProperty(CSSStyleSheet.prototype, "cssRules", {
@@ -437,11 +441,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
       setSaveResumeLoading(false);
       if (patched && origDescriptor) {
         try {
-          Object.defineProperty(
-            CSSStyleSheet.prototype,
-            "cssRules",
-            origDescriptor
-          );
+          Object.defineProperty(CSSStyleSheet.prototype, "cssRules", origDescriptor);
         } catch {
           /* ignore */
         }
@@ -457,21 +457,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
     setTemplateMenuAnchor(null);
   };
 
-  const handleTemplateSelect = (
-    template:
-      | "modern"
-      | "classic"
-      | "minimal"
-      | "executive"
-      | "creative"
-      | "technical"
-      | "western"
-      | "luxsleek"
-      | "twocolumn"
-      | "accentbar"
-      | "rightsidebar"
-      | "bubble"
-  ) => {
+  const handleTemplateSelect = (template: TemplateName) => {
     setSelectedTemplate(template);
     handleTemplateMenuClose();
     const templateName = t(`profile.${TEMPLATE_KEYS[template]}`);
@@ -486,7 +472,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
         sx={{
           p: 2,
           mb: 3,
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--border-default)",
           borderRadius: 2,
           display: "flex",
           alignItems: "center",
@@ -495,26 +481,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           gap: 2,
         }}
       >
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          <Tooltip title={t("profile.save")}>
-            <Button
-              variant="outlined"
-              startIcon={<IconWrapper icon="mdi:content-save" />}
-              onClick={handleSave}
-              sx={{
-                textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#1f2937",
-                "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: "#f9fafb",
-                },
-              }}
-            >
-              {t("profile.save")}
-            </Button>
-          </Tooltip>
-
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
           <Tooltip title={t("profile.clearSavedData")}>
             <Button
               variant="outlined"
@@ -522,11 +489,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={handleClearData}
               sx={{
                 textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#dc2626",
+                borderColor: "var(--border-default)",
+                color: "var(--error-500)",
                 "&:hover": {
-                  borderColor: "#dc2626",
-                  backgroundColor: "#fef2f2",
+                  borderColor: "var(--error-500)",
+                  backgroundColor: "color-mix(in srgb, var(--error-500) 10%, var(--surface))",
                 },
               }}
             >
@@ -534,23 +501,23 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             </Button>
           </Tooltip>
 
-          <Tooltip title={isProfileMode ? t("profile.tooltipSwitchToMock") : t("profile.tooltipImportFromProfile")}>
+          <Tooltip title={isSampleMode ? t("profile.tooltipSwitchToProfile") : t("profile.tooltipLoadSample")}>
             <Button
               variant="outlined"
-              startIcon={<IconWrapper icon={isProfileMode ? "mdi:swap-horizontal" : "mdi:account-arrow-right"} />}
+              startIcon={<IconWrapper icon={isSampleMode ? "mdi:account-arrow-right" : "mdi:swap-horizontal"} />}
               onClick={handleToggleSource}
               sx={{
                 textTransform: "none",
-                borderColor: isProfileMode ? "#6366f1" : "#e5e7eb",
-                color: "#6366f1",
-                backgroundColor: isProfileMode ? "#eef2ff" : "transparent",
+                borderColor: isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
+                color: "var(--accent-purple)",
+                backgroundColor: isSampleMode ? "color-mix(in srgb, var(--accent-purple) 12%, var(--surface))" : "transparent",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: isProfileMode ? "#e0e7ff" : "#eef2ff",
+                  borderColor: "var(--accent-purple)",
+                  backgroundColor: isSampleMode ? "color-mix(in srgb, var(--accent-purple) 18%, var(--surface))" : "color-mix(in srgb, var(--accent-purple) 12%, var(--surface))",
                 },
               }}
             >
-              {isProfileMode ? t("profile.useMockData") : t("profile.importFromProfile")}
+              {isSampleMode ? t("profile.useProfileData") : t("profile.loadSampleData")}
             </Button>
           </Tooltip>
 
@@ -561,11 +528,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={handleTemplateMenuOpen}
               sx={{
                 textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#1f2937",
+                borderColor: "var(--border-default)",
+                color: "var(--font-primary)",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--accent-purple)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -580,31 +547,34 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               onClick={() => setAtsDialogOpen(true)}
               sx={{
                 textTransform: "none",
-                borderColor: "#e5e7eb",
-                color: "#1f2937",
+                borderColor: "var(--border-default)",
+                color: "var(--font-primary)",
                 "&:hover": {
-                  borderColor: "#6366f1",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--accent-purple)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
               {t("profile.atsScoreButton")}
-              {atsScoreLoading ? (
-                <Box component="span" sx={{ ml: 1, opacity: 0.8 }}>
-                  …
-                </Box>
-              ) : atsScoreLive !== null ? (
-                <Box
-                  component="span"
-                  sx={{
-                    ml: 1,
-                    fontWeight: 700,
-                    color: atsScoreLive >= 80 ? "#16a34a" : atsScoreLive >= 50 ? "#ca8a04" : "#dc2626",
-                  }}
-                >
-                  {atsScoreLive}
-                </Box>
-              ) : null}
+              <Box component="span" sx={{ ml: 1, display: "inline-flex", alignItems: "center" }}>
+                <IconWrapper
+                  icon={
+                    atsScoreLive >= 80
+                      ? "mdi:emoticon-happy-outline"
+                      : atsScoreLive >= 50
+                        ? "mdi:emoticon-neutral-outline"
+                        : "mdi:emoticon-sad-outline"
+                  }
+                  size={20}
+                  color={
+                    atsScoreLive >= 80
+                      ? "var(--success-500)"
+                      : atsScoreLive >= 50
+                        ? "var(--warning-500)"
+                        : "var(--error-500)"
+                  }
+                />
+              </Box>
             </Button>
           </Tooltip>
 
@@ -613,42 +583,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             open={Boolean(templateMenuAnchor)}
             onClose={handleTemplateMenuClose}
           >
-            <MenuItem onClick={() => handleTemplateSelect("modern")}>
-              {t("profile.templateModern")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("classic")}>
-              {t("profile.templateClassic")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("minimal")}>
-              {t("profile.templateMinimal")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("executive")}>
-              {t("profile.templateExecutive")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("creative")}>
-              {t("profile.templateCreative")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("technical")}>
-              {t("profile.templateTechnical")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("western")}>
-              {t("profile.templateWestern")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("luxsleek")}>
-              {t("profile.templateLuxsleek")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("twocolumn")}>
-              {t("profile.templateTwocolumn")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("accentbar")}>
-              {t("profile.templateAccentbar")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("rightsidebar")}>
-              {t("profile.templateRightsidebar")}
-            </MenuItem>
-            <MenuItem onClick={() => handleTemplateSelect("bubble")}>
-              {t("profile.templateBubble")}
-            </MenuItem>
+            {(Object.keys(TEMPLATE_KEYS) as TemplateName[]).map((template) => (
+              <MenuItem key={template} onClick={() => handleTemplateSelect(template)}>
+                {t(`profile.${TEMPLATE_KEYS[template]}`)}
+              </MenuItem>
+            ))}
           </Menu>
         </Box>
 
@@ -661,11 +600,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               disabled={saveResumeLoading}
               sx={{
                 textTransform: "none",
-                backgroundColor: "#6366f1",
-                color: "#ffffff",
+                backgroundColor: "var(--accent-purple)",
+                color: "var(--background)",
                 px: 3,
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
+                  backgroundColor: "var(--accent-indigo-dark)",
                 },
               }}
             >
@@ -678,11 +617,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             onClick={handleDownloadPDF}
             sx={{
               textTransform: "none",
-              backgroundColor: "#6366f1",
-              color: "#ffffff",
+              backgroundColor: "var(--accent-purple)",
+              color: "var(--background)",
               px: 3,
               "&:hover": {
-                backgroundColor: "#4f46e5",
+                backgroundColor: "var(--accent-indigo-dark)",
               },
             }}
           >
@@ -746,7 +685,10 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             resumeData={resumeData}
             initialLiveScore={atsScoreLive ?? undefined}
             dialogOpen={atsDialogOpen}
+            onResumeChange={setResumeData}
+            onAiScoreUpdate={setAiAtsScore}
           />
+          <ATSQuickFixes resumeData={resumeData} />
         </DialogContent>
       </Dialog>
     </Box>

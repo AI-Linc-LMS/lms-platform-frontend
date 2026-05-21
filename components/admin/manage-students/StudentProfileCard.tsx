@@ -29,9 +29,11 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
       sx={{
         p: 3,
         borderRadius: 2,
-        background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-        color: "white",
-        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+        background:
+          "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
+        color: "var(--font-light)",
+        boxShadow:
+          "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
       }}
     >
       <Box
@@ -46,9 +48,9 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
           sx={{
             width: 100,
             height: 100,
-            bgcolor: "rgba(255,255,255,0.2)",
+            bgcolor: "color-mix(in srgb, var(--font-light) 20%, transparent)",
             fontSize: "2rem",
-            border: "4px solid white",
+            border: "4px solid var(--font-light)",
           }}
         >
           {getInitials(personal_info.first_name, personal_info.last_name)}
@@ -57,12 +59,12 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
           label={personal_info.is_active ? t("manageStudents.active") : t("manageStudents.inactive")}
           sx={{
             bgcolor: personal_info.is_active
-              ? "rgba(16, 185, 129, 0.3)"
-              : "rgba(239, 68, 68, 0.3)",
-            color: "white",
+              ? "color-mix(in srgb, var(--success-500) 30%, transparent)"
+              : "color-mix(in srgb, var(--error-500) 30%, transparent)",
+            color: "var(--font-light)",
             fontWeight: 600,
             border: `2px solid ${
-              personal_info.is_active ? "#10b981" : "#ef4444"
+              personal_info.is_active ? "var(--success-500)" : "var(--error-500)"
             }`,
           }}
         />
@@ -76,14 +78,14 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
           sx={{
             width: "100%",
             pt: 1,
-            borderTop: "1px solid rgba(255,255,255,0.2)",
+            borderTop: "1px solid color-mix(in srgb, var(--font-light) 22%, transparent)",
             textAlign: "center",
           }}
         >
           <Typography
             variant="caption"
             sx={{
-              color: "#9ca3af",
+              color: "color-mix(in srgb, var(--font-light) 70%, transparent)",
               fontSize: "0.7rem",
               display: "block",
               mb: 0.5,

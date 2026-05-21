@@ -959,12 +959,25 @@ Authorization: Bearer <jwt_token>
 - **Endpoint**: `POST /api/clients/{client_id}/upload/`
 - **Authentication**: Required
 - **Content-Type**: `multipart/form-data`
-- **Request Body** (form fields):
+
+**A) General uploads** (non-certificates) — include `module`:
+
+| Field    | Type   | Required | Description                                              |
+|----------|--------|----------|----------------------------------------------------------|
+| `file`   | File   | Yes      | PDF or image (PNG, JPEG, GIF, WEBP). Max 10 MB.          |
+| `module` | String | Yes      | One of: `assessment_screenshots`, `report_issue`, `profile_avatar`, `job_application`, `other` |
+
+**B) Admin certificate uploads** — send **`module=certificates`** plus **`certificate_scope`**. Backend should store the object under **`certificates/{client_id}/{slug}/{tier}/...`** for assessments.
 
 | Field   | Type   | Required | Description                                              |
 |---------|--------|----------|----------------------------------------------------------|
 | `file`  | File   | Yes      | PDF or image (PNG, JPEG, GIF, WEBP). Max 10 MB.          |
-| `module`| String | Yes      | One of: `assessment_screenshots`, `report_issue`, `profile_avatar`, `job_application`, `other` |
+| `module` | String | Yes | Must be `certificates`. |
+| `certificate_scope` | String | Yes | `assessment` or `course`. |
+| `assessment_slug` | String | Required when scope is `assessment` | Assessment slug (e.g. under `…/certificates/…/<tier>/<slug>/`). |
+| `certificate_tier` | String | Required when scope is `assessment` | `participation` or `excellence`. |
+| `course_id` | String (numeric) | Required when scope is `course` | Course primary key. |
+| `certificate_path_hint` | String | Recommended | Explicit backend key prefix hint. For assessment: `certificates/{client_id}/{assessment_slug}/{certificate_tier}/` |
 
 - **Response** (201 Created):
 
@@ -978,7 +991,7 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
-- **Usage**: Upload files to S3; use returned `url` as `screenshot_url` in Report Issue or elsewhere. See `ai-linc-backend/docs/FILE_UPLOAD_API.md` for full documentation.
+- **Usage**: Upload files to S3; use returned `url` as `screenshot_url` in Report Issue or elsewhere. The LMS admin **Certificate uploads** UI uses **variant B** only. See `ai-linc-backend/docs/FILE_UPLOAD_API.md` for full documentation.
 
 #### 19. Workshop Variables
 

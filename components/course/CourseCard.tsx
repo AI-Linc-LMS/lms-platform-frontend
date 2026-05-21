@@ -51,11 +51,18 @@ export const CourseCard = memo(
       [onEnroll, course.id]
     );
 
-    const totalLessons = useMemo(
-      () =>
-        (course.stats?.article?.total || 0) + (course.stats?.video?.total || 0),
-      [course.stats]
-    );
+    const totalLessons = useMemo(() => {
+      const s = course.stats;
+      if (!s) return 0;
+      return (
+        (s.video?.total || 0) +
+        (s.article?.total || 0) +
+        (s.quiz?.total || 0) +
+        (s.assignment?.total || 0) +
+        (s.coding_problem?.total || 0) +
+        (s.subjective_question?.total || 0)
+      );
+    }, [course.stats]);
 
     return (
       <Card
@@ -65,14 +72,18 @@ export const CourseCard = memo(
           display: "flex",
           flexDirection: "column",
           border: "1px solid",
-          borderColor: isEnrolled ? "rgba(16, 185, 129, 0.2)" : "#e5e7eb",
+          borderColor: isEnrolled
+            ? "color-mix(in srgb, var(--success-500) 30%, transparent)"
+            : "var(--border-default)",
           borderRadius: 3,
           overflow: "hidden",
           transition: "all 0.3s ease",
           position: "relative",
           "&:hover": {
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
-            borderColor: isEnrolled ? "rgba(16, 185, 129, 0.4)" : "#6366f1",
+            borderColor: isEnrolled
+              ? "color-mix(in srgb, var(--success-500) 48%, transparent)"
+              : "var(--accent-indigo)",
           },
         }}
       >
@@ -91,13 +102,13 @@ export const CourseCard = memo(
               label={t("courses.enrolled")}
               size="small"
               sx={{
-                backgroundColor: "#d1fae5",
-                color: "#065f46",
+                backgroundColor: "color-mix(in srgb, var(--success-500) 22%, transparent)",
+                color: "var(--success-500)",
                 fontWeight: 600,
                 fontSize: "0.7rem",
                 height: 22,
                 "& .MuiChip-icon": {
-                  color: "#065f46",
+                  color: "var(--success-500)",
                 },
               }}
             />
@@ -108,8 +119,8 @@ export const CourseCard = memo(
         <Box
           sx={{
             background: isEnrolled
-              ? "linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.05) 100%)"
-              : "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+              ? "linear-gradient(135deg, color-mix(in srgb, var(--success-500) 12%, transparent) 0%, color-mix(in srgb, var(--success-500) 8%, transparent) 100%)"
+              : "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
             p: 2,
             pb: 2.5,
             position: "relative",
@@ -121,7 +132,7 @@ export const CourseCard = memo(
           <Typography
             variant="h6"
             sx={{
-              color: isEnrolled ? "#1f2937" : "#ffffff",
+              color: isEnrolled ? "var(--font-primary)" : "#ffffff",
               fontWeight: 700,
               fontSize: "1rem",
               mb: 0.5,
@@ -139,7 +150,7 @@ export const CourseCard = memo(
           <Typography
             variant="body2"
             sx={{
-              color: isEnrolled ? "#6b7280" : "rgba(255, 255, 255, 0.9)",
+              color: isEnrolled ? "var(--font-secondary)" : "rgba(255, 255, 255, 0.9)",
               fontSize: "0.8125rem",
               minHeight: 18,
               display: "-webkit-box",
@@ -171,7 +182,7 @@ export const CourseCard = memo(
             <Typography
               variant="body2"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.8125rem",
                 lineHeight: 1.5,
                 mb: 2,
@@ -204,20 +215,20 @@ export const CourseCard = memo(
                 alignItems: "center",
                 gap: 0.75,
                 p: 1.25,
-                backgroundColor: "#f3f4f6",
+                backgroundColor: "var(--surface)",
                 borderRadius: 1.5,
               }}
             >
               <IconWrapper
                 icon={isEnrolled ? "mdi:chart-box-outline" : "mdi:book-outline"}
                 size={18}
-                color="#6366f1"
+                color="var(--accent-indigo)"
               />
               <Box sx={{ flex: 1, minWidth: 0, textAlign: "start" }}>
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "#9ca3af",
+                    color: "var(--font-tertiary)",
                     fontSize: "0.65rem",
                     fontWeight: 500,
                     textTransform: "uppercase",
@@ -231,7 +242,7 @@ export const CourseCard = memo(
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#1f2937",
+                    color: "var(--font-primary)",
                     fontWeight: 600,
                     fontSize: "0.8125rem",
                     lineHeight: 1.2,
@@ -249,16 +260,16 @@ export const CourseCard = memo(
                 alignItems: "center",
                 gap: 0.75,
                 p: 1.25,
-                backgroundColor: "#f3f4f6",
+                backgroundColor: "var(--surface)",
                 borderRadius: 1.5,
               }}
             >
-              <IconWrapper icon="mdi:speedometer" size={18} color="#6366f1" />
+              <IconWrapper icon="mdi:speedometer" size={18} color="var(--accent-indigo)" />
               <Box sx={{ minWidth: 0, textAlign: "start" }}>
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "#9ca3af",
+                    color: "var(--font-tertiary)",
                     fontSize: "0.65rem",
                     fontWeight: 500,
                     textTransform: "uppercase",
@@ -272,7 +283,7 @@ export const CourseCard = memo(
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#1f2937",
+                    color: "var(--font-primary)",
                     fontWeight: 600,
                     fontSize: "0.8125rem",
                     lineHeight: 1.2,
@@ -306,7 +317,7 @@ export const CourseCard = memo(
                 !isEnrolled && (!course.enrollment_enabled || enrolling)
               }
               sx={{
-                backgroundColor: isEnrolled ? "#10b981" : "#6366f1",
+                backgroundColor: isEnrolled ? "var(--success-500)" : "var(--accent-indigo)",
                 color: "#ffffff",
                 fontWeight: 600,
                 py: 1,
@@ -314,13 +325,15 @@ export const CourseCard = memo(
                 textTransform: "none",
                 fontSize: "0.875rem",
                 boxShadow: isEnrolled
-                  ? "0 4px 14px 0 rgba(16, 185, 129, 0.39)"
-                  : "0 4px 14px 0 rgba(99, 102, 241, 0.39)",
+                  ? "0 4px 14px 0 color-mix(in srgb, var(--success-500) 40%, transparent)"
+                  : "0 4px 14px 0 color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
                 "&:hover": {
-                  backgroundColor: isEnrolled ? "#059669" : "#4f46e5",
+                  backgroundColor: isEnrolled
+                    ? "color-mix(in srgb, var(--success-500) 86%, black)"
+                    : "var(--accent-indigo-dark)",
                   boxShadow: isEnrolled
-                    ? "0 6px 20px 0 rgba(16, 185, 129, 0.5)"
-                    : "0 6px 20px 0 rgba(99, 102, 241, 0.5)",
+                    ? "0 6px 20px 0 color-mix(in srgb, var(--success-500) 52%, transparent)"
+                    : "0 6px 20px 0 color-mix(in srgb, var(--accent-indigo) 52%, transparent)",
                   transform: "translateY(-2px)",
                 },
                 transition: "all 0.2s ease",
@@ -340,12 +353,19 @@ export const CourseCard = memo(
     );
   },
   (prevProps, nextProps) => {
-    // Only re-render if course data or enrolling state changes
+    const contentTotal = (c: Course) =>
+      (c.stats?.video?.total || 0) +
+      (c.stats?.article?.total || 0) +
+      (c.stats?.quiz?.total || 0) +
+      (c.stats?.assignment?.total || 0) +
+      (c.stats?.coding_problem?.total || 0) +
+      (c.stats?.subjective_question?.total || 0);
     return (
       prevProps.course.id === nextProps.course.id &&
       prevProps.course.is_enrolled === nextProps.course.is_enrolled &&
       prevProps.course.progress === nextProps.course.progress &&
-      prevProps.enrolling === nextProps.enrolling
+      prevProps.enrolling === nextProps.enrolling &&
+      contentTotal(prevProps.course) === contentTotal(nextProps.course)
     );
   }
 );

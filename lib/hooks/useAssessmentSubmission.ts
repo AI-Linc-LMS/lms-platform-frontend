@@ -4,6 +4,7 @@ import { useToast } from "@/components/common/Toast";
 import { assessmentService } from "@/lib/services/assessment.service";
 import {
   AssessmentMetadata,
+  SESSION_START_SCREENSHOT_TYPE,
   type ViolationScreenshotSample,
 } from "@/lib/services/assessment.service";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
@@ -37,6 +38,10 @@ interface UseAssessmentSubmissionOptions {
   setShowFullscreenWarning: (value: boolean) => void;
   setShowSubmitDialog?: (value: boolean) => void;
   violationScreenshotSamplesRef?: MutableRefObject<ViolationScreenshotSample[]>;
+  /** Keys from `timedSectionCompletionKey` — merged into final payload. */
+  timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
+  autoSubmitReasonRef?: MutableRefObject<string | null>;
+  autoSubmitMetaRef?: MutableRefObject<Record<string, any> | null>;
 }
 
 export function useAssessmentSubmission({
@@ -51,6 +56,9 @@ export function useAssessmentSubmission({
   setShowFullscreenWarning,
   setShowSubmitDialog,
   violationScreenshotSamplesRef,
+  timedSectionsCompleteRef,
+  autoSubmitReasonRef,
+  autoSubmitMetaRef,
 }: UseAssessmentSubmissionOptions) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -211,12 +219,29 @@ export function useAssessmentSubmission({
         return null;
       };
       const { quizSectionId, codingProblemSectionId, subjectiveQuestionSectionId } =
-        formatAssessmentResponses(currentResponses, sections, getCodeFromSession);
+        formatAssessmentResponses(
+          currentResponses,
+          sections,
+          getCodeFromSession,
+          timedSectionsCompleteRef?.current ?? null,
+        );
 
-      const violationScreenshotSamples = pickRandomUpTo(
-        violationScreenshotSamplesRef?.current ?? [],
-        VIOLATION_SCREENSHOT_SUBMIT_MAX
+      const rawSamples = violationScreenshotSamplesRef?.current ?? [];
+      const sessionStartSamples = rawSamples.filter(
+        (s) => s.latest_violation_type === SESSION_START_SCREENSHOT_TYPE
       );
+      const otherSamples = rawSamples.filter(
+        (s) => s.latest_violation_type !== SESSION_START_SCREENSHOT_TYPE
+      );
+      const remainingSlots = Math.max(
+        0,
+        VIOLATION_SCREENSHOT_SUBMIT_MAX - sessionStartSamples.length
+      );
+      const pickedOthers = pickRandomUpTo(otherSamples, remainingSlots);
+      const violationScreenshotSamples = [
+        ...sessionStartSamples,
+        ...pickedOthers,
+      ].slice(0, VIOLATION_SCREENSHOT_SUBMIT_MAX);
 
       // Prepare metadata for transcript
       const transcriptMetadata = {
@@ -255,6 +280,8 @@ export function useAssessmentSubmission({
         quizSectionId,
         codingProblemSectionId,
         subjectiveQuestionSectionId,
+        auto_submitted_reason: autoSubmitReasonRef?.current || undefined,
+        auto_submitted_meta: autoSubmitMetaRef?.current || undefined,
       };
 
       // Submit assessment - THIS IS THE CRITICAL STEP
@@ -330,12 +357,16 @@ export function useAssessmentSubmission({
       });
 
       // Navigate immediately - no delay to prevent freezing
-      // Use window.location for reliable navigation (ensures clean state)
+      // Use window.location.replace (NOT .href) so the take page is removed
+      // from browser history. Otherwise the user can hit "Back" from the
+      // result/success page and land on the in-progress take page, where
+      // (depending on bfcache + race timing) they can resume an interview
+      // they've already submitted.
       // SECURITY: Only navigate if submission was successful
       if (hasNavigatedRef.current) {
         // Use requestAnimationFrame for smooth, non-blocking navigation
         requestAnimationFrame(() => {
-          window.location.href = `/assessments/${slug}/submission-success`;
+          window.location.replace(`/assessments/${slug}/submission-success`);
         });
       }
     } catch (error: any) {
@@ -374,6 +405,7 @@ export function useAssessmentSubmission({
     showToast,
     stopCameraCompletely,
     violationScreenshotSamplesRef,
+    timedSectionsCompleteRef,
   ]);
 
   return { handleFinalSubmit };

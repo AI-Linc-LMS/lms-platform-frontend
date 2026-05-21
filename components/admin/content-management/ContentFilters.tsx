@@ -75,7 +75,7 @@ export function ContentFilters({
               <IconWrapper
                 icon="mdi:magnify"
                 size={20}
-                color="#9ca3af"
+                color="var(--font-tertiary)"
               />
             </Box>
           ),
@@ -83,7 +83,7 @@ export function ContentFilters({
         sx={{
           flex: 1,
           "& .MuiOutlinedInput-root": {
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--card-bg)",
           },
         }}
       />
@@ -128,11 +128,12 @@ export function ContentFilters({
           startIcon={<IconWrapper icon="mdi:close" size={18} />}
           sx={{
             minWidth: { xs: "100%", sm: "auto" },
-            borderColor: "#d1d5db",
-            color: "#6b7280",
+            borderColor: "var(--border-default)",
+            color: "var(--font-secondary)",
             "&:hover": {
-              borderColor: "#9ca3af",
-              backgroundColor: "#f9fafb",
+              borderColor:
+                "color-mix(in srgb, var(--font-secondary) 34%, var(--border-default) 66%)",
+              backgroundColor: "var(--surface)",
             },
           }}
         >

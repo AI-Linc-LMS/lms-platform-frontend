@@ -76,13 +76,15 @@ export function MockInterviewFilters({
         p: { xs: 2, sm: 3 },
         mb: { xs: 2, sm: 3 },
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        backgroundColor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
         transition: "box-shadow 0.2s ease, border-color 0.2s ease",
         "&:hover": {
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          borderColor: "#d1d5db",
+          boxShadow:
+            "0 2px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
+          borderColor: "color-mix(in srgb, var(--font-secondary) 26%, var(--border-default) 74%)",
         },
       }}
     >
@@ -97,8 +99,8 @@ export function MockInterviewFilters({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="mdi:filter-variant" size={20} color="#6366f1" />
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#111827" }}>
+          <IconWrapper icon="mdi:filter-variant" size={20} color="var(--accent-indigo)" />
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
             {t("adminMockInterview.filterInterviews")}
           </Typography>
           {hasFilters && (
@@ -108,8 +110,9 @@ export function MockInterviewFilters({
                 px: 1,
                 py: 0.25,
                 borderRadius: 1,
-                backgroundColor: "#eef2ff",
-                color: "#6366f1",
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                color: "var(--accent-indigo)",
                 fontSize: "0.75rem",
                 fontWeight: 600,
               }}
@@ -124,11 +127,12 @@ export function MockInterviewFilters({
             startIcon={<IconWrapper icon="mdi:filter-off-outline" size={18} />}
             onClick={onClearFilters}
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               textTransform: "none",
               "&:hover": {
-                backgroundColor: "#f3f4f6",
-                color: "#374151",
+                backgroundColor:
+                  "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+                color: "var(--font-primary)",
               },
             }}
           >
@@ -158,7 +162,7 @@ export function MockInterviewFilters({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <IconWrapper icon="mdi:magnify" size={20} color="#6b7280" />
+                <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
               </InputAdornment>
             ),
           }}
@@ -167,12 +171,13 @@ export function MockInterviewFilters({
               transition: "background-color 0.2s, border-color 0.2s",
               "&:hover": {
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#9ca3af",
+                  borderColor:
+                    "color-mix(in srgb, var(--font-secondary) 34%, var(--border-default) 66%)",
                 },
               },
               "&.Mui-focused": {
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#6366f1",
+                  borderColor: "var(--accent-indigo)",
                   borderWidth: 2,
                 },
               },

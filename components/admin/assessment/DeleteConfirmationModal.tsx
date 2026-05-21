@@ -47,7 +47,7 @@ export function DeleteConfirmationModal({
           pb: 1,
         }}
       >
-        <IconWrapper icon="mdi:alert-circle" size={24} color="#ef4444" />
+        <IconWrapper icon="mdi:alert-circle" size={24} color="var(--error-500)" />
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Delete Assessment
         </Typography>
@@ -59,16 +59,16 @@ export function DeleteConfirmationModal({
         <Box
           sx={{
             p: 2,
-            bgcolor: "#fef2f2",
+            bgcolor: "color-mix(in srgb, var(--error-500) 10%, var(--surface) 90%)",
             borderRadius: 1,
-            border: "1px solid #fecaca",
+            border: "1px solid color-mix(in srgb, var(--error-500) 34%, var(--border-default) 66%)",
           }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "#991b1b" }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--error-500)" }}>
             {title}
           </Typography>
         </Box>
-        <Typography variant="body2" sx={{ mt: 2, color: "#6b7280" }}>
+        <Typography variant="body2" sx={{ mt: 2, color: "var(--font-secondary)" }}>
           This action cannot be undone. All associated data will be permanently
           deleted.
         </Typography>
@@ -89,7 +89,7 @@ export function DeleteConfirmationModal({
               <IconWrapper icon="mdi:delete" size={18} />
             )
           }
-          sx={{ bgcolor: "#ef4444", "&:hover": { bgcolor: "#dc2626" } }}
+          sx={{ bgcolor: "var(--error-500)", "&:hover": { bgcolor: "var(--error-500)" } }}
         >
           {loading ? "Deleting..." : "Delete"}
         </Button>

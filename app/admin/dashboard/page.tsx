@@ -32,7 +32,7 @@ import { StudentRankingCard } from "@/components/admin/dashboard/StudentRankingC
 import { useToast } from "@/components/common/Toast";
 import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
 import { useAuth } from "@/lib/auth/auth-context";
-import { isCourseManagerRole } from "@/lib/auth/role-utils";
+import { isScopedAdminRole } from "@/lib/auth/role-utils";
 
 type TimePeriod = "weekly" | "bimonthly" | "monthly";
 
@@ -145,7 +145,7 @@ function AdminDashboardPage() {
   const loadAttendanceData = useCallback(async () => {
     if (!dateRange.start || !dateRange.end) return;
     const seq = ++attendanceLoadSeqRef.current;
-    const courseManager = isCourseManagerRole(user?.role);
+    const courseManager = isScopedAdminRole(user?.role);
     try {
       const courseId =
         selectedCourse !== "all" ? Number(selectedCourse) : undefined;
@@ -365,7 +365,7 @@ function AdminDashboardPage() {
                   variant="h4"
                   sx={{
                     fontWeight: 700,
-                    color: "#111827",
+                    color: "var(--font-primary)",
                     fontSize: { xs: "1.5rem", sm: "2rem" },
                   }}
                 >
@@ -411,15 +411,26 @@ function AdminDashboardPage() {
                           py: 1,
                           borderRadius: 1,
                           cursor: "pointer",
-                          backgroundColor: timePeriod === period ? "#6366f1" : "transparent",
-                          color: timePeriod === period ? "#ffffff" : "#6b7280",
+                          backgroundColor:
+                            timePeriod === period ? "var(--accent-indigo)" : "transparent",
+                          color:
+                            timePeriod === period
+                              ? "var(--font-light)"
+                              : "var(--font-secondary)",
                           fontWeight: timePeriod === period ? 600 : 500,
                           fontSize: { xs: "0.75rem", sm: "0.875rem" },
                           textTransform: "capitalize",
-                          border: `1px solid ${timePeriod === period ? "#6366f1" : "#e5e7eb"}`,
+                          border: `1px solid ${
+                            timePeriod === period
+                              ? "var(--accent-indigo)"
+                              : "var(--border-default)"
+                          }`,
                           transition: "all 0.2s",
                           "&:hover": {
-                            backgroundColor: timePeriod === period ? "#6366f1" : "#f3f4f6",
+                            backgroundColor:
+                              timePeriod === period
+                                ? "var(--accent-indigo)"
+                                : "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
                           },
                         }}
                       >
@@ -438,8 +449,9 @@ function AdminDashboardPage() {
                       onClick={handleDownloadPdf}
                       disabled={pdfGenerating || loading}
                       sx={{
-                        backgroundColor: "#6366f1",
-                        "&:hover": { backgroundColor: "#4f46e5" },
+                        backgroundColor: "var(--accent-indigo)",
+                        color: "var(--font-light)",
+                        "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
                       }}
                     >
                       {pdfGenerating ? "Generating..." : "Download PDF"}
@@ -464,28 +476,28 @@ function AdminDashboardPage() {
                 title={t("admin.dashboard.numberOfStudents")}
                 value={dashboardData?.number_of_students || 0}
                 icon="mdi:account-group"
-                iconColor="#6366f1"
+                iconColor="var(--accent-indigo)"
                 tooltip={getMetricTooltip("total_students")}
               />
               <DashboardMetricCard
                 title="Active Students"
                 value={dashboardData?.active_students || 0}
                 icon="mdi:monitor"
-                iconColor="#10b981"
+                iconColor="var(--success-500)"
                 tooltip={getMetricTooltip("active_students")}
               />
               <DashboardMetricCard
                 title={t("admin.dashboard.timeSpentByStudent")}
                 value={`${calculatedTimeSpent.value} ${calculatedTimeSpent.unit}`}
                 icon="mdi:clock-outline"
-                iconColor="#f59e0b"
+                iconColor="var(--warning-500)"
                 tooltip={getMetricTooltip("time_spent")}
               />
               <DashboardMetricCard
                 title="Student Daily Logins"
                 value={calculatedDailyLogin.toFixed(2)}
                 icon="mdi:arrow-right-circle"
-                iconColor="#8b5cf6"
+                iconColor="var(--accent-purple)"
                 tooltip={getMetricTooltip("daily_logins")}
               />
               </Box>

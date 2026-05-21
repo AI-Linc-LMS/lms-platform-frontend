@@ -45,14 +45,14 @@ const JobCardComponent = ({ job }: JobCardProps) => {
         borderRadius: 2,
         marginBottom: 2,
         border: "1px solid",
-        borderColor: "rgba(0, 0, 0, 0.12)",
-        backgroundColor: "#ffffff",
+        borderColor: "color-mix(in srgb, var(--font-primary) 15%, transparent)",
+        backgroundColor: "var(--card-bg)",
         transition: "all 0.2s ease",
         width: "100%",
         maxWidth: "100%",
         "&:hover": {
-          borderColor: "rgba(0, 0, 0, 0.2)",
-          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.08)",
+          borderColor: "color-mix(in srgb, var(--font-primary) 24%, transparent)",
+          boxShadow: "0 1px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
         },
       }}
     >
@@ -67,8 +67,8 @@ const JobCardComponent = ({ job }: JobCardProps) => {
             borderRadius: 1.5,
             border: "1px solid",
             borderColor: "divider",
-            backgroundColor: "#6366f1",
-            color: "#ffffff",
+            backgroundColor: "var(--accent-indigo)",
+            color: "var(--font-light)",
             fontSize: { xs: "1rem", md: "1.25rem" },
             fontWeight: 600,
             flexShrink: 0,
@@ -95,7 +95,7 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                   fontWeight: 600,
                   fontSize: "1.1rem",
                   mb: 0.5,
-                  color: "#1a1f2e",
+                  color: "var(--font-primary)",
                   lineHeight: 1.3,
                 }}
               >
@@ -150,13 +150,13 @@ const JobCardComponent = ({ job }: JobCardProps) => {
               onClick={handleFavorite}
               size="small"
               sx={{
-                color: isFavorite ? "#6366f1" : "text.secondary",
+                color: isFavorite ? "var(--accent-indigo)" : "text.secondary",
                 "&:hover": {
-                  backgroundColor: "rgba(99, 102, 241, 0.08)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
               }}
             >
-              <Heart size={18} fill={isFavorite ? "#6366f1" : "none"} />
+              <Heart size={18} fill={isFavorite ? "var(--accent-indigo)" : "none"} />
             </IconButton>
           </Box>
 
@@ -171,7 +171,7 @@ const JobCardComponent = ({ job }: JobCardProps) => {
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <MapPin size={14} style={{ color: "#6b7280" }} />
+              <MapPin size={14} style={{ color: "var(--font-secondary)" }} />
               <Typography
                 variant="body2"
                 sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -181,7 +181,7 @@ const JobCardComponent = ({ job }: JobCardProps) => {
             </Box>
             {job.experience && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Briefcase size={14} style={{ color: "#6b7280" }} />
+                <Briefcase size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -198,7 +198,7 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                 enterDelay={300}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <DollarSign size={14} style={{ color: "#6b7280" }} />
+                  <DollarSign size={14} style={{ color: "var(--font-secondary)" }} />
                   <Typography
                     variant="body2"
                     sx={{
@@ -220,7 +220,7 @@ const JobCardComponent = ({ job }: JobCardProps) => {
             )}
             {job.job_post_date && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Clock size={14} style={{ color: "#6b7280" }} />
+                <Clock size={14} style={{ color: "var(--font-secondary)" }} />
                 <Typography
                   variant="body2"
                   sx={{ fontSize: "0.875rem", color: "text.secondary" }}
@@ -271,14 +271,14 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                     height: 26,
                     fontSize: "0.75rem",
                     backgroundColor: "transparent",
-                    color: "#6366f1",
-                    borderColor: "#6366f1",
+                    color: "var(--accent-indigo)",
+                    borderColor: "var(--accent-indigo)",
                     borderWidth: 1,
                     borderStyle: "solid",
                     fontWeight: 500,
                     "&:hover": {
-                      backgroundColor: "rgba(99, 102, 241, 0.08)",
-                      borderColor: "#4f46e5",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                      borderColor: "var(--accent-indigo-dark)",
                     },
                   }}
                 />
@@ -292,14 +292,14 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                     height: 26,
                     fontSize: "0.75rem",
                     backgroundColor: "transparent",
-                    color: "#6366f1",
-                    borderColor: "#6366f1",
+                    color: "var(--accent-indigo)",
+                    borderColor: "var(--accent-indigo)",
                     borderWidth: 1,
                     borderStyle: "solid",
                     fontWeight: 500,
                     "&:hover": {
-                      backgroundColor: "rgba(99, 102, 241, 0.08)",
-                      borderColor: "#4f46e5",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                      borderColor: "var(--accent-indigo-dark)",
                     },
                   }}
                 />
@@ -321,8 +321,8 @@ const JobCardComponent = ({ job }: JobCardProps) => {
               onClick={handleApply}
               sx={{
                 borderRadius: 2,
-                backgroundColor: "#6366f1",
-                color: "#ffffff",
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
                 textTransform: "none",
                 px: { xs: 2, md: 2.5 },
                 py: 0.75,
@@ -332,8 +332,8 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                 flex: { xs: "1 1 auto", sm: "0 0 auto" },
                 minWidth: { xs: "auto", sm: 120 },
                 "&:hover": {
-                  backgroundColor: "#4f46e5",
-                  boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
+                  backgroundColor: "var(--accent-indigo-dark)",
+                  boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
                 },
               }}
             >
@@ -345,8 +345,8 @@ const JobCardComponent = ({ job }: JobCardProps) => {
               startIcon={<ExternalLink size={16} />}
               sx={{
                 borderRadius: 2,
-                borderColor: "#6366f1",
-                color: "#6366f1",
+                borderColor: "var(--accent-indigo)",
+                color: "var(--accent-indigo)",
                 textTransform: "none",
                 px: { xs: 2, md: 2.5 },
                 py: 0.75,
@@ -355,8 +355,9 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                 flex: { xs: "1 1 auto", sm: "0 0 auto" },
                 minWidth: { xs: "auto", sm: 140 },
                 "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "rgba(99, 102, 241, 0.05)",
+                  borderColor: "var(--accent-indigo-dark)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--accent-indigo) 7%, transparent)",
                 },
               }}
             >

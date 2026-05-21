@@ -11,6 +11,7 @@ import {
   Paper,
   Alert,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -19,8 +20,18 @@ import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
 import {
   assessmentService,
   AssessmentDetail,
+  AssessmentResult,
   ScholarshipStatus,
 } from "@/lib/services/assessment.service";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { getUserDisplayName } from "@/lib/utils/user-utils";
+import { buildAssessmentParticipationCertificate } from "@/lib/certificate/copy";
+import {
+  buildCertificateBranding,
+  finalizeBranding,
+} from "@/lib/certificate/client-branding";
+import { CertificateLearnerToolbar } from "@/components/certificate/CertificateLearnerToolbar";
 
 export default function SubmissionSuccessPage() {
   const { t } = useTranslation("common");
@@ -31,7 +42,10 @@ export default function SubmissionSuccessPage() {
   const [scholarshipStatus, setScholarshipStatus] =
     useState<ScholarshipStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [autoSubmitMessage, setAutoSubmitMessage] = useState<string | null>(null);
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const { clientInfo } = useClientInfo();
 
   // Stop any active camera and audio streams on this page
   useStopCameraOnMount();
@@ -52,6 +66,20 @@ export default function SubmissionSuccessPage() {
         } catch (error) {
           // Scholarship status might not be available yet - silently fail
         }
+        try {
+          const result = await assessmentService.getAssessmentResult(slug);
+          const reason = (result as AssessmentResult).auto_submitted_reason;
+          if (reason === "tab_switch_limit") {
+            setAutoSubmitMessage(
+              (result as AssessmentResult).auto_submit_message ||
+                "This assessment was auto-submitted because the tab-switch limit was reached."
+            );
+          } else {
+            setAutoSubmitMessage(null);
+          }
+        } catch {
+          setAutoSubmitMessage(null);
+        }
       } catch (error: any) {
         showToast(t("assessments.failedToLoadDetails"), "error");
         router.push(`/assessments/${slug}`);
@@ -65,6 +93,16 @@ export default function SubmissionSuccessPage() {
     }
   }, [slug]);
 
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Container sx={{ py: 8, display: "flex", justifyContent: "center" }}>
+          <CircularProgress />
+        </Container>
+      </MainLayout>
+    );
+  }
 
   if (!assessment) {
     return (
@@ -82,7 +120,11 @@ export default function SubmissionSuccessPage() {
         <Paper sx={{ p: 4, textAlign: "center" }}>
           <Box sx={{ mb: 4 }}>
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-              <IconWrapper icon="mdi:check-circle" size={80} color="#10b981" />
+              <IconWrapper
+                icon="mdi:check-circle"
+                size={80}
+                color="var(--success-500)"
+              />
             </Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               {t("assessments.submittedSuccess")}
@@ -93,6 +135,12 @@ export default function SubmissionSuccessPage() {
           </Box>
 
           <Divider sx={{ my: 4 }} />
+
+          {autoSubmitMessage ? (
+            <Alert severity="warning" sx={{ mb: 3, textAlign: "left" }}>
+              <Typography variant="body2">{autoSubmitMessage}</Typography>
+            </Alert>
+          ) : null}
 
           {scholarshipStatus && scholarshipStatus.has_submitted && (
             <Box sx={{ mb: 4 }}>
@@ -121,7 +169,8 @@ export default function SubmissionSuccessPage() {
                       variant="h6"
                       sx={{
                         fontFamily: "monospace",
-                        backgroundColor: "#f3f4f6",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--font-primary)",
                         p: 2,
                         borderRadius: 1,
                         fontWeight: 600,
@@ -135,8 +184,38 @@ export default function SubmissionSuccessPage() {
           )}
 
           <Typography variant="body1" color="text.secondary" paragraph>
-            {t("assessments.submittedReview")}
+            {assessment.evaluation_mode === "manual"
+              ? "Your submission is pending manual evaluation. You will be notified once published."
+              : t("assessments.submittedReview")}
           </Typography>
+
+          {assessment.certificate_available && user ? (
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                Certificate of participation
+              </Typography>
+              <CertificateLearnerToolbar
+                content={buildAssessmentParticipationCertificate({
+                  recipientName: getUserDisplayName(user),
+                  assessmentTitle: assessment.title,
+                  certificateCourseName: (() => {
+                    const vals = [
+                      assessment.certificate_course_name,
+                      assessment.course_title,
+                      assessment.certificateCourseName,
+                      assessment.courseTitle,
+                    ];
+                    for (const v of vals) {
+                      if (typeof v === "string" && v.trim()) return v.trim();
+                    }
+                    return (assessment.title || "").trim() || null;
+                  })(),
+                  branding: finalizeBranding(buildCertificateBranding(clientInfo)),
+                })}
+                fileNameBase={`certificate-participation-${assessment.slug || slug}`}
+              />
+            </Box>
+          ) : null}
 
           <Box
             sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4, flexWrap: "wrap" }}

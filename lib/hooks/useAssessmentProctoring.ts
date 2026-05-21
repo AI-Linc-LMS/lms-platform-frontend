@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useProctoring } from "./useProctoring";
 import {
   useFullscreenMonitor,
@@ -10,10 +10,6 @@ import {
   useTabSwitchDetector,
   TabSwitchViolation,
 } from "./useTabSwitchDetector";
-import {
-  useTrackpadSwipeDetector,
-  TrackpadSwipeViolation,
-} from "./useTrackpadSwipeDetector";
 import { ProctoringViolation } from "@/lib/services/proctoring.service";
 import type { ViolationScreenshotSample } from "@/lib/services/assessment.service";
 
@@ -39,7 +35,13 @@ export interface AssessmentMetadata {
     eye_movement_count: number;
     tab_switches: TabSwitchViolation[];
     fullscreen_exits: FullscreenViolation[];
-    trackpad_swipes: TrackpadSwipeViolation[];
+    /** Legacy shape for submission payload; always empty (trackpad detection removed). */
+    trackpad_swipes: Array<{
+      timestamp: string;
+      deltaX: number;
+      deltaY: number;
+      deltaMode: number;
+    }>;
     total_violation_count: number;
     violation_threshold_reached: boolean;
     violation_screenshot_samples?: ViolationScreenshotSample[];
@@ -56,8 +58,6 @@ interface UseAssessmentProctoringOptions {
   maxViolations?: number;
   onViolationThresholdReached?: () => void;
   autoStart?: boolean;
-  /** When false, trackpad swipe detection is disabled (no warnings, no blocking). Default true. */
-  trackpadSwipeDetection?: boolean;
   /**
    * When false, tab/window visibility listeners are off (no tab-switch violations).
    * Default true. Prefer enabling only during an active proctored session.
@@ -110,7 +110,6 @@ export function useAssessmentProctoring(
     maxViolations = DEFAULT_MAX_VIOLATIONS,
     onViolationThresholdReached,
     autoStart = false,
-    trackpadSwipeDetection = true,
     tabSwitchDetectionEnabled = true,
   } = options;
 
@@ -155,13 +154,20 @@ export function useAssessmentProctoring(
   } = useProctoring({
     autoStart: false, // We'll control this manually
     includeAudio: true,
-    detectionInterval: 800,
+    // Detection runs BlazeFace ML inference on every tick. On low-end Windows laptops
+    // with integrated GPUs, the old 800ms cadence was pinning the CPU and starving the
+    // React render loop — clicks felt unresponsive, code editor lagged. 2000ms cuts CPU
+    // work by ~60% vs the original while keeping proctoring fidelity: a sustained
+    // violation (looking away, phone use, second face) confirms in ~4s, which is well
+    // below any realistic cheating window. For tighter detection we'd move BlazeFace
+    // to a Web Worker so the main thread is never blocked regardless of cadence.
+    detectionInterval: 2000,
     violationCooldown: 2500,
     minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
     maxFaceSize: 75,
     lookingAwayThreshold: 0.3,
     minConfidence: 0.4,
-    smoothFrameCount: 3,
+    smoothFrameCount: 2,
     poorLightingThreshold: 0.4,
   });
 
@@ -182,39 +188,18 @@ export function useAssessmentProctoring(
     clearViolations: clearTabSwitchViolations,
   } = useTabSwitchDetector({ enabled: tabSwitchDetectionEnabled });
 
-  // Trackpad swipe detection (horizontal swipes only; mouse wheel unaffected). Can be turned off via trackpadSwipeDetection.
-  const {
-    violations: trackpadSwipeViolations,
-    latestViolation: latestSwipeViolation,
-    clearViolations: clearTrackpadSwipeViolations,
-  } = useTrackpadSwipeDetector({
-    enabled: isFaceProctoringActive,
-    detectionEnabled: trackpadSwipeDetection,
-  });
+  const latestViolation = latestFaceViolation;
 
-  // Merged latest violation: most recent of face or trackpad swipe (for toasts)
-  const latestViolation = useMemo((): ProctoringViolation | null => {
-    const face = latestFaceViolation;
-    const swipe = latestSwipeViolation;
-    if (!face && !swipe) return null;
-    if (!face) return swipe;
-    if (!swipe) return face;
-    return face.timestamp >= swipe.timestamp ? face : swipe;
-  }, [latestFaceViolation, latestSwipeViolation]);
-
-  // Calculate total violation count (include trackpad swipes)
   const totalViolationCount =
     faceViolations.length +
     tabSwitchViolations.length +
-    fullscreenViolations.length +
-    trackpadSwipeViolations.length;
+    fullscreenViolations.length;
 
   // Use refs to track previous values and prevent unnecessary updates
   const prevViolationLengthsRef = useRef({
     face: 0,
     tab: 0,
     fullscreen: 0,
-    trackpad: 0,
     total: 0,
   });
 
@@ -224,7 +209,6 @@ export function useAssessmentProctoring(
       face: faceViolations.length,
       tab: tabSwitchViolations.length,
       fullscreen: fullscreenViolations.length,
-      trackpad: trackpadSwipeViolations.length,
       total: totalViolationCount,
     };
 
@@ -234,7 +218,6 @@ export function useAssessmentProctoring(
       prevViolationLengthsRef.current.tab !== currentLengths.tab ||
       prevViolationLengthsRef.current.fullscreen !==
         currentLengths.fullscreen ||
-      prevViolationLengthsRef.current.trackpad !== currentLengths.trackpad ||
       prevViolationLengthsRef.current.total !== currentLengths.total;
 
     if (!lengthsChanged) {
@@ -267,7 +250,7 @@ export function useAssessmentProctoring(
         eye_movement_count: eyeMovementViolations.length,
         tab_switches: tabSwitchViolations,
         fullscreen_exits: fullscreenViolations,
-        trackpad_swipes: trackpadSwipeViolations,
+        trackpad_swipes: [],
         total_violation_count: totalViolationCount,
         violation_threshold_reached: violationThresholdReached,
       },
@@ -289,10 +272,9 @@ export function useAssessmentProctoring(
     faceViolations.length,
     tabSwitchViolations.length,
     fullscreenViolations.length,
-    trackpadSwipeViolations.length,
     totalViolationCount,
     maxViolations,
-    // Note: faceViolations, tabSwitchViolations, fullscreenViolations, trackpadSwipeViolations used inside
+    // Note: faceViolations, tabSwitchViolations, fullscreenViolations used inside
     // but not in deps to avoid infinite loops. We track changes via their lengths.
   ]);
 
@@ -312,7 +294,6 @@ export function useAssessmentProctoring(
     clearFaceViolations();
     clearFullscreenViolations();
     clearTabSwitchViolations();
-    clearTrackpadSwipeViolations();
     setMetadata((prev) => ({
       ...prev,
       proctoring: {
@@ -331,7 +312,6 @@ export function useAssessmentProctoring(
     clearFaceViolations,
     clearFullscreenViolations,
     clearTabSwitchViolations,
-    clearTrackpadSwipeViolations,
   ]);
 
   // Update submission timestamp when stopping

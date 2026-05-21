@@ -48,12 +48,12 @@ export function SubmoduleSidebar({
       sx={{
         width: "100%",
         display: "flex",
-        borderInlineEnd: { xs: "none", md: "1px solid #e5e7eb" },
+        borderInlineEnd: { xs: "none", md: "1px solid var(--border-default)" },
         flexDirection: "column",
         height: "100%",
         borderRadius: 0,
         overflow: "hidden",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       {/* Header */}
@@ -61,8 +61,8 @@ export function SubmoduleSidebar({
         sx={{
           p: 2,
           pb: 1.5,
-          borderBottom: "1px solid #e5e7eb",
-          backgroundColor: "#f9fafb",
+          borderBottom: "1px solid var(--border-default)",
+          backgroundColor: "var(--surface)",
           display: "flex",
           flexDirection: "column",
           gap: 0.25,
@@ -82,7 +82,8 @@ export function SubmoduleSidebar({
               flexShrink: 0,
               mt: 0.25,
               "&:hover": {
-                backgroundColor: "#f3f4f6",
+                backgroundColor:
+                  "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
               },
             }}
           >
@@ -93,7 +94,7 @@ export function SubmoduleSidebar({
               variant="h6"
               sx={{
                 fontWeight: 600,
-                color: "#1a1f2e",
+                color: "var(--font-primary)",
                 fontSize: "1rem",
                 lineHeight: 1.4,
                 wordBreak: "break-word",
@@ -105,7 +106,7 @@ export function SubmoduleSidebar({
             <Typography
               variant="caption"
               sx={{
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 fontSize: "0.75rem",
                 display: "block",
                 mt: 0.25,
@@ -119,7 +120,7 @@ export function SubmoduleSidebar({
         <Typography
           variant="caption"
           sx={{
-            color: "#6b7280",
+            color: "var(--font-secondary)",
             fontSize: "0.75rem",
             pl: 5, // Align with text after icon
           }}
@@ -129,7 +130,7 @@ export function SubmoduleSidebar({
       </Box>
 
       {/* Tabs */}
-      <Box sx={{ borderBottom: "1px solid #e5e7eb" }}>
+      <Box sx={{ borderBottom: "1px solid var(--border-default)" }}>
         <Tabs
           value={activeTab}
           onChange={(e, newValue) => onTabChange(newValue)}
@@ -142,10 +143,10 @@ export function SubmoduleSidebar({
               fontSize: "0.875rem",
             },
             "& .Mui-selected": {
-              color: "#6366f1",
+              color: "var(--accent-indigo)",
             },
             "& .MuiTabs-indicator": {
-              backgroundColor: "#6366f1",
+              backgroundColor: "var(--accent-indigo)",
             },
           }}
         >

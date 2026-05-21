@@ -31,8 +31,14 @@ export function AIJobCard({ job }: AIJobCardProps) {
     <Card
       sx={{
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.1)" },
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        "&:hover": {
+          boxShadow:
+            "0 4px 12px color-mix(in srgb, var(--font-primary) 14%, transparent)",
+        },
       }}
     >
       <CardContent>
@@ -46,15 +52,15 @@ export function AIJobCard({ job }: AIJobCardProps) {
         >
           <Typography
             variant="subtitle1"
-            sx={{ fontWeight: 600, color: "#111827" }}
+            sx={{ fontWeight: 600, color: "var(--font-primary)" }}
           >
             {job.course_title || t("adminAICourseBuilder.untitledCourse")}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
             {statusLabel}
           </Typography>
         </Box>
-        <Typography variant="body2" sx={{ color: "#6b7280", mb: 1 }}>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1 }}>
           {job.input_type === "description" ? t("adminAICourseBuilder.fromDescription") : t("adminAICourseBuilder.structuredPlan")}
         </Typography>
         {(job.total_content_items != null &&
@@ -66,7 +72,7 @@ export function AIJobCard({ job }: AIJobCardProps) {
                 display: "flex",
                 justifyContent: "space-between",
                 fontSize: "0.75rem",
-                color: "#6b7280",
+                color: "var(--font-secondary)",
                 mb: 0.5,
               }}
             >
@@ -79,7 +85,7 @@ export function AIJobCard({ job }: AIJobCardProps) {
               sx={{
                 height: 6,
                 borderRadius: 1,
-                bgcolor: "#e5e7eb",
+                bgcolor: "var(--border-default)",
                 overflow: "hidden",
               }}
             >
@@ -87,7 +93,7 @@ export function AIJobCard({ job }: AIJobCardProps) {
                 sx={{
                   height: "100%",
                   width: `${progress}%`,
-                  bgcolor: "#6366f1",
+                  bgcolor: "var(--accent-indigo)",
                   transition: "width 0.3s ease",
                 }}
               />
@@ -98,7 +104,11 @@ export function AIJobCard({ job }: AIJobCardProps) {
           size="small"
           variant="outlined"
           onClick={() => router.push(`/admin/ai-course-builder/jobs/${job.job_id}`)}
-          sx={{ mt: 1, color: "#6366f1", borderColor: "#6366f1" }}
+          sx={{
+            mt: 1,
+            color: "var(--accent-indigo)",
+            borderColor: "var(--accent-indigo)",
+          }}
         >
           {t("adminAICourseBuilder.viewDetails")}
         </Button>

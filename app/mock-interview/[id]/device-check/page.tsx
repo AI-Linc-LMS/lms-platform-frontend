@@ -19,6 +19,12 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useProctoring } from "@/lib/hooks/useProctoring";
+import {
+  detectBrowser,
+  detectPlatform,
+  type BrowserName,
+  type PlatformName,
+} from "@/lib/utils/browser-detect";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 interface DeviceStatus {
@@ -47,10 +53,12 @@ export default function MockInterviewDeviceCheckPage() {
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const [faceValidationPassed, setFaceValidationPassed] = useState(false);
   const [faceValidationMessage, setFaceValidationMessage] = useState<string>("");
-  const [isListening, setIsListening] = useState(false);
   const [recognizedText, setRecognizedText] = useState<string>("");
   const [ttsMatch, setTtsMatch] = useState<boolean>(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  const [browserName, setBrowserName] = useState<BrowserName>("other");
+  const [platformName, setPlatformName] = useState<PlatformName>("other");
+  const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -59,6 +67,49 @@ export default function MockInterviewDeviceCheckPage() {
   const isNavigatingToInterviewRef = useRef(false);
   const [isNavigatingToInterview, setIsNavigatingToInterview] = useState(false);
   const hasAutoTestedRef = useRef(false);
+  const speechStreamRef = useRef<MediaStream | null>(null);
+  const speechRecorderRef = useRef<MediaRecorder | null>(null);
+  const speechStopTimeoutRef = useRef<number | null>(null);
+  // Mic calibration captured during this page's lifetime. micNoiseFloorRef tracks the
+  // rolling minimum audio level (~ambient room noise); micVoicePeakRef tracks the rolling
+  // maximum (~user's actual speech). Both are handed off to the take page on Proceed so the
+  // interview's silence-detection can ignore background noise specific to this environment.
+  const micNoiseFloorRef = useRef<number>(1);
+  const micVoicePeakRef = useRef<number>(0);
+  const calibrationSamplesRef = useRef<number>(0);
+  // Native window.SpeechRecognition (Chrome). When available we use it as the primary path so
+  // OPENAI_API_KEY is NOT required for the mic check; the MediaRecorder + /api/transcribe path
+  // below is only used as a fallback for browsers without native STT (Safari) or when native
+  // fails with a transient error (Edge's `network` error in particular).
+  const speechRecognitionRef = useRef<any>(null);
+  // Set when a fallback is already in flight; prevents native onerror + onend from racing.
+  const fallbackInFlightRef = useRef(false);
+
+  const normalize = useCallback(
+    (text: string) => text.toLowerCase().replace(/[^\w\s]/g, "").trim(),
+    []
+  );
+
+  const evaluateSpeechMatch = useCallback(
+    (transcript: string) => {
+      const normalizedTts = normalize(TTS_TEXT);
+      const normalizedRecognized = normalize(transcript);
+      const ttsWords = normalizedTts.split(/\s+/).filter(Boolean);
+      const recognizedWords = normalizedRecognized.split(/\s+/).filter(Boolean);
+      const matchRatio =
+        ttsWords.filter((w) => recognizedWords.includes(w)).length /
+        Math.max(ttsWords.length, 1);
+      const isMatch = matchRatio >= 0.5;
+      setTtsMatch(isMatch);
+      setIsListening(false);
+      if (isMatch) {
+        showToast(t("mockInterview.deviceCheck.speechSuccess"), "success");
+      } else {
+        showToast(t("mockInterview.deviceCheck.textNoMatch"), "error");
+      }
+    },
+    [normalize, showToast, t]
+  );
 
   const {
     isInitializing: isFaceDetectionInitializing,
@@ -171,7 +222,12 @@ export default function MockInterviewDeviceCheckPage() {
             };
             checkVideoReady();
           }
-        }).catch((err) => {
+        }).catch((err: unknown) => {
+          const name = (err as { name?: string })?.name;
+          // AbortError fires when the element is removed from the DOM
+          // mid-play (e.g. user navigates away); NotAllowedError fires
+          // when autoplay is blocked. Neither needs surfacing.
+          if (name === "AbortError" || name === "NotAllowedError") return;
           console.error("Failed to play video:", err);
         });
       }
@@ -216,6 +272,28 @@ export default function MockInterviewDeviceCheckPage() {
               dataArray.reduce((a, b) => a + b) / dataArray.length;
             const normalizedLevel = Math.min(average / 100, 1);
             setAudioLevel(normalizedLevel);
+
+            // Mic calibration:
+            // - First ~5 samples (~500ms) are warm-up / mic-priming garbage — skip them.
+            // - Noise floor uses an exponential-moving-min (sticky-low) of the current
+            //   level: ambient HVAC / fans / breathing don't push it up, but a moment of
+            //   true silence below the running floor will pull it down.
+            // - Voice peak is just the running max — captures the loudest moment, which
+            //   should be the user reading the test sentence.
+            calibrationSamplesRef.current += 1;
+            if (calibrationSamplesRef.current > 5) {
+              // EMA-min: floor only decreases or drifts slowly upward. The 0.9 coefficient
+              // means the floor very gradually adapts if the room gets louder.
+              micNoiseFloorRef.current = Math.min(
+                micNoiseFloorRef.current,
+                Math.max(normalizedLevel, 0.005) // hard zero is meaningless; clamp tiny
+              );
+              micVoicePeakRef.current = Math.max(
+                micVoicePeakRef.current,
+                normalizedLevel
+              );
+            }
+
             animationFrameRef.current =
               requestAnimationFrame(updateAudioLevel);
           };
@@ -258,6 +336,8 @@ export default function MockInterviewDeviceCheckPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    setBrowserName(detectBrowser());
+    setPlatformName(detectPlatform());
     const isSupported =
       navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
     if (!isSupported) {
@@ -266,51 +346,6 @@ export default function MockInterviewDeviceCheckPage() {
       return;
     }
     setDeviceStatus((prev) => ({ ...prev, browserSupported: true }));
-
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = "en-US";
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setRecognizedText(transcript);
-        const normalize = (text: string) =>
-          text.toLowerCase().replace(/[^\w\s]/g, "").trim();
-        const normalizedTts = normalize(TTS_TEXT);
-        const normalizedRecognized = normalize(transcript);
-        const ttsWords = normalizedTts.split(/\s+/);
-        const recognizedWords = normalizedRecognized.split(/\s+/);
-        const matchRatio =
-          ttsWords.filter((w) => recognizedWords.includes(w)).length /
-          ttsWords.length;
-        const isMatch = matchRatio >= 0.5;
-        setTtsMatch(isMatch);
-        setIsListening(false);
-        if (isMatch) {
-          showToast(t("mockInterview.deviceCheck.speechSuccess"), "success");
-        } else {
-          showToast(t("mockInterview.deviceCheck.textNoMatch"), "error");
-        }
-      };
-      recognitionInstance.onerror = (event: any) => {
-        setIsListening(false);
-        if (event.error === "no-speech") {
-          showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
-        } else if (event.error === "not-allowed") {
-          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
-        } else {
-          showToast(t("mockInterview.deviceCheck.speechError"), "error");
-        }
-      };
-      recognitionInstance.onend = () => setIsListening(false);
-      setRecognition(recognitionInstance);
-    } else {
-      showToast(t("mockInterview.deviceCheck.speechNotSupported"), "warning");
-    }
   }, [showToast, t]);
 
   useEffect(() => {
@@ -323,6 +358,10 @@ export default function MockInterviewDeviceCheckPage() {
 
   useEffect(() => {
     return () => {
+      if (speechStopTimeoutRef.current) {
+        window.clearTimeout(speechStopTimeoutRef.current);
+        speechStopTimeoutRef.current = null;
+      }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -342,20 +381,218 @@ export default function MockInterviewDeviceCheckPage() {
           delete (window as any).__mockInterviewStream;
         }
       }
+      if (speechRecorderRef.current) {
+        try {
+          if (speechRecorderRef.current.state !== "inactive") {
+            speechRecorderRef.current.stop();
+          }
+        } catch {
+          // ignore
+        }
+        speechRecorderRef.current = null;
+      }
+      if (speechRecognitionRef.current) {
+        try {
+          speechRecognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+        speechRecognitionRef.current = null;
+      }
+      if (speechStreamRef.current) {
+        speechStreamRef.current.getTracks().forEach((track) => track.stop());
+        speechStreamRef.current = null;
+      }
       analyserRef.current = null;
       setAudioLevel(0);
     };
   }, [stopFaceDetection, videoRef]);
 
   const handleStartTTS = () => {
-    if (!recognition) {
-      showToast(t("mockInterview.deviceCheck.speechNotAvailable"), "error");
-      return;
-    }
-    setIsListening(true);
+    if (isListening || isTranscribing) return;
     setRecognizedText("");
     setTtsMatch(false);
-    recognition.start();
+    fallbackInFlightRef.current = false;
+
+    // MediaRecorder + /api/transcribe (Whisper) fallback. Requires OPENAI_API_KEY on the
+    // Next.js server. Used when native window.SpeechRecognition is unavailable (Safari) or
+    // fails with a transient/permanent error (Edge's `network` quirk, etc.).
+    const startRecorderFallback = async () => {
+      if (fallbackInFlightRef.current) return;
+      fallbackInFlightRef.current = true;
+      setIsListening(true);
+      setIsTranscribing(false);
+      try {
+        const stream =
+          speechStreamRef.current ||
+          (await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true },
+          }));
+        speechStreamRef.current = stream;
+
+        const chunks: BlobPart[] = [];
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : MediaRecorder.isTypeSupported("audio/mp4")
+              ? "audio/mp4"
+              : "";
+
+        const recorder = new MediaRecorder(
+          stream,
+          mimeType ? { mimeType } : undefined
+        );
+        speechRecorderRef.current = recorder;
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+          setIsListening(false);
+          setIsTranscribing(true);
+          try {
+            const blob = new Blob(chunks, { type: mimeType || "audio/webm" });
+            if (blob.size < 1000) {
+              setIsTranscribing(false);
+              showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+              return;
+            }
+
+            const form = new FormData();
+            form.append("file", blob, "speech.webm");
+            form.append("language", "en");
+            const res = await fetch("/api/transcribe", {
+              method: "POST",
+              body: form,
+            });
+
+            const data = (await res.json().catch(() => ({}))) as {
+              text?: string;
+              error?: string;
+            };
+
+            if (!res.ok) {
+              setIsTranscribing(false);
+              // 503 is typically missing OPENAI_API_KEY on the server running Next.js.
+              showToast(
+                data?.error ||
+                  t("mockInterview.deviceCheck.speechError"),
+                "error"
+              );
+              return;
+            }
+
+            const text = typeof data?.text === "string" ? data.text.trim() : "";
+            setIsTranscribing(false);
+            if (!text) {
+              showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+              return;
+            }
+            setRecognizedText(text);
+            evaluateSpeechMatch(text);
+          } catch {
+            setIsTranscribing(false);
+            showToast(t("mockInterview.deviceCheck.speechError"), "error");
+          }
+        };
+
+        recorder.start();
+
+        // Stop after a short deterministic window.
+        speechStopTimeoutRef.current = window.setTimeout(() => {
+          speechStopTimeoutRef.current = null;
+          try {
+            if (recorder.state !== "inactive") recorder.stop();
+          } catch {
+            setIsListening(false);
+            showToast(t("mockInterview.deviceCheck.speechError"), "error");
+          }
+        }, 4500);
+      } catch (err: any) {
+        setIsListening(false);
+        if (
+          err?.name === "NotAllowedError" ||
+          err?.name === "PermissionDeniedError"
+        ) {
+          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
+        } else {
+          showToast(t("mockInterview.deviceCheck.speechError"), "error");
+        }
+      }
+    };
+
+    // Native window.SpeechRecognition is the primary path (Chrome / Chromium). It does NOT
+    // need OPENAI_API_KEY and gives instant transcription. We fall through to the Whisper
+    // recorder only when the native API doesn't exist or signals it won't deliver (`network`,
+    // `service-not-allowed`, `audio-capture`, or onend without a result).
+    const SpeechRecognitionCtor =
+      typeof window !== "undefined"
+        ? (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognitionCtor) {
+      void startRecorderFallback();
+      return;
+    }
+
+    let nativeSettled = false;
+    try {
+      const recognition = new SpeechRecognitionCtor();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+      speechRecognitionRef.current = recognition;
+
+      recognition.onresult = (event: any) => {
+        nativeSettled = true;
+        const transcript = event?.results?.[0]?.[0]?.transcript ?? "";
+        if (!transcript) {
+          setIsListening(false);
+          showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+          return;
+        }
+        setRecognizedText(transcript);
+        evaluateSpeechMatch(transcript);
+      };
+
+      recognition.onerror = (event: any) => {
+        nativeSettled = true;
+        const code = event?.error;
+        if (code === "not-allowed" || code === "permission-denied") {
+          setIsListening(false);
+          showToast(t("mockInterview.deviceCheck.micPermissionDenied"), "error");
+          return;
+        }
+        if (code === "no-speech") {
+          setIsListening(false);
+          showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
+          return;
+        }
+        if (code === "aborted") {
+          setIsListening(false);
+          return;
+        }
+        // network / service-not-allowed / audio-capture — native won't deliver. Fall back.
+        void startRecorderFallback();
+      };
+
+      recognition.onend = () => {
+        // Some Edge versions end without ever firing onresult/onerror; recover via fallback.
+        if (!nativeSettled && !fallbackInFlightRef.current) {
+          void startRecorderFallback();
+        }
+      };
+
+      setIsListening(true);
+      setIsTranscribing(false);
+      recognition.start();
+    } catch {
+      // Synchronous throw constructing/starting native recognition — fall through to Whisper.
+      void startRecorderFallback();
+    }
   };
 
   const handleProceed = async () => {
@@ -374,6 +611,21 @@ export default function MockInterviewDeviceCheckPage() {
 
       if (streamRef.current) {
         (window as any).__mockInterviewStream = streamRef.current;
+      }
+
+      // Hand off mic calibration to the take page so its silence detector can ignore this
+      // user's background noise. Only stash if the floor actually drifted below the initial
+      // sentinel (1) and the peak captured a real voice signal (>0.1); otherwise the take
+      // page falls back to its built-in default threshold.
+      if (
+        typeof window !== "undefined" &&
+        micVoicePeakRef.current > 0.1 &&
+        micNoiseFloorRef.current < 1
+      ) {
+        (window as any).__mockInterviewMicCalibration = {
+          noise_floor: micNoiseFloorRef.current,
+          voice_peak: micVoicePeakRef.current,
+        };
       }
 
       const startedInterview = await mockInterviewService.startInterview(
@@ -565,7 +817,15 @@ export default function MockInterviewDeviceCheckPage() {
                   }
                 }}
               />
-              {deviceStatus.camera && (
+              {/* Face-detection chip stack. Hidden once the candidate has clicked
+                  "Start Interview" — at that point the "Starting interview…" overlay
+                  covers the camera feed, so the model momentarily sees a black frame and
+                  starts reporting `faceCount === 0`. Showing a "No face" chip + warning
+                  in that exact window made the candidate think they were being told to
+                  fix something even though the camera pre-flight had already passed and
+                  the interview was already kicking off. We freeze the post-Start state
+                  to whatever the validation showed at the moment of click. */}
+              {deviceStatus.camera && !isNavigatingToInterview && (
                 <Box
                   sx={{
                     position: "absolute",
@@ -630,7 +890,7 @@ export default function MockInterviewDeviceCheckPage() {
                 </Box>
               )}
             </Box>
-            {deviceStatus.camera && !isFaceDetectionInitializing && (
+            {deviceStatus.camera && !isFaceDetectionInitializing && !isNavigatingToInterview && (
               <Box sx={{ mt: 2 }}>
                 {faceValidationPassed ? (
                   <Alert severity="success" sx={{ mt: 1 }}>
@@ -656,15 +916,15 @@ export default function MockInterviewDeviceCheckPage() {
             sx={{
               p: 3,
               borderRadius: 3,
-              border: "1px solid #e5e7eb",
-              backgroundColor: ttsMatch ? "#f0fdf4" : "#fef2f2",
+              border: "1px solid var(--border-default)",
+              backgroundColor: ttsMatch ? "var(--success-50)" : "var(--error-100)",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               {ttsMatch ? (
-                <CheckCircle size={32} color="#10b981" />
+                <CheckCircle size={32} color="var(--ats-success)" />
               ) : (
-                <XCircle size={32} color="#ef4444" />
+                <XCircle size={32} color="var(--ats-error)" />
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
@@ -794,38 +1054,51 @@ export default function MockInterviewDeviceCheckPage() {
                 )}
               </Box>
             )}
-            <Button
-              variant="outlined"
-              onClick={handleStartTTS}
-              disabled={isListening || !deviceStatus.microphone}
-              startIcon={
-                isListening ? (
-                  <CircularProgress size={18} />
-                ) : (
-                  <IconWrapper icon="mdi:microphone" size={20} />
-                )
-              }
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                px: 3,
-                py: 1.25,
-                borderColor: "#6366f1",
-                color: "#6366f1",
-                "&:hover": {
-                  borderColor: "#4f46e5",
-                  backgroundColor: "#eef2ff",
-                },
-                "&:disabled": {
-                  borderColor: "#e5e7eb",
-                  color: "#9ca3af",
-                },
-              }}
-            >
-              {isListening
-                ? t("mockInterview.deviceCheck.listening").split("...")[0]
-                : t("mockInterview.deviceCheck.startSpeechTest")}
-            </Button>
+            {browserName === "edge" && platformName === "windows" && !ttsMatch && (
+              <Alert severity="info" icon={<AlertCircle size={20} />} sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Using Microsoft Edge?
+                </Typography>
+                <Typography variant="body2">
+                  If speech isn&apos;t recognized, open <b>Windows Settings → Privacy &amp; Security → Speech</b> and turn on{" "}
+                  <b>Online speech recognition</b>, then reload this page.
+                </Typography>
+              </Alert>
+            )}
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+              <Button
+                variant="outlined"
+                onClick={handleStartTTS}
+                disabled={isListening || !deviceStatus.microphone}
+                startIcon={
+                  isListening ? (
+                    <CircularProgress size={18} />
+                  ) : (
+                    <IconWrapper icon="mdi:microphone" size={20} />
+                  )
+                }
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.25,
+                  borderColor: "#6366f1",
+                  color: "#6366f1",
+                  "&:hover": {
+                    borderColor: "#4f46e5",
+                    backgroundColor: "#eef2ff",
+                  },
+                  "&:disabled": {
+                    borderColor: "#e5e7eb",
+                    color: "#9ca3af",
+                  },
+                }}
+              >
+                {isListening
+                  ? t("mockInterview.deviceCheck.listening").split("...")[0]
+                  : t("mockInterview.deviceCheck.startSpeechTest")}
+              </Button>
+            </Box>
           </Paper>
         </Box>
 

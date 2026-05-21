@@ -27,7 +27,7 @@ export function GrowthRoadmapChart({ roadmap }: GrowthRoadmapChartProps) {
     fullArea: item.area,
     priority: roadmap.length - index, // Higher number = higher priority
     action: item.suggested_action,
-    color: index === 0 ? "#2563EB" : index === 1 ? "#8b5cf6" : "#16A34A",
+    color: index === 0 ? "var(--assessment-chart-blue)" : index === 1 ? "var(--assessment-chart-violet)" : "var(--assessment-chart-green)",
   }));
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -67,22 +67,22 @@ export function GrowthRoadmapChart({ roadmap }: GrowthRoadmapChartProps) {
             layout="vertical"
             margin={{ top: 20, right: 30, left: 120, bottom: 20 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
             <XAxis
               type="number"
               domain={[0, roadmap.length + 1]}
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "var(--font-secondary)" }}
               label={{
                 value: "Priority Level",
                 position: "insideBottom",
                 offset: -5,
-                style: { textAnchor: "middle", fill: "#6b7280" },
+                style: { textAnchor: "middle", fill: "var(--font-secondary)" },
               }}
             />
             <YAxis
               type="category"
               dataKey="area"
-              tick={{ fontSize: 11, fill: "#6b7280" }}
+              tick={{ fontSize: 11, fill: "var(--font-secondary)" }}
               width={110}
             />
             <Tooltip content={<CustomTooltip />} />

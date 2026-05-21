@@ -49,13 +49,16 @@ export function MockInterviewStudentsFilters({
         p: { xs: 2, sm: 3 },
         mb: 3,
         borderRadius: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
+        boxShadow:
+          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        backgroundColor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
         transition: "box-shadow 0.2s ease, border-color 0.2s ease",
         "&:hover": {
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          borderColor: "#d1d5db",
+          boxShadow:
+            "0 2px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
+          borderColor:
+            "color-mix(in srgb, var(--font-secondary) 26%, var(--border-default) 74%)",
         },
       }}
     >
@@ -72,19 +75,20 @@ export function MockInterviewStudentsFilters({
             width: 40,
             height: 40,
             borderRadius: 2,
-            backgroundColor: "#eef2ff",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <IconWrapper icon="mdi:account-search" size={22} color="#6366f1" />
+          <IconWrapper icon="mdi:account-search" size={22} color="var(--accent-indigo)" />
         </Box>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#111827" }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
             {t("adminMockInterview.findStudents")}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#6b7280" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
             {t("adminMockInterview.searchSortByPerformance")}
           </Typography>
         </Box>
@@ -94,8 +98,9 @@ export function MockInterviewStudentsFilters({
               px: 1.5,
               py: 0.5,
               borderRadius: 1,
-              backgroundColor: "#eef2ff",
-              color: "#6366f1",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+              color: "var(--accent-indigo)",
               fontWeight: 600,
               fontSize: "0.875rem",
             }}
@@ -123,7 +128,7 @@ export function MockInterviewStudentsFilters({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <IconWrapper icon="mdi:magnify" size={20} color="#6b7280" />
+                <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
               </InputAdornment>
             ),
           }}
@@ -131,18 +136,19 @@ export function MockInterviewStudentsFilters({
             flex: { xs: "1 1 100%", sm: "1 1 280px" },
             minWidth: 200,
             "& .MuiOutlinedInput-root": {
-              backgroundColor: "#f9fafb",
+              backgroundColor: "var(--surface)",
               transition: "background-color 0.2s, border-color 0.2s",
               "&:hover": {
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--card-bg)",
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#9ca3af",
+                  borderColor:
+                    "color-mix(in srgb, var(--font-secondary) 34%, var(--border-default) 66%)",
                 },
               },
               "&.Mui-focused": {
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--card-bg)",
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#6366f1",
+                  borderColor: "var(--accent-indigo)",
                   borderWidth: 2,
                 },
               },

@@ -46,7 +46,7 @@ export function FullscreenPolicyModal({
         backdrop: {
           sx: {
             zIndex: 14000,
-            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backgroundColor: "color-mix(in srgb, var(--primary-900) 68%, transparent)",
           },
         },
       }}
@@ -60,7 +60,7 @@ export function FullscreenPolicyModal({
     >
       <DialogTitle>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <IconWrapper icon="mdi:fullscreen" size={28} color="#92400e" />
+          <IconWrapper icon="mdi:fullscreen" size={28} color="color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))" />
           <Typography variant="h6" fontWeight={700}>
             Fullscreen is required
           </Typography>

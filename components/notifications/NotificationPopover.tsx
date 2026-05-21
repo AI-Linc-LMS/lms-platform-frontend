@@ -23,15 +23,51 @@ const NOTIFICATION_TYPE_CONFIG: Record<
   string,
   { icon: string; color: string; bgColor: string }
 > = {
-  course_enrolled: { icon: "mdi:book-plus", color: "#6366f1", bgColor: "rgba(99, 102, 241, 0.12)" },
-  job_published: { icon: "mdi:briefcase-plus", color: "#059669", bgColor: "rgba(5, 150, 105, 0.12)" },
-  job_status_change: { icon: "mdi:briefcase-clock", color: "#0d9488", bgColor: "rgba(13, 148, 136, 0.12)" },
-  course_completed: { icon: "mdi:check-circle", color: "#16a34a", bgColor: "rgba(22, 163, 74, 0.12)" },
-  assessment_available: { icon: "mdi:clipboard-check", color: "#7c3aed", bgColor: "rgba(124, 58, 237, 0.12)" },
-  mock_interview_completed: { icon: "mdi:video-account", color: "#ea580c", bgColor: "rgba(234, 88, 12, 0.12)" },
-  community_thread: { icon: "mdi:forum", color: "#2563eb", bgColor: "rgba(37, 99, 235, 0.12)" },
-  community_reply: { icon: "mdi:reply", color: "#0891b2", bgColor: "rgba(8, 145, 178, 0.12)" },
-  custom: { icon: "mdi:bell", color: "#6b7280", bgColor: "rgba(107, 114, 128, 0.12)" },
+  course_enrolled: {
+    icon: "mdi:book-plus",
+    color: "var(--accent-indigo)",
+    bgColor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+  },
+  job_published: {
+    icon: "mdi:briefcase-plus",
+    color: "var(--success-500)",
+    bgColor: "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
+  },
+  job_status_change: {
+    icon: "mdi:briefcase-clock",
+    color: "var(--accent-purple)",
+    bgColor: "color-mix(in srgb, var(--accent-purple) 12%, var(--surface) 88%)",
+  },
+  course_completed: {
+    icon: "mdi:check-circle",
+    color: "var(--success-500)",
+    bgColor: "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)",
+  },
+  assessment_available: {
+    icon: "mdi:clipboard-check",
+    color: "var(--accent-purple)",
+    bgColor: "color-mix(in srgb, var(--accent-purple) 12%, var(--surface) 88%)",
+  },
+  mock_interview_completed: {
+    icon: "mdi:video-account",
+    color: "var(--warning-500)",
+    bgColor: "color-mix(in srgb, var(--warning-500) 12%, var(--surface) 88%)",
+  },
+  community_thread: {
+    icon: "mdi:forum",
+    color: "var(--accent-indigo)",
+    bgColor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+  },
+  community_reply: {
+    icon: "mdi:reply",
+    color: "var(--accent-indigo)",
+    bgColor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+  },
+  custom: {
+    icon: "mdi:bell",
+    color: "var(--font-secondary)",
+    bgColor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+  },
 };
 
 const getNotificationConfig = (type: string) =>
@@ -45,21 +81,21 @@ function EmptyNotificationsIllustration() {
       viewBox="0 0 120 100"
       width={100}
       height={84}
-      sx={{ flexShrink: 0, opacity: 0.7 }}
+      sx={{ flexShrink: 0, opacity: 0.7, color: "var(--font-tertiary)" }}
     >
-      <circle cx="60" cy="35" r="18" fill="none" stroke="#9ca3af" strokeWidth="2" opacity={0.5} />
+      <circle cx="60" cy="35" r="18" fill="none" stroke="currentColor" strokeWidth="2" opacity={0.5} />
       <path
         d="M45 55 L45 75 Q45 85 60 85 Q75 85 75 75 L75 55"
         fill="none"
-        stroke="#9ca3af"
+        stroke="currentColor"
         strokeWidth="2"
         strokeLinejoin="round"
         opacity={0.5}
       />
-      <line x1="35" y1="35" x2="25" y2="25" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" opacity={0.4} />
-      <line x1="85" y1="35" x2="95" y2="25" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" opacity={0.4} />
-      <circle cx="55" cy="50" r="3" fill="#9ca3af" opacity={0.3} />
-      <circle cx="65" cy="50" r="3" fill="#9ca3af" opacity={0.3} />
+      <line x1="35" y1="35" x2="25" y2="25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity={0.4} />
+      <line x1="85" y1="35" x2="95" y2="25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity={0.4} />
+      <circle cx="55" cy="50" r="3" fill="currentColor" opacity={0.3} />
+      <circle cx="65" cy="50" r="3" fill="currentColor" opacity={0.3} />
     </Box>
   );
 }
@@ -99,7 +135,8 @@ export function NotificationPopover({
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          boxShadow: "0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08)",
+          boxShadow:
+            "0 12px 40px color-mix(in srgb, var(--font-primary) 14%, transparent), 0 4px 12px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           overflow: "hidden",
         },
       }}
@@ -111,7 +148,7 @@ export function NotificationPopover({
           py: 1.75,
           borderBottom: "1px solid",
           borderColor: "divider",
-          backgroundColor: "rgba(249, 250, 251, 0.8)",
+          backgroundColor: "var(--surface)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -124,20 +161,21 @@ export function NotificationPopover({
               width: 36,
               height: 36,
               borderRadius: 2,
-              backgroundColor: "rgba(99, 102, 241, 0.1)",
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Bell size={18} color="#6366f1" />
+            <Bell size={18} color="var(--accent-indigo)" />
           </Box>
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "text.primary" }}>
               Notifications
             </Typography>
             {unreadCount > 0 && (
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {unreadCount} unread
               </Typography>
             )}
@@ -152,8 +190,8 @@ export function NotificationPopover({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              color: "#6366f1",
-              "&:hover": { backgroundColor: "rgba(99, 102, 241, 0.08)" },
+              color: "var(--accent-indigo)",
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
             }}
           >
             Mark all read
@@ -174,7 +212,7 @@ export function NotificationPopover({
               gap: 1.5,
             }}
           >
-            <CircularProgress size={36} sx={{ color: "#6366f1" }} />
+            <CircularProgress size={36} sx={{ color: "var(--accent-indigo)" }} />
             <Typography variant="body2" color="text.secondary">
               Loading notifications...
             </Typography>
@@ -228,12 +266,14 @@ export function NotificationPopover({
                     borderBottom: "1px solid",
                     borderColor: "divider",
                     "&:last-child": { borderBottom: "none" },
-                    backgroundColor: n.is_read ? "transparent" : "rgba(99, 102, 241, 0.04)",
+                    backgroundColor: n.is_read
+                      ? "transparent"
+                      : "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
                     transition: "background-color 0.2s ease",
                     "&:hover": {
                       backgroundColor: n.is_read
-                        ? "rgba(0,0,0,0.02)"
-                        : "rgba(99, 102, 241, 0.08)",
+                        ? "color-mix(in srgb, var(--font-primary) 4%, transparent)"
+                        : "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                     },
                   }}
                 >
@@ -272,7 +312,7 @@ export function NotificationPopover({
                             width: 8,
                             height: 8,
                             borderRadius: "50%",
-                            backgroundColor: "#6366f1",
+                            backgroundColor: "var(--accent-indigo)",
                             flexShrink: 0,
                             mt: 0.5,
                           }}
@@ -282,7 +322,7 @@ export function NotificationPopover({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "text.secondary",
+                        color: "var(--font-secondary)",
                         fontSize: "0.8125rem",
                         mt: 0.25,
                         lineHeight: 1.4,
@@ -297,7 +337,7 @@ export function NotificationPopover({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.disabled",
+                        color: "var(--font-tertiary)",
                         mt: 0.5,
                         display: "block",
                         fontSize: "0.75rem",
@@ -341,18 +381,26 @@ export function NotificationBell({ unreadCount, onClick }: NotificationBellProps
           onClick={onClick}
           sx={{
             position: "relative",
-            color: hasUnread ? "#6366f1" : "text.secondary",
+            color: hasUnread ? "var(--accent-indigo)" : "text.secondary",
             width: 44,
             height: 44,
             borderRadius: 2,
-            backgroundColor: hasUnread ? "rgba(99, 102, 241, 0.1)" : "transparent",
+            backgroundColor: hasUnread
+              ? "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)"
+              : "transparent",
             border: "1px solid",
-            borderColor: hasUnread ? "rgba(99, 102, 241, 0.3)" : "transparent",
+            borderColor: hasUnread
+              ? "color-mix(in srgb, var(--accent-indigo) 32%, var(--border-default) 68%)"
+              : "transparent",
             transition: "all 0.2s ease",
             "&:hover": {
-              backgroundColor: hasUnread ? "rgba(99, 102, 241, 0.16)" : "rgba(99, 102, 241, 0.08)",
-              color: "#6366f1",
-              borderColor: hasUnread ? "rgba(99, 102, 241, 0.5)" : "rgba(99, 102, 241, 0.2)",
+              backgroundColor: hasUnread
+                ? "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)"
+                : "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+              color: "var(--accent-indigo)",
+              borderColor: hasUnread
+                ? "color-mix(in srgb, var(--accent-indigo) 50%, var(--border-default) 50%)"
+                : "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
             },
           }}
       >
@@ -366,10 +414,11 @@ export function NotificationBell({ unreadCount, onClick }: NotificationBellProps
               minWidth: 20,
               height: 20,
               fontWeight: 700,
-              backgroundColor: "#ef4444",
-              color: "#fff",
-              border: "2px solid #fff",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+              backgroundColor: "var(--error-500)",
+              color: "var(--font-light)",
+              border: "2px solid var(--card-bg)",
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 14%, transparent)",
             },
           }}
         >

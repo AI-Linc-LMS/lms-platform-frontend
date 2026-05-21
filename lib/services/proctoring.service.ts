@@ -79,6 +79,10 @@ export class ProctoringService {
   private currentLatestViolation: ProctoringViolation | null = null;
   /** Rolling buffer of recent face counts for smoothing */
   private faceCountBuffer: number[] = [];
+  /** After the first frame pipeline starts, suppress NO_FACE this long (exposure / model warmup). */
+  private startupWarmupUntilMs = 0;
+  /** Serialize startProctoring so concurrent calls cannot leave the singleton half-initialized. */
+  private startProctoringQueue: Promise<void> = Promise.resolve();
 
   constructor(config: Partial<ProctoringConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -114,6 +118,72 @@ export class ProctoringService {
   }
 
   /**
+   * Wait until the video element is actually decoding frames (avoids NO_FACE on black / not-ready video).
+   */
+  private async waitForVideoFramesReady(video: HTMLVideoElement): Promise<void> {
+    const hasFrameData = () =>
+      video.videoWidth > 0 &&
+      video.videoHeight > 0 &&
+      video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+
+    if (hasFrameData()) return;
+
+    const tryPlay = async () => {
+      try {
+        await video.play();
+      } catch {
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+        await video.play().catch(() => {});
+      }
+    };
+
+    await tryPlay();
+
+    await new Promise<void>((resolve, reject) => {
+      let done = false;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      const cleanup = () => {
+        video.removeEventListener("loadeddata", onReady);
+        video.removeEventListener("loadedmetadata", onReady);
+        video.removeEventListener("canplay", onReady);
+        video.removeEventListener("playing", onReady);
+      };
+
+      const finishOk = () => {
+        if (done || !hasFrameData()) return;
+        done = true;
+        if (timeoutId) clearTimeout(timeoutId);
+        cleanup();
+        resolve();
+      };
+
+      const onReady = () => finishOk();
+
+      video.addEventListener("loadeddata", onReady);
+      video.addEventListener("loadedmetadata", onReady);
+      video.addEventListener("canplay", onReady);
+      video.addEventListener("playing", onReady);
+      finishOk();
+
+      timeoutId = setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup();
+        if (hasFrameData()) {
+          resolve();
+          return;
+        }
+        reject(
+          new Error(
+            "Camera preview did not start. Please try again or refresh the page."
+          )
+        );
+      }, 12_000);
+    });
+  }
+
+  /**
    * Start the camera and begin face detection
    */
   async startProctoring(
@@ -123,11 +193,28 @@ export class ProctoringService {
       audio: false,
     }
   ): Promise<void> {
-    if (this.isRunning) {
-      return;
-    }
+    const previous = this.startProctoringQueue;
+    let release!: () => void;
+    this.startProctoringQueue = new Promise<void>((res) => {
+      release = res;
+    });
+    await previous;
 
     try {
+      if (this.isRunning) {
+        const pipelineHealthy =
+          this.videoElement === videoElement &&
+          this.stream != null &&
+          videoElement.srcObject === this.stream &&
+          videoElement.videoWidth > 0 &&
+          videoElement.videoHeight > 0 &&
+          videoElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+        if (pipelineHealthy) {
+          return;
+        }
+        this.stopProctoring({ preserveMediaStream: true });
+      }
+
       // Check if mediaDevices is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error(
@@ -274,58 +361,9 @@ export class ProctoringService {
         this.videoElement.playsInline = true;
         this.videoElement.muted = true;
         this.videoElement.srcObject = this.stream;
-
-        // Wait for video to have valid dimensions (fast path if stream already attached)
-        await new Promise<void>((resolve) => {
-          if (!this.videoElement) {
-            resolve();
-            return;
-          }
-
-          // Immediate check
-          if (
-            this.videoElement.videoWidth > 0 &&
-            this.videoElement.videoHeight > 0 &&
-            this.videoElement.readyState >= 2
-          ) {
-            resolve();
-            return;
-          }
-
-          let done = false;
-          let timeout: ReturnType<typeof setTimeout> | null = null;
-
-          const finish = () => {
-            if (done) return;
-            done = true;
-            if (timeout) clearTimeout(timeout);
-            if (this.videoElement) {
-              this.videoElement.removeEventListener("loadeddata", onReady);
-              this.videoElement.removeEventListener("playing", onReady);
-            }
-            resolve();
-          };
-
-          const onReady = () => {
-            if (
-              this.videoElement &&
-              this.videoElement.videoWidth > 0 &&
-              this.videoElement.readyState >= 2
-            ) {
-              finish();
-            }
-          };
-
-          this.videoElement.addEventListener("loadeddata", onReady);
-          this.videoElement.addEventListener("playing", onReady);
-
-          // Try play immediately
-          this.videoElement.play().catch(() => {});
-          onReady();
-
-          timeout = setTimeout(finish, 500);
-        });
       }
+
+      await this.waitForVideoFramesReady(this.videoElement);
 
       // Start detection loop
       this.isRunning = true;
@@ -339,6 +377,8 @@ export class ProctoringService {
         error.message ||
           "Failed to start proctoring. Please check camera permissions."
       );
+    } finally {
+      release();
     }
   }
 
@@ -368,6 +408,7 @@ export class ProctoringService {
       this.lastViolationTime.clear();
       this.violationHistory = [];
       this.currentLatestViolation = null;
+      this.startupWarmupUntilMs = 0;
       return;
     }
 
@@ -388,6 +429,9 @@ export class ProctoringService {
     this.currentFaceCount = 0;
     this.faceCountBuffer = [];
     this.lastViolationTime.clear();
+    this.violationHistory = [];
+    this.currentLatestViolation = null;
+    this.startupWarmupUntilMs = 0;
   }
 
   /**
@@ -411,7 +455,7 @@ export class ProctoringService {
         // Always process result, even if faceCount is 0
         // This ensures the callback is called and UI stays in sync
         if (result) {
-          this.processDetectionResult(result);
+          this.processDetectionResult(this.suppressStartupNoFace(result));
         }
       } catch (error) {
         // On error, still update face count to 0 to keep UI in sync
@@ -439,6 +483,10 @@ export class ProctoringService {
         this.videoElement.videoHeight > 0 &&
         this.videoElement.readyState >= 2
       ) {
+        if (this.startupWarmupUntilMs === 0) {
+          // Camera auto-exposure + BlazeFace/WebGL often need several seconds on cold start.
+          this.startupWarmupUntilMs = Date.now() + 5500;
+        }
         // Video is ready, start detection immediately
         detect();
         // Set up interval for continuous detection
@@ -567,15 +615,12 @@ export class ProctoringService {
         return typeof prob === "number" && prob >= minConf;
       }) as blazeface.NormalizedFace[];
     } catch (error) {
-      // On estimation error, push 0 and use smoothed count (avoids one-frame glitches)
-      const smoothed = this.getSmoothedFaceCount(0);
+      // WebGL/model warmup and transient TF errors are common on first frames; never map those to NO_FACE.
+      // Do not touch the smoothing buffer here (would bias toward "no face" after glitches).
       return {
-        faceCount: smoothed,
-        violations:
-          smoothed === 0
-            ? [this.createViolation("NO_FACE", "No face detected", "high")]
-            : [],
-        status: smoothed === 0 ? "VIOLATION" : "NORMAL",
+        faceCount: this.currentFaceCount,
+        violations: [],
+        status: "NORMAL",
         predictions: [],
       };
     }
@@ -583,9 +628,11 @@ export class ProctoringService {
     const violations: ProctoringViolation[] = [];
     const rawFaceCount = predictions.length;
     const faceCount = this.getSmoothedFaceCount(rawFaceCount);
+    const smoothN = this.config.smoothFrameCount ?? 3;
+    const bufferReadyForNoFace = this.faceCountBuffer.length >= smoothN;
 
     // Check for violations (use smoothed count for stability)
-    if (faceCount === 0) {
+    if (faceCount === 0 && bufferReadyForNoFace) {
       violations.push(
         this.createViolation("NO_FACE", "No face detected", "high")
       );
@@ -734,18 +781,32 @@ export class ProctoringService {
   }
 
   /**
+   * BlazeFace and camera exposure often need a few seconds; suppress spurious NO_FACE during startup (~5.5s).
+   */
+  private suppressStartupNoFace(
+    result: FaceDetectionResult
+  ): FaceDetectionResult {
+    if (!this.startupWarmupUntilMs || Date.now() >= this.startupWarmupUntilMs) {
+      return result;
+    }
+    const violations = result.violations.filter((v) => v.type !== "NO_FACE");
+    return {
+      ...result,
+      violations,
+      status: this.determineStatus(violations),
+    };
+  }
+
+  /**
    * Process detection result and trigger callbacks
    */
   private processDetectionResult(result: FaceDetectionResult): void {
-    // Update face count immediately - always update and call callback
     const faceCountChanged = result.faceCount !== this.currentFaceCount;
     this.currentFaceCount = result.faceCount;
 
-    // Always call callback to ensure UI is updated with latest face count
-    // This ensures the UI reflects the current detection state
-    // IMPORTANT: Always call this, even if count is 0, to keep UI in sync
-    // Use optional chaining to safely call the callback
-    this.config.onFaceCountChange?.(result.faceCount);
+    if (faceCountChanged) {
+      this.config.onFaceCountChange?.(result.faceCount);
+    }
 
     // Update latest violation immediately based on current detection
     // Use the first violation from current detection (most recent)

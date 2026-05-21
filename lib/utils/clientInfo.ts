@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { config } from "@/lib/config";
 import type { ClientInfo } from "@/lib/services/client.service";
 
 const FALLBACK_CLIENT_INFO: ClientInfo = {
@@ -10,7 +11,7 @@ export const getClientInfo = cache(
   async (host?: string): Promise<ClientInfo> => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/clients/${process.env.NEXT_PUBLIC_CLIENT_ID}/client-info/`,
+        `${config.apiBaseUrl}/api/clients/${config.clientId}/client-info/`,
         {
           next: {
             revalidate: 120,
