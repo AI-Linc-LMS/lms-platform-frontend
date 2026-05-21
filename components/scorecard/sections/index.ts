@@ -6,3 +6,7 @@ export { StickyTabNav } from "./StickyTabNav";
 export { SkillRadarChart } from "./SkillRadarChart";
 export { InterviewReadinessGauge } from "./InterviewReadinessGauge";
 export { RecommendationCard } from "./RecommendationCard";
+export { StreakTracker } from "./StreakTracker";
+export { BadgeTrophyCase } from "./BadgeTrophyCase";
+export { PeerPercentileBar } from "./PeerPercentileBar";
+export { GoalsCard } from "./GoalsCard";

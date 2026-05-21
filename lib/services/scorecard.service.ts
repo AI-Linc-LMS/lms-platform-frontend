@@ -2,8 +2,20 @@ import apiClient from "./api";
 import { config } from "@/lib/config";
 import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
-import { mapAIRecommendationFromApi } from "./scorecard/mappers";
-import type { AIRecommendation } from "@/lib/types/scorecard.types";
+import {
+  mapAIRecommendationFromApi,
+  mapBadgesFromApi,
+  mapGoalsFromApi,
+  mapPeerPercentileFromApi,
+  mapStreakFromApi,
+} from "./scorecard/mappers";
+import type {
+  AIRecommendation,
+  Badges,
+  Goals,
+  PeerPercentile,
+  StreakSnapshot,
+} from "@/lib/types/scorecard.types";
 
 export { formatTimeSpent } from "./scorecard/mappers";
 export type { ScorecardApiPayload };
@@ -84,6 +96,65 @@ export const scorecardService = {
       `/api/scorecard/clients/${clientId}/student/ai-recommendations/${recId}/complete/`
     );
     return mapAIRecommendationFromApi(response.data);
+  },
+
+  getGoals: async (): Promise<Goals> => {
+    const clientId = config.clientId;
+    const res = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/goals/`
+    );
+    return mapGoalsFromApi(res.data);
+  },
+
+  setGoals: async (input: { targetMinutes?: number; targetContentCount?: number }): Promise<Goals> => {
+    const clientId = config.clientId;
+    const body: Record<string, number> = {};
+    if (typeof input.targetMinutes === "number") body.target_minutes = input.targetMinutes;
+    if (typeof input.targetContentCount === "number") body.target_content_count = input.targetContentCount;
+    const res = await apiClient.post<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/goals/`,
+      body,
+    );
+    return mapGoalsFromApi(res.data);
+  },
+
+  getStreak: async (): Promise<StreakSnapshot> => {
+    const clientId = config.clientId;
+    const res = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/streak/`
+    );
+    return mapStreakFromApi(res.data);
+  },
+
+  useStreakFreeze: async (): Promise<StreakSnapshot> => {
+    const clientId = config.clientId;
+    const res = await apiClient.post<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/streak/freeze/`
+    );
+    return mapStreakFromApi(res.data);
+  },
+
+  getBadges: async (): Promise<Badges> => {
+    const clientId = config.clientId;
+    const res = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/badges/`
+    );
+    return mapBadgesFromApi(res.data);
+  },
+
+  markBadgeSeen: async (awardId: number): Promise<void> => {
+    const clientId = config.clientId;
+    await apiClient.post(
+      `/api/scorecard/clients/${clientId}/student/badges/${awardId}/seen/`
+    );
+  },
+
+  getPeerPercentile: async (): Promise<PeerPercentile> => {
+    const clientId = config.clientId;
+    const res = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/peer-percentile/`
+    );
+    return mapPeerPercentileFromApi(res.data);
   },
 
   getDashboardSummary: async () => {

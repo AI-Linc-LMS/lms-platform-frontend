@@ -194,6 +194,70 @@ export interface AIRecommendation {
   generatedAt?: string;
 }
 
+export interface WeekGoal {
+  weekStart: string;
+  targetMinutes: number;
+  targetContentCount: number;
+  achievedMinutes: number;
+  achievedContentCount: number;
+  minutesProgressPct: number;
+  contentProgressPct: number;
+}
+
+export interface Goals {
+  currentWeek: WeekGoal;
+}
+
+export interface StreakSnapshot {
+  currentStreak: number;
+  longestStreak: number;
+  freezeCount: number;
+  frozenToday: boolean;
+  lastActiveDate?: string;
+  timezone: string;
+}
+
+export type BadgeTier = "bronze" | "silver" | "gold" | "platinum";
+
+export interface BadgeEntry {
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  tier: BadgeTier;
+  criteriaType: string;
+  threshold: number;
+  earned: boolean;
+  awardId: number | null;
+  awardedAt?: string;
+  seen: boolean;
+  progress: number;
+}
+
+export interface Badges {
+  earned: BadgeEntry[];
+  inProgress: BadgeEntry[];
+  all: BadgeEntry[];
+  totalEarned: number;
+  totalActive: number;
+}
+
+export interface PercentileBand {
+  band: string;
+  count: number;
+}
+
+export interface PeerPercentile {
+  available: boolean;
+  reason?: string;
+  percentile?: number;
+  rank?: number;
+  cohortSize: number;
+  cohortSampled?: number;
+  ownScore?: number;
+  distribution?: PercentileBand[];
+}
+
 export interface ScorecardData {
   /** Backend payload version (BE sets `version: 2` on contract v2). */
   version?: number;
@@ -204,4 +268,8 @@ export interface ScorecardData {
   skillProficiency?: SkillProficiency;
   interviewReadiness?: InterviewReadiness;
   aiRecommendations?: AIRecommendation[];
+  goals?: Goals;
+  streaks?: StreakSnapshot;
+  badges?: Badges;
+  peerPercentile?: PeerPercentile;
 }

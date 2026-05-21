@@ -2,9 +2,14 @@ import type {
   ActivityHeatmap,
   ActivityHeatmapDay,
   AIRecommendation,
+  BadgeEntry,
+  Badges,
+  BadgeTier,
   ContentCompletionOverview,
+  Goals,
   InterviewReadiness,
   LearningConsumption,
+  PeerPercentile,
   ReadinessLevel,
   ReadinessRole,
   RecommendationAction,
@@ -12,6 +17,7 @@ import type {
   SkillEntry,
   SkillProficiency,
   SkillTrend,
+  StreakSnapshot,
   StudentOverview,
 } from "@/lib/types/scorecard.types";
 
@@ -346,6 +352,82 @@ export function mapAIRecommendationFromApi(r: Record<string, unknown>): AIRecomm
 export function mapAIRecommendationsFromApi(api: unknown): AIRecommendation[] {
   if (!Array.isArray(api)) return [];
   return (api as Array<Record<string, unknown>>).map(mapAIRecommendationFromApi);
+}
+
+export function mapGoalsFromApi(api: Record<string, unknown>): Goals {
+  const week = (api.current_week as Record<string, unknown>) ?? {};
+  return {
+    currentWeek: {
+      weekStart: String(week.week_start ?? ""),
+      targetMinutes: num(week.target_minutes),
+      targetContentCount: num(week.target_content_count),
+      achievedMinutes: num(week.achieved_minutes),
+      achievedContentCount: num(week.achieved_content_count),
+      minutesProgressPct: num(week.minutes_progress_pct),
+      contentProgressPct: num(week.content_progress_pct),
+    },
+  };
+}
+
+export function mapStreakFromApi(api: Record<string, unknown>): StreakSnapshot {
+  return {
+    currentStreak: num(api.current_streak),
+    longestStreak: num(api.longest_streak),
+    freezeCount: num(api.freeze_count),
+    frozenToday: Boolean(api.frozen_today),
+    lastActiveDate: typeof api.last_active_date === "string" ? api.last_active_date : undefined,
+    timezone: String(api.timezone ?? ""),
+  };
+}
+
+function mapBadgeEntry(b: Record<string, unknown>): BadgeEntry {
+  const tierRaw = String(b.tier ?? "bronze");
+  const validTiers: BadgeTier[] = ["bronze", "silver", "gold", "platinum"];
+  const tier = (validTiers as string[]).includes(tierRaw) ? (tierRaw as BadgeTier) : "bronze";
+  return {
+    code: String(b.code ?? ""),
+    name: String(b.name ?? ""),
+    description: String(b.description ?? ""),
+    icon: String(b.icon ?? "trophy"),
+    tier,
+    criteriaType: String(b.criteria_type ?? ""),
+    threshold: num(b.threshold),
+    earned: Boolean(b.earned),
+    awardId: typeof b.award_id === "number" ? b.award_id : null,
+    awardedAt: typeof b.awarded_at === "string" ? b.awarded_at : undefined,
+    seen: Boolean(b.seen),
+    progress: num(b.progress),
+  };
+}
+
+export function mapBadgesFromApi(api: Record<string, unknown>): Badges {
+  const earned = (Array.isArray(api.earned) ? api.earned : []) as Array<Record<string, unknown>>;
+  const inProgress = (Array.isArray(api.in_progress) ? api.in_progress : []) as Array<Record<string, unknown>>;
+  const all = (Array.isArray(api.all) ? api.all : []) as Array<Record<string, unknown>>;
+  return {
+    earned: earned.map(mapBadgeEntry),
+    inProgress: inProgress.map(mapBadgeEntry),
+    all: all.map(mapBadgeEntry),
+    totalEarned: num(api.total_earned),
+    totalActive: num(api.total_active),
+  };
+}
+
+export function mapPeerPercentileFromApi(api: Record<string, unknown>): PeerPercentile {
+  const available = Boolean(api.available);
+  const distRaw = (Array.isArray(api.distribution) ? api.distribution : []) as Array<Record<string, unknown>>;
+  return {
+    available,
+    reason: typeof api.reason === "string" ? api.reason : undefined,
+    percentile: available ? num(api.percentile) : undefined,
+    rank: available ? num(api.rank) : undefined,
+    cohortSize: num(api.cohort_size),
+    cohortSampled: available ? num(api.cohort_sampled) : undefined,
+    ownScore: available ? num(api.own_score) : undefined,
+    distribution: available
+      ? distRaw.map((d) => ({ band: String(d.band ?? ""), count: num(d.count) }))
+      : undefined,
+  };
 }
 
 export function mapActivityHeatmapFromApi(api: Record<string, unknown>): ActivityHeatmap {

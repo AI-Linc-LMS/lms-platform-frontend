@@ -2,10 +2,14 @@ import type { ScorecardData } from "@/lib/types/scorecard.types";
 import {
   mapActivityHeatmapFromApi,
   mapAIRecommendationsFromApi,
+  mapBadgesFromApi,
+  mapGoalsFromApi,
   mapInterviewReadinessFromApi,
   mapLearningConsumptionFromApi,
   mapOverviewFromApi,
+  mapPeerPercentileFromApi,
   mapSkillProficiencyFromApi,
+  mapStreakFromApi,
   getEmptyLearningConsumption,
   getEmptyOverview,
   getEmptyScorecardData,
@@ -21,6 +25,10 @@ export type ScorecardApiPayload = {
   skill_proficiency?: unknown;
   interview_readiness?: unknown;
   ai_recommendations?: unknown;
+  goals?: unknown;
+  streaks?: unknown;
+  badges?: unknown;
+  peer_percentile?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -62,6 +70,22 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
 
   if (data?.ai_recommendations !== undefined) {
     result.aiRecommendations = mapAIRecommendationsFromApi(data.ai_recommendations);
+  }
+
+  if (data?.goals && typeof data.goals === "object") {
+    result.goals = mapGoalsFromApi(data.goals as Record<string, unknown>);
+  }
+
+  if (data?.streaks && typeof data.streaks === "object") {
+    result.streaks = mapStreakFromApi(data.streaks as Record<string, unknown>);
+  }
+
+  if (data?.badges && typeof data.badges === "object") {
+    result.badges = mapBadgesFromApi(data.badges as Record<string, unknown>);
+  }
+
+  if (data?.peer_percentile && typeof data.peer_percentile === "object") {
+    result.peerPercentile = mapPeerPercentileFromApi(data.peer_percentile as Record<string, unknown>);
   }
 
   return result;

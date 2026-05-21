@@ -20,6 +20,10 @@ import {
   SkillRadarChart,
   InterviewReadinessGauge,
   RecommendationCard,
+  StreakTracker,
+  BadgeTrophyCase,
+  PeerPercentileBar,
+  GoalsCard,
 } from "@/components/scorecard/sections";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
@@ -27,8 +31,10 @@ import { fadeIn, staggerContainer } from "@/lib/motion/scorecard-presets";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview" },
+  { id: "goals", label: "Goals" },
   { id: "skills", label: "Skills" },
   { id: "career", label: "Career" },
+  { id: "achievements", label: "Achievements" },
   { id: "activity", label: "Activity" },
   { id: "learning", label: "Learning" },
 ] as const;
@@ -60,8 +66,10 @@ export default function ScorecardPage() {
     const enabled = data?.scorecardConfig?.enabledModules ?? [];
     const sectionsPresent = {
       overview: Boolean(data?.overview),
+      goals: Boolean(data?.goals) || Boolean(data?.streaks),
       skills: Boolean(data?.skillProficiency),
       career: Boolean(data?.interviewReadiness) || Boolean(data?.aiRecommendations?.length),
+      achievements: Boolean(data?.badges?.totalActive) || Boolean(data?.peerPercentile),
       activity: Boolean(data?.activityHeatmap),
       learning: Boolean(data?.learningConsumption),
     };
@@ -70,12 +78,22 @@ export default function ScorecardPage() {
       switch (t.id) {
         case "overview":
           return (allOn || enabled.includes("overview")) && sectionsPresent.overview;
+        case "goals":
+          return (
+            (allOn || enabled.includes("goals") || enabled.includes("streaks"))
+            && sectionsPresent.goals
+          );
         case "skills":
           return (allOn || enabled.includes("skill_proficiency")) && sectionsPresent.skills;
         case "career":
           return (
             (allOn || enabled.includes("interview_readiness") || enabled.includes("ai_recommendations"))
             && sectionsPresent.career
+          );
+        case "achievements":
+          return (
+            (allOn || enabled.includes("badges") || enabled.includes("peer_percentile"))
+            && sectionsPresent.achievements
           );
         case "activity":
           return (allOn || enabled.includes("activity_heatmap")) && sectionsPresent.activity;
@@ -88,9 +106,13 @@ export default function ScorecardPage() {
   }, [
     data?.scorecardConfig?.enabledModules,
     data?.overview,
+    data?.goals,
+    data?.streaks,
     data?.skillProficiency,
     data?.interviewReadiness,
     data?.aiRecommendations,
+    data?.badges,
+    data?.peerPercentile,
     data?.activityHeatmap,
     data?.learningConsumption,
   ]);
@@ -130,8 +152,8 @@ export default function ScorecardPage() {
   }
 
   const heatmap = data.activityHeatmap;
-  const currentStreak = heatmap?.summary.currentStreak ?? data.overview.activeDaysStreak;
-  const longestStreak = heatmap?.summary.longestStreak;
+  const currentStreak = data.streaks?.currentStreak ?? heatmap?.summary.currentStreak ?? data.overview.activeDaysStreak;
+  const longestStreak = data.streaks?.longestStreak ?? heatmap?.summary.longestStreak;
 
   const sections: Record<string, React.ReactNode> = {
     overview: (
@@ -139,6 +161,12 @@ export default function ScorecardPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <OverviewStatsRow overview={data.overview} currentStreak={currentStreak} />
         </div>
+      </section>
+    ),
+    goals: (
+      <section key="goals" data-sc-section="goals" style={{ scrollMarginTop: 96, display: "flex", flexDirection: "column", gap: 16 }}>
+        {data.goals ? <GoalsCard initial={data.goals} /> : null}
+        {data.streaks ? <StreakTracker initial={data.streaks} /> : null}
       </section>
     ),
     skills: (
@@ -150,6 +178,12 @@ export default function ScorecardPage() {
       <section key="career" data-sc-section="career" style={{ scrollMarginTop: 96, display: "flex", flexDirection: "column", gap: 16 }}>
         {data.interviewReadiness ? <InterviewReadinessGauge data={data.interviewReadiness} /> : null}
         {data.aiRecommendations ? <RecommendationCard initialRecommendations={data.aiRecommendations} /> : null}
+      </section>
+    ),
+    achievements: (
+      <section key="achievements" data-sc-section="achievements" style={{ scrollMarginTop: 96, display: "flex", flexDirection: "column", gap: 16 }}>
+        {data.badges ? <BadgeTrophyCase initial={data.badges} /> : null}
+        {data.peerPercentile ? <PeerPercentileBar data={data.peerPercentile} /> : null}
       </section>
     ),
     activity: (
