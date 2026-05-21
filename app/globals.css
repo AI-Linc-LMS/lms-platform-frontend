@@ -1225,3 +1225,122 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.4), transparent);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Scorecard v2 design system — scoped tokens.
+   Keep parity with lib/theme/scorecard-tokens.ts. Vars only apply inside a
+   `.sc-scope` ancestor so the rest of the app's light theme stays untouched.
+   ───────────────────────────────────────────────────────────────────────── */
+.sc-scope {
+  --sc-bg-canvas: #f7f8fc;
+  --sc-bg-elevated: #ffffff;
+  --sc-bg-glass: rgba(255, 255, 255, 0.72);
+  --sc-bg-overlay: rgba(15, 23, 42, 0.04);
+
+  --sc-border-subtle: rgba(15, 23, 42, 0.08);
+  --sc-border-strong: rgba(15, 23, 42, 0.16);
+  --sc-border-glow: rgba(99, 102, 241, 0.32);
+
+  --sc-text-primary: #0f172a;
+  --sc-text-secondary: #334155;
+  --sc-text-muted: #64748b;
+  --sc-text-inverted: #ffffff;
+
+  --sc-accent-primary: #6366f1;
+  --sc-accent-primary-glow: rgba(99, 102, 241, 0.35);
+  --sc-accent-success: #16a34a;
+  --sc-accent-warning: #f59e0b;
+  --sc-accent-danger: #ef4444;
+  --sc-accent-streak: #f97316;
+  --sc-accent-streak-glow: rgba(249, 115, 22, 0.45);
+  --sc-accent-gold: #eab308;
+  --sc-accent-gold-glow: rgba(234, 179, 8, 0.4);
+  --sc-accent-silver: #94a3b8;
+  --sc-accent-bronze: #b45309;
+  --sc-accent-platinum: #0ea5e9;
+
+  --sc-gradient-hero: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  --sc-gradient-streak: linear-gradient(180deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+  --sc-gradient-gold: linear-gradient(135deg, #fde68a 0%, #eab308 50%, #b45309 100%);
+
+  --sc-shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 6px rgba(15, 23, 42, 0.06);
+  --sc-shadow-elevated: 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+  --sc-shadow-glow: 0 0 0 1px rgba(99, 102, 241, 0.18), 0 12px 32px rgba(99, 102, 241, 0.25);
+
+  --sc-radius-sm: 8px;
+  --sc-radius-md: 12px;
+  --sc-radius-lg: 16px;
+  --sc-radius-xl: 24px;
+
+  color: var(--sc-text-primary);
+  background: var(--sc-bg-canvas);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.sc-scope.sc-dark {
+  --sc-bg-canvas: #0b1020;
+  --sc-bg-elevated: #121833;
+  --sc-bg-glass: rgba(18, 24, 51, 0.68);
+  --sc-bg-overlay: rgba(255, 255, 255, 0.04);
+
+  --sc-border-subtle: rgba(255, 255, 255, 0.08);
+  --sc-border-strong: rgba(255, 255, 255, 0.16);
+  --sc-border-glow: rgba(129, 140, 248, 0.45);
+
+  --sc-text-primary: #f8fafc;
+  --sc-text-secondary: #cbd5e1;
+  --sc-text-muted: #94a3b8;
+  --sc-text-inverted: #0f172a;
+
+  --sc-accent-primary: #818cf8;
+  --sc-accent-primary-glow: rgba(129, 140, 248, 0.5);
+  --sc-accent-success: #22c55e;
+  --sc-accent-warning: #fbbf24;
+  --sc-accent-danger: #f87171;
+  --sc-accent-streak: #fb923c;
+  --sc-accent-streak-glow: rgba(251, 146, 60, 0.6);
+  --sc-accent-gold: #fde047;
+  --sc-accent-gold-glow: rgba(253, 224, 71, 0.55);
+  --sc-accent-silver: #cbd5e1;
+  --sc-accent-bronze: #d97706;
+  --sc-accent-platinum: #38bdf8;
+
+  --sc-gradient-hero: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #f472b6 100%);
+  --sc-gradient-streak: linear-gradient(180deg, #fdba74 0%, #fb923c 50%, #f97316 100%);
+  --sc-gradient-gold: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #d97706 100%);
+
+  --sc-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 6px rgba(0, 0, 0, 0.3);
+  --sc-shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --sc-shadow-glow: 0 0 0 1px rgba(129, 140, 248, 0.3), 0 12px 36px rgba(129, 140, 248, 0.35);
+}
+
+@keyframes sc-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.sc-scope .sc-shimmer {
+  background: linear-gradient(110deg,
+    var(--sc-bg-overlay) 30%,
+    var(--sc-border-strong) 50%,
+    var(--sc-bg-overlay) 70%);
+  background-size: 200% auto;
+  animation: sc-shimmer 1.6s linear infinite;
+}
+
+@keyframes sc-flame-flicker {
+  0%, 100% { transform: scale(1) rotate(-1deg); }
+  50% { transform: scale(1.06) rotate(1deg); }
+}
+
+.sc-scope .sc-flame-flicker {
+  animation: sc-flame-flicker 1.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-scope .sc-shimmer,
+  .sc-scope .sc-flame-flicker {
+    animation: none;
+  }
+}
