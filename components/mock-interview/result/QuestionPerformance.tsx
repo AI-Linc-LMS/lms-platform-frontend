@@ -4,6 +4,7 @@ import {
   Paper,
   Typography,
   Box,
+  Button,
   Chip,
   LinearProgress,
   Accordion,
@@ -12,13 +13,27 @@ import {
   Divider,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { memo } from "react";
+import { memo, useState, useCallback } from "react";
+import { StructuredQuestionViewModal } from "./StructuredQuestionViewModal";
 
 interface Question {
   id: number;
   type: string;
   question_text: string;
   expected_key_points: string[];
+  // Optional structured-question payloads stamped on `questions_for_interview` during the
+  // live interview. Present only for the turns where the AI inserted a coding question
+  // or an MCQ; consumed by the View-problem button below to re-render them.
+  coding_problem?: {
+    statement: string;
+    starter_code: string;
+    language: string;
+    sample_input?: string;
+    sample_output?: string;
+  };
+  mcq_options?: { id: string; text: string }[];
+  mcq_multi_select?: boolean;
+  mcq_correct_option_ids?: string[];
 }
 
 interface QuestionScore {
@@ -62,6 +77,20 @@ const QuestionPerformanceComponent = ({
   (responses || []).forEach((r) => {
     if (typeof r.question_id === "number") responseById.set(r.question_id, r);
   });
+
+  // Modal state for the "View problem" / "View MCQ" button on structured questions.
+  // Tracks the question id whose problem is being viewed (null = closed).
+  const [viewerQuestionId, setViewerQuestionId] = useState<number | null>(null);
+  const openViewer = useCallback((id: number) => setViewerQuestionId(id), []);
+  const closeViewer = useCallback(() => setViewerQuestionId(null), []);
+  const viewerQuestion =
+    viewerQuestionId !== null
+      ? questions.find((q) => q.id === viewerQuestionId) ?? null
+      : null;
+  const viewerAnswer =
+    viewerQuestionId !== null
+      ? responseById.get(viewerQuestionId)?.answer
+      : undefined;
   return (
     <Paper
       elevation={0}
@@ -159,6 +188,51 @@ const QuestionPerformanceComponent = ({
               </AccordionSummary>
               <AccordionDetails sx={{ pt: 0 }}>
                 <Divider sx={{ mb: 3 }} />
+
+                {/* "View problem" button — only renders for structured turns (coding
+                    or MCQ). Opens a read-only modal that re-renders the original problem
+                    statement + starter code (coding) or the option list with the correct
+                    answer highlighted (MCQ). The reviewer / candidate can revisit the
+                    exact payload that was shown during the live interview. */}
+                {(() => {
+                  const qtype = (question.type || "").toLowerCase();
+                  const hasCoding =
+                    qtype === "coding" && !!question.coding_problem?.statement;
+                  const hasMCQ =
+                    qtype === "mcq" && (question.mcq_options?.length ?? 0) >= 2;
+                  if (!hasCoding && !hasMCQ) return null;
+                  return (
+                    <Box sx={{ mb: 3 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={
+                          <IconWrapper
+                            icon={
+                              hasCoding
+                                ? "mdi:code-braces"
+                                : "mdi:format-list-checks"
+                            }
+                            size={18}
+                          />
+                        }
+                        onClick={() => openViewer(question.id)}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 600,
+                          borderColor: "var(--accent-indigo)",
+                          color: "var(--accent-indigo)",
+                          "&:hover": {
+                            backgroundColor: "var(--surface-indigo-light)",
+                            borderColor: "var(--accent-indigo-dark)",
+                          },
+                        }}
+                      >
+                        {hasCoding ? "View coding problem" : "View MCQ"}
+                      </Button>
+                    </Box>
+                  );
+                })()}
 
                 {/* Candidate's actual answer (what the user said in response to this
                     question). Pulled from interview_transcript.responses keyed by question id. */}
@@ -335,6 +409,12 @@ const QuestionPerformanceComponent = ({
           );
         })}
       </Box>
+      <StructuredQuestionViewModal
+        open={viewerQuestionId !== null}
+        onClose={closeViewer}
+        question={viewerQuestion}
+        candidateAnswer={viewerAnswer}
+      />
     </Paper>
   );
 };

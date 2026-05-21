@@ -12,6 +12,7 @@ export interface CourseData {
   is_pro?: boolean;
   is_free?: boolean;
   enrollment_enabled?: boolean;
+  certificate_available?: boolean;
   tags?: string | string[]; // Tags as comma-separated string or array
   [key: string]: string | number | boolean | string[] | undefined;
 }
@@ -108,6 +109,27 @@ export interface QuizPayload {
   durating_in_minutes?: number;
   difficulty_level?: string;
   mcqs?: number[];
+}
+
+export type ContentAttachmentType = "pdf" | "image" | "document" | "text" | "other";
+
+// Back-compat alias for callers that still use the old name.
+export type SubmoduleAttachmentType = ContentAttachmentType;
+
+export interface ContentAttachment {
+  id: number;
+  content: number;
+  title: string;
+  file_url: string | null;
+  file_type: ContentAttachmentType;
+  original_filename: string;
+  file_size: number;
+  mime_type: string;
+  order: number;
+  uploaded_by: number | null;
+  uploaded_by_name: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export const contentTypeMap: Record<ContentIdType, BackendContentType> = {
@@ -696,6 +718,104 @@ export const adminCourseBuilderService = {
       payload
     );
     return res.data;
+  },
+
+  getContentAttachments: async (
+    courseId: number,
+    contentId: number
+  ): Promise<ContentAttachment[]> => {
+    try {
+      const res = await apiClient.get(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/contents/${contentId}/attachments/`
+      );
+      return Array.isArray(res.data) ? res.data : [];
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to fetch content attachments"
+      );
+    }
+  },
+
+  uploadContentAttachment: async (
+    courseId: number,
+    contentId: number,
+    file: File,
+    title?: string,
+    order?: number
+  ): Promise<ContentAttachment> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (title) formData.append("title", title);
+      if (typeof order === "number") formData.append("order", String(order));
+
+      const res = await apiClient.post(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/contents/${contentId}/attachments/`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          (apiError.response?.data as { file?: string })?.file ||
+          apiError.message ||
+          "Failed to upload attachment"
+      );
+    }
+  },
+
+  updateContentAttachment: async (
+    courseId: number,
+    contentId: number,
+    attachmentId: number,
+    payload: { title?: string; order?: number }
+  ): Promise<ContentAttachment> => {
+    try {
+      const res = await apiClient.patch(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/contents/${contentId}/attachments/${attachmentId}/`,
+        payload
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to update attachment"
+      );
+    }
+  },
+
+  deleteContentAttachment: async (
+    courseId: number,
+    contentId: number,
+    attachmentId: number
+  ): Promise<void> => {
+    try {
+      await apiClient.delete(
+        `/admin-dashboard/api/clients/${config.clientId}/courses/${courseId}/contents/${contentId}/attachments/${attachmentId}/`
+      );
+    } catch (error: unknown) {
+      const apiError = error as AxiosError<ApiErrorPayload>;
+      throw new Error(
+        apiError.response?.data?.detail ||
+          apiError.response?.data?.error ||
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Failed to delete attachment"
+      );
+    }
   },
 };
 

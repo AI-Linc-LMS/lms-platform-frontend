@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
+import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 import mockInterviewService, {
   type PendingCourseInterview,
 } from "@/lib/services/mock-interview.service";
@@ -201,7 +202,7 @@ export default function MockInterviewCoursesPage() {
                     variant="subtitle1"
                     sx={{ fontWeight: 700, flex: 1 }}
                   >
-                    {tmpl.title}
+                    {cleanInterviewTitle(tmpl.title)}
                   </Typography>
                   <Chip
                     label={tmpl.difficulty}

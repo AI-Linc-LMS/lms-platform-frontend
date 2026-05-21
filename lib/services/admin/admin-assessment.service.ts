@@ -1327,10 +1327,74 @@ export const getAssessmentAnalytics = async (
   }
 };
 
+export interface AssessmentRetakeGrant {
+  id: number;
+  user_id: number;
+  user_email: string;
+  user_name: string;
+  granted_at: string;
+  granted_by_email: string | null;
+  note: string;
+}
+
+export const listAssessmentRetakeGrants = async (
+  clientId: string | number,
+  assessmentId: number,
+): Promise<AssessmentRetakeGrant[]> => {
+  const res = await apiClient.get<AssessmentRetakeGrant[]>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/retake-grants/`,
+  );
+  return res.data;
+};
+
+export const grantAssessmentRetake = async (
+  clientId: string | number,
+  assessmentId: number,
+  payload: { user_email?: string; user_id?: number; note?: string },
+): Promise<AssessmentRetakeGrant> => {
+  try {
+    const res = await apiClient.post<AssessmentRetakeGrant>(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/retake-grants/`,
+      payload,
+    );
+    return res.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      "Failed to grant re-attempt";
+    throw new Error(message);
+  }
+};
+
+export const revokeAssessmentRetake = async (
+  clientId: string | number,
+  assessmentId: number,
+  grantId: number,
+): Promise<void> => {
+  try {
+    await apiClient.delete(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/retake-grants/${grantId}/`,
+    );
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.detail ||
+      "Failed to revoke re-attempt";
+    throw new Error(message);
+  }
+};
+
 export const adminAssessmentService = {
   getAssessments,
   getAssessmentById,
   createAssessment,
+  listAssessmentRetakeGrants,
+  grantAssessmentRetake,
+  revokeAssessmentRetake,
   publishAssessment,
   updateAssessment,
   deleteAssessment,

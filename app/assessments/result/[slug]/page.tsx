@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Paper,Alert, Typography } from "@mui/material";
+import { Box, Button, Paper,Alert, Typography, CircularProgress, Chip } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
@@ -42,6 +42,28 @@ import { CertificateLearnerToolbar } from "@/components/certificate/CertificateL
 import { DynamicCertificate } from "@/components/certificate/DynamicCertificate";
 import { getUploadedFiles } from "@/lib/services/file-upload.service";
 import { config } from "@/lib/config";
+
+async function getAssessmentResultWithRetry(
+  slug: string,
+  attemptId?: number | string,
+  retries = 3,
+  delayMs = 600,
+): Promise<AssessmentResult> {
+  let lastError: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await assessmentService.getAssessmentResult(slug, attemptId);
+    } catch (error: any) {
+      lastError = error;
+      const status = error?.response?.status;
+      // Retry only on 404 — covers the brief window after submit where the
+      // result row isn't queryable yet. Other errors (auth, server) fail fast.
+      if (status !== 404 || attempt === retries) throw error;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastError;
+}
 
 function sanitizeCertificateFileSegment(raw: string, fallback: string): string {
   const s = raw
@@ -321,7 +343,7 @@ export default function AssessmentResultPage() {
     return { assessment, learner };
   }, [assessmentResult, user, slug]);
 
-  const loadAssessmentResult = async () => {
+  const loadAssessmentResult = async (attemptId?: number | string) => {
     try {
       const slugLower = slug?.toLowerCase() || "";
 
@@ -338,7 +360,7 @@ export default function AssessmentResultPage() {
         return;
       }
 
-      const result = await assessmentService.getAssessmentResult(slug);
+      const result = await getAssessmentResultWithRetry(slug, attemptId);
       setAssessmentDetail(result?.assessment_details || null);
       if ((result as any).assessment_meta) {
         setPsychometricData(result);
@@ -351,6 +373,22 @@ export default function AssessmentResultPage() {
       setLoading(false);
     }
   };
+
+  const handleAttemptChange = async (attemptId: number) => {
+    if (attemptId === assessmentResult?.current_attempt_id) return;
+    setLoading(true);
+    await loadAssessmentResult(attemptId);
+  };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
+          <CircularProgress />
+        </Box>
+      </MainLayout>
+    );
+  }
 
   if (!assessmentResult && !psychometricData) return null;
 
@@ -514,6 +552,113 @@ export default function AssessmentResultPage() {
           assessmentTitle={assessmentResult?.assessment_name || ""}
           status={assessmentResult?.status || ""}
         />
+
+        {/* Multi-attempt selector. Renders only when this learner has more
+            than one submitted attempt — i.e. admin has granted at least one
+            retake that was consumed and finalized. Clicking an attempt
+            refetches the full result payload for that submission. */}
+        {assessmentResult?.attempts && assessmentResult.attempts.length > 1 && (
+          <Paper
+            elevation={0}
+            sx={{
+              mb: 3,
+              border: "1px solid var(--border-default)",
+              borderRadius: 2,
+              bgcolor: "var(--card-bg)",
+              overflow: "hidden",
+            }}
+          >
+            <Box
+              sx={{
+                px: 2,
+                py: 1.25,
+                borderBottom: "1px solid var(--border-default)",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                bgcolor:
+                  "color-mix(in srgb, var(--accent-indigo) 5%, var(--card-bg))",
+              }}
+            >
+              <IconWrapper icon="mdi:history" size={18} color="var(--accent-indigo)" />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Attempt history
+              </Typography>
+              <Chip
+                size="small"
+                label={`${assessmentResult.attempts.length} attempts`}
+                sx={{ ml: "auto", bgcolor: "var(--surface)", fontWeight: 600 }}
+              />
+            </Box>
+            <Box sx={{ p: 1, display: "flex", flexWrap: "wrap", gap: 1 }}>
+              {assessmentResult.attempts.map((att) => {
+                const isCurrent = att.id === assessmentResult.current_attempt_id;
+                const dateLabel = att.submitted_at
+                  ? new Date(att.submitted_at).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : "—";
+                const scoreLabel = att.score != null ? `${att.score}` : "—";
+                return (
+                  <Button
+                    key={att.id}
+                    size="small"
+                    variant={isCurrent ? "contained" : "outlined"}
+                    onClick={() => handleAttemptChange(att.id)}
+                    disabled={loading}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: 1.5,
+                      fontWeight: 600,
+                      px: 1.5,
+                      ...(isCurrent
+                        ? {
+                            background:
+                              "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+                            color: "var(--font-light)",
+                            "&:hover": {
+                              background:
+                                "linear-gradient(135deg, var(--accent-indigo-dark) 0%, var(--accent-indigo) 100%)",
+                            },
+                          }
+                        : {
+                            borderColor: "var(--border-default)",
+                            color: "var(--font-primary)",
+                          }),
+                    }}
+                  >
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          opacity: isCurrent ? 0.9 : 0.7,
+                        }}
+                      >
+                        Attempt {att.attempt_number}
+                        {isCurrent ? " · current" : ""}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        Score: {scoreLabel}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontSize: "0.65rem",
+                          opacity: isCurrent ? 0.85 : 0.65,
+                        }}
+                      >
+                        {dateLabel}
+                      </Typography>
+                    </Box>
+                  </Button>
+                );
+              })}
+            </Box>
+          </Paper>
+        )}
 
         {resultHidden && (
           <Alert severity="info" sx={{ mb: 3 }}>

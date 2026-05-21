@@ -347,6 +347,7 @@ export function useInterviewerVoice(
 
         await audio.play();
       } catch {
+        if (isStale()) return;
         await playBrowser(true);
       }
     };
@@ -370,6 +371,19 @@ export function useInterviewerVoice(
       cleanupAudio();
       utteranceRef.current = null;
       setAudioActive(false);
+      // If we already kicked off the utterance (didStart) but the effect is being torn
+      // down before `onend` fired — usually because the parent flipped `isSpeaking`
+      // to false (e.g., silence detector auto-advanced, new question replaced this one)
+      // — fire the complete callback explicitly. Without this the avatar's `isAnimating`
+      // would stay `true` and the lip-sync video would keep looping after the actual
+      // audio is already gone. This is the root cause of the "lip sync continues after
+      // voice stops" symptom.
+      if (didStart && !finishing) {
+        finishing = true;
+        try {
+          onSpeakCompleteRef.current?.();
+        } catch {}
+      }
     };
   }, [question, isSpeaking]);
 

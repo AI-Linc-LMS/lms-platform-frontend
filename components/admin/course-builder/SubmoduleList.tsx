@@ -296,7 +296,7 @@ export function SubmoduleList({
                 </Box>
 
                 {/* Expanded Content */}
-                <Collapse in={isExpanded}>
+                <Collapse in={isExpanded} unmountOnExit>
                   <Box sx={{ px: 2, pb: 1.5, borderTop: "1px solid var(--border-default)" }}>
                     <ContentList
                       courseId={courseId}

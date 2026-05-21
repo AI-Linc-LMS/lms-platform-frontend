@@ -969,6 +969,11 @@ export default function SubmoduleDetailPage() {
                 comments={comments}
                 newComment={newComment}
                 submittingComment={submittingComment}
+                attachments={
+                  selectedContentId
+                    ? submoduleData?.attachments_by_content?.[selectedContentId] ?? []
+                    : []
+                }
                 onCommentChange={setNewComment}
                 onSubmitComment={handleSubmitComment}
                 onVideoStart={async () => {

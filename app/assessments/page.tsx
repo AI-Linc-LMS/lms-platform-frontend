@@ -36,7 +36,15 @@ import {
 
 const ITEMS_PER_PAGE = 12;
 
-type FilterType = "all" | "available" | "under_review" | "completed";
+type FilterType = "all" | "available" | "under_review" | "completed" | "expired";
+
+/** Assessment is past its end_time and the learner did not submit before it ended. */
+function isLearnerAssessmentExpired(a: Assessment): boolean {
+  if (!a.end_time) return false;
+  if (new Date(a.end_time).getTime() > Date.now()) return false;
+  // Don't surface submitted assessments under "expired" — they belong in completed/review.
+  return !isLearnerAssessmentSubmittedForCatalog(a);
+}
 type SortType = "recent" | "oldest" | "title";
 
 export default function AssessmentsPage() {
@@ -95,6 +103,8 @@ export default function AssessmentsPage() {
   const underReviewCount = assessments.filter((a) =>
     isLearnerAssessmentSubmittedUnderReview(a),
   ).length;
+
+  const expiredCount = assessments.filter((a) => isLearnerAssessmentExpired(a)).length;
   
   // Available: status is "not_started" or "in_progress"
   // If status is undefined/null, fallback to !is_attempted && !has_attempted for backward compatibility
@@ -127,6 +137,8 @@ export default function AssessmentsPage() {
       result = result.filter((a) => canViewLearnerAssessmentResults(a));
     } else if (filter === "under_review") {
       result = result.filter((a) => isLearnerAssessmentSubmittedUnderReview(a));
+    } else if (filter === "expired") {
+      result = result.filter((a) => isLearnerAssessmentExpired(a));
     } else if (filter === "available") {
       // Available: status is "not_started" or "in_progress"
       // Fallback to !is_attempted && !has_attempted for backward compatibility
@@ -527,6 +539,10 @@ export default function AssessmentsPage() {
             <Tab
               label={`${t("assessments.completed")} (${completedCount})`}
               value="completed"
+            />
+            <Tab
+              label={`${t("assessments.expired")} (${expiredCount})`}
+              value="expired"
             />
           </Tabs>
 
