@@ -110,8 +110,35 @@ export interface ScorecardConfig {
   enabledModules: string[];
 }
 
+export interface ActivityHeatmapDay {
+  date: string;
+  count: number;
+  minutes: number;
+}
+
+export interface ActivityHeatmapSummary {
+  totalActivities: number;
+  activeDays: number;
+  longestStreak: number;
+  currentStreak: number;
+  maxCount: number;
+  windowStart: string;
+  windowEnd: string;
+}
+
+export interface ActivityHeatmap {
+  /** Legacy GitHub-graph shape kept for old <ActivityHeatmap /> consumers. */
+  byDate: Record<string, Record<string, number>>;
+  /** Flat array — preferred for new viz. */
+  days: ActivityHeatmapDay[];
+  summary: ActivityHeatmapSummary;
+}
+
 export interface ScorecardData {
+  /** Backend payload version (BE sets `version: 2` on contract v2). */
+  version?: number;
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
   learningConsumption: LearningConsumption;
+  activityHeatmap?: ActivityHeatmap;
 }

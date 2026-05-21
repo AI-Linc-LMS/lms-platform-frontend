@@ -1,4 +1,6 @@
 import type {
+  ActivityHeatmap,
+  ActivityHeatmapDay,
   ContentCompletionOverview,
   LearningConsumption,
   ScorecardData,
@@ -244,5 +246,32 @@ export function getEmptyScorecardData(): ScorecardData {
   return {
     overview: getEmptyOverview(),
     learningConsumption: getEmptyLearningConsumption(),
+  };
+}
+
+export function mapActivityHeatmapFromApi(api: Record<string, unknown>): ActivityHeatmap {
+  const rawDays = Array.isArray(api.days) ? (api.days as Array<Record<string, unknown>>) : [];
+  const days: ActivityHeatmapDay[] = rawDays.map((d) => ({
+    date: String(d.date ?? ""),
+    count: num(d.count),
+    minutes: num(d.minutes),
+  }));
+  const byDate =
+    api.heatmap_data && typeof api.heatmap_data === "object"
+      ? (api.heatmap_data as Record<string, Record<string, number>>)
+      : {};
+  const s = (api.summary as Record<string, unknown>) ?? {};
+  return {
+    byDate,
+    days,
+    summary: {
+      totalActivities: num(s.total_activities),
+      activeDays: num(s.active_days),
+      longestStreak: num(s.longest_streak),
+      currentStreak: num(s.current_streak),
+      maxCount: num(s.max_count),
+      windowStart: String(s.window_start ?? ""),
+      windowEnd: String(s.window_end ?? ""),
+    },
   };
 }

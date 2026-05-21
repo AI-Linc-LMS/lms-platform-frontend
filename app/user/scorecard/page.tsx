@@ -1,35 +1,47 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Container, Typography, Button, Paper, Skeleton, CircularProgress } from "@mui/material";
+import { motion } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
 
 import { MainLayout } from "@/components/layout/MainLayout";
-import { IconWrapper } from "@/components/common/IconWrapper";
-import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
-import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
-import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
-import { profileService, type HeatmapData } from "@/lib/services/profile.service";
+import {
+  ScorecardThemeProvider,
+  SkeletonShimmer,
+  EmptyState,
+} from "@/components/scorecard/primitives";
+import {
+  HeroBand,
+  OverviewStatsRow,
+  ActivityHeatmapSection,
+  LearningConsumptionGrid,
+  StickyTabNav,
+} from "@/components/scorecard/sections";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
+import { fadeIn, staggerContainer } from "@/lib/motion/scorecard-presets";
+
+const ALL_TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "activity", label: "Activity" },
+  { id: "learning", label: "Learning" },
+] as const;
 
 export default function ScorecardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ScorecardData | null>(null);
-  const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
+  const [error, setError] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
-      const [scorecardData, heatmapRes] = await Promise.all([
-        scorecardService.getScorecardData(),
-        profileService.getUserActivityHeatmap().catch(() => ({ heatmap_data: {} as HeatmapData })),
-      ]);
-      setData(scorecardData);
-      setHeatmapData(heatmapRes.heatmap_data ?? {});
+      const result = await scorecardService.getScorecardData();
+      setData(result);
     } catch {
-      /* Error state: data remains null */
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -39,187 +51,122 @@ export default function ScorecardPage() {
     fetchData();
   }, [fetchData]);
 
+  const tabs = useMemo(() => {
+    const enabled = data?.scorecardConfig?.enabledModules ?? [];
+    if (enabled.length === 0) return [...ALL_TABS];
+    return ALL_TABS.filter((t) => {
+      switch (t.id) {
+        case "overview": return enabled.includes("overview");
+        case "activity": return enabled.includes("activity_heatmap");
+        case "learning": return enabled.includes("learning_consumption");
+        default: return false;
+      }
+    });
+  }, [data?.scorecardConfig?.enabledModules]);
+
   if (loading) {
     return (
       <MainLayout>
-        <Box
-          sx={{
-            width: "100%",
-            backgroundColor: "var(--background)",
-            minHeight: "100vh",
-            pb: 4,
-          }}
-        >
-          <Container maxWidth="xl" sx={{ py: 4 }}>
-            {/* Header skeleton */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 4,
-              }}
-            >
-              <Box>
-                <Skeleton variant="text" width={320} height={40} sx={{ mb: 0.5 }} />
-                <Skeleton variant="text" width={380} height={24} />
-              </Box>
-              <Skeleton variant="rounded" width={160} height={40} sx={{ display: { xs: "none", sm: "block" } }} />
-            </Box>
-
-            {/* Overview stats row */}
-            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton
-                  key={i}
-                  variant="rounded"
-                  height={88}
-                  animation="wave"
-                  sx={{ flex: "1 1 140px", minWidth: 120, borderRadius: 2 }}
-                />
-              ))}
-            </Box>
-
-            {/* Main content blocks */}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <Skeleton variant="rounded" height={180} animation="wave" sx={{ borderRadius: 2, width: "100%" }} />
-              <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" } }}>
-                <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 2, flex: 1 }} />
-                <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 2, flex: 1 }} />
-              </Box>
-              <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                {[1, 2, 3].map((i) => (
-                  <Skeleton
-                    key={i}
-                    variant="rounded"
-                    height={160}
-                    animation="wave"
-                    sx={{ flex: "1 1 200px", minWidth: 180, borderRadius: 2 }}
-                  />
-                ))}
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1 }}>
-                <CircularProgress size={18} sx={{ color: "primary.main" }} />
-                <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
-                  Loading your scorecard...
-                </Typography>
-              </Box>
-            </Box>
-          </Container>
-        </Box>
+        <ScorecardThemeProvider>
+          <PageShell>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <SkeletonShimmer height={156} radius={24} />
+              <SkeletonShimmer height={88} radius={12} />
+              <SkeletonShimmer height={48} radius={999} />
+              <SkeletonShimmer height={240} radius={16} />
+              <SkeletonShimmer height={320} radius={16} />
+            </div>
+          </PageShell>
+        </ScorecardThemeProvider>
       </MainLayout>
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
       <MainLayout>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
-            Failed to load scorecard data.
-          </Typography>
-        </Container>
+        <ScorecardThemeProvider>
+          <PageShell>
+            <EmptyState
+              icon={<AlertTriangle size={24} />}
+              title="Could not load your scorecard"
+              description="Something went wrong fetching your learning summary. Try again in a moment."
+            />
+          </PageShell>
+        </ScorecardThemeProvider>
       </MainLayout>
     );
   }
 
-  const enabledModules = data.scorecardConfig?.enabledModules;
-  const showAll = !enabledModules || enabledModules.length === 0;
+  const heatmap = data.activityHeatmap;
+  const currentStreak = heatmap?.summary.currentStreak ?? data.overview.activeDaysStreak;
+  const longestStreak = heatmap?.summary.longestStreak;
 
-  const SECTION_ORDER = ["overview", "activity_heatmap", "learning_consumption"] as const;
+  const sections: Record<string, React.ReactNode> = {
+    overview: (
+      <section key="overview" data-sc-section="overview" style={{ scrollMarginTop: 96 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <OverviewStatsRow overview={data.overview} currentStreak={currentStreak} />
+        </div>
+      </section>
+    ),
+    activity: (
+      <section key="activity" data-sc-section="activity" style={{ scrollMarginTop: 96 }}>
+        <ActivityHeatmapSection data={heatmap} />
+      </section>
+    ),
+    learning: (
+      <section key="learning" data-sc-section="learning" style={{ scrollMarginTop: 96 }}>
+        <LearningConsumptionGrid data={data.learningConsumption} />
+      </section>
+    ),
+  };
 
-  const sectionOrder = showAll
-    ? [...SECTION_ORDER]
-    : (SECTION_ORDER as readonly string[]).filter((id) => (enabledModules as string[]).includes(id));
+  const visibleIds = tabs.map((t) => t.id);
 
   return (
     <MainLayout>
-      <Box
-        sx={{
-          width: "100%",
-          backgroundColor: "var(--background)",
-          minHeight: "100vh",
-          pb: 4,
-        }}
-      >
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          {/* Wrapper for PDF export capture */}
-          <Box data-scorecard-pdf-content>
-          {/* Header */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 4,
-            }}
+      <ScorecardThemeProvider>
+        <PageShell>
+          <HeroBand
+            overview={data.overview}
+            currentStreak={currentStreak}
+            longestStreak={longestStreak}
+            onBack={() => router.push("/dashboard")}
+          />
+          {tabs.length > 1 ? <StickyTabNav tabs={tabs} /> : null}
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            style={{ display: "flex", flexDirection: "column", gap: 24 }}
           >
-            <Box>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  color: "var(--font-primary)",
-                  fontSize: { xs: "1.75rem", sm: "2rem" },
-                  mb: 0.5,
-                }}
-              >
-                Learning scorecard
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.9375rem",
-                }}
-              >
-                Overview, activity, and learning consumption
-              </Typography>
-            </Box>
-            <Button
-              data-scorecard-pdf-exclude
-              variant="outlined"
-              startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-              onClick={() => router.push("/dashboard")}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                color: "var(--accent-indigo)",
-                borderColor: "var(--accent-indigo)",
-                borderRadius: "24px",
-                px: 2.5,
-                py: 1,
-                "&:hover": {
-                  borderColor: "var(--accent-indigo-dark)",
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                },
-                display: { xs: "none", sm: "flex" },
-              }}
-            >
-              Back to Dashboard
-            </Button>
-          </Box>
-
-          {/* Sections - order from enabled_modules when configured */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            {sectionOrder.map((sectionId) => {
-              const visible = showAll || (enabledModules && enabledModules.includes(sectionId));
-              if (!visible) return null;
-              switch (sectionId) {
-                case "overview":
-                  return <StudentOverviewSection key={sectionId} data={data.overview} />;
-                case "activity_heatmap":
-                  return <ActivityHeatmap key={sectionId} heatmapData={heatmapData} />;
-                case "learning_consumption":
-                  return <LearningConsumptionSection key={sectionId} data={data.learningConsumption} />;
-                default:
-                  return null;
-              }
-            })}
-          </Box>
-          </Box>
-        </Container>
-      </Box>
+            {visibleIds.map((id) => (
+              <motion.div key={id} variants={fadeIn}>
+                {sections[id]}
+              </motion.div>
+            ))}
+          </motion.div>
+        </PageShell>
+      </ScorecardThemeProvider>
     </MainLayout>
+  );
+}
+
+function PageShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        background: "var(--sc-bg-canvas)",
+        color: "var(--sc-text-primary)",
+        padding: "32px clamp(16px, 4vw, 48px) 48px",
+      }}
+    >
+      <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+        {children}
+      </div>
+    </div>
   );
 }
