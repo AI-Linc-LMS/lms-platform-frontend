@@ -17,6 +17,9 @@ import {
   ActivityHeatmapSection,
   LearningConsumptionGrid,
   StickyTabNav,
+  SkillRadarChart,
+  InterviewReadinessGauge,
+  RecommendationCard,
 } from "@/components/scorecard/sections";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
@@ -24,6 +27,8 @@ import { fadeIn, staggerContainer } from "@/lib/motion/scorecard-presets";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview" },
+  { id: "skills", label: "Skills" },
+  { id: "career", label: "Career" },
   { id: "activity", label: "Activity" },
   { id: "learning", label: "Learning" },
 ] as const;
@@ -53,16 +58,42 @@ export default function ScorecardPage() {
 
   const tabs = useMemo(() => {
     const enabled = data?.scorecardConfig?.enabledModules ?? [];
-    if (enabled.length === 0) return [...ALL_TABS];
+    const sectionsPresent = {
+      overview: Boolean(data?.overview),
+      skills: Boolean(data?.skillProficiency),
+      career: Boolean(data?.interviewReadiness) || Boolean(data?.aiRecommendations?.length),
+      activity: Boolean(data?.activityHeatmap),
+      learning: Boolean(data?.learningConsumption),
+    };
+    const allOn = enabled.length === 0;
     return ALL_TABS.filter((t) => {
       switch (t.id) {
-        case "overview": return enabled.includes("overview");
-        case "activity": return enabled.includes("activity_heatmap");
-        case "learning": return enabled.includes("learning_consumption");
-        default: return false;
+        case "overview":
+          return (allOn || enabled.includes("overview")) && sectionsPresent.overview;
+        case "skills":
+          return (allOn || enabled.includes("skill_proficiency")) && sectionsPresent.skills;
+        case "career":
+          return (
+            (allOn || enabled.includes("interview_readiness") || enabled.includes("ai_recommendations"))
+            && sectionsPresent.career
+          );
+        case "activity":
+          return (allOn || enabled.includes("activity_heatmap")) && sectionsPresent.activity;
+        case "learning":
+          return (allOn || enabled.includes("learning_consumption")) && sectionsPresent.learning;
+        default:
+          return false;
       }
     });
-  }, [data?.scorecardConfig?.enabledModules]);
+  }, [
+    data?.scorecardConfig?.enabledModules,
+    data?.overview,
+    data?.skillProficiency,
+    data?.interviewReadiness,
+    data?.aiRecommendations,
+    data?.activityHeatmap,
+    data?.learningConsumption,
+  ]);
 
   if (loading) {
     return (
@@ -108,6 +139,17 @@ export default function ScorecardPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <OverviewStatsRow overview={data.overview} currentStreak={currentStreak} />
         </div>
+      </section>
+    ),
+    skills: (
+      <section key="skills" data-sc-section="skills" style={{ scrollMarginTop: 96 }}>
+        <SkillRadarChart data={data.skillProficiency} />
+      </section>
+    ),
+    career: (
+      <section key="career" data-sc-section="career" style={{ scrollMarginTop: 96, display: "flex", flexDirection: "column", gap: 16 }}>
+        {data.interviewReadiness ? <InterviewReadinessGauge data={data.interviewReadiness} /> : null}
+        {data.aiRecommendations ? <RecommendationCard initialRecommendations={data.aiRecommendations} /> : null}
       </section>
     ),
     activity: (

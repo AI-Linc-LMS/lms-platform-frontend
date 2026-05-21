@@ -1,8 +1,11 @@
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 import {
   mapActivityHeatmapFromApi,
+  mapAIRecommendationsFromApi,
+  mapInterviewReadinessFromApi,
   mapLearningConsumptionFromApi,
   mapOverviewFromApi,
+  mapSkillProficiencyFromApi,
   getEmptyLearningConsumption,
   getEmptyOverview,
   getEmptyScorecardData,
@@ -15,6 +18,9 @@ export type ScorecardApiPayload = {
   overview?: Record<string, unknown>;
   learning_consumption?: unknown;
   activity_heatmap?: unknown;
+  skill_proficiency?: unknown;
+  interview_readiness?: unknown;
+  ai_recommendations?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -44,6 +50,18 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
 
   if (data?.activity_heatmap && typeof data.activity_heatmap === "object") {
     result.activityHeatmap = mapActivityHeatmapFromApi(data.activity_heatmap as Record<string, unknown>);
+  }
+
+  if (data?.skill_proficiency && typeof data.skill_proficiency === "object") {
+    result.skillProficiency = mapSkillProficiencyFromApi(data.skill_proficiency as Record<string, unknown>);
+  }
+
+  if (data?.interview_readiness && typeof data.interview_readiness === "object") {
+    result.interviewReadiness = mapInterviewReadinessFromApi(data.interview_readiness as Record<string, unknown>);
+  }
+
+  if (data?.ai_recommendations !== undefined) {
+    result.aiRecommendations = mapAIRecommendationsFromApi(data.ai_recommendations);
   }
 
   return result;

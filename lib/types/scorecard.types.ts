@@ -134,6 +134,66 @@ export interface ActivityHeatmap {
   summary: ActivityHeatmapSummary;
 }
 
+export type SkillTrend = "up" | "flat" | "down";
+
+export interface SkillEntry {
+  moduleId: number;
+  courseId?: number;
+  name: string;
+  proficiency: number;
+  accuracy: number;
+  completion: number;
+  timeInvestedMinutes: number;
+  weak: boolean;
+  trend: SkillTrend;
+}
+
+export interface SkillProficiency {
+  skills: SkillEntry[];
+  top3: SkillEntry[];
+  weak3: SkillEntry[];
+}
+
+export type ReadinessLevel = "interview_ready" | "advanced" | "intermediate" | "foundation";
+
+export interface ReadinessRole {
+  id: string;
+  name: string;
+  readinessPct: number;
+  minScore: number;
+  missingSkills: string[];
+}
+
+export interface InterviewReadiness {
+  score: number;
+  level: ReadinessLevel;
+  components: {
+    mockInterviewAvg: number;
+    codingCompletionPct: number;
+    assessmentAvg: number;
+    skillAvg: number;
+  };
+  roles: ReadinessRole[];
+  thresholds: {
+    interviewReady: number;
+    advanced: number;
+    intermediate: number;
+  };
+}
+
+export type RecommendationAction = "revisit_module" | "take_quiz" | "attempt_mock" | "coding_practice" | "generic";
+
+export interface AIRecommendation {
+  id: number;
+  title: string;
+  body: string;
+  actionType: RecommendationAction;
+  actionPayload?: Record<string, unknown>;
+  priority: number;
+  source: "llm" | "fallback";
+  generatedAt?: string;
+}
+
 export interface ScorecardData {
   /** Backend payload version (BE sets `version: 2` on contract v2). */
   version?: number;
@@ -141,4 +201,7 @@ export interface ScorecardData {
   overview: StudentOverview;
   learningConsumption: LearningConsumption;
   activityHeatmap?: ActivityHeatmap;
+  skillProficiency?: SkillProficiency;
+  interviewReadiness?: InterviewReadiness;
+  aiRecommendations?: AIRecommendation[];
 }

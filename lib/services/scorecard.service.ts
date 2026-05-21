@@ -2,6 +2,8 @@ import apiClient from "./api";
 import { config } from "@/lib/config";
 import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
+import { mapAIRecommendationFromApi } from "./scorecard/mappers";
+import type { AIRecommendation } from "@/lib/types/scorecard.types";
 
 export { formatTimeSpent } from "./scorecard/mappers";
 export type { ScorecardApiPayload };
@@ -46,6 +48,42 @@ export const scorecardService = {
       responseType: "blob",
     });
     return response.data as Blob;
+  },
+
+  getAIRecommendations: async (): Promise<AIRecommendation[]> => {
+    const clientId = config.clientId;
+    try {
+      const response = await apiClient.get<{ recommendations: Record<string, unknown>[] }>(
+        `/api/scorecard/clients/${clientId}/student/ai-recommendations/`
+      );
+      return (response.data.recommendations ?? []).map(mapAIRecommendationFromApi);
+    } catch {
+      return [];
+    }
+  },
+
+  refreshAIRecommendations: async (): Promise<AIRecommendation[]> => {
+    const clientId = config.clientId;
+    const response = await apiClient.post<{ recommendations: Record<string, unknown>[] }>(
+      `/api/scorecard/clients/${clientId}/student/ai-recommendations/refresh/`
+    );
+    return (response.data.recommendations ?? []).map(mapAIRecommendationFromApi);
+  },
+
+  dismissAIRecommendation: async (recId: number): Promise<AIRecommendation> => {
+    const clientId = config.clientId;
+    const response = await apiClient.post<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/ai-recommendations/${recId}/dismiss/`
+    );
+    return mapAIRecommendationFromApi(response.data);
+  },
+
+  completeAIRecommendation: async (recId: number): Promise<AIRecommendation> => {
+    const clientId = config.clientId;
+    const response = await apiClient.post<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/ai-recommendations/${recId}/complete/`
+    );
+    return mapAIRecommendationFromApi(response.data);
   },
 
   getDashboardSummary: async () => {

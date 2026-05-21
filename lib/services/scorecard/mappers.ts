@@ -1,9 +1,17 @@
 import type {
   ActivityHeatmap,
   ActivityHeatmapDay,
+  AIRecommendation,
   ContentCompletionOverview,
+  InterviewReadiness,
   LearningConsumption,
+  ReadinessLevel,
+  ReadinessRole,
+  RecommendationAction,
   ScorecardData,
+  SkillEntry,
+  SkillProficiency,
+  SkillTrend,
   StudentOverview,
 } from "@/lib/types/scorecard.types";
 
@@ -247,6 +255,97 @@ export function getEmptyScorecardData(): ScorecardData {
     overview: getEmptyOverview(),
     learningConsumption: getEmptyLearningConsumption(),
   };
+}
+
+export function mapSkillProficiencyFromApi(api: Record<string, unknown>): SkillProficiency {
+  const skills = (Array.isArray(api.skills) ? api.skills : []) as Array<Record<string, unknown>>;
+  const top3 = (Array.isArray(api.top_3) ? api.top_3 : []) as Array<Record<string, unknown>>;
+  const weak3 = (Array.isArray(api.weak_3) ? api.weak_3 : []) as Array<Record<string, unknown>>;
+  return {
+    skills: skills.map(mapSkillEntry),
+    top3: top3.map(mapSkillEntry),
+    weak3: weak3.map(mapSkillEntry),
+  };
+}
+
+function mapSkillEntry(s: Record<string, unknown>): SkillEntry {
+  const trendRaw = typeof s.trend === "string" ? s.trend : "flat";
+  const trend: SkillTrend = trendRaw === "up" || trendRaw === "down" ? trendRaw : "flat";
+  return {
+    moduleId: num(s.module_id),
+    courseId: numOrUndefined(s.course_id),
+    name: String(s.name ?? "—"),
+    proficiency: num(s.proficiency),
+    accuracy: num(s.accuracy),
+    completion: num(s.completion),
+    timeInvestedMinutes: num(s.time_invested_minutes),
+    weak: Boolean(s.weak),
+    trend,
+  };
+}
+
+export function mapInterviewReadinessFromApi(api: Record<string, unknown>): InterviewReadiness {
+  const comp = (api.components as Record<string, unknown>) ?? {};
+  const thresholds = (api.thresholds as Record<string, unknown>) ?? {};
+  const roles = (Array.isArray(api.roles) ? api.roles : []) as Array<Record<string, unknown>>;
+  const levelRaw = String(api.level ?? "foundation");
+  const level: ReadinessLevel =
+    levelRaw === "interview_ready" || levelRaw === "advanced" || levelRaw === "intermediate"
+      ? (levelRaw as ReadinessLevel)
+      : "foundation";
+  return {
+    score: num(api.score),
+    level,
+    components: {
+      mockInterviewAvg: num(comp.mock_interview_avg),
+      codingCompletionPct: num(comp.coding_completion_pct),
+      assessmentAvg: num(comp.assessment_avg),
+      skillAvg: num(comp.skill_avg),
+    },
+    roles: roles.map<ReadinessRole>((r) => ({
+      id: String(r.id ?? ""),
+      name: String(r.name ?? ""),
+      readinessPct: num(r.readiness_pct),
+      minScore: num(r.min_score),
+      missingSkills: Array.isArray(r.missing_skills)
+        ? (r.missing_skills as unknown[]).map(String)
+        : [],
+    })),
+    thresholds: {
+      interviewReady: num(thresholds.interview_ready),
+      advanced: num(thresholds.advanced),
+      intermediate: num(thresholds.intermediate),
+    },
+  };
+}
+
+export function mapAIRecommendationFromApi(r: Record<string, unknown>): AIRecommendation {
+  const actionRaw = String(r.action_type ?? "generic");
+  const validActions: RecommendationAction[] = [
+    "revisit_module",
+    "take_quiz",
+    "attempt_mock",
+    "coding_practice",
+    "generic",
+  ];
+  const actionType = (validActions as string[]).includes(actionRaw)
+    ? (actionRaw as RecommendationAction)
+    : "generic";
+  return {
+    id: num(r.id),
+    title: String(r.title ?? ""),
+    body: String(r.body ?? ""),
+    actionType,
+    actionPayload: (r.action_payload as Record<string, unknown>) ?? undefined,
+    priority: num(r.priority),
+    source: r.source === "llm" ? "llm" : "fallback",
+    generatedAt: typeof r.generated_at === "string" ? r.generated_at : undefined,
+  };
+}
+
+export function mapAIRecommendationsFromApi(api: unknown): AIRecommendation[] {
+  if (!Array.isArray(api)) return [];
+  return (api as Array<Record<string, unknown>>).map(mapAIRecommendationFromApi);
 }
 
 export function mapActivityHeatmapFromApi(api: Record<string, unknown>): ActivityHeatmap {
