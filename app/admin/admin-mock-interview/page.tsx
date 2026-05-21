@@ -350,15 +350,12 @@ export default function AdminMockInterviewPage() {
               alignItems: "center",
             }}
           >
-            {/* Create-interview workflow: admin defines a reusable interview and maps it
-                to one or more courses to publish it to enrolled students. Lives on its own
-                page because it's CRUD vs. the existing tabs which are analytics. */}
             <Button
               variant="contained"
               onClick={() =>
                 router.push("/admin/admin-mock-interview/templates")
               }
-              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+              startIcon={<IconWrapper icon="mdi:book-open-variant" size={18} />}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
@@ -367,7 +364,7 @@ export default function AdminMockInterviewPage() {
                 "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
               }}
             >
-              Create Interview
+              Published interviews
             </Button>
             <FormControl
               size="small"

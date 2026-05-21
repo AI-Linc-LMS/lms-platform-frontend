@@ -17,6 +17,11 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { stopAllMediaTracks, registerMediaStream } from "@/lib/utils/cameraUtils";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 import {
+  getAudioConstraints,
+  VIDEO_CAMERA_CONSTRAINTS,
+} from "@/lib/utils/audio-constraints";
+import { applyNoiseSuppression } from "@/lib/utils/noise-suppression";
+import {
   InterviewHeader,
   VideoPreviewArea,
   AnswerInputArea,
@@ -69,12 +74,16 @@ export default function TakeMockInterviewPage() {
   const [isMCQModalOpen, setIsMCQModalOpen] = useState<boolean>(false);
   const lastStructuredQuestionIdRef = useRef<number | null>(null);
 
-  const [closingRemarkIdleStartedAt, setClosingRemarkIdleStartedAt] = useState<
-    number | null
-  >(null);
-  const [autoSubmitSecondsLeft, setAutoSubmitSecondsLeft] = useState<number | null>(
-    null,
-  );
+  const [nudgeText, setNudgeText] = useState<string | null>(null);
+  const nudgeSilenceCountRef = useRef(0);
+  const nudgeProbeCountRef = useRef(0);
+  const nudgeProbeUsedThisTurnRef = useRef(false);
+  const recentProbeIndexRef = useRef(-1);
+  const nudgeSpeakCompleteAtRef = useRef<number>(0);
+  const advanceAfterNudgeRef = useRef(false);
+  const MAX_PROBES_PER_INTERVIEW = 3;
+  const rewindOriginalAnswerRef = useRef<string>("");
+  const rewindActiveRef = useRef(false);
 
   const [codingTimeBudgetSeconds, setCodingTimeBudgetSeconds] = useState<number>(0);
   const [interviewBonusSeconds, setInterviewBonusSeconds] = useState<number>(0);
@@ -85,6 +94,7 @@ export default function TakeMockInterviewPage() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const userStreamRef = useRef<MediaStream | null>(null);
+  const noiseSuppressionTeardownRef = useRef<(() => void) | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioLevelRef = useRef<number>(0);
   const lastTranscriptChangeAtRef = useRef<number>(0);
@@ -101,6 +111,9 @@ export default function TakeMockInterviewPage() {
   // implicitly and fixes the reported "click Proceed → no face detected toast" bug.
   const proctoringStartedAtRef = useRef<number | null>(null);
   const PROCTORING_WARMUP_MS = 6000;
+
+  const tabSwitchCountRef = useRef(0);
+  const windowSwitchCountRef = useRef(0);
 
   // Proctoring hooks with enhanced configuration
   const {
@@ -175,16 +188,20 @@ export default function TakeMockInterviewPage() {
       }
       if (!stream) {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "user",
-          },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
+          video: VIDEO_CAMERA_CONSTRAINTS,
+          audio: getAudioConstraints(),
         });
+      }
+
+      try {
+        const ns = await applyNoiseSuppression(stream);
+        if (ns.outputStream !== stream) {
+          noiseSuppressionTeardownRef.current?.();
+          noiseSuppressionTeardownRef.current = ns.teardown;
+          stream = ns.outputStream;
+        }
+      } catch {
+        // already logged inside applyNoiseSuppression; fall through with raw stream
       }
 
       userStreamRef.current = stream;
@@ -508,8 +525,8 @@ export default function TakeMockInterviewPage() {
         const stream = hasAudio
           ? existingStream!
           : await navigator.mediaDevices.getUserMedia({
-          audio: { noiseSuppression: true, echoCancellation: true },
-        });
+              audio: getAudioConstraints(),
+            });
         if (!hasAudio) streamToClean = stream;
 
         userStreamRef.current = stream;
@@ -533,9 +550,6 @@ export default function TakeMockInterviewPage() {
           const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
           const normalizedLevel = average / 255;
           audioLevelRef.current = normalizedLevel;
-          if (normalizedLevel > 0.06) {
-            lastTranscriptChangeAtRef.current = Date.now();
-          }
           animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
         };
 
@@ -704,10 +718,51 @@ export default function TakeMockInterviewPage() {
     return out;
   }, [responses, currentQuestion, isClosingRemark, getQuestionText]);
 
-  // Handle question read complete
+  // Watchdog #1: isSpeaking can get stuck true if the browser TTS engine fails silently
+  // (no onend event from speechSynthesis). The avatar visually stops talking but the
+  // React flag stays true, which permanently suspends the silence detector and STT
+  // routing — the candidate sees "Listening" forever with nothing happening. Hard cap
+  // any single speech utterance at 35s.
+  useEffect(() => {
+    if (!isSpeaking) return;
+    const timeout = window.setTimeout(() => {
+      setIsSpeaking(false);
+      if (nudgeText !== null) {
+        setNudgeText(null);
+        nudgeSpeakCompleteAtRef.current = Date.now();
+        if (advanceAfterNudgeRef.current) {
+          advanceAfterNudgeRef.current = false;
+          const fn = handleNextQuestionRef.current;
+          if (fn) void fn();
+        }
+      }
+    }, 35000);
+    return () => window.clearTimeout(timeout);
+  }, [isSpeaking, nudgeText]);
+
+  // Watchdog #2: isFetchingNext is set true during /next-question/ and reset in the
+  // finally block. If the request hangs (network stall, backend deadlock) longer than
+  // any realistic LLM round-trip, force-reset it so the silence detector can resume.
+  useEffect(() => {
+    if (!isFetchingNext) return;
+    const timeout = window.setTimeout(() => {
+      setIsFetchingNext(false);
+    }, 35000);
+    return () => window.clearTimeout(timeout);
+  }, [isFetchingNext]);
+
   const handleSpeakComplete = useCallback(() => {
     setIsSpeaking(false);
-  }, []);
+    if (nudgeText !== null) {
+      setNudgeText(null);
+      nudgeSpeakCompleteAtRef.current = Date.now();
+      if (advanceAfterNudgeRef.current) {
+        advanceAfterNudgeRef.current = false;
+        const fn = handleNextQuestionRef.current;
+        if (fn) void fn();
+      }
+    }
+  }, [nudgeText]);
 
   // Handle answer change (clear interim when user types)
   const handleAnswerChange = useCallback((answer: string) => {
@@ -759,12 +814,25 @@ export default function TakeMockInterviewPage() {
   const answerAtAdvanceRef = useRef<string>("");
   const previousQuestionIdAtAdvanceRef = useRef<number | null>(null);
   const [conversationStatus, setConversationStatus] = useState<string>("");
+  const [focusedHistoryQuestionId, setFocusedHistoryQuestionId] = useState<number | null>(null);
+  useEffect(() => {
+    if (focusedHistoryQuestionId === null) return;
+    // Auto-clear the focus highlight after a few seconds — the candidate should see
+    // which past question the AI re-spoke, but the marker shouldn't stick around.
+    const timeout = window.setTimeout(() => {
+      setFocusedHistoryQuestionId(null);
+    }, 6000);
+    return () => window.clearTimeout(timeout);
+  }, [focusedHistoryQuestionId]);
   // 0-1 value the answer-input area renders as the "Interviewer is waiting" bar.
   // Updated by the silence detector on every poll — climbs from 0 → 1 over the
   // SILENCE_THRESHOLD_MS window of quiet, drops back to 0 when the candidate speaks
   // again. Gives the candidate a visible thinking budget instead of an invisible
   // countdown.
-  const [pauseProgress, setPauseProgress] = useState<number>(0);
+  const pauseProgressRef = useRef<number>(0);
+  const setPauseProgress = useCallback((value: number) => {
+    pauseProgressRef.current = value;
+  }, []);
 
   // Live mirror of currentAnswer into a ref. handleNextQuestion is an async function and the
   // value of `currentAnswer` it closed over is stale by the time the /next-question/ POST
@@ -827,9 +895,18 @@ export default function TakeMockInterviewPage() {
         (endTime.getTime() - startTime.getTime()) / 1000
       );
 
-      // Process violations - count all violation types
+      // "Face validation failures" is the aggregate of every face-detection-related
+      // violation surfaced by the proctoring service — NO_FACE (face out of frame),
+      // POOR_LIGHTING (model can't see), MULTIPLE_FACES (someone else in frame),
+      // FACE_TOO_CLOSE / FACE_TOO_FAR (improper distance). Looking-away is tracked
+      // separately because it's an attention metric, not a face-presence one.
       const faceValidationFailures = violations.filter(
-        (v) => v.type === "NO_FACE" || v.type === "POOR_LIGHTING"
+        (v) =>
+          v.type === "NO_FACE" ||
+          v.type === "POOR_LIGHTING" ||
+          v.type === "MULTIPLE_FACES" ||
+          v.type === "FACE_TOO_CLOSE" ||
+          v.type === "FACE_TOO_FAR"
       ).length;
       const multipleFaceDetections = violations.filter(
         (v) => v.type === "MULTIPLE_FACES"
@@ -853,12 +930,11 @@ export default function TakeMockInterviewPage() {
         interview.questions_for_interview || interview.questions;
       const totalQuestions = questions?.length || 0;
 
-      // Prepare submission data
       const requestBody = {
         transcript: {
           responses: finalResponses,
           total_duration_seconds: totalDurationSeconds,
-          logs: [], // Add any logs if needed
+          logs: [],
           metadata: {
             face_validation_failures: faceValidationFailures,
             multiple_face_detections: multipleFaceDetections,
@@ -867,6 +943,8 @@ export default function TakeMockInterviewPage() {
             face_too_close_count: faceTooCloseCount,
             face_too_far_count: faceTooFarCount,
             fullscreen_exits: fullscreenExits,
+            tabSwitches: tabSwitchCountRef.current,
+            windowSwitches: windowSwitchCountRef.current,
             completed_questions: finalResponses.length,
             total_questions: totalQuestions,
           },
@@ -900,6 +978,10 @@ export default function TakeMockInterviewPage() {
       if (audioContextRef.current) {
         audioContextRef.current.close();
         audioContextRef.current = null;
+      }
+      if (noiseSuppressionTeardownRef.current) {
+        noiseSuppressionTeardownRef.current();
+        noiseSuppressionTeardownRef.current = null;
       }
       if (userStreamRef.current) {
         userStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -946,35 +1028,15 @@ export default function TakeMockInterviewPage() {
     showToast,
   ]);
 
+  const closingAutoSubmitFiredRef = useRef(false);
   useEffect(() => {
     if (!isClosingRemark) return;
     if (isSpeaking) return;
-    if (closingRemarkIdleStartedAt !== null) return;
-    setClosingRemarkIdleStartedAt(Date.now());
-  }, [isClosingRemark, isSpeaking, closingRemarkIdleStartedAt]);
-
-  useEffect(() => {
-    if (closingRemarkIdleStartedAt === null) return;
-    const IDLE_GRACE_SECONDS = 30;
-    const COUNTDOWN_SECONDS = 10;
-    const intervalId = window.setInterval(() => {
-      const elapsedSeconds = (Date.now() - closingRemarkIdleStartedAt) / 1000;
-      if (elapsedSeconds >= IDLE_GRACE_SECONDS + COUNTDOWN_SECONDS) {
-        window.clearInterval(intervalId);
-        setAutoSubmitSecondsLeft(0);
-        handleSubmitInterview();
-        return;
-      }
-      if (elapsedSeconds >= IDLE_GRACE_SECONDS) {
-        const remaining = Math.max(
-          0,
-          Math.ceil(IDLE_GRACE_SECONDS + COUNTDOWN_SECONDS - elapsedSeconds),
-        );
-        setAutoSubmitSecondsLeft(remaining);
-      }
-    }, 250);
-    return () => window.clearInterval(intervalId);
-  }, [closingRemarkIdleStartedAt, handleSubmitInterview]);
+    if (closingAutoSubmitFiredRef.current) return;
+    if (submitInFlightRef.current) return;
+    closingAutoSubmitFiredRef.current = true;
+    handleSubmitInterview();
+  }, [isClosingRemark, isSpeaking, handleSubmitInterview]);
 
   const handleNextQuestion = useCallback(async (
     overrideAnswerText?: unknown,
@@ -993,11 +1055,23 @@ export default function TakeMockInterviewPage() {
       if (!currentQuestion) return;
       if (isFetchingNext) return; // guard against double-tap
 
-      // Capture the answer text for this turn and record it locally so the transcript stays
-      // in sync with what the backend will receive at submit time. Structured-question
-      // modals pass their formatted text via `overrideString` so we don't rely on the
-      // stale `currentAnswer` state.
-      const answerForThisTurn = (overrideString ?? currentAnswer).trim();
+      const liveAnswer = `${currentAnswerRef.current || ""} ${interimTranscript || ""}`
+        .replace(/\s+/g, " ")
+        .trim();
+      let answerForThisTurn = (overrideString ?? liveAnswer).trim();
+
+      if (
+        rewindActiveRef.current &&
+        rewindOriginalAnswerRef.current &&
+        overrideString === undefined
+      ) {
+        const original = rewindOriginalAnswerRef.current.trim();
+        answerForThisTurn = answerForThisTurn
+          ? `${original} ${answerForThisTurn}`.trim()
+          : original;
+        rewindActiveRef.current = false;
+        rewindOriginalAnswerRef.current = "";
+      }
       const questionTextForThisTurn =
         currentQuestion.question_text || currentQuestion.question || "";
 
@@ -1047,12 +1121,173 @@ export default function TakeMockInterviewPage() {
         return;
       }
 
-      // If we already finished the closing remark and the candidate is hitting Submit, do
-      // exactly that. Note we DON'T short-circuit on `dynamicIsFinalQuestion` — even when
-      // the LLM marked its last question as final, we still want to call /next-question/
-      // so the backend can hand back the closing remark (thank-you + light feedback +
-      // "you can submit when you're ready"). The candidate would otherwise lose the
-      // wrap-up speech entirely.
+      // "Repeat that question" / "say it again" / "repeat question 3" — re-speak a question
+      // without advancing or writing a response. Two flavors:
+      //   (a) Plain repeat → re-speaks the CURRENT question.
+      //   (b) Numbered repeat ("repeat question 3", "say question 2 again") → looks up
+      //       question N from the conversation history, re-speaks its text via the
+      //       nudge mechanism, and bumps focusedQuestionId so the conversation-so-far
+      //       panel auto-scrolls the candidate to that question's row.
+      const numberWords: Record<string, number> = {
+        one: 1, two: 2, three: 3, four: 4, five: 5,
+        six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+        first: 1, second: 2, third: 3, fourth: 4, fifth: 5,
+        sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10,
+      };
+      const numberedRepeatMatch =
+        lowerAnswer.match(
+          /\b(repeat|say|read|ask|go\s+back\s+to)\s+(the\s+|question\s+)?(?:question\s+)?(?:number\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\b/,
+        ) ||
+        lowerAnswer.match(
+          /\bquestion\s+(?:number\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\b(?:.*\b(again|repeat|once\s+more))?/,
+        );
+      let numberedTargetIndex: number | null = null;
+      if (numberedRepeatMatch) {
+        const raw =
+          numberedRepeatMatch[3] ?? numberedRepeatMatch[1] ?? "";
+        const parsed = Number.parseInt(raw, 10);
+        if (Number.isFinite(parsed)) {
+          numberedTargetIndex = parsed;
+        } else if (numberWords[raw]) {
+          numberedTargetIndex = numberWords[raw];
+        }
+      }
+
+      const plainRepeatPhrases = [
+        /\b(can|could|would)\s+you\s+(please\s+)?(repeat|say)\s+(it|that|the\s+question)\s*(again|once\s+more)?\b/,
+        /\brepeat\s+(this\s+|the\s+)?(question|one)\s*(again)?\b/,
+        /\bsay\s+(it|that)\s+(again|once\s+more)\b/,
+        /\b(ask|say)\s+(it|the\s+question)\s+again\b/,
+        /\bone\s+more\s+time\b/,
+        /\bi\s+didn'?t\s+(catch|hear|understand)\s+(that|the\s+question)\b/,
+        /\bwhat\s+was\s+(the\s+|that\s+)?question\b/,
+        /\bcould\s+you\s+repeat\b/,
+      ];
+      const isPlainRepeat =
+        !numberedTargetIndex &&
+        lowerAnswer.length > 0 &&
+        lowerAnswer.length < 120 &&
+        plainRepeatPhrases.some((rx) => rx.test(lowerAnswer));
+
+      const isNumberedRepeat =
+        numberedTargetIndex !== null &&
+        numberedTargetIndex >= 1 &&
+        numberedTargetIndex <= responses.length + 1;
+
+      if ((isPlainRepeat || isNumberedRepeat) && currentQuestion && !isClosingRemark) {
+        setResponses((prev) =>
+          prev.filter((r) => r.question_id !== currentQuestion.id),
+        );
+        setCurrentAnswer("");
+        setInterimTranscript("");
+        nudgeSilenceCountRef.current = 0;
+        // Block probes for the rest of this turn so the candidate hears the repeat and
+        // gets to answer in peace. Without this, the candidate's first acknowledgment
+        // word ("okay", "hmm") gets caught by STT, the silence detector fires, and the
+        // probe ("Want to go a level deeper?") fires on a single syllable. Probes
+        // belong AFTER a real short/unclear answer, not after a repeat request.
+        nudgeProbeUsedThisTurnRef.current = true;
+        nudgeSpeakCompleteAtRef.current = 0;
+        advanceAfterNudgeRef.current = false;
+
+        if (isNumberedRepeat && numberedTargetIndex !== null) {
+          // Find the question by 1-indexed position in the conversation timeline.
+          // questionHistory is built from responses (in order) + currentQuestion at the
+          // tail; both share the same numbering the candidate would say aloud.
+          const target = questionHistory[numberedTargetIndex - 1];
+          if (target) {
+            setFocusedHistoryQuestionId(target.id);
+            setConversationStatus(
+              `Repeating question ${numberedTargetIndex}…`,
+            );
+            const ack =
+              numberedTargetIndex === questionHistory.length
+                ? "Sure, here it is again. "
+                : `Sure, repeating question ${numberedTargetIndex}. `;
+            triggerNudge(`${ack}${target.question_text}`);
+            return;
+          }
+          // Fallback: number out of range, treat as plain repeat.
+        }
+
+        setConversationStatus("Repeating the question…");
+        // Plain repeat — re-speak the current question with a short acknowledgment.
+        // We use the nudge mechanism (same TTS pipeline) and override questionText for
+        // the duration of the speech, so the candidate hears "Sure, here it is again:"
+        // before the question without changing currentQuestion's stored text.
+        const currentText =
+          currentQuestion.question_text || currentQuestion.question || "";
+        triggerNudge(`Sure, here it is again. ${currentText}`);
+        return;
+      }
+
+      const rewindPhrases = [
+        /\bgo\s+back\s+to\s+(the\s+)?(previous|last|prior)\s+(question|one)\b/,
+        /\b(answer|finish|complete)\s+(the\s+)?(previous|last|prior)\s+(question|one)\b/,
+        /\bi\s+wasn'?t\s+(done|finished)\b/,
+        /\b(let'?s|can\s+we|could\s+we)\s+go\s+back\b/,
+        /\b(re-?do|redo)\s+(the\s+)?(previous|last|prior)\s+(question|one)\b/,
+        /\bi\s+want(ed)?\s+to\s+(add|say|answer|finish)\s+(more\s+)?(to\s+)?(the\s+|my\s+)?(previous|last|prior)\b/,
+        /\bback\s+to\s+(the\s+)?(previous|last)\b/,
+        /\bi\s+meant\s+to\s+(say|add)\s+more\b/,
+      ];
+      const isRewindRequest =
+        !rewindActiveRef.current &&
+        lowerAnswer.length > 0 &&
+        lowerAnswer.length < 200 &&
+        rewindPhrases.some((rx) => rx.test(lowerAnswer));
+
+      if (isRewindRequest) {
+        if (isFetchingNext) return;
+        const previousResponseEntry = responses.find(
+          (r) => r.question_id !== currentQuestion.id,
+        );
+        if (!previousResponseEntry) {
+          showToast(
+            "There's no prior question to go back to yet — please continue with this one.",
+            "info",
+          );
+          return;
+        }
+        try {
+          setIsFetchingNext(true);
+          setConversationStatus("Going back to your previous question…");
+          const rewound = await mockInterviewService.rewindToPreviousQuestion(
+            interviewId,
+          );
+          setResponses((prev) =>
+            prev.filter((r) => r.question_id !== currentQuestion.id),
+          );
+          const rewoundQuestion: InterviewQuestion = {
+            ...rewound.question,
+            question_text: `Sure, going back to your previous question. ${
+              rewound.question.question_text || rewound.question.question || ""
+            }`,
+          };
+          setDynamicCurrentQuestion(rewoundQuestion);
+          setDynamicTurnNumber(rewound.turn_number);
+          setDynamicMaxTurns(rewound.max_turns);
+          setDynamicIsFinalQuestion(false);
+          setCurrentAnswer("");
+          setInterimTranscript("");
+          rewindOriginalAnswerRef.current = rewound.previous_answer || "";
+          rewindActiveRef.current = true;
+          nudgeSilenceCountRef.current = 0;
+          nudgeProbeUsedThisTurnRef.current = false;
+          nudgeSpeakCompleteAtRef.current = 0;
+          advanceAfterNudgeRef.current = false;
+          setIsSpeaking(true);
+        } catch (err) {
+          showToast(
+            "Couldn't go back to the previous question. Please continue with this one.",
+            "error",
+          );
+        } finally {
+          setIsFetchingNext(false);
+        }
+        return;
+      }
+
       if (isClosingRemark) {
         handleSubmitInterview();
         return;
@@ -1105,7 +1340,7 @@ export default function TakeMockInterviewPage() {
           setInterimTranscript("");
           setIsSpeaking(true); // avatar reads the close out loud
           setConversationStatus(
-            "Interview complete — submit when you're ready."
+            "Interview complete — submitting your responses automatically."
           );
           return;
         }
@@ -1153,6 +1388,12 @@ export default function TakeMockInterviewPage() {
         setDynamicTurnNumber(next.turn_number);
         setDynamicMaxTurns(next.max_turns);
         setDynamicIsFinalQuestion(!!next.is_final_question);
+        nudgeSilenceCountRef.current = 0;
+        nudgeProbeUsedThisTurnRef.current = false;
+        nudgeSpeakCompleteAtRef.current = 0;
+        advanceAfterNudgeRef.current = false;
+        rewindActiveRef.current = false;
+        rewindOriginalAnswerRef.current = "";
         // Capture per-coding-turn budget (5/7/10 min based on interview difficulty). The
         // backend always sends 0 for non-coding turns, so this resets cleanly when the
         // candidate finishes a coding modal and the AI moves on. The CodingQuestionModal
@@ -1256,6 +1497,42 @@ export default function TakeMockInterviewPage() {
     lastTranscriptChangeAtRef.current = Date.now();
   }, [isDynamicInterview, currentAnswer, interimTranscript]);
 
+  const SILENCE_MIC_CHECK_NUDGE =
+    "Please respond. You're either not speaking, or there might be a microphone issue — please check your mic.";
+  const SILENCE_GIVEUP_NUDGE =
+    "Alright, let's move on to the next question.";
+  const PROBE_NUDGES = useMemo(
+    () => [
+      "Would you like to add anything to that, or shall we move on?",
+      "Want to go a level deeper there before we continue?",
+      "Is there more you'd want to mention on that one?",
+      "Anything else you'd add — an example, a trade-off, something you've run into?",
+    ],
+    [],
+  );
+
+  const isAnswerUnclearOrShort = useCallback((text: string): boolean => {
+    const t = text.trim();
+    if (t.length < 60) return true;
+    const lastChar = t.slice(-1);
+    if (lastChar === "." || lastChar === "?" || lastChar === "!") {
+      return t.length < 90;
+    }
+    const tail = t.toLowerCase().replace(/[,;:\s]+$/, "");
+    const fillers = ["um", "uh", "so", "and", "but", "or", "you know", "i mean", "well"];
+    for (const f of fillers) {
+      if (tail.endsWith(" " + f) || tail === f) return true;
+    }
+    return false;
+  }, []);
+
+  const triggerNudge = useCallback((text: string) => {
+    setNudgeText(text);
+    setIsSpeaking(true);
+    setConversationStatus("Interviewer is checking in…");
+    setPauseProgress(0);
+  }, []);
+
   // Silence-based auto-advance, ChatGPT-voice-mode style. While the candidate is answering
   // we poll: if there's been no transcript change for SILENCE_THRESHOLD_MS and the avatar
   // isn't currently speaking the question, treat that as "candidate is done" and advance.
@@ -1277,16 +1554,44 @@ export default function TakeMockInterviewPage() {
     // auto-advance with an empty STT buffer.
     if (isCodingModalOpen || isMCQModalOpen) return;
 
-    // Silence threshold tuning:
-    // - 3000ms (3 seconds) is intentionally generous so the candidate has a VISIBLE
-    //   thinking budget. A quick 500ms detector ate thinking pauses with no warning,
-    //   which is what the user reported as "if I think for 4-5 seconds it jumps". Now
-    //   the progress bar gives them 3s of visible "Interviewer is waiting" before the
-    //   advance fires — and any speech resets the bar to 0 instantly.
-    // - The bar's `pauseProgress` (0..1) is computed every tick from
-    //   sinceLastChange / SILENCE_THRESHOLD_MS so the candidate sees the wait elapsing.
-    const SILENCE_THRESHOLD_MS = 3000;
+    if (!currentAnswerRef.current.trim()) {
+      lastTranscriptChangeAtRef.current = Date.now();
+    } else if (lastTranscriptChangeAtRef.current === 0) {
+      lastTranscriptChangeAtRef.current = Date.now();
+    }
+
+    const SILENCE_THRESHOLD_DEFAULT_MS = 5000;
+    const SILENCE_THRESHOLD_SENTENCE_END_MS = 3500;
+    const SILENCE_THRESHOLD_FILLER_MS = 6500;
+    const SILENCE_THRESHOLD_INTRO_MS = 6500;
+    const INTRO_MIN_LENGTH = 80;
     const POLL_INTERVAL_MS = 100;
+    const TOTAL_SILENCE_HARD_CAP_MS = 25000;
+    const AUDIO_BURST_GRACE_MS = 1200;
+    const FILLER_ENDINGS = [
+      "um", "uh", "uhh", "umm", "hmm", "er", "erm",
+      "so", "like", "and", "but", "or", "because", "well",
+      "you know", "i mean", "kind of", "sort of", "right",
+    ];
+    const turnNumberForThreshold = dynamicTurnNumber;
+    const pickSilenceThreshold = (rawText: string): number => {
+      const t = rawText.trim();
+      if (!t) return SILENCE_THRESHOLD_DEFAULT_MS;
+      if (turnNumberForThreshold <= 1 && t.length < INTRO_MIN_LENGTH) {
+        return SILENCE_THRESHOLD_INTRO_MS;
+      }
+      const lastChar = t.slice(-1);
+      if (lastChar === "." || lastChar === "?" || lastChar === "!") {
+        return SILENCE_THRESHOLD_SENTENCE_END_MS;
+      }
+      const tail = t.toLowerCase().replace(/[,;:\s]+$/, "");
+      for (const f of FILLER_ENDINGS) {
+        if (tail.endsWith(" " + f) || tail === f) {
+          return SILENCE_THRESHOLD_FILLER_MS;
+        }
+      }
+      return SILENCE_THRESHOLD_DEFAULT_MS;
+    };
 
     // Audio activity gate: anything below this level is treated as silence. By default we
     // use 0.06 (the previous static threshold), but if the device-check page calibrated the
@@ -1310,51 +1615,119 @@ export default function TakeMockInterviewPage() {
     }
 
     const intervalId = window.setInterval(() => {
-      const text = currentAnswer.trim();
-      // Need at least *something* spoken before we count silence as "done." Otherwise the
-      // very moment the avatar finishes speaking we'd auto-advance with an empty answer.
-      if (!text) {
-        setConversationStatus("Listening — speak when you're ready.");
-        setPauseProgress(0);
-        return;
-      }
-      // STT might still have an interim chunk in flight; don't advance until it settles.
-      if (interimTranscript) {
-        setConversationStatus("Listening…");
-        setPauseProgress(0);
-        return;
-      }
-      // Live audio: if the candidate is currently making noise above the calibrated
-      // threshold, they're probably still talking — STT just hasn't chunked the words yet.
-      if (audioLevelRef.current > audioGateThreshold) {
-        setConversationStatus("Listening…");
-        setPauseProgress(0);
-        return;
-      }
+      const text = currentAnswerRef.current.trim();
       const sinceLastChange = Date.now() - lastTranscriptChangeAtRef.current;
-      // 0..1 progress into the silence window — drives the visible "Interviewer is
-      // waiting" bar in AnswerInputArea. The candidate can interrupt by speaking again,
-      // which resets the bar above.
-      const progress = Math.min(1, sinceLastChange / SILENCE_THRESHOLD_MS);
+
+      if (!text) {
+        const stage = nudgeSilenceCountRef.current;
+        const POST_NUDGE_GRACE_MS = 4000;
+        const FIRST_NUDGE_AT_MS = 5000;
+
+        // If the candidate is currently speaking but STT hasn't flushed a final chunk
+        // yet — they have an interim transcript, or the mic is hot above the noise gate
+        // — DO NOT escalate the nudge ladder. Most often this happens right after the
+        // mic-check nudge ends: the candidate jumps in with their answer, STT is
+        // catching up, currentAnswer is still "". Without this gate the giveup nudge
+        // would fire and skip past the answer they're already giving.
+        const userMidSpeech =
+          (interimTranscript && interimTranscript.trim().length > 0) ||
+          audioLevelRef.current > audioGateThreshold;
+        if (userMidSpeech) {
+          setConversationStatus("Listening");
+          setPauseProgress(0);
+          // Keep the grace timer alive — when the final chunk lands, the speech branch
+          // takes over naturally. If the audio activity drops again before any final
+          // chunk arrives, the next poll re-enters this branch and the timer resumes.
+          return;
+        }
+
+        if (stage === 0 && sinceLastChange >= FIRST_NUDGE_AT_MS) {
+          nudgeSilenceCountRef.current = 1;
+          window.clearInterval(intervalId);
+          silenceAdvanceTimerRef.current = null;
+          triggerNudge(SILENCE_MIC_CHECK_NUDGE);
+          return;
+        }
+
+        if (
+          stage === 1 &&
+          nudgeSpeakCompleteAtRef.current > 0 &&
+          Date.now() - nudgeSpeakCompleteAtRef.current >= POST_NUDGE_GRACE_MS
+        ) {
+          nudgeSilenceCountRef.current = 2;
+          window.clearInterval(intervalId);
+          silenceAdvanceTimerRef.current = null;
+          advanceAfterNudgeRef.current = true;
+          triggerNudge(SILENCE_GIVEUP_NUDGE);
+          return;
+        }
+
+        if (sinceLastChange >= TOTAL_SILENCE_HARD_CAP_MS) {
+          window.clearInterval(intervalId);
+          silenceAdvanceTimerRef.current = null;
+          setConversationStatus("Moving on…");
+          setPauseProgress(0);
+          const fn = handleNextQuestionRef.current;
+          if (fn) void fn();
+          return;
+        }
+
+        const waitProgress = Math.min(1, sinceLastChange / TOTAL_SILENCE_HARD_CAP_MS);
+        setPauseProgress(waitProgress > 0.6 ? waitProgress : 0);
+        setConversationStatus("Listening");
+        return;
+      }
+
+      if (interimTranscript) {
+        setConversationStatus("Listening");
+        setPauseProgress(0);
+        return;
+      }
+
+      if (
+        audioLevelRef.current > audioGateThreshold &&
+        sinceLastChange < AUDIO_BURST_GRACE_MS
+      ) {
+        setConversationStatus("Listening");
+        setPauseProgress(0);
+        return;
+      }
+
+      const threshold = pickSilenceThreshold(text);
+      const progress = Math.min(1, sinceLastChange / threshold);
       setPauseProgress(progress);
-      if (sinceLastChange >= SILENCE_THRESHOLD_MS) {
-        // Bar filled — auto-advance. Fire once and stop the interval; the next
-        // handleNextQuestion call (via the ref) will set isFetchingNext which prevents
-        // re-entry until the new question is mounted.
+      if (sinceLastChange >= threshold) {
         window.clearInterval(intervalId);
         silenceAdvanceTimerRef.current = null;
-        setConversationStatus("Got it — following up.");
         setPauseProgress(0);
+
+        const shouldProbe =
+          !nudgeProbeUsedThisTurnRef.current &&
+          nudgeProbeCountRef.current < MAX_PROBES_PER_INTERVIEW &&
+          isAnswerUnclearOrShort(text);
+
+        if (shouldProbe) {
+          nudgeProbeUsedThisTurnRef.current = true;
+          nudgeProbeCountRef.current += 1;
+          let probeIndex =
+            (recentProbeIndexRef.current + 1) % PROBE_NUDGES.length;
+          if (PROBE_NUDGES.length > 1 && probeIndex === recentProbeIndexRef.current) {
+            probeIndex = (probeIndex + 1) % PROBE_NUDGES.length;
+          }
+          recentProbeIndexRef.current = probeIndex;
+          triggerNudge(PROBE_NUDGES[probeIndex]);
+          return;
+        }
+
+        setConversationStatus("Following up…");
         const fn = handleNextQuestionRef.current;
         if (fn) {
           void fn();
         }
-      } else if (progress >= 0.55) {
-        // Halfway through the wait — switch the status text to "Interviewer is waiting"
-        // so the candidate knows the bar's about to fill.
-        setConversationStatus("Interviewer is waiting…");
+      } else if (progress >= 0.25) {
+        setConversationStatus("Interviewer is going to follow up…");
       } else {
-        setConversationStatus("Listening…");
+        setConversationStatus("Listening");
       }
     }, POLL_INTERVAL_MS);
 
@@ -1373,10 +1746,14 @@ export default function TakeMockInterviewPage() {
     isClosingRemark,
     isCodingModalOpen,
     isMCQModalOpen,
-    // Re-bind when these change so the threshold check sees fresh values without depending
-    // on a stale closure.
+    dynamicTurnNumber,
     currentAnswer,
     interimTranscript,
+    triggerNudge,
+    isAnswerUnclearOrShort,
+    SILENCE_MIC_CHECK_NUDGE,
+    SILENCE_GIVEUP_NUDGE,
+    PROBE_NUDGES,
   ]);
 
   // Handle previous question
@@ -1466,6 +1843,26 @@ export default function TakeMockInterviewPage() {
         "MSFullscreenChange",
         handleFullscreenChange
       );
+    };
+  }, [interviewStarted]);
+
+  useEffect(() => {
+    if (!interviewStarted) return;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        tabSwitchCountRef.current += 1;
+      }
+    };
+    const onWindowBlur = () => {
+      if (document.visibilityState === "visible") {
+        windowSwitchCountRef.current += 1;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onWindowBlur);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", onWindowBlur);
     };
   }, [interviewStarted]);
 
@@ -1626,45 +2023,6 @@ export default function TakeMockInterviewPage() {
         bonusSeconds={interviewBonusSeconds}
       />
 
-      {autoSubmitSecondsLeft !== null && autoSubmitSecondsLeft > 0 && (
-        <Box
-          sx={{
-            position: "sticky",
-            top: 0,
-            zIndex: 1100,
-            px: 3,
-            py: 1.25,
-            backgroundColor: "var(--accent-indigo)",
-            color: "var(--font-light)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 1.5,
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            letterSpacing: "0.02em",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-          }}
-        >
-          <Box
-            component="span"
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 32,
-              height: 32,
-              borderRadius: "50%",
-              backgroundColor: "rgba(255,255,255,0.2)",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {autoSubmitSecondsLeft}
-          </Box>
-          <span>Auto-submitting in {autoSubmitSecondsLeft}s — click Submit Interview to send now.</span>
-        </Box>
-      )}
-
       {/* Main Content */}
       <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Left Side - Video & Answer Area */}
@@ -1689,7 +2047,7 @@ export default function TakeMockInterviewPage() {
             faceCount={faceCount}
             latestViolation={latestViolationProp}
             isSpeaking={isSpeaking}
-            questionText={getQuestionText(currentQuestion)}
+            questionText={nudgeText || getQuestionText(currentQuestion)}
             onSpeakComplete={handleSpeakComplete}
             isUserSpeaking={isListening}
             interviewVideoSrc={INTERVIEW_AVATAR_SRC}
@@ -1730,8 +2088,8 @@ export default function TakeMockInterviewPage() {
               conversationStatus={
                 isDynamicInterview ? conversationStatus : undefined
               }
-              pauseProgress={
-                isDynamicInterview && !isClosingRemark ? pauseProgress : 0
+              pauseProgressRef={
+                isDynamicInterview && !isClosingRemark ? pauseProgressRef : undefined
               }
               isFetchingNext={isFetchingNext}
               // Dynamic interviews hide the live transcript on screen and show the
@@ -1739,6 +2097,7 @@ export default function TakeMockInterviewPage() {
               // since they still rely on the candidate seeing/editing their answer text.
               showAnswerTextarea={!isDynamicInterview}
               questionHistory={isDynamicInterview ? questionHistory : []}
+              focusedHistoryQuestionId={focusedHistoryQuestionId}
               submitDisabled={isClosingRemark && isSpeaking}
             />
           )}

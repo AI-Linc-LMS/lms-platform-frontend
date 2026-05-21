@@ -18,34 +18,53 @@ import mockInterviewService, {
   MockInterviewDetail,
 } from "@/lib/services/mock-interview.service";
 
+type GatedDetail = {
+  result_visible_to_student?: boolean;
+  scheduled_release_at?: string | null;
+  result_release_mode?: string;
+  message?: string;
+};
+
 export default function SubmissionSuccessPage() {
   const params = useParams();
   const router = useRouter();
   const interviewId = Number(params.id);
-  const [interview, setInterview] = useState<MockInterviewDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setInterview] = useState<MockInterviewDetail | null>(null);
+  const [resultGated, setResultGated] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string | null>(null);
+  const [gatedMessage, setGatedMessage] = useState<string>("");
   const { showToast } = useToast();
 
-  // Stop any active camera and audio streams on this page
   useStopCameraOnMount();
 
   useEffect(() => {
+    let cancelled = false;
     const loadData = async () => {
+      if (!interviewId) return;
       try {
-        setLoading(true);
-        // Load interview details if needed
-        // For now, we'll just show the success message
-      } catch (error: any) {
+        const data = (await mockInterviewService.getInterviewDetail(
+          interviewId,
+        )) as MockInterviewDetail & GatedDetail;
+        if (cancelled) return;
+        if (data && data.result_visible_to_student === false) {
+          setResultGated(true);
+          setScheduledAt(data.scheduled_release_at ?? null);
+          setGatedMessage(
+            data.message ||
+              "Your interview was submitted successfully. The evaluation will be released by your instructor.",
+          );
+        } else {
+          setInterview(data as MockInterviewDetail);
+        }
+      } catch (error: unknown) {
+        if (cancelled) return;
         showToast("Failed to load interview details", "error");
-        router.push("/mock-interview");
-      } finally {
-        setLoading(false);
       }
     };
-
-    if (interviewId) {
-      loadData();
-    }
+    loadData();
+    return () => {
+      cancelled = true;
+    };
   }, [interviewId, router, showToast]);
 
 
@@ -58,8 +77,8 @@ export default function SubmissionSuccessPage() {
             p: 6,
             textAlign: "center",
             borderRadius: 3,
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#ffffff",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
           }}
         >
           {/* Success Icon */}
@@ -75,14 +94,14 @@ export default function SubmissionSuccessPage() {
                 width: 80,
                 height: 80,
                 borderRadius: "50%",
-                backgroundColor: "#10b981",
+                backgroundColor: "var(--course-cta)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 4px 6px rgba(16, 185, 129, 0.3)",
+                boxShadow: "0 4px 6px color-mix(in srgb, var(--course-cta) 30%, transparent)",
               }}
             >
-              <IconWrapper icon="mdi:check-circle" size={48} color="#ffffff" />
+              <IconWrapper icon="mdi:check-circle" size={48} color="var(--font-light)" />
             </Box>
           </Box>
 
@@ -91,7 +110,7 @@ export default function SubmissionSuccessPage() {
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--font-primary-dark)",
               mb: 2,
             }}
           >
@@ -101,36 +120,50 @@ export default function SubmissionSuccessPage() {
           <Typography
             variant="body1"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               mb: 4,
               lineHeight: 1.6,
             }}
           >
-            Your mock interview has been submitted and is being reviewed. You
-            can view your results and feedback now.
+            {resultGated
+              ? gatedMessage
+              : "Your mock interview has been submitted and is being reviewed. You can view your results and feedback now."}
           </Typography>
 
-          {/* Info Alert */}
           <Alert
             severity="info"
             sx={{
               mb: 4,
               textAlign: "left",
-              backgroundColor: "#eff6ff",
-              border: "1px solid #bfdbfe",
+              backgroundColor: "var(--info-surface)",
+              border: "1px solid var(--info-border)",
               "& .MuiAlert-icon": {
-                color: "#3b82f6",
+                color: "var(--info-accent)",
               },
             }}
           >
-            <Typography variant="body2" sx={{ color: "#1e40af" }}>
-              Your interview responses have been recorded and will be analyzed
-              by our AI system. You can review detailed feedback, performance
-              metrics, and suggestions for improvement in the results page.
+            <Typography variant="body2" sx={{ color: "var(--info-strong)" }}>
+              {resultGated ? (
+                <>
+                  Your responses have been recorded. You&apos;ll receive a
+                  notification when your evaluation is released
+                  {scheduledAt
+                    ? ` on ${new Date(scheduledAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}`
+                    : " by your instructor"}
+                  .
+                </>
+              ) : (
+                "Your interview responses have been recorded and will be analyzed by our AI system. You can review detailed feedback, performance metrics, and suggestions for improvement in the results page."
+              )}
             </Typography>
           </Alert>
 
-          {/* Action Buttons */}
           <Box
             sx={{
               display: "flex",
@@ -144,46 +177,48 @@ export default function SubmissionSuccessPage() {
               onClick={() => router.push("/mock-interview")}
               startIcon={<IconWrapper icon="mdi:home" size={20} />}
               sx={{
-                borderColor: "#d1d5db",
-                color: "#374151",
+                borderColor: "var(--border-light)",
+                color: "var(--ats-cta-bg)",
                 textTransform: "none",
                 px: 3,
                 py: 1.5,
                 fontSize: "1rem",
                 fontWeight: 600,
                 "&:hover": {
-                  borderColor: "#9ca3af",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--font-tertiary)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
               Back to Homepage
             </Button>
-            <Button
-              variant="contained"
-              onClick={() =>
-                router.push(`/mock-interview/${interviewId}/result`)
-              }
-              startIcon={
-                <IconWrapper icon="mdi:file-document-edit" size={20} />
-              }
-              sx={{
-                backgroundColor: "#6366f1",
-                color: "#ffffff",
-                textTransform: "none",
-                px: 4,
-                py: 1.5,
-                fontSize: "1rem",
-                fontWeight: 600,
-                boxShadow: "0 4px 6px rgba(99, 102, 241, 0.3)",
-                "&:hover": {
-                  backgroundColor: "#4f46e5",
-                  boxShadow: "0 6px 8px rgba(99, 102, 241, 0.4)",
-                },
-              }}
-            >
-              View Result
-            </Button>
+            {!resultGated && (
+              <Button
+                variant="contained"
+                onClick={() =>
+                  router.push(`/mock-interview/${interviewId}/result`)
+                }
+                startIcon={
+                  <IconWrapper icon="mdi:file-document-edit" size={20} />
+                }
+                sx={{
+                  backgroundColor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  textTransform: "none",
+                  px: 4,
+                  py: 1.5,
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  boxShadow: "0 4px 6px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+                  "&:hover": {
+                    backgroundColor: "var(--accent-indigo-dark)",
+                    boxShadow: "0 6px 8px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                  },
+                }}
+              >
+                View Result
+              </Button>
+            )}
           </Box>
         </Paper>
       </Container>
