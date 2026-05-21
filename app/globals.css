@@ -1344,3 +1344,20 @@ body {
     animation: none;
   }
 }
+
+/* Keyboard-only focus ring for any interactive in the scorecard scope.
+   Mouse / touch clicks don't trigger this — only Tab does. */
+.sc-scope button:focus-visible,
+.sc-scope a:focus-visible,
+.sc-scope [role="tab"]:focus-visible,
+.sc-scope [role="button"]:focus-visible,
+.sc-scope input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--sc-accent-primary-glow);
+  border-radius: 6px;
+}
+
+/* Tab nav scrolls horizontally on mobile — hide the scrollbar. */
+.sc-scope [role="tablist"]::-webkit-scrollbar {
+  display: none;
+}

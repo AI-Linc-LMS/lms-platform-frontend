@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Moon, Sun, GraduationCap, ChevronLeft } from "lucide-react";
+import { Moon, Sun, GraduationCap, ChevronLeft, Share2, Check, Copy } from "lucide-react";
 import { GlassCard, RingMeter, StreakFlame, useScorecardTheme } from "@/components/scorecard/primitives";
 import { fadeInUp } from "@/lib/motion/scorecard-presets";
+import { scorecardService } from "@/lib/services/scorecard.service";
 import type { PerformanceLevel, StatusBadge, StudentOverview } from "@/lib/types/scorecard.types";
 
 interface HeroBandProps {
@@ -48,18 +50,61 @@ export function HeroBand({ overview, currentStreak, longestStreak, onBack, pdfMo
   const ringGradient = GRADE_TO_RING[overview.overallGrade] ?? "primary";
   const cardGlow = GRADE_TO_GLOW[overview.overallGrade] ?? "indigo";
   const streak = currentStreak ?? overview.activeDaysStreak ?? 0;
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copying, setCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+  const handleShare = useCallback(async () => {
+    if (copying) return;
+    setCopying(true);
+    setShareError(null);
+    try {
+      let url = shareUrl;
+      if (!url) {
+        const created = await scorecardService.createShareLink();
+        url = created.url;
+        setShareUrl(url);
+      }
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      setShareError("Couldn't create share link.");
+    } finally {
+      setCopying(false);
+    }
+  }, [shareUrl, copying]);
 
   return (
     <motion.div variants={fadeInUp} initial="initial" animate="animate">
       <GlassCard padding="lg" radius="xl" glow={cardGlow}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "auto 1fr auto",
-            gap: 24,
-            alignItems: "center",
-          }}
-        >
+        <div className="sc-hero-grid">
+          <style jsx>{`
+            .sc-hero-grid {
+              display: grid;
+              grid-template-columns: auto 1fr auto;
+              gap: 24px;
+              align-items: center;
+            }
+            @media (max-width: 900px) {
+              .sc-hero-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+              }
+              .sc-hero-grid > :nth-child(2) {
+                justify-content: flex-start !important;
+              }
+              .sc-hero-grid > :nth-child(3) {
+                align-items: flex-start !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                width: 100%;
+              }
+            }
+          `}</style>
           {/* Avatar + identity */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div
@@ -142,9 +187,12 @@ export function HeroBand({ overview, currentStreak, longestStreak, onBack, pdfMo
               {status.label}
             </div>
             {!pdfMode ? (
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                 <IconButton onClick={toggle} aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}>
                   {mode === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                </IconButton>
+                <IconButton onClick={handleShare} aria-label={copied ? "Link copied" : "Copy shareable link"}>
+                  {copied ? <Check size={16} color="var(--sc-accent-success)" /> : copying ? <Copy size={16} /> : <Share2 size={16} />}
                 </IconButton>
                 {onBack ? (
                   <IconButton onClick={onBack} aria-label="Back to dashboard">
@@ -152,6 +200,16 @@ export function HeroBand({ overview, currentStreak, longestStreak, onBack, pdfMo
                   </IconButton>
                 ) : null}
               </div>
+            ) : null}
+            {shareError ? (
+              <span role="alert" style={{ fontSize: 11, color: "var(--sc-accent-danger)", marginTop: 4 }}>
+                {shareError}
+              </span>
+            ) : null}
+            {copied ? (
+              <span role="status" style={{ fontSize: 11, color: "var(--sc-accent-success)", marginTop: 4 }}>
+                Link copied!
+              </span>
             ) : null}
           </div>
         </div>
@@ -188,6 +246,7 @@ function IconButton({ children, onClick, "aria-label": ariaLabel }: { children: 
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
+      className="sc-icon-btn"
       style={{
         width: 36,
         height: 36,
@@ -199,9 +258,20 @@ function IconButton({ children, onClick, "aria-label": ariaLabel }: { children: 
         alignItems: "center",
         justifyContent: "center",
         cursor: "pointer",
-        transition: "background 150ms ease, border-color 150ms ease",
+        transition: "background 150ms ease, border-color 150ms ease, box-shadow 150ms ease",
       }}
     >
+      <style jsx>{`
+        .sc-icon-btn:hover {
+          background: var(--sc-bg-overlay);
+          border-color: var(--sc-border-strong);
+        }
+        .sc-icon-btn:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px var(--sc-accent-primary-glow);
+          border-color: var(--sc-accent-primary);
+        }
+      `}</style>
       {children}
     </button>
   );

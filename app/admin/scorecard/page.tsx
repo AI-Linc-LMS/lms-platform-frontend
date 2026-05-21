@@ -37,9 +37,16 @@ import { profileService, type HeatmapData } from "@/lib/services/profile.service
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 
 const MODULE_OPTIONS = [
-  { id: "overview", label: "Student Overview" },
-  { id: "activity_heatmap", label: "Activity Heatmap" },
-  { id: "learning_consumption", label: "Learning Consumption" },
+  { id: "overview", label: "Student Overview", group: "Core" },
+  { id: "activity_heatmap", label: "Activity Heatmap", group: "Core" },
+  { id: "learning_consumption", label: "Learning Consumption", group: "Core" },
+  { id: "skill_proficiency", label: "Skill Radar", group: "Career" },
+  { id: "interview_readiness", label: "Interview Readiness", group: "Career" },
+  { id: "ai_recommendations", label: "AI Recommendations", group: "Career" },
+  { id: "goals", label: "Weekly Goals", group: "Motivation" },
+  { id: "streaks", label: "Streaks", group: "Motivation" },
+  { id: "badges", label: "Badges / Trophy Case", group: "Motivation" },
+  { id: "peer_percentile", label: "Peer Percentile", group: "Motivation" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
