@@ -149,6 +149,54 @@ export const scorecardService = {
     );
   },
 
+  listShareLinks: async (): Promise<Array<{ id: number; slug: string; url: string; createdAt?: string; viewCount: number; lastViewedAt?: string }>> => {
+    const clientId = config.clientId;
+    const res = await apiClient.get<{ shares: Array<Record<string, unknown>> }>(
+      `/api/scorecard/clients/${clientId}/student/share/`
+    );
+    return (res.data.shares ?? []).map((s) => ({
+      id: Number(s.id),
+      slug: String(s.slug),
+      url: String(s.url),
+      createdAt: typeof s.created_at === "string" ? s.created_at : undefined,
+      viewCount: Number(s.view_count ?? 0),
+      lastViewedAt: typeof s.last_viewed_at === "string" ? s.last_viewed_at : undefined,
+    }));
+  },
+
+  createShareLink: async (): Promise<{ id: number; slug: string; url: string }> => {
+    const clientId = config.clientId;
+    const res = await apiClient.post<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/share/`
+    );
+    return {
+      id: Number(res.data.id),
+      slug: String(res.data.slug),
+      url: String(res.data.url),
+    };
+  },
+
+  revokeShareLinks: async (): Promise<void> => {
+    const clientId = config.clientId;
+    await apiClient.delete(`/api/scorecard/clients/${clientId}/student/share/`);
+  },
+
+  getPublicScorecard: async (slug: string): Promise<Record<string, unknown>> => {
+    const res = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/share/${slug}/`
+    );
+    return res.data;
+  },
+
+  exportScorecardPdfCertificate: async (): Promise<Blob> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get(
+      `/api/scorecard/clients/${clientId}/student/scorecard/export/pdf/?template=certificate`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
+
   getPeerPercentile: async (): Promise<PeerPercentile> => {
     const clientId = config.clientId;
     const res = await apiClient.get<Record<string, unknown>>(
