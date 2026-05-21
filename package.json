@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ngrok": "ngrok http  5173"
+    "ngrok": "ngrok http  5173",
+    "vendor-noise-suppression": "node scripts/vendor-noise-suppression.mjs",
+    "postinstall": "node scripts/vendor-noise-suppression.mjs"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -33,6 +35,7 @@
     "@opentelemetry/sdk-trace-web": "^2.6.0",
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@reduxjs/toolkit": "^2.11.2",
+    "@sapphi-red/web-noise-suppressor": "^0.3.5",
     "@tensorflow-models/blazeface": "^0.1.0",
     "@tensorflow/tfjs-backend-webgl": "^4.22.0",
     "@tensorflow/tfjs-converter": "^4.22.0",

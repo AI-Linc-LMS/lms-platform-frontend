@@ -9,6 +9,7 @@ export { InterviewHeader } from "./InterviewHeader";
 export { VideoPreviewArea } from "./VideoPreviewArea";
 export { AnswerInputArea } from "./AnswerInputArea";
 export type { AnswerInputAreaProps } from "./AnswerInputArea";
+export { PauseProgressBar } from "./PauseProgressBar";
 export { QuestionListSidebar } from "./QuestionListSidebar";
 export { FullscreenWarningDialog } from "./FullscreenWarningDialog";
 export { EndInterviewDialog } from "./EndInterviewDialog";

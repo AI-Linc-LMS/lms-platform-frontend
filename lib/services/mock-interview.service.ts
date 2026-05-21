@@ -244,6 +244,21 @@ const mockInterviewService = {
     return response.data;
   },
 
+  rewindToPreviousQuestion: async (
+    interviewId: number
+  ): Promise<{
+    question: InterviewQuestion;
+    turn_number: number;
+    max_turns: number;
+    previous_answer: string;
+    removed_question_id: number;
+  }> => {
+    const response = await apiClient.post(
+      `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/rewind/`,
+    );
+    return response.data;
+  },
+
   /**
    * Student-side: list interviews the student has been "assigned" via course mapping but
    * hasn't yet completed. Each item is an InterviewTemplate the student can claim. Returns

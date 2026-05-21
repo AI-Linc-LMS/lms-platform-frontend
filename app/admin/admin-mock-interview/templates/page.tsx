@@ -29,7 +29,13 @@ import adminMockInterviewService, {
   type InterviewTemplate,
   type InterviewTemplateCreatePayload,
   type InterviewTemplateDifficulty,
+  type InterviewResultReleaseMode,
+  type AdminTemplateAttempt,
 } from "@/lib/services/admin/admin-mock-interview.service";
+import {
+  INTERVIEW_TOPICS,
+  CUSTOM_TOPIC_VALUE,
+} from "@/lib/constants/interview-topics";
 
 /**
  * Admin: Create Interview page.
@@ -47,40 +53,76 @@ import adminMockInterviewService, {
  */
 
 const DIFFICULTIES: InterviewTemplateDifficulty[] = ["Easy", "Medium", "Hard"];
+const RELEASE_MODES: { value: InterviewResultReleaseMode; label: string; help: string }[] = [
+  {
+    value: "manual",
+    label: "Manual release (recommended for courses)",
+    help: "Students get a 'submitted' notification. You release results from the Attempts list.",
+  },
+  {
+    value: "scheduled",
+    label: "Scheduled release at a fixed time",
+    help: "Results auto-flip visible at the chosen date/time.",
+  },
+  {
+    value: "immediate",
+    label: "Immediate (legacy / practice templates only)",
+    help: "Student sees the evaluation the moment they finish.",
+  },
+];
 
 interface DraftTemplate {
-  title: string;
-  topic: string;
-  subtopic: string;
+  topicSelection: string;
+  customTopic: string;
   difficulty: InterviewTemplateDifficulty;
   duration_minutes: number;
   description: string;
   is_active: boolean;
   course_ids: number[];
+  num_coding_questions: number;
+  num_mcq_questions: number;
+  result_release_mode: InterviewResultReleaseMode;
+  result_release_at: string;
 }
 
 const EMPTY_DRAFT: DraftTemplate = {
-  title: "",
-  topic: "",
-  subtopic: "",
+  topicSelection: "",
+  customTopic: "",
   difficulty: "Medium",
   duration_minutes: 7,
   description: "",
   is_active: true,
   course_ids: [],
+  num_coding_questions: 2,
+  num_mcq_questions: 1,
+  result_release_mode: "manual",
+  result_release_at: "",
 };
 
 function toDraft(t: InterviewTemplate): DraftTemplate {
+  const known = INTERVIEW_TOPICS.includes(t.topic as (typeof INTERVIEW_TOPICS)[number]);
   return {
-    title: t.title,
-    topic: t.topic,
-    subtopic: t.subtopic,
+    topicSelection: known ? t.topic : t.topic ? CUSTOM_TOPIC_VALUE : "",
+    customTopic: known ? "" : t.topic || "",
     difficulty: t.difficulty,
     duration_minutes: t.duration_minutes,
     description: t.description || "",
     is_active: t.is_active,
     course_ids: t.course_ids,
+    num_coding_questions: t.num_coding_questions ?? 2,
+    num_mcq_questions: t.num_mcq_questions ?? 1,
+    result_release_mode: t.result_release_mode ?? "manual",
+    result_release_at: t.result_release_at
+      ? t.result_release_at.slice(0, 16)
+      : "",
   };
+}
+
+function resolveTopic(draft: DraftTemplate): string {
+  if (draft.topicSelection === CUSTOM_TOPIC_VALUE) {
+    return draft.customTopic.trim();
+  }
+  return draft.topicSelection.trim();
 }
 
 export default function AdminInterviewTemplatesPage() {
@@ -97,6 +139,11 @@ export default function AdminInterviewTemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [pendingDelete, setPendingDelete] = useState<InterviewTemplate | null>(null);
+  const [attemptsDialogTemplate, setAttemptsDialogTemplate] = useState<InterviewTemplate | null>(null);
+  const [attemptsList, setAttemptsList] = useState<AdminTemplateAttempt[]>([]);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [releasingAttemptId, setReleasingAttemptId] = useState<number | null>(null);
+  const [bulkReleasing, setBulkReleasing] = useState(false);
 
   const isEditing = selectedTemplate !== null;
 
@@ -151,12 +198,22 @@ export default function AdminInterviewTemplatesPage() {
   };
 
   const validateDraft = (): string | null => {
-    if (!draft.title.trim()) return "Title is required.";
-    if (!draft.topic.trim()) return "Topic is required.";
-    if (!draft.subtopic.trim()) return "Subtopic is required.";
+    if (!draft.topicSelection) return "Pick a topic.";
+    if (draft.topicSelection === CUSTOM_TOPIC_VALUE && !draft.customTopic.trim()) {
+      return "Enter the custom topic name.";
+    }
     if (!DIFFICULTIES.includes(draft.difficulty)) return "Pick a difficulty.";
     if (draft.duration_minutes < 5 || draft.duration_minutes > 20) {
       return "Duration must be between 5 and 20 minutes.";
+    }
+    if (draft.num_coding_questions < 0 || draft.num_coding_questions > 6) {
+      return "Coding questions must be 0-6.";
+    }
+    if (draft.num_mcq_questions < 0 || draft.num_mcq_questions > 6) {
+      return "Quiz questions must be 0-6.";
+    }
+    if (draft.result_release_mode === "scheduled" && !draft.result_release_at) {
+      return "Pick a scheduled release date/time.";
     }
     return null;
   };
@@ -169,15 +226,23 @@ export default function AdminInterviewTemplatesPage() {
     }
     setSaving(true);
     try {
+      const finalTopic = resolveTopic(draft);
       const payload: InterviewTemplateCreatePayload = {
-        title: draft.title.trim(),
-        topic: draft.topic.trim(),
-        subtopic: draft.subtopic.trim(),
+        title: `${finalTopic} Interview`,
+        topic: finalTopic,
+        subtopic: finalTopic,
         difficulty: draft.difficulty,
         duration_minutes: draft.duration_minutes,
         description: draft.description.trim(),
         is_active: draft.is_active,
         course_ids: draft.course_ids,
+        num_coding_questions: draft.num_coding_questions,
+        num_mcq_questions: draft.num_mcq_questions,
+        result_release_mode: draft.result_release_mode,
+        result_release_at:
+          draft.result_release_mode === "scheduled" && draft.result_release_at
+            ? new Date(draft.result_release_at).toISOString()
+            : null,
       };
       if (isEditing && selectedTemplate) {
         await adminMockInterviewService.updateTemplate(
@@ -206,6 +271,61 @@ export default function AdminInterviewTemplatesPage() {
       showToast(detail, "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openAttemptsDialog = async (t: InterviewTemplate) => {
+    setAttemptsDialogTemplate(t);
+    setAttemptsLoading(true);
+    setAttemptsList([]);
+    try {
+      const list = await adminMockInterviewService.listTemplateAttempts(t.id);
+      setAttemptsList(list);
+    } catch (err) {
+      showToast("Failed to load attempts", "error");
+    } finally {
+      setAttemptsLoading(false);
+    }
+  };
+
+  const handleReleaseSingleAttempt = async (interviewId: number) => {
+    setReleasingAttemptId(interviewId);
+    try {
+      await adminMockInterviewService.releaseSingleInterviewResult(interviewId);
+      showToast("Result released to student", "success");
+      setAttemptsList((prev) =>
+        prev.map((a) =>
+          a.id === interviewId
+            ? {
+                ...a,
+                result_visible_to_student: true,
+                result_released_at: new Date().toISOString(),
+              }
+            : a,
+        ),
+      );
+    } catch (err) {
+      showToast("Could not release result", "error");
+    } finally {
+      setReleasingAttemptId(null);
+    }
+  };
+
+  const handleBulkReleaseTemplate = async () => {
+    if (!attemptsDialogTemplate) return;
+    setBulkReleasing(true);
+    try {
+      const res = await adminMockInterviewService.releaseTemplateResults(
+        attemptsDialogTemplate.id,
+      );
+      showToast(res.message, "success");
+      if (attemptsDialogTemplate) {
+        await openAttemptsDialog(attemptsDialogTemplate);
+      }
+    } catch (err) {
+      showToast("Bulk release failed", "error");
+    } finally {
+      setBulkReleasing(false);
     }
   };
 
@@ -418,6 +538,17 @@ export default function AdminInterviewTemplatesPage() {
                           <Button
                             size="small"
                             variant="text"
+                            onClick={() => openAttemptsDialog(t)}
+                            sx={{
+                              textTransform: "none",
+                              color: "var(--font-secondary)",
+                            }}
+                          >
+                            Attempts
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="text"
                             onClick={() => handleEdit(t)}
                             sx={{
                               textTransform: "none",
@@ -462,32 +593,41 @@ export default function AdminInterviewTemplatesPage() {
                 : "New interview"}
             </Typography>
             <Stack spacing={2}>
-              <TextField
-                label="Title"
-                value={draft.title}
-                onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                fullWidth
-                size="small"
-                placeholder="e.g. Mid-level Python screen"
-              />
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField
+              <FormControl fullWidth size="small">
+                <InputLabel>Topic</InputLabel>
+                <Select
                   label="Topic"
-                  value={draft.topic}
-                  onChange={(e) => setDraft((d) => ({ ...d, topic: e.target.value }))}
-                  fullWidth
-                  size="small"
-                  placeholder="e.g. Python"
-                />
+                  value={draft.topicSelection}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      topicSelection: e.target.value as string,
+                      customTopic:
+                        e.target.value === CUSTOM_TOPIC_VALUE ? d.customTopic : "",
+                    }))
+                  }
+                >
+                  {INTERVIEW_TOPICS.map((t) => (
+                    <MenuItem key={t} value={t}>
+                      {t}
+                    </MenuItem>
+                  ))}
+                  <MenuItem value={CUSTOM_TOPIC_VALUE}>Custom…</MenuItem>
+                </Select>
+              </FormControl>
+              {draft.topicSelection === CUSTOM_TOPIC_VALUE && (
                 <TextField
-                  label="Subtopic"
-                  value={draft.subtopic}
-                  onChange={(e) => setDraft((d) => ({ ...d, subtopic: e.target.value }))}
+                  label="Custom topic"
+                  value={draft.customTopic}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, customTopic: e.target.value }))
+                  }
                   fullWidth
                   size="small"
-                  placeholder="e.g. Decorators and metaclasses"
+                  placeholder="e.g. GraphQL Federation"
+                  autoFocus
                 />
-              </Stack>
+              )}
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Difficulty</InputLabel>
@@ -551,6 +691,114 @@ export default function AdminInterviewTemplatesPage() {
                 multiline
                 rows={2}
               />
+              <Box
+                sx={{
+                  mt: 1,
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--surface)",
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Structured questions floor
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", color: "var(--font-secondary)", mb: 1.5 }}
+                >
+                  Minimum coding turns and quiz turns the AI must produce. The interviewer
+                  still drives the conversation between them.
+                </Typography>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    label="Coding questions"
+                    type="number"
+                    inputProps={{ min: 0, max: 6, step: 1 }}
+                    value={
+                      draft.num_coding_questions === 0 ? "0" : draft.num_coding_questions
+                    }
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setDraft((d) => ({
+                        ...d,
+                        num_coding_questions: Number.isNaN(n) ? 0 : Math.max(0, Math.min(6, n)),
+                      }));
+                    }}
+                    fullWidth
+                    size="small"
+                  />
+                  <TextField
+                    label="Quiz (MCQ) questions"
+                    type="number"
+                    inputProps={{ min: 0, max: 6, step: 1 }}
+                    value={
+                      draft.num_mcq_questions === 0 ? "0" : draft.num_mcq_questions
+                    }
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setDraft((d) => ({
+                        ...d,
+                        num_mcq_questions: Number.isNaN(n) ? 0 : Math.max(0, Math.min(6, n)),
+                      }));
+                    }}
+                    fullWidth
+                    size="small"
+                  />
+                </Stack>
+              </Box>
+
+              <Box
+                sx={{
+                  mt: 1,
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--surface)",
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Result release
+                </Typography>
+                <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+                  <InputLabel>Release mode</InputLabel>
+                  <Select
+                    label="Release mode"
+                    value={draft.result_release_mode}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        result_release_mode: e.target.value as InterviewResultReleaseMode,
+                      }))
+                    }
+                  >
+                    {RELEASE_MODES.map((m) => (
+                      <MenuItem key={m.value} value={m.value}>
+                        {m.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", color: "var(--font-secondary)", mb: 1 }}
+                >
+                  {RELEASE_MODES.find((m) => m.value === draft.result_release_mode)?.help}
+                </Typography>
+                {draft.result_release_mode === "scheduled" && (
+                  <TextField
+                    label="Release at"
+                    type="datetime-local"
+                    InputLabelProps={{ shrink: true }}
+                    value={draft.result_release_at}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, result_release_at: e.target.value }))
+                    }
+                    fullWidth
+                    size="small"
+                  />
+                )}
+              </Box>
               {/* Course mapping — visually separated as its own step so admins clearly
                   understand this is the action that makes the interview reachable for
                   students. Without a course, the interview stays "drafted" and nobody
@@ -717,6 +965,122 @@ export default function AdminInterviewTemplatesPage() {
               }}
             >
               {deletingId !== null ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={attemptsDialogTemplate !== null}
+          onClose={() => setAttemptsDialogTemplate(null)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            Attempts · {attemptsDialogTemplate?.title}
+          </DialogTitle>
+          <DialogContent dividers>
+            {attemptsLoading ? (
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                Loading attempts…
+              </Typography>
+            ) : attemptsList.length === 0 ? (
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                No students have attempted this interview yet.
+              </Typography>
+            ) : (
+              <Stack spacing={1}>
+                {attemptsList.map((a) => {
+                  const submittedText = a.submitted_at
+                    ? new Date(a.submitted_at).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Not submitted";
+                  return (
+                    <Box
+                      key={a.id}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        p: 1.5,
+                        borderRadius: 2,
+                        border: "1px solid var(--border-default)",
+                      }}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          {a.student_name}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: "block",
+                            color: "var(--font-tertiary)",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {a.student_email || `Student #${a.student_id}`} · {a.status} · {submittedText}
+                        </Typography>
+                      </Box>
+                      {a.result_visible_to_student ? (
+                        <Chip
+                          label="Released"
+                          size="small"
+                          sx={{
+                            backgroundColor: "var(--surface-green-light)",
+                            color: "var(--ats-success-muted)",
+                            fontWeight: 600,
+                          }}
+                        />
+                      ) : a.status === "completed" ? (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          disabled={releasingAttemptId === a.id}
+                          onClick={() => handleReleaseSingleAttempt(a.id)}
+                          sx={{
+                            textTransform: "none",
+                            backgroundColor: "var(--accent-indigo)",
+                            "&:hover": {
+                              backgroundColor: "var(--accent-indigo-dark)",
+                            },
+                          }}
+                        >
+                          {releasingAttemptId === a.id ? "Releasing…" : "Release"}
+                        </Button>
+                      ) : (
+                        <Chip
+                          label={a.status}
+                          size="small"
+                          sx={{
+                            backgroundColor: "var(--surface)",
+                            color: "var(--font-tertiary)",
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
+            <Button
+              variant="outlined"
+              disabled={bulkReleasing || attemptsList.every((a) => a.result_visible_to_student)}
+              onClick={handleBulkReleaseTemplate}
+              sx={{ textTransform: "none" }}
+            >
+              {bulkReleasing ? "Releasing all…" : "Release all pending"}
+            </Button>
+            <Button
+              onClick={() => setAttemptsDialogTemplate(null)}
+              sx={{ textTransform: "none" }}
+            >
+              Close
             </Button>
           </DialogActions>
         </Dialog>
