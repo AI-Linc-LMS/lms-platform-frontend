@@ -1749,6 +1749,7 @@
     "next": "Next",
     "creating": "Creating...",
     "createJob": "Create Job",
+    "enroll": "Enroll",
     "csvHeaderName": "Name",
     "csvHeaderEmail": "Email",
     "csvHeaderStatus": "Status",
