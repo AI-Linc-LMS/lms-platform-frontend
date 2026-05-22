@@ -204,7 +204,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     if (submissionComplete && !showResults) {
       return {
         buttonLabel: t("assessments.submittedPendingReview"),
-        isClickable: true,
+        isClickable: false,
       };
     }
     if (normalizedStatus === "in_progress") {
@@ -301,10 +301,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     if (!isClickable) return;
     if (submissionComplete && showResults) {
       router.push(`/assessments/result/${assessment.slug}`);
-      return;
-    }
-    if (submissionComplete && !showResults) {
-      router.push(`/assessments/${assessment.slug}/submission-success`);
       return;
     }
     if (!isCurrentDeviceAllowedForAssessment(assessment)) {
