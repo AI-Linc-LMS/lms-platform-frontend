@@ -86,6 +86,16 @@ export function EnrollmentJobStatus({
         // If job is already completed or failed, don't start polling
         if (jobData.status === "COMPLETED" || jobData.status === "FAILED") {
           hasCompletedRef.current = true;
+          // If the parent provided an onComplete handler, call it after a short delay
+          if (jobData.status === "COMPLETED" && onComplete) {
+            setTimeout(() => {
+              try {
+                onComplete();
+              } catch (e) {
+                // swallow
+              }
+            }, 1200);
+          }
           return; // Don't start polling for already-completed jobs
         }
 

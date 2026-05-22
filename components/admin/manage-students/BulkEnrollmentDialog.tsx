@@ -339,9 +339,13 @@ export function BulkEnrollmentDialog({
                 border: "2px dashed var(--border-default)",
                 borderRadius: 2,
                 p: 4,
-                textAlign: "center",
                 mb: 3,
                 cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 140,
                 "&:hover": {
                   borderColor: "var(--accent-indigo)",
                   backgroundColor: "var(--surface)",
@@ -581,6 +585,10 @@ export function BulkEnrollmentDialog({
                   value={selectedCourseIds}
                   onChange={(e) => setSelectedCourseIds(e.target.value as number[])}
                   label={t("adminManageStudents.courses")}
+                  MenuProps={{
+                    disablePortal: true,
+                    PaperProps: { style: { maxHeight: 300 } },
+                  }}
                   renderValue={(selected) => (
                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                       {selected.map((courseId) => {
@@ -660,9 +668,7 @@ export function BulkEnrollmentDialog({
               </Alert>
             )}
 
-            <Alert severity="info">
-              {t("adminManageStudents.asyncJobNote")}
-            </Alert>
+            {/* async job note removed to avoid confusion */}
           </Box>
         );
 
@@ -740,7 +746,7 @@ export function BulkEnrollmentDialog({
                 )
               }
             >
-              {creatingJob ? t("adminManageStudents.creating") : t("adminManageStudents.createJob")}
+              {creatingJob ? t("adminManageStudents.creating") : t("adminManageStudents.enroll")}
             </Button>
           )}
         </DialogActions>
