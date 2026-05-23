@@ -223,6 +223,12 @@ export interface CreateAssessmentPayload {
    * multipart file field.
    */
   attachment_url?: string | null;
+  /**
+   * Base URL of the frontend app (e.g. https://your-app.netlify.app).
+   * Sent with every assessment create/update/publish so the backend can
+   * construct correct deep-links inside notification emails.
+   */
+  email_base_url?: string;
   /** Whether to show results to students after submission (default true) */
   show_result?: boolean;
   evaluation_mode?: "auto" | "manual";
@@ -323,6 +329,7 @@ export interface AssessmentDetail extends Assessment {
   show_result?: boolean;
   evaluation_mode?: "auto" | "manual";
   certificate_available?: boolean;
+  
   pass_band_lower_min_percent?: string;
   pass_band_upper_min_percent?: string;
   tab_switch_limit_enabled?: boolean;
@@ -480,6 +487,8 @@ export interface PublishAssessmentBody {
    * existing file. Mutually exclusive with the multipart `email_attachment`.
    */
   attachment_url?: string | null;
+  /** Base URL of the frontend app — backend uses it to build assessment deep-links in emails. */
+  email_base_url?: string;
 }
 
 export const publishAssessment = async (

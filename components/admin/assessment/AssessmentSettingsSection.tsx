@@ -71,6 +71,15 @@ interface AssessmentSettingsSectionProps {
   existingEmailAttachmentUrl?: string | null;
   /** Filename for the previously-saved attachment. Derived from URL if omitted. */
   existingEmailAttachmentName?: string | null;
+  /**
+   * Assessment schedule shown as a dedicated panel inside the email preview
+   * so start/end/duration always appear in the email regardless of body edits.
+   */
+  emailSchedule?: {
+    startTime?: string | null;
+    endTime?: string | null;
+    durationMinutes?: number | null;
+  } | null;
   showResult?: boolean;
   evaluationMode?: "auto" | "manual";
   allowDesktop?: boolean;
@@ -288,6 +297,7 @@ export function AssessmentSettingsSection({
   defaultEmailBody = "",
   existingEmailAttachmentUrl,
   existingEmailAttachmentName,
+  emailSchedule,
   showResult = true,
   evaluationMode = "auto",
   allowDesktop = true,
@@ -779,6 +789,7 @@ export function AssessmentSettingsSection({
                   initialBody={defaultEmailBody}
                   initialAttachmentUrl={existingEmailAttachmentUrl}
                   initialAttachmentName={existingEmailAttachmentName}
+                  schedule={emailSchedule}
                   readOnly={readOnly}
                   onEnabledChange={onEmailEnabledChange}
                 />

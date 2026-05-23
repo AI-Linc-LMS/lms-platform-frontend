@@ -25,7 +25,27 @@ interface BuildEmailHtmlOptions {
   signOff?: string;
   /** Top accent strip color (hex). Defaults to the indigo accent. */
   accentColor?: string;
+  /**
+   * Assessment schedule details. Rendered as a dedicated panel below the
+   * body so recipients always see start/end times even when the admin has
+   * customised the message.
+   */
+  schedule?: {
+    startTime?: string | null;
+    endTime?: string | null;
+    durationMinutes?: number | null;
+  } | null;
 }
+
+const formatScheduleDate = (s: string | null | undefined): string => {
+  if (!s) return "";
+  try {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? "" : d.toLocaleString();
+  } catch {
+    return "";
+  }
+};
 
 const SANS_STACK =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, 'Helvetica Neue', Arial, sans-serif";
@@ -48,6 +68,7 @@ export function buildAssessmentNotificationEmailHtml(
     logoUrl,
     signOff = "Best regards,",
     accentColor = "#5a4ea2",
+    schedule,
   } = opts;
 
   const safeSubject = escape(subject);
@@ -56,6 +77,38 @@ export function buildAssessmentNotificationEmailHtml(
   const headerInner = logoUrl
     ? `<img src="${escape(logoUrl)}" alt="${safeName}" style="max-height:52px;max-width:220px;display:block;border:0;outline:none;text-decoration:none;" />`
     : `<div style="font-size:20px;font-weight:700;color:#0f172a;letter-spacing:0.2px;">${safeName}</div>`;
+
+  // Build the schedule panel — only rendered when at least one detail is set.
+  const scheduleRows: string[] = [];
+  if (schedule?.durationMinutes && schedule.durationMinutes > 0) {
+    scheduleRows.push(
+      `<div style="font-size:14px;color:#1f2937;line-height:1.5;"><span style="font-weight:700;color:#0f172a;">Duration:</span> ${escape(
+        String(schedule.durationMinutes)
+      )} minutes</div>`
+    );
+  }
+  const startStr = formatScheduleDate(schedule?.startTime);
+  if (startStr) {
+    scheduleRows.push(
+      `<div style="font-size:14px;color:#1f2937;line-height:1.5;"><span style="font-weight:700;color:#0f172a;">Start time:</span> ${escape(
+        startStr
+      )}</div>`
+    );
+  }
+  const endStr = formatScheduleDate(schedule?.endTime);
+  if (endStr) {
+    scheduleRows.push(
+      `<div style="font-size:14px;color:#1f2937;line-height:1.5;"><span style="font-weight:700;color:#0f172a;">End time:</span> ${escape(
+        endStr
+      )}</div>`
+    );
+  }
+  const scheduleBlock = scheduleRows.length
+    ? `<div style="margin-top:16px;padding:14px 18px;background-color:#f8fafc;border:1px solid #e5e7eb;border-left:3px solid ${accentColor};border-radius:6px;">
+         <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Schedule</div>
+         ${scheduleRows.join("\n         ")}
+       </div>`
+    : "";
 
   return [
     '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">',
@@ -74,10 +127,11 @@ export function buildAssessmentNotificationEmailHtml(
     // Header
     `        <tr><td align="center" style="padding:32px 40px 24px;">${headerInner}</td></tr>`,
     `        <tr><td style="padding:0 40px;"><div style="border-top:1px solid #eef0f3;height:0;line-height:0;font-size:0;">&nbsp;</div></td></tr>`,
-    // Body (subject H1 + editable body fragment)
+    // Body (subject H1 + editable body fragment + auto schedule panel)
     `        <tr><td style="padding:32px 40px;color:#1f2937;font-size:15px;line-height:1.65;font-family:${SANS_STACK};">`,
     `          <h1 style="font-size:24px;font-weight:700;color:#0f172a;margin:0 0 20px;line-height:1.3;letter-spacing:-0.2px;">${safeSubject}</h1>`,
     `          <div>${bodyHtml}</div>`,
+    `          ${scheduleBlock}`,
     "        </td></tr>",
     // Footer
     `        <tr><td><div style="border-top:1px solid #eef0f3;height:0;line-height:0;font-size:0;">&nbsp;</div></td></tr>`,

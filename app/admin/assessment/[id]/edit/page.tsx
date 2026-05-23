@@ -53,7 +53,7 @@ import {
   clampAssessmentAnalyticsTopPerformers,
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
-import { config } from "@/lib/config";
+import { config, getPublicAppOrigin } from "@/lib/config";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
@@ -450,30 +450,25 @@ export default function AssessmentEditPage() {
     () => `Important Notification - ${title.trim() || "New Assessment"}`,
     [title]
   );
+  // Schedule (start/end/duration) is rendered separately by the preview /
+  // email HTML, so the seeded body stays light. See create page for the
+  // same pattern.
   const defaultEmailBody = useMemo(() => {
-    const formatDateTime = (s: string | undefined) => {
-      if (!s) return "";
-      const d = new Date(s);
-      return isNaN(d.getTime()) ? "" : d.toLocaleString();
-    };
-    const detailLines: string[] = [
-      `<strong>Assessment:</strong> ${title.trim() || "New Assessment"}`,
-      ...(durationMinutes
-        ? [`<strong>Duration:</strong> ${durationMinutes} minutes`]
-        : []),
-      ...(startTime
-        ? [`<strong>Start time:</strong> ${formatDateTime(startTime)}`]
-        : []),
-      ...(endTime
-        ? [`<strong>End time:</strong> ${formatDateTime(endTime)}`]
-        : []),
-    ];
     return [
       "<p>Dear {name},</p>",
       "<p>All set! Your assessment details are below — good luck 👍.</p>",
-      `<p>${detailLines.join("<br>")}</p>`,
+      `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
     ].join("");
-  }, [title, durationMinutes, startTime, endTime]);
+  }, [title]);
+
+  const emailSchedule = useMemo(
+    () => ({
+      startTime: startTime || null,
+      endTime: endTime || null,
+      durationMinutes: durationMinutes || null,
+    }),
+    [startTime, endTime, durationMinutes]
+  );
 
   const [previewMCQ, setPreviewMCQ] = useState<{
     section: { section_title: string };
@@ -806,8 +801,10 @@ export default function AssessmentEditPage() {
             bodyHtml: emailSnapshot.body,
             clientName: clientInfo?.name?.trim() || "Your team",
             logoUrl: clientInfo?.app_logo_url ?? null,
+            schedule: emailSchedule,
           })
         : undefined;
+      payload.email_base_url = getPublicAppOrigin();
       const emailAttachment = emailSnapshot?.attachment ?? null;
       // Keep the saved attachment when no new file is picked.
       payload.attachment_url = emailSnapshot?.attachmentUrl ?? undefined;
@@ -1505,6 +1502,7 @@ export default function AssessmentEditPage() {
                   defaultEmailBody={defaultEmailBody}
                   existingEmailAttachmentUrl={existingEmailAttachmentUrl}
                   existingEmailAttachmentName={existingEmailAttachmentName}
+                  emailSchedule={emailSchedule}
                   showResult={showResult}
                   evaluationMode={evaluationMode}
                   allowMovementAcrossSections={allowMovementAcrossSections}

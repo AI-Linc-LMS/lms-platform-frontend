@@ -47,6 +47,7 @@ import type { WrittenPromptPreview } from "@/components/admin/assessment/Section
 import type { SubjectiveQuestionDraft } from "@/components/admin/assessment/SubjectiveQuestionsFormSection";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
+import { getPublicAppOrigin } from "@/lib/config";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import {
   applyAssessmentDetailToBasicFields,
@@ -137,30 +138,29 @@ function CreateAssessmentPageContent() {
     () => `Important Notification - ${title.trim() || "New Assessment"}`,
     [title]
   );
+  // The schedule (start/end/duration) is rendered as a dedicated block by
+  // <EmailTemplatePreview> and the rendered email HTML — so the seeded body
+  // only needs the greeting + a reference to the assessment. This keeps
+  // start/end times always current in the email even when the admin
+  // customises the body.
   const defaultEmailBody = useMemo(() => {
-    const formatDateTime = (s: string | undefined) => {
-      if (!s) return "";
-      const d = new Date(s);
-      return isNaN(d.getTime()) ? "" : d.toLocaleString();
-    };
-    const detailLines: string[] = [
-      `<strong>Assessment:</strong> ${title.trim() || "New Assessment"}`,
-      ...(durationMinutes
-        ? [`<strong>Duration:</strong> ${durationMinutes} minutes`]
-        : []),
-      ...(startTime
-        ? [`<strong>Start time:</strong> ${formatDateTime(startTime)}`]
-        : []),
-      ...(endTime
-        ? [`<strong>End time:</strong> ${formatDateTime(endTime)}`]
-        : []),
-    ];
     return [
       "<p>Dear {name},</p>",
       "<p>All set! Your assessment details are below — good luck 👍.</p>",
-      `<p>${detailLines.join("<br>")}</p>`,
+      `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
     ].join("");
-  }, [title, durationMinutes, startTime, endTime]);
+  }, [title]);
+
+  // Schedule passed to the preview + the rendered email HTML. Rebuilt on
+  // every render but cheap (just a plain object).
+  const emailSchedule = useMemo(
+    () => ({
+      startTime: startTime || null,
+      endTime: endTime || null,
+      durationMinutes: durationMinutes || null,
+    }),
+    [startTime, endTime, durationMinutes]
+  );
 
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
@@ -1187,8 +1187,10 @@ function CreateAssessmentPageContent() {
             bodyHtml: emailSnapshot.body,
             clientName: clientInfo?.name?.trim() || "Your team",
             logoUrl: clientInfo?.app_logo_url ?? null,
+            schedule: emailSchedule,
           })
         : undefined;
+      payload.email_base_url = getPublicAppOrigin();
       const emailAttachment = emailSnapshot?.attachment ?? null;
       // When the admin is keeping the previously-saved attachment (no new
       // file picked), pass the existing URL so the backend retains it.
@@ -1532,6 +1534,7 @@ function CreateAssessmentPageContent() {
       const publishBody = {
         is_active: true,
         email_notification_enabled: emailNotificationEnabled,
+        email_base_url: getPublicAppOrigin(),
         ...(emailSnapshot
           ? {
               email_subject: emailSnapshot.subject,
@@ -1541,6 +1544,7 @@ function CreateAssessmentPageContent() {
                 bodyHtml: emailSnapshot.body,
                 clientName: clientInfo?.name?.trim() || "Your team",
                 logoUrl: clientInfo?.app_logo_url ?? null,
+                schedule: emailSchedule,
               }),
               // Retain the previously-saved attachment unless a new file was
               // picked (in which case the multipart `email_attachment` wins).
@@ -1603,6 +1607,7 @@ function CreateAssessmentPageContent() {
               defaultEmailBody={defaultEmailBody}
               existingEmailAttachmentUrl={existingEmailAttachmentUrl}
               existingEmailAttachmentName={existingEmailAttachmentName}
+              emailSchedule={emailSchedule}
               showResult={showResult}
               evaluationMode={evaluationMode}
               allowMovementAcrossSections={allowMovementAcrossSections}

@@ -545,7 +545,7 @@ export default function AssessmentPage() {
         {
           assessment_id: assessmentToTriggerEmail.id,
           subject: buildEmailSubject(assessmentToTriggerEmail),
-          email_body: buildEmailBody(assessmentToTriggerEmail),
+          email_body: (assessmentToTriggerEmail as any).email_html,
           ...(att.url ? { attachment_url: att.url } : {}),
         }
       );
@@ -1166,12 +1166,22 @@ export default function AssessmentPage() {
                   const att = extractSavedEmailAttachment(
                     assessmentToTriggerEmail as unknown as Record<string, unknown>
                   );
+                  const detail = assessmentToTriggerEmail as typeof assessmentToTriggerEmail & {
+                    start_time?: string | null;
+                    end_time?: string | null;
+                  };
                   return (
                     <EmailTemplatePreview
                       subject={buildEmailSubject(assessmentToTriggerEmail)}
                       showPreviewChip={false}
                       attachmentUrl={att.url}
                       attachmentName={att.name}
+                      schedule={{
+                        startTime: detail.start_time ?? null,
+                        endTime: detail.end_time ?? null,
+                        durationMinutes:
+                          assessmentToTriggerEmail.duration_minutes ?? null,
+                      }}
                     >
                       <Box
                         sx={{ "& a": { color: "var(--accent-indigo)" } }}

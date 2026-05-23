@@ -430,6 +430,17 @@ export default function AssessmentEmailJobDetailPage() {
                       showPreviewChip={false}
                       attachmentUrl={jobAttachment.url}
                       attachmentName={jobAttachment.name}
+                      schedule={{
+                        startTime:
+                          (data as unknown as Record<string, unknown>)
+                            .start_time as string | null,
+                        endTime:
+                          (data as unknown as Record<string, unknown>)
+                            .end_time as string | null,
+                        durationMinutes:
+                          ((data as unknown as Record<string, unknown>)
+                            .duration_minutes as number | null) ?? null,
+                      }}
                     >
                       <Box
                         sx={{ "& a": { color: "var(--accent-indigo)" } }}

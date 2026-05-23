@@ -78,6 +78,15 @@ interface EmailNotificationEditorProps {
   initialAttachmentUrl?: string | null;
   /** Display name for the previously-saved attachment. Derived from URL if omitted. */
   initialAttachmentName?: string | null;
+  /**
+   * Assessment schedule rendered as a dedicated panel in the preview so
+   * recipients always see current start/end/duration regardless of body edits.
+   */
+  schedule?: {
+    startTime?: string | null;
+    endTime?: string | null;
+    durationMinutes?: number | null;
+  } | null;
   readOnly?: boolean;
   /**
    * Called when the editor's "has real data" status transitions true ↔ false.
@@ -109,6 +118,7 @@ function EmailNotificationEditorInner(
     initialBody,
     initialAttachmentUrl,
     initialAttachmentName,
+    schedule,
     readOnly,
     onEnabledChange,
   }: EmailNotificationEditorProps,
@@ -246,6 +256,7 @@ function EmailNotificationEditorInner(
             ? deriveFilenameFromUrl(initialAttachmentUrl)
             : null)
         }
+        schedule={schedule}
       >
         {editorNode}
       </EmailTemplatePreview>

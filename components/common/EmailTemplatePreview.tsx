@@ -36,7 +36,31 @@ interface EmailTemplatePreviewProps {
    * non-clickable chip — useful when the file isn't uploaded yet.
    */
   attachmentName?: string | null;
+  /**
+   * Assessment schedule details. Rendered as a dedicated block below the
+   * body so admins can't accidentally edit them out — recipients always see
+   * the current start time, end time, and duration when the assessment has
+   * them set.
+   */
+  schedule?: {
+    /** ISO timestamp or any string Date() can parse. */
+    startTime?: string | null;
+    /** ISO timestamp or any string Date() can parse. */
+    endTime?: string | null;
+    /** Duration in minutes. Renders as "60 minutes". */
+    durationMinutes?: number | null;
+  } | null;
 }
+
+const formatScheduleDate = (s: string | null | undefined): string => {
+  if (!s) return "";
+  try {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? "" : d.toLocaleString();
+  } catch {
+    return "";
+  }
+};
 
 const deriveAttachmentName = (url: string | null | undefined): string => {
   if (!url) return "attachment";
@@ -72,10 +96,28 @@ function EmailTemplatePreviewInner({
   showPreviewChip = true,
   attachmentUrl,
   attachmentName,
+  schedule,
 }: EmailTemplatePreviewProps) {
   const hasAttachment = Boolean(attachmentUrl || attachmentName);
   const resolvedAttachmentName =
     attachmentName?.trim() || (attachmentUrl ? deriveAttachmentName(attachmentUrl) : null);
+
+  const scheduleRows = (() => {
+    if (!schedule) return [] as Array<{ label: string; value: string }>;
+    const rows: Array<{ label: string; value: string }> = [];
+    if (schedule.durationMinutes && schedule.durationMinutes > 0) {
+      rows.push({
+        label: "Duration",
+        value: `${schedule.durationMinutes} minutes`,
+      });
+    }
+    const startFormatted = formatScheduleDate(schedule.startTime);
+    if (startFormatted) rows.push({ label: "Start time", value: startFormatted });
+    const endFormatted = formatScheduleDate(schedule.endTime);
+    if (endFormatted) rows.push({ label: "End time", value: endFormatted });
+    return rows;
+  })();
+  const hasSchedule = scheduleRows.length > 0;
   const { clientInfo } = useClientInfo();
   const clientName = clientInfo?.name?.trim() || "Your team";
   const logoUrl = clientInfo?.app_logo_url || null;
@@ -230,6 +272,51 @@ function EmailTemplatePreviewInner({
           >
             {children}
           </Box>
+
+          {hasSchedule ? (
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                bgcolor: "#f8fafc",
+                border: "1px solid #e5e7eb",
+                borderRadius: 1,
+                borderLeft: "3px solid",
+                borderLeftColor: accentColor,
+              }}
+            >
+              <Typography
+                component="div"
+                sx={{
+                  fontSize: "0.68rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "#9ca3af",
+                  mb: 0.5,
+                }}
+              >
+                Schedule
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
+                {scheduleRows.map((row) => (
+                  <Typography
+                    key={row.label}
+                    component="div"
+                    sx={{ fontSize: "0.9rem", color: "#1f2937", lineHeight: 1.5 }}
+                  >
+                    <Box
+                      component="span"
+                      sx={{ fontWeight: 700, color: "#0f172a", mr: 0.75 }}
+                    >
+                      {row.label}:
+                    </Box>
+                    {row.value}
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+          ) : null}
 
           {hasAttachment ? (
             <Box>
