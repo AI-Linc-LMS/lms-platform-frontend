@@ -25,7 +25,9 @@
     "adminAttendance": "Attendance",
     "scorecard": "Scorecard",
     "branding": "Branding & theme",
-    "certificateUploads": "Certificate uploads"
+    "certificateUploads": "Certificate uploads",
+    "support": "My Tickets",
+    "adminTickets": "Ticket Management"
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",

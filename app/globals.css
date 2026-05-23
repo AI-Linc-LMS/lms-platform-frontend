@@ -363,6 +363,50 @@
   /* White shimmer that travels along the mark while the loader is alive. Kept as a
      token (rather than a literal #FFFFFF) so any future contrast tweak is one edit. */
   --ailinc-brand-highlight: #ffffff;
+
+  /* Support / ticketing system */
+  --ticket-brand: #2563eb;
+  --ticket-brand-hover: #1d4ed8;
+  --ticket-brand-soft: #e0e7ff;
+  --ticket-brand-strong: #4338ca;
+  --ticket-success-strong: #166534;
+  --ticket-success-deep: #14532d;
+  --ticket-success-border: #bbf7d0;
+  --ticket-success-soft: #dcfce7;
+  --ticket-reopen: #f97316;
+  --ticket-reopen-hover: #ea580c;
+  --ticket-reopen-strong: #c2410c;
+  --ticket-reopen-deep: #7c2d12;
+  --ticket-reopen-bg: #fff7ed;
+  --ticket-reopen-soft: #ffedd5;
+  --ticket-reopen-border: #fed7aa;
+  --ticket-status-open-bg: #fef3c7;
+  --ticket-status-open-border: #fde68a;
+  --ticket-status-in-progress-bg: #dbeafe;
+  --ticket-status-in-progress-text: #1e40af;
+  --ticket-status-in-progress-border: #bfdbfe;
+  --ticket-row-divider: #f1f5f9;
+  --ticket-text-strong: #0f172a;
+
+  /* Green CTA — used for Assignees + Add buttons and any "go" affordance
+     that should stand apart from the blue ticket-brand. */
+  --ticket-cta-green: #16a34a;
+  --ticket-cta-green-hover: #15803d;
+  --ticket-cta-green-deep: #14532d;
+  --ticket-cta-green-soft: #dcfce7;
+  --ticket-cta-green-border: #bbf7d0;
+
+  /* Slate palette — the original Tailwind-style slate values used across the
+     ticket UI before the first sweep. Kept as proper tokens so the cooler
+     slate look survives instead of falling back to warmer grays. */
+  --ticket-slate-50: #f8fafc;
+  --ticket-slate-100: #f1f5f9;
+  --ticket-slate-200: #e2e8f0;
+  --ticket-slate-300: #cbd5e1;
+  --ticket-slate-400: #94a3b8;
+  --ticket-slate-500: #64748b;
+  --ticket-slate-600: #475569;
+  --ticket-slate-700: #334155;
 }
 
 @theme inline {
