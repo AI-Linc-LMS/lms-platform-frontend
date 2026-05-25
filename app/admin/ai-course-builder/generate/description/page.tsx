@@ -199,9 +199,9 @@ export default function GenerateDescriptionPage() {
                 variant="contained"
                 disabled={submitting}
                 sx={{
-                  bgcolor: "var(--accent-indigo)",
+                  bgcolor: "var(--primary-500)",
                   color: "var(--font-light)",
-                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                  "&:hover": { bgcolor: "var(--primary-700)" },
                 }}
               >
                 {submitting ? (

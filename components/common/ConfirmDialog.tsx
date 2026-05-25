@@ -45,7 +45,7 @@ export function ConfirmDialog({
       <DialogTitle
         sx={{
           fontWeight: 600,
-          color: "#1a1f2e",
+          color: "var(--font-primary)",
           pb: 1,
         }}
       >
@@ -55,7 +55,7 @@ export function ConfirmDialog({
         <Typography
           variant="body1"
           sx={{
-            color: "#4b5563",
+            color: "var(--font-secondary)",
             lineHeight: 1.6,
           }}
         >
@@ -76,11 +76,11 @@ export function ConfirmDialog({
             textTransform: "none",
             borderRadius: 2,
             px: 3,
-            borderColor: "#e5e7eb",
-            color: "#6b7280",
+            borderColor: "var(--border-default)",
+            color: "var(--font-secondary)",
             "&:hover": {
-              borderColor: "#d1d5db",
-              backgroundColor: "#f9fafb",
+              borderColor: "var(--font-tertiary)",
+              backgroundColor: "var(--surface)",
             },
           }}
         >

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import {
+  Alert,
   Box,
   ButtonBase,
   Chip,
@@ -14,23 +15,27 @@ import { useTranslation } from "react-i18next";
 import type { BrandingPresetSummary } from "@/lib/services/admin/branding.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-type CategoryKey = "classic" | "vibrant" | "high_contrast";
-
-type ExtendedCategoryKey =
-  | CategoryKey
-  | "light"
-  | "dark"
-  | "minimal"
-  | "white_bg";
-
-const CATEGORY_ORDER: ExtendedCategoryKey[] = [
-  "white_bg",
-  "light",
-  "classic",
-  "vibrant",
-  "high_contrast",
-  "dark",
-  "minimal",
+const GROUP_ORDER: Array<{
+  key: string;
+  label: string;
+  blurb: string;
+  icon: string;
+  match: (p: BrandingPresetSummary) => boolean;
+}> = [
+  {
+    key: "light",
+    label: "Light",
+    blurb: "Soft tonal canvases — easy on the eyes for content-heavy modules.",
+    icon: "mdi:white-balance-sunny",
+    match: (p) => (p.category ?? "") !== "white_bg",
+  },
+  {
+    key: "white_bg",
+    label: "White BG",
+    blurb: "Dark sidebar + active palette with a crisp white canvas.",
+    icon: "mdi:monitor-shimmer",
+    match: (p) => (p.category ?? "") === "white_bg",
+  },
 ];
 
 const FALLBACK_PREVIEW = {
@@ -39,84 +44,6 @@ const FALLBACK_PREVIEW = {
   active: "var(--primary-300)",
   surface: "var(--surface)",
 };
-
-function categoryLabelKey(cat: string): string {
-  switch (cat) {
-    case "white_bg":
-      return "branding.presetCategoryWhiteBg";
-    case "light":
-      return "branding.presetCategoryLight";
-    case "dark":
-      return "branding.presetCategoryDark";
-    case "minimal":
-      return "branding.presetCategoryMinimal";
-    case "vibrant":
-      return "branding.presetCategoryVibrant";
-    case "high_contrast":
-      return "branding.presetCategoryHighContrast";
-    default:
-      return "branding.presetCategoryClassic";
-  }
-}
-
-function categoryBlurbKey(cat: string): string {
-  switch (cat) {
-    case "white_bg":
-      return "branding.presetGroupBlurb_white_bg";
-    case "light":
-      return "branding.presetGroupBlurb_light";
-    case "dark":
-      return "branding.presetGroupBlurb_dark";
-    case "minimal":
-      return "branding.presetGroupBlurb_minimal";
-    case "vibrant":
-      return "branding.presetGroupBlurb_vibrant";
-    case "high_contrast":
-      return "branding.presetGroupBlurb_high_contrast";
-    default:
-      return "branding.presetGroupBlurb_classic";
-  }
-}
-
-function categoryIcon(cat: string): string {
-  switch (cat) {
-    case "white_bg":
-      return "mdi:monitor-shimmer";
-    case "light":
-      return "mdi:white-balance-sunny";
-    case "dark":
-      return "mdi:weather-night";
-    case "minimal":
-      return "mdi:shape-outline";
-    case "vibrant":
-      return "mdi:palette";
-    case "high_contrast":
-      return "mdi:contrast-circle";
-    default:
-      return "mdi:view-grid-outline";
-  }
-}
-
-function categoryChipColor(
-  cat: string
-): "default" | "primary" | "secondary" | "warning" | "success" | "info" {
-  switch (cat) {
-    case "white_bg":
-      return "info";
-    case "light":
-      return "info";
-    case "dark":
-      return "secondary";
-    case "minimal":
-      return "success";
-    case "vibrant":
-      return "warning";
-    case "high_contrast":
-      return "secondary";
-    default:
-      return "default";
-  }
-}
 
 function MiniChromePreview({
   preview,
@@ -128,7 +55,7 @@ function MiniChromePreview({
     <Box
       sx={{
         display: "flex",
-        height: 92,
+        height: 96,
         borderRadius: 2,
         overflow: "hidden",
         border: "1px solid",
@@ -242,89 +169,41 @@ export function BrandingPresetGallery({
   const { t } = useTranslation("common");
   const theme = useTheme();
 
-  const grouped = useMemo((): {
-    category: ExtendedCategoryKey;
-    items: Array<{
-      baseId: string;
-      defaultPreset: BrandingPresetSummary;
-      whiteBgPreset?: BrandingPresetSummary;
-      whiteCanvasPreset?: BrandingPresetSummary;
-    }>;
-  }[] => {
-    const pairMap = new Map<
-      string,
-      {
-        baseId: string;
-        category: ExtendedCategoryKey;
-        defaultPreset?: BrandingPresetSummary;
-        whiteBgPreset?: BrandingPresetSummary;
-        whiteCanvasPreset?: BrandingPresetSummary;
-      }
-    >();
-
-    for (const p of presets) {
-      if (p.variant === "white_canvas") {
-        pairMap.set(`white:${p.id}`, {
-          baseId: p.id,
-          category: "white_bg",
-          defaultPreset: p,
-          whiteCanvasPreset: p,
-        });
-        continue;
-      }
-
-      const baseId = p.base_id || p.id;
-      const c = (p.category || "classic") as ExtendedCategoryKey;
-      const existing = pairMap.get(baseId) || {
-        baseId,
-        category: c,
-      };
-      if (p.variant === "white_bg") {
-        existing.whiteBgPreset = p;
-      } else if (p.variant === "white_canvas") {
-        existing.whiteCanvasPreset = p;
-      } else {
-        existing.defaultPreset = p;
-      }
-      if (!existing.defaultPreset) {
-        existing.defaultPreset = p;
-      }
-      pairMap.set(baseId, existing);
-    }
-
-    const groupedMap = new Map<
-      ExtendedCategoryKey,
-      Array<{
-        baseId: string;
-        defaultPreset: BrandingPresetSummary;
-        whiteBgPreset?: BrandingPresetSummary;
-        whiteCanvasPreset?: BrandingPresetSummary;
-      }>
-    >();
-    for (const entry of pairMap.values()) {
-      if (!entry.defaultPreset) continue;
-      if (!groupedMap.has(entry.category)) groupedMap.set(entry.category, []);
-      groupedMap.get(entry.category)!.push({
-        baseId: entry.baseId,
-        defaultPreset: entry.defaultPreset,
-        whiteBgPreset: entry.whiteBgPreset,
-        whiteCanvasPreset: entry.whiteCanvasPreset,
-      });
-    }
-
-    return CATEGORY_ORDER.filter((k) => groupedMap.has(k)).map((k) => ({
-      category: k,
-      items: groupedMap.get(k)!,
-    }));
-  }, [presets]);
-
   const customSelected = !selectedId;
+  // Tenant still has _preset = "graphite_night" etc. from before the catalogue trim.
+  const retiredPreset =
+    selectedId && !presets.some((p) => p.id === selectedId) ? selectedId : null;
+
+  const groups = useMemo(
+    () =>
+      GROUP_ORDER.map((g) => ({
+        ...g,
+        items: presets.filter(g.match),
+      })),
+    [presets]
+  );
 
   return (
     <Stack spacing={2.5}>
       <Typography variant="body2" color="text.secondary">
         {t("branding.presetGalleryHint")}
       </Typography>
+
+      {retiredPreset ? (
+        <Alert
+          severity="info"
+          icon={<IconWrapper icon="mdi:history" size={20} />}
+          sx={{
+            borderRadius: 2,
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--surface)",
+            color: "var(--font-primary)",
+          }}
+        >
+          Your theme ({retiredPreset}) was retired. Your colors still render —
+          pick a current preset below or keep using your saved palette.
+        </Alert>
+      ) : null}
 
       <ButtonBase
         focusRipple
@@ -386,158 +265,134 @@ export function BrandingPresetGallery({
         </Box>
       </ButtonBase>
 
-      {grouped.map(({ category, items }) => (
-        <Box key={category}>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-            <Chip
-              size="small"
-              icon={<IconWrapper icon={categoryIcon(category)} size={14} />}
-              label={t(categoryLabelKey(category))}
-              color={categoryChipColor(category)}
-              variant={category === "classic" || category === "minimal" ? "outlined" : "filled"}
-              sx={{ fontWeight: 700, fontSize: "0.7rem" }}
-            />
-            <Typography variant="caption" color="text.secondary">
-              {t(categoryBlurbKey(category))}
-            </Typography>
-          </Stack>
-
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(2, 1fr)",
-                lg: "repeat(3, 1fr)",
-              },
-              gap: 1.75,
-            }}
-          >
-            {items.map((pair) => {
-              const currentPreset = pair.defaultPreset;
-              const whiteBgPreset = pair.whiteBgPreset;
-              const whiteCanvasPreset = pair.whiteCanvasPreset;
-              const selectedUsesWhiteCanvas = selectedId === whiteCanvasPreset?.id;
-      const activePreset = selectedUsesWhiteCanvas
-                ? whiteCanvasPreset!
-                : currentPreset;
-              const preview = activePreset.preview ?? FALLBACK_PREVIEW;
-              const selected =
-                selectedId === currentPreset.id ||
-                (whiteCanvasPreset ? selectedId === whiteCanvasPreset.id : false);
-              const loading =
-                applyingId === currentPreset.id ||
-                (whiteCanvasPreset ? applyingId === whiteCanvasPreset.id : false);
-              return (
-                <ButtonBase
-                  key={pair.baseId}
-                  focusRipple
-                  disabled={Boolean(applyingId)}
-                  onClick={() => onSelectPreset(activePreset.id)}
-                  sx={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    borderRadius: 2,
-                  }}
-                >
-                  <Box
+      {groups.map((group) =>
+        group.items.length === 0 ? null : (
+          <Box key={group.key}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ mb: 1.25 }}
+            >
+              <Chip
+                size="small"
+                icon={<IconWrapper icon={group.icon} size={14} />}
+                label={group.label}
+                color={group.key === "white_bg" ? "secondary" : "primary"}
+                variant={group.key === "white_bg" ? "filled" : "outlined"}
+                sx={{ fontWeight: 700, fontSize: "0.7rem" }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                {group.blurb}
+              </Typography>
+            </Stack>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  md: "repeat(2, 1fr)",
+                  lg: "repeat(3, 1fr)",
+                },
+                gap: 1.75,
+              }}
+            >
+              {group.items.map((preset) => {
+                const preview = preset.preview ?? FALLBACK_PREVIEW;
+                const selected = selectedId === preset.id;
+                const loading = applyingId === preset.id;
+                return (
+                  <ButtonBase
+                    key={preset.id}
+                    focusRipple
+                    disabled={Boolean(applyingId)}
+                    onClick={() => onSelectPreset(preset.id)}
                     sx={{
-                      position: "relative",
-                      p: 1.25,
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
                       borderRadius: 2,
-                      border: "2px solid",
-                      borderColor: selected ? "primary.main" : "divider",
-                      bgcolor: (theme) =>
-                        selected
-                          ? alpha(theme.palette.primary.main, 0.04)
-                          : "background.paper",
-                      transition: "border-color 0.2s, box-shadow 0.2s",
-                      boxShadow: selected
-                        ? (theme) =>
-                            `0 0 0 1px ${alpha(theme.palette.primary.main, 0.25)}`
-                        : "0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent)",
-                      "&:hover": {
-                        borderColor: "primary.light",
-                        boxShadow: (theme) =>
-                          `0 4px 14px ${alpha(theme.palette.primary.main, 0.12)}`,
-                      },
                     }}
                   >
-                    {loading && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          inset: 0,
-                          borderRadius: 1.75,
-                          bgcolor: (theme) => alpha(theme.palette.background.paper, 0.72),
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 1,
-                        }}
-                      >
-                        <CircularProgress size={28} />
-                      </Box>
-                    )}
-                    <MiniChromePreview preview={preview} />
-                    <Stack spacing={0.35} sx={{ mt: 1.25 }}>
-                      <Stack direction="row" alignItems="center" spacing={0.75}>
-                        <Typography fontWeight={700} fontSize="0.95rem" noWrap>
-                          {currentPreset.label.replace(/\s*\(White BG\)\s*$/i, "")}
-                        </Typography>
-                        {selected && !loading && (
-                          <IconWrapper
-                            icon="mdi:check-circle"
-                            size={18}
-                            color={theme.palette.primary.main}
-                          />
-                        )}
-                      </Stack>
-                      <Stack direction="row" spacing={0.75} sx={{ pt: 0.25 }}>
-                        <Chip
-                          size="small"
-                          clickable
-                          label="Current"
-                          color={!selectedUsesWhiteCanvas ? "primary" : "default"}
-                          variant={!selectedUsesWhiteCanvas ? "filled" : "outlined"}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onSelectPreset(currentPreset.id);
+                    <Box
+                      sx={{
+                        position: "relative",
+                        p: 1.25,
+                        borderRadius: 2,
+                        border: "2px solid",
+                        borderColor: selected ? "primary.main" : "divider",
+                        bgcolor: (theme) =>
+                          selected
+                            ? alpha(theme.palette.primary.main, 0.04)
+                            : "background.paper",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
+                        boxShadow: selected
+                          ? (theme) =>
+                              `0 0 0 1px ${alpha(
+                                theme.palette.primary.main,
+                                0.25
+                              )}`
+                          : "0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent)",
+                        "&:hover": {
+                          borderColor: "primary.light",
+                          boxShadow: (theme) =>
+                            `0 4px 14px ${alpha(
+                              theme.palette.primary.main,
+                              0.12
+                            )}`,
+                        },
+                      }}
+                    >
+                      {loading && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            inset: 0,
+                            borderRadius: 1.75,
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.background.paper, 0.72),
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 1,
                           }}
-                          sx={{ fontWeight: 600, fontSize: "0.68rem" }}
-                        />
-                        {whiteCanvasPreset ? (
-                          <Chip
-                            size="small"
-                            clickable
-                            label="White BG"
-                            color={selectedUsesWhiteCanvas ? "primary" : "default"}
-                            variant={selectedUsesWhiteCanvas ? "filled" : "outlined"}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onSelectPreset(whiteCanvasPreset.id);
-                            }}
-                            sx={{ fontWeight: 600, fontSize: "0.68rem" }}
-                          />
+                        >
+                          <CircularProgress size={28} />
+                        </Box>
+                      )}
+                      <MiniChromePreview preview={preview} />
+                      <Stack spacing={0.35} sx={{ mt: 1.25 }}>
+                        <Stack direction="row" alignItems="center" spacing={0.75}>
+                          <Typography fontWeight={700} fontSize="0.95rem" noWrap>
+                            {preset.label.replace(/\s*\(White BG\)\s*$/i, "")}
+                          </Typography>
+                          {selected && !loading && (
+                            <IconWrapper
+                              icon="mdi:check-circle"
+                              size={18}
+                              color={theme.palette.primary.main}
+                            />
+                          )}
+                        </Stack>
+                        {preset.tagline ? (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ lineHeight: 1.35 }}
+                          >
+                            {preset.tagline}
+                          </Typography>
                         ) : null}
                       </Stack>
-                      {activePreset.tagline ? (
-                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35 }}>
-                          {activePreset.tagline}
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                  </Box>
-                </ButtonBase>
-              );
-            })}
+                    </Box>
+                  </ButtonBase>
+                );
+              })}
+            </Box>
           </Box>
-        </Box>
-      ))}
+        )
+      )}
     </Stack>
   );
 }

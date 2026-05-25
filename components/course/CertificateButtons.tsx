@@ -327,9 +327,10 @@ export function CertificateButtons({
           onClick={handleDownloadCertificate}
           disabled={downloading || !user || !canClaimCertificate}
           sx={{
-            backgroundColor: "#5A46A0",
+            backgroundColor: "var(--primary-600)",
+            color: "var(--font-light)",
             "&:hover": {
-              backgroundColor: "#4a3a8a",
+              backgroundColor: "var(--primary-700)",
             },
           }}
         >

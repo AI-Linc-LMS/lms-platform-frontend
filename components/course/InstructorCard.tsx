@@ -13,7 +13,7 @@ export function InstructorCard({ instructor }: InstructorCardProps) {
     <Paper
       elevation={0}
       sx={{
-        border: "1px solid #e5e7eb",
+        border: "1px solid var(--border-default)",
         borderRadius: 2,
         p: 3,
       }}
@@ -29,11 +29,11 @@ export function InstructorCard({ instructor }: InstructorCardProps) {
         <IconWrapper
           icon="mdi:account-outline"
           size={28}
-          color="#6366f1"
+          color="var(--accent-indigo)"
         />
         <Typography
           variant="h6"
-          sx={{ fontWeight: 600, color: "#1a1f2e" }}
+          sx={{ fontWeight: 600, color: "var(--font-primary)" }}
         >
           Instructor
         </Typography>
@@ -58,19 +58,19 @@ export function InstructorCard({ instructor }: InstructorCardProps) {
           >
             <Typography
               variant="subtitle2"
-              sx={{ fontWeight: 600, color: "#1a1f2e" }}
+              sx={{ fontWeight: 600, color: "var(--font-primary)" }}
             >
               {instructor.name}
             </Typography>
             <IconWrapper
               icon="mdi:check-circle-outline"
               size={24}
-              color="#fbbf24"
+              color="var(--warning-500)"
             />
           </Box>
           <Typography
             variant="body2"
-            sx={{ color: "#6b7280", fontSize: "0.875rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
           >
             {instructor.bio || "Instructor"}
           </Typography>
