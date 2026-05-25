@@ -6,6 +6,7 @@ import { Box, Container, Typography } from "@mui/material";
 
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
+import { ScorecardStaticRenderProvider } from "@/components/scorecard/shared";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 
@@ -125,18 +126,20 @@ export default function ScorecardPdfPage() {
           </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {sectionOrder.map((sectionId) => {
-            switch (sectionId) {
-              case "overview":
-                return <StudentOverviewSection key={sectionId} data={data.overview} readOnly />;
-              case "learning_consumption":
-                return <LearningConsumptionSection key={sectionId} data={data.learningConsumption} />;
-              default:
-                return null;
-            }
-          })}
-        </Box>
+        <ScorecardStaticRenderProvider>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {sectionOrder.map((sectionId) => {
+              switch (sectionId) {
+                case "overview":
+                  return <StudentOverviewSection key={sectionId} data={data.overview} readOnly />;
+                case "learning_consumption":
+                  return <LearningConsumptionSection key={sectionId} data={data.learningConsumption} />;
+                default:
+                  return null;
+              }
+            })}
+          </Box>
+        </ScorecardStaticRenderProvider>
       </Container>
     </Box>
   );
