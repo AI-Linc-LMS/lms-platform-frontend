@@ -6,7 +6,6 @@ import NextLink from "next/link";
 import { useTranslation } from "react-i18next";
 import {
   Box,
-  Button,
   Divider,
   Link,
   Stack,
@@ -24,6 +23,7 @@ import {
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { OtpDigitInput } from "@/components/auth/OtpDigitInput";
 import { useToast } from "@/components/common/Toast";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const primaryBtnSx = {
@@ -235,15 +235,16 @@ export default function ForgotPasswordPage() {
                       />
                     )}
                   </Field>
-                  <Button
+                  <LoadingButton
                     type="submit"
                     fullWidth
                     variant="contained"
-                    disabled={loading}
+                    loading={loading}
+                    loadingText={t("auth.sending")}
                     sx={{ ...primaryBtnSx, mb: 2 }}
                   >
-                    {loading ? t("auth.sending") : t("auth.sendResetCode")}
-                  </Button>
+                    {t("auth.sendResetCode")}
+                  </LoadingButton>
                 </Form>
               )}
             </Formik>
@@ -265,26 +266,29 @@ export default function ForgotPasswordPage() {
               {() => (
                 <Form>
                   <OtpDigitInput name="otp" label={t("auth.otpCode")} />
-                  <Button
+                  <LoadingButton
                     type="submit"
                     fullWidth
                     variant="contained"
-                    disabled={loading}
+                    loading={loading}
+                    loadingText={t("auth.verifying")}
                     sx={{ ...primaryBtnSx, mb: 1.5 }}
                   >
-                    {loading ? t("auth.verifying") : t("auth.forgotPasswordVerifyContinue")}
-                  </Button>
-                  <Button
+                    {t("auth.forgotPasswordVerifyContinue")}
+                  </LoadingButton>
+                  <LoadingButton
                     type="button"
                     fullWidth
                     variant="outlined"
                     onClick={onResend}
-                    disabled={resending || !resetEmail}
+                    disabled={!resetEmail}
+                    loading={resending}
+                    loadingText={t("auth.resending")}
                     size="small"
                     sx={resendBtnSx}
                   >
-                    {resending ? t("auth.resending") : t("auth.resendOtp")}
-                  </Button>
+                    {t("auth.resendOtp")}
+                  </LoadingButton>
                   <Typography
                     variant="caption"
                     component="p"

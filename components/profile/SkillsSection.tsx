@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, Chip, TextField } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile } from "@/lib/services/profile.service";
 
 function normalizeToStringArray(raw: any): string[] {
@@ -171,11 +172,12 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
             >
               {t("profile.cancel")}
             </Button>
-            <Button
+            <LoadingButton
               variant="contained"
               size="small"
               onClick={handleSave}
-              disabled={saving}
+              loading={saving}
+              loadingText={t("profile.saving")}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
@@ -186,8 +188,8 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? t("profile.saving") : t("profile.save")}
-            </Button>
+              {t("profile.save")}
+            </LoadingButton>
           </Box>
         )}
         </Box>

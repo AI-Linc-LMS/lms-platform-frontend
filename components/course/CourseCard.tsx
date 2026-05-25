@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Course } from "./interfaces";
 
@@ -298,10 +299,12 @@ export const CourseCard = memo(
 
           {/* CTA Button */}
           <Box sx={{ mt: "auto" }}>
-            <Button
+            <LoadingButton
               fullWidth
               variant="contained"
               size="large"
+              loading={enrolling}
+              loadingText={t("courses.enrolling")}
               startIcon={
                 <IconWrapper
                   icon={
@@ -313,9 +316,7 @@ export const CourseCard = memo(
                 />
               }
               onClick={isEnrolled ? handleClick : handleEnroll}
-              disabled={
-                !isEnrolled && (!course.enrollment_enabled || enrolling)
-              }
+              disabled={!isEnrolled && !course.enrollment_enabled}
               sx={{
                 backgroundColor: isEnrolled ? "var(--primary-600)" : "var(--primary-500)",
                 color: "var(--font-light)",
@@ -332,17 +333,14 @@ export const CourseCard = memo(
                     "0 6px 20px 0 color-mix(in srgb, var(--primary-500) 52%, transparent)",
                   transform: "translateY(-2px)",
                 },
-                transition: "all 0.2s ease",
               }}
             >
-              {enrolling
-                ? t("courses.enrolling")
-                : isEnrolled
+              {isEnrolled
                 ? t("courses.continueLearning")
                 : course.is_free
                 ? t("courses.enrollNow")
                 : parseFloat(course.price) > 0 ? t("courses.enrollPrice", { price: course.price }) : t("courses.enrollNow")}
-            </Button>
+            </LoadingButton>
           </Box>
         </CardContent>
       </Card>

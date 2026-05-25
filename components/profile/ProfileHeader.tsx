@@ -15,6 +15,7 @@ import {
   TextField,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { ImageUrlDialog } from "./ImageUrlDialog";
 
 interface ProfileHeaderProps {
@@ -562,7 +563,7 @@ export function ProfileHeader({
           >
             {t("profile.cancel")}
           </Button>
-          <Button
+          <LoadingButton
             onClick={async () => {
               if (onEditHeadline) {
                 try {
@@ -577,7 +578,8 @@ export function ProfileHeader({
               }
             }}
             variant="contained"
-            disabled={savingHeadline}
+            loading={savingHeadline}
+            loadingText={t("profile.saving")}
             sx={{
               textTransform: "none",
               fontWeight: 600,
@@ -597,31 +599,10 @@ export function ProfileHeader({
                 color: "var(--font-tertiary)",
                 boxShadow: "none",
               },
-              transition: "all 0.2s ease",
             }}
           >
-            {savingHeadline ? (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 16,
-                    height: 16,
-                    border: "2px solid color-mix(in srgb, var(--font-light) 35%, transparent)",
-                    borderTop: "2px solid var(--font-light)",
-                    borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite",
-                    "@keyframes spin": {
-                      "0%": { transform: "rotate(0deg)" },
-                      "100%": { transform: "rotate(360deg)" },
-                    },
-                  }}
-                />
-                {t("profile.saving")}
-              </Box>
-            ) : (
-              t("profile.save")
-            )}
-          </Button>
+            {t("profile.save")}
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 

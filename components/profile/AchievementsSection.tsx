@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { UserProfile, Achievement } from "@/lib/services/profile.service";
+import { LoadingButton } from "@/components/common/LoadingButton";
 
 interface AchievementsSectionProps {
   profile: UserProfile;
@@ -252,23 +253,24 @@ export function AchievementsSection({
               >
               {t("profile.cancel")}
             </Button>
-            <Button
+            <LoadingButton
               variant="contained"
               size="small"
               onClick={handleSave}
-                disabled={saving}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  backgroundColor: "var(--accent-purple)",
-                  borderRadius: 1.5,
-                  "&:hover": {
-                    backgroundColor: "var(--accent-indigo-dark)",
-                  },
-                }}
-              >
-                {saving ? t("profile.saving") : t("profile.save")}
-              </Button>
+              loading={saving}
+              loadingText={t("profile.saving")}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "var(--accent-purple)",
+                borderRadius: 1.5,
+                "&:hover": {
+                  backgroundColor: "var(--accent-indigo-dark)",
+                },
+              }}
+            >
+              {t("profile.save")}
+            </LoadingButton>
             </Box>
           )}
           </Box>

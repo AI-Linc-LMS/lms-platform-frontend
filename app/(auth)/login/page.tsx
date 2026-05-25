@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { SignInLoader } from "@/components/common/SignInLoader";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import {
   TextField,
-  Button,
   Typography,
   Box,
   Divider,
@@ -278,11 +278,12 @@ export default function LoginPage() {
               </Box>
 
               {/* Login Button */}
-              <Button
+              <LoadingButton
                 type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+                loading={loading}
+                loadingText={t("auth.signingIn")}
                 sx={{
                   py: 1.25,
                   mb: 2,
@@ -306,8 +307,8 @@ export default function LoginPage() {
                   },
                 }}
               >
-                {loading ? t("auth.signingIn") : t("auth.login")}
-              </Button>
+                {t("auth.login")}
+              </LoadingButton>
 
               {/* Sign up link */}
               <Box sx={{ textAlign: "center", mt: 1 }}>

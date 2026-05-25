@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField, Checkbox, FormControlLabel, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile, Experience } from "@/lib/services/profile.service";
 
 interface ExperienceSectionProps {
@@ -262,14 +263,15 @@ export function ExperienceSection({
             >
               {t("profile.cancel")}
             </Button>
-            <Button
+            <LoadingButton
               variant="contained"
               size="small"
               onClick={handleSave}
-                disabled={saving}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
+              loading={saving}
+              loadingText={t("profile.saving")}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
                 backgroundColor: "var(--accent-indigo)",
                 borderRadius: "24px",
                 px: 2,
@@ -277,10 +279,10 @@ export function ExperienceSection({
                   backgroundColor: "var(--accent-indigo-dark)",
                 },
                 transition: "all 0.2s ease",
-                }}
-              >
-                {saving ? t("profile.saving") : t("profile.save")}
-              </Button>
+              }}
+            >
+              {t("profile.save")}
+            </LoadingButton>
             </Box>
           )}
           </Box>

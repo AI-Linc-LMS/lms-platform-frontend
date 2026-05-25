@@ -147,3 +147,9 @@ export function useHideLeaderboardView(): boolean {
     clientInfo?.features?.some((f) => f.name === "no_leaderboard_view")
   );
 }
+
+/** Returns true when the "course" feature is enabled for this client. */
+export function useIsCourseEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "course"));
+}
