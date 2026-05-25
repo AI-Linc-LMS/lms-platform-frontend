@@ -1,16 +1,16 @@
 "use client";
 
 import { Box, Paper, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface BrandingSectionCardProps {
   icon: string;
   title: string;
   description?: string;
-  /** Optional step number for guided flow (1, 2, 3…). */
-  step?: number;
+  /** Right-aligned slot for actions (toggles, reset buttons, etc.). */
+  action?: ReactNode;
   children: ReactNode;
 }
 
@@ -18,18 +18,15 @@ export function BrandingSectionCard({
   icon,
   title,
   description,
-  step,
+  action,
   children,
 }: BrandingSectionCardProps) {
-  const { t } = useTranslation("common");
-
   return (
     <Paper
       elevation={0}
       sx={{
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 2,
+        border: "1px solid var(--border-default)",
+        borderRadius: 2.5,
         overflow: "hidden",
         bgcolor: "background.paper",
       }}
@@ -38,15 +35,15 @@ export function BrandingSectionCard({
         sx={{
           px: 2.5,
           py: 2,
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          borderBottom: "1px solid var(--border-default)",
           background: (theme) =>
-            theme.palette.mode === "dark"
-              ? "color-mix(in srgb, var(--font-light) 4%, transparent)"
-              : "linear-gradient(180deg, var(--background) 0%, var(--surface) 100%)",
+            `linear-gradient(180deg, ${alpha(
+              theme.palette.primary.main,
+              0.03
+            )} 0%, var(--surface) 100%)`,
           display: "flex",
-          alignItems: "flex-start",
-          gap: 1.5,
+          alignItems: "center",
+          gap: 1.75,
         }}
       >
         <Box
@@ -57,35 +54,32 @@ export function BrandingSectionCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "primary.main",
-            color: "primary.contrastText",
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+            color: "primary.main",
             flexShrink: 0,
           }}
         >
           <IconWrapper icon={icon} size={22} style={{ color: "currentColor" }} />
         </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} component="h2">
-            {typeof step === "number" ? (
-              <Box
-                component="span"
-                sx={{
-                  color: "primary.main",
-                  fontWeight: 800,
-                  mr: 0.5,
-                }}
-              >
-                {t("branding.stepPrefix", { n: step })}{" "}
-              </Box>
-            ) : null}
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={700}
+            component="h2"
+            sx={{ color: "var(--font-primary)", letterSpacing: "-0.01em" }}
+          >
             {title}
           </Typography>
           {description ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.5 }}>
+            <Typography
+              variant="body2"
+              sx={{ mt: 0.25, lineHeight: 1.5, color: "var(--font-secondary)" }}
+            >
               {description}
             </Typography>
           ) : null}
         </Box>
+        {action ? <Box sx={{ flexShrink: 0 }}>{action}</Box> : null}
       </Box>
       <Box sx={{ p: 2.5 }}>{children}</Box>
     </Paper>

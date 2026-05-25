@@ -78,7 +78,7 @@ export default function AdminProfilePage() {
     return (
       <MainLayout fullWidthContent>
         <Box sx={{ py: 12, textAlign: "center", px: 2 }}>
-          <Typography sx={{ color: "#6b7280", fontSize: "1rem" }}>
+          <Typography sx={{ color: "var(--font-secondary)", fontSize: "1rem" }}>
             {t("profile.notFound")}
           </Typography>
           <Button
@@ -120,7 +120,7 @@ export default function AdminProfilePage() {
             onClick={() => router.back()}
             sx={{
               textTransform: "none",
-              color: "#64748b",
+              color: "var(--font-secondary)",
               fontWeight: 600,
               "&:hover": { backgroundColor: "rgba(100, 116, 139, 0.08)" },
             }}
@@ -138,8 +138,8 @@ export default function AdminProfilePage() {
               px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
               pt: 0,
               pb: 3,
-              backgroundColor: "#ffffff",
-              borderBottom: "1px solid rgba(0,0,0,0.06)",
+              backgroundColor: "var(--card-bg)",
+              borderBottom: "1px solid var(--border-default)",
             }}
           >
             <ProfileHeader
@@ -202,7 +202,7 @@ export default function AdminProfilePage() {
                         borderRadius: 2,
                       }}
                     >
-                      <Typography variant="subtitle2" sx={{ color: "#64748b", mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ color: "var(--font-secondary)", mb: 1 }}>
                         Organization
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -269,10 +269,10 @@ function AdminProfileInfoCard({
       >
         {fields.map(({ label, value }) => (
           <Box key={label}>
-            <Typography variant="caption" sx={{ color: "#6b7280", fontSize: "0.75rem" }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}>
               {label}
             </Typography>
-            <Typography variant="body2" sx={{ color: "#111827", mt: 0.25, display: "block" }}>
+            <Typography variant="body2" sx={{ color: "var(--font-primary)", mt: 0.25, display: "block" }}>
               {value || "-"}
             </Typography>
           </Box>

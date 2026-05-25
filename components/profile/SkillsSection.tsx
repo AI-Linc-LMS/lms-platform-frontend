@@ -179,10 +179,10 @@ export function SkillsSection({ profile, onSave, onRemoveSection }: SkillsSectio
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: "var(--accent-indigo)",
+                backgroundColor: "var(--primary-500)",
                 borderRadius: "24px",
                 px: 2,
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+                "&:hover": { backgroundColor: "var(--primary-700)" },
                 transition: "all 0.2s ease",
               }}
             >

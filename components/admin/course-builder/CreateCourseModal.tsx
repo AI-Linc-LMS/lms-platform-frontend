@@ -223,13 +223,13 @@ export function CreateCourseModal({
               )
             }
             sx={{
-              bgcolor: "var(--accent-indigo)",
+              bgcolor: "var(--primary-500)",
               color: "var(--font-light)",
-              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              "&:hover": { bgcolor: "var(--primary-700)" },
               "&.Mui-disabled": {
                 color: "var(--font-secondary)",
                 backgroundColor:
-                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                  "color-mix(in srgb, var(--primary-500) 24%, var(--surface) 76%)",
               },
             }}
           >

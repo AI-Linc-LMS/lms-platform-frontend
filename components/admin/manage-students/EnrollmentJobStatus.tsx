@@ -294,7 +294,7 @@ export function EnrollmentJobStatus({
           mb: 3,
           borderRadius: 2,
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--card-bg)",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -310,8 +310,8 @@ export function EnrollmentJobStatus({
                     : job.status === "FAILED"
                     ? "#fee2e2"
                     : job.status === "IN_PROGRESS"
-                    ? "#dbeafe"
-                    : "#f3f4f6",
+                    ? "color-mix(in srgb, var(--primary-500) 16%, var(--surface) 84%)"
+                    : "var(--surface)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -334,8 +334,8 @@ export function EnrollmentJobStatus({
                     : job.status === "FAILED"
                     ? "#ef4444"
                     : job.status === "IN_PROGRESS"
-                    ? "#3b82f6"
-                    : "#6b7280"
+                    ? "var(--primary-500)"
+                    : "var(--font-tertiary)"
                 }
               />
             </Box>
@@ -344,13 +344,13 @@ export function EnrollmentJobStatus({
                 variant="h6"
                 sx={{
                   fontWeight: 600,
-                  color: "#111827",
+                  color: "var(--font-primary)",
                   fontSize: { xs: "1rem", sm: "1.25rem" },
                 }}
               >
                 Enrollment Job Status
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mt: 0.5 }}>
+              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
                 Task ID: {job.task_id.slice(0, 8)}...
               </Typography>
             </Box>
@@ -374,15 +374,16 @@ export function EnrollmentJobStatus({
             mb: 3,
             borderRadius: 2,
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            backgroundColor: "#eff6ff",
-            border: "1px solid #bfdbfe",
+            backgroundColor:
+              "color-mix(in srgb, var(--primary-500) 10%, var(--surface) 90%)",
+            border: "1px solid color-mix(in srgb, var(--primary-500) 28%, transparent)",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-            <CircularProgress size={24} sx={{ color: "#3b82f6" }} />
+            <CircularProgress size={24} sx={{ color: "var(--primary-500)" }} />
             <Typography
               variant="body2"
-              sx={{ fontWeight: 500, color: "#1e40af" }}
+              sx={{ fontWeight: 500, color: "var(--primary-700)" }}
             >
               Processing enrollment job...
             </Typography>
@@ -391,9 +392,10 @@ export function EnrollmentJobStatus({
             sx={{
               height: 8,
               borderRadius: 4,
-              backgroundColor: "#dbeafe",
+              backgroundColor:
+                "color-mix(in srgb, var(--primary-500) 16%, var(--surface) 84%)",
               "& .MuiLinearProgress-bar": {
-                backgroundColor: "#3b82f6",
+                backgroundColor: "var(--primary-500)",
               },
             }}
           />
@@ -497,24 +499,25 @@ export function EnrollmentJobStatus({
               width: 48,
               height: 48,
               borderRadius: 2,
-              backgroundColor: "#eef2ff",
+              backgroundColor:
+                "color-mix(in srgb, var(--primary-500) 14%, var(--surface) 86%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <IconWrapper icon="mdi:account-group" size={24} color="#6366f1" />
+            <IconWrapper icon="mdi:account-group" size={24} color="var(--primary-500)" />
           </Box>
           <Box>
             <Typography
               variant="caption"
-              sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+              sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
             >
               Total Students
             </Typography>
             <Typography
               variant="h5"
-              sx={{ fontWeight: 700, color: "#111827", mt: 0.5 }}
+              sx={{ fontWeight: 700, color: "var(--font-primary)", mt: 0.5 }}
             >
               {job.students.length}
             </Typography>

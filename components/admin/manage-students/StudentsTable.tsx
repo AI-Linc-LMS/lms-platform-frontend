@@ -512,7 +512,7 @@ export function StudentsTable({
                           <Typography
                             variant="caption"
                             sx={{
-                              color: "#6b7280",
+                              color: "var(--font-secondary)",
                               fontSize: { xs: "0.65rem", sm: "0.75rem" },
                               display: "block",
                               overflow: "hidden",
@@ -535,8 +535,9 @@ export function StudentsTable({
                         label={student.enrollment_count}
                         size="small"
                         sx={{
-                          backgroundColor: "#eef2ff",
-                          color: "#6366f1",
+                          backgroundColor:
+                            "color-mix(in srgb, var(--primary-500) 14%, var(--surface) 86%)",
+                          color: "var(--primary-700)",
                           fontWeight: 600,
                           fontSize: { xs: "0.7rem", sm: "0.75rem" },
                         }}
@@ -552,7 +553,7 @@ export function StudentsTable({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#374151",
+                          color: "var(--font-primary)",
                           fontSize: { xs: "0.75rem", sm: "0.875rem" },
                           overflow: "hidden",
                           textOverflow: "ellipsis",

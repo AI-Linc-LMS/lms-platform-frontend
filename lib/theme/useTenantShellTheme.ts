@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { alpha } from "@mui/material/styles";
-import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useClientInfo, useThemePreview } from "@/lib/contexts/ClientInfoContext";
 import { normalizeThemeSettings } from "./normalizeThemeSettings";
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -52,9 +52,14 @@ function contrastRatio(aHex: string, bHex: string): number {
  */
 export function useTenantShellTheme() {
   const { clientInfo } = useClientInfo();
+  const { themeOverride } = useThemePreview();
 
   return useMemo(() => {
-    const t = normalizeThemeSettings(clientInfo?.theme_settings);
+    // `themeOverride` is set by the admin Branding page while the user is
+    // editing — it lets the sidebar/nav reflect the draft instantly without
+    // waiting for the save round-trip to ClientInfoContext.
+    const source = themeOverride ?? clientInfo?.theme_settings;
+    const t = normalizeThemeSettings(source);
     const shellBg = (t.secondary500 || "").trim() || "#12293a";
     const nav = (t.fontLightNav || "").trim() || "#ffffff";
     const p300 = (t.primary300 || "").trim() || "#63b6d3";
@@ -109,5 +114,5 @@ export function useTenantShellTheme() {
       /** Inactive icon hover glow on dark shell */
       navIconHoverDim: alpha(nav, 0.2),
     };
-  }, [clientInfo]);
+  }, [clientInfo, themeOverride]);
 }

@@ -476,7 +476,7 @@ export default function JobsV2Page() {
             flexDirection: "column",
             gap: 2,
             p: 2,
-            background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)",
+            background: "linear-gradient(135deg, var(--surface) 0%, var(--background) 50%, var(--card-bg) 100%)",
             borderBottom: "1px solid",
             borderColor: "divider",
             position: "sticky",

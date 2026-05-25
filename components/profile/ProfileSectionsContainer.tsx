@@ -237,8 +237,8 @@ export function ProfileSectionsContainer({
               px: 3,
               py: 1.25,
               borderRadius: 2,
-              backgroundColor: "var(--accent-indigo)",
-              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              backgroundColor: "var(--primary-500)",
+              "&:hover": { backgroundColor: "var(--primary-700)" },
             }}
           >
             Add Section

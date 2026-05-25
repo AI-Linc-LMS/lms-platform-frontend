@@ -64,27 +64,31 @@ export const InterviewHeader = memo(function InterviewHeader({
         justifyContent: "space-between",
         px: 3,
         py: 2,
-        backgroundColor: "#ffffff",
-        borderBottom: "1px solid #e5e7eb",
+        backgroundColor: "var(--card-bg)",
+        borderBottom: "1px solid var(--border-default)",
         boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         {!interviewStarted && onBack && (
-          <IconButton onClick={onBack} sx={{ color: "#374151" }}>
+          <IconButton onClick={onBack} sx={{ color: "var(--font-primary)" }}>
             <IconWrapper icon="mdi:arrow-left" size={24} />
           </IconButton>
         )}
         <Box>
           <Typography
             variant="h6"
-            sx={{ fontWeight: 700, fontSize: "1.25rem", color: "#111827" }}
+            sx={{
+              fontWeight: 700,
+              fontSize: "1.25rem",
+              color: "var(--font-primary)",
+            }}
           >
             {cleanInterviewTitle(title)}
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.75rem" }}
           >
             {topic} • {difficulty}
           </Typography>
@@ -165,11 +169,11 @@ export const InterviewHeader = memo(function InterviewHeader({
               variant="contained"
               size="small"
               sx={{
-                backgroundColor: "#ef4444",
-                color: "#ffffff",
+                backgroundColor: "var(--error-500, #ef4444)",
+                color: "var(--font-light)",
                 textTransform: "none",
                 "&:hover": {
-                  backgroundColor: "#dc2626",
+                  backgroundColor: "var(--error-600, #dc2626)",
                 },
               }}
               startIcon={<IconWrapper icon="mdi:record" size={18} />}
@@ -182,12 +186,12 @@ export const InterviewHeader = memo(function InterviewHeader({
               onClick={onEndInterview}
               disabled={endInterviewDisabled}
               sx={{
-                borderColor: "#d1d5db",
-                color: "#374151",
+                borderColor: "var(--border-default)",
+                color: "var(--font-primary)",
                 textTransform: "none",
                 "&:hover": {
-                  borderColor: "#9ca3af",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--font-tertiary)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >

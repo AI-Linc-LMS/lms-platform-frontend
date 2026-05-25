@@ -147,11 +147,11 @@ export function ManageStudentsHeader({
               size="medium"
               sx={{
                 minWidth: { xs: "100%", sm: 168 },
-                backgroundColor: "var(--accent-indigo)",
+                backgroundColor: "var(--primary-500)",
                 color: "var(--font-light)",
-                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                boxShadow: "0 2px 8px color-mix(in srgb, var(--primary-500) 35%, transparent)",
                 "&:hover": {
-                  backgroundColor: "var(--accent-indigo-dark)",
+                  backgroundColor: "var(--primary-700)",
                 },
               }}
               startIcon={<IconWrapper icon="mdi:account-plus" size={20} />}

@@ -149,7 +149,7 @@ export function PersonalInformationCard({
                 onClick={onSave}
                 disabled={saving}
                 size="small"
-                sx={{ bgcolor: "var(--accent-indigo)", color: "var(--font-light)" }}
+                sx={{ bgcolor: "var(--primary-500)", color: "var(--font-light)", "&:hover": { bgcolor: "var(--primary-700)" } }}
               >
                 {saving ? t("manageStudents.saving") : t("manageStudents.save")}
               </Button>

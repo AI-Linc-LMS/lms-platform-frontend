@@ -7,7 +7,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { createTheme } from "@mui/material/styles";
 import { theme as baseTheme } from "@/lib/theme";
 import { isRtl } from "@/lib/i18n";
-import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useClientInfo, useThemePreview } from "@/lib/contexts/ClientInfoContext";
 import type { ClientInfo } from "@/lib/services/client.service";
 import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 
@@ -61,11 +61,18 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const { i18n } = useTranslation();
   const { clientInfo } = useClientInfo();
+  const { themeOverride } = useThemePreview();
   const lng = i18n.language || "en";
   const direction = isRtl(lng) ? "rtl" : "ltr";
 
   const source = clientInfo ?? initialClient ?? null;
-  const t = normalizeThemeSettings(source?.theme_settings);
+  // While the admin Branding page edits, themeOverride feeds the draft into
+  // the MUI theme so Button / Chip / Card etc. reflect it instantly.
+  const rawTheme = themeOverride ?? source?.theme_settings;
+  // Memoize so a parent re-render doesn't bust the createTheme cache via a
+  // fresh `t` object reference. createTheme is expensive — only re-run when
+  // the underlying raw theme actually changes.
+  const t = useMemo(() => normalizeThemeSettings(rawTheme), [rawTheme]);
 
   const theme = useMemo(() => {
     const backgroundDefault =

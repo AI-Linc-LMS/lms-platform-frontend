@@ -310,12 +310,12 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 height: 40,
                 borderRadius: 1,
                 overflow: "hidden",
-                backgroundColor: "#ffffff",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "var(--card-bg)",
+                border: "1px solid var(--border-default)",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  borderColor: "#6366f1",
+                  borderColor: "var(--accent-indigo)",
                   transform: "scale(1.05)",
                 },
               }}
@@ -545,7 +545,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                             width: 24,
                             height: 24,
                             borderRadius: "50%",
-                            backgroundColor: "#e5e7eb",
+                            backgroundColor: "var(--border-default)",
                             animation: "pulse 1.5s ease-in-out infinite",
                             "@keyframes pulse": {
                               "0%, 100%": { opacity: 1 },
@@ -557,7 +557,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                           sx={{
                             width: 80,
                             height: 12,
-                            backgroundColor: "#e5e7eb",
+                            backgroundColor: "var(--border-default)",
                             borderRadius: 1,
                             animation: "pulse 1.5s ease-in-out infinite",
                           }}
@@ -648,7 +648,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                             },
                             "&:focus": linkedinUrl
                               ? {
-                                  outline: "2px solid #6366f1",
+                                  outline: "2px solid var(--accent-indigo)",
                                   outlineOffset: "2px",
                                 }
                               : {},
@@ -696,7 +696,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                             variant="body2"
                             sx={{
                               fontSize: "0.875rem",
-                              color: "#374151",
+                              color: "var(--font-primary)",
                               maxWidth: 150,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -712,7 +712,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                             sx={{
                               fontSize: "0.75rem",
                               fontWeight: 500,
-                              color: "#17627A",
+                              color: "var(--primary-700)",
                             }}
                           >
                             {timeDisplay}
@@ -734,7 +734,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#ef4444",
+                    color: "var(--error-500)",
                     textAlign: "center",
                     py: 2,
                     fontSize: "0.875rem",
@@ -746,7 +746,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#9ca3af",
+                    color: "var(--font-tertiary)",
                     textAlign: "center",
                     py: 2,
                     fontSize: "0.875rem",
@@ -892,7 +892,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   minWidth: 20,
                   left: -200,
                   borderRadius: 2,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                 },
               }}
@@ -975,9 +975,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 width: 40,
                 height: 40,
                 cursor: "pointer",
-                border: "2px solid #e5e7eb",
+                border: "2px solid var(--border-default)",
                 "&:hover": {
-                  borderColor: "#6366f1",
+                  borderColor: "var(--accent-indigo)",
                 },
               }}
             >
@@ -994,7 +994,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               width: 36,
               height: 36,
               cursor: "pointer",
-              border: "2px solid #e5e7eb",
+              border: "2px solid var(--border-default)",
             }}
           >
             {getUserInitials(user)}
@@ -1021,7 +1021,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {getUserDisplayName(user)}
               </Typography>
-              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {user?.email || ""}
               </Typography>
             </Box>
