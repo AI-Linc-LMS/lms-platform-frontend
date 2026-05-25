@@ -162,6 +162,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:forum",
       featureName: "community_forum",
     },
+    {
+      label: "Support",
+      labelKey: "nav.support",
+      path: "/tickets",
+      icon: "mdi:ticket-confirmation-outline",
+      featureName: "support",
+    },
   ];
 
   // Admin navigation items - all routes start with /admin/
@@ -241,6 +248,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/notifications",
       icon: "mdi:bell-badge",
       featureName: "admin_notifications",
+    },
+    {
+      label: "Tickets",
+      labelKey: "nav.adminTickets",
+      path: "/admin/tickets",
+      icon: "mdi:ticket-confirmation-outline",
+      featureName: "admin_tickets",
     },
     // {
     //   label: "Payment",
@@ -357,7 +371,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
         }
+        // Support is always available to every signed-in user
+        if (!effectiveAdminMode && item.featureName === "support") {
+          return true;
+        }
         if (effectiveAdminMode && item.featureName === "admin_scorecard") {
+          return true;
+        }
+        if (effectiveAdminMode && item.featureName === "admin_tickets") {
           return true;
         }
         const any = item.featureNamesAny;

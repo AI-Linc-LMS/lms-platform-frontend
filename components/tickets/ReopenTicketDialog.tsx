@@ -1,55 +1,49 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  TextField,
-  MenuItem,
   Box,
   Typography,
+  TextField,
+  Button,
   CircularProgress,
-  IconButton,
   Stack,
+  IconButton,
 } from "@mui/material";
-import Link from "next/link";
-import { IconWrapper } from "./IconWrapper";
-import {
-  ticketService,
-  TICKET_CATEGORY_OPTIONS,
-  TicketCategory,
-} from "@/lib/services/ticket.service";
+import { IconWrapper } from "@/components/common/IconWrapper";
+import { useToast } from "@/components/common/Toast";
 import { uploadFile } from "@/lib/services/file-upload.service";
-import { config } from "@/lib/config";
-import { useToast } from "./Toast";
+import { ticketService, Ticket } from "@/lib/services/ticket.service";
 
-interface ReportIssueDialogProps {
+interface Props {
   open: boolean;
+  ticketId: number;
+  clientId: number;
   onClose: () => void;
-  courseId?: number;
-  contentId?: number;
+  onReopened: (ticket: Ticket) => void;
 }
 
 const MAX_ATTACHMENTS = 5;
 const ACCEPTED_TYPES =
   "image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf";
 
-export function ReportIssueDialog({
+export function ReopenTicketDialog({
   open,
+  ticketId,
+  clientId,
   onClose,
-  courseId,
-  contentId,
-}: ReportIssueDialogProps) {
-  const [issueType, setIssueType] = useState<TicketCategory | "">("");
-  const [description, setDescription] = useState("");
+  onReopened,
+}: Props) {
+  const { showToast } = useToast();
+  const [details, setDetails] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { showToast } = useToast();
 
   const handleAddFiles = (incoming: FileList | null) => {
     if (!incoming) return;
@@ -58,7 +52,7 @@ export function ReportIssueDialog({
       const room = MAX_ATTACHMENTS - prev.length;
       if (room <= 0) {
         showToast(
-          `You can attach up to ${MAX_ATTACHMENTS} files per ticket.`,
+          `You can attach up to ${MAX_ATTACHMENTS} files.`,
           "warning",
         );
         return prev;
@@ -71,16 +65,28 @@ export function ReportIssueDialog({
   const removeFileAt = (index: number) =>
     setFiles((prev) => prev.filter((_, i) => i !== index));
 
+  const reset = () => {
+    setDetails("");
+    setFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleClose = () => {
+    if (submitting || uploading) return;
+    reset();
+    onClose();
+  };
+
   const handleSubmit = async () => {
-    if (!issueType || !description.trim()) {
-      showToast("Please fill in all required fields", "error");
+    if (!details.trim()) {
+      showToast(
+        "Please describe why you need to reopen this ticket.",
+        "error",
+      );
       return;
     }
-
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      const clientId = Number(config.clientId);
-
       let attachmentUrls: string[] = [];
       if (files.length > 0) {
         setUploading(true);
@@ -91,40 +97,27 @@ export function ReportIssueDialog({
         setUploading(false);
       }
 
-      const ticket = await ticketService.create(clientId, {
-        category: issueType,
-        description: description.trim(),
-        user_attachments: attachmentUrls,
-        course_id: courseId,
-        content_id: contentId,
-        page_url:
-          typeof window !== "undefined" ? window.location.href : undefined,
+      const updated = await ticketService.reopen(clientId, ticketId, {
+        additional_details: details.trim(),
+        additional_attachments: attachmentUrls,
       });
 
       showToast(
-        `Ticket #${ticket.id} created. We'll get back to you soon — track it in My Tickets.`,
+        "Ticket reopened. Our team will get back to you shortly.",
         "success",
       );
-      handleClose();
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to send. Please try again.";
-      showToast(message, "error");
+      reset();
+      onReopened(updated);
+      onClose();
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : "Failed to reopen ticket",
+        "error",
+      );
     } finally {
       setSubmitting(false);
       setUploading(false);
     }
-  };
-
-  const handleClose = () => {
-    if (submitting || uploading) return;
-    setIssueType("");
-    setDescription("");
-    setFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    onClose();
   };
 
   return (
@@ -133,11 +126,7 @@ export function ReportIssueDialog({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-        },
-      }}
+      PaperProps={{ sx: { borderRadius: 3 } }}
     >
       <DialogTitle
         sx={{
@@ -145,8 +134,9 @@ export function ReportIssueDialog({
           alignItems: "center",
           gap: 1.5,
           pb: 1,
-          fontWeight: 600,
-          fontSize: "1.25rem",
+          fontWeight: 700,
+          fontSize: "1.15rem",
+          color: "var(--ticket-text-strong)",
         }}
       >
         <Box
@@ -154,86 +144,45 @@ export function ReportIssueDialog({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: "var(--ticket-brand)",
+            background:
+              "linear-gradient(135deg, var(--ticket-reopen) 0%, var(--warning-amber) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
+            boxShadow: "0 4px 12px rgba(249,115,22,0.28)",
           }}
         >
-          <IconWrapper icon="mdi:headset" size={24} color="var(--font-light)" />
+          <IconWrapper icon="mdi:lock-reset" size={22} color="var(--font-light)" />
         </Box>
-        Support and Help
+        Reopen this ticket
       </DialogTitle>
 
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
-          <Typography variant="body2" sx={{ color: "var(--font-muted)", fontWeight: 500 }}>
-            Raise a support ticket and our team will get back to you. You can
-            track all your tickets in{" "}
-            <Link
-              href="/tickets"
-              style={{
-                color: "var(--ticket-brand)",
-                textDecoration: "underline",
-                fontWeight: 600,
-              }}
-              onClick={handleClose}
-            >
-              My Tickets
-            </Link>
-            .
+          <Typography
+            variant="body2"
+            sx={{ color: "var(--font-muted)", fontWeight: 500 }}
+          >
+            Let our team know what's still not working. They'll re‑attend to
+            your ticket and respond by email and in‑app notification.
           </Typography>
 
           <TextField
-            select
-            label="What do you need help with?"
-            value={issueType}
-            onChange={(e) => setIssueType(e.target.value as TicketCategory)}
-            fullWidth
-            required
-            disabled={submitting}
-            InputLabelProps={{
-              sx: {
-                color: "var(--font-muted)",
-                fontWeight: 500,
-                "&.Mui-focused": { color: "var(--ticket-brand)" },
-              },
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 1.5,
-                "& fieldset": { borderColor: "var(--border-light)" },
-                "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
-              },
-              "& .MuiSelect-select, & .MuiInputBase-input": {
-                color: "var(--ticket-text-strong)",
-                fontWeight: 500,
-              },
-            }}
-          >
-            {TICKET_CATEGORY_OPTIONS.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            label="What's still not resolved?"
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
             multiline
-            rows={4}
+            rows={5}
             fullWidth
             required
             disabled={submitting}
-            placeholder="Describe your question or issue..."
+            placeholder="Describe what you tried, what didn't work, and any new information that might help."
             InputLabelProps={{
               sx: {
                 color: "var(--font-muted)",
                 fontWeight: 500,
-                "&.Mui-focused": { color: "var(--ticket-brand)" },
+                "&.Mui-focused": { color: "var(--ticket-reopen)" },
               },
             }}
             sx={{
@@ -241,16 +190,14 @@ export function ReportIssueDialog({
                 borderRadius: 1.5,
                 "& fieldset": { borderColor: "var(--border-light)" },
                 "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
+                "&.Mui-focused fieldset": { borderColor: "var(--ticket-reopen)" },
               },
               "& .MuiInputBase-input, & .MuiInputBase-inputMultiline": {
                 color: "var(--ticket-text-strong)",
                 fontWeight: 500,
               },
               "& .MuiInputBase-input::placeholder, & .MuiInputBase-inputMultiline::placeholder":
-                {
-                  color: "var(--font-secondary)",
-                  opacity: 1,
-                },
+                { color: "var(--font-secondary)", opacity: 1 },
             }}
           />
 
@@ -268,48 +215,43 @@ export function ReportIssueDialog({
               !submitting && !uploading && fileInputRef.current?.click()
             }
             sx={{
-              border: "2px dashed rgba(0,0,0,0.12)",
+              border: "1.5px dashed var(--border-light)",
               borderRadius: 1.5,
               p: 2,
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              gap: 2,
+              gap: 1.5,
               backgroundColor: "var(--surface)",
               cursor: submitting || uploading ? "default" : "pointer",
               opacity: submitting || uploading ? 0.7 : 1,
-              transition: "all 0.2s ease",
+              transition: "all 0.15s ease",
               "&:hover": {
                 borderColor:
-                  submitting || uploading ? undefined : "var(--ticket-brand)",
+                  submitting || uploading ? undefined : "var(--ticket-reopen)",
                 backgroundColor:
-                  submitting || uploading
-                    ? undefined
-                    : "rgba(66, 133, 244, 0.04)",
+                  submitting || uploading ? undefined : "var(--ticket-reopen-bg)",
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <IconWrapper
-                icon="mdi:image-plus"
-                size={24}
-                color={
-                  files.length > 0
-                    ? "var(--ats-success-muted)"
-                    : "var(--font-secondary)"
-                }
-              />
-              <Typography
-                variant="body2"
-                sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}
-              >
-                {uploading
-                  ? "Uploading attachments..."
-                  : files.length > 0
-                    ? `${files.length} file${files.length === 1 ? "" : "s"} attached — click to add more`
-                    : `Attach screenshots / docs (optional, up to ${MAX_ATTACHMENTS})`}
-              </Typography>
-            </Box>
+            <IconWrapper
+              icon="mdi:paperclip"
+              size={22}
+              color={
+                files.length > 0
+                  ? "var(--ats-success-muted)"
+                  : "var(--font-secondary)"
+              }
+            />
+            <Typography
+              variant="body2"
+              sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}
+            >
+              {uploading
+                ? "Uploading attachments..."
+                : files.length > 0
+                  ? `${files.length} file${files.length === 1 ? "" : "s"} attached — click to add more`
+                  : `Attach screenshots / docs (optional, up to ${MAX_ATTACHMENTS})`}
+            </Typography>
           </Box>
 
           {files.length > 0 && (
@@ -323,8 +265,8 @@ export function ReportIssueDialog({
                     justifyContent: "space-between",
                     gap: 1,
                     p: 1,
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    borderRadius: 1,
+                    border: "1px solid var(--border-default)",
+                    borderRadius: 1.5,
                     backgroundColor: "var(--card-bg)",
                   }}
                 >
@@ -344,7 +286,8 @@ export function ReportIssueDialog({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "var(--font-muted)",
+                        color: "var(--ticket-text-strong)",
+                        fontWeight: 500,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -380,45 +323,48 @@ export function ReportIssueDialog({
             textTransform: "none",
             fontWeight: 600,
             color: "var(--font-primary-dark)",
-            "&:hover": {
-              backgroundColor: "var(--ticket-row-divider)",
-            },
+            "&:hover": { backgroundColor: "var(--ticket-row-divider)" },
           }}
         >
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={submitting || uploading || !issueType || !description.trim()}
+          disabled={submitting || uploading || !details.trim()}
           variant="contained"
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            backgroundColor: "var(--ticket-brand)",
-            color: "var(--font-light)",
-            boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
-            "&:hover": {
-              backgroundColor: "var(--ticket-brand-hover)",
-              boxShadow: "0 6px 16px rgba(37,99,235,0.32)",
-            },
-            "&.Mui-disabled": {
-              backgroundColor: "var(--border-default)",
-              color: "var(--font-tertiary)",
-            },
-          }}
           startIcon={
             submitting || uploading ? (
               <CircularProgress size={16} color="inherit" />
             ) : (
-              <IconWrapper icon="mdi:send" size={18} />
+              <IconWrapper icon="mdi:lock-reset" size={18} />
             )
           }
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            px: 2.5,
+            borderRadius: 999,
+            background:
+              "linear-gradient(135deg, var(--ticket-reopen) 0%, var(--warning-amber) 100%)",
+            color: "var(--font-light)",
+            boxShadow: "0 4px 12px rgba(249,115,22,0.28)",
+            "&:hover": {
+              background:
+                "linear-gradient(135deg, var(--ticket-reopen-hover) 0%, var(--proctoring-strong-dark) 100%)",
+              boxShadow: "0 6px 16px rgba(249,115,22,0.36)",
+            },
+            "&.Mui-disabled": {
+              background: "var(--border-default)",
+              color: "var(--font-tertiary)",
+              boxShadow: "none",
+            },
+          }}
         >
           {uploading
             ? "Uploading..."
             : submitting
-              ? "Submitting..."
-              : "Submit ticket"}
+              ? "Reopening..."
+              : "Reopen ticket"}
         </Button>
       </DialogActions>
     </Dialog>

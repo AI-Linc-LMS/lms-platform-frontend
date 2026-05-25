@@ -25,7 +25,9 @@
     "adminAttendance": "الحضور",
     "scorecard": "بطاقة الأداء",
     "branding": "العلامة والمظهر",
-    "certificateUploads": "رفع الشهادات"
+    "certificateUploads": "رفع الشهادات",
+    "support": "تذاكري",
+    "adminTickets": "إدارة التذاكر"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",
