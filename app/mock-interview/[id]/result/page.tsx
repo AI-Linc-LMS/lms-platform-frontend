@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Container, Typography } from "@mui/material";
+import { Box, Button, Container, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AiLincLoader } from "@/components/common/AiLincLoader";
 import mockInterviewService from "@/lib/services/mock-interview.service";
@@ -88,6 +88,7 @@ interface InterviewResult {
       fullscreen_exits: number;
       face_validation_failures: number;
       multiple_face_detections: number;
+      looking_away_count?: number;
       screenResolution: string;
       userAgent: string;
       timestamp: number;
@@ -122,6 +123,12 @@ export default function InterviewResultPage() {
   // returns 202 immediately and runs evaluation in a background thread on the server —
   // the result page polls /detail/ until `evaluation_score.overall_percentage` shows up.
   const [evaluationPending, setEvaluationPending] = useState(false);
+  const [gatedRelease, setGatedRelease] = useState<null | {
+    title: string;
+    scheduled_release_at: string | null;
+    release_mode: string;
+    message: string;
+  }>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Stop any active camera streams on this page
@@ -145,6 +152,30 @@ export default function InterviewResultPage() {
       try {
         const data = await mockInterviewService.getInterviewDetail(interviewId);
         if (cancelled) return;
+        const gatedShape = data as {
+          result_visible_to_student?: boolean;
+          title?: string;
+          scheduled_release_at?: string | null;
+          result_release_mode?: string;
+          message?: string;
+        };
+        if (gatedShape && gatedShape.result_visible_to_student === false) {
+          setGatedRelease({
+            title: gatedShape.title || "Interview",
+            scheduled_release_at: gatedShape.scheduled_release_at ?? null,
+            release_mode: gatedShape.result_release_mode || "manual",
+            message:
+              gatedShape.message ||
+              "Your interview was submitted successfully. The evaluation will be released by your instructor.",
+          });
+          setEvaluationPending(false);
+          setLoading(false);
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          return;
+        }
         setResult(data as InterviewResult);
         if (isEvaluationReady(data as { evaluation_score?: { overall_percentage?: number } })) {
           setEvaluationPending(false);
@@ -154,8 +185,6 @@ export default function InterviewResultPage() {
             pollIntervalRef.current = null;
           }
         } else {
-          // Server has the row but the background evaluation worker hasn't finished
-          // writing the score yet. Stay in pending mode and let the interval re-poll.
           setEvaluationPending(true);
           setLoading(false);
         }
@@ -201,12 +230,12 @@ export default function InterviewResultPage() {
 
   const getScoreColor = useCallback((percentage: number) => {
     if (percentage >= 80)
-      return { bg: "#d1fae5", color: "#065f46", main: "#10b981" };
+      return { bg: "var(--surface-green-light)", color: "var(--success-strong)", main: "var(--course-cta)" };
     if (percentage >= 60)
-      return { bg: "#dbeafe", color: "#1e40af", main: "#3b82f6" };
+      return { bg: "var(--surface-blue-light)", color: "var(--info-strong)", main: "var(--accent-blue-light)" };
     if (percentage >= 40)
-      return { bg: "#fed7aa", color: "#9a3412", main: "#f59e0b" };
-    return { bg: "#fecaca", color: "#991b1b", main: "#ef4444" };
+      return { bg: "var(--warning-surface)", color: "var(--warning-strong)", main: "var(--warning-amber)" };
+    return { bg: "var(--error-surface)", color: "var(--error-strong)", main: "var(--ats-error)" };
   }, []);
 
   const getPerformanceLabel = useCallback((percentage: number) => {
@@ -216,8 +245,10 @@ export default function InterviewResultPage() {
     return "Needs Improvement";
   }, []);
 
-  const formatDate = useCallback((dateString: string) => {
+  const formatDate = useCallback((dateString: string | null | undefined) => {
+    if (!dateString) return "—";
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime()) || date.getTime() <= 0) return "—";
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -260,6 +291,72 @@ export default function InterviewResultPage() {
             subMessage="Loading your interview result…"
           />
         </Box>
+      </MainLayout>
+    );
+  }
+
+  if (gatedRelease) {
+    const scheduledText = gatedRelease.scheduled_release_at
+      ? new Date(gatedRelease.scheduled_release_at).toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
+    return (
+      <MainLayout>
+        <Container maxWidth="sm" sx={{ py: 10, textAlign: "center" }}>
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 700, mb: 2, color: "var(--font-primary-dark)" }}
+          >
+            Interview submitted successfully
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ color: "var(--font-secondary)", mb: 3, lineHeight: 1.6 }}
+          >
+            {gatedRelease.message}
+          </Typography>
+          {scheduledText && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: "var(--accent-indigo)",
+                fontWeight: 600,
+                mb: 4,
+              }}
+            >
+              Scheduled release: {scheduledText}
+            </Typography>
+          )}
+          <Box
+            sx={{
+              display: "inline-flex",
+              gap: 2,
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            <Button
+              variant="contained"
+              onClick={() => router.push("/mock-interview")}
+              sx={{
+                px: 2.5,
+                py: 1.25,
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: "var(--accent-indigo)",
+                color: "var(--font-light)",
+                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              }}
+            >
+              Back to interviews
+            </Button>
+          </Box>
+        </Container>
       </MainLayout>
     );
   }
@@ -345,7 +442,23 @@ export default function InterviewResultPage() {
         >
           <StudentInfoCard
             student={result.student}
-            started_at={result.started_at}
+            started_at={(() => {
+              const candidate = result.started_at;
+              if (candidate) {
+                const d = new Date(candidate);
+                if (!Number.isNaN(d.getTime()) && d.getTime() > 0) return candidate;
+              }
+              if (result.submitted_at && result.interview_transcript?.total_duration_seconds) {
+                const submitted = new Date(result.submitted_at);
+                if (!Number.isNaN(submitted.getTime()) && submitted.getTime() > 0) {
+                  return new Date(
+                    submitted.getTime() -
+                      result.interview_transcript.total_duration_seconds * 1000,
+                  ).toISOString();
+                }
+              }
+              return result.created_at;
+            })()}
             submitted_at={result.submitted_at}
             total_duration_seconds={
               result.interview_transcript.total_duration_seconds
@@ -372,13 +485,19 @@ export default function InterviewResultPage() {
 
         {/* Proctoring Report */}
         <ProctoringReport
-          tabSwitches={result.interview_transcript.metadata.tabSwitches}
-          windowSwitches={result.interview_transcript.metadata.windowSwitches}
+          tabSwitches={result.interview_transcript.metadata.tabSwitches ?? 0}
+          windowSwitches={result.interview_transcript.metadata.windowSwitches ?? 0}
           fullscreen_exits={
-            result.interview_transcript.metadata.fullscreen_exits
+            result.interview_transcript.metadata.fullscreen_exits ?? 0
           }
           face_validation_failures={
-            result.interview_transcript.metadata.face_validation_failures
+            result.interview_transcript.metadata.face_validation_failures ?? 0
+          }
+          looking_away_count={
+            result.interview_transcript.metadata.looking_away_count ?? 0
+          }
+          multiple_face_detections={
+            result.interview_transcript.metadata.multiple_face_detections ?? 0
           }
         />
 

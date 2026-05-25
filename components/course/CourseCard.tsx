@@ -73,7 +73,7 @@ export const CourseCard = memo(
           flexDirection: "column",
           border: "1px solid",
           borderColor: isEnrolled
-            ? "color-mix(in srgb, var(--success-500) 30%, transparent)"
+            ? "color-mix(in srgb, var(--primary-500) 30%, transparent)"
             : "var(--border-default)",
           borderRadius: 3,
           overflow: "hidden",
@@ -82,8 +82,8 @@ export const CourseCard = memo(
           "&:hover": {
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
             borderColor: isEnrolled
-              ? "color-mix(in srgb, var(--success-500) 48%, transparent)"
-              : "var(--accent-indigo)",
+              ? "color-mix(in srgb, var(--primary-500) 48%, transparent)"
+              : "var(--primary-500)",
           },
         }}
       >
@@ -102,13 +102,13 @@ export const CourseCard = memo(
               label={t("courses.enrolled")}
               size="small"
               sx={{
-                backgroundColor: "color-mix(in srgb, var(--success-500) 22%, transparent)",
-                color: "var(--success-500)",
+                backgroundColor: "color-mix(in srgb, var(--primary-500) 22%, transparent)",
+                color: "var(--primary-700)",
                 fontWeight: 600,
                 fontSize: "0.7rem",
                 height: 22,
                 "& .MuiChip-icon": {
-                  color: "var(--success-500)",
+                  color: "var(--primary-700)",
                 },
               }}
             />
@@ -119,8 +119,8 @@ export const CourseCard = memo(
         <Box
           sx={{
             background: isEnrolled
-              ? "linear-gradient(135deg, color-mix(in srgb, var(--success-500) 12%, transparent) 0%, color-mix(in srgb, var(--success-500) 8%, transparent) 100%)"
-              : "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+              ? "linear-gradient(135deg, color-mix(in srgb, var(--primary-500) 12%, transparent) 0%, color-mix(in srgb, var(--primary-500) 6%, transparent) 100%)"
+              : "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)",
             p: 2,
             pb: 2.5,
             position: "relative",
@@ -132,7 +132,7 @@ export const CourseCard = memo(
           <Typography
             variant="h6"
             sx={{
-              color: isEnrolled ? "var(--font-primary)" : "#ffffff",
+              color: isEnrolled ? "var(--font-primary)" : "var(--font-light)",
               fontWeight: 700,
               fontSize: "1rem",
               mb: 0.5,
@@ -222,7 +222,7 @@ export const CourseCard = memo(
               <IconWrapper
                 icon={isEnrolled ? "mdi:chart-box-outline" : "mdi:book-outline"}
                 size={18}
-                color="var(--accent-indigo)"
+                color="var(--primary-500)"
               />
               <Box sx={{ flex: 1, minWidth: 0, textAlign: "start" }}>
                 <Typography
@@ -264,7 +264,7 @@ export const CourseCard = memo(
                 borderRadius: 1.5,
               }}
             >
-              <IconWrapper icon="mdi:speedometer" size={18} color="var(--accent-indigo)" />
+              <IconWrapper icon="mdi:speedometer" size={18} color="var(--primary-500)" />
               <Box sx={{ minWidth: 0, textAlign: "start" }}>
                 <Typography
                   variant="caption"
@@ -317,23 +317,19 @@ export const CourseCard = memo(
                 !isEnrolled && (!course.enrollment_enabled || enrolling)
               }
               sx={{
-                backgroundColor: isEnrolled ? "var(--success-500)" : "var(--accent-indigo)",
-                color: "#ffffff",
+                backgroundColor: isEnrolled ? "var(--primary-600)" : "var(--primary-500)",
+                color: "var(--font-light)",
                 fontWeight: 600,
                 py: 1,
                 borderRadius: 2,
                 textTransform: "none",
                 fontSize: "0.875rem",
-                boxShadow: isEnrolled
-                  ? "0 4px 14px 0 color-mix(in srgb, var(--success-500) 40%, transparent)"
-                  : "0 4px 14px 0 color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                boxShadow:
+                  "0 4px 14px 0 color-mix(in srgb, var(--primary-500) 40%, transparent)",
                 "&:hover": {
-                  backgroundColor: isEnrolled
-                    ? "color-mix(in srgb, var(--success-500) 86%, black)"
-                    : "var(--accent-indigo-dark)",
-                  boxShadow: isEnrolled
-                    ? "0 6px 20px 0 color-mix(in srgb, var(--success-500) 52%, transparent)"
-                    : "0 6px 20px 0 color-mix(in srgb, var(--accent-indigo) 52%, transparent)",
+                  backgroundColor: "var(--primary-700)",
+                  boxShadow:
+                    "0 6px 20px 0 color-mix(in srgb, var(--primary-500) 52%, transparent)",
                   transform: "translateY(-2px)",
                 },
                 transition: "all 0.2s ease",

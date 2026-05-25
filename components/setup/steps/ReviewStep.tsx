@@ -62,12 +62,13 @@ function Row({
 export function ReviewStep({ state, data, onJumpToStep }: Props) {
   const featureCount = data.features?.selected_feature_ids?.length || 0;
   const importedCount = data.course_library?.selected_course_ids?.length || 0;
-  // Pretty preset names mirror the four wizard tiles in ThemeStep.tsx.
+  // Pretty preset names mirror the wizard tiles in ThemeStep.tsx.
   const PRESET_LABEL: Record<string, string> = {
     default: "Default · Blue Slate",
     azure_bolt: "Azure Bolt",
-    graphite_night: "Graphite Night",
+    sakura_day: "Sakura Day",
     sky_paper: "Sky Paper",
+    mono_minimal: "Mono Minimal",
   };
 
   return (
@@ -129,8 +130,7 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
               <>
                 <span>
                   {PRESET_LABEL[data.theme?.preset_id || ""] ||
-                    "Default · Blue Slate"}{" "}
-                  · {data.theme?.default_mode || "light"} mode
+                    "Default · Blue Slate"}
                 </span>
                 {data.theme?.welcome_message ? (
                   <p className="aw-text-mute mt-1.5 text-[12px] leading-relaxed">

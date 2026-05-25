@@ -4,10 +4,10 @@ export const config = {
    * Set in Netlify and locally as NEXT_PUBLIC_APP_URL so links and redirects stay correct.
    */
   appUrl: (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, ""),
-  apiBaseUrl: (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(
-    /\/$/,
-    ""
-  ),
+  apiBaseUrl: (
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    (process.env.NODE_ENV === "development" ? "http://localhost:8000" : "")
+  ).replace(/\/$/, ""),
   clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "1",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
   /**

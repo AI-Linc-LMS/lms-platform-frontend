@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 import { blobToWav } from "@/lib/utils/audio-to-wav";
 import { detectBrowser, detectPlatform } from "@/lib/utils/browser-detect";
+import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 
 const WHISPER_CHUNK_MS = 2000;
 const TRANSCRIBE_API = "/api/transcribe";
@@ -565,7 +566,7 @@ export function useSpeechToText(
         }
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
-            audio: { noiseSuppression: true, echoCancellation: true },
+            audio: getAudioConstraints(),
           });
           if (!startedRef.current || pausedRef.current) {
             stream.getTracks().forEach((t) => t.stop());

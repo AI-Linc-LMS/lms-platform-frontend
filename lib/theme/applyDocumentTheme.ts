@@ -78,7 +78,7 @@ function applyShellThemeVars(
 }
 
 /** Maps camelCase token keys to CSS custom property names (without leading --). */
-const CAMEL_TO_CSS: [keyof NormalizedTheme | string, string][] = [
+export const CAMEL_TO_CSS: [keyof NormalizedTheme | string, string][] = [
   ["primary50", "primary-50"],
   ["primary100", "primary-100"],
   ["primary200", "primary-200"],
@@ -212,4 +212,6 @@ export function applyDocumentTheme(theme: NormalizedTheme): void {
   body.style.setProperty("--font-tertiary", safeTertiary);
   body.style.setProperty("--surface", surface);
   body.style.setProperty("--card-bg", cardBg);
+  body.style.setProperty("--modal-bg", cardBg);
+  body.style.setProperty("--border-default", theme.neutral200 || "#e5e7eb");
 }

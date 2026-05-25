@@ -9,9 +9,12 @@ import {
   PerformanceSummary,
   ProctoringReport,
   OverallFeedback,
+  QuestionPerformance,
 } from "@/components/mock-interview/result";
-import { AdminQuestionPerformance } from "./AdminQuestionPerformance";
-import type { AdminInterviewDetail } from "@/lib/services/admin/admin-mock-interview.service";
+import type {
+  AdminInterviewDetail,
+  RawQuestionScore,
+} from "@/lib/services/admin/admin-mock-interview.service";
 
 interface AdminInterviewResultAdapterProps {
   data: AdminInterviewDetail;
@@ -132,6 +135,67 @@ export function AdminInterviewResultAdapter({
     setExpandedQuestion((prev) => (prev === questionNumber ? false : questionNumber));
   }, []);
 
+  const questionsForRender = useMemo(
+    () =>
+      (data.questions_full ?? []).map((q) => ({
+        id: q.id,
+        type: q.type ?? "conceptual",
+        question_text: q.question_text ?? "",
+        expected_key_points: q.expected_key_points ?? [],
+        coding_problem: (
+          q as unknown as { coding_problem?: NonNullable<unknown> }
+        ).coding_problem as
+          | {
+              statement: string;
+              starter_code: string;
+              language: string;
+              sample_input?: string;
+              sample_output?: string;
+            }
+          | undefined,
+        mcq_options: (
+          q as unknown as { mcq_options?: { id: string; text: string }[] }
+        ).mcq_options,
+        mcq_multi_select: (
+          q as unknown as { mcq_multi_select?: boolean }
+        ).mcq_multi_select,
+        mcq_correct_option_ids: (
+          q as unknown as { mcq_correct_option_ids?: string[] }
+        ).mcq_correct_option_ids,
+      })),
+    [data.questions_full],
+  );
+
+  const responsesForRender = useMemo(
+    () =>
+      (data.responses_full ?? []).map((r) => ({
+        question_id: r.question_id,
+        answer: r.answer,
+        question_text: r.question_text,
+      })),
+    [data.responses_full],
+  );
+
+  const questionScoresForRender = useMemo<Record<string, RawQuestionScore & { percentage: number; feedback: string; strengths: string[]; improvements: string[] }>>(() => {
+    const out: Record<string, RawQuestionScore & {
+      percentage: number;
+      feedback: string;
+      strengths: string[];
+      improvements: string[];
+    }> = {};
+    for (const [k, v] of Object.entries(data.question_scores ?? {})) {
+      out[k] = {
+        score: v.score ?? 0,
+        max_score: v.max_score ?? 0,
+        percentage: v.percentage ?? (v.max_score ? Math.round((v.score / v.max_score) * 100) : 0),
+        feedback: v.feedback ?? "",
+        strengths: v.strengths ?? [],
+        improvements: v.improvements ?? [],
+      };
+    }
+    return out;
+  }, [data.question_scores]);
+
   return (
     <>
       <ResultHeader
@@ -181,15 +245,22 @@ export function AdminInterviewResultAdapter({
             windowSwitches={metadata?.windowSwitches ?? 0}
             fullscreen_exits={metadata?.fullscreen_exits ?? 0}
             face_validation_failures={metadata?.face_validation_failures ?? 0}
+            looking_away_count={
+              (metadata as { looking_away_count?: number } | undefined)?.looking_away_count ?? 0
+            }
+            multiple_face_detections={
+              (metadata as { multiple_face_detections?: number } | undefined)?.multiple_face_detections ?? 0
+            }
           />
         )}
 
-        <AdminQuestionPerformance
-          questions={questions}
-          responses={responses}
-          evaluationScore={evaluationScore}
+        <QuestionPerformance
+          questions={questionsForRender}
+          question_scores={questionScoresForRender}
+          responses={responsesForRender}
           expandedQuestion={expandedQuestion}
           onQuestionToggle={handleQuestionToggle}
+          getScoreColor={getScoreColor}
         />
 
         <OverallFeedback

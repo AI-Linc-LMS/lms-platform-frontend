@@ -162,7 +162,7 @@ export default function AttendancePage() {
             variant="contained"
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
             onClick={() => setCreateDialogOpen(true)}
-            sx={{ bgcolor: "#10b981", "&:hover": { bgcolor: "#059669" } }}
+            sx={{ bgcolor: "var(--primary-500)", "&:hover": { bgcolor: "var(--primary-700)" } }}
           >
             {t("adminAttendance.createActivity")}
           </Button>
@@ -248,7 +248,7 @@ export default function AttendancePage() {
                 page={page}
                 onChange={(_, value) => setPage(value)}
                 color="primary"
-                sx={{ "& .Mui-selected": { bgcolor: "#10b981" } }}
+                sx={{ "& .Mui-selected": { bgcolor: "var(--primary-500)" } }}
               />
             </Box>
           )}

@@ -25,7 +25,9 @@
     "adminAttendance": "Attendance",
     "scorecard": "Scorecard",
     "branding": "Branding & theme",
-    "certificateUploads": "Certificate uploads"
+    "certificateUploads": "Certificate uploads",
+    "support": "My Tickets",
+    "adminTickets": "Ticket Management"
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",
@@ -1749,6 +1751,7 @@
     "next": "Next",
     "creating": "Creating...",
     "createJob": "Create Job",
+    "enroll": "Enroll",
     "csvHeaderName": "Name",
     "csvHeaderEmail": "Email",
     "csvHeaderStatus": "Status",

@@ -374,7 +374,7 @@ export default function AdminCertificatesHubPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <IconWrapper icon="mdi:magnify" size={20} color="#64748b" />
+                      <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
                     </InputAdornment>
                   ),
                 }}
@@ -433,7 +433,7 @@ export default function AdminCertificatesHubPage() {
                           },
                         }}
                       />
-                      <IconWrapper icon="mdi:chevron-right" size={24} color="#94a3b8" />
+                      <IconWrapper icon="mdi:chevron-right" size={24} color="var(--font-tertiary)" />
                     </ListItemButton>
                   ))}
                   {filteredAssessments.length === 0 ? (
@@ -479,7 +479,7 @@ export default function AdminCertificatesHubPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <IconWrapper icon="mdi:magnify" size={20} color="#64748b" />
+                      <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
                     </InputAdornment>
                   ),
                 }}
@@ -538,7 +538,7 @@ export default function AdminCertificatesHubPage() {
                           },
                         }}
                       />
-                      <IconWrapper icon="mdi:chevron-right" size={24} color="#94a3b8" />
+                      <IconWrapper icon="mdi:chevron-right" size={24} color="var(--font-tertiary)" />
                     </ListItemButton>
                   ))}
                   {filteredCourses.length === 0 ? (

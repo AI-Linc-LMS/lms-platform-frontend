@@ -25,8 +25,8 @@ const NOTIFICATION_TYPE_CONFIG: Record<
 > = {
   course_enrolled: {
     icon: "mdi:book-plus",
-    color: "var(--accent-indigo)",
-    bgColor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+    color: "var(--primary-500)",
+    bgColor: "color-mix(in srgb, var(--primary-500) 12%, var(--surface) 88%)",
   },
   job_published: {
     icon: "mdi:briefcase-plus",
@@ -55,13 +55,13 @@ const NOTIFICATION_TYPE_CONFIG: Record<
   },
   community_thread: {
     icon: "mdi:forum",
-    color: "var(--accent-indigo)",
-    bgColor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+    color: "var(--primary-500)",
+    bgColor: "color-mix(in srgb, var(--primary-500) 12%, var(--surface) 88%)",
   },
   community_reply: {
     icon: "mdi:reply",
-    color: "var(--accent-indigo)",
-    bgColor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+    color: "var(--primary-500)",
+    bgColor: "color-mix(in srgb, var(--primary-500) 12%, var(--surface) 88%)",
   },
   custom: {
     icon: "mdi:bell",
@@ -162,13 +162,13 @@ export function NotificationPopover({
               height: 36,
               borderRadius: 2,
               backgroundColor:
-                "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                "color-mix(in srgb, var(--primary-500) 10%, var(--surface) 90%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Bell size={18} color="var(--accent-indigo)" />
+            <Bell size={18} color="var(--primary-500)" />
           </Box>
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "text.primary" }}>
@@ -190,8 +190,8 @@ export function NotificationPopover({
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              color: "var(--accent-indigo)",
-              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
+              color: "var(--primary-500)",
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--primary-500) 10%, transparent)" },
             }}
           >
             Mark all read
@@ -212,7 +212,7 @@ export function NotificationPopover({
               gap: 1.5,
             }}
           >
-            <CircularProgress size={36} sx={{ color: "var(--accent-indigo)" }} />
+            <CircularProgress size={36} sx={{ color: "var(--primary-500)" }} />
             <Typography variant="body2" color="text.secondary">
               Loading notifications...
             </Typography>
@@ -268,12 +268,12 @@ export function NotificationPopover({
                     "&:last-child": { borderBottom: "none" },
                     backgroundColor: n.is_read
                       ? "transparent"
-                      : "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                      : "color-mix(in srgb, var(--primary-500) 6%, transparent)",
                     transition: "background-color 0.2s ease",
                     "&:hover": {
                       backgroundColor: n.is_read
                         ? "color-mix(in srgb, var(--font-primary) 4%, transparent)"
-                        : "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                        : "color-mix(in srgb, var(--primary-500) 12%, transparent)",
                     },
                   }}
                 >
@@ -312,7 +312,7 @@ export function NotificationPopover({
                             width: 8,
                             height: 8,
                             borderRadius: "50%",
-                            backgroundColor: "var(--accent-indigo)",
+                            backgroundColor: "var(--primary-500)",
                             flexShrink: 0,
                             mt: 0.5,
                           }}
@@ -381,26 +381,26 @@ export function NotificationBell({ unreadCount, onClick }: NotificationBellProps
           onClick={onClick}
           sx={{
             position: "relative",
-            color: hasUnread ? "var(--accent-indigo)" : "text.secondary",
+            color: hasUnread ? "var(--primary-500)" : "text.secondary",
             width: 44,
             height: 44,
             borderRadius: 2,
             backgroundColor: hasUnread
-              ? "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)"
+              ? "color-mix(in srgb, var(--primary-500) 10%, var(--surface) 90%)"
               : "transparent",
             border: "1px solid",
             borderColor: hasUnread
-              ? "color-mix(in srgb, var(--accent-indigo) 32%, var(--border-default) 68%)"
+              ? "color-mix(in srgb, var(--primary-500) 32%, var(--border-default) 68%)"
               : "transparent",
             transition: "all 0.2s ease",
             "&:hover": {
               backgroundColor: hasUnread
-                ? "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)"
-                : "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
-              color: "var(--accent-indigo)",
+                ? "color-mix(in srgb, var(--primary-500) 16%, var(--surface) 84%)"
+                : "color-mix(in srgb, var(--primary-500) 8%, var(--surface) 92%)",
+              color: "var(--primary-500)",
               borderColor: hasUnread
-                ? "color-mix(in srgb, var(--accent-indigo) 50%, var(--border-default) 50%)"
-                : "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
+                ? "color-mix(in srgb, var(--primary-500) 50%, var(--border-default) 50%)"
+                : "color-mix(in srgb, var(--primary-500) 20%, var(--border-default) 80%)",
             },
           }}
       >

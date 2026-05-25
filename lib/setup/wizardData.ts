@@ -15,20 +15,13 @@ export interface WizardData {
     custom_domain?: string;
   };
   theme?: {
-    /**
-     * One of the 4 starter presets exposed in step 4 of the wizard. Maps 1:1
-     * to a preset id in client_theming/presets.py on the backend, so the
-     * launch handler can hydrate `client.theme_settings` from the matching
-     * preset's full theme dict. More presets are available post-launch via
-     * Settings → Branding (admin page hits the same preset registry).
-     */
-    preset_id?: "default" | "azure_bolt" | "graphite_night" | "sky_paper";
-    /**
-     * Default UI mode the LMS opens in for first-time visitors. Each preset
-     * has a "natural" mode but the user can still override (e.g. pick the
-     * Sky Paper preset but prefer the dark variant on first load).
-     */
-    default_mode?: "dark" | "light";
+    // Maps 1:1 to a preset id in client_theming/presets.py — see THEME_PRESETS.
+    preset_id?:
+      | "default"
+      | "azure_bolt"
+      | "sakura_day"
+      | "sky_paper"
+      | "mono_minimal";
     hero_image_url?: string;
     welcome_message?: string;
   };

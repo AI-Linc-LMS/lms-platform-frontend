@@ -329,6 +329,31 @@
   --interview-overlay-bg: rgba(248, 250, 252, 0.85);
   --interview-spinner-border: #e2e8f0;
 
+  /* Additional tokens used by recent mock-interview UI changes */
+  --surface-success-light: #f0fdf4;
+  --surface-error-light: #fef2f2;
+  --warning-amber: #f59e0b;
+  --overlay-dark: rgba(0, 0, 0, 0.7);
+
+  /* Proctoring / integrity report colors */
+  --proctoring-gradient-start: #fef3c7;
+  --proctoring-gradient-end: #fde68a;
+  --proctoring-strong: #f59e0b;
+  --proctoring-strong-dark: #d97706;
+  --proctoring-heading: #78350f;
+  --proctoring-subheading: #92400e;
+  /* Info / notification */
+  --info-surface: #eff6ff;
+  --info-border: #bfdbfe;
+  --info-strong: #1e40af;
+  --info-accent: #3b82f6;
+  /* Result evaluation color tokens */
+  --success-strong: #065f46;
+  --warning-surface: #fed7aa;
+  --warning-strong: #9a3412;
+  --error-surface: #fecaca;
+  --error-strong: #991b1b;
+
   /* AI Linc brand gradient — matches the gradient stops in the dark-mode mark SVG
      at /public/logos/ai-linc-mark-darkmode.svg. Used by the AiLincLoader (and any
      future brand-mark renderers) so the brand identity is centralized here and the
@@ -338,6 +363,52 @@
   /* White shimmer that travels along the mark while the loader is alive. Kept as a
      token (rather than a literal #FFFFFF) so any future contrast tweak is one edit. */
   --ailinc-brand-highlight: #ffffff;
+
+  /* Support / ticketing system — brand-color tokens follow the tenant primary.
+   * Status colors (yellow/in-progress blue, reopen orange, success green) stay
+   * semantic since they convey state, not brand. */
+  --ticket-brand: var(--primary-500);
+  --ticket-brand-hover: var(--primary-700);
+  --ticket-brand-soft: color-mix(in srgb, var(--primary-500) 14%, var(--surface) 86%);
+  --ticket-brand-strong: var(--primary-900);
+  --ticket-success-strong: #166534;
+  --ticket-success-deep: #14532d;
+  --ticket-success-border: #bbf7d0;
+  --ticket-success-soft: #dcfce7;
+  --ticket-reopen: #f97316;
+  --ticket-reopen-hover: #ea580c;
+  --ticket-reopen-strong: #c2410c;
+  --ticket-reopen-deep: #7c2d12;
+  --ticket-reopen-bg: #fff7ed;
+  --ticket-reopen-soft: #ffedd5;
+  --ticket-reopen-border: #fed7aa;
+  --ticket-status-open-bg: #fef3c7;
+  --ticket-status-open-border: #fde68a;
+  --ticket-status-in-progress-bg: #dbeafe;
+  --ticket-status-in-progress-text: #1e40af;
+  --ticket-status-in-progress-border: #bfdbfe;
+  --ticket-row-divider: #f1f5f9;
+  --ticket-text-strong: #0f172a;
+
+  /* Green CTA — used for Assignees + Add buttons and any "go" affordance
+     that should stand apart from the blue ticket-brand. */
+  --ticket-cta-green: #16a34a;
+  --ticket-cta-green-hover: #15803d;
+  --ticket-cta-green-deep: #14532d;
+  --ticket-cta-green-soft: #dcfce7;
+  --ticket-cta-green-border: #bbf7d0;
+
+  /* Slate palette — the original Tailwind-style slate values used across the
+     ticket UI before the first sweep. Kept as proper tokens so the cooler
+     slate look survives instead of falling back to warmer grays. */
+  --ticket-slate-50: #f8fafc;
+  --ticket-slate-100: #f1f5f9;
+  --ticket-slate-200: #e2e8f0;
+  --ticket-slate-300: #cbd5e1;
+  --ticket-slate-400: #94a3b8;
+  --ticket-slate-500: #64748b;
+  --ticket-slate-600: #475569;
+  --ticket-slate-700: #334155;
 }
 
 @theme inline {
@@ -1224,4 +1295,65 @@ body {
   top: 0; left: 16px; right: 16px;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(0, 224, 255, 0.4), transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Soft global color transitions
+ * ---------------------------------------------------------------------------
+ * Fires on any background-color / color / border-color change. Lets a theme
+ * switch (admin Branding live preview, MUI theme rebuild, dark/light toggle)
+ * fade between palettes instead of snapping. Limited to color properties so
+ * layout/transform animations are untouched. Scoped to body + common MUI
+ * surfaces + anything explicitly opted-in via data-theme-target.
+ *
+ * Respects prefers-reduced-motion: users who opted out get instant snaps.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* Gated on `html[data-hydrated]` so the initial SSR→CSR cycle does NOT
+   * animate. ClientThemeSync sets the attribute via requestAnimationFrame
+   * after the first applyDocumentTheme call, so:
+   *
+   *   1) first paint uses the SSR-inlined `:root` vars (instant, no transition)
+   *   2) JS hydration writes body-inline vars in the same frame (instant)
+   *   3) `data-hydrated="1"` is set in the next frame, enabling transitions
+   *      for subsequent theme changes (admin Branding preview, save).
+   *
+   * Without this gate, any delta between SSR `:root` values and the
+   * client-computed body inline values (contrast-safe foreground, modal-bg,
+   * border-default fallbacks) animates over ~280 ms and shows as a flash. */
+  html[data-hydrated] body,
+  html[data-hydrated] .MuiPaper-root,
+  html[data-hydrated] .MuiAppBar-root,
+  html[data-hydrated] .MuiDrawer-paper,
+  html[data-hydrated] .MuiToolbar-root,
+  html[data-hydrated] .MuiButton-root,
+  html[data-hydrated] .MuiCard-root,
+  html[data-hydrated] .MuiChip-root,
+  html[data-hydrated] .MuiIconButton-root,
+  html[data-hydrated] .MuiListItemButton-root,
+  html[data-hydrated] .MuiTableRow-root,
+  html[data-hydrated] .MuiTableCell-root,
+  html[data-hydrated] .MuiDialog-paper,
+  html[data-hydrated] .MuiMenu-paper,
+  html[data-hydrated] .MuiPopover-paper,
+  html[data-hydrated] .MuiTooltip-tooltip,
+  html[data-hydrated] [data-theme-target] {
+    transition:
+      background-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
+      color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
+      fill 220ms cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 220ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 240ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Pulsing dot used in admin Branding live-preview chips. */
+@keyframes awBrandPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary-500) 65%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary-500) 0%, transparent);
+  }
 }

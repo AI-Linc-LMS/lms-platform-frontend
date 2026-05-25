@@ -159,6 +159,114 @@ const groupTitleSx = {
   mb: 0.25,
 };
 
+const hourOptions = Array.from({ length: 24 }, (_, index) => index);
+const minuteOptions = Array.from({ length: 60 }, (_, index) => index);
+
+function splitDateTime(value: string) {
+  const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  return {
+    date: match?.[1] ?? "",
+    hours: match?.[2] ?? "",
+    minutes: match?.[3] ?? "",
+  };
+}
+
+function joinDateTime(date: string, hours: string, minutes: string) {
+  if (!date) {
+    return "";
+  }
+  const safeHours = hours ? hours.padStart(2, "0") : "00";
+  const safeMinutes = minutes ? minutes.padStart(2, "0") : "00";
+  return `${date}T${safeHours}:${safeMinutes}`;
+}
+
+function DateTimePartsField({
+  label,
+  value,
+  onChange,
+  helperText,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (nextValue: string) => void;
+  helperText?: string;
+  disabled?: boolean;
+}) {
+  const parts = splitDateTime(value);
+
+  return (
+    <Box>
+      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}>
+        {label}
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1.2fr 1fr" },
+          gap: 2,
+        }}
+      >
+        <TextField
+          label="Date"
+          type="date"
+          value={parts.date}
+          onChange={(e) => onChange(joinDateTime(e.target.value, parts.hours, parts.minutes))}
+          fullWidth
+          helperText={helperText}
+          FormHelperTextProps={helperFormProps}
+          InputLabelProps={{ shrink: true }}
+          disabled={disabled}
+        />
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr" },
+            gap: 1.5,
+          }}
+        >
+          <TextField
+            select
+            label="Hours"
+            value={parts.hours}
+            onChange={(e) => onChange(joinDateTime(parts.date, e.target.value, parts.minutes))}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            disabled={disabled}
+          >
+            <MenuItem value="">
+              <em>--</em>
+            </MenuItem>
+            {hourOptions.map((hour) => (
+              <MenuItem key={hour} value={hour.toString().padStart(2, "0")}>
+                {hour.toString().padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            label="Minutes"
+            value={parts.minutes}
+            onChange={(e) => onChange(joinDateTime(parts.date, parts.hours, e.target.value))}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            disabled={disabled}
+          >
+            <MenuItem value="">
+              <em>--</em>
+            </MenuItem>
+            {minuteOptions.map((minute) => (
+              <MenuItem key={minute} value={minute.toString().padStart(2, "0")}>
+                {minute.toString().padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 function FieldGroup({
   title,
   hint,
@@ -553,28 +661,18 @@ export function AssessmentSettingsSection({
               gap: 2,
             }}
           >
-            <TextField
+            <DateTimePartsField
               label="Start date & time (optional)"
-              type="datetime-local"
               value={startTime}
-              onChange={(e) => onStartTimeChange(e.target.value)}
-              fullWidth
+              onChange={onStartTimeChange}
               helperText="IST timezone"
-              FormHelperTextProps={helperFormProps}
-              InputLabelProps={{ shrink: true }}
-              slotProps={{ htmlInput: { step: 60 } }}
               disabled={readOnly}
             />
-            <TextField
+            <DateTimePartsField
               label="End date & time (optional)"
-              type="datetime-local"
               value={endTime}
-              onChange={(e) => onEndTimeChange(e.target.value)}
-              fullWidth
+              onChange={onEndTimeChange}
               helperText="IST timezone"
-              FormHelperTextProps={helperFormProps}
-              InputLabelProps={{ shrink: true }}
-              slotProps={{ htmlInput: { step: 60 } }}
               disabled={readOnly}
             />
           </Box>

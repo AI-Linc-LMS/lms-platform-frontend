@@ -13,9 +13,15 @@ import {
   Typography,
   CircularProgress,
   IconButton,
+  Stack,
 } from "@mui/material";
+import Link from "next/link";
 import { IconWrapper } from "./IconWrapper";
-import { reportIssue, ReportIssueRequest } from "@/lib/services/client.service";
+import {
+  ticketService,
+  TICKET_CATEGORY_OPTIONS,
+  TicketCategory,
+} from "@/lib/services/ticket.service";
 import { uploadFile } from "@/lib/services/file-upload.service";
 import { config } from "@/lib/config";
 import { useToast } from "./Toast";
@@ -27,14 +33,9 @@ interface ReportIssueDialogProps {
   contentId?: number;
 }
 
-const SUPPORT_TYPES = [
-  { value: "technical", label: "Technical Support" },
-  { value: "content", label: "Content Help" },
-  { value: "video", label: "Video Help" },
-  { value: "quiz", label: "Quiz/Assessment Help" },
-  { value: "navigation", label: "Navigation Help" },
-  { value: "other", label: "Other" },
-];
+const MAX_ATTACHMENTS = 5;
+const ACCEPTED_TYPES =
+  "image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf";
 
 export function ReportIssueDialog({
   open,
@@ -42,13 +43,33 @@ export function ReportIssueDialog({
   courseId,
   contentId,
 }: ReportIssueDialogProps) {
-  const [issueType, setIssueType] = useState("");
+  const [issueType, setIssueType] = useState<TicketCategory | "">("");
   const [description, setDescription] = useState("");
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
+
+  const handleAddFiles = (incoming: FileList | null) => {
+    if (!incoming) return;
+    const additions = Array.from(incoming);
+    setFiles((prev) => {
+      const room = MAX_ATTACHMENTS - prev.length;
+      if (room <= 0) {
+        showToast(
+          `You can attach up to ${MAX_ATTACHMENTS} files per ticket.`,
+          "warning",
+        );
+        return prev;
+      }
+      return [...prev, ...additions.slice(0, room)];
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFileAt = (index: number) =>
+    setFiles((prev) => prev.filter((_, i) => i !== index));
 
   const handleSubmit = async () => {
     if (!issueType || !description.trim()) {
@@ -60,46 +81,50 @@ export function ReportIssueDialog({
       setSubmitting(true);
       const clientId = Number(config.clientId);
 
-      let screenshotUrl: string | undefined;
-      if (screenshotFile) {
-        setUploadingScreenshot(true);
-        const result = await uploadFile(clientId, screenshotFile, "report_issue");
-        screenshotUrl = result.url;
-        setUploadingScreenshot(false);
+      let attachmentUrls: string[] = [];
+      if (files.length > 0) {
+        setUploading(true);
+        const uploads = await Promise.all(
+          files.map((file) => uploadFile(clientId, file, "report_issue")),
+        );
+        attachmentUrls = uploads.map((u) => u.url).filter(Boolean);
+        setUploading(false);
       }
 
-      const issueData: ReportIssueRequest = {
-        issue_type: issueType,
+      const ticket = await ticketService.create(clientId, {
+        category: issueType,
         description: description.trim(),
-        subject: issueType,
+        user_attachments: attachmentUrls,
         course_id: courseId,
         content_id: contentId,
-        page_url: window.location.href,
-        ...(screenshotUrl && { screenshot_url: screenshotUrl }),
-      };
+        page_url:
+          typeof window !== "undefined" ? window.location.href : undefined,
+      });
 
-      await reportIssue(clientId, issueData);
-
-      showToast("Your request has been sent. We'll get back to you soon.", "success");
-      handleClose();
-    } catch (error: any) {
       showToast(
-        error.message || "Failed to send. Please try again.",
-        "error"
+        `Ticket #${ticket.id} created. We'll get back to you soon — track it in My Tickets.`,
+        "success",
       );
+      handleClose();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to send. Please try again.";
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
+      setUploading(false);
     }
   };
 
   const handleClose = () => {
-    if (!submitting) {
-      setIssueType("");
-      setDescription("");
-      setScreenshotFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      onClose();
-    }
+    if (submitting || uploading) return;
+    setIssueType("");
+    setDescription("");
+    setFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    onClose();
   };
 
   return (
@@ -129,40 +154,65 @@ export function ReportIssueDialog({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: "#4285f4",
+            backgroundColor: "var(--ticket-brand)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:headset" size={24} color="#ffffff" />
+          <IconWrapper icon="mdi:headset" size={24} color="var(--font-light)" />
         </Box>
         Support and Help
       </DialogTitle>
 
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
-          <Typography variant="body2" sx={{ color: "#6b7280" }}>
-            Get technical support, content help, video help, and more. We're
-            here to assist you.
+          <Typography variant="body2" sx={{ color: "var(--font-muted)", fontWeight: 500 }}>
+            Raise a support ticket and our team will get back to you. You can
+            track all your tickets in{" "}
+            <Link
+              href="/tickets"
+              style={{
+                color: "var(--ticket-brand)",
+                textDecoration: "underline",
+                fontWeight: 600,
+              }}
+              onClick={handleClose}
+            >
+              My Tickets
+            </Link>
+            .
           </Typography>
 
           <TextField
             select
             label="What do you need help with?"
             value={issueType}
-            onChange={(e) => setIssueType(e.target.value)}
+            onChange={(e) => setIssueType(e.target.value as TicketCategory)}
             fullWidth
             required
             disabled={submitting}
+            InputLabelProps={{
+              sx: {
+                color: "var(--font-muted)",
+                fontWeight: 500,
+                "&.Mui-focused": { color: "var(--ticket-brand)" },
+              },
+            }}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,
+                "& fieldset": { borderColor: "var(--border-light)" },
+                "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
+              },
+              "& .MuiSelect-select, & .MuiInputBase-input": {
+                color: "var(--ticket-text-strong)",
+                fontWeight: 500,
               },
             }}
           >
-            {SUPPORT_TYPES.map((option) => (
+            {TICKET_CATEGORY_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
               </MenuItem>
@@ -179,27 +229,43 @@ export function ReportIssueDialog({
             required
             disabled={submitting}
             placeholder="Describe your question or issue..."
+            InputLabelProps={{
+              sx: {
+                color: "var(--font-muted)",
+                fontWeight: 500,
+                "&.Mui-focused": { color: "var(--ticket-brand)" },
+              },
+            }}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,
+                "& fieldset": { borderColor: "var(--border-light)" },
+                "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
               },
+              "& .MuiInputBase-input, & .MuiInputBase-inputMultiline": {
+                color: "var(--ticket-text-strong)",
+                fontWeight: 500,
+              },
+              "& .MuiInputBase-input::placeholder, & .MuiInputBase-inputMultiline::placeholder":
+                {
+                  color: "var(--font-secondary)",
+                  opacity: 1,
+                },
             }}
           />
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) setScreenshotFile(file);
-            }}
+            multiple
+            accept={ACCEPTED_TYPES}
+            onChange={(e) => handleAddFiles(e.target.files)}
             style={{ display: "none" }}
           />
 
           <Box
             onClick={() =>
-              !submitting && !uploadingScreenshot && fileInputRef.current?.click()
+              !submitting && !uploading && fileInputRef.current?.click()
             }
             sx={{
               border: "2px dashed rgba(0,0,0,0.12)",
@@ -209,15 +275,15 @@ export function ReportIssueDialog({
               alignItems: "center",
               justifyContent: "space-between",
               gap: 2,
-              backgroundColor: "#f9fafb",
-              cursor: submitting || uploadingScreenshot ? "default" : "pointer",
-              opacity: submitting || uploadingScreenshot ? 0.7 : 1,
+              backgroundColor: "var(--surface)",
+              cursor: submitting || uploading ? "default" : "pointer",
+              opacity: submitting || uploading ? 0.7 : 1,
               transition: "all 0.2s ease",
               "&:hover": {
                 borderColor:
-                  submitting || uploadingScreenshot ? undefined : "#4285f4",
+                  submitting || uploading ? undefined : "var(--ticket-brand)",
                 backgroundColor:
-                  submitting || uploadingScreenshot
+                  submitting || uploading
                     ? undefined
                     : "rgba(66, 133, 244, 0.04)",
               },
@@ -227,44 +293,95 @@ export function ReportIssueDialog({
               <IconWrapper
                 icon="mdi:image-plus"
                 size={24}
-                color={screenshotFile ? "#22c55e" : "#9ca3af"}
+                color={
+                  files.length > 0
+                    ? "var(--ats-success-muted)"
+                    : "var(--font-secondary)"
+                }
               />
-              <Typography variant="body2" sx={{ color: "#4b5563" }}>
-                {uploadingScreenshot
-                  ? "Uploading screenshot..."
-                  : screenshotFile
-                    ? screenshotFile.name
-                    : "Attach screenshot (optional)"}
+              <Typography
+                variant="body2"
+                sx={{ color: "var(--font-primary-dark)", fontWeight: 500 }}
+              >
+                {uploading
+                  ? "Uploading attachments..."
+                  : files.length > 0
+                    ? `${files.length} file${files.length === 1 ? "" : "s"} attached — click to add more`
+                    : `Attach screenshots / docs (optional, up to ${MAX_ATTACHMENTS})`}
               </Typography>
             </Box>
-            {screenshotFile && !uploadingScreenshot && (
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setScreenshotFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-                sx={{ color: "#6b7280" }}
-                aria-label="Remove screenshot"
-              >
-                <IconWrapper icon="mdi:close" size={18} />
-              </IconButton>
-            )}
           </Box>
+
+          {files.length > 0 && (
+            <Stack spacing={1}>
+              {files.map((f, i) => (
+                <Box
+                  key={`${f.name}-${i}`}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 1,
+                    p: 1,
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    borderRadius: 1,
+                    backgroundColor: "var(--card-bg)",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <IconWrapper
+                      icon="mdi:file-document-outline"
+                      size={18}
+                      color="var(--font-secondary)"
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "var(--font-muted)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {f.name}
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFileAt(i);
+                    }}
+                    disabled={uploading || submitting}
+                    aria-label="Remove attachment"
+                    sx={{ color: "var(--font-secondary)" }}
+                  >
+                    <IconWrapper icon="mdi:close" size={16} />
+                  </IconButton>
+                </Box>
+              ))}
+            </Stack>
+          )}
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>
         <Button
           onClick={handleClose}
-          disabled={submitting}
+          disabled={submitting || uploading}
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            color: "#6b7280",
+            color: "var(--font-primary-dark)",
             "&:hover": {
-              backgroundColor: "#f3f4f6",
+              backgroundColor: "var(--ticket-row-divider)",
             },
           }}
         >
@@ -272,29 +389,36 @@ export function ReportIssueDialog({
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={submitting || !issueType || !description.trim()}
+          disabled={submitting || uploading || !issueType || !description.trim()}
           variant="contained"
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            backgroundColor: "#4285f4",
+            backgroundColor: "var(--ticket-brand)",
+            color: "var(--font-light)",
+            boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
             "&:hover": {
-              backgroundColor: "#3367d6",
+              backgroundColor: "var(--ticket-brand-hover)",
+              boxShadow: "0 6px 16px rgba(37,99,235,0.32)",
             },
-            "&:disabled": {
-              backgroundColor: "#f3f4f6",
-              color: "#9ca3af",
+            "&.Mui-disabled": {
+              backgroundColor: "var(--border-default)",
+              color: "var(--font-tertiary)",
             },
           }}
           startIcon={
-            submitting ? (
+            submitting || uploading ? (
               <CircularProgress size={16} color="inherit" />
             ) : (
               <IconWrapper icon="mdi:send" size={18} />
             )
           }
         >
-          {submitting ? "Sending..." : "Submit"}
+          {uploading
+            ? "Uploading..."
+            : submitting
+              ? "Submitting..."
+              : "Submit ticket"}
         </Button>
       </DialogActions>
     </Dialog>

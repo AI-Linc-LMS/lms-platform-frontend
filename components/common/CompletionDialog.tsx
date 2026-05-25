@@ -95,7 +95,7 @@ export function CompletionDialog({
               variant="h5"
               sx={{
                 fontWeight: 600,
-                color: "#1f2937",
+                color: "var(--font-primary)",
               }}
             >
               Congratulations!
@@ -104,7 +104,7 @@ export function CompletionDialog({
           <Typography
             variant="body2"
             sx={{
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               textAlign: "center",
             }}
           >
@@ -122,7 +122,7 @@ export function CompletionDialog({
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: "#6b7280", fontWeight: 600 }}
+                  sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                 >
                   Submission Summary
                 </Typography>
@@ -136,7 +136,7 @@ export function CompletionDialog({
                         alignItems: "center",
                         justifyContent: "space-between",
                         p: 2,
-                        backgroundColor: "#f9fafb",
+                        backgroundColor: "var(--surface)",
                         borderRadius: 2,
                       }}
                     >
@@ -148,7 +148,7 @@ export function CompletionDialog({
                           size={24}
                           color="#6366f1"
                         />
-                        <Typography variant="body2" sx={{ color: "#4b5563" }}>
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                           Test Cases Passed
                         </Typography>
                       </Box>
@@ -175,7 +175,7 @@ export function CompletionDialog({
                       alignItems: "center",
                       justifyContent: "space-between",
                       p: 2,
-                      backgroundColor: "#f9fafb",
+                      backgroundColor: "var(--surface)",
                       borderRadius: 2,
                     }}
                   >
@@ -187,13 +187,13 @@ export function CompletionDialog({
                         size={24}
                         color="#f59e0b"
                       />
-                      <Typography variant="body2" sx={{ color: "#4b5563" }}>
+                      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         Score
                       </Typography>
                     </Box>
                     <Typography
                       variant="h6"
-                      sx={{ fontWeight: 600, color: "#6b7280" }}
+                      sx={{ fontWeight: 600, color: "var(--font-secondary)" }}
                     >
                       {stats.score} / {stats.maxScore}
                     </Typography>
@@ -215,7 +215,7 @@ export function CompletionDialog({
                         flexDirection: "column",
                         alignItems: "center",
                         p: 2,
-                        backgroundColor: "#f9fafb",
+                        backgroundColor: "var(--surface)",
                         borderRadius: 2,
                         gap: 1,
                       }}
@@ -225,12 +225,12 @@ export function CompletionDialog({
                         size={20}
                         color="#6b7280"
                       />
-                      <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
                         Time Used
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ fontWeight: 600, color: "#4b5563" }}
+                        sx={{ fontWeight: 600, color: "var(--font-secondary)" }}
                       >
                         {stats.timeUsed}
                       </Typography>
@@ -244,7 +244,7 @@ export function CompletionDialog({
                         flexDirection: "column",
                         alignItems: "center",
                         p: 2,
-                        backgroundColor: "#f9fafb",
+                        backgroundColor: "var(--surface)",
                         borderRadius: 2,
                         gap: 1,
                       }}
@@ -254,12 +254,12 @@ export function CompletionDialog({
                         size={20}
                         color="#6b7280"
                       />
-                      <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
                         Memory Used
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ fontWeight: 600, color: "#4b5563" }}
+                        sx={{ fontWeight: 600, color: "var(--font-secondary)" }}
                       >
                         {stats.memoryUsed}
                       </Typography>
@@ -312,7 +312,7 @@ export function CompletionDialog({
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: "#6b7280", fontWeight: 600 }}
+                  sx={{ color: "var(--font-secondary)", fontWeight: 600 }}
                 >
                   Quiz Summary
                 </Typography>
@@ -323,7 +323,7 @@ export function CompletionDialog({
                     alignItems: "center",
                     justifyContent: "space-between",
                     p: 2,
-                    backgroundColor: "#f9fafb",
+                    backgroundColor: "var(--surface)",
                     borderRadius: 2,
                   }}
                 >
@@ -333,13 +333,13 @@ export function CompletionDialog({
                       size={24}
                       color="#f59e0b"
                     />
-                    <Typography variant="body2" sx={{ color: "#4b5563" }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       Your Score
                     </Typography>
                   </Box>
                   <Typography
                     variant="h6"
-                    sx={{ fontWeight: 600, color: "#6b7280" }}
+                    sx={{ fontWeight: 600, color: "var(--font-secondary)" }}
                   >
                     {stats.totalMarks != null && stats.totalMarks > 0
                       ? `${stats.obtainedMarks ?? 0} / ${stats.totalMarks}`
