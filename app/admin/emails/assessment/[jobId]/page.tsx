@@ -28,6 +28,8 @@ import {
   AssessmentEmailJobDetail,
 } from "@/lib/services/admin/admin-assessment-email-jobs.service";
 import { config } from "@/lib/config";
+import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
+import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 
 const POLL_INTERVAL_MS = 3000;
 const TERMINAL_STATUSES = ["COMPLETED", "FAILED", "completed", "failed"];
@@ -190,6 +192,11 @@ export default function AssessmentEmailJobDetailPage() {
   const failedCount = data.failed_emails?.length ?? data.failed_count ?? 0;
   const isPolling = !TERMINAL_STATUSES.includes((data.status || "").toUpperCase());
   const title = data.task_name || data.subject || t("adminEmailJobs.assessmentEmailJob");
+  // Pull any saved attachment from the response — backend has used several
+  // field name conventions, so the helper tries them all.
+  const jobAttachment = extractSavedEmailAttachment(
+    data as unknown as Record<string, unknown>
+  );
 
   return (
     <MainLayout>
@@ -301,6 +308,40 @@ export default function AssessmentEmailJobDetailPage() {
                 {formatDate(data.created_at || "")}
               </Typography>
             </Box>
+            {jobAttachment.url ? (
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Attachment
+                </Typography>
+                <Box sx={{ mt: 0.5 }}>
+                  <Chip
+                    icon={<IconWrapper icon="mdi:paperclip" size={16} />}
+                    label={
+                      jobAttachment.name?.trim() ||
+                      jobAttachment.url.split("?")[0].split("/").pop() ||
+                      "attachment"
+                    }
+                    clickable
+                    size="small"
+                    onClick={() =>
+                      jobAttachment.url &&
+                      window.open(
+                        jobAttachment.url,
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    }
+                    sx={{
+                      maxWidth: 360,
+                      bgcolor:
+                        "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                      color: "var(--accent-indigo)",
+                      "& .MuiChip-icon": { color: "var(--accent-indigo)" },
+                    }}
+                  />
+                </Box>
+              </Box>
+            ) : null}
           </Box>
         </Paper>
 
@@ -350,27 +391,64 @@ export default function AssessmentEmailJobDetailPage() {
               />
             )}
             {tabValue === 3 && (
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  {t("adminEmailJobs.emailBody")}
-                </Typography>
-                {data.email_body ? (
-                  <Box
-                    sx={{
-                      p: 2,
-                      bgcolor: "var(--surface)",
-                      borderRadius: 1,
-                      maxHeight: 400,
-                      overflow: "auto",
-                      "& a": { color: "var(--accent-indigo)" },
-                    }}
-                    dangerouslySetInnerHTML={{ __html: data.email_body }}
-                  />
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    {t("adminEmailJobs.noEmailBody")}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, mb: 1 }}
+                  >
+                    {t("adminEmailJobs.emailBody")}
                   </Typography>
-                )}
+                  {data.email_body ? (
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: "var(--surface)",
+                        borderRadius: 1,
+                        maxHeight: 400,
+                        overflow: "auto",
+                        "& a": { color: "var(--accent-indigo)" },
+                      }}
+                      dangerouslySetInnerHTML={{ __html: data.email_body }}
+                    />
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      {t("adminEmailJobs.noEmailBody")}
+                    </Typography>
+                  )}
+                </Box>
+                {data.email_body ? (
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 600, mb: 1 }}
+                    >
+                      Email template preview
+                    </Typography>
+                    <EmailTemplatePreview
+                      subject={data.subject}
+                      showPreviewChip={false}
+                      attachmentUrl={jobAttachment.url}
+                      attachmentName={jobAttachment.name}
+                      schedule={{
+                        startTime:
+                          (data as unknown as Record<string, unknown>)
+                            .start_time as string | null,
+                        endTime:
+                          (data as unknown as Record<string, unknown>)
+                            .end_time as string | null,
+                        durationMinutes:
+                          ((data as unknown as Record<string, unknown>)
+                            .duration_minutes as number | null) ?? null,
+                      }}
+                    >
+                      <Box
+                        sx={{ "& a": { color: "var(--accent-indigo)" } }}
+                        dangerouslySetInnerHTML={{ __html: data.email_body }}
+                      />
+                    </EmailTemplatePreview>
+                  </Box>
+                ) : null}
               </Box>
             )}
           </Box>
