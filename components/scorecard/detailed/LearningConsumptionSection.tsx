@@ -1,21 +1,27 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useId } from "react";
 import {
   Box,
   Typography,
-  Paper,
-  LinearProgress,
   Tooltip as MuiTooltip,
   IconButton,
-  Chip,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LearningConsumption } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
-import { ProgressRingChart } from "@/components/charts";
+import {
+  AnimatedRing,
+  CountUp,
+  Reveal,
+  gridStagger,
+  fadeRise,
+  useViewportEntrance,
+  useStaticRender,
+} from "@/components/scorecard/shared";
 import {
   BarChart,
   Bar,
@@ -27,231 +33,17 @@ import {
   Legend,
 } from "recharts";
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, ease: "easeOut" as const },
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.07,
-      delayChildren: 0.05,
-    },
+const ITEM_VARIANTS = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as const },
   },
-};
-
-const staggerItem = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.35, ease: "easeOut" as const },
 };
 
 interface LearningConsumptionSectionProps {
   data: LearningConsumption;
-}
-
-const SECTION_PAPER = {
-  p: { xs: 2, sm: 3, md: 3.5 },
-  borderRadius: 3,
-  border: "1px solid",
-  borderColor: "divider",
-  backgroundColor: "background.paper",
-  boxShadow: "none",
-};
-
-const STAT_CARD = {
-  p: 2,
-  borderRadius: 2,
-  bgcolor: "action.hover",
-  border: "1px solid",
-  borderColor: "divider",
-  textAlign: "center" as const,
-  minHeight: 88,
-  display: "flex",
-  flexDirection: "column" as const,
-  justifyContent: "center",
-};
-
-const CONTENT_CARD = {
-  p: 2.5,
-  borderRadius: 2,
-  width: "100%",
-  height: "100%",
-  minHeight: 0,
-  display: "flex",
-  flexDirection: "column" as const,
-  border: "1px solid",
-  borderColor: "divider",
-  bgcolor: "background.paper",
-  transition: "box-shadow 0.25s ease, border-color 0.25s ease",
-  "&:hover": {
-    boxShadow: 1,
-    borderColor: "primary.main",
-  },
-};
-
-function contentTypeMiniStatSx(accent: string, mode: "light" | "dark") {
-  return {
-    p: 1.5,
-    borderRadius: 2,
-    width: "100%",
-    minHeight: 72,
-    minWidth: 0,
-    boxSizing: "border-box" as const,
-    bgcolor: alpha(accent, mode === "dark" ? 0.14 : 0.06),
-    border: "1px solid",
-    borderColor: alpha(accent, mode === "dark" ? 0.3 : 0.2),
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: "center",
-    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-  };
-}
-
-interface ContentTypeBreakdownCardProps {
-  accentColor: string;
-  icon: ReactNode;
-  title: string;
-  subtitle: string;
-  completionPct: number;
-  children: ReactNode;
-}
-
-function ContentTypeBreakdownCard({
-  accentColor,
-  icon,
-  title,
-  subtitle,
-  completionPct,
-  children,
-}: ContentTypeBreakdownCardProps) {
-  const theme = useTheme();
-  const mode = theme.palette.mode;
-  return (
-    <Box
-      component={motion.div}
-      variants={staggerItem}
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      sx={{
-        ...CONTENT_CARD,
-        position: "relative",
-        overflow: "hidden",
-        borderTopWidth: 3,
-        borderTopStyle: "solid",
-        borderTopColor: accentColor,
-        bgcolor: alpha(accentColor, mode === "dark" ? 0.1 : 0.025),
-        "&:hover": {
-          boxShadow: 2,
-          borderColor: alpha(accentColor, mode === "dark" ? 0.55 : 0.4),
-        },
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 1.5,
-          mb: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: 1 }}>
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: 2,
-              bgcolor: accentColor,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              boxShadow: `0 6px 20px ${alpha(accentColor, 0.28)}`,
-            }}
-          >
-            {icon}
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="subtitle1" fontWeight={700} color="text.primary">
-              {title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-              {subtitle}
-            </Typography>
-          </Box>
-        </Box>
-        <Chip
-          label={`${completionPct}%`}
-          size="small"
-          sx={{
-            height: 28,
-            fontWeight: 700,
-            flexShrink: 0,
-            bgcolor: alpha(accentColor, mode === "dark" ? 0.22 : 0.12),
-            color: accentColor,
-            border: "1px solid",
-            borderColor: alpha(accentColor, 0.38),
-            "& .MuiChip-label": { px: 1.25 },
-          }}
-        />
-      </Box>
-      <LinearProgress
-        variant="determinate"
-        value={completionPct}
-        sx={{
-          height: 10,
-          borderRadius: 5,
-          mb: 2,
-          bgcolor: alpha(accentColor, 0.12),
-          "& .MuiLinearProgress-bar": {
-            borderRadius: 5,
-            bgcolor: proficiencyBandColor(completionPct),
-          },
-        }}
-      />
-      {children}
-    </Box>
-  );
-}
-
-/** Custom tooltip for Content Completion Overview bar chart */
-function ChartTooltipContent(props: {
-  active?: boolean;
-  payload?: Array<{ dataKey?: string; value?: number }>;
-  label?: string;
-}) {
-  const { active, payload, label } = props;
-  if (!active || !payload?.length || !label) return null;
-  const completed = payload.find((p) => p.dataKey === "completed")?.value ?? 0;
-  const pending = payload.find((p) => p.dataKey === "pending")?.value ?? 0;
-  return (
-    <Paper
-      elevation={8}
-      sx={{
-        px: 2,
-        py: 1.5,
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        minWidth: 180,
-      }}
-    >
-      <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
-        {label}
-      </Typography>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-        <Typography variant="body2" sx={{ color: "var(--success-500)", fontWeight: 600 }}>
-          Completed: {Number(completed)}
-        </Typography>
-        <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
-          Pending: {Number(pending)}
-        </Typography>
-      </Box>
-    </Paper>
-  );
 }
 
 const KPI_TOOLTIPS: Record<string, string> = {
@@ -265,10 +57,66 @@ const KPI_TOOLTIPS: Record<string, string> = {
   engagementActions: "Video rewatch events across enrolled courses.",
 };
 
+function ChartTooltipContent(props: {
+  active?: boolean;
+  payload?: Array<{ dataKey?: string; value?: number; color?: string }>;
+  label?: string;
+}) {
+  const { active, payload, label } = props;
+  if (!active || !payload?.length || !label) return null;
+  const completed = payload.find((p) => p.dataKey === "completed")?.value ?? 0;
+  const pending = payload.find((p) => p.dataKey === "pending")?.value ?? 0;
+  return (
+    <Box
+      sx={{
+        px: 2,
+        py: 1.25,
+        borderRadius: 2,
+        backgroundColor: "var(--card-bg)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+        boxShadow: "0 20px 50px -20px rgba(15, 23, 42, 0.35)",
+        minWidth: 180,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{
+          color: "var(--font-secondary)",
+          fontSize: "0.7rem",
+          fontWeight: 700,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          display: "block",
+          mb: 0.75,
+        }}
+      >
+        {label}
+      </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
+          <Typography variant="body2" sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
+            Completed · {Number(completed)}
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: "50%", background: "var(--border-default)" }} />
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
+            Pending · {Number(pending)}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 export function LearningConsumptionSection({ data }: LearningConsumptionSectionProps) {
   const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const mockInterviewAccent = theme.palette.secondary.main;
-  const miniStat = (accent: string) => contentTypeMiniStatSx(accent, theme.palette.mode);
+  const gradientCompletedId = useId();
+  const entrance = useViewportEntrance();
 
   const totalContent =
     data.totalContent ??
@@ -344,7 +192,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
       pending: data.articles.totalAssigned - data.articles.read,
     },
     {
-      category: "Course quizzes",
+      category: "Quizzes",
       assigned: data.practice.mcqsTotal,
       completed: data.practice.mcqsAttempted,
       pending: mcqsPending,
@@ -364,561 +212,864 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
   ];
 
   const kpiItems = [
-    { value: totalContentDisplay, label: "Total Content", tip: KPI_TOOLTIPS.totalContent },
-    { value: totalCompleted, label: "Total Completed", tip: KPI_TOOLTIPS.totalCompleted },
-    { value: data.practice.assessmentsAttempted, label: "Assessments Taken", tip: KPI_TOOLTIPS.assessmentsTaken },
-    { value: totalAssessmentsPresent, label: "Assessments Available", tip: KPI_TOOLTIPS.assessmentsAvailable },
+    { value: totalContentDisplay, label: "Total Content", tip: KPI_TOOLTIPS.totalContent, accent: "#0a66c2" },
+    { value: totalCompleted, label: "Completed", tip: KPI_TOOLTIPS.totalCompleted, accent: "#10b981" },
+    {
+      value: data.practice.assessmentsAttempted,
+      label: "Assessments Taken",
+      tip: KPI_TOOLTIPS.assessmentsTaken,
+      accent: "#8b5cf6",
+    },
+    {
+      value: totalAssessmentsPresent,
+      label: "Assessments Available",
+      tip: KPI_TOOLTIPS.assessmentsAvailable,
+      accent: "#06b6d4",
+    },
     {
       value: data.videos.rewatchCount,
       label: "Engagement Actions",
       tip: KPI_TOOLTIPS.engagementActions,
+      accent: "#f59e0b",
     },
   ];
 
   return (
-    <Paper elevation={0} sx={SECTION_PAPER}>
-      {/* Header */}
+    <Reveal as="section">
       <Box
-        component={motion.div}
-        initial={fadeInUp.initial}
-        animate={fadeInUp.animate}
-        transition={fadeInUp.transition}
-        sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
+        sx={{
+          position: "relative",
+          borderRadius: 4,
+          overflow: "hidden",
+          border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+          backgroundColor: "var(--card-bg)",
+          boxShadow:
+            "0 1px 0 color-mix(in srgb, var(--border-default) 60%, transparent), 0 30px 60px -30px rgba(15, 23, 42, 0.18)",
+        }}
       >
         <Box
+          aria-hidden
           sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 2,
-            bgcolor: "primary.main",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            position: "absolute",
+            inset: 0,
+            opacity: isDark ? 0.6 : 0.45,
+            backgroundImage: [
+              "radial-gradient(50% 50% at 0% 0%, color-mix(in srgb, var(--accent-cyan) 12%, transparent), transparent 60%)",
+              "radial-gradient(45% 55% at 100% 0%, color-mix(in srgb, var(--accent-purple) 10%, transparent), transparent 60%)",
+            ].join(", "),
+            pointerEvents: "none",
           }}
-        >
-          <IconWrapper icon="mdi:chart-line" size={24} color="#ffffff" />
-        </Box>
-        <Box>
-          <Typography variant="h5" fontWeight={700} color="text.primary">
-            Learning Consumption
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Progress and engagement across videos, articles, course quizzes, coding problems, mock interviews, and assessments
-          </Typography>
-        </Box>
-      </Box>
+        />
 
-      {/* Hero: Completion overview + ring */}
-      <Box
-        component={motion.div}
-        initial={fadeInUp.initial}
-        animate={fadeInUp.animate}
-        transition={{ ...fadeInUp.transition, delay: 0.08 }}
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          alignItems: { md: "center" },
-          gap: 3,
-          mb: 4,
-          p: 3,
-          borderRadius: 2,
-          bgcolor: "action.hover",
-          border: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Box
-          component={motion.div}
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
-          sx={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}
-        >
-          <ProgressRingChart value={overallCompletion} size={100} fontSize={24} />
-          <Box>
-            <Typography variant="body2" color="text.secondary" fontWeight={600}>
-              Overall completion
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {totalCompleted} of {totalContentDisplay} items completed
-            </Typography>
-          </Box>
-        </Box>
-        <Box
-          component={motion.div}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-          sx={{ flex: 1, minHeight: 240 }}
-        >
-          <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
-            Content Completion Overview
-          </Typography>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-              <XAxis
-                dataKey="category"
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-              />
-              <YAxis tick={{ fontSize: 12, fill: theme.palette.text.secondary }} />
-              <Tooltip content={<ChartTooltipContent />} />
-              <Legend
-                wrapperStyle={{
-                  paddingTop: 8,
-                  color: theme.palette.text.primary,
-                }}
-                formatter={(value) => (
-                  <span style={{ color: theme.palette.text.primary, fontWeight: 500 }}>{value}</span>
-                )}
-              />
-              <Bar dataKey="completed" stackId="a" fill="var(--success-500)" name="Completed" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="pending" stackId="a" fill="var(--border-default)" name="Pending" radius={[0, 0, 4, 4]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      </Box>
-
-      {/* KPI strip — full width row, 5 equal cards */}
-      <Box
-        component={motion.div}
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
-        sx={{
-          mb: 4,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          width: "100%",
-        }}
-      >
-        {kpiItems.map((kpi, i) => (
+        <Box sx={{ position: "relative", p: { xs: 2.5, sm: 3.5, md: 5 } }}>
+          {/* Header */}
           <Box
-            key={kpi.label}
             component={motion.div}
-            variants={staggerItem}
-            sx={{ ...STAT_CARD, flex: "1 1 0", minWidth: { xs: "100%", sm: 140 } }}
+            variants={fadeRise}
+            {...entrance}
+            sx={{
+              display: "flex",
+              alignItems: { xs: "flex-start", sm: "center" },
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+              mb: { xs: 4, md: 5 },
+            }}
           >
-            <Typography variant="h4" fontWeight={700} color="text.primary">
-              {kpi.value}
-            </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.25, mt: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                {kpi.label}
-              </Typography>
-              <MuiTooltip title={kpi.tip} placement="top" arrow>
-                <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                  <IconWrapper icon="mdi:information-outline" size={16} color="currentColor" />
-                </IconButton>
-              </MuiTooltip>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, minWidth: 0 }}>
+              <Box
+                sx={{
+                  width: 4,
+                  height: 48,
+                  borderRadius: 2,
+                  background:
+                    "linear-gradient(180deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
+                }}
+              />
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Chapter 02
+                </Typography>
+                <Typography
+                  component="h2"
+                  sx={{
+                    fontWeight: 800,
+                    color: "var(--font-primary)",
+                    fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.75rem" },
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.035em",
+                    mt: 0.25,
+                  }}
+                >
+                  Learning Consumption
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.95rem",
+                    mt: 1,
+                    maxWidth: 640,
+                  }}
+                >
+                  Progress and engagement across videos, articles, course quizzes,
+                  coding problems, mock interviews, and assessments.
+                </Typography>
+              </Box>
             </Box>
           </Box>
-        ))}
-      </Box>
 
-      {/* By content type — accent cards + tinted stat tiles */}
-      <Box
-        component={motion.div}
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
-        sx={{
-          mb: 0,
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          p: { xs: 2, sm: 2.5, md: 3 },
-          bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.06 : 0.02),
-        }}
-      >
-        <Box
-          component={motion.div}
-          variants={staggerItem}
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "flex-start", sm: "center" },
-            justifyContent: "space-between",
-            gap: 2,
-            mb: 2.5,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+          {/* Editorial KPI rail — 5 oversized numbers separated by hairlines */}
+          <Box
+            component={motion.div}
+            variants={gridStagger}
+            {...entrance}
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "repeat(2, 1fr)",
+                sm: "repeat(3, 1fr)",
+                md: "repeat(5, 1fr)",
+              },
+              borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+              borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+              mb: { xs: 4, md: 5 },
+            }}
+          >
+            {kpiItems.map((kpi, idx) => (
+              <Box
+                key={kpi.label}
+                component={motion.div}
+                variants={ITEM_VARIANTS}
+                sx={{
+                  position: "relative",
+                  py: { xs: 2.5, md: 3 },
+                  px: { xs: 1.5, sm: 2 },
+                  borderRight: {
+                    xs: idx % 2 === 0 ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" : "none",
+                    sm: (idx + 1) % 3 === 0 ? "none" : "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                    md: idx === kpiItems.length - 1 ? "none" : "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                  },
+                  borderBottom: {
+                    xs: idx < kpiItems.length - 2 ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" : "none",
+                    sm: idx < kpiItems.length - 3 ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" : "none",
+                    md: "none",
+                  },
+                  transition: "background-color 0.25s ease",
+                  "&:hover": {
+                    backgroundColor: `color-mix(in srgb, ${kpi.accent} 6%, transparent)`,
+                  },
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: 24,
+                    height: 2,
+                    background: kpi.accent,
+                  },
+                }}
+              >
+                <Typography
+                  component="div"
+                  sx={{
+                    fontWeight: 800,
+                    color: "var(--font-primary)",
+                    fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" },
+                    lineHeight: 1,
+                    letterSpacing: "-0.04em",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  <CountUp value={kpi.value} duration={1.4} />
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {kpi.label}
+                  </Typography>
+                  <MuiTooltip title={kpi.tip} placement="top" arrow>
+                    <IconButton size="small" sx={{ p: 0.25, color: "var(--font-secondary)" }}>
+                      <IconWrapper icon="mdi:information-outline" size={13} color="currentColor" />
+                    </IconButton>
+                  </MuiTooltip>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Hero panel: completion ring + chart side-by-side */}
+          <Box
+            component={motion.div}
+            variants={fadeRise}
+            {...entrance}
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "minmax(0, 320px) minmax(0, 1fr)" },
+              gap: { xs: 3, md: 4 },
+              alignItems: "stretch",
+              mb: { xs: 4, md: 5 },
+            }}
+          >
             <Box
               sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.15),
-                border: "1px solid",
-                borderColor: alpha(theme.palette.primary.main, 0.25),
+                position: "relative",
+                p: { xs: 3, md: 4 },
+                borderRadius: 3,
+                background:
+                  "linear-gradient(160deg, color-mix(in srgb, var(--accent-indigo) 12%, transparent) 0%, color-mix(in srgb, var(--accent-cyan) 6%, transparent) 100%)",
+                border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, transparent)",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                flexShrink: 0,
+                gap: 2,
+                minHeight: 280,
               }}
             >
-              <IconWrapper icon="mdi:view-grid-outline" size={22} color={theme.palette.primary.main} />
+              <AnimatedRing
+                value={overallCompletion}
+                size={200}
+                strokeWidth={12}
+                color="var(--accent-indigo)"
+                colorEnd="var(--accent-cyan)"
+                caption="Overall Completion"
+                valueFontSize={48}
+              />
+              <Box sx={{ textAlign: "center" }}>
+                <Typography
+                  sx={{
+                    color: "var(--font-primary)",
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  <CountUp value={totalCompleted} /> of <CountUp value={totalContentDisplay} /> items
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.8rem",
+                    display: "block",
+                    mt: 0.25,
+                  }}
+                >
+                  Across every content type below
+                </Typography>
+              </Box>
             </Box>
-            <Box>
-              <Typography variant="h6" fontWeight={700} color="text.primary">
-                By content type
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, maxWidth: 560 }}>
-                Completion and detail metrics for videos, articles, course quizzes, coding problems, mock interviews, and assessments—aligned with the overview chart above.
-              </Typography>
+
+            <Box
+              sx={{
+                p: { xs: 2, md: 3 },
+                borderRadius: 3,
+                border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Content Completion Overview
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <LegendDot label="Completed" color="#10b981" />
+                  <LegendDot label="Pending" color="var(--border-light)" />
+                </Box>
+              </Box>
+              <Box sx={{ flex: 1, minHeight: 240 }}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={240}>
+                  <BarChart data={chartData} margin={{ top: 12, right: 12, bottom: 0, left: -12 }}>
+                    <defs>
+                      <linearGradient id={gradientCompletedId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" />
+                        <stop offset="100%" stopColor="#059669" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 6"
+                      stroke={alpha(theme.palette.divider, 0.6)}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="category"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{
+                        fontSize: 11,
+                        fill: theme.palette.text.secondary,
+                        fontWeight: 600,
+                      }}
+                      dy={6}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{
+                        fontSize: 11,
+                        fill: theme.palette.text.secondary,
+                      }}
+                      width={36}
+                    />
+                    <Tooltip
+                      content={<ChartTooltipContent />}
+                      cursor={{ fill: alpha(theme.palette.primary.main, 0.06) }}
+                    />
+                    <Legend wrapperStyle={{ display: "none" }} />
+                    <Bar
+                      dataKey="completed"
+                      stackId="a"
+                      fill={`url(#${gradientCompletedId})`}
+                      name="Completed"
+                      radius={[6, 6, 0, 0]}
+                      animationDuration={1100}
+                      animationEasing="ease-out"
+                    />
+                    <Bar
+                      dataKey="pending"
+                      stackId="a"
+                      fill={alpha(theme.palette.text.secondary, isDark ? 0.18 : 0.12)}
+                      name="Pending"
+                      radius={[0, 0, 6, 6]}
+                      animationDuration={1100}
+                      animationEasing="ease-out"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
             </Box>
           </Box>
-        </Box>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
-            gap: 3,
-            alignItems: "stretch",
-          }}
-        >
-          <Box sx={{ display: "flex", minWidth: 0 }}>
-            <ContentTypeBreakdownCard
-              accentColor={theme.palette.primary.main}
-              icon={<IconWrapper icon="mdi:play-circle" size={24} color="#ffffff" />}
-              title="Videos"
-              subtitle={`${data.videos.completed} of ${data.videos.totalAssigned} completed`}
-              completionPct={videoCompletion}
-            >
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.primary.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Avg watch
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.videos.averageWatchPercentage}%
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.primary.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Rewatches
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.videos.rewatchCount}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.primary.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Engagement
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.videos.engagementCount != null ? videoEngagement : `${videoEngagement}%`}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.primary.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Skipped
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} color="error.main" sx={{ mt: 0.25 }}>
-                        {skippedVideosCount}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </ContentTypeBreakdownCard>
-          </Box>
+          {/* Bento grid — 6 content type cards, with Videos and Mock Interviews spanning two columns on lg */}
+          <Box
+            component={motion.div}
+            variants={gridStagger}
+            {...entrance}
+            sx={{
+              display: "grid",
+              gap: { xs: 2, md: 2.5 },
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                lg: "repeat(6, 1fr)",
+              },
+            }}
+          >
+            <Box sx={{ gridColumn: { lg: "span 4" } }}>
+              <BentoCard
+                accent={theme.palette.primary.main}
+                icon="mdi:play-circle"
+                eyebrow="Video Lessons"
+                title="Videos"
+                subtitle={`${data.videos.completed} of ${data.videos.totalAssigned} completed`}
+                completionPct={videoCompletion}
+                large
+                stats={[
+                  { label: "Avg watch", value: `${data.videos.averageWatchPercentage}%` },
+                  { label: "Rewatches", value: data.videos.rewatchCount },
+                  {
+                    label: "Engagement",
+                    value:
+                      data.videos.engagementCount != null
+                        ? videoEngagement
+                        : `${videoEngagement}%`,
+                  },
+                  { label: "Skipped", value: skippedVideosCount, danger: true },
+                ]}
+              />
+            </Box>
 
-          <Box sx={{ display: "flex", minWidth: 0 }}>
-            <ContentTypeBreakdownCard
-              accentColor={theme.palette.success.main}
-              icon={<IconWrapper icon="mdi:book-open" size={24} color="#ffffff" />}
-              title="Articles"
-              subtitle={`${data.articles.read} of ${data.articles.totalAssigned} read`}
-              completionPct={articleCompletion}
-            >
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.success.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Pending
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {articlesPending}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.success.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Assigned
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.articles.totalAssigned}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.success.main)}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                          Estimated read
-                        </Typography>
-                        <MuiTooltip title="Average lesson estimate across all assigned articles." placement="top" arrow>
-                          <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                            <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
-                          </IconButton>
-                        </MuiTooltip>
-                      </Box>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.articles.totalAssigned > 0 ? `${data.articles.typicalReadTimePerArticle}m` : "—"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.success.main)}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                          Your read time
-                        </Typography>
-                        <MuiTooltip title="Your average when read time is saved (e.g. Mark as read)." placement="top" arrow>
-                          <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                            <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
-                          </IconButton>
-                        </MuiTooltip>
-                      </Box>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.articles.read === 0 ? "—" : `${data.articles.averageReadingTime}m`}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </ContentTypeBreakdownCard>
-          </Box>
+            <Box sx={{ gridColumn: { lg: "span 2" } }}>
+              <BentoCard
+                accent={theme.palette.success.main}
+                icon="mdi:book-open"
+                eyebrow="Reading"
+                title="Articles"
+                subtitle={`${data.articles.read} of ${data.articles.totalAssigned} read`}
+                completionPct={articleCompletion}
+                stats={[
+                  { label: "Pending", value: articlesPending },
+                  { label: "Assigned", value: data.articles.totalAssigned },
+                  {
+                    label: "Est. read",
+                    value:
+                      data.articles.totalAssigned > 0
+                        ? `${data.articles.typicalReadTimePerArticle}m`
+                        : "—",
+                    hintTip: "Average lesson estimate across all assigned articles.",
+                  },
+                  {
+                    label: "Your read",
+                    value:
+                      data.articles.read === 0 ? "—" : `${data.articles.averageReadingTime}m`,
+                    hintTip: "Your average when read time is saved (e.g. Mark as read).",
+                  },
+                ]}
+              />
+            </Box>
 
-          <Box sx={{ display: "flex", minWidth: 0 }}>
-            <ContentTypeBreakdownCard
-              accentColor={theme.palette.warning.main}
-              icon={<IconWrapper icon="mdi:help-circle-outline" size={24} color="#ffffff" />}
-              title="Course quizzes"
-              subtitle={`${data.practice.mcqsAttempted} of ${data.practice.mcqsTotal} MCQs`}
-              completionPct={mcqCompletion}
-            >
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.warning.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Quiz sections
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {quizSectionsCompleted} / {quizSectionsTotal}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.warning.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Pending MCQs
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {mcqsPending}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </ContentTypeBreakdownCard>
-          </Box>
+            <Box sx={{ gridColumn: { lg: "span 2" } }}>
+              <BentoCard
+                accent={theme.palette.warning.main}
+                icon="mdi:help-circle-outline"
+                eyebrow="Practice"
+                title="Course quizzes"
+                subtitle={`${data.practice.mcqsAttempted} of ${data.practice.mcqsTotal} MCQs`}
+                completionPct={mcqCompletion}
+                stats={[
+                  {
+                    label: "Quiz sections",
+                    value: `${quizSectionsCompleted}/${quizSectionsTotal}`,
+                  },
+                  { label: "Pending MCQs", value: mcqsPending },
+                ]}
+              />
+            </Box>
 
-          <Box sx={{ display: "flex", minWidth: 0 }}>
-            <ContentTypeBreakdownCard
-              accentColor={theme.palette.info.main}
-              icon={<IconWrapper icon="mdi:code-braces" size={24} color="#ffffff" />}
-              title="Coding problems"
-              subtitle={`${data.codingProblems.completed} of ${data.codingProblems.totalAssigned} solved`}
-              completionPct={codingCompletion}
-            >
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.info.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Pending
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {codingPending}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.info.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Assigned
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.codingProblems.totalAssigned}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ gridColumn: "1 / -1" }}>
-                    <Box sx={miniStat(theme.palette.info.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Submissions
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.codingProblems.submissionCount}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </ContentTypeBreakdownCard>
-          </Box>
+            <Box sx={{ gridColumn: { lg: "span 2" } }}>
+              <BentoCard
+                accent={theme.palette.info.main}
+                icon="mdi:code-braces"
+                eyebrow="Coding"
+                title="Coding problems"
+                subtitle={`${data.codingProblems.completed} of ${data.codingProblems.totalAssigned} solved`}
+                completionPct={codingCompletion}
+                stats={[
+                  { label: "Pending", value: codingPending },
+                  { label: "Submissions", value: data.codingProblems.submissionCount },
+                ]}
+              />
+            </Box>
 
-          <Box sx={{ display: "flex", minWidth: 0 }}>
-            <ContentTypeBreakdownCard
-              accentColor={mockInterviewAccent}
-              icon={<IconWrapper icon="mdi:account-voice" size={24} color="#ffffff" />}
-              title="Mock interviews"
-              subtitle={`${data.mockInterviews.completed} of ${data.mockInterviews.totalAssigned} completed`}
-              completionPct={data.mockInterviews.completionPercentage}
-            >
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                  <Box>
-                    <Box sx={miniStat(mockInterviewAccent)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Pending
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {mockInterviewPending}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(mockInterviewAccent)}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                          Active total
-                        </Typography>
-                        <MuiTooltip
-                          title="Scheduled, in progress, or completed (excludes cancelled sessions)."
-                          placement="top"
-                          arrow
-                        >
-                          <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                            <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
-                          </IconButton>
-                        </MuiTooltip>
-                      </Box>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.mockInterviews.totalAssigned}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(mockInterviewAccent)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Completion
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        fontWeight={700}
-                        sx={{ mt: 0.25, color: proficiencyBandColor(data.mockInterviews.completionPercentage) }}
-                      >
-                        {data.mockInterviews.completionPercentage}%
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(mockInterviewAccent)}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexWrap: "wrap" }}>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                          Avg score
-                        </Typography>
-                        <MuiTooltip
-                          title="Average of per-interview scores from evaluation (e.g. overall_percentage). Interviews without a numeric score are omitted."
-                          placement="top"
-                          arrow
-                        >
-                          <IconButton size="small" sx={{ p: 0.25, color: "text.secondary" }}>
-                            <IconWrapper icon="mdi:information-outline" size={14} color="currentColor" />
-                          </IconButton>
-                        </MuiTooltip>
-                      </Box>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {data.mockInterviews.averageScore == null ? "—" : `${data.mockInterviews.averageScore}%`}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </ContentTypeBreakdownCard>
-          </Box>
+            <Box sx={{ gridColumn: { lg: "span 4" } }}>
+              <BentoCard
+                accent={mockInterviewAccent}
+                icon="mdi:account-voice"
+                eyebrow="Interview Prep"
+                title="Mock interviews"
+                subtitle={`${data.mockInterviews.completed} of ${data.mockInterviews.totalAssigned} completed`}
+                completionPct={data.mockInterviews.completionPercentage}
+                large
+                stats={[
+                  { label: "Pending", value: mockInterviewPending },
+                  {
+                    label: "Active total",
+                    value: data.mockInterviews.totalAssigned,
+                    hintTip:
+                      "Scheduled, in progress, or completed (excludes cancelled sessions).",
+                  },
+                  {
+                    label: "Completion",
+                    value: `${data.mockInterviews.completionPercentage}%`,
+                    valueColor: proficiencyBandColor(data.mockInterviews.completionPercentage),
+                  },
+                  {
+                    label: "Avg score",
+                    value:
+                      data.mockInterviews.averageScore == null
+                        ? "—"
+                        : `${data.mockInterviews.averageScore}%`,
+                    hintTip:
+                      "Average of per-interview scores from evaluation. Interviews without a numeric score are omitted.",
+                  },
+                ]}
+              />
+            </Box>
 
-          <Box sx={{ display: "flex", minWidth: 0 }}>
-            <ContentTypeBreakdownCard
-              accentColor={theme.palette.secondary.main}
-              icon={<IconWrapper icon="mdi:clipboard-text-outline" size={24} color="#ffffff" />}
-              title="Assessments"
-              subtitle={
-                totalAssessmentsPresent > 0
-                  ? `${data.practice.assessmentsAttempted} of ${totalAssessmentsPresent} attempted`
-                  : "No assessments assigned"
-              }
-              completionPct={assessmentChipPct}
-            >
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.secondary.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Available
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }}>
-                        {totalAssessmentsPresent}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Box sx={miniStat(theme.palette.secondary.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Missed
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700} sx={{ mt: 0.25 }} color="error.main">
-                        {data.practice.assessmentsMissed}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ gridColumn: "1 / -1" }}>
-                    <Box sx={miniStat(theme.palette.secondary.main)}>
-                      <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                        Completion
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        fontWeight={700}
-                        sx={{ mt: 0.25, color: proficiencyBandColor(assessmentCompletionPct) }}
-                      >
-                        {assessmentCompletionPct}%
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </ContentTypeBreakdownCard>
+            <Box sx={{ gridColumn: { lg: "span 6" } }}>
+              <BentoCard
+                accent={theme.palette.secondary.main}
+                icon="mdi:clipboard-text-outline"
+                eyebrow="Assessments"
+                title="Assessments"
+                subtitle={
+                  totalAssessmentsPresent > 0
+                    ? `${data.practice.assessmentsAttempted} of ${totalAssessmentsPresent} attempted`
+                    : "No assessments assigned"
+                }
+                completionPct={assessmentChipPct}
+                stats={[
+                  { label: "Available", value: totalAssessmentsPresent },
+                  {
+                    label: "Missed",
+                    value: data.practice.assessmentsMissed,
+                    danger: true,
+                  },
+                  {
+                    label: "Completion",
+                    value: `${assessmentCompletionPct}%`,
+                    valueColor: proficiencyBandColor(assessmentCompletionPct),
+                  },
+                ]}
+              />
+            </Box>
           </Box>
         </Box>
       </Box>
-    </Paper>
+    </Reveal>
+  );
+}
+
+function LegendDot({ label, color }: { label: string; color: string }) {
+  return (
+    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
+      <Box sx={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+      <Typography
+        variant="caption"
+        sx={{
+          color: "var(--font-secondary)",
+          fontSize: "0.7rem",
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
+interface BentoStat {
+  label: string;
+  value: ReactNode;
+  danger?: boolean;
+  valueColor?: string;
+  hintTip?: string;
+}
+
+interface BentoCardProps {
+  accent: string;
+  icon: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  completionPct: number;
+  large?: boolean;
+  stats: BentoStat[];
+}
+
+function BentoCard({
+  accent,
+  icon,
+  eyebrow,
+  title,
+  subtitle,
+  completionPct,
+  large,
+  stats,
+}: BentoCardProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const barId = useId();
+  const staticRender = useStaticRender();
+  const clampedPct = Math.max(0, Math.min(100, completionPct));
+  const hairline = alpha(accent, isDark ? 0.22 : 0.16);
+  const statColumns = Math.min(stats.length, 4);
+
+  return (
+    <Box
+      component={motion.div}
+      variants={ITEM_VARIANTS}
+      sx={{
+        position: "relative",
+        height: "100%",
+        minHeight: large ? 320 : 280,
+        p: { xs: 2.5, sm: 3, md: 3.5 },
+        borderRadius: 4,
+        overflow: "hidden",
+        backgroundColor: "var(--card-bg)",
+        border: "1px solid",
+        borderColor: alpha(accent, isDark ? 0.3 : 0.18),
+        backgroundImage: `linear-gradient(155deg, ${alpha(accent, isDark ? 0.16 : 0.06)} 0%, transparent 55%)`,
+      }}
+    >
+      {/* Decorative corner glyph — large transparent icon as background */}
+      <Box
+        aria-hidden
+        sx={{
+          position: "absolute",
+          top: { xs: -32, md: -40 },
+          right: { xs: -32, md: -40 },
+          opacity: isDark ? 0.16 : 0.1,
+          color: accent,
+          pointerEvents: "none",
+        }}
+      >
+        <IconWrapper icon={icon} size={large ? 220 : 180} color="currentColor" />
+      </Box>
+
+      {/* Subtle radial glow accent */}
+      <Box
+        aria-hidden
+        sx={{
+          position: "absolute",
+          top: -80,
+          right: -80,
+          width: 240,
+          height: 240,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${alpha(accent, 0.28)} 0%, transparent 65%)`,
+          filter: "blur(28px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <Box
+        sx={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          gap: { xs: 2.5, md: 3 },
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 1.5,
+              flexShrink: 0,
+              background: `linear-gradient(135deg, ${accent} 0%, ${alpha(accent, 0.65)} 100%)`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: `0 12px 24px -10px ${alpha(accent, 0.6)}`,
+            }}
+          >
+            <IconWrapper icon={icon} size={20} color="#ffffff" />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: accent,
+                fontSize: "0.65rem",
+                fontWeight: 800,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                display: "block",
+                lineHeight: 1.2,
+              }}
+            >
+              {eyebrow}
+            </Typography>
+            <Typography
+              sx={{
+                fontWeight: 700,
+                color: "var(--font-primary)",
+                fontSize: "1.15rem",
+                lineHeight: 1.2,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {title}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Hero metric — oversized completion % anchored next to the subtitle */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 1.5,
+          }}
+        >
+          <Typography
+            component="div"
+            sx={{
+              fontWeight: 800,
+              color: "var(--font-primary)",
+              lineHeight: 0.92,
+              letterSpacing: "-0.05em",
+              fontSize: large
+                ? { xs: "4.5rem", md: "5.25rem" }
+                : { xs: "3.75rem", md: "4.25rem" },
+              fontVariantNumeric: "tabular-nums",
+              display: "inline-flex",
+              alignItems: "baseline",
+            }}
+          >
+            <CountUp value={clampedPct} duration={1.3} />
+            <Box
+              component="span"
+              sx={{
+                fontSize: "0.32em",
+                fontWeight: 800,
+                ml: 0.5,
+                color: accent,
+                letterSpacing: 0,
+              }}
+            >
+              %
+            </Box>
+          </Typography>
+          <Typography
+            sx={{
+              color: "var(--font-secondary)",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              textAlign: "right",
+              maxWidth: 180,
+              lineHeight: 1.4,
+            }}
+          >
+            {subtitle}
+          </Typography>
+        </Box>
+
+        {/* Slim neon progress track */}
+        <Box sx={{ position: "relative" }}>
+          <Box
+            sx={{
+              height: 4,
+              borderRadius: 999,
+              backgroundColor: alpha(accent, isDark ? 0.18 : 0.12),
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <Box
+              component={motion.div}
+              initial={{ width: staticRender ? `${clampedPct}%` : 0 }}
+              animate={staticRender ? { width: `${clampedPct}%` } : undefined}
+              whileInView={staticRender ? undefined : { width: `${clampedPct}%` }}
+              viewport={staticRender ? undefined : { once: true, margin: "0px 0px -10% 0px" }}
+              transition={{ duration: staticRender ? 0 : 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+              sx={{
+                height: "100%",
+                borderRadius: 999,
+                background: `linear-gradient(90deg, ${accent} 0%, ${alpha(accent, 0.7)} 100%)`,
+                boxShadow: `0 0 14px ${alpha(accent, 0.6)}`,
+              }}
+              id={barId}
+            />
+          </Box>
+        </Box>
+
+        {/* Editorial stats strip — hairline-separated cells, no tinted boxes */}
+        <Box
+          sx={{
+            mt: "auto",
+            pt: { xs: 2, md: 2.5 },
+            borderTop: `1px solid ${hairline}`,
+            display: "grid",
+            gridTemplateColumns: {
+              xs: stats.length >= 4 ? "repeat(2, 1fr)" : `repeat(${stats.length}, 1fr)`,
+              sm: `repeat(${statColumns}, 1fr)`,
+            },
+            rowGap: { xs: 2, sm: 0 },
+            position: "relative",
+          }}
+        >
+          {stats.map((stat) => {
+            const cell = (
+              <Box
+                key={stat.label}
+                sx={{
+                  position: "relative",
+                  px: { xs: 0, sm: 1.5 },
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0.5,
+                  // Vertical dividers between cells in the same row
+                  "&:not(:first-of-type)": {
+                    pl: { sm: 1.75 },
+                    borderLeft: { sm: `1px solid ${hairline}` },
+                  },
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: accent,
+                      flexShrink: 0,
+                      boxShadow: `0 0 0 2px ${alpha(accent, 0.15)}`,
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                    title={stat.label}
+                  >
+                    {stat.label}
+                  </Typography>
+                  {stat.hintTip && (
+                    <MuiTooltip title={stat.hintTip} placement="top" arrow>
+                      <IconButton
+                        size="small"
+                        sx={{ p: 0.15, color: "var(--font-secondary)", ml: -0.25 }}
+                      >
+                        <IconWrapper icon="mdi:information-outline" size={12} color="currentColor" />
+                      </IconButton>
+                    </MuiTooltip>
+                  )}
+                </Box>
+                <Typography
+                  sx={{
+                    fontWeight: 800,
+                    color: stat.danger
+                      ? theme.palette.error.main
+                      : stat.valueColor ?? "var(--font-primary)",
+                    fontSize: { xs: "1.35rem", md: "1.5rem" },
+                    lineHeight: 1,
+                    letterSpacing: "-0.02em",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {stat.value}
+                </Typography>
+              </Box>
+            );
+            return cell;
+          })}
+        </Box>
+      </Box>
+    </Box>
   );
 }
