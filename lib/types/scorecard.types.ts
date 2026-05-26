@@ -304,6 +304,32 @@ export interface MockInterviewPerformance {
   interviews: MockInterview[];
 }
 
+// Behavioral & Consistency (Phase 6)
+export interface LoginFrequency {
+  week: string;
+  loginCount: number;
+}
+
+export interface StudyTimeByWeek {
+  week: string;
+  hours: number;
+}
+
+export interface StudyTimeDistribution {
+  day: string;
+  hours: number;
+}
+
+export interface BehavioralMetrics {
+  loginFrequency: LoginFrequency[];
+  studyTimeByWeek: StudyTimeByWeek[];
+  studyTimeDistribution: StudyTimeDistribution[];
+  missedDeadlinesCount: number;
+  lastActiveDate: string | null;
+  consistencyScore: number;
+  activityCalendar: Record<string, number>;
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
@@ -313,4 +339,5 @@ export interface ScorecardData {
   weakAreas?: WeakAreas;
   assessmentPerformance?: AssessmentPerformance[];
   mockInterviewPerformance?: MockInterviewPerformance;
+  behavioralMetrics?: BehavioralMetrics;
 }

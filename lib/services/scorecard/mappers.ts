@@ -1,6 +1,7 @@
 import type {
   AssessmentDifficultyBreakdown,
   AssessmentPerformance,
+  BehavioralMetrics,
   ContentCompletionOverview,
   InterviewParameter,
   LearningConsumption,
@@ -531,6 +532,60 @@ export function mapMockInterviewPerformanceFromApi(api: unknown): MockInterviewP
     interviewReadinessIndex: num(raw.interview_readiness_index),
     improvementSinceFirst: num(raw.improvement_since_first),
     interviews,
+  };
+}
+
+export function mapBehavioralMetricsFromApi(api: unknown): BehavioralMetrics {
+  if (!api || typeof api !== "object") {
+    return getEmptyBehavioralMetrics();
+  }
+  const raw = api as Record<string, unknown>;
+  const loginFrequency = Array.isArray(raw.login_frequency)
+    ? (raw.login_frequency as Record<string, unknown>[]).map((r) => ({
+        week: (r.week as string) ?? "",
+        loginCount: num(r.login_count),
+      }))
+    : [];
+  const studyTimeByWeek = Array.isArray(raw.study_time_by_week)
+    ? (raw.study_time_by_week as Record<string, unknown>[]).map((r) => ({
+        week: (r.week as string) ?? "",
+        hours: num(r.hours),
+      }))
+    : [];
+  const studyTimeDistribution = Array.isArray(raw.study_time_distribution)
+    ? (raw.study_time_distribution as Record<string, unknown>[]).map((r) => ({
+        day: (r.day as string) ?? "",
+        hours: num(r.hours),
+      }))
+    : [];
+  const activityCalendarRaw =
+    raw.activity_calendar && typeof raw.activity_calendar === "object"
+      ? (raw.activity_calendar as Record<string, unknown>)
+      : {};
+  const activityCalendar: Record<string, number> = {};
+  for (const [key, value] of Object.entries(activityCalendarRaw)) {
+    activityCalendar[key] = num(value);
+  }
+  return {
+    loginFrequency,
+    studyTimeByWeek,
+    studyTimeDistribution,
+    missedDeadlinesCount: num(raw.missed_deadlines_count),
+    lastActiveDate: (raw.last_active_date as string) || null,
+    consistencyScore: num(raw.consistency_score),
+    activityCalendar,
+  };
+}
+
+export function getEmptyBehavioralMetrics(): BehavioralMetrics {
+  return {
+    loginFrequency: [],
+    studyTimeByWeek: [],
+    studyTimeDistribution: [],
+    missedDeadlinesCount: 0,
+    lastActiveDate: null,
+    consistencyScore: 0,
+    activityCalendar: {},
   };
 }
 

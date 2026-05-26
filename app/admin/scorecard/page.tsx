@@ -26,6 +26,7 @@ import { useToast } from "@/components/common/Toast";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
+import { BehavioralMetricsSection } from "@/components/scorecard/detailed/BehavioralMetricsSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { MockInterviewSection } from "@/components/scorecard/detailed/MockInterviewSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
@@ -50,6 +51,7 @@ const MODULE_OPTIONS = [
   { id: "weak_areas", label: "Weak Areas" },
   { id: "assessment_performance", label: "Assessment Performance" },
   { id: "mock_interview", label: "Mock Interview" },
+  { id: "behavioral_metrics", label: "Behavioral & Consistency" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
@@ -771,6 +773,14 @@ export default function AdminScorecardPage() {
                             <MockInterviewSection
                               key={sectionId}
                               data={scorecardData.mockInterviewPerformance}
+                            />
+                          );
+                        case "behavioral_metrics":
+                          if (!scorecardData.behavioralMetrics) return null;
+                          return (
+                            <BehavioralMetricsSection
+                              key={sectionId}
+                              data={scorecardData.behavioralMetrics}
                             />
                           );
                         default:
