@@ -2,6 +2,7 @@ import type { ScorecardData } from "@/lib/types/scorecard.types";
 import {
   mapAssessmentPerformanceFromApi,
   mapLearningConsumptionFromApi,
+  mapMockInterviewPerformanceFromApi,
   mapOverviewFromApi,
   mapPerformanceTrendsFromApi,
   mapSkillsFromApi,
@@ -20,6 +21,7 @@ export type ScorecardApiPayload = {
   skills?: unknown;
   weak_areas?: unknown;
   assessment_performance?: unknown;
+  mock_interview_performance?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -60,6 +62,10 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
 
   if (Array.isArray(data?.assessment_performance)) {
     result.assessmentPerformance = mapAssessmentPerformanceFromApi(data.assessment_performance);
+  }
+
+  if (data?.mock_interview_performance != null && typeof data.mock_interview_performance === "object") {
+    result.mockInterviewPerformance = mapMockInterviewPerformanceFromApi(data.mock_interview_performance);
   }
 
   return result;

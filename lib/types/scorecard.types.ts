@@ -264,6 +264,46 @@ export interface AssessmentPerformance {
   reviewStatus?: string;
 }
 
+// Mock Interview Performance (Phase 5)
+export interface InterviewParameter {
+  name: string;
+  score: number; // 0-100
+}
+
+export interface InterviewMentorRatings {
+  overall: number;
+  technical: number;
+  communication: number;
+}
+
+export interface InterviewFeedback {
+  strengths: string[];
+  areasOfImprovement: string[];
+  mentorComments: string;
+  mentorRatings: InterviewMentorRatings;
+}
+
+export interface MockInterview {
+  interviewId: string;
+  title: string;
+  topic?: string;
+  subtopic?: string;
+  difficulty?: string;
+  date: string | null;
+  overallScore: number | null;
+  parameters: InterviewParameter[];
+  feedback: InterviewFeedback;
+  playbackLink?: string | null;
+}
+
+export interface MockInterviewPerformance {
+  totalInterviews: number;
+  latestInterviewScore: number;
+  interviewReadinessIndex: number;
+  improvementSinceFirst: number;
+  interviews: MockInterview[];
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
@@ -272,4 +312,5 @@ export interface ScorecardData {
   skills?: Skill[];
   weakAreas?: WeakAreas;
   assessmentPerformance?: AssessmentPerformance[];
+  mockInterviewPerformance?: MockInterviewPerformance;
 }

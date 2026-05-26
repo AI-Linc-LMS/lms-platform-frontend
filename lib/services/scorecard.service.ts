@@ -4,12 +4,14 @@ import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
 import {
   mapAssessmentPerformanceFromApi,
+  mapMockInterviewPerformanceFromApi,
   mapPerformanceTrendsFromApi,
   mapSkillsFromApi,
   mapWeakAreasFromApi,
 } from "./scorecard/mappers";
 import type {
   AssessmentPerformance,
+  MockInterviewPerformance,
   PerformanceTrends,
   Skill,
   WeakAreas,
@@ -86,6 +88,14 @@ export const scorecardService = {
       `/api/scorecard/clients/${clientId}/student/scorecard/assessments/`,
     );
     return mapAssessmentPerformanceFromApi(response.data?.assessment_performance);
+  },
+
+  getMockInterviewPerformance: async (): Promise<MockInterviewPerformance> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/mock-interviews/`,
+    );
+    return mapMockInterviewPerformanceFromApi(response.data);
   },
 
   exportScorecardPdf: async (): Promise<Blob> => {

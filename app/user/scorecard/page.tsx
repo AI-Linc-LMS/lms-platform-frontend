@@ -17,6 +17,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
+import { MockInterviewSection } from "@/components/scorecard/detailed/MockInterviewSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
@@ -33,6 +34,7 @@ const SECTION_ORDER = [
   "skill_scorecard",
   "weak_areas",
   "assessment_performance",
+  "mock_interview",
 ] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
@@ -346,6 +348,14 @@ export default function ScorecardPage() {
                       <AssessmentPerformanceSection
                         key={sectionId}
                         data={data.assessmentPerformance}
+                      />
+                    );
+                  case "mock_interview":
+                    if (!data.mockInterviewPerformance || data.mockInterviewPerformance.totalInterviews === 0) return null;
+                    return (
+                      <MockInterviewSection
+                        key={sectionId}
+                        data={data.mockInterviewPerformance}
                       />
                     );
                   default:

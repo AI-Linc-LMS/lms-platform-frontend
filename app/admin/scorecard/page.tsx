@@ -27,6 +27,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
+import { MockInterviewSection } from "@/components/scorecard/detailed/MockInterviewSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
@@ -48,6 +49,7 @@ const MODULE_OPTIONS = [
   { id: "skill_scorecard", label: "Skill Scorecard" },
   { id: "weak_areas", label: "Weak Areas" },
   { id: "assessment_performance", label: "Assessment Performance" },
+  { id: "mock_interview", label: "Mock Interview" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
@@ -761,6 +763,14 @@ export default function AdminScorecardPage() {
                             <AssessmentPerformanceSection
                               key={sectionId}
                               data={scorecardData.assessmentPerformance}
+                            />
+                          );
+                        case "mock_interview":
+                          if (!scorecardData.mockInterviewPerformance || scorecardData.mockInterviewPerformance.totalInterviews === 0) return null;
+                          return (
+                            <MockInterviewSection
+                              key={sectionId}
+                              data={scorecardData.mockInterviewPerformance}
                             />
                           );
                         default:

@@ -2,7 +2,10 @@ import type {
   AssessmentDifficultyBreakdown,
   AssessmentPerformance,
   ContentCompletionOverview,
+  InterviewParameter,
   LearningConsumption,
+  MockInterview,
+  MockInterviewPerformance,
   PerformanceTrends,
   ScorecardData,
   Skill,
@@ -469,6 +472,76 @@ export function mapAssessmentPerformanceFromApi(api: unknown): AssessmentPerform
       reviewStatus: (r.review_status as string) || undefined,
     };
   });
+}
+
+function mapInterviewParameters(raw: unknown): InterviewParameter[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((p) => {
+      const o = p as Record<string, unknown>;
+      const name = (o.name as string) ?? "";
+      const score = num(o.score);
+      return name ? { name, score } : null;
+    })
+    .filter((x): x is InterviewParameter => x !== null);
+}
+
+function mapInterview(raw: unknown): MockInterview {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const feedbackRaw = (o.feedback as Record<string, unknown>) ?? {};
+  const ratingsRaw = (feedbackRaw.mentor_ratings as Record<string, unknown>) ?? {};
+  return {
+    interviewId: String(o.interview_id ?? ""),
+    title: (o.title as string) ?? "Mock interview",
+    topic: (o.topic as string) || undefined,
+    subtopic: (o.subtopic as string) || undefined,
+    difficulty: (o.difficulty as string) || undefined,
+    date: (o.date as string) || null,
+    overallScore: o.overall_score == null ? null : num(o.overall_score),
+    parameters: mapInterviewParameters(o.parameters),
+    feedback: {
+      strengths: Array.isArray(feedbackRaw.strengths)
+        ? (feedbackRaw.strengths as unknown[]).filter((s): s is string => typeof s === "string")
+        : [],
+      areasOfImprovement: Array.isArray(feedbackRaw.areas_of_improvement)
+        ? (feedbackRaw.areas_of_improvement as unknown[]).filter((s): s is string => typeof s === "string")
+        : [],
+      mentorComments: (feedbackRaw.mentor_comments as string) ?? "",
+      mentorRatings: {
+        overall: num(ratingsRaw.overall),
+        technical: num(ratingsRaw.technical),
+        communication: num(ratingsRaw.communication),
+      },
+    },
+    playbackLink: (o.playback_link as string) || null,
+  };
+}
+
+export function mapMockInterviewPerformanceFromApi(api: unknown): MockInterviewPerformance {
+  if (!api || typeof api !== "object") {
+    return getEmptyMockInterviewPerformance();
+  }
+  const raw = api as Record<string, unknown>;
+  const interviews = Array.isArray(raw.interviews)
+    ? (raw.interviews as unknown[]).map(mapInterview)
+    : [];
+  return {
+    totalInterviews: num(raw.total_interviews),
+    latestInterviewScore: num(raw.latest_interview_score),
+    interviewReadinessIndex: num(raw.interview_readiness_index),
+    improvementSinceFirst: num(raw.improvement_since_first),
+    interviews,
+  };
+}
+
+export function getEmptyMockInterviewPerformance(): MockInterviewPerformance {
+  return {
+    totalInterviews: 0,
+    latestInterviewScore: 0,
+    interviewReadinessIndex: 0,
+    improvementSinceFirst: 0,
+    interviews: [],
+  };
 }
 
 export function getEmptyWeakAreas(): WeakAreas {
