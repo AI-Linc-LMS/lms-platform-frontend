@@ -4,6 +4,7 @@ import { useState, memo } from "react";
 
 import { useTranslation } from "react-i18next";
 import { Box, Typography, Avatar, Chip, Button, TextField, IconButton, Collapse, Tooltip } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 
 import type { Comment } from "@/lib/services/community.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -254,19 +255,21 @@ export const CommentItem = memo(function CommentItem({
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontSize: "0.875rem" } }}
               />
               <Box sx={{ display: "flex", gap: 1, mt: 0.75 }}>
-                <Button
+                <LoadingButton
                   size="small"
                   variant="contained"
                   onClick={handleSubmitReply}
-                  disabled={!replyBody.trim() || submitting}
+                  disabled={!replyBody.trim()}
+                  loading={submitting}
+                  loadingText={t("common.posting")}
                   sx={{
                     textTransform: "none", fontSize: "0.78rem", borderRadius: "7px",
                     backgroundColor: "var(--accent-indigo)", boxShadow: "none",
                     "&:hover": { backgroundColor: "var(--accent-indigo)", filter: "brightness(0.9)", boxShadow: "none" },
                   }}
                 >
-                  {submitting ? t("community.posting") : t("community.postReply")}
-                </Button>
+                  {t("community.postReply")}
+                </LoadingButton>
                 <Button
                   size="small"
                   onClick={() => { setShowReplyForm(false); setReplyBody(""); }}

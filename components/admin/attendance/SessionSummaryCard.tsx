@@ -8,6 +8,7 @@ import {
   Button,
   TextField,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -228,10 +229,11 @@ export function SessionSummaryCard({
             >
               {t("adminAttendance.cancel")}
             </Button>
-            <Button
+            <LoadingButton
               onClick={handleSave}
               variant="contained"
-              disabled={saving}
+              loading={saving}
+              loadingText={t("common.saving")}
               size="small"
               fullWidth
               sx={{
@@ -247,8 +249,8 @@ export function SessionSummaryCard({
                 maxWidth: { xs: "100%", sm: "auto" },
               }}
             >
-              {saving ? t("adminAttendance.saving") : t("adminAttendance.save")}
-            </Button>
+              {t("adminAttendance.save")}
+            </LoadingButton>
           </Box>
         </Box>
       ) : (

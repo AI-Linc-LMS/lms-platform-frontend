@@ -276,7 +276,7 @@
     "passwordResetPasswordHint": "Use at least 8 characters including uppercase, lowercase, and a number. Avoid passwords similar to your email or name.",
     "newPassword": "New password",
     "resetPasswordSubmit": "Reset password",
-    "resettingPassword": "Saving...",
+    "resettingPassword": "Resetting password...",
     "useDifferentEmail": "Use a different email",
     "resetCodeSent": "A verification code has been sent.",
     "resetRequestFailed": "We couldn’t complete that request. Please try again.",

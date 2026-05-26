@@ -6,11 +6,11 @@ import {
   Typography,
   Box,
   TextField,
-  Button,
   CircularProgress,
   FormControlLabel,
   Switch,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
@@ -199,17 +199,12 @@ export function ZoomCredentialsSection() {
         />
       </Box>
 
-      <Button
+      <LoadingButton
         variant="contained"
         onClick={handleSave}
-        disabled={saving}
-        startIcon={
-          saving ? (
-            <CircularProgress size={18} color="inherit" />
-          ) : (
-            <IconWrapper icon="mdi:content-save" size={18} />
-          )
-        }
+        loading={saving}
+        loadingText="Saving…"
+        startIcon={<IconWrapper icon="mdi:content-save" size={18} />}
         sx={{
           bgcolor: "var(--accent-indigo)",
           color: "var(--font-light)",
@@ -221,8 +216,8 @@ export function ZoomCredentialsSection() {
           },
         }}
       >
-        {saving ? "Saving…" : "Save"}
-      </Button>
+        Save
+      </LoadingButton>
     </Paper>
   );
 }

@@ -8,7 +8,6 @@ import {
   Typography,
   Paper,
   Button,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -24,6 +23,7 @@ import {
   Chip,
   useTheme,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -1123,16 +1123,16 @@ export default function AssessmentPage() {
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               onClick={handleDeleteConfirm}
-              disabled={deleting}
+              loading={deleting}
+              loadingText={t("common.deleting")}
               variant="contained"
               color="error"
               autoFocus
-              startIcon={deleting ? <CircularProgress size={16} color="inherit" /> : null}
             >
-              {deleting ? "Deleting…" : "Delete"}
-            </Button>
+              Delete
+            </LoadingButton>
           </DialogActions>
         </Dialog>
 
@@ -1208,15 +1208,12 @@ export default function AssessmentPage() {
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               onClick={handleConfirmTriggerEmailJob}
+              loading={!!(triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id)}
+              loadingText={t("common.submitting")}
               disabled={!!triggeringEmailJobId}
               variant="contained"
-              startIcon={
-                triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : null
-              }
               sx={{
                 bgcolor: "var(--success-500)",
                 "&:hover": {
@@ -1225,10 +1222,8 @@ export default function AssessmentPage() {
                 },
               }}
             >
-              {triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id
-                ? "Sending…"
-                : "Confirm & Send"}
-            </Button>
+              Confirm & Send
+            </LoadingButton>
           </DialogActions>
         </Dialog>
 
@@ -1264,9 +1259,10 @@ export default function AssessmentPage() {
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               onClick={handleDuplicateConfirm}
-              disabled={!!duplicatingId}
+              loading={!!duplicatingId}
+              loadingText={t("common.loading")}
               variant="contained"
               sx={{
                 bgcolor: "var(--accent-purple)",
@@ -1276,10 +1272,9 @@ export default function AssessmentPage() {
                 },
               }}
               autoFocus
-              startIcon={duplicatingId ? <CircularProgress size={16} color="inherit" /> : null}
             >
-              {duplicatingId ? "Duplicating…" : "Duplicate"}
-            </Button>
+              Duplicate
+            </LoadingButton>
           </DialogActions>
         </Dialog>
       </Box>

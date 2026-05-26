@@ -7,9 +7,9 @@ import {
   DialogActions,
   Typography,
   Button,
-  CircularProgress,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { LoadingButton } from "@/components/common/LoadingButton";
 
 interface ConfirmDeleteDialogProps {
   open: boolean;
@@ -41,12 +41,12 @@ export function ConfirmDeleteDialog({
         <Button onClick={onCancel} disabled={loading} sx={{ color: "var(--font-secondary)" }}>
           {t("adminCourseBuilder.cancel")}
         </Button>
-        <Button
+        <LoadingButton
           onClick={onConfirm}
-          disabled={loading}
+          loading={loading}
+          loadingText={t("common.deleting")}
           variant="contained"
           color="error"
-          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
           sx={{
             "&.Mui-disabled": {
               color: "var(--font-secondary)",
@@ -55,8 +55,8 @@ export function ConfirmDeleteDialog({
             },
           }}
         >
-          {loading ? t("adminCourseBuilder.deleting") : t("adminCourseBuilder.delete")}
-        </Button>
+          {t("adminCourseBuilder.delete")}
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

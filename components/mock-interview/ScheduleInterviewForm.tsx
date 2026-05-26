@@ -13,6 +13,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { useState, useCallback, memo } from "react";
 
 interface ScheduleInterviewFormProps {
@@ -311,10 +312,11 @@ const ScheduleInterviewFormComponent = ({
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               variant="contained"
               onClick={handleSubmit}
-              disabled={loading}
+              loading={loading}
+              loadingText="Scheduling..."
               endIcon={<IconWrapper icon="mdi:calendar-check" size={20} />}
               sx={{
                 textTransform: "none",
@@ -328,8 +330,8 @@ const ScheduleInterviewFormComponent = ({
                 },
               }}
             >
-              {loading ? "Scheduling..." : "Schedule Interview"}
-            </Button>
+              Schedule Interview
+            </LoadingButton>
           </Box>
         </Box>
 

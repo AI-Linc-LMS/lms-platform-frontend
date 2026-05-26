@@ -23,6 +23,8 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { FileUp, FileText, Eye } from "lucide-react";
 import { resumeService, type SavedResume } from "@/lib/services/resume.service";
 import { useToast } from "@/components/common/Toast";
@@ -77,6 +79,7 @@ export function ApplyJobPage({
   onApply,
   onCancel,
 }: ApplyJobPageProps) {
+  const { t } = useTranslation("common");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { showToast } = useToast();
@@ -990,11 +993,12 @@ export function ApplyJobPage({
                 Next
               </Button>
             ) : (
-              <Button
+              <LoadingButton
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={applying}
-                startIcon={applying ? <CircularProgress size={18} color="inherit" /> : <IconWrapper icon="mdi:send" size={18} />}
+                loading={applying}
+                loadingText={t("common.submitting")}
+                startIcon={<IconWrapper icon="mdi:send" size={18} />}
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
@@ -1017,8 +1021,8 @@ export function ApplyJobPage({
                   },
                 }}
               >
-                {applying ? "Applying..." : "Apply"}
-              </Button>
+                Apply
+              </LoadingButton>
             )}
           </Box>
         </Box>

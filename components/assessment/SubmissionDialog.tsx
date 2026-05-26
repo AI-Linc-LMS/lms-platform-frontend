@@ -29,6 +29,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import LoadingButton from "@/components/common/LoadingButton";
 import {
   formatChecklistQuestionLabel,
   getResponseForQuestion,
@@ -471,16 +472,16 @@ export function SubmissionDialog({
         <Button onClick={onClose} disabled={submitting} color="inherit">
           {t("assessments.submitChecklist.cancel")}
         </Button>
-        <Button
+        <LoadingButton
           onClick={onConfirm}
           variant="contained"
           disabled={!confirmed || submitting}
+          loading={submitting}
+          loadingText={t("common.submitting")}
           startIcon={<IconWrapper icon="mdi:send-check" />}
         >
-          {submitting
-            ? t("assessments.submitChecklist.submitting")
-            : t("assessments.submitChecklist.confirmSubmit")}
-        </Button>
+          {t("assessments.submitChecklist.confirmSubmit")}
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

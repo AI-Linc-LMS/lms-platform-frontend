@@ -59,21 +59,6 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [buttonWidth, setButtonWidth] = useState(300);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Measure the container so the GSI button fills it exactly
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.floor(entries[0].contentRect.width);
-      if (width > 0) setButtonWidth(width);
-    });
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
-
   const handleGoogleSignIn = useCallback(
     async (response: { credential: string }) => {
       try {
@@ -105,6 +90,45 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     [googleLogin, router, showToast, searchParams, t]
   );
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Show a toast if Google's redirect came back without a credential
+  useEffect(() => {
+    if (searchParams.get("google_error") === "1") {
+      showToast(t("auth.googleSignInFailed"), "error");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("google_error");
+      window.history.replaceState(null, "", url.toString());
+    }
+  }, [searchParams, showToast, t]);
+
+  // Consume a credential left by the /api/auth/google/callback redirect route.
+  // This fires when the user returns to /login after Google's redirect-mode flow.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const cookieName = "google_pending_credential";
+    const match = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith(`${cookieName}=`));
+    if (!match) return;
+    const credential = match.split("=").slice(1).join("=");
+    document.cookie = `${cookieName}=; Max-Age=0; path=/`;
+    if (credential) handleGoogleSignIn({ credential });
+  }, [handleGoogleSignIn]);
+
+  // Measure the container so the GSI button fills it exactly
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = Math.floor(entries[0].contentRect.width);
+      if (width > 0) setButtonWidth(width);
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   // Re-render the GSI button whenever the measured width changes so it stays
   // full-width as the layout shifts (e.g. sidebar open/close).
   const renderGsiButton = useCallback(() => {
@@ -121,6 +145,13 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         text: "signin_with",
         logo_alignment: "left",
         width: buttonWidth,
+        // Redirect mode: Google POSTs the credential to our API route on the
+        // same tab — no popup, no new tab on any device or browser.
+        ux_mode: "redirect",
+        login_uri:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/api/auth/google/callback`
+            : "/api/auth/google/callback",
       });
     } catch {
       // ignore
@@ -247,33 +278,71 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   }
 
   // ── Legacy GSI flow ───────────────────────────────────────────────────────
-  // The GSI-rendered button is shown directly. Google handles FedCM → popup
-  // fallback natively on every click — no custom popup triggering needed.
+  // The custom-styled button is shown as usual. The GSI-rendered button sits
+  // on top of it as a transparent, full-size overlay so every click lands
+  // directly on the GSI button — a trusted user gesture — bypassing all
+  // popup-blocking and FedCM issues permanently.
   if (!config.googleClientId) return null;
 
   return (
-    <Box
-      ref={containerRef}
-      sx={{
-        width: "100%",
-        // Show a skeleton-style placeholder while the GSI iframe loads
-        minHeight: 44,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        opacity: disabled ? 0.5 : 1,
-        pointerEvents: disabled ? "none" : "auto",
-        // Clip the GSI iframe's hard white background to match the card
-        borderRadius: 1,
-        overflow: "hidden",
-      }}
-    >
+    <Box ref={containerRef} sx={{ position: "relative", width: "100%" }}>
+      {/* Custom-styled button — purely visual, pointer events pass through */}
+      <Button
+        fullWidth
+        variant="outlined"
+        disabled={disabled}
+        tabIndex={-1}          // GSI button handles keyboard focus
+        aria-hidden="true"     // GSI button is the real interactive element
+        sx={{
+          py: 1.25,
+          borderColor: "#e2e8f0",
+          borderWidth: 1.5,
+          color: "#0f172a",
+          textTransform: "none",
+          backgroundColor: "white",
+          fontWeight: 500,
+          fontSize: "0.875rem",
+          pointerEvents: "none", // clicks fall through to GSI overlay
+          WebkitTapHighlightColor: "transparent",
+          "&:hover": { borderColor: "#cbd5e1", backgroundColor: "#f8fafc", borderWidth: 1.5 },
+          "&.Mui-disabled": { opacity: 0.5, borderColor: "#e2e8f0", backgroundColor: "white" },
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+            <g fill="#000" fillRule="evenodd">
+              <path d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z" fill="#EA4335" />
+              <path d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.21 1.18-.84 2.18-1.79 2.85l2.78 2.16c1.7-1.57 2.69-3.88 2.69-6.51z" fill="#4285F4" />
+              <path d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z" fill="#FBBC05" />
+              <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.78-2.16c-.76.53-1.78.9-3.18.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.45 15.98 5.48 18 9 18z" fill="#34A853" />
+            </g>
+          </svg>
+          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "0.9375rem", color: "#0f172a" }}>
+            {t("auth.signInWithGoogle")}
+          </Typography>
+        </Box>
+      </Button>
+
+      {/* GSI-rendered button — transparent overlay, full size, receives all clicks */}
       {isMounted && (
-        <div
-          ref={googleButtonRef}
-          style={{ width: "100%", lineHeight: 0 }}
-          suppressHydrationWarning
-        />
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            opacity: 0,
+            overflow: "hidden",
+            // Disabled: block pointer events so the underlying MUI button
+            // shows the correct disabled cursor/appearance
+            pointerEvents: disabled ? "none" : "auto",
+            "& > div, & iframe": { width: "100% !important", height: "100% !important" },
+          }}
+        >
+          <div
+            ref={googleButtonRef}
+            style={{ width: "100%", height: "100%" }}
+            suppressHydrationWarning
+          />
+        </Box>
       )}
     </Box>
   );

@@ -12,6 +12,7 @@ import {
   Select,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { useState, useCallback, memo, useMemo } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
@@ -380,10 +381,11 @@ const QuickStartFormComponent = ({
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               variant="contained"
               onClick={handleSubmit}
-              disabled={loading}
+              loading={loading}
+              loadingText="Creating..."
               endIcon={<IconWrapper icon="mdi:lightning-bolt" size={20} />}
               sx={{
                 textTransform: "none",
@@ -396,8 +398,8 @@ const QuickStartFormComponent = ({
                 },
               }}
             >
-              {loading ? "Creating..." : "Start Interview"}
-            </Button>
+              Start Interview
+            </LoadingButton>
           </Box>
         </Box>
 
