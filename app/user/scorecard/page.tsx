@@ -17,6 +17,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { BehavioralMetricsSection } from "@/components/scorecard/detailed/BehavioralMetricsSection";
+import { ComparativeInsightsSection } from "@/components/scorecard/detailed/ComparativeInsightsSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { MockInterviewSection } from "@/components/scorecard/detailed/MockInterviewSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
@@ -37,6 +38,7 @@ const SECTION_ORDER = [
   "assessment_performance",
   "mock_interview",
   "behavioral_metrics",
+  "comparative_insights",
 ] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
@@ -366,6 +368,14 @@ export default function ScorecardPage() {
                       <BehavioralMetricsSection
                         key={sectionId}
                         data={data.behavioralMetrics}
+                      />
+                    );
+                  case "comparative_insights":
+                    if (!data.comparativeInsights) return null;
+                    return (
+                      <ComparativeInsightsSection
+                        key={sectionId}
+                        data={data.comparativeInsights}
                       />
                     );
                   default:

@@ -27,6 +27,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { BehavioralMetricsSection } from "@/components/scorecard/detailed/BehavioralMetricsSection";
+import { ComparativeInsightsSection } from "@/components/scorecard/detailed/ComparativeInsightsSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { MockInterviewSection } from "@/components/scorecard/detailed/MockInterviewSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
@@ -52,6 +53,7 @@ const MODULE_OPTIONS = [
   { id: "assessment_performance", label: "Assessment Performance" },
   { id: "mock_interview", label: "Mock Interview" },
   { id: "behavioral_metrics", label: "Behavioral & Consistency" },
+  { id: "comparative_insights", label: "Comparative Insights" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
@@ -781,6 +783,14 @@ export default function AdminScorecardPage() {
                             <BehavioralMetricsSection
                               key={sectionId}
                               data={scorecardData.behavioralMetrics}
+                            />
+                          );
+                        case "comparative_insights":
+                          if (!scorecardData.comparativeInsights) return null;
+                          return (
+                            <ComparativeInsightsSection
+                              key={sectionId}
+                              data={scorecardData.comparativeInsights}
                             />
                           );
                         default:

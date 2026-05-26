@@ -5,6 +5,7 @@ import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/b
 import {
   mapAssessmentPerformanceFromApi,
   mapBehavioralMetricsFromApi,
+  mapComparativeInsightsFromApi,
   mapMockInterviewPerformanceFromApi,
   mapPerformanceTrendsFromApi,
   mapSkillsFromApi,
@@ -13,6 +14,7 @@ import {
 import type {
   AssessmentPerformance,
   BehavioralMetrics,
+  ComparativeInsights,
   MockInterviewPerformance,
   PerformanceTrends,
   Skill,
@@ -106,6 +108,14 @@ export const scorecardService = {
       `/api/scorecard/clients/${clientId}/student/scorecard/behavioral/`,
     );
     return mapBehavioralMetricsFromApi(response.data);
+  },
+
+  getComparativeInsights: async (): Promise<ComparativeInsights> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/comparative/`,
+    );
+    return mapComparativeInsightsFromApi(response.data);
   },
 
   exportScorecardPdf: async (): Promise<Blob> => {

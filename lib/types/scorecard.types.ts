@@ -330,6 +330,28 @@ export interface BehavioralMetrics {
   activityCalendar: Record<string, number>;
 }
 
+// Comparative Insights (Phase 7)
+export interface BenchmarkComparison {
+  metric: string;
+  label: string;
+  unit: "percent" | "hours" | string;
+  studentValue: number;
+  batchAverage: number | null;
+  top10Percent: number | null;
+  percentile: number;
+}
+
+export interface ComparativeInsights {
+  cohortSize: number;
+  percentileRank: number;
+  vsBatchAverage: {
+    better: number;
+    worse: number;
+    equal: number;
+  };
+  comparisons: BenchmarkComparison[];
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
@@ -340,4 +362,5 @@ export interface ScorecardData {
   assessmentPerformance?: AssessmentPerformance[];
   mockInterviewPerformance?: MockInterviewPerformance;
   behavioralMetrics?: BehavioralMetrics;
+  comparativeInsights?: ComparativeInsights;
 }

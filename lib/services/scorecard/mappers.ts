@@ -2,6 +2,8 @@ import type {
   AssessmentDifficultyBreakdown,
   AssessmentPerformance,
   BehavioralMetrics,
+  BenchmarkComparison,
+  ComparativeInsights,
   ContentCompletionOverview,
   InterviewParameter,
   LearningConsumption,
@@ -574,6 +576,44 @@ export function mapBehavioralMetricsFromApi(api: unknown): BehavioralMetrics {
     lastActiveDate: (raw.last_active_date as string) || null,
     consistencyScore: num(raw.consistency_score),
     activityCalendar,
+  };
+}
+
+export function mapComparativeInsightsFromApi(api: unknown): ComparativeInsights {
+  if (!api || typeof api !== "object") {
+    return getEmptyComparativeInsights();
+  }
+  const raw = api as Record<string, unknown>;
+  const comparisons: BenchmarkComparison[] = Array.isArray(raw.comparisons)
+    ? (raw.comparisons as Record<string, unknown>[]).map((c) => ({
+        metric: (c.metric as string) ?? "",
+        label: (c.label as string) ?? "",
+        unit: ((c.unit as string) ?? "percent") as BenchmarkComparison["unit"],
+        studentValue: num(c.student_value),
+        batchAverage: c.batch_average == null ? null : num(c.batch_average),
+        top10Percent: c.top_10_percent == null ? null : num(c.top_10_percent),
+        percentile: num(c.percentile),
+      }))
+    : [];
+  const vsRaw = (raw.vs_batch_average as Record<string, unknown>) ?? {};
+  return {
+    cohortSize: num(raw.cohort_size),
+    percentileRank: num(raw.percentile_rank),
+    vsBatchAverage: {
+      better: num(vsRaw.better),
+      worse: num(vsRaw.worse),
+      equal: num(vsRaw.equal),
+    },
+    comparisons,
+  };
+}
+
+export function getEmptyComparativeInsights(): ComparativeInsights {
+  return {
+    cohortSize: 1,
+    percentileRank: 0,
+    vsBatchAverage: { better: 0, worse: 0, equal: 0 },
+    comparisons: [],
   };
 }
 
