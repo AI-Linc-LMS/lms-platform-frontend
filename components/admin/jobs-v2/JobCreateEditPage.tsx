@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   TextField,
@@ -21,6 +22,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import type {
   JobCreateUpdatePayload,
@@ -216,6 +218,7 @@ export function JobCreateEditPage({
   courses = [],
   isEditMode = false,
 }: JobCreateEditPageProps) {
+  const { t } = useTranslation("common");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [formData, setFormData] = useState<JobCreateUpdatePayload>(emptyPayload);
@@ -1555,11 +1558,12 @@ export function JobCreateEditPage({
                 Next
               </Button>
             ) : (
-              <Button
+              <LoadingButton
                 variant="contained"
                 onClick={handleSubmit}
+                loading={submitting}
+                loadingText={t("common.saving")}
                 disabled={
-                  submitting ||
                   !formData.job_title.trim() ||
                   !formData.company_name.trim() ||
                   !formData.company_logo?.trim()
@@ -1576,8 +1580,8 @@ export function JobCreateEditPage({
                   "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
                 }}
               >
-                {submitting ? "Saving..." : "Save Job"}
-              </Button>
+                Save Job
+              </LoadingButton>
             )}
           </Box>
         </Box>

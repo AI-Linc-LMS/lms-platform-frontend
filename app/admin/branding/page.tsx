@@ -24,6 +24,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { alpha } from "@mui/material/styles";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -1624,29 +1625,27 @@ export default function AdminBrandingPage() {
                 >
                   {t("branding.discard")}
                 </Button>
-                <Button
+                <LoadingButton
                   variant="contained"
                   onClick={handleSave}
-                  disabled={saving || !isDirty}
+                  disabled={!isDirty}
+                  loading={saving}
+                  loadingText={t("common.saving")}
                   title={!isDirty ? t("branding.saveDisabledHint") : undefined}
                   startIcon={
-                    saving ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <Box
-                        component="span"
-                        sx={{
-                          display: "inline-flex",
-                          color: "var(--font-light)",
-                        }}
-                      >
-                        <IconWrapper
-                          icon="mdi:content-save-outline"
-                          size={20}
-                          style={{ color: "currentColor" }}
-                        />
-                      </Box>
-                    )
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        color: "var(--font-light)",
+                      }}
+                    >
+                      <IconWrapper
+                        icon="mdi:content-save-outline"
+                        size={20}
+                        style={{ color: "currentColor" }}
+                      />
+                    </Box>
                   }
                   sx={{
                     textTransform: "none",
@@ -1664,8 +1663,8 @@ export default function AdminBrandingPage() {
                     },
                   }}
                 >
-                  {saving ? t("branding.saving") : t("branding.save")}
-                </Button>
+                  {t("branding.save")}
+                </LoadingButton>
               </Stack>
             </Stack>
           </Paper>
@@ -1793,6 +1792,7 @@ function BrandAssetCard({
 }) {
   const inputId = `brand-asset-${label.toLowerCase().replace(/\s+/g, "-")}`;
   const trimmed = value.trim();
+  const { t } = useTranslation("common");
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1940,20 +1940,15 @@ function BrandAssetCard({
         />
         {onUpload ? (
           <Box>
-            <Button
+            <LoadingButton
               variant="outlined"
               component="label"
               htmlFor={inputId}
               size="small"
               fullWidth
-              disabled={uploading}
-              startIcon={
-                uploading ? (
-                  <CircularProgress size={14} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:cloud-upload-outline" size={16} />
-                )
-              }
+              loading={uploading}
+              loadingText={t("common.uploading")}
+              startIcon={<IconWrapper icon="mdi:cloud-upload-outline" size={16} />}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
@@ -1967,7 +1962,7 @@ function BrandAssetCard({
                 },
               }}
             >
-              {uploading ? "Uploading…" : uploadLabel}
+              {uploadLabel}
               <input
                 id={inputId}
                 type="file"
@@ -1975,7 +1970,7 @@ function BrandAssetCard({
                 accept={accept}
                 onChange={handleFile}
               />
-            </Button>
+            </LoadingButton>
           </Box>
         ) : null}
       </Box>

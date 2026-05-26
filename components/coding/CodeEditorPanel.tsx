@@ -7,9 +7,9 @@ import {
   Select,
   FormControl,
   InputLabel,
-  CircularProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { getMonacoLanguage } from "./utils/languageUtils";
 
@@ -96,18 +96,14 @@ export function CodeEditorPanel({
           Reset
         </Button>
 
-        <Button
+        <LoadingButton
           variant="outlined"
           size="small"
           onClick={onRun}
-          disabled={running || submitting}
-          startIcon={
-            running ? (
-              <CircularProgress size={16} />
-            ) : (
-              <IconWrapper icon="mdi:play" size={16} />
-            )
-          }
+          disabled={submitting}
+          loading={running}
+          loadingText="Running..."
+          startIcon={<IconWrapper icon="mdi:play" size={16} />}
           sx={{
             borderColor: "#6366f1",
             color: "#6366f1",
@@ -118,21 +114,17 @@ export function CodeEditorPanel({
             },
           }}
         >
-          {running ? "Running..." : "Run"}
-        </Button>
+          Run
+        </LoadingButton>
 
-        <Button
+        <LoadingButton
           variant="contained"
           size="small"
           onClick={onSubmit}
-          disabled={running || submitting || !code.trim()}
-          startIcon={
-            submitting ? (
-              <CircularProgress size={16} />
-            ) : (
-              <IconWrapper icon="mdi:check" size={16} />
-            )
-          }
+          disabled={running || !code.trim()}
+          loading={submitting}
+          loadingText="Submitting..."
+          startIcon={<IconWrapper icon="mdi:check" size={16} />}
           sx={{
             backgroundColor: "#10b981",
             fontSize: { xs: "0.75rem", md: "0.8rem", lg: "0.875rem" },
@@ -145,8 +137,8 @@ export function CodeEditorPanel({
             },
           }}
         >
-          {submitting ? "Submitting..." : "Submit"}
-        </Button>
+          Submit
+        </LoadingButton>
       </Box>
 
       {/* Code Editor */}

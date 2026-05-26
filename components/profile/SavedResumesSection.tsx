@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { resumeService, SavedResume } from "@/lib/services/resume.service";
 
 const MAX_RESUMES_PER_USER = 10;
@@ -671,22 +672,17 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
           >
             {t("profile.cancel")}
           </Button>
-          <Button
+          <LoadingButton
             variant="contained"
             color="error"
             onClick={handleDeleteConfirm}
-            disabled={deletingId !== null}
-            startIcon={
-              deletingId !== null ? (
-                <CircularProgress size={18} sx={{ color: "inherit" }} />
-              ) : (
-                <IconWrapper icon="mdi:delete-outline" size={18} />
-              )
-            }
+            loading={deletingId !== null}
+            loadingText={t("common.deleting")}
+            startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />}
             sx={{ textTransform: "none", fontWeight: 600 }}
           >
-            {deletingId !== null ? t("profile.deleting") : t("profile.deleteResume")}
-          </Button>
+            {t("profile.deleteResume")}
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </>

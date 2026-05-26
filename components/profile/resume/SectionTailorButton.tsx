@@ -13,11 +13,11 @@ import {
   Typography,
   Paper,
   Alert,
-  CircularProgress,
   Chip,
   Divider,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { ResumeData } from "./types";
 
 export type TailorSection = "summary" | "skills" | "experience" | "projects";
@@ -571,17 +571,17 @@ export function SectionTailorButton({
           <Button onClick={handleClose} disabled={loading} sx={{ textTransform: "none" }}>
             Close
           </Button>
-          <Button
+          <LoadingButton
             variant="contained"
             onClick={handleGenerate}
             disabled={!canGenerate}
-            startIcon={
-              loading ? <CircularProgress size={14} color="inherit" /> : <IconWrapper icon="mdi:auto-fix" />
-            }
+            loading={loading}
+            loadingText="Generating…"
+            startIcon={<IconWrapper icon="mdi:auto-fix" />}
             sx={{ textTransform: "none", backgroundColor: "var(--accent-purple)" }}
           >
-            {loading ? "Generating…" : result ? "Regenerate" : "Generate"}
-          </Button>
+            {result ? "Regenerate" : "Generate"}
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </>

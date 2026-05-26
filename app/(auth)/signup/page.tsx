@@ -12,8 +12,8 @@ import {
   IconButton,
   InputAdornment,
   Switch,
-  CircularProgress,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { alpha } from "@mui/material/styles";
 import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
@@ -687,23 +687,19 @@ export default function SignupPage() {
               )}
 
               {/* Sign Up Button */}
-              
-              <Button
+              <LoadingButton
                 type="submit"
                 fullWidth
                 variant="contained"
+                loading={loading}
+                loadingText={t("common.submitting")}
                 disabled={
                   loading ||
                   (values.signup_as_instructor && !cvFile)
                 }
-                aria-busy={loading}
                 sx={{
                   py: 1.25,
                   mb: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 1.25,
                   background:
                     "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
                   color: "var(--font-light)",
@@ -725,20 +721,8 @@ export default function SignupPage() {
                   },
                 }}
               >
-                {loading ? (
-                  <>
-                    <CircularProgress
-                      size={22}
-                      thickness={4}
-                      sx={{ color: "inherit" }}
-                      aria-hidden
-                    />
-                    <span>{t("auth.creatingAccount")}</span>
-                  </>
-                ) : (
-                  t("auth.signUp")
-                )}
-              </Button>
+                {t("auth.signUp")}
+              </LoadingButton>
 
               {/* Sign in link */}
               <Box sx={{ textAlign: "center", mt: 1 }}>

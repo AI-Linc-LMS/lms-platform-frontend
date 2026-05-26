@@ -14,6 +14,7 @@ import {
   Alert,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 
 interface ImageUploadDialogProps {
   open: boolean;
@@ -533,10 +534,12 @@ export function ImageUploadDialog({
         >
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           onClick={handleUpload}
           variant="contained"
-          disabled={uploading || !selectedFile}
+          disabled={!selectedFile}
+          loading={uploading}
+          loadingText="Uploading…"
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -559,28 +562,8 @@ export function ImageUploadDialog({
             transition: "all 0.2s ease",
           }}
         >
-          {uploading ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  border: "2px solid color-mix(in srgb, var(--font-light) 35%, transparent)",
-                  borderTop: "2px solid var(--font-light)",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                  "@keyframes spin": {
-                    "0%": { transform: "rotate(0deg)" },
-                    "100%": { transform: "rotate(360deg)" },
-                  },
-                }}
-              />
-              Uploading...
-            </Box>
-          ) : (
-            "Upload"
-          )}
-        </Button>
+          Upload
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

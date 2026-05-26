@@ -10,11 +10,12 @@ import {
   Typography,
   TextField,
   Button,
-  CircularProgress,
   Stack,
   IconButton,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { useToast } from "@/components/common/Toast";
 import { uploadFile } from "@/lib/services/file-upload.service";
 import { ticketService, Ticket } from "@/lib/services/ticket.service";
@@ -38,6 +39,7 @@ export function ReopenTicketDialog({
   onClose,
   onReopened,
 }: Props) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [details, setDetails] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -328,17 +330,13 @@ export function ReopenTicketDialog({
         >
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           onClick={handleSubmit}
-          disabled={submitting || uploading || !details.trim()}
+          disabled={!details.trim()}
+          loading={submitting || uploading}
+          loadingText={uploading ? t("common.loading") : t("common.submitting")}
           variant="contained"
-          startIcon={
-            submitting || uploading ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              <IconWrapper icon="mdi:lock-reset" size={18} />
-            )
-          }
+          startIcon={<IconWrapper icon="mdi:lock-reset" size={18} />}
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -360,12 +358,8 @@ export function ReopenTicketDialog({
             },
           }}
         >
-          {uploading
-            ? "Uploading..."
-            : submitting
-              ? "Reopening..."
-              : "Reopen ticket"}
-        </Button>
+          Reopen ticket
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

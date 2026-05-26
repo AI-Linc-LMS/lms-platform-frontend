@@ -16,7 +16,9 @@ import {
   Tooltip,
   Divider,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { PostType, POST_TYPE_CONFIG, communityService } from "@/lib/services/community.service";
 import { softBreakMarkdown } from "@/lib/utils/html-utils";
 
@@ -154,6 +156,7 @@ export function CreateThreadDialog({
   onSubmit,
   initialPostType = "question",
 }: CreateThreadDialogProps) {
+  const { t } = useTranslation("common");
   const [postType, setPostType] = useState<PostType>(initialPostType);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -862,11 +865,13 @@ export function CreateThreadDialog({
         <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           variant="contained"
           onClick={handleSubmit}
           disabled={isSubmitDisabled}
-          startIcon={submitting ? undefined : <IconWrapper icon="mdi:send" size={15} />}
+          loading={submitting}
+          loadingText={t("common.posting")}
+          startIcon={<IconWrapper icon="mdi:send" size={15} />}
           sx={{
             textTransform: "none", fontWeight: 600, borderRadius: "8px", px: 2.5,
             backgroundColor: typeConfig.color, boxShadow: "none",
@@ -874,8 +879,8 @@ export function CreateThreadDialog({
             "&.Mui-disabled": { backgroundColor: "var(--border-default)", color: "var(--font-tertiary)" },
           }}
         >
-          {submitting ? "Posting..." : anyUploading ? "Uploading images..." : `Post ${typeConfig.label}`}
-        </Button>
+          {anyUploading ? "Uploading images..." : `Post ${typeConfig.label}`}
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

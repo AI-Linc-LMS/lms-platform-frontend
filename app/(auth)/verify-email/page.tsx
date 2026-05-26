@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { TextField, Button, Typography, Box } from "@mui/material";
+import { TextField, Typography, Box } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import Link from "next/link";
 import { Formik, Form, Field } from "formik";
 import type { FieldInputProps } from "formik";
@@ -152,11 +153,12 @@ export default function VerifyEmailPage() {
               <OtpDigitInput name="otp" label={t("auth.otpCode")} />
 
               {/* Verify Button */}
-              <Button
+              <LoadingButton
                 type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+                loading={loading}
+                loadingText={t("auth.verifying")}
                 sx={{
                   py: 1.25,
                   mb: 1.5,
@@ -180,15 +182,17 @@ export default function VerifyEmailPage() {
                   },
                 }}
               >
-                {loading ? "Verifying..." : "Verify Email"}
-              </Button>
+                Verify Email
+              </LoadingButton>
 
               {/* Resend OTP Button */}
-              <Button
+              <LoadingButton
                 type="button"
                 fullWidth
                 variant="outlined"
                 onClick={() => handleResend(values.email)}
+                loading={resending}
+                loadingText={t("common.loading")}
                 disabled={resending || !values.email}
                 size="small"
                 sx={{
@@ -213,8 +217,8 @@ export default function VerifyEmailPage() {
                   },
                 }}
               >
-                {resending ? t("auth.resending") : t("auth.resendOtp")}
-              </Button>
+                {t("auth.resendOtp")}
+              </LoadingButton>
 
               {/* Back to login link */}
               <Box sx={{ textAlign: "center" }}>

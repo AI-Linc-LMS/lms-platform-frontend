@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import {
   Checkbox,
   IconButton,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 export type QuestionType = "text" | "textarea" | "choice" | "multichoice" | "yes_no";
@@ -49,6 +51,7 @@ export function ApplicationQuestionsModal({
   const [questionType, setQuestionType] = useState<QuestionType>("text");
   const [isRequired, setIsRequired] = useState(false);
   const [options, setOptions] = useState<string[]>(DEFAULT_OPTIONS);
+  const { t } = useTranslation("common");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -361,11 +364,13 @@ export function ApplicationQuestionsModal({
         <Button onClick={handleClose} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           variant="contained"
           onClick={handleSubmit}
-          disabled={submitting || !questionText.trim()}
-          startIcon={!submitting && <IconWrapper icon="mdi:check" size={18} />}
+          loading={submitting}
+          loadingText={t("common.submitting")}
+          disabled={!questionText.trim()}
+          startIcon={<IconWrapper icon="mdi:check" size={18} />}
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -377,8 +382,8 @@ export function ApplicationQuestionsModal({
             "&:hover": { bgcolor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
           }}
         >
-          {submitting ? "Adding…" : "Add question"}
-        </Button>
+          Add question
+        </LoadingButton>
       </Box>
     </Dialog>
   );

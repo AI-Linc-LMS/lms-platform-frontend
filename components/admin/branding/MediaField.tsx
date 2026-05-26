@@ -3,14 +3,14 @@
 import { useId, useRef } from "react";
 import {
   Box,
-  Button,
-  CircularProgress,
   IconButton,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 type AspectVariant = "square" | "landscape";
@@ -54,6 +54,7 @@ export function MediaField({
   const inputRef = useRef<HTMLInputElement>(null);
   const trimmed = value.trim();
   const dims = ASPECT_DIMS[aspect];
+  const { t } = useTranslation("common");
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -187,19 +188,14 @@ export function MediaField({
 
           {onUpload ? (
             <Box>
-              <Button
+              <LoadingButton
                 variant="outlined"
                 component="label"
                 htmlFor={inputId}
                 size="small"
-                disabled={uploading}
-                startIcon={
-                  uploading ? (
-                    <CircularProgress size={14} color="inherit" />
-                  ) : (
-                    <IconWrapper icon="mdi:cloud-upload-outline" size={16} />
-                  )
-                }
+                loading={uploading}
+                loadingText={t("common.uploading")}
+                startIcon={<IconWrapper icon="mdi:cloud-upload-outline" size={16} />}
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
@@ -213,7 +209,7 @@ export function MediaField({
                   },
                 }}
               >
-                {uploading ? "Uploading…" : uploadLabel}
+                {uploadLabel}
                 <input
                   id={inputId}
                   ref={inputRef}
@@ -222,7 +218,7 @@ export function MediaField({
                   accept={accept}
                   onChange={handleFile}
                 />
-              </Button>
+              </LoadingButton>
             </Box>
           ) : null}
         </Stack>

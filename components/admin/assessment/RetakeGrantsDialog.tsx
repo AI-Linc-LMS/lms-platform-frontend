@@ -18,6 +18,8 @@ import {
   Stack,
   Chip,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -41,6 +43,7 @@ export function RetakeGrantsDialog({
   assessmentId,
   assessmentTitle,
 }: RetakeGrantsDialogProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [grants, setGrants] = useState<AssessmentRetakeGrant[]>([]);
   const [loading, setLoading] = useState(false);
@@ -164,20 +167,16 @@ export function RetakeGrantsDialog({
             inputProps={{ maxLength: 255 }}
           />
           <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button
+            <LoadingButton
               variant="contained"
-              startIcon={
-                granting ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:plus" size={18} />
-                )
-              }
+              loading={granting}
+              loadingText={t("common.submitting")}
+              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
               onClick={handleGrant}
-              disabled={granting || !email.trim()}
+              disabled={!email.trim()}
             >
-              {granting ? "Granting..." : "Grant re-attempt"}
-            </Button>
+              Grant re-attempt
+            </LoadingButton>
           </Box>
         </Stack>
 

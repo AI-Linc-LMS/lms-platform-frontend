@@ -11,12 +11,12 @@ import {
   MenuItem,
   Box,
   Typography,
-  CircularProgress,
   IconButton,
   Stack,
 } from "@mui/material";
 import Link from "next/link";
 import { IconWrapper } from "./IconWrapper";
+import { LoadingButton } from "./LoadingButton";
 import {
   ticketService,
   TICKET_CATEGORY_OPTIONS,
@@ -387,9 +387,11 @@ export function ReportIssueDialog({
         >
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           onClick={handleSubmit}
-          disabled={submitting || uploading || !issueType || !description.trim()}
+          disabled={!issueType || !description.trim()}
+          loading={submitting || uploading}
+          loadingText={uploading ? "Uploading…" : "Submitting..."}
           variant="contained"
           sx={{
             textTransform: "none",
@@ -406,20 +408,10 @@ export function ReportIssueDialog({
               color: "var(--font-tertiary)",
             },
           }}
-          startIcon={
-            submitting || uploading ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              <IconWrapper icon="mdi:send" size={18} />
-            )
-          }
+          startIcon={<IconWrapper icon="mdi:send" size={18} />}
         >
-          {uploading
-            ? "Uploading..."
-            : submitting
-              ? "Submitting..."
-              : "Submit ticket"}
-        </Button>
+          Submit ticket
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

@@ -8,11 +8,11 @@ import {
   Typography,
   TextField,
   Button,
-  CircularProgress,
   IconButton,
   Card,
   CardContent,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -421,10 +421,11 @@ export default function GenerateStructuredPlanPage() {
             )}
 
             <Box sx={{ display: "flex", gap: 2 }}>
-              <Button
+              <LoadingButton
                 type="submit"
                 variant="contained"
-                disabled={submitting}
+                loading={submitting}
+                loadingText={t("common.loading")}
                 sx={{
                   bgcolor: "var(--success-500)",
                   color: "var(--font-light)",
@@ -434,15 +435,8 @@ export default function GenerateStructuredPlanPage() {
                   },
                 }}
               >
-                {submitting ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    {t("adminAICourseBuilder.generating")}
-                  </>
-                ) : (
-                  t("adminAICourseBuilder.generateOutline")
-                )}
-              </Button>
+                {t("adminAICourseBuilder.generateOutline")}
+              </LoadingButton>
               <Button
                 component={Link}
                 href="/admin/ai-course-builder"

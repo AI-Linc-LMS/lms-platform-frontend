@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Paper, Typography, Button, Chip } from "@mui/material";
+import { Box, Paper, Typography, Chip } from "@mui/material";
+import LoadingButton from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
@@ -204,29 +205,12 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
         }}
       >
         {assessmentToolsSlot}
-        <Button
+        <LoadingButton
         variant="contained"
         onClick={onSubmit}
-        disabled={submitting}
-        startIcon={
-          submitting ? (
-            <Box
-              component="span"
-              sx={{
-                display: "inline-block",
-                animation: "spin 1s linear infinite",
-                "@keyframes spin": {
-                  "0%": { transform: "rotate(0deg)" },
-                  "100%": { transform: "rotate(360deg)" },
-                },
-              }}
-            >
-              <IconWrapper icon="mdi:loading" size={20} />
-            </Box>
-          ) : (
-            <IconWrapper icon="mdi:check-circle" size={20} />
-          )
-        }
+        loading={submitting}
+        loadingText={t("common.submitting")}
+        startIcon={<IconWrapper icon="mdi:check-circle" size={20} />}
         sx={{
           minWidth: { xs: "120px", md: "180px" },
           px: { xs: 2, md: 3 },
@@ -260,12 +244,8 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
           },
         }}
       >
-        {submitting
-          ? "Submitting..."
-          : isLastQuestion
-          ? "Submit Assessment"
-          : "Submit Early"}
-        </Button>
+        {isLastQuestion ? "Submit Assessment" : "Submit Early"}
+        </LoadingButton>
       </Box>
     </Paper>
   );

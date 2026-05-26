@@ -13,6 +13,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 
 const MAX_SIZE_MB = 5;
 const ACCEPTED_TYPES = ["application/pdf"];
@@ -229,10 +230,12 @@ export function ResumeUploadDialog({
         >
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           variant="contained"
           onClick={handleUpload}
-          disabled={!selectedFile || uploading}
+          disabled={!selectedFile}
+          loading={uploading}
+          loadingText="Uploading…"
           startIcon={<IconWrapper icon="mdi:upload" size={20} />}
           sx={{
             textTransform: "none",
@@ -244,8 +247,8 @@ export function ResumeUploadDialog({
             "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
-          {uploading ? "Uploading…" : "Upload"}
-        </Button>
+          Upload
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

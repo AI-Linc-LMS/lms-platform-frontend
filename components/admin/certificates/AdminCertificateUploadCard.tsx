@@ -15,8 +15,8 @@ import {
   Typography,
   Stack,
   TextField,
-  CircularProgress,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { alpha, useTheme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { CertificateUploadTier } from "@/lib/services/file-upload.service";
@@ -255,12 +255,14 @@ export function AdminCertificateUploadCard({
           </Button>
         </Box>
 
-        <Button
+        <LoadingButton
           variant="contained"
           size="large"
           fullWidth
           onClick={onUpload}
-          disabled={disabled || uploading || !selectedFile}
+          loading={uploading}
+          loadingText={t("common.uploading")}
+          disabled={disabled || !selectedFile}
           sx={{
             borderRadius: 2,
             py: 1.35,
@@ -272,16 +274,10 @@ export function AdminCertificateUploadCard({
               boxShadow: "none",
             },
           }}
-          startIcon={
-            uploading ? (
-              <CircularProgress color="inherit" size={22} thickness={5} />
-            ) : (
-              <IconWrapper icon="mdi:upload" size={22} />
-            )
-          }
+          startIcon={<IconWrapper icon="mdi:upload" size={22} />}
         >
-          {uploading ? t("certificatesUpload.uploading") : t("certificatesUpload.upload")}
-        </Button>
+          {t("certificatesUpload.upload")}
+        </LoadingButton>
 
         {lastUrl ? (
           <TextField

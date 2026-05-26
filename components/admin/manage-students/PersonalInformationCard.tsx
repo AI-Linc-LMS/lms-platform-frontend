@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { Box, Typography, Paper, TextField, Button } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { StudentDetail } from "@/lib/services/admin/admin-student.service";
 
@@ -144,15 +145,16 @@ export function PersonalInformationCard({
         {editing && (
           <Box sx={{ gridColumn: { xs: "1", sm: "1 / -1", md: "1 / -1" } }}>
             <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-              <Button
+              <LoadingButton
                 variant="contained"
                 onClick={onSave}
-                disabled={saving}
+                loading={saving}
+                loadingText={t("common.saving")}
                 size="small"
                 sx={{ bgcolor: "var(--primary-500)", color: "var(--font-light)", "&:hover": { bgcolor: "var(--primary-700)" } }}
               >
-                {saving ? t("manageStudents.saving") : t("manageStudents.save")}
-              </Button>
+                {t("manageStudents.save")}
+              </LoadingButton>
               <Button variant="outlined" onClick={onCancel} size="small">
                 {t("manageStudents.cancel")}
               </Button>

@@ -19,6 +19,8 @@ import {
   RadioGroup,
   Checkbox,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { FileUp, FileText } from "lucide-react";
 import { resumeService, type SavedResume } from "@/lib/services/resume.service";
 import { useToast } from "@/components/common/Toast";
@@ -100,6 +102,7 @@ export function ApplyJobDialog({
   questions = [],
   onApply,
 }: ApplyJobDialogProps) {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [resumeMode, setResumeMode] = useState<ResumeMode>("saved");
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
@@ -615,10 +618,12 @@ export function ApplyJobDialog({
         >
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           variant="contained"
           onClick={handleSubmit}
-          disabled={!canSubmit || applying}
+          disabled={!canSubmit}
+          loading={applying}
+          loadingText={t("common.submitting")}
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -627,8 +632,8 @@ export function ApplyJobDialog({
             "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
-          {applying ? "Applying..." : "Apply"}
-        </Button>
+          Apply
+        </LoadingButton>
       </Box>
     </Dialog>
   );

@@ -8,8 +8,9 @@ import {
   Button,
   Typography,
   Box,
-  CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface DeleteConfirmationModalProps {
@@ -27,6 +28,7 @@ export function DeleteConfirmationModal({
   title,
   loading = false,
 }: DeleteConfirmationModalProps) {
+  const { t } = useTranslation("common");
   return (
     <Dialog
       open={open}
@@ -77,22 +79,17 @@ export function DeleteConfirmationModal({
         <Button onClick={onClose} disabled={loading}>
           Cancel
         </Button>
-        <Button
+        <LoadingButton
           onClick={onConfirm}
+          loading={loading}
+          loadingText={t("common.deleting")}
           variant="contained"
           color="error"
-          disabled={loading}
-          startIcon={
-            loading ? (
-              <CircularProgress size={18} color="inherit" />
-            ) : (
-              <IconWrapper icon="mdi:delete" size={18} />
-            )
-          }
+          startIcon={<IconWrapper icon="mdi:delete" size={18} />}
           sx={{ bgcolor: "var(--error-500)", "&:hover": { bgcolor: "var(--error-500)" } }}
         >
-          {loading ? "Deleting..." : "Delete"}
-        </Button>
+          Delete
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

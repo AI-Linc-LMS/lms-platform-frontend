@@ -13,10 +13,10 @@ import {
   MenuItem,
   Box,
   IconButton,
-  CircularProgress,
   Typography,
   SelectChangeEvent,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState } from "react";
@@ -211,17 +211,12 @@ export function CreateCourseModal({
           >
             {t("adminCourseBuilder.cancel")}
           </Button>
-          <Button
+          <LoadingButton
             type="submit"
             variant="contained"
-            disabled={loading}
-            startIcon={
-              loading ? (
-                <CircularProgress size={18} color="inherit" />
-              ) : (
-                <IconWrapper icon="mdi:check" size={18} />
-              )
-            }
+            loading={loading}
+            loadingText={t("common.creating")}
+            startIcon={<IconWrapper icon="mdi:check" size={18} />}
             sx={{
               bgcolor: "var(--primary-500)",
               color: "var(--font-light)",
@@ -233,8 +228,8 @@ export function CreateCourseModal({
               },
             }}
           >
-            {loading ? t("adminCourseBuilder.creating") : t("adminCourseBuilder.createCourse")}
-          </Button>
+            {t("adminCourseBuilder.createCourse")}
+          </LoadingButton>
         </DialogActions>
       </form>
     </Dialog>

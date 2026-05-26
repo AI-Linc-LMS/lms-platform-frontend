@@ -21,6 +21,8 @@ import {
   Tooltip,
   Divider,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
@@ -245,6 +247,7 @@ export function ContentList({
   readOnly = false,
 }: ContentListProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
 
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1396,17 +1399,17 @@ export function ContentList({
           <Button onClick={closeDialog} disabled={saving} sx={{ color: "var(--font-secondary)" }}>
             Cancel
           </Button>
-          <Button
+          <LoadingButton
             onClick={handleSave}
             disabled={
-              saving ||
-              (!formData.title.trim() &&
-                !(editingId === null &&
-                  formData.content_type === "coding_problem" &&
-                  formData.coding_questions.length > 0))
+              !formData.title.trim() &&
+              !(editingId === null &&
+                formData.content_type === "coding_problem" &&
+                formData.coding_questions.length > 0)
             }
+            loading={saving}
+            loadingText={t("common.saving")}
             variant="contained"
-            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
             sx={{
               bgcolor: "var(--accent-indigo)",
               color: "var(--font-light)",
@@ -1418,8 +1421,8 @@ export function ContentList({
               },
             }}
           >
-            {saving ? "Saving..." : editingId !== null ? "Update" : "Add"}
-          </Button>
+            {editingId !== null ? "Update" : "Add"}
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 

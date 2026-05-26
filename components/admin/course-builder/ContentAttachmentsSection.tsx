@@ -4,12 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
-  Button,
   IconButton,
   CircularProgress,
   Chip,
   Tooltip,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -64,6 +65,7 @@ export function ContentAttachmentsSection({
   readOnly = false,
 }: ContentAttachmentsSectionProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [attachments, setAttachments] = useState<ContentAttachment[]>([]);
@@ -197,17 +199,12 @@ export function ContentAttachmentsSection({
           )}
         </Box>
         {!readOnly && (
-          <Button
+          <LoadingButton
             size="small"
-            startIcon={
-              uploading ? (
-                <CircularProgress size={14} color="inherit" />
-              ) : (
-                <IconWrapper icon="mdi:plus" size={14} />
-              )
-            }
+            loading={uploading}
+            loadingText={t("common.uploading")}
+            startIcon={<IconWrapper icon="mdi:plus" size={14} />}
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
             sx={{
               color: "var(--accent-indigo)",
               textTransform: "none",
@@ -215,8 +212,8 @@ export function ContentAttachmentsSection({
               fontSize: "0.75rem",
             }}
           >
-            {uploading ? "Uploading…" : "Add file"}
-          </Button>
+            Add file
+          </LoadingButton>
         )}
         <input
           ref={fileInputRef}

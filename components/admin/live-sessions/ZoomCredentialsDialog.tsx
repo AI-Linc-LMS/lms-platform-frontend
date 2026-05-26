@@ -17,6 +17,7 @@ import {
   Chip,
   Collapse,
 } from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
@@ -342,13 +343,12 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
             </Box>
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={onClose}>{t("adminLiveSessions.cancel")}</Button>
-              <Button
+              <LoadingButton
                 variant="contained"
                 onClick={handleSave}
-                disabled={saving}
-                startIcon={
-                  saving ? <CircularProgress size={18} color="inherit" /> : <IconWrapper icon="mdi:content-save" size={18} />
-                }
+                loading={saving}
+                loadingText={t("common.saving")}
+                startIcon={<IconWrapper icon="mdi:content-save" size={18} />}
                 sx={{
                   bgcolor: "var(--accent-indigo)",
                   color: "var(--font-light)",
@@ -360,8 +360,8 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                   },
                 }}
               >
-                {saving ? t("adminLiveSessions.saving") : t("adminLiveSessions.save")}
-              </Button>
+                {t("adminLiveSessions.save")}
+              </LoadingButton>
             </Box>
           </>
         )}

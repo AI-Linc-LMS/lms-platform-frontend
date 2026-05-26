@@ -277,7 +277,7 @@
     "passwordResetPasswordHint": "8 أحرف على الأقل مع حرف كبير وصغير ورقم. تجنّب التشابه مع بريدك أو اسمك.",
     "newPassword": "كلمة المرور الجديدة",
     "resetPasswordSubmit": "إعادة تعيين كلمة المرور",
-    "resettingPassword": "جاري الحفظ...",
+    "resettingPassword": "جاري إعادة تعيين كلمة المرور...",
     "useDifferentEmail": "استخدام بريد إلكتروني آخر",
     "resetCodeSent": "تم إرسال رمز التحقق.",
     "resetRequestFailed": "تعذر إكمال الطلب. حاول مرة أخرى.",
