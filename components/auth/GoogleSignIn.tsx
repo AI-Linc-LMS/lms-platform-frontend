@@ -44,6 +44,12 @@ interface GoogleSignInProps {
   disabled?: boolean;
 }
 
+/**
+ * How long after the user clicks the custom Google button to wait before
+ * deciding the popup was blocked and surfacing the direct-GSI fallback.
+ */
+const POPUP_FALLBACK_DELAY_MS = 2500;
+
 export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   disabled = false,
 }) => {
@@ -54,16 +60,29 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   const { showToast } = useToast();
   const isInitialized = useRef(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  /**
+   * When true the GSI-rendered button is shown visibly above the custom button
+   * so the user can click it directly — bypassing any popup-blocked restriction
+   * caused by our programmatic .click() triggering.
+   */
+  const [showGsiFallback, setShowGsiFallback] = useState(false);
 
-  // Ensure component only renders client-side content after hydration
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const handleGoogleSignIn = useCallback(
     async (response: { credential: string }) => {
+      // Credential received — cancel any pending popup-fallback timer
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+      setShowGsiFallback(false);
+
       try {
         const result = await googleLogin(response.credential);
         if (!result.profileActive) {
@@ -100,9 +119,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     // loading the in-page GSI library here is unnecessary AND actively harmful:
     // the GSI button iframe checks the page origin against the OAuth client's
     // "Authorized JavaScript origins" list, and per-tenant domains aren't
-    // (and shouldn't be) on that list. Bailing prevents the console errors
-    // "The given origin is not allowed for the given client ID" and
-    // "google.accounts.id.initialize() is called multiple times".
+    // (and shouldn't be) on that list.
     if (config.tenantSlug && config.authProxyUrl) {
       return;
     }
@@ -115,32 +132,25 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       return;
     }
 
-    // Load Google Identity Services script
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
     script.onload = () => {
       if (window.google && window.google.accounts && googleButtonRef.current) {
-        // Initialize Google Sign-In with credential (ID token) callback
-        // This will be called when user signs in via button or One Tap
         try {
           window.google.accounts.id.initialize({
             client_id: config.googleClientId,
             callback: handleGoogleSignIn,
-            // Disable FedCM to avoid network errors
             use_fedcm_for_prompt: false,
-            // Add error callback
             error_callback: (error: any) => {
               if (error.type === "popup_closed_by_user") {
-                // User closed the popup, don't show error
                 return;
               }
               showToast(t("auth.googleError"), "error");
             },
           });
 
-          // Render Google button on the hidden div
           try {
             window.google.accounts.id.renderButton(googleButtonRef.current, {
               type: "standard",
@@ -149,37 +159,62 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
               text: "signin_with",
               width: 300,
             });
-          } catch (error) {
+          } catch {
             // Failed to render Google button
           }
 
           isInitialized.current = true;
-        } catch (error) {
+        } catch {
           showToast(t("auth.googleInitFailed"), "error");
         }
       }
     };
-    
+
     script.onerror = () => {
       showToast(t("auth.googleLoadFailed"), "error");
     };
     document.body.appendChild(script);
 
     return () => {
-      // Cleanup script if component unmounts
-      // Only remove if it still exists and is attached to the DOM
       const existingScript = document.querySelector(
         'script[src="https://accounts.google.com/gsi/client"]'
       );
       if (existingScript && existingScript.parentNode) {
         try {
           existingScript.remove();
-        } catch (error) {
+        } catch {
           // Element may have already been removed by React
         }
       }
     };
   }, [isMounted, handleGoogleSignIn, showToast]);
+
+  // When the fallback container mounts, re-render the GSI button inside it
+  // so the user can click it directly (a trusted user gesture).
+  useEffect(() => {
+    if (!showGsiFallback) return;
+    if (!window.google?.accounts?.id) return;
+    if (!googleButtonRef.current) return;
+    if (!isInitialized.current) return;
+    try {
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        width: 300,
+      });
+    } catch {
+      // ignore
+    }
+  }, [showGsiFallback]);
+
+  // Clear popup-fallback timer on unmount
+  useEffect(() => {
+    return () => {
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    };
+  }, []);
 
   // Conditional return AFTER all hooks
   if (isRedirecting) {
@@ -187,10 +222,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   }
 
   const handleClick = () => {
-    // Central auth proxy path: when this Netlify site was provisioned by the
-    // backend, NEXT_PUBLIC_TENANT_SLUG + NEXT_PUBLIC_AUTH_PROXY_URL are set, so
-    // no per-tenant Google Console origin is needed. One Django backend route
-    // (/central-auth/...) is the ONLY registered redirect URI globally.
+    // Central auth proxy path — full-page redirect, no popup needed
     if (config.tenantSlug && config.authProxyUrl) {
       const returnTo =
         searchParams.get("redirect") ||
@@ -203,8 +235,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       return;
     }
 
-    // Legacy in-page flow: pre-proxy tenants still ship their own
-    // GOOGLE_CLIENT_ID and authorized origin in Google Console.
+    // Legacy in-page GSI flow
     if (!config.googleClientId) {
       showToast("Google sign-in is not configured", "error");
       return;
@@ -215,9 +246,24 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       return;
     }
 
+    // Reset stale fallback state from any previous attempt
+    setShowGsiFallback(false);
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+
+    /**
+     * Start a timer. If no credential arrives within POPUP_FALLBACK_DELAY_MS
+     * the popup was probably blocked — reveal the real GSI-rendered button
+     * so the user can click it directly (no programmatic .click(), which
+     * browsers treat as untrusted and block as a popup).
+     */
+    fallbackTimerRef.current = setTimeout(() => {
+      setShowGsiFallback(true);
+    }, POPUP_FALLBACK_DELAY_MS);
+
+    // Attempt to trigger the hidden GSI button programmatically
     const googleButton = googleButtonRef.current?.querySelector(
       'div[role="button"]'
-    ) as HTMLElement;
+    ) as HTMLElement | null;
     if (googleButton) {
       googleButton.click();
     } else {
@@ -225,10 +271,30 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     }
   };
 
+  const googleLogoSvg = (
+    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#000" fillRule="evenodd">
+        <path d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z" fill="#EA4335" />
+        <path d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.21 1.18-.84 2.18-1.79 2.85l2.78 2.16c1.7-1.57 2.69-3.88 2.69-6.51z" fill="#4285F4" />
+        <path d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z" fill="#FBBC05" />
+        <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.78-2.16c-.76.53-1.78.9-3.18.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.45 15.98 5.48 18 9 18z" fill="#34A853" />
+      </g>
+    </svg>
+  );
+
   return (
     <>
-      {/* Hidden Google button for credential flow - only render on client */}
-      {isMounted && (
+      {/*
+        GSI-rendered button container.
+
+        Normal state  → positioned off-screen (left: -9999px), invisible.
+                        Our custom-styled button is shown instead.
+
+        Fallback state → floated into view below the custom button.
+                         The user clicks it directly — a real trusted user
+                         gesture — so browsers cannot block the popup.
+      */}
+      {isMounted && !showGsiFallback && (
         <div
           ref={googleButtonRef}
           style={{
@@ -240,6 +306,8 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           suppressHydrationWarning
         />
       )}
+
+      {/* Custom-styled Google button */}
       <Button
         fullWidth
         variant="outlined"
@@ -260,6 +328,8 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           backgroundColor: "white",
           fontWeight: 500,
           fontSize: "0.875rem",
+          WebkitTapHighlightColor: "transparent",
+          touchAction: "manipulation",
           "&:hover": {
             borderColor: "#cbd5e1",
             backgroundColor: "#f8fafc",
@@ -268,31 +338,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 18 18"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <g fill="#000" fillRule="evenodd">
-              <path
-                d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"
-                fill="#EA4335"
-              />
-              <path
-                d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.21 1.18-.84 2.18-1.79 2.85l2.78 2.16c1.7-1.57 2.69-3.88 2.69-6.51z"
-                fill="#4285F4"
-              />
-              <path
-                d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.78-2.16c-.76.53-1.78.9-3.18.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.45 15.98 5.48 18 9 18z"
-                fill="#34A853"
-              />
-            </g>
-          </svg>
+          {googleLogoSvg}
           <Typography
             variant="body2"
             sx={{ fontWeight: 500, fontSize: "0.9375rem", color: "#0f172a" }}
@@ -301,6 +347,33 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           </Typography>
         </Box>
       </Button>
+
+      {/*
+        Fallback: shown only in the legacy GSI flow after POPUP_FALLBACK_DELAY_MS
+        with no credential (popup was blocked by the browser).
+
+        The actual GSI-rendered button is moved here and made visible.
+        The user clicks it directly — a real user gesture — so the browser
+        allows the popup to open. No custom OAuth redirect needed.
+      */}
+      {isMounted && showGsiFallback && (
+        <Box sx={{ mt: 1.5, textAlign: "center" }}>
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", display: "block", mb: 1 }}
+          >
+            {t("auth.googlePopupBlocked", {
+              defaultValue: "Popup blocked — click below to sign in:",
+            })}
+          </Typography>
+          {/* GSI button is rendered here; user clicks it directly */}
+          <Box
+            ref={googleButtonRef}
+            sx={{ display: "flex", justifyContent: "center" }}
+            suppressHydrationWarning
+          />
+        </Box>
+      )}
     </>
   );
 };
