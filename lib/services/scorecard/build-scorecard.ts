@@ -1,5 +1,6 @@
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 import {
+  mapAchievementsFromApi,
   mapAssessmentPerformanceFromApi,
   mapBehavioralMetricsFromApi,
   mapComparativeInsightsFromApi,
@@ -26,6 +27,7 @@ export type ScorecardApiPayload = {
   mock_interview_performance?: unknown;
   behavioral_metrics?: unknown;
   comparative_insights?: unknown;
+  achievements?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -78,6 +80,10 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
 
   if (data?.comparative_insights != null && typeof data.comparative_insights === "object") {
     result.comparativeInsights = mapComparativeInsightsFromApi(data.comparative_insights);
+  }
+
+  if (data?.achievements != null && typeof data.achievements === "object") {
+    result.achievements = mapAchievementsFromApi(data.achievements);
   }
 
   return result;

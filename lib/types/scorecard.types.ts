@@ -352,6 +352,45 @@ export interface ComparativeInsights {
   comparisons: BenchmarkComparison[];
 }
 
+// Achievements & Gamification (Phase 8)
+export interface BadgeEarned {
+  id: string;
+  name: string;
+  description: string;
+  iconSlug: string;
+  earnedDate: string | null;
+  points: number;
+  snapshotValue: string;
+}
+
+export interface BadgeMilestone {
+  id: string;
+  name: string;
+  description: string;
+  iconSlug: string;
+  progress: number; // 0-100
+}
+
+export interface CertificatesProgress {
+  total: number;
+  completed: number;
+  inProgress: number;
+}
+
+export interface Achievements {
+  badges: BadgeEarned[];
+  milestones: BadgeMilestone[];
+  streakRewards: {
+    currentStreak: number;
+    longestStreak: number;
+    rewards: unknown[];
+  };
+  certificatesProgress: CertificatesProgress;
+  totalPoints: number;
+  badgesEarnedCount: number;
+  badgesAvailableCount: number;
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
@@ -363,4 +402,5 @@ export interface ScorecardData {
   mockInterviewPerformance?: MockInterviewPerformance;
   behavioralMetrics?: BehavioralMetrics;
   comparativeInsights?: ComparativeInsights;
+  achievements?: Achievements;
 }

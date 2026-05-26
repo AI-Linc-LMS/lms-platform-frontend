@@ -1,8 +1,12 @@
 import type {
+  Achievements,
   AssessmentDifficultyBreakdown,
   AssessmentPerformance,
+  BadgeEarned,
+  BadgeMilestone,
   BehavioralMetrics,
   BenchmarkComparison,
+  CertificatesProgress,
   ComparativeInsights,
   ContentCompletionOverview,
   InterviewParameter,
@@ -605,6 +609,69 @@ export function mapComparativeInsightsFromApi(api: unknown): ComparativeInsights
       equal: num(vsRaw.equal),
     },
     comparisons,
+  };
+}
+
+export function mapAchievementsFromApi(api: unknown): Achievements {
+  if (!api || typeof api !== "object") {
+    return getEmptyAchievements();
+  }
+  const raw = api as Record<string, unknown>;
+
+  const badges: BadgeEarned[] = Array.isArray(raw.badges)
+    ? (raw.badges as Record<string, unknown>[]).map((b) => ({
+        id: String(b.id ?? ""),
+        name: (b.name as string) ?? "",
+        description: (b.description as string) ?? "",
+        iconSlug: (b.icon_slug as string) || "mdi:trophy-outline",
+        earnedDate: (b.earned_date as string) || null,
+        points: num(b.points),
+        snapshotValue: (b.snapshot_value as string) ?? "",
+      }))
+    : [];
+
+  const milestones: BadgeMilestone[] = Array.isArray(raw.milestones)
+    ? (raw.milestones as Record<string, unknown>[]).map((m) => ({
+        id: String(m.id ?? ""),
+        name: (m.name as string) ?? "",
+        description: (m.description as string) ?? "",
+        iconSlug: (m.icon_slug as string) || "mdi:flag-outline",
+        progress: num(m.progress),
+      }))
+    : [];
+
+  const streakRaw = (raw.streak_rewards as Record<string, unknown>) ?? {};
+  const certsRaw = (raw.certificates_progress as Record<string, unknown>) ?? {};
+  const certificatesProgress: CertificatesProgress = {
+    total: num(certsRaw.total),
+    completed: num(certsRaw.completed),
+    inProgress: num(certsRaw.in_progress),
+  };
+
+  return {
+    badges,
+    milestones,
+    streakRewards: {
+      currentStreak: num(streakRaw.current_streak),
+      longestStreak: num(streakRaw.longest_streak),
+      rewards: Array.isArray(streakRaw.rewards) ? (streakRaw.rewards as unknown[]) : [],
+    },
+    certificatesProgress,
+    totalPoints: num(raw.total_points),
+    badgesEarnedCount: num(raw.badges_earned_count),
+    badgesAvailableCount: num(raw.badges_available_count),
+  };
+}
+
+export function getEmptyAchievements(): Achievements {
+  return {
+    badges: [],
+    milestones: [],
+    streakRewards: { currentStreak: 0, longestStreak: 0, rewards: [] },
+    certificatesProgress: { total: 0, completed: 0, inProgress: 0 },
+    totalPoints: 0,
+    badgesEarnedCount: 0,
+    badgesAvailableCount: 0,
   };
 }
 

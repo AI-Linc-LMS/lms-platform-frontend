@@ -3,6 +3,7 @@ import { config } from "@/lib/config";
 import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
 import {
+  mapAchievementsFromApi,
   mapAssessmentPerformanceFromApi,
   mapBehavioralMetricsFromApi,
   mapComparativeInsightsFromApi,
@@ -12,6 +13,7 @@ import {
   mapWeakAreasFromApi,
 } from "./scorecard/mappers";
 import type {
+  Achievements,
   AssessmentPerformance,
   BehavioralMetrics,
   ComparativeInsights,
@@ -116,6 +118,14 @@ export const scorecardService = {
       `/api/scorecard/clients/${clientId}/student/scorecard/comparative/`,
     );
     return mapComparativeInsightsFromApi(response.data);
+  },
+
+  getAchievements: async (): Promise<Achievements> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/achievements/`,
+    );
+    return mapAchievementsFromApi(response.data);
   },
 
   exportScorecardPdf: async (): Promise<Blob> => {
