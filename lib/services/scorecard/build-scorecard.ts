@@ -3,6 +3,7 @@ import {
   mapLearningConsumptionFromApi,
   mapOverviewFromApi,
   mapPerformanceTrendsFromApi,
+  mapSkillsFromApi,
   getEmptyLearningConsumption,
   getEmptyOverview,
   getEmptyScorecardData,
@@ -14,6 +15,7 @@ export type ScorecardApiPayload = {
   overview?: Record<string, unknown>;
   learning_consumption?: unknown;
   performance_trends?: unknown;
+  skills?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -42,6 +44,10 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
   // crashing on missing data — the section component renders an empty state.
   if (data?.performance_trends != null && typeof data.performance_trends === "object") {
     result.performanceTrends = mapPerformanceTrendsFromApi(data.performance_trends);
+  }
+
+  if (Array.isArray(data?.skills)) {
+    result.skills = mapSkillsFromApi(data?.skills);
   }
 
   return result;

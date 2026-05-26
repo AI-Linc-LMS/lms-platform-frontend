@@ -27,6 +27,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
+import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
 import { adminStudentService, type Student } from "@/lib/services/admin/admin-student.service";
 import {
@@ -42,6 +43,7 @@ const MODULE_OPTIONS = [
   { id: "activity_heatmap", label: "Activity Heatmap" },
   { id: "learning_consumption", label: "Learning Consumption" },
   { id: "performance_trends", label: "Performance Trends" },
+  { id: "skill_scorecard", label: "Skill Scorecard" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
@@ -743,6 +745,9 @@ export default function AdminScorecardPage() {
                               readOnly
                             />
                           );
+                        case "skill_scorecard":
+                          if (!scorecardData.skills || scorecardData.skills.length === 0) return null;
+                          return <SkillScorecardSection key={sectionId} data={scorecardData.skills} />;
                         default:
                           return null;
                       }

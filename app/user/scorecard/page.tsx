@@ -17,6 +17,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
+import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
 import { profileService, type HeatmapData } from "@/lib/services/profile.service";
 import { scorecardService } from "@/lib/services/scorecard.service";
@@ -27,6 +28,7 @@ const SECTION_ORDER = [
   "activity_heatmap",
   "learning_consumption",
   "performance_trends",
+  "skill_scorecard",
 ] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
@@ -328,6 +330,9 @@ export default function ScorecardPage() {
                         initialData={data.performanceTrends}
                       />
                     );
+                  case "skill_scorecard":
+                    if (!data.skills || data.skills.length === 0) return null;
+                    return <SkillScorecardSection key={sectionId} data={data.skills} />;
                   default:
                     return null;
                 }

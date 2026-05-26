@@ -1,6 +1,7 @@
-// Scorecard types (overview + learning consumption only)
+// Scorecard types (overview + learning consumption + per-module additions)
 
 export type PerformanceLevel = "Beginner" | "Intermediate" | "Advanced" | "Interview-Ready";
+export type SkillStrength = "Strong" | "Intermediate" | "Needs Attention";
 export type StatusBadge = "Green" | "Amber" | "Red";
 
 export interface CourseProgressItem {
@@ -135,9 +136,58 @@ export interface PerformanceTrends {
   skillWiseAccuracy: SkillAccuracy[];
 }
 
+// Skill Scorecard (Phase 2)
+export interface SkillBreakdown {
+  quizScore: number; // 0-100
+  assessmentScore: number;
+  interviewScore: number;
+  codingScore: number;
+  videoScore: number;
+}
+
+export interface SkillBreakdownCounts {
+  quizCount: number;
+  videoCount: number;
+  assessmentCount: number;
+  codingCount: number;
+  interviewCount: number;
+}
+
+export interface SkillBreakdownItem {
+  name: string;
+  score?: number;
+  courseName?: string;
+  moduleName?: string;
+  submoduleName?: string;
+}
+
+export interface SkillBreakdownItems {
+  quiz: SkillBreakdownItem[];
+  video: SkillBreakdownItem[];
+  coding: SkillBreakdownItem[];
+  assessment: SkillBreakdownItem[];
+  interview: SkillBreakdownItem[];
+  article?: SkillBreakdownItem[];
+  subjective?: SkillBreakdownItem[];
+}
+
+export interface Skill {
+  id: string | number;
+  name: string;
+  category?: string;
+  proficiencyScore: number; // 0-100
+  level: PerformanceLevel;
+  strength: SkillStrength;
+  confidenceScore: number; // 0-100
+  breakdown: SkillBreakdown;
+  breakdownCounts?: SkillBreakdownCounts;
+  breakdownItems?: SkillBreakdownItems;
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
   learningConsumption: LearningConsumption;
   performanceTrends?: PerformanceTrends;
+  skills?: Skill[];
 }

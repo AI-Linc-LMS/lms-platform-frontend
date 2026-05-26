@@ -2,8 +2,8 @@ import apiClient from "./api";
 import { config } from "@/lib/config";
 import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
-import { mapPerformanceTrendsFromApi } from "./scorecard/mappers";
-import type { PerformanceTrends } from "@/lib/types/scorecard.types";
+import { mapPerformanceTrendsFromApi, mapSkillsFromApi } from "./scorecard/mappers";
+import type { PerformanceTrends, Skill } from "@/lib/types/scorecard.types";
 
 export { formatTimeSpent } from "./scorecard/mappers";
 export type { ScorecardApiPayload };
@@ -52,6 +52,14 @@ export const scorecardService = {
       { params: { granularity } },
     );
     return mapPerformanceTrendsFromApi(response.data);
+  },
+
+  getSkillScorecard: async (): Promise<Skill[]> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<{ skills?: unknown }>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/skills/`,
+    );
+    return mapSkillsFromApi(response.data?.skills);
   },
 
   exportScorecardPdf: async (): Promise<Blob> => {

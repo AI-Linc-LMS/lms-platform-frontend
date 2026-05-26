@@ -3,6 +3,9 @@ import type {
   LearningConsumption,
   PerformanceTrends,
   ScorecardData,
+  Skill,
+  SkillBreakdownItem,
+  SkillBreakdownItems,
   StudentOverview,
 } from "@/lib/types/scorecard.types";
 
@@ -277,6 +280,77 @@ export function mapPerformanceTrendsFromApi(api: unknown): PerformanceTrends {
 
 export function getEmptyPerformanceTrends(): PerformanceTrends {
   return { granularity: "weekly", weeklyData: [], skillWiseAccuracy: [] };
+}
+
+function mapBreakdownItemList(raw: unknown): SkillBreakdownItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((x) => {
+    const o = x as Record<string, unknown>;
+    return {
+      name: (o.name as string) ?? (o.title as string) ?? "",
+      score: o.score != null ? num(o.score) : undefined,
+      courseName: (o.course_name as string) || undefined,
+      moduleName: (o.module_name as string) || undefined,
+      submoduleName: (o.submodule_name as string) || undefined,
+    };
+  });
+}
+
+function mapBreakdownItems(items: unknown): SkillBreakdownItems | undefined {
+  if (!items || typeof items !== "object") return undefined;
+  const raw = items as Record<string, unknown>;
+  return {
+    quiz: mapBreakdownItemList(raw.quiz),
+    video: mapBreakdownItemList(raw.video),
+    coding: mapBreakdownItemList(raw.coding),
+    assessment: mapBreakdownItemList(raw.assessment),
+    interview: mapBreakdownItemList(raw.interview),
+    article: mapBreakdownItemList(raw.article),
+    subjective: mapBreakdownItemList(raw.subjective),
+  };
+}
+
+export function mapSkillsFromApi(apiSkills: unknown): Skill[] {
+  if (!Array.isArray(apiSkills)) return [];
+  return apiSkills.map((s, idx) => {
+    const raw = s as Record<string, unknown>;
+    const breakdown = (raw.breakdown as Record<string, unknown>) ?? {};
+    const counts = (raw.breakdown_counts as Record<string, unknown>) ?? {};
+    const id = raw.skill_id ?? raw.id ?? idx;
+    const hasCounts =
+      counts.quiz_count != null ||
+      counts.video_count != null ||
+      counts.coding_count != null ||
+      counts.assessment_count != null ||
+      counts.interview_count != null;
+    return {
+      id: typeof id === "number" || typeof id === "string" ? id : String(id),
+      name: (raw.skill_name ?? raw.name ?? "") as string,
+      category: (raw.category as string) || undefined,
+      proficiencyScore: num(raw.proficiency),
+      level: ((raw.level as Skill["level"]) ?? "Beginner") as Skill["level"],
+      strength:
+        ((raw.strength as Skill["strength"]) ?? "Needs Attention") as Skill["strength"],
+      confidenceScore: num(raw.confidence),
+      breakdown: {
+        quizScore: num(breakdown.quiz_score),
+        assessmentScore: num(breakdown.assessment_score),
+        interviewScore: num(breakdown.interview_score),
+        codingScore: num(breakdown.coding_score),
+        videoScore: num(breakdown.video_score),
+      },
+      breakdownCounts: hasCounts
+        ? {
+            quizCount: num(counts.quiz_count),
+            videoCount: num(counts.video_count),
+            assessmentCount: num(counts.assessment_count),
+            codingCount: num(counts.coding_count),
+            interviewCount: num(counts.interview_count),
+          }
+        : undefined,
+      breakdownItems: mapBreakdownItems(raw.breakdown_items),
+    };
+  });
 }
 
 export function getEmptyScorecardData(): ScorecardData {
