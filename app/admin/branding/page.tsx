@@ -1943,7 +1943,7 @@ function BrandAssetCard({
             <LoadingButton
               variant="outlined"
               component="label"
-              htmlFor={inputId}
+              htmlFor={inputId as any}
               size="small"
               fullWidth
               loading={uploading}

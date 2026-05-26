@@ -14,6 +14,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { useState, useCallback, memo, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 
@@ -61,6 +62,7 @@ const QuickStartFormComponent = ({
   onSubmit,
   loading,
 }: QuickStartFormProps) => {
+  const { t } = useTranslation("common");
   const defaultDate = new Date();
   defaultDate.setHours(9, 0, 0, 0);
 
@@ -385,7 +387,7 @@ const QuickStartFormComponent = ({
               variant="contained"
               onClick={handleSubmit}
               loading={loading}
-              loadingText="Creating..."
+              loadingText={t("common.creating")}
               endIcon={<IconWrapper icon="mdi:lightning-bolt" size={20} />}
               sx={{
                 textTransform: "none",

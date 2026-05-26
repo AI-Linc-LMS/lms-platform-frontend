@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogTitle,
@@ -39,6 +40,7 @@ export function ImageUploadDialog({
   maxSizeMB = 5,
   acceptedFormats = ["image/jpeg", "image/jpg", "image/png", "image/webp"],
 }: ImageUploadDialogProps) {
+  const { t } = useTranslation("common");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
   const [uploading, setUploading] = useState(false);
@@ -539,7 +541,7 @@ export function ImageUploadDialog({
           variant="contained"
           disabled={!selectedFile}
           loading={uploading}
-          loadingText="Uploading…"
+          loadingText={t("common.uploading")}
           sx={{
             textTransform: "none",
             fontWeight: 600,

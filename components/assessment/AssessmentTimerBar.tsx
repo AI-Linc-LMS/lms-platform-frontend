@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Paper, Typography, Chip } from "@mui/material";
-import LoadingButton from "@/components/common/LoadingButton";
+import {LoadingButton} from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
@@ -43,6 +43,8 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
         return "var(--error-500)";
     }
   };
+  const {t}=useTranslation()
+  
   return (
     <Paper
       elevation={2}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Button,
@@ -129,6 +130,7 @@ export function SectionTailorButton({
   variant = "chip",
   label,
 }: SectionTailorButtonProps) {
+  const { t } = useTranslation("common");
   const copy = SECTION_COPY[section];
   const triggerLabel = label ?? copy.buttonLabel;
   const [open, setOpen] = useState(false);
@@ -576,7 +578,7 @@ export function SectionTailorButton({
             onClick={handleGenerate}
             disabled={!canGenerate}
             loading={loading}
-            loadingText="Generating…"
+            loadingText={t("common.generating")}
             startIcon={<IconWrapper icon="mdi:auto-fix" />}
             sx={{ textTransform: "none", backgroundColor: "var(--accent-purple)" }}
           >

@@ -8,6 +8,7 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
@@ -44,6 +45,7 @@ export function CodeEditorPanel({
   onRun,
   onSubmit,
 }: CodeEditorPanelProps) {
+  const { t } = useTranslation("common");
   const monacoLanguage = getMonacoLanguage(selectedLanguage);
 
   return (
@@ -102,7 +104,7 @@ export function CodeEditorPanel({
           onClick={onRun}
           disabled={submitting}
           loading={running}
-          loadingText="Running..."
+          loadingText={t("common.running")}
           startIcon={<IconWrapper icon="mdi:play" size={16} />}
           sx={{
             borderColor: "#6366f1",
@@ -123,7 +125,7 @@ export function CodeEditorPanel({
           onClick={onSubmit}
           disabled={running || !code.trim()}
           loading={submitting}
-          loadingText="Submitting..."
+          loadingText={t("common.submitting")}
           startIcon={<IconWrapper icon="mdi:check" size={16} />}
           sx={{
             backgroundColor: "#10b981",
