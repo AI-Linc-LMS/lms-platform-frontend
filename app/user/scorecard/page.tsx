@@ -19,6 +19,7 @@ import { LearningConsumptionSection } from "@/components/scorecard/detailed/Lear
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
+import { WeakAreasSection } from "@/components/scorecard/detailed/WeakAreasSection";
 import { profileService, type HeatmapData } from "@/lib/services/profile.service";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
@@ -29,6 +30,7 @@ const SECTION_ORDER = [
   "learning_consumption",
   "performance_trends",
   "skill_scorecard",
+  "weak_areas",
 ] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
@@ -333,6 +335,9 @@ export default function ScorecardPage() {
                   case "skill_scorecard":
                     if (!data.skills || data.skills.length === 0) return null;
                     return <SkillScorecardSection key={sectionId} data={data.skills} />;
+                  case "weak_areas":
+                    if (!data.weakAreas) return null;
+                    return <WeakAreasSection key={sectionId} data={data.weakAreas} />;
                   default:
                     return null;
                 }

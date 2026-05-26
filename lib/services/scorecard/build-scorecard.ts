@@ -4,6 +4,7 @@ import {
   mapOverviewFromApi,
   mapPerformanceTrendsFromApi,
   mapSkillsFromApi,
+  mapWeakAreasFromApi,
   getEmptyLearningConsumption,
   getEmptyOverview,
   getEmptyScorecardData,
@@ -16,6 +17,7 @@ export type ScorecardApiPayload = {
   learning_consumption?: unknown;
   performance_trends?: unknown;
   skills?: unknown;
+  weak_areas?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -48,6 +50,10 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
 
   if (Array.isArray(data?.skills)) {
     result.skills = mapSkillsFromApi(data?.skills);
+  }
+
+  if (data?.weak_areas != null && typeof data.weak_areas === "object") {
+    result.weakAreas = mapWeakAreasFromApi(data.weak_areas);
   }
 
   return result;

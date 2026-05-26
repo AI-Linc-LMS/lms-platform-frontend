@@ -2,8 +2,12 @@ import apiClient from "./api";
 import { config } from "@/lib/config";
 import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
-import { mapPerformanceTrendsFromApi, mapSkillsFromApi } from "./scorecard/mappers";
-import type { PerformanceTrends, Skill } from "@/lib/types/scorecard.types";
+import {
+  mapPerformanceTrendsFromApi,
+  mapSkillsFromApi,
+  mapWeakAreasFromApi,
+} from "./scorecard/mappers";
+import type { PerformanceTrends, Skill, WeakAreas } from "@/lib/types/scorecard.types";
 
 export { formatTimeSpent } from "./scorecard/mappers";
 export type { ScorecardApiPayload };
@@ -60,6 +64,14 @@ export const scorecardService = {
       `/api/scorecard/clients/${clientId}/student/scorecard/skills/`,
     );
     return mapSkillsFromApi(response.data?.skills);
+  },
+
+  getWeakAreas: async (): Promise<WeakAreas> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/weak-areas/`,
+    );
+    return mapWeakAreasFromApi(response.data);
   },
 
   exportScorecardPdf: async (): Promise<Blob> => {

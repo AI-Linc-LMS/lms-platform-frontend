@@ -29,6 +29,7 @@ import { LearningConsumptionSection } from "@/components/scorecard/detailed/Lear
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
+import { WeakAreasSection } from "@/components/scorecard/detailed/WeakAreasSection";
 import { adminStudentService, type Student } from "@/lib/services/admin/admin-student.service";
 import {
   getAdminScorecardConfig,
@@ -44,6 +45,7 @@ const MODULE_OPTIONS = [
   { id: "learning_consumption", label: "Learning Consumption" },
   { id: "performance_trends", label: "Performance Trends" },
   { id: "skill_scorecard", label: "Skill Scorecard" },
+  { id: "weak_areas", label: "Weak Areas" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
@@ -748,6 +750,9 @@ export default function AdminScorecardPage() {
                         case "skill_scorecard":
                           if (!scorecardData.skills || scorecardData.skills.length === 0) return null;
                           return <SkillScorecardSection key={sectionId} data={scorecardData.skills} />;
+                        case "weak_areas":
+                          if (!scorecardData.weakAreas) return null;
+                          return <WeakAreasSection key={sectionId} data={scorecardData.weakAreas} />;
                         default:
                           return null;
                       }

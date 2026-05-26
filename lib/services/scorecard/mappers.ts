@@ -7,6 +7,11 @@ import type {
   SkillBreakdownItem,
   SkillBreakdownItems,
   StudentOverview,
+  TopicIncorrect,
+  WeakArea,
+  WeakAreaRecommendation,
+  WeakAreas,
+  WeakAreaSourceContext,
 } from "@/lib/types/scorecard.types";
 
 export function mapOverviewFromApi(overview: Record<string, unknown>): StudentOverview {
@@ -351,6 +356,73 @@ export function mapSkillsFromApi(apiSkills: unknown): Skill[] {
       breakdownItems: mapBreakdownItems(raw.breakdown_items),
     };
   });
+}
+
+function mapSourceContext(raw: unknown): WeakAreaSourceContext | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const ctx: WeakAreaSourceContext = {};
+  if (typeof o.content_type === "string" && o.content_type) ctx.contentType = o.content_type;
+  if (typeof o.item_name === "string" && o.item_name) ctx.itemName = o.item_name;
+  if (typeof o.course_name === "string" && o.course_name) ctx.courseName = o.course_name;
+  if (typeof o.module_name === "string" && o.module_name) ctx.moduleName = o.module_name;
+  if (typeof o.submodule_name === "string" && o.submodule_name) ctx.submoduleName = o.submodule_name;
+  // Return undefined when every field was blank, so the UI can short-circuit.
+  return Object.keys(ctx).length ? ctx : undefined;
+}
+
+export function mapWeakAreasFromApi(api: unknown): WeakAreas {
+  if (!api || typeof api !== "object") {
+    return getEmptyWeakAreas();
+  }
+  const raw = api as Record<string, unknown>;
+  const skillsBelowThreshold: WeakArea[] = Array.isArray(raw.skills_below_threshold)
+    ? (raw.skills_below_threshold as Record<string, unknown>[]).map((s) => ({
+        skillName: (s.skill_name as string) ?? "",
+        currentScore: num(s.current_score),
+        threshold: num(s.threshold),
+        recommendation: (s.recommendation as string) ?? "",
+        sourceContext: mapSourceContext(s.source_context),
+      }))
+    : [];
+  const topicsFrequentlyIncorrect: TopicIncorrect[] = Array.isArray(raw.topics_frequently_incorrect)
+    ? (raw.topics_frequently_incorrect as Record<string, unknown>[]).map((t) => ({
+        topicName: (t.topic_name as string) ?? "",
+        incorrectCount: num(t.incorrect_count),
+        totalAttempts: num(t.total_attempts),
+        sourceContext: mapSourceContext(t.source_context),
+      }))
+    : [];
+  const skippedQuestions: string[] = Array.isArray(raw.skipped_questions)
+    ? (raw.skipped_questions as unknown[])
+        .filter((q): q is string => typeof q === "string" && q.length > 0)
+    : [];
+  const recommendations: WeakAreaRecommendation[] = Array.isArray(raw.recommendations)
+    ? (raw.recommendations as Record<string, unknown>[]).map((r) => ({
+        type: ((r.type as WeakAreaRecommendation["type"]) ?? "revise") as WeakAreaRecommendation["type"],
+        title: (r.title as string) ?? "",
+        description: (r.description as string) ?? "",
+        actionUrl: (r.action_url as string) || undefined,
+        priority: num(r.priority),
+      }))
+    : [];
+  return {
+    weakThreshold: num(raw.weak_threshold) || 60,
+    skillsBelowThreshold,
+    topicsFrequentlyIncorrect,
+    skippedQuestions,
+    recommendations,
+  };
+}
+
+export function getEmptyWeakAreas(): WeakAreas {
+  return {
+    weakThreshold: 60,
+    skillsBelowThreshold: [],
+    topicsFrequentlyIncorrect: [],
+    skippedQuestions: [],
+    recommendations: [],
+  };
 }
 
 export function getEmptyScorecardData(): ScorecardData {

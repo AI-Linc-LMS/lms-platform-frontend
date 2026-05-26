@@ -184,10 +184,51 @@ export interface Skill {
   breakdownItems?: SkillBreakdownItems;
 }
 
+// Weak Areas & Attention Alerts (Phase 3)
+export interface WeakAreaSourceContext {
+  contentType?: string;
+  itemName?: string;
+  courseName?: string;
+  moduleName?: string;
+  submoduleName?: string;
+}
+
+export interface WeakArea {
+  skillName: string;
+  currentScore: number;
+  threshold: number;
+  recommendation: string;
+  sourceContext?: WeakAreaSourceContext;
+}
+
+export interface TopicIncorrect {
+  topicName: string;
+  incorrectCount: number;
+  totalAttempts: number;
+  sourceContext?: WeakAreaSourceContext;
+}
+
+export interface WeakAreaRecommendation {
+  type: "revise" | "mcq" | "video" | "interview";
+  title: string;
+  description: string;
+  actionUrl?: string;
+  priority: number;
+}
+
+export interface WeakAreas {
+  weakThreshold: number;
+  skillsBelowThreshold: WeakArea[];
+  topicsFrequentlyIncorrect: TopicIncorrect[];
+  skippedQuestions: string[];
+  recommendations: WeakAreaRecommendation[];
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
   learningConsumption: LearningConsumption;
   performanceTrends?: PerformanceTrends;
   skills?: Skill[];
+  weakAreas?: WeakAreas;
 }
