@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Paper,
   Typography,
@@ -16,6 +17,7 @@ import { useToast } from "@/components/common/Toast";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
 
 export function ZoomCredentialsSection() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -203,7 +205,7 @@ export function ZoomCredentialsSection() {
         variant="contained"
         onClick={handleSave}
         loading={saving}
-        loadingText="Saving…"
+        loadingText={t("common.saving")}
         startIcon={<IconWrapper icon="mdi:content-save" size={18} />}
         sx={{
           bgcolor: "var(--accent-indigo)",

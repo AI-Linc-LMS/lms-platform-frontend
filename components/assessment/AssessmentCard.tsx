@@ -7,13 +7,13 @@ import {
   Box,
   Typography,
   Chip,
-  Button,
   Tooltip,
   useTheme,
 } from "@mui/material";
 import { Assessment } from "@/lib/services/assessment.service";
 import { useRouter } from "next/navigation";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import {
   isPsychometricAssessment,
   getPsychometricTags,
@@ -145,6 +145,9 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     : "var(--assessment-catalog-stat-icon-auto)";
   const [remainingTime, setRemainingTime] = useState<string>("");
   const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
+  /** Which CTA is mid-navigation. Component unmounts on route change, so we
+      never need to reset this back to null. */
+  const [loadingAction, setLoadingAction] = useState<"primary" | "reattempt" | null>(null);
   
   // Calculate remaining time for hover tooltip
   const startDate = useMemo(() => parseDateTime(assessment.start_time), [assessment.start_time]);
@@ -300,8 +303,9 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   );
 
   const handleClick = () => {
-    if (!isClickable) return;
+    if (!isClickable || loadingAction) return;
     if (submissionComplete && showResults) {
+      setLoadingAction("primary");
       router.push(`/assessments/result/${assessment.slug}`);
       return;
     }
@@ -312,6 +316,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       setDesktopOnlyOpen(true);
       return;
     }
+    setLoadingAction("primary");
     router.push(`/assessments/${assessment.slug}`);
   };
 
@@ -784,16 +789,24 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             differentiates "secondary action" without breaking alignment. */}
         {submissionComplete && assessment.can_reattempt && (
           <Box sx={{ mt: 1 }}>
-            <Button
+            <LoadingButton
               fullWidth
               variant="outlined"
               size="large"
               disableRipple
+              loading={loadingAction === "reattempt"}
+              disabled={loadingAction !== null && loadingAction !== "reattempt"}
               onClick={(e) => {
                 e.stopPropagation();
+                if (loadingAction) return;
+                setLoadingAction("reattempt");
                 router.push(`/assessments/${assessment.slug}`);
               }}
-              endIcon={<IconWrapper icon="mdi:replay" size={18} color="currentColor" />}
+              endIcon={
+                loadingAction === "reattempt"
+                  ? undefined
+                  : <IconWrapper icon="mdi:replay" size={18} color="currentColor" />
+              }
               sx={{
                 flexDirection: isRtl ? "row-reverse" : "row",
                 mb: 1,
@@ -826,73 +839,58 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
               }}
             >
               {t("assessments.reattempt", { defaultValue: "Re-attempt" })}
-            </Button>
+            </LoadingButton>
           </Box>
         )}
 
         {/* CTA Button */}
         <Box sx={{ mt: "1" }}>
-          {!isClickable && startDate && remainingTime && !showResults ? (
-            <Tooltip
-              title={remainingTime}
-              arrow
-              placement="top"
-              enterDelay={300}
-              leaveDelay={0}
-            >
-              <Button
+          {(() => {
+            const primaryLoading = loadingAction === "primary";
+            const primaryEndIcon = primaryLoading ? undefined : (
+              <IconWrapper
+                icon={
+                  submissionComplete && showResults
+                    ? "mdi:eye-outline"
+                    : submissionComplete && !showResults
+                      ? "mdi:check-circle-outline"
+                      : !isClickable
+                        ? "mdi:clock-outline"
+                        : "mdi:play-circle-outline"
+                }
+                size={18}
+                color="currentColor"
+              />
+            );
+            const primaryButton = (
+              <LoadingButton
                 fullWidth
                 variant="contained"
                 size="large"
-                disabled={!isClickable}
+                loading={primaryLoading}
+                disabled={!isClickable || (loadingAction !== null && !primaryLoading)}
                 disableRipple
-                endIcon={
-                  <IconWrapper
-                    icon={
-                      submissionComplete && showResults
-                        ? "mdi:eye-outline"
-                        : submissionComplete && !showResults
-                          ? "mdi:check-circle-outline"
-                          : !isClickable
-                            ? "mdi:clock-outline"
-                            : "mdi:play-circle-outline"
-                    }
-                    size={18}
-                    color="currentColor"
-                  />
-                }
+                endIcon={primaryEndIcon}
                 sx={ctaButtonSx}
               >
                 {buttonLabel}
-              </Button>
-            </Tooltip>
-          ) : (
-            <Button
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={!isClickable}
-              disableRipple
-              endIcon={
-                <IconWrapper
-                  icon={
-                    submissionComplete && showResults
-                      ? "mdi:eye-outline"
-                      : submissionComplete && !showResults
-                        ? "mdi:check-circle-outline"
-                        : !isClickable
-                          ? "mdi:clock-outline"
-                          : "mdi:play-circle-outline"
-                  }
-                  size={18}
-                  color="currentColor"
-                />
-              }
-              sx={ctaButtonSx}
-            >
-              {buttonLabel}
-            </Button>
-          )}
+              </LoadingButton>
+            );
+            if (!isClickable && startDate && remainingTime && !showResults) {
+              return (
+                <Tooltip
+                  title={remainingTime}
+                  arrow
+                  placement="top"
+                  enterDelay={300}
+                  leaveDelay={0}
+                >
+                  {primaryButton}
+                </Tooltip>
+              );
+            }
+            return primaryButton;
+          })()}
         </Box>
       </CardContent>
     </Card>

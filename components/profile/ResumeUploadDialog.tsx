@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogTitle,
@@ -29,6 +30,7 @@ export function ResumeUploadDialog({
   onClose,
   onUpload,
 }: ResumeUploadDialogProps) {
+  const { t } = useTranslation("common");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>("");
@@ -235,7 +237,7 @@ export function ResumeUploadDialog({
           onClick={handleUpload}
           disabled={!selectedFile}
           loading={uploading}
-          loadingText="Uploading…"
+          loadingText={t("common.uploading")}
           startIcon={<IconWrapper icon="mdi:upload" size={20} />}
           sx={{
             textTransform: "none",

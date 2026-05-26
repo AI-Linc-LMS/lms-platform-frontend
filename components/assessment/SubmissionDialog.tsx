@@ -29,7 +29,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import LoadingButton from "@/components/common/LoadingButton";
+import {LoadingButton} from "@/components/common/LoadingButton";
 import {
   formatChecklistQuestionLabel,
   getResponseForQuestion,

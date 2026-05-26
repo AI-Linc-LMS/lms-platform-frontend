@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogTitle,
@@ -43,6 +44,7 @@ export function ReportIssueDialog({
   courseId,
   contentId,
 }: ReportIssueDialogProps) {
+  const { t } = useTranslation("common");
   const [issueType, setIssueType] = useState<TicketCategory | "">("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -391,7 +393,7 @@ export function ReportIssueDialog({
           onClick={handleSubmit}
           disabled={!issueType || !description.trim()}
           loading={submitting || uploading}
-          loadingText={uploading ? "Uploading…" : "Submitting..."}
+          loadingText={uploading ? t("common.uploading") : t("common.submitting")}
           variant="contained"
           sx={{
             textTransform: "none",

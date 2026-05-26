@@ -15,6 +15,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { useState, useCallback, memo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ScheduleInterviewFormProps {
   onSubmit: (data: ScheduleInterviewFormData) => void;
@@ -34,6 +35,7 @@ const ScheduleInterviewFormComponent = ({
   onSubmit,
   loading,
 }: ScheduleInterviewFormProps) => {
+  const { t } = useTranslation("common");
   const [formData, setFormData] = useState<{
     topic: string;
     subtopic: string;
@@ -316,7 +318,7 @@ const ScheduleInterviewFormComponent = ({
               variant="contained"
               onClick={handleSubmit}
               loading={loading}
-              loadingText="Scheduling..."
+              loadingText={t("common.scheduling")}
               endIcon={<IconWrapper icon="mdi:calendar-check" size={20} />}
               sx={{
                 textTransform: "none",

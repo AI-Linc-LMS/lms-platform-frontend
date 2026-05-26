@@ -8,6 +8,8 @@ export interface LoadingButtonProps extends ButtonProps {
   loading?: boolean;
   /** Text shown while loading (falls back to children) */
   loadingText?: React.ReactNode;
+  /** Forwarded to the root element — needed when component="label" wraps a file input */
+  htmlFor?: string;
 }
 
 /**

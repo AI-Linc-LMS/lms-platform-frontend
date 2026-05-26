@@ -221,7 +221,16 @@
     "quickLinks": "Quick Links",
     "todaysLeaders": "Today's Leaders",
     "profileSettings": "Profile Settings",
-    "dashboard":"Back to dashboard"
+    "dashboard":"Back to dashboard",
+    "saving": "Saving...",
+    "uploading": "Uploading…",
+    "deleting": "Deleting…",
+    "submitting": "Submitting...",
+    "creating": "Creating...",
+    "posting": "Posting...",
+    "running": "Running...",
+    "scheduling": "Scheduling...",
+    "generating": "Generating..."
   },
   "auth": {
     "login": "Login",
