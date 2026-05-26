@@ -187,6 +187,35 @@ function analyticsStatusChipColor(
   return "default";
 }
 
+type ScoreChipDisplay = {
+  label: string;
+  color: "default" | "primary" | "warning" | "info";
+  variant: "filled" | "outlined";
+};
+
+function getScoreChipDisplay(
+  submission: { status?: string; overall_score?: number | null; maximum_marks?: number | null },
+  evaluationMode: "auto" | "manual" | string | null | undefined,
+): ScoreChipDisplay {
+  // submitted_at uses auto_now in the backend, so it ticks on every response
+  // auto-save. In-progress attempts therefore look "submitted but ungraded"
+  // unless we differentiate by status here.
+  if (submission.status === "in_progress") {
+    return { label: "In progress", color: "warning", variant: "outlined" };
+  }
+  if (submission.overall_score != null) {
+    return {
+      label: `${submission.overall_score}/${submission.maximum_marks ?? "—"}`,
+      color: "primary",
+      variant: "filled",
+    };
+  }
+  if (evaluationMode === "manual") {
+    return { label: "Pending evaluation", color: "info", variant: "outlined" };
+  }
+  return { label: "Not graded", color: "default", variant: "outlined" };
+}
+
 function humanizeReviewStatus(raw: string | null | undefined): string {
   if (!raw || !String(raw).trim()) return "Pending evaluation";
   return String(raw)
@@ -2386,23 +2415,26 @@ export default function AssessmentEditPage() {
                                 {formatSubmissionDate(s.started_at)}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
-                                {formatSubmissionDate(s.submitted_at)}
+                                {s.status === "in_progress"
+                                  ? "—"
+                                  : formatSubmissionDate(s.submitted_at)}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.maximum_marks ?? "—"}
                               </TableCell>
                               <TableCell sx={{ py: 1.25 }}>
-                                <Chip
-                                  size="small"
-                                  label={
-                                    s.overall_score != null
-                                      ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
-                                      : "Not graded"
-                                  }
-                                  color={s.overall_score != null ? "primary" : "default"}
-                                  variant={s.overall_score != null ? "filled" : "outlined"}
-                                  sx={{ fontWeight: 700 }}
-                                />
+                                {(() => {
+                                  const d = getScoreChipDisplay(s, evaluationMode);
+                                  return (
+                                    <Chip
+                                      size="small"
+                                      label={d.label}
+                                      color={d.color}
+                                      variant={d.variant}
+                                      sx={{ fontWeight: 700 }}
+                                    />
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
                                 {s.attempted_questions ?? "—"}
@@ -2421,12 +2453,20 @@ export default function AssessmentEditPage() {
                                     <Chip
                                       size="small"
                                       label={
-                                        s.overall_score != null
-                                          ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
-                                          : "Not evaluated"
+                                        s.status === "in_progress"
+                                          ? "In progress"
+                                          : s.overall_score != null
+                                            ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
+                                            : "Not evaluated"
                                       }
-                                      color={s.overall_score != null ? "primary" : "default"}
-                                      variant={s.overall_score != null ? "filled" : "outlined"}
+                                      color={
+                                        s.status === "in_progress"
+                                          ? "warning"
+                                          : s.overall_score != null
+                                            ? "primary"
+                                            : "default"
+                                      }
+                                      variant={s.overall_score != null && s.status !== "in_progress" ? "filled" : "outlined"}
                                       sx={{ fontWeight: 700 }}
                                     />
                                   </TableCell>
