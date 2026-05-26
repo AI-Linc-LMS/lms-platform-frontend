@@ -224,6 +224,46 @@ export interface WeakAreas {
   recommendations: WeakAreaRecommendation[];
 }
 
+// Assessment Performance (Phase 4)
+export interface AssessmentDifficultyBucket {
+  correct: number;
+  total: number;
+}
+
+export interface AssessmentDifficultyBreakdown {
+  easy: AssessmentDifficultyBucket;
+  medium: AssessmentDifficultyBucket;
+  hard: AssessmentDifficultyBucket;
+}
+
+export interface AssessmentQuestionAnalytics {
+  correct: number;
+  incorrect: number;
+  skipped: number;
+  averageTimePerQuestion: number; // seconds
+  negativeMarkImpact: number;
+}
+
+export interface AssessmentPerformance {
+  assessmentId: string;
+  assessmentName: string;
+  dateAttempted: string | null;
+  /** Normalized percentage (0-100). null when score is missing. */
+  score: number | null;
+  /** Raw points awarded (pre-normalization). Useful for the "X / Y" subtitle. */
+  rawScore: number | null;
+  maximumMarks: number;
+  percentile: number | null;
+  rank: number | null;
+  cohortCount: number;
+  timeTaken: number; // minutes
+  timeAllowed: number; // minutes
+  accuracy: number; // 0-100
+  difficultyBreakdown: AssessmentDifficultyBreakdown;
+  questionAnalytics: AssessmentQuestionAnalytics;
+  reviewStatus?: string;
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
@@ -231,4 +271,5 @@ export interface ScorecardData {
   performanceTrends?: PerformanceTrends;
   skills?: Skill[];
   weakAreas?: WeakAreas;
+  assessmentPerformance?: AssessmentPerformance[];
 }

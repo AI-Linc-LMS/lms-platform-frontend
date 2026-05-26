@@ -1,5 +1,6 @@
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 import {
+  mapAssessmentPerformanceFromApi,
   mapLearningConsumptionFromApi,
   mapOverviewFromApi,
   mapPerformanceTrendsFromApi,
@@ -18,6 +19,7 @@ export type ScorecardApiPayload = {
   performance_trends?: unknown;
   skills?: unknown;
   weak_areas?: unknown;
+  assessment_performance?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -54,6 +56,10 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
 
   if (data?.weak_areas != null && typeof data.weak_areas === "object") {
     result.weakAreas = mapWeakAreasFromApi(data.weak_areas);
+  }
+
+  if (Array.isArray(data?.assessment_performance)) {
+    result.assessmentPerformance = mapAssessmentPerformanceFromApi(data.assessment_performance);
   }
 
   return result;

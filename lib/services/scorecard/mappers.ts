@@ -1,4 +1,6 @@
 import type {
+  AssessmentDifficultyBreakdown,
+  AssessmentPerformance,
   ContentCompletionOverview,
   LearningConsumption,
   PerformanceTrends,
@@ -413,6 +415,60 @@ export function mapWeakAreasFromApi(api: unknown): WeakAreas {
     skippedQuestions,
     recommendations,
   };
+}
+
+function mapDifficultyBucket(raw: unknown): { correct: number; total: number } {
+  if (!raw || typeof raw !== "object") return { correct: 0, total: 0 };
+  const o = raw as Record<string, unknown>;
+  return { correct: num(o.correct), total: num(o.total) };
+}
+
+function mapDifficultyBreakdown(raw: unknown): AssessmentDifficultyBreakdown {
+  if (!raw || typeof raw !== "object") {
+    return {
+      easy: { correct: 0, total: 0 },
+      medium: { correct: 0, total: 0 },
+      hard: { correct: 0, total: 0 },
+    };
+  }
+  const o = raw as Record<string, unknown>;
+  return {
+    easy: mapDifficultyBucket(o.easy),
+    medium: mapDifficultyBucket(o.medium),
+    hard: mapDifficultyBucket(o.hard),
+  };
+}
+
+export function mapAssessmentPerformanceFromApi(api: unknown): AssessmentPerformance[] {
+  if (!Array.isArray(api)) return [];
+  return api.map((row) => {
+    const r = row as Record<string, unknown>;
+    const analytics = (r.question_analytics as Record<string, unknown>) ?? {};
+    const score = r.score == null ? null : num(r.score);
+    return {
+      assessmentId: String(r.assessment_id ?? ""),
+      assessmentName: (r.assessment_name as string) ?? "Assessment",
+      dateAttempted: (r.date_attempted as string) || null,
+      score,
+      rawScore: r.raw_score == null ? null : num(r.raw_score),
+      maximumMarks: num(r.maximum_marks),
+      percentile: r.percentile == null ? null : num(r.percentile),
+      rank: r.rank == null ? null : num(r.rank),
+      cohortCount: num(r.cohort_count),
+      timeTaken: num(r.time_taken),
+      timeAllowed: num(r.time_allowed),
+      accuracy: num(r.accuracy),
+      difficultyBreakdown: mapDifficultyBreakdown(r.difficulty_breakdown),
+      questionAnalytics: {
+        correct: num(analytics.correct),
+        incorrect: num(analytics.incorrect),
+        skipped: num(analytics.skipped),
+        averageTimePerQuestion: num(analytics.average_time_per_question),
+        negativeMarkImpact: num(analytics.negative_mark_impact),
+      },
+      reviewStatus: (r.review_status as string) || undefined,
+    };
+  });
 }
 
 export function getEmptyWeakAreas(): WeakAreas {

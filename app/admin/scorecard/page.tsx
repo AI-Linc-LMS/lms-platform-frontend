@@ -25,6 +25,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
+import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
@@ -46,6 +47,7 @@ const MODULE_OPTIONS = [
   { id: "performance_trends", label: "Performance Trends" },
   { id: "skill_scorecard", label: "Skill Scorecard" },
   { id: "weak_areas", label: "Weak Areas" },
+  { id: "assessment_performance", label: "Assessment Performance" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
@@ -753,6 +755,14 @@ export default function AdminScorecardPage() {
                         case "weak_areas":
                           if (!scorecardData.weakAreas) return null;
                           return <WeakAreasSection key={sectionId} data={scorecardData.weakAreas} />;
+                        case "assessment_performance":
+                          if (!scorecardData.assessmentPerformance || scorecardData.assessmentPerformance.length === 0) return null;
+                          return (
+                            <AssessmentPerformanceSection
+                              key={sectionId}
+                              data={scorecardData.assessmentPerformance}
+                            />
+                          );
                         default:
                           return null;
                       }

@@ -15,6 +15,7 @@ import { motion, useScroll, useSpring } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
+import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
@@ -31,6 +32,7 @@ const SECTION_ORDER = [
   "performance_trends",
   "skill_scorecard",
   "weak_areas",
+  "assessment_performance",
 ] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
@@ -338,6 +340,14 @@ export default function ScorecardPage() {
                   case "weak_areas":
                     if (!data.weakAreas) return null;
                     return <WeakAreasSection key={sectionId} data={data.weakAreas} />;
+                  case "assessment_performance":
+                    if (!data.assessmentPerformance || data.assessmentPerformance.length === 0) return null;
+                    return (
+                      <AssessmentPerformanceSection
+                        key={sectionId}
+                        data={data.assessmentPerformance}
+                      />
+                    );
                   default:
                     return null;
                 }
