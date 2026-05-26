@@ -16,12 +16,18 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
+import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
 import { profileService, type HeatmapData } from "@/lib/services/profile.service";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 
-const SECTION_ORDER = ["overview", "activity_heatmap", "learning_consumption"] as const;
+const SECTION_ORDER = [
+  "overview",
+  "activity_heatmap",
+  "learning_consumption",
+  "performance_trends",
+] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
 function PageBackdrop() {
@@ -309,6 +315,17 @@ export default function ScorecardPage() {
                       <LearningConsumptionSection
                         key={sectionId}
                         data={data.learningConsumption}
+                      />
+                    );
+                  case "performance_trends":
+                    // performanceTrends is optional on ScorecardData — earlier
+                    // backend deploys may not return it; render the section
+                    // only when the umbrella payload included it.
+                    if (!data.performanceTrends) return null;
+                    return (
+                      <PerformanceTrendsSection
+                        key={sectionId}
+                        initialData={data.performanceTrends}
                       />
                     );
                   default:

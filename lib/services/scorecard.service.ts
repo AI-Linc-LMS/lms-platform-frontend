@@ -2,9 +2,12 @@ import apiClient from "./api";
 import { config } from "@/lib/config";
 import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
+import { mapPerformanceTrendsFromApi } from "./scorecard/mappers";
+import type { PerformanceTrends } from "@/lib/types/scorecard.types";
 
 export { formatTimeSpent } from "./scorecard/mappers";
 export type { ScorecardApiPayload };
+export type PerformanceTrendsGranularity = "weekly" | "bimonthly" | "monthly";
 
 async function mergeProfilePicture<T extends { overview: { profilePicUrl?: string } }>(result: T): Promise<T> {
   try {
@@ -38,6 +41,17 @@ export const scorecardService = {
     if (!res.ok) throw new Error("Invalid or expired PDF link");
     const data = (await res.json()) as ScorecardApiPayload;
     return scorecardFromApiPayload(data);
+  },
+
+  getPerformanceTrends: async (
+    granularity: PerformanceTrendsGranularity = "weekly",
+  ): Promise<PerformanceTrends> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/performance-trends/`,
+      { params: { granularity } },
+    );
+    return mapPerformanceTrendsFromApi(response.data);
   },
 
   exportScorecardPdf: async (): Promise<Blob> => {

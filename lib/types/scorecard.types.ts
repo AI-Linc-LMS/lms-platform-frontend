@@ -110,8 +110,34 @@ export interface ScorecardConfig {
   enabledModules: string[];
 }
 
+// Performance Trends (Phase 1) — added incrementally as new modules land.
+// Older mockup branch had these in a single big drop; on stagging they're
+// introduced one section at a time so each phase merges cleanly.
+export interface WeeklyPerformance {
+  week: number;
+  weekLabel: string;
+  mcqAccuracy: number;
+  subjectiveScore: number;
+  assessmentScore: number;
+  interviewScore: number;
+}
+
+export interface SkillAccuracy {
+  skillName: string;
+  accuracy: number; // 0-100
+  attemptCount: number;
+  confidenceScore: number; // 0-100
+}
+
+export interface PerformanceTrends {
+  granularity?: "weekly" | "bimonthly" | "monthly";
+  weeklyData: WeeklyPerformance[];
+  skillWiseAccuracy: SkillAccuracy[];
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
   learningConsumption: LearningConsumption;
+  performanceTrends?: PerformanceTrends;
 }

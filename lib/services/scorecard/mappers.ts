@@ -1,6 +1,7 @@
 import type {
   ContentCompletionOverview,
   LearningConsumption,
+  PerformanceTrends,
   ScorecardData,
   StudentOverview,
 } from "@/lib/types/scorecard.types";
@@ -238,6 +239,44 @@ export function getEmptyLearningConsumption(): LearningConsumption {
       assessmentsMissed: 0,
     },
   };
+}
+
+export function mapPerformanceTrendsFromApi(api: unknown): PerformanceTrends {
+  if (!api || typeof api !== "object") {
+    return getEmptyPerformanceTrends();
+  }
+  const raw = api as Record<string, unknown>;
+  const weeklyData = Array.isArray(raw.weekly_data)
+    ? (raw.weekly_data as Record<string, unknown>[]).map((w) => ({
+        week: num(w.week),
+        weekLabel: (w.week_label as string) ?? "",
+        mcqAccuracy: num(w.mcq_accuracy),
+        subjectiveScore: num(w.subjective_score),
+        assessmentScore: num(w.assessment_score),
+        interviewScore: num(w.interview_score),
+      }))
+    : [];
+  const skillWiseAccuracy = Array.isArray(raw.skill_wise_accuracy)
+    ? (raw.skill_wise_accuracy as Record<string, unknown>[]).map((s) => ({
+        skillName: (s.skill_name as string) ?? "",
+        accuracy: num(s.accuracy),
+        attemptCount: num(s.attempt_count),
+        confidenceScore: num(s.confidence_score),
+      }))
+    : [];
+  const granularity = raw.granularity;
+  const allowed = new Set(["weekly", "bimonthly", "monthly"] as const);
+  return {
+    granularity: typeof granularity === "string" && allowed.has(granularity as "weekly")
+      ? (granularity as "weekly" | "bimonthly" | "monthly")
+      : "weekly",
+    weeklyData,
+    skillWiseAccuracy,
+  };
+}
+
+export function getEmptyPerformanceTrends(): PerformanceTrends {
+  return { granularity: "weekly", weeklyData: [], skillWiseAccuracy: [] };
 }
 
 export function getEmptyScorecardData(): ScorecardData {

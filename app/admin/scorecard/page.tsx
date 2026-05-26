@@ -26,6 +26,7 @@ import { useToast } from "@/components/common/Toast";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
+import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
 import { adminStudentService, type Student } from "@/lib/services/admin/admin-student.service";
 import {
@@ -40,6 +41,7 @@ const MODULE_OPTIONS = [
   { id: "overview", label: "Student Overview" },
   { id: "activity_heatmap", label: "Activity Heatmap" },
   { id: "learning_consumption", label: "Learning Consumption" },
+  { id: "performance_trends", label: "Performance Trends" },
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
@@ -732,6 +734,15 @@ export default function AdminScorecardPage() {
                           );
                         case "learning_consumption":
                           return <LearningConsumptionSection key={sectionId} data={scorecardData.learningConsumption} />;
+                        case "performance_trends":
+                          if (!scorecardData.performanceTrends) return null;
+                          return (
+                            <PerformanceTrendsSection
+                              key={sectionId}
+                              initialData={scorecardData.performanceTrends}
+                              readOnly
+                            />
+                          );
                         default:
                           return null;
                       }

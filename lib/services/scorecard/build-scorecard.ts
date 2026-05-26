@@ -2,6 +2,7 @@ import type { ScorecardData } from "@/lib/types/scorecard.types";
 import {
   mapLearningConsumptionFromApi,
   mapOverviewFromApi,
+  mapPerformanceTrendsFromApi,
   getEmptyLearningConsumption,
   getEmptyOverview,
   getEmptyScorecardData,
@@ -12,6 +13,7 @@ export type ScorecardApiPayload = {
   scorecard_config?: { enabled_modules?: string[]; enabled_content_types_for_skills?: string[] };
   overview?: Record<string, unknown>;
   learning_consumption?: unknown;
+  performance_trends?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -34,6 +36,13 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
     data?.learning_consumption != null && typeof data.learning_consumption === "object"
       ? mapLearningConsumptionFromApi(data.learning_consumption as Record<string, unknown>)
       : getEmptyLearningConsumption();
+
+  // Only set performanceTrends when the backend actually sent it. Leaving it
+  // undefined lets pages render older deploys (Phase 0 backend) without
+  // crashing on missing data — the section component renders an empty state.
+  if (data?.performance_trends != null && typeof data.performance_trends === "object") {
+    result.performanceTrends = mapPerformanceTrendsFromApi(data.performance_trends);
+  }
 
   return result;
 }
