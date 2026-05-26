@@ -142,11 +142,45 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           window.google.accounts.id.initialize({
             client_id: config.googleClientId,
             callback: handleGoogleSignIn,
+            // Disable FedCM for the One Tap prompt (the rendered button may
+            // still attempt it — we handle failures in error_callback below).
             use_fedcm_for_prompt: false,
             error_callback: (error: any) => {
-              if (error.type === "popup_closed_by_user") {
+              /**
+               * Non-fatal errors that should be silently ignored:
+               *
+               * popup_closed_by_user  – user closed the popup themselves
+               * fedcm_api_disabled    – FedCM blocked via site settings; GSI
+               *                        should fall back to popup automatically
+               * unknown_reason        – often a FedCM internal abort
+               * browser_not_supported – browser lacks FedCM support (expected)
+               * popup_blocked         – browser blocked the popup; our 2.5 s
+               *                        timer will surface the visible GSI button
+               */
+              const silentTypes = new Set([
+                "popup_closed_by_user",
+                "fedcm_api_disabled",
+                "unknown_reason",
+                "browser_not_supported",
+                "popup_blocked",
+              ]);
+
+              if (silentTypes.has(error.type)) {
+                // FedCM was aborted/blocked — skip the normal delay and show
+                // the clickable GSI fallback button immediately.
+                if (
+                  error.type === "fedcm_api_disabled" ||
+                  error.type === "popup_blocked"
+                ) {
+                  if (fallbackTimerRef.current) {
+                    clearTimeout(fallbackTimerRef.current);
+                    fallbackTimerRef.current = null;
+                  }
+                  setShowGsiFallback(true);
+                }
                 return;
               }
+
               showToast(t("auth.googleError"), "error");
             },
           });
