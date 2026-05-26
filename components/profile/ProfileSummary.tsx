@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, Button, TextField } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface ProfileSummaryProps {
@@ -104,11 +105,11 @@ export function ProfileSummary({
               }}
               sx={{
                 textTransform: "none",
-                color: "var(--accent-indigo)",
+                color: "var(--primary-500)",
                 fontWeight: 600,
                 fontSize: "0.9375rem",
                 "&:hover": {
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                  backgroundColor: "color-mix(in srgb, var(--primary-500) 10%, transparent)",
                 },
                 transition: "all 0.2s ease",
               }}
@@ -133,25 +134,26 @@ export function ProfileSummary({
               >
                 {t("profile.cancel")}
               </Button>
-              <Button
+              <LoadingButton
                 variant="contained"
                 size="small"
                 onClick={handleSave}
-                disabled={saving}
+                loading={saving}
+                loadingText={t("profile.saving")}
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
-                  backgroundColor: "var(--accent-indigo)",
+                  backgroundColor: "var(--primary-500)",
                   borderRadius: "24px",
                   px: 2,
                   "&:hover": {
-                    backgroundColor: "var(--accent-indigo-dark)",
+                    backgroundColor: "var(--primary-700)",
                   },
                   transition: "all 0.2s ease",
                 }}
               >
-                {saving ? t("profile.saving") : t("profile.save")}
-              </Button>
+                {t("profile.save")}
+              </LoadingButton>
             </Box>
           )
         )}
@@ -197,7 +199,7 @@ export function ProfileSummary({
                   onClick={() => setExpanded(!expanded)}
                   sx={{
                     textTransform: "none",
-                    color: "var(--accent-indigo)",
+                    color: "var(--primary-500)",
                     fontWeight: 600,
                     fontSize: "0.875rem",
                     mt: 1,

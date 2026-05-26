@@ -205,7 +205,7 @@ export function ModuleList({
                     alignItems: "center",
                     justifyContent: "center",
                     borderRadius: 1.5,
-                    bgcolor: "var(--accent-indigo)",
+                    bgcolor: "var(--primary-500)",
                     color: "var(--font-light)",
                   }}
                 >

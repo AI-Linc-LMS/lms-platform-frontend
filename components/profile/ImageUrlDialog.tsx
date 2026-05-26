@@ -13,6 +13,7 @@ import {
   TextField,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 
 interface ImageUrlDialogProps {
   open: boolean;
@@ -176,10 +177,11 @@ export function ImageUrlDialog({
         >
           {t("profile.cancel")}
         </Button>
-        <Button
+        <LoadingButton
           onClick={handleSave}
           variant="contained"
-          disabled={saving}
+          loading={saving}
+          loadingText={t("profile.saving")}
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -190,8 +192,8 @@ export function ImageUrlDialog({
             "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
           }}
         >
-          {saving ? t("profile.saving") : t("profile.save")}
-        </Button>
+          {t("profile.save")}
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

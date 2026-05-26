@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -21,6 +22,10 @@ import {
   ListSubheader,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import {
+  EmailNotificationEditor,
+  type EmailNotificationEditorHandle,
+} from "@/components/admin/assessment/EmailNotificationEditor";
 
 interface AssessmentSettingsSectionProps {
   durationMinutes: number;
@@ -45,6 +50,36 @@ interface AssessmentSettingsSectionProps {
   passBandLowerError?: string;
   passBandUpperError?: string;
   sendCommunication?: boolean;
+  /**
+   * The actual "will an email be sent" flag — computed in the parent from
+   * `sendCommunication` AND whether the editor currently has data. Drives
+   * the visibility of the editor block.
+   */
+  emailNotificationEnabled?: boolean;
+  /** Reports editor data-presence transitions back up to the parent. */
+  onEmailEnabledChange?: (enabled: boolean) => void;
+  /**
+   * Ref handle so the parent can read the email editor state at submit time.
+   * The editor owns subject/body/attachment locally to keep typing snappy.
+   */
+  emailEditorRef?: React.Ref<EmailNotificationEditorHandle>;
+  /** Seed for the email subject (live-syncs into the field until edited). */
+  defaultEmailSubject?: string;
+  /** Seed for the email body (used once when the editor mounts). */
+  defaultEmailBody?: string;
+  /** URL of a previously-saved email attachment (shown as a chip on edit). */
+  existingEmailAttachmentUrl?: string | null;
+  /** Filename for the previously-saved attachment. Derived from URL if omitted. */
+  existingEmailAttachmentName?: string | null;
+  /**
+   * Assessment schedule shown as a dedicated panel inside the email preview
+   * so start/end/duration always appear in the email regardless of body edits.
+   */
+  emailSchedule?: {
+    startTime?: string | null;
+    endTime?: string | null;
+    durationMinutes?: number | null;
+  } | null;
   showResult?: boolean;
   evaluationMode?: "auto" | "manual";
   allowDesktop?: boolean;
@@ -123,6 +158,114 @@ const groupTitleSx = {
   color: "var(--font-secondary)",
   mb: 0.25,
 };
+
+const hourOptions = Array.from({ length: 24 }, (_, index) => index);
+const minuteOptions = Array.from({ length: 60 }, (_, index) => index);
+
+function splitDateTime(value: string) {
+  const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  return {
+    date: match?.[1] ?? "",
+    hours: match?.[2] ?? "",
+    minutes: match?.[3] ?? "",
+  };
+}
+
+function joinDateTime(date: string, hours: string, minutes: string) {
+  if (!date) {
+    return "";
+  }
+  const safeHours = hours ? hours.padStart(2, "0") : "00";
+  const safeMinutes = minutes ? minutes.padStart(2, "0") : "00";
+  return `${date}T${safeHours}:${safeMinutes}`;
+}
+
+function DateTimePartsField({
+  label,
+  value,
+  onChange,
+  helperText,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (nextValue: string) => void;
+  helperText?: string;
+  disabled?: boolean;
+}) {
+  const parts = splitDateTime(value);
+
+  return (
+    <Box>
+      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}>
+        {label}
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1.2fr 1fr" },
+          gap: 2,
+        }}
+      >
+        <TextField
+          label="Date"
+          type="date"
+          value={parts.date}
+          onChange={(e) => onChange(joinDateTime(e.target.value, parts.hours, parts.minutes))}
+          fullWidth
+          helperText={helperText}
+          FormHelperTextProps={helperFormProps}
+          InputLabelProps={{ shrink: true }}
+          disabled={disabled}
+        />
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr" },
+            gap: 1.5,
+          }}
+        >
+          <TextField
+            select
+            label="Hours"
+            value={parts.hours}
+            onChange={(e) => onChange(joinDateTime(parts.date, e.target.value, parts.minutes))}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            disabled={disabled}
+          >
+            <MenuItem value="">
+              <em>--</em>
+            </MenuItem>
+            {hourOptions.map((hour) => (
+              <MenuItem key={hour} value={hour.toString().padStart(2, "0")}>
+                {hour.toString().padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            label="Minutes"
+            value={parts.minutes}
+            onChange={(e) => onChange(joinDateTime(parts.date, parts.hours, e.target.value))}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            disabled={disabled}
+          >
+            <MenuItem value="">
+              <em>--</em>
+            </MenuItem>
+            {minuteOptions.map((minute) => (
+              <MenuItem key={minute} value={minute.toString().padStart(2, "0")}>
+                {minute.toString().padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
 
 function FieldGroup({
   title,
@@ -255,6 +398,14 @@ export function AssessmentSettingsSection({
   passBandLowerError,
   passBandUpperError,
   sendCommunication = false,
+  emailNotificationEnabled = false,
+  onEmailEnabledChange,
+  emailEditorRef,
+  defaultEmailSubject = "",
+  defaultEmailBody = "",
+  existingEmailAttachmentUrl,
+  existingEmailAttachmentName,
+  emailSchedule,
   showResult = true,
   evaluationMode = "auto",
   allowDesktop = true,
@@ -290,6 +441,37 @@ export function AssessmentSettingsSection({
   readOnly = false,
 }: AssessmentSettingsSectionProps) {
   const { t } = useTranslation("common");
+  // Mount the email editor lazily once and keep it mounted so toggling
+  // on/off becomes a CSS display swap (no Tiptap re-init, no Collapse height
+  // animation). Sticky derived state is set during render — the recommended
+  // React 19 pattern for "once true, always true" flags.
+  const [emailEditorMounted, setEmailEditorMounted] = useState(
+    Boolean(sendCommunication)
+  );
+  if (sendCommunication && !emailEditorMounted) {
+    setEmailEditorMounted(true);
+  }
+  // Pre-warm the editor in the background after first paint so the very
+  // first toggle-on is instant too. setState is scheduled inside an idle
+  // callback (asynchronous), so this doesn't violate the
+  // set-state-in-effect rule.
+  useEffect(() => {
+    if (emailEditorMounted) return;
+    if (typeof window === "undefined") return;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (typeof win.requestIdleCallback === "function") {
+      const handle = win.requestIdleCallback(
+        () => setEmailEditorMounted(true),
+        { timeout: 2000 }
+      );
+      return () => win.cancelIdleCallback?.(handle);
+    }
+    const handle = window.setTimeout(() => setEmailEditorMounted(true), 800);
+    return () => window.clearTimeout(handle);
+  }, [emailEditorMounted]);
   return (
     <Paper
       elevation={0}
@@ -479,28 +661,18 @@ export function AssessmentSettingsSection({
               gap: 2,
             }}
           >
-            <TextField
+            <DateTimePartsField
               label="Start date & time (optional)"
-              type="datetime-local"
               value={startTime}
-              onChange={(e) => onStartTimeChange(e.target.value)}
-              fullWidth
+              onChange={onStartTimeChange}
               helperText="IST timezone"
-              FormHelperTextProps={helperFormProps}
-              InputLabelProps={{ shrink: true }}
-              slotProps={{ htmlInput: { step: 60 } }}
               disabled={readOnly}
             />
-            <TextField
+            <DateTimePartsField
               label="End date & time (optional)"
-              type="datetime-local"
               value={endTime}
-              onChange={(e) => onEndTimeChange(e.target.value)}
-              fullWidth
+              onChange={onEndTimeChange}
               helperText="IST timezone"
-              FormHelperTextProps={helperFormProps}
-              InputLabelProps={{ shrink: true }}
-              slotProps={{ htmlInput: { step: 60 } }}
               disabled={readOnly}
             />
           </Box>
@@ -703,6 +875,24 @@ export function AssessmentSettingsSection({
               onChange={onSendCommunicationChange}
               disabled={readOnly}
             />
+            {emailEditorMounted ? (
+              <Box
+                sx={{
+                  display: emailNotificationEnabled ? "block" : "none",
+                }}
+              >
+                <EmailNotificationEditor
+                  ref={emailEditorRef}
+                  initialSubject={defaultEmailSubject}
+                  initialBody={defaultEmailBody}
+                  initialAttachmentUrl={existingEmailAttachmentUrl}
+                  initialAttachmentName={existingEmailAttachmentName}
+                  schedule={emailSchedule}
+                  readOnly={readOnly}
+                  onEnabledChange={onEmailEnabledChange}
+                />
+              </Box>
+            ) : null}
             <ListItem
               sx={{
                 py: 1.35,

@@ -66,16 +66,16 @@ export const CourseTable: React.FC<CourseTableProps> = ({
   const getStatusChipSx = (isEnrolled: boolean) => {
     if (isEnrolled) {
       return {
-        backgroundColor: "#d1fae5",
-        color: "#065f46",
+        backgroundColor: "color-mix(in srgb, var(--primary-500) 18%, var(--surface) 82%)",
+        color: "var(--primary-700)",
         fontSize: "0.75rem",
         height: 24,
         fontWeight: 500,
       };
     } else {
       return {
-        backgroundColor: "#e9d5ff",
-        color: "#6b21a8",
+        backgroundColor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
+        color: "var(--font-secondary)",
         fontSize: "0.75rem",
         height: 24,
         fontWeight: 500,
@@ -130,7 +130,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
               <Card
                 key={course.id}
                 sx={{
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid var(--border-default)",
                   borderRadius: 2,
                   boxShadow: "none",
                   "&:hover": {
@@ -144,7 +144,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                     variant="h6"
                     sx={{
                       fontWeight: 600,
-                      color: "#1a1f2e",
+                      color: "var(--font-primary)",
                       mb: 1.5,
                       fontSize: "1rem",
                     }}
@@ -168,8 +168,8 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                           label={tag}
                           size="small"
                           sx={{
-                            backgroundColor: "#e0e7ff",
-                            color: "#6366f1",
+                            backgroundColor: "color-mix(in srgb, var(--primary-500) 14%, var(--surface) 86%)",
+                            color: "var(--primary-700)",
                             fontSize: "0.75rem",
                             height: 24,
                             fontWeight: 500,
@@ -181,7 +181,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#9ca3af",
+                          color: "var(--font-tertiary)",
                           fontSize: "0.75rem",
                           fontStyle: "italic",
                         }}
@@ -195,7 +195,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#6b7280",
+                      color: "var(--font-secondary)",
                       fontSize: "0.875rem",
                       mb: 1.5,
                       lineHeight: 1.5,
@@ -274,7 +274,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                         />
                         <Typography
                           variant="body2"
-                          sx={{ color: "#6b7280", fontSize: "0.7rem" }}
+                          sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
                         >
                           ({course.rating_count || 0})
                         </Typography>
@@ -285,7 +285,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         fontSize: "0.875rem",
                         fontWeight: 500,
                       }}
@@ -307,14 +307,14 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                           variant="contained"
                           fullWidth
                           sx={{
-                            backgroundColor: "#6366f1",
-                            color: "#ffffff",
+                            backgroundColor: "var(--primary-500)",
+                            color: "var(--font-light)",
                             textTransform: "none",
                             fontSize: "0.875rem",
                             py: 1,
                             borderRadius: 1.5,
                             "&:hover": {
-                              backgroundColor: "#4f46e5",
+                              backgroundColor: "var(--primary-700)",
                             },
                           }}
                         >
@@ -332,14 +332,14 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                           course.enrollment_enabled === false
                         }
                         sx={{
-                          backgroundColor: "#6366f1",
-                          color: "#ffffff",
+                          backgroundColor: "var(--primary-500)",
+                          color: "var(--font-light)",
                           textTransform: "none",
                           fontSize: "0.875rem",
                           py: 1,
                           borderRadius: 1.5,
                           "&:hover": {
-                            backgroundColor: "#4f46e5",
+                            backgroundColor: "var(--primary-700)",
                           },
                         }}
                       >
@@ -369,7 +369,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
         >
           <Typography
             variant="body2"
-            sx={{ color: "#6b7280", fontSize: "0.875rem", textAlign: "center" }}
+            sx={{ color: "var(--font-secondary)", fontSize: "0.875rem", textAlign: "center" }}
           >
             Showing result {startIndex}-{endIndex} of {totalCount} Entries
           </Typography>
@@ -387,16 +387,16 @@ export const CourseTable: React.FC<CourseTableProps> = ({
               onClick={() => onPageChange(page - 1)}
               startIcon={<IconWrapper icon="mdi:chevron-left" size={18} />}
               sx={{
-                borderColor: "#e5e7eb",
-                color: "#6b7280",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
                 textTransform: "none",
                 px: 2,
                 flex: 1,
                 maxWidth: 150,
                 "&:disabled": { opacity: 0.5 },
                 "&:hover": {
-                  borderColor: "#d1d5db",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--font-tertiary)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -408,16 +408,16 @@ export const CourseTable: React.FC<CourseTableProps> = ({
               onClick={() => onPageChange(page + 1)}
               endIcon={<IconWrapper icon="mdi:chevron-right" size={18} />}
               sx={{
-                borderColor: "#e5e7eb",
-                color: "#6b7280",
+                borderColor: "var(--border-default)",
+                color: "var(--font-secondary)",
                 textTransform: "none",
                 px: 2,
                 flex: 1,
                 maxWidth: 150,
                 "&:disabled": { opacity: 0.5 },
                 "&:hover": {
-                  borderColor: "#d1d5db",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "var(--font-tertiary)",
+                  backgroundColor: "var(--surface)",
                 },
               }}
             >
@@ -435,36 +435,36 @@ export const CourseTable: React.FC<CourseTableProps> = ({
       <TableContainer
         component={Paper}
         elevation={0}
-        sx={{ border: "1px solid #e5e7eb" }}
+        sx={{ border: "1px solid var(--border-default)" }}
       >
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+            <TableRow sx={{ backgroundColor: "var(--surface)" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Course
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Difficulty
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Categories
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Description
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Certification
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Status
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Rating
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e" }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
                 Price
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#1a1f2e", width: 120 }}>
+              <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)", width: 120 }}>
                 Action
               </TableCell>
             </TableRow>
@@ -483,8 +483,8 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                 <TableRow
                   key={course.id}
                   sx={{
-                    "&:hover": { backgroundColor: "#f9fafb" },
-                    borderBottom: "1px solid #e5e7eb",
+                    "&:hover": { backgroundColor: "var(--surface)" },
+                    borderBottom: "1px solid var(--border-default)",
                   }}
                 >
                   <TableCell>
@@ -492,7 +492,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                       variant="body1"
                       sx={{
                         fontWeight: 600,
-                        color: "#1a1f2e",
+                        color: "var(--font-primary)",
                       }}
                     >
                       {course.title}
@@ -520,8 +520,8 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                             label={tag}
                             size="small"
                             sx={{
-                              backgroundColor: "#e0e7ff",
-                              color: "#6366f1",
+                              backgroundColor: "color-mix(in srgb, var(--primary-500) 14%, var(--surface) 86%)",
+                              color: "var(--primary-700)",
                               fontSize: "0.75rem",
                               height: 24,
                               fontWeight: 500,
@@ -533,7 +533,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#9ca3af",
+                            color: "var(--font-tertiary)",
                             fontSize: "0.75rem",
                             fontStyle: "italic",
                           }}
@@ -547,7 +547,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#6b7280",
+                        color: "var(--font-secondary)",
                         fontSize: "0.875rem",
                         maxWidth: 300,
                       }}
@@ -603,7 +603,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: "#6b7280",
+                            color: "var(--font-secondary)",
                             fontSize: "0.75rem",
                             ml: 0.5,
                           }}
@@ -615,7 +615,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "#9ca3af",
+                          color: "var(--font-tertiary)",
                           fontSize: "0.75rem",
                           fontStyle: "italic",
                         }}
@@ -627,7 +627,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                   <TableCell>
                     <Typography
                       variant="body2"
-                      sx={{ color: "#6b7280", fontSize: "0.875rem" }}
+                      sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
                     >
                       {course.is_free || parseFloat(course.price || "0") === 0
                         ? t("courses.free")
@@ -644,15 +644,15 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                           variant="contained"
                           size="small"
                           sx={{
-                            backgroundColor: "#6366f1",
-                            color: "#ffffff",
+                            backgroundColor: "var(--primary-500)",
+                            color: "var(--font-light)",
                             textTransform: "none",
                             fontSize: "0.875rem",
                             px: 2,
                             py: 0.5,
                             borderRadius: 1.5,
                             "&:hover": {
-                              backgroundColor: "#4f46e5",
+                              backgroundColor: "var(--primary-700)",
                             },
                           }}
                         >
@@ -670,15 +670,15 @@ export const CourseTable: React.FC<CourseTableProps> = ({
                           course.enrollment_enabled === false
                         }
                         sx={{
-                          backgroundColor: "#6366f1",
-                          color: "#ffffff",
+                          backgroundColor: "var(--primary-500)",
+                          color: "var(--font-light)",
                           textTransform: "none",
                           fontSize: "0.875rem",
                           px: 2,
                           py: 0.5,
                           borderRadius: 1.5,
                           "&:hover": {
-                            backgroundColor: "#4f46e5",
+                            backgroundColor: "var(--primary-700)",
                           },
                         }}
                       >
@@ -709,7 +709,7 @@ export const CourseTable: React.FC<CourseTableProps> = ({
       >
         <Typography
           variant="body2"
-          sx={{ color: "#6b7280", fontSize: "0.875rem" }}
+          sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
         >
           Showing result {startIndex}-{endIndex} of {totalCount} Entries
         </Typography>
@@ -720,14 +720,14 @@ export const CourseTable: React.FC<CourseTableProps> = ({
             onClick={() => onPageChange(page - 1)}
             startIcon={<IconWrapper icon="mdi:chevron-left" size={18} />}
             sx={{
-              borderColor: "#e5e7eb",
-              color: "#6b7280",
+              borderColor: "var(--border-default)",
+              color: "var(--font-secondary)",
               textTransform: "none",
               px: 2,
               "&:disabled": { opacity: 0.5 },
               "&:hover": {
-                borderColor: "#d1d5db",
-                backgroundColor: "#f9fafb",
+                borderColor: "var(--font-tertiary)",
+                backgroundColor: "var(--surface)",
               },
             }}
           >
@@ -739,14 +739,14 @@ export const CourseTable: React.FC<CourseTableProps> = ({
             onClick={() => onPageChange(page + 1)}
             endIcon={<IconWrapper icon="mdi:chevron-right" size={18} />}
             sx={{
-              borderColor: "#e5e7eb",
-              color: "#6b7280",
+              borderColor: "var(--border-default)",
+              color: "var(--font-secondary)",
               textTransform: "none",
               px: 2,
               "&:disabled": { opacity: 0.5 },
               "&:hover": {
-                borderColor: "#d1d5db",
-                backgroundColor: "#f9fafb",
+                borderColor: "var(--font-tertiary)",
+                backgroundColor: "var(--surface)",
               },
             }}
           >

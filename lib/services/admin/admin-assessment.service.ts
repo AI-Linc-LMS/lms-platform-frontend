@@ -198,8 +198,37 @@ export interface CreateAssessmentPayload {
   is_draft?: boolean;
   proctoring_enabled?: boolean;
   live_streaming?: boolean;
-  /** Whether to send notification email to students */
+  /**
+   * Legacy alias for `email_notification_enabled`. Kept on the type so older
+   * callers (the edit page and draft loader) continue to compile, but the
+   * create flow no longer sends it.
+   */
   send_communication?: boolean;
+  /** Whether the assessment-created notification email should actually be sent. */
+  email_notification_enabled?: boolean;
+  /** Subject line for the student notification email. */
+  email_subject?: string;
+  /** Body fragment authored in the rich-text editor (HTML, supports {name}). */
+  email_body?: string;
+  /**
+   * Fully-rendered notification email HTML — includes the branded header,
+   * the subject as an H1, the body fragment, and the sign-off footer. Backend
+   * can forward this verbatim without re-running its own template.
+   */
+  email_html?: string;
+  /**
+   * URL of the previously-saved attachment when the admin chose to keep it
+   * (i.e. did not upload a new file). Sent so the backend knows to retain
+   * the existing file. Mutually exclusive with the `email_attachment`
+   * multipart file field.
+   */
+  attachment_url?: string | null;
+  /**
+   * Base URL of the frontend app (e.g. https://your-app.netlify.app).
+   * Sent with every assessment create/update/publish so the backend can
+   * construct correct deep-links inside notification emails.
+   */
+  email_base_url?: string;
   /** Whether to show results to students after submission (default true) */
   show_result?: boolean;
   evaluation_mode?: "auto" | "manual";
@@ -300,6 +329,7 @@ export interface AssessmentDetail extends Assessment {
   show_result?: boolean;
   evaluation_mode?: "auto" | "manual";
   certificate_available?: boolean;
+  
   pass_band_lower_min_percent?: string;
   pass_band_upper_min_percent?: string;
   tab_switch_limit_enabled?: boolean;
@@ -386,16 +416,28 @@ export const getAssessmentById = async (
 };
 
 /**
- * Create a new assessment
+ * Create a new assessment.
+ *
+ * If `emailAttachment` is provided the request is sent as `multipart/form-data`:
+ * a `payload` field carries the JSON-stringified payload and `email_attachment`
+ * carries the file. Otherwise a normal JSON POST is used.
  */
 export const createAssessment = async (
   clientId: string | number,
-  payload: CreateAssessmentPayload
+  payload: CreateAssessmentPayload,
+  emailAttachment?: File | null
 ): Promise<Assessment> => {
   try {
+    let body: CreateAssessmentPayload | FormData = payload;
+    if (emailAttachment) {
+      const form = new FormData();
+      form.append("payload", JSON.stringify(payload));
+      form.append("email_attachment", emailAttachment, emailAttachment.name);
+      body = form;
+    }
     const response = await apiClient.post(
       `/admin-dashboard/api/clients/${clientId}/assessments/`,
-      payload
+      body
     );
     return response.data;
   } catch (err) {
@@ -427,16 +469,46 @@ export const createAssessment = async (
 
 /**
  * Publish assessment (clear draft, optionally activate). POST .../publish/
+ *
+ * Can also carry the notification email fields so the backend triggers the
+ * student-notification at publish time. When `emailAttachment` is provided
+ * the request becomes `multipart/form-data` with a JSON `payload` blob plus
+ * an `email_attachment` file field — same shape as create/update.
  */
+export interface PublishAssessmentBody {
+  is_active?: boolean;
+  email_notification_enabled?: boolean;
+  email_subject?: string;
+  email_body?: string;
+  email_html?: string;
+  /**
+   * URL of a previously-saved attachment to retain (when no new file is
+   * being uploaded). Sent in the JSON body to tell the backend to keep the
+   * existing file. Mutually exclusive with the multipart `email_attachment`.
+   */
+  attachment_url?: string | null;
+  /** Base URL of the frontend app — backend uses it to build assessment deep-links in emails. */
+  email_base_url?: string;
+}
+
 export const publishAssessment = async (
   clientId: string | number,
   assessmentId: number,
-  body?: { is_active?: boolean }
+  body?: PublishAssessmentBody,
+  emailAttachment?: File | null
 ): Promise<Assessment> => {
   try {
+    const requestBody: PublishAssessmentBody = body ?? {};
+    let payload: PublishAssessmentBody | FormData = requestBody;
+    if (emailAttachment) {
+      const form = new FormData();
+      form.append("payload", JSON.stringify(requestBody));
+      form.append("email_attachment", emailAttachment, emailAttachment.name);
+      payload = form;
+    }
     const response = await apiClient.post(
       `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/publish/`,
-      body ?? {}
+      payload
     );
     return response.data;
   } catch (err) {
@@ -451,17 +523,29 @@ export const publishAssessment = async (
 };
 
 /**
- * Update an existing assessment
+ * Update an existing assessment.
+ *
+ * When `emailAttachment` is provided the request becomes `multipart/form-data`
+ * with a `payload` JSON field and an `email_attachment` file field, mirroring
+ * `createAssessment` so callers can carry a notification-email file through.
  */
 export const updateAssessment = async (
   clientId: string | number,
   assessmentId: number,
-  payload: Partial<CreateAssessmentPayload>
+  payload: Partial<CreateAssessmentPayload>,
+  emailAttachment?: File | null
 ): Promise<Assessment> => {
   try {
+    let body: Partial<CreateAssessmentPayload> | FormData = payload;
+    if (emailAttachment) {
+      const form = new FormData();
+      form.append("payload", JSON.stringify(payload));
+      form.append("email_attachment", emailAttachment, emailAttachment.name);
+      body = form;
+    }
     const response = await apiClient.patch(
       `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/`,
-      payload
+      body
     );
     return response.data;
   } catch (err) {

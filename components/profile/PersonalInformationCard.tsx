@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormControl } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile } from "@/lib/services/profile.service";
 
 interface PersonalInformationCardProps {
@@ -207,11 +208,13 @@ export function PersonalInformationCard({
             >
               {t("profile.cancel")}
             </Button>
-            <Button
+            <LoadingButton
               variant="contained"
               size="small"
               onClick={handleSave}
-              disabled={saving || !formData.first_name || !formData.last_name}
+              loading={saving}
+              loadingText={t("profile.saving")}
+              disabled={!formData.first_name || !formData.last_name}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
@@ -224,8 +227,8 @@ export function PersonalInformationCard({
                 transition: "all 0.2s ease",
               }}
             >
-              {saving ? t("profile.saving") : t("profile.save")}
-            </Button>
+              {t("profile.save")}
+            </LoadingButton>
           </Box>
         )}
       </Box>

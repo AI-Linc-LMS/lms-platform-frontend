@@ -188,9 +188,11 @@ export function MCQQuestionsTable({
                       p: { xs: 1.25, sm: 1.5 },
                       borderRadius: 1.5,
                       border: isCorrect
-                        ? "2px solid #10b981"
+                        ? "2px solid var(--success-500, #10b981)"
                         : "1.5px solid var(--border-default)",
-                      backgroundColor: isCorrect ? "#f0fdf4" : "var(--surface)",
+                      backgroundColor: isCorrect
+                        ? "color-mix(in srgb, var(--success-500, #10b981) 12%, var(--surface) 88%)"
+                        : "var(--surface)",
                     }}
                   >
                     <Box
@@ -198,8 +200,8 @@ export function MCQQuestionsTable({
                         minWidth: 24,
                         height: 24,
                         borderRadius: "50%",
-                        bgcolor: isCorrect ? "#10b981" : "var(--border-default)",
-                        color: isCorrect ? "#fff" : "var(--font-secondary)",
+                        bgcolor: isCorrect ? "var(--success-500, #10b981)" : "var(--border-default)",
+                        color: isCorrect ? "var(--font-light)" : "var(--font-secondary)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -214,7 +216,7 @@ export function MCQQuestionsTable({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: isCorrect ? "#065f46" : "var(--font-primary)",
+                        color: isCorrect ? "var(--success-700, #065f46)" : "var(--font-primary)",
                         fontWeight: isCorrect ? 600 : 400,
                         lineHeight: 1.6,
                         whiteSpace: "pre-wrap",
@@ -229,11 +231,11 @@ export function MCQQuestionsTable({
                           minWidth: 20,
                           height: 20,
                           borderRadius: "50%",
-                          backgroundColor: "#10b981",
+                          backgroundColor: "var(--success-500, #10b981)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          color: "#fff",
+                          color: "var(--font-light)",
                           fontSize: "12px",
                           fontWeight: 700,
                           flexShrink: 0,

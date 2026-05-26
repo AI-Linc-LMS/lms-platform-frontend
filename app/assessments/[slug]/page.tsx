@@ -7,7 +7,6 @@ import {
   Container,
   Typography,
   Box,
-  Button,
   Paper,
   Alert,
   CircularProgress,
@@ -21,9 +20,9 @@ import {
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
 import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
-import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { LoadingButton } from "@/components/common/LoadingButton";
+import { isCurrentDeviceAllowedForAssessment, allowedDeviceLabels } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 
 function parseAssessmentStartTime(
@@ -146,10 +145,10 @@ export default function AssessmentDetailPage({
     }
 
     if (!isCurrentDeviceAllowedForAssessment(assessment)) {
-      if (isMobileOrTabletForAssessment()) {
-        setDesktopOnlyOpen(true);
-      }
-      showToast(t("assessmentDevice.toastBlocked"), "warning");
+      const allowed = allowedDeviceLabels(assessment);
+      const allowedList = allowed.map((d) => t(`assessmentDevice.classNames.${d}`, d)).join(", ");
+      showToast(t("assessmentDevice.learnerAlertBody", { types: allowedList }), "warning");
+      setDesktopOnlyOpen(true);
       return;
     }
 
@@ -195,6 +194,7 @@ export default function AssessmentDetailPage({
       <AssessmentDesktopOnlyDialog
         open={desktopOnlyOpen}
         onClose={() => setDesktopOnlyOpen(false)}
+        allowedTypes={allowedDeviceLabels(assessment)}
       />
       <Box
         sx={{
@@ -206,7 +206,7 @@ export default function AssessmentDetailPage({
         }}
       >
         {/* Back Button */}
-        <Button
+        <LoadingButton
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/assessments")}
           sx={{
@@ -222,7 +222,7 @@ export default function AssessmentDetailPage({
           }}
         >
           Back to Assessments
-        </Button>
+        </LoadingButton>
 
         {/* Assessment Info */}
         <Box
@@ -692,7 +692,7 @@ export default function AssessmentDetailPage({
             </Alert>
           )}
 
-          <Button
+          <LoadingButton
             variant="contained"
             size="large"
             fullWidth
@@ -714,7 +714,6 @@ export default function AssessmentDetailPage({
             disabled={
               isExpired ||
               (isAlreadySubmitted && !canReattempt) ||
-              !deviceAllowed ||
               !canStartAssessment
             }
             sx={{
@@ -739,7 +738,7 @@ export default function AssessmentDetailPage({
               : isAlreadySubmitted
               ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
               : t("assessments.startAssessment")}
-          </Button>
+          </LoadingButton>
         </Paper>
       </Box>
     </MainLayout>

@@ -29,29 +29,29 @@ export const QuestionListSidebar = memo(function QuestionListSidebar({
         width: 400,
         display: "flex",
         flexDirection: "column",
-        borderLeft: "1px solid #e5e7eb",
-        backgroundColor: "#ffffff",
+        borderLeft: "1px solid var(--border-default)",
+        backgroundColor: "var(--card-bg)",
       }}
     >
       {/* Tabs */}
       <Box
         sx={{
-          borderBottom: "1px solid #e5e7eb",
+          borderBottom: "1px solid var(--border-default)",
         }}
       >
         <Tabs
           value={0}
           sx={{
             "& .MuiTab-root": {
-              color: "#6b7280",
+              color: "var(--font-secondary)",
               textTransform: "none",
               fontWeight: 600,
               "&.Mui-selected": {
-                color: "#6366f1",
+                color: "var(--primary-700)",
               },
             },
             "& .MuiTabs-indicator": {
-              backgroundColor: "#6366f1",
+              backgroundColor: "var(--primary-500)",
             },
           }}
         >
@@ -75,16 +75,16 @@ export const QuestionListSidebar = memo(function QuestionListSidebar({
                 onClick={() => onQuestionClick(index)}
                 sx={{
                   p: 2,
-                  backgroundColor: isCurrent ? "#6366f1" : "#ffffff",
+                  backgroundColor: isCurrent ? "var(--primary-500)" : "var(--card-bg)",
                   borderRadius: 2,
                   cursor: "pointer",
                   border: isCurrent
-                    ? "2px solid #6366f1"
-                    : "1px solid #e5e7eb",
+                    ? "2px solid var(--primary-500)"
+                    : "1px solid var(--border-default)",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: isCurrent ? "#6366f1" : "#f9fafb",
-                    borderColor: "#6366f1",
+                    backgroundColor: isCurrent ? "var(--primary-600)" : "var(--surface)",
+                    borderColor: "var(--primary-500)",
                   },
                 }}
               >
@@ -99,7 +99,7 @@ export const QuestionListSidebar = memo(function QuestionListSidebar({
                     variant="body2"
                     sx={{
                       fontWeight: 700,
-                      color: isCurrent ? "#ffffff" : "#6b7280",
+                      color: isCurrent ? "var(--font-light)" : "var(--font-secondary)",
                       minWidth: 40,
                     }}
                   >
@@ -110,7 +110,7 @@ export const QuestionListSidebar = memo(function QuestionListSidebar({
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: isCurrent ? "#ffffff" : "#111827",
+                        color: isCurrent ? "var(--font-light)" : "var(--font-primary)",
                         mb: 1,
                       }}
                     >
@@ -125,10 +125,13 @@ export const QuestionListSidebar = memo(function QuestionListSidebar({
                           mt: 1,
                         }}
                       >
-                        <CheckCircle size={14} color="#10b981" />
+                        <CheckCircle size={14} color="var(--success-500, #10b981)" />
                         <Typography
                           variant="caption"
-                          sx={{ color: "#10b981", fontSize: "0.75rem" }}
+                          sx={{
+                            color: "var(--success-500, #10b981)",
+                            fontSize: "0.75rem",
+                          }}
                         >
                           Answer provided
                         </Typography>
@@ -144,4 +147,3 @@ export const QuestionListSidebar = memo(function QuestionListSidebar({
     </Box>
   );
 });
-

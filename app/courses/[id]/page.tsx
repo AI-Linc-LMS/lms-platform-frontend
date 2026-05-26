@@ -22,7 +22,7 @@ import { InstructorCard } from "@/components/course/InstructorCard";
 import { CertificateButtons } from "@/components/course/CertificateButtons";
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
-import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
+import { useHideLeaderboardView, useIsCourseEnabled, useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { config } from "@/lib/config";
 import { getUploadedFiles } from "@/lib/services/file-upload.service";
 
@@ -43,6 +43,7 @@ export default function CourseDetailPage() {
   const { showToast } = useToast();
   const { handlePayment, isProcessing } = usePayment();
   const hideLeaderboardView = useHideLeaderboardView();
+  const isCourseEnabled = useIsCourseEnabled();
 
   useEffect(() => {
     if (!courseId) return;
@@ -256,7 +257,7 @@ export default function CourseDetailPage() {
         {/* Breadcrumb */}
         <Box sx={{ px: { xs: 2, md: 4 }, pt: 3, pb: 2 }}>
           <Link
-            href="/courses"
+            href={isCourseEnabled ? "/courses" : "/dashboard"}
             style={{
               textDecoration: "none",
               color: "var(--font-secondary)",
@@ -274,7 +275,7 @@ export default function CourseDetailPage() {
                 "&:hover": { color: "var(--font-primary)" },
               }}
             >
-              {t("courses.myCourses")} / {course.course_title}
+              {isCourseEnabled ? `${t("courses.myCourses")} / ${course.course_title}` : t("common.dashboard")}
             </Typography>
           </Link>
         </Box>

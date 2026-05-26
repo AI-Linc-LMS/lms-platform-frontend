@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -35,6 +35,7 @@ import { adminCoursesService } from "@/lib/services/admin/admin-courses.service"
 import { config } from "@/lib/config";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
+import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
 import {
   MultipleSectionsSection,
   Section,
@@ -45,6 +46,9 @@ import { AssessmentPreviewSection } from "@/components/admin/assessment/Assessme
 import type { WrittenPromptPreview } from "@/components/admin/assessment/SectionCard";
 import type { SubjectiveQuestionDraft } from "@/components/admin/assessment/SubjectiveQuestionsFormSection";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
+import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
+import { getPublicAppOrigin } from "@/lib/config";
+import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import {
   applyAssessmentDetailToBasicFields,
   mapQuestionsExportToAuthoringState,
@@ -104,6 +108,23 @@ function CreateAssessmentPageContent() {
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
+  // Email subject/body/attachment live INSIDE <EmailNotificationEditor /> so
+  // typing in them doesn't re-render this huge page. We read the final values
+  // through this ref at submit time only.
+  const emailEditorRef = useRef<EmailNotificationEditorHandle>(null);
+  // The editor pushes a single boolean up whenever its "has real content"
+  // status flips — used to derive `email_notification_enabled` without
+  // re-rendering the page on every keystroke.
+  const [emailEditorHasData, setEmailEditorHasData] = useState(false);
+  const emailNotificationEnabled = sendCommunication && emailEditorHasData;
+  // Previously-saved attachment surfaced as a chip in the editor on draft
+  // reload. If the admin doesn't replace it, we won't re-send `email_attachment`
+  // and the backend keeps the existing file.
+  const [existingEmailAttachmentUrl, setExistingEmailAttachmentUrl] = useState<
+    string | null
+  >(null);
+  const [existingEmailAttachmentName, setExistingEmailAttachmentName] =
+    useState<string | null>(null);
   const [showResult, setShowResult] = useState(true);
   const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
   useEffect(() => {
@@ -111,6 +132,35 @@ function CreateAssessmentPageContent() {
       setShowResult(false);
     }
   }, [evaluationMode, showResult]);
+
+  // Live-built default subject/body for the student notification email.
+  const defaultEmailSubject = useMemo(
+    () => `Important Notification - ${title.trim() || "New Assessment"}`,
+    [title]
+  );
+  // The schedule (start/end/duration) is rendered as a dedicated block by
+  // <EmailTemplatePreview> and the rendered email HTML — so the seeded body
+  // only needs the greeting + a reference to the assessment. This keeps
+  // start/end times always current in the email even when the admin
+  // customises the body.
+  const defaultEmailBody = useMemo(() => {
+    return [
+      "<p>Dear {name},</p>",
+      "<p>All set! Your assessment details are below — good luck 👍.</p>",
+      `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
+    ].join("");
+  }, [title]);
+
+  // Schedule passed to the preview + the rendered email HTML. Rebuilt on
+  // every render but cheap (just a plain object).
+  const emailSchedule = useMemo(
+    () => ({
+      startTime: startTime || null,
+      endTime: endTime || null,
+      durationMinutes: durationMinutes || null,
+    }),
+    [startTime, endTime, durationMinutes]
+  );
 
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
     useState(true);
@@ -247,6 +297,13 @@ function CreateAssessmentPageContent() {
           setAllowMobile,
           setAllowTablet,
         });
+        // Carry any previously-saved attachment forward to the editor so the
+        // admin sees it and can choose to keep or replace it. Backend has used
+        // a few field names over time — accept any.
+        const draftAny = detail as unknown as Record<string, unknown>;
+        const savedAttachment = extractSavedEmailAttachment(draftAny);
+        setExistingEmailAttachmentUrl(savedAttachment.url);
+        setExistingEmailAttachmentName(savedAttachment.name);
         const mapped = mapQuestionsExportToAuthoringState(exportJson);
         setSections(mapped.sections);
         setMcqInputMethodBySection(mapped.mcqInputMethodBySection);
@@ -1079,7 +1136,13 @@ function CreateAssessmentPageContent() {
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
-        send_communication: sendCommunication,
+        // Pulled from the email editor below; populated in-place after the
+        // payload is built.
+        email_notification_enabled: false,
+        email_subject: undefined,
+        email_body: undefined,
+        email_html: undefined,
+        attachment_url: undefined,
         show_result: evaluationMode === "manual" ? false : showResult,
         evaluation_mode: evaluationMode,
         certificate_available: certificateAvailable,
@@ -1105,6 +1168,33 @@ function CreateAssessmentPageContent() {
       if (colleges.length > 0) {
         payload.colleges = colleges;
       }
+
+      // `emailNotificationEnabled` already accounts for toggle state AND the
+      // editor having real content. Snapshot the editor only when we plan to
+      // actually send something.
+      const emailSnapshot = emailNotificationEnabled
+        ? emailEditorRef.current?.getValues() ?? null
+        : null;
+      payload.email_notification_enabled = emailNotificationEnabled;
+      payload.email_subject = emailSnapshot?.subject;
+      payload.email_body = emailSnapshot?.body;
+      // Render the full transactional email (header + body + footer) so the
+      // backend can forward it verbatim and recipients see exactly what the
+      // admin previewed.
+      payload.email_html = emailSnapshot
+        ? buildAssessmentNotificationEmailHtml({
+            subject: emailSnapshot.subject,
+            bodyHtml: emailSnapshot.body,
+            clientName: clientInfo?.name?.trim() || "Your team",
+            logoUrl: clientInfo?.app_logo_url ?? null,
+            schedule: emailSchedule,
+          })
+        : undefined;
+      payload.email_base_url = getPublicAppOrigin();
+      const emailAttachment = emailSnapshot?.attachment ?? null;
+      // When the admin is keeping the previously-saved attachment (no new
+      // file picked), pass the existing URL so the backend retains it.
+      payload.attachment_url = emailSnapshot?.attachmentUrl ?? undefined;
 
       // Remove undefined fields to match exact API format
       Object.keys(payload).forEach((key) => {
@@ -1332,7 +1422,8 @@ function CreateAssessmentPageContent() {
         await adminAssessmentService.updateAssessment(
           config.clientId,
           editingAssessmentId,
-          payload
+          payload,
+          emailAttachment
         );
         showToast(
           options?.forceDraft ? "Draft saved successfully" : "Assessment updated successfully",
@@ -1342,7 +1433,8 @@ function CreateAssessmentPageContent() {
       } else {
         const created = await adminAssessmentService.createAssessment(
           config.clientId,
-          payload
+          payload,
+          emailAttachment
         );
         showToast(
           options?.forceDraft ? "Draft saved successfully" : "Assessment created successfully",
@@ -1433,9 +1525,42 @@ function CreateAssessmentPageContent() {
     if (!editingAssessmentId || !config.clientId) return;
     try {
       setCreating(true);
-      await adminAssessmentService.publishAssessment(config.clientId, editingAssessmentId, {
+      // Snapshot the email editor so the publish call also carries the
+      // notification details (subject, body, rendered HTML, attachment).
+      // Backend can use these to actually send the email on publish.
+      const emailSnapshot = emailNotificationEnabled
+        ? emailEditorRef.current?.getValues() ?? null
+        : null;
+      const publishBody = {
         is_active: true,
-      });
+        email_notification_enabled: emailNotificationEnabled,
+        email_base_url: getPublicAppOrigin(),
+        ...(emailSnapshot
+          ? {
+              email_subject: emailSnapshot.subject,
+              email_body: emailSnapshot.body,
+              email_html: buildAssessmentNotificationEmailHtml({
+                subject: emailSnapshot.subject,
+                bodyHtml: emailSnapshot.body,
+                clientName: clientInfo?.name?.trim() || "Your team",
+                logoUrl: clientInfo?.app_logo_url ?? null,
+                schedule: emailSchedule,
+              }),
+              // Retain the previously-saved attachment unless a new file was
+              // picked (in which case the multipart `email_attachment` wins).
+              ...(emailSnapshot.attachmentUrl
+                ? { attachment_url: emailSnapshot.attachmentUrl }
+                : {}),
+            }
+          : {}),
+      };
+      const publishAttachment = emailSnapshot?.attachment ?? null;
+      await adminAssessmentService.publishAssessment(
+        config.clientId,
+        editingAssessmentId,
+        publishBody,
+        publishAttachment
+      );
       showToast("Assessment published", "success");
       setLoadedIsDraft(false);
       router.push(`/admin/assessment/${editingAssessmentId}/edit`);
@@ -1475,6 +1600,14 @@ function CreateAssessmentPageContent() {
               liveStreaming={liveStreaming}
               showLiveStreamingToggle={canConfigureLiveStreaming}
               sendCommunication={sendCommunication}
+              emailNotificationEnabled={emailNotificationEnabled}
+              onEmailEnabledChange={setEmailEditorHasData}
+              emailEditorRef={emailEditorRef}
+              defaultEmailSubject={defaultEmailSubject}
+              defaultEmailBody={defaultEmailBody}
+              existingEmailAttachmentUrl={existingEmailAttachmentUrl}
+              existingEmailAttachmentName={existingEmailAttachmentName}
+              emailSchedule={emailSchedule}
               showResult={showResult}
               evaluationMode={evaluationMode}
               allowMovementAcrossSections={allowMovementAcrossSections}
@@ -1499,7 +1632,17 @@ function CreateAssessmentPageContent() {
               onCollegesChange={setColleges}
               onProctoringEnabledChange={setProctoringEnabled}
               onLiveStreamingChange={setLiveStreaming}
-              onSendCommunicationChange={setSendCommunication}
+              onSendCommunicationChange={(value) => {
+                setSendCommunication(value);
+                if (value) {
+                  // Toggling on must guarantee data is present so the
+                  // visibility flag (which depends on data) flips true.
+                  // No-op-safe: the ref may be null right before the editor
+                  // mounts, in which case the editor's useState initializer
+                  // will seed defaults on mount automatically.
+                  emailEditorRef.current?.seedDefaults();
+                }
+              }}
               onShowResultChange={setShowResult}
               onEvaluationModeChange={setEvaluationMode}
               onAllowMovementAcrossSectionsChange={setAllowMovementAcrossSections}

@@ -20,8 +20,9 @@ import {
 } from "@/lib/utils/psychometric-utils";
 import { stripHtmlTags } from "@/lib/utils/html-utils";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/components/common/Toast";
 import { isMobileOrTabletForAssessment } from "@/lib/utils/assessment-device.utils";
-import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { isCurrentDeviceAllowedForAssessment, allowedDeviceLabels } from "@/lib/utils/assessment-device";
 import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
 import {
   isLearnerAssessmentSubmissionComplete,
@@ -80,6 +81,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const theme = useTheme();
   const isRtl = theme.direction === "rtl";
   const router = useRouter();
+  const { showToast } = useToast();
   const submissionComplete = isLearnerAssessmentSubmissionComplete(assessment);
   const normalizedStatus = normalizeLearnerAssessmentStatus(assessment);
 
@@ -204,7 +206,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     if (submissionComplete && !showResults) {
       return {
         buttonLabel: t("assessments.submittedPendingReview"),
-        isClickable: true,
+        isClickable: false,
       };
     }
     if (normalizedStatus === "in_progress") {
@@ -303,14 +305,11 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       router.push(`/assessments/result/${assessment.slug}`);
       return;
     }
-    if (submissionComplete && !showResults) {
-      router.push(`/assessments/${assessment.slug}/submission-success`);
-      return;
-    }
     if (!isCurrentDeviceAllowedForAssessment(assessment)) {
-      if (isMobileOrTabletForAssessment()) {
-        setDesktopOnlyOpen(true);
-      }
+      const allowed = allowedDeviceLabels(assessment);
+      const allowedList = allowed.map((d) => t(`assessmentDevice.classNames.${d}`, d)).join(", ");
+      showToast(t("assessmentDevice.learnerAlertBody", { types: allowedList }), "warning");
+      setDesktopOnlyOpen(true);
       return;
     }
     router.push(`/assessments/${assessment.slug}`);
@@ -321,6 +320,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     <AssessmentDesktopOnlyDialog
       open={desktopOnlyOpen}
       onClose={() => setDesktopOnlyOpen(false)}
+      allowedTypes={allowedDeviceLabels(assessment)}
     />
     <Card
       sx={{

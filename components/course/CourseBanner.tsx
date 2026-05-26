@@ -37,7 +37,7 @@ export function CourseBanner({
       sx={{
         position: "relative",
         background:
-          "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)",
         px: { xs: 2, sm: 3, md: 4 },
         py: { xs: 4, sm: 5, md: 6 },
         mx: { xs: 2, sm: 3, md: 4 },
@@ -256,7 +256,7 @@ export function CourseBanner({
                     width: `${dashboard.completion_percentage ?? 0}%`,
                     height: "100%",
                     background:
-                      "linear-gradient(90deg, #8b5cf6 0%, #3b82f6 100%)",
+                      "linear-gradient(90deg, var(--primary-300) 0%, var(--primary-100) 100%)",
                     borderRadius: 4,
                     transition: "width 0.3s ease",
                   }}

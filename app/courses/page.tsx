@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -30,6 +31,7 @@ import { useToast } from "@/components/common/Toast";
 import { usePayment } from "@/hooks/usePayment";
 import type { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { PaymentType } from "@/lib/services/payment.service";
+import { useIsCourseEnabled, useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -38,6 +40,9 @@ type SortType = "recent" | "oldest" | "title";
 
 export default function CoursesPage() {
   const { t } = useTranslation("common");
+  const router = useRouter();
+  const isCourseEnabled = useIsCourseEnabled();
+  const { loading: clientLoading } = useClientInfo();
   const [courses, setCourses] = useState<CourseCardCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,6 +63,12 @@ export default function CoursesPage() {
   const { showToast } = useToast();
   const hasLoadedRef = useRef(false);
   const { handlePayment, isProcessing } = usePayment();
+
+  useEffect(() => {
+    if (!clientLoading && !isCourseEnabled) {
+      router.replace("/dashboard");
+    }
+  }, [clientLoading, isCourseEnabled]);
 
   useEffect(() => {
     if (hasLoadedRef.current) return;

@@ -24,37 +24,22 @@ interface Props {
   onChange: (patch: Partial<WizardData>) => void;
 }
 
-/**
- * Four starter presets surfaced in the wizard — a subset of the 25+ presets
- * in client_theming/presets.py on the backend. We pick a curated handful here
- * because step 4 is "first impression" not "full customisation"; the rest are
- * available post-launch from Settings → Branding (admin page calls the same
- * preset registry).
- *
- * Colour values come directly from the backend preset definitions so the
- * mini-mockup previewed here matches what the deployed LMS actually renders.
- * Don't drift these — if a backend preset's swatches change, mirror it here.
- */
+// Mirror of the 5 light-only presets in backend client_theming/presets.py.
+// Colour values come from the backend preset definitions so the mini-mockup
+// matches what the deployed LMS renders. If a backend preset changes, mirror here.
 type PresetId = NonNullable<WizardData["theme"]>["preset_id"];
 
 interface PresetMeta {
   id: NonNullable<PresetId>;
   label: string;
   tagline: string;
-  mode: "light" | "dark";
   /** Swatches used to paint the mini browser-mockup preview. */
   swatches: {
-    /** Sidebar/nav rail background */
     nav: string;
-    /** Active state — selected sidebar item, primary button */
     active: string;
-    /** Primary action colour — CTAs, links, accent fills */
     primary: string;
-    /** Page surface — main content background */
     surface: string;
-    /** Body text colour on the surface */
     text: string;
-    /** Muted/secondary text */
     textMute: string;
   };
 }
@@ -64,7 +49,6 @@ const PRESETS: PresetMeta[] = [
     id: "default",
     label: "Default · Blue Slate",
     tagline: "Balanced blues — professional and calm.",
-    mode: "light",
     swatches: {
       nav: "#d7eff6",
       active: "#12293a",
@@ -78,7 +62,6 @@ const PRESETS: PresetMeta[] = [
     id: "azure_bolt",
     label: "Azure Bolt",
     tagline: "Deep navy rail and electric sky blue.",
-    mode: "light",
     swatches: {
       nav: "#e0f2fe",
       active: "#164e63",
@@ -89,24 +72,22 @@ const PRESETS: PresetMeta[] = [
     },
   },
   {
-    id: "graphite_night",
-    label: "Graphite Night",
-    tagline: "Slate charcoal shell with cool electric blue actions.",
-    mode: "dark",
+    id: "sakura_day",
+    label: "Sakura Day",
+    tagline: "Soft rose tint with clean bright surfaces.",
     swatches: {
-      nav: "#111827",
-      active: "#1f2937",
-      primary: "#3b82f6",
-      surface: "#0f172a",
-      text: "#e5e7eb",
-      textMute: "#94a3b8",
+      nav: "#fff7f8",
+      active: "#fecdd3",
+      primary: "#e11d48",
+      surface: "#ffffff",
+      text: "#7a1230",
+      textMute: "#9f1239",
     },
   },
   {
     id: "sky_paper",
     label: "Sky Paper",
     tagline: "Bright sky blues on a paper-like base.",
-    mode: "light",
     swatches: {
       nav: "#f8fcff",
       active: "#bae6fd",
@@ -114,6 +95,19 @@ const PRESETS: PresetMeta[] = [
       surface: "#ffffff",
       text: "#0c4a6e",
       textMute: "#64748b",
+    },
+  },
+  {
+    id: "mono_minimal",
+    label: "Mono Minimal",
+    tagline: "Neutral grayscale UI with subtle professional contrast.",
+    swatches: {
+      nav: "#f8fafc",
+      active: "#cbd5e1",
+      primary: "#64748b",
+      surface: "#ffffff",
+      text: "#0f172a",
+      textMute: "#475569",
     },
   },
 ];
@@ -137,8 +131,8 @@ export function ThemeStep({ data, onChange }: Props) {
       <motion.div variants={itemVariants}>
         <p className="aw-label">Starter theme</p>
         <p className="aw-help -mt-1 mb-3">
-          Four hand-picked presets. Pick the closest match — you can fine-tune
-          colours, sidebar style, and 20+ more presets after launch in{" "}
+          Five light themes. Pick the closest match — you can fine-tune
+          colours and per-section overrides post-launch in{" "}
           <span className="text-text">Settings → Branding</span>.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -148,9 +142,7 @@ export function ThemeStep({ data, onChange }: Props) {
               <button
                 key={preset.id}
                 type="button"
-                onClick={() =>
-                  set({ preset_id: preset.id, default_mode: preset.mode })
-                }
+                onClick={() => set({ preset_id: preset.id })}
                 className={`group relative overflow-hidden rounded-[14px] text-left transition-all hover:-translate-y-px ${
                   active ? "ring-2 ring-offset-2 ring-offset-transparent" : ""
                 }`}
@@ -163,28 +155,9 @@ export function ThemeStep({ data, onChange }: Props) {
               >
                 <PresetPreview preset={preset} />
                 <div className="border-t border-themed p-3.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="aw-text text-[13px] font-semibold">
-                      {preset.label}
-                    </p>
-                    <span
-                      className="aw-mono shrink-0 rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.22em]"
-                      style={{
-                        color:
-                          preset.mode === "dark" ? "#94a3b8" : "#0c4a6e",
-                        background:
-                          preset.mode === "dark"
-                            ? "rgba(148, 163, 184, 0.10)"
-                            : "rgba(35, 86, 214, 0.08)",
-                        border:
-                          preset.mode === "dark"
-                            ? "1px solid rgba(148, 163, 184, 0.25)"
-                            : "1px solid rgba(35, 86, 214, 0.2)",
-                      }}
-                    >
-                      {preset.mode}
-                    </span>
-                  </div>
+                  <p className="aw-text text-[13px] font-semibold">
+                    {preset.label}
+                  </p>
                   <p className="aw-text-mute mt-1 text-[11.5px] leading-relaxed">
                     {preset.tagline}
                   </p>
@@ -302,25 +275,20 @@ export function ThemeStep({ data, onChange }: Props) {
  */
 function PresetPreview({ preset }: { preset: PresetMeta }) {
   const s = preset.swatches;
+  const hairline = "rgba(0,0,0,0.05)";
   return (
     <div
       className="relative aspect-[16/9] w-full overflow-hidden"
       style={{ background: s.surface }}
     >
-      {/* Top nav strip */}
       <div
         className="flex items-center justify-between px-3 py-1.5"
-        style={{
-          background: s.nav,
-          borderBottom: `1px solid ${preset.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`,
-        }}
+        style={{ background: s.nav, borderBottom: `1px solid ${hairline}` }}
       >
         <div className="flex items-center gap-1.5">
           <span
             className="grid h-3 w-3 place-items-center rounded-[3px]"
-            style={{
-              background: s.primary,
-            }}
+            style={{ background: s.primary }}
           />
           <span
             className="block h-1.5 w-10 rounded"
@@ -334,83 +302,33 @@ function PresetPreview({ preset }: { preset: PresetMeta }) {
       </div>
 
       <div className="flex" style={{ height: "calc(100% - 22px)" }}>
-        {/* Sidebar */}
         <div
           className="flex w-[22%] flex-col gap-1 px-1.5 py-2"
-          style={{
-            background: s.nav,
-            borderRight: `1px solid ${preset.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`,
-          }}
+          style={{ background: s.nav, borderRight: `1px solid ${hairline}` }}
         >
-          {/* Active item */}
-          <div
-            className="rounded-[3px] px-1.5 py-1"
-            style={{ background: s.active }}
-          >
-            <span
-              className="block h-1 w-full rounded"
-              style={{
-                background: preset.mode === "dark" ? "#ffffff" : "#ffffff",
-                opacity: 0.95,
-              }}
-            />
+          <div className="rounded-[3px] px-1.5 py-1" style={{ background: s.active }}>
+            <span className="block h-1 w-full rounded" style={{ background: "#ffffff", opacity: 0.95 }} />
           </div>
-          {/* Idle items */}
           {[0.45, 0.35, 0.3, 0.4].map((opacity, i) => (
             <div key={i} className="px-1.5 py-1">
-              <span
-                className="block h-1 w-full rounded"
-                style={{ background: s.text, opacity }}
-              />
+              <span className="block h-1 w-full rounded" style={{ background: s.text, opacity }} />
             </div>
           ))}
         </div>
 
-        {/* Main content area */}
         <div className="flex-1 p-2.5">
-          {/* Welcome line */}
-          <span
-            className="block h-1.5 w-1/2 rounded"
-            style={{ background: s.text, opacity: 0.85 }}
-          />
-          <span
-            className="mt-1.5 block h-1 w-1/3 rounded"
-            style={{ background: s.textMute, opacity: 0.7 }}
-          />
+          <span className="block h-1.5 w-1/2 rounded" style={{ background: s.text, opacity: 0.85 }} />
+          <span className="mt-1.5 block h-1 w-1/3 rounded" style={{ background: s.textMute, opacity: 0.7 }} />
 
-          {/* Card */}
           <div
             className="mt-2.5 rounded-[5px] p-2"
-            style={{
-              background:
-                preset.mode === "dark"
-                  ? "rgba(255,255,255,0.04)"
-                  : "rgba(0,0,0,0.025)",
-              border: `1px solid ${preset.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`,
-            }}
+            style={{ background: "rgba(0,0,0,0.025)", border: `1px solid ${hairline}` }}
           >
-            <span
-              className="block h-1.5 w-2/3 rounded"
-              style={{ background: s.text, opacity: 0.8 }}
-            />
-            <span
-              className="mt-1.5 block h-1 w-full rounded"
-              style={{ background: s.textMute, opacity: 0.55 }}
-            />
-            <span
-              className="mt-1 block h-1 w-4/5 rounded"
-              style={{ background: s.textMute, opacity: 0.55 }}
-            />
-
-            {/* CTA button */}
-            <div
-              className="mt-2 inline-block rounded-[3px] px-2 py-1"
-              style={{ background: s.primary }}
-            >
-              <span
-                className="block h-1 w-7 rounded"
-                style={{ background: "#ffffff", opacity: 0.95 }}
-              />
+            <span className="block h-1.5 w-2/3 rounded" style={{ background: s.text, opacity: 0.8 }} />
+            <span className="mt-1.5 block h-1 w-full rounded" style={{ background: s.textMute, opacity: 0.55 }} />
+            <span className="mt-1 block h-1 w-4/5 rounded" style={{ background: s.textMute, opacity: 0.55 }} />
+            <div className="mt-2 inline-block rounded-[3px] px-2 py-1" style={{ background: s.primary }}>
+              <span className="block h-1 w-7 rounded" style={{ background: "#ffffff", opacity: 0.95 }} />
             </div>
           </div>
         </div>

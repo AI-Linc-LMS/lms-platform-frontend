@@ -1,7 +1,9 @@
 "use client";
 
+import { memo } from "react";
 import { Box, Typography, TextField, Paper } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { RichTextEditor } from "@/components/common/RichTextEditor";
 
 interface BasicInfoSectionProps {
   title: string;
@@ -57,7 +59,7 @@ function FieldGroup({
   );
 }
 
-export function BasicInfoSection({
+function BasicInfoSectionInner({
   title,
   instructions,
   description,
@@ -159,17 +161,15 @@ export function BasicInfoSection({
           title="Instructions"
           hint="Required. Tell students how to complete the assessment, time expectations, and any materials allowed."
         >
-          <TextField
+          <RichTextEditor
             label="Instructions"
             value={instructions}
-            onChange={(e) => onInstructionsChange(e.target.value)}
-            fullWidth
+            onChange={onInstructionsChange}
+            mode="text"
             required
-            multiline
             minRows={4}
+            readOnly={readOnly}
             helperText="Provide clear instructions for students."
-            FormHelperTextProps={helperFormProps}
-            disabled={readOnly}
           />
         </FieldGroup>
 
@@ -177,19 +177,19 @@ export function BasicInfoSection({
           title="Description (optional)"
           hint="Optional context for the catalog or course page—goals, topics covered, or prerequisites."
         >
-          <TextField
+          <RichTextEditor
             label="Description"
             value={description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            fullWidth
-            multiline
+            onChange={onDescriptionChange}
+            mode="text"
             minRows={2}
+            readOnly={readOnly}
             helperText="Optional description of the assessment."
-            FormHelperTextProps={helperFormProps}
-            disabled={readOnly}
           />
         </FieldGroup>
       </Box>
     </Paper>
   );
 }
+
+export const BasicInfoSection = memo(BasicInfoSectionInner);

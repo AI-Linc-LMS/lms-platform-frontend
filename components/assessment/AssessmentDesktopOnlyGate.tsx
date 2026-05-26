@@ -17,11 +17,19 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 export function AssessmentDesktopOnlyDialog({
   open,
   onClose,
+  allowedTypes,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Human-readable device labels that ARE allowed, e.g. ["desktop", "tablet"] */
+  allowedTypes?: string[];
 }) {
   const { t } = useTranslation("common");
+
+  const hasAllowedTypes = allowedTypes && allowedTypes.length > 0;
+  const allowedList = hasAllowedTypes
+    ? allowedTypes!.map((d) => t(`assessmentDevice.classNames.${d}`, d)).join(", ")
+    : null;
 
   return (
     <Dialog
@@ -45,22 +53,24 @@ export function AssessmentDesktopOnlyDialog({
             width: 88,
             height: 88,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+            background: "linear-gradient(135deg, var(--accent-warning, #f59e0b) 0%, var(--accent-warning-dark, #d97706) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             mx: "auto",
             mb: 2.5,
-            boxShadow: "0 12px 40px color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
+            boxShadow: "0 12px 40px color-mix(in srgb, #f59e0b 30%, transparent)",
           }}
         >
-          <IconWrapper icon="mdi:laptop" size={44} color="var(--font-light)" />
+          <IconWrapper icon="mdi:devices" size={44} color="var(--font-light)" />
         </Box>
         <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary-dark)", mb: 1.5 }}>
-          {t("assessments.desktopOnly.title")}
+          {t("assessmentDevice.learnerAlertTitle")}
         </Typography>
         <Typography variant="body1" sx={{ color: "var(--font-secondary)", lineHeight: 1.65 }}>
-          {t("assessments.desktopOnly.description")}
+          {hasAllowedTypes
+            ? t("assessmentDevice.learnerAlertBody", { types: allowedList })
+            : t("assessments.desktopOnly.description")}
         </Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3, pt: 0, justifyContent: "center" }}>
@@ -86,9 +96,21 @@ export function AssessmentDesktopOnlyDialog({
   );
 }
 
-export function AssessmentDesktopOnlyFullPage({ slug }: { slug: string }) {
+export function AssessmentDesktopOnlyFullPage({
+  slug,
+  allowedTypes,
+}: {
+  slug: string;
+  /** Human-readable device labels that ARE allowed, e.g. ["desktop", "tablet"] */
+  allowedTypes?: string[];
+}) {
   const { t } = useTranslation("common");
   const router = useRouter();
+
+  const hasAllowedTypes = allowedTypes && allowedTypes.length > 0;
+  const allowedList = hasAllowedTypes
+    ? allowedTypes!.map((d) => t(`assessmentDevice.classNames.${d}`, d)).join(", ")
+    : null;
 
   return (
     <MainLayout>
@@ -120,22 +142,24 @@ export function AssessmentDesktopOnlyFullPage({ slug }: { slug: string }) {
               width: 88,
               height: 88,
               borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+              background: "linear-gradient(135deg, var(--accent-warning, #f59e0b) 0%, var(--accent-warning-dark, #d97706) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               mx: "auto",
               mb: 2.5,
-              boxShadow: "0 12px 40px color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
+              boxShadow: "0 12px 40px color-mix(in srgb, #f59e0b 30%, transparent)",
             }}
           >
-            <IconWrapper icon="mdi:monitor" size={44} color="var(--font-light)" />
+            <IconWrapper icon="mdi:devices" size={44} color="var(--font-light)" />
           </Box>
           <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary-dark)", mb: 1.5 }}>
-            {t("assessments.desktopOnly.title")}
+            {t("assessmentDevice.learnerAlertTitle")}
           </Typography>
           <Typography variant="body1" sx={{ color: "var(--font-secondary)", lineHeight: 1.65, mb: 3 }}>
-            {t("assessments.desktopOnly.description")}
+            {hasAllowedTypes
+              ? t("assessmentDevice.learnerAlertBody", { types: allowedList })
+              : t("assessments.desktopOnly.description")}
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             <Button

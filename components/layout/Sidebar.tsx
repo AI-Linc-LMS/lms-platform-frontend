@@ -23,7 +23,7 @@ import {
   getUserInitials,
   getUserProfilePicture,
 } from "@/lib/utils/user-utils";
-import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useClientInfo, useThemePreview } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { Button } from "@mui/material";
 import { useTranslation } from "react-i18next";
@@ -73,11 +73,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
+  const { themeOverride } = useThemePreview();
   const shell = useTenantShellTheme();
 
   const themeFlat = useMemo(
-    () => normalizeThemeSettings(clientInfo?.theme_settings),
-    [clientInfo?.theme_settings]
+    () => normalizeThemeSettings(themeOverride ?? clientInfo?.theme_settings),
+    [clientInfo?.theme_settings, themeOverride]
   );
   const sidebarLogoSizing = useMemo(
     () => buildSidebarLogoBrandingUi(themeFlat),
@@ -162,6 +163,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:forum",
       featureName: "community_forum",
     },
+    {
+      label: "Support",
+      labelKey: "nav.support",
+      path: "/tickets",
+      icon: "mdi:ticket-confirmation-outline",
+      featureName: "support",
+    },
   ];
 
   // Admin navigation items - all routes start with /admin/
@@ -241,6 +249,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/notifications",
       icon: "mdi:bell-badge",
       featureName: "admin_notifications",
+    },
+    {
+      label: "Tickets",
+      labelKey: "nav.adminTickets",
+      path: "/admin/tickets",
+      icon: "mdi:ticket-confirmation-outline",
+      featureName: "admin_tickets",
     },
     // {
     //   label: "Payment",
@@ -357,7 +372,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         if (!effectiveAdminMode && item.featureName === "dashboard") {
           return true;
         }
+        // Support is always available to every signed-in user
+        if (!effectiveAdminMode && item.featureName === "support") {
+          return true;
+        }
         if (effectiveAdminMode && item.featureName === "admin_scorecard") {
+          return true;
+        }
+        if (effectiveAdminMode && item.featureName === "admin_tickets") {
           return true;
         }
         const any = item.featureNamesAny;

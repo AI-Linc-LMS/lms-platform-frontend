@@ -60,6 +60,7 @@ export const COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
   "admin_assessment",
   "admin_scorecard",
   "admin_jobs_v2",
+  "admin_tickets",
 ];
 
 /**
@@ -77,6 +78,7 @@ export const INSTRUCTOR_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
   "admin_live_sessions",
   "admin_attendance",
   "admin_notifications",
+  "admin_tickets",
 ];
 
 /** May see /admin/* navigation (full or limited) */
