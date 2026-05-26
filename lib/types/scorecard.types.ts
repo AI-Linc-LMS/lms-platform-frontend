@@ -391,6 +391,47 @@ export interface Achievements {
   badgesAvailableCount: number;
 }
 
+// Action Panel (Phase 9)
+export interface PriorityAction {
+  id: string;
+  title: string;
+  description: string;
+  priority: number;
+  type: "mcq" | "video" | "interview" | "assessment" | "revise" | string;
+  actionUrl?: string | null;
+}
+
+export interface RecommendedContentItem {
+  id: string;
+  title: string;
+  type: string;
+  reason: string;
+  url?: string | null;
+}
+
+export interface PendingTask {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  type: string;
+  url?: string | null;
+}
+
+export interface UpcomingAssessment {
+  id: string;
+  name: string;
+  date: string | null;
+  duration: number;
+  url?: string | null;
+}
+
+export interface ActionPanel {
+  priorityActions: PriorityAction[];
+  recommendedContent: RecommendedContentItem[];
+  pendingTasks: PendingTask[];
+  upcomingAssessments: UpcomingAssessment[];
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
@@ -403,4 +444,5 @@ export interface ScorecardData {
   behavioralMetrics?: BehavioralMetrics;
   comparativeInsights?: ComparativeInsights;
   achievements?: Achievements;
+  actionPanel?: ActionPanel;
 }

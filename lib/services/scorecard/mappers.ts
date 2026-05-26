@@ -1,5 +1,6 @@
 import type {
   Achievements,
+  ActionPanel,
   AssessmentDifficultyBreakdown,
   AssessmentPerformance,
   BadgeEarned,
@@ -13,13 +14,17 @@ import type {
   LearningConsumption,
   MockInterview,
   MockInterviewPerformance,
+  PendingTask,
   PerformanceTrends,
+  PriorityAction,
+  RecommendedContentItem,
   ScorecardData,
   Skill,
   SkillBreakdownItem,
   SkillBreakdownItems,
   StudentOverview,
   TopicIncorrect,
+  UpcomingAssessment,
   WeakArea,
   WeakAreaRecommendation,
   WeakAreas,
@@ -660,6 +665,65 @@ export function mapAchievementsFromApi(api: unknown): Achievements {
     totalPoints: num(raw.total_points),
     badgesEarnedCount: num(raw.badges_earned_count),
     badgesAvailableCount: num(raw.badges_available_count),
+  };
+}
+
+export function mapActionPanelFromApi(api: unknown): ActionPanel {
+  if (!api || typeof api !== "object") {
+    return getEmptyActionPanel();
+  }
+  const raw = api as Record<string, unknown>;
+
+  const priorityActions: PriorityAction[] = Array.isArray(raw.priority_actions)
+    ? (raw.priority_actions as Record<string, unknown>[]).map((p) => ({
+        id: String(p.id ?? ""),
+        title: (p.title as string) ?? "",
+        description: (p.description as string) ?? "",
+        priority: num(p.priority),
+        type: ((p.type as PriorityAction["type"]) ?? "mcq") as PriorityAction["type"],
+        actionUrl: (p.action_url as string) || null,
+      }))
+    : [];
+
+  const recommendedContent: RecommendedContentItem[] = Array.isArray(raw.recommended_content)
+    ? (raw.recommended_content as Record<string, unknown>[]).map((r) => ({
+        id: String(r.id ?? ""),
+        title: (r.title as string) ?? "",
+        type: (r.type as string) ?? "",
+        reason: (r.reason as string) ?? "",
+        url: (r.url as string) || null,
+      }))
+    : [];
+
+  const pendingTasks: PendingTask[] = Array.isArray(raw.pending_tasks)
+    ? (raw.pending_tasks as Record<string, unknown>[]).map((t) => ({
+        id: String(t.id ?? ""),
+        title: (t.title as string) ?? "",
+        dueDate: (t.due_date as string) || null,
+        type: (t.type as string) ?? "",
+        url: (t.url as string) || null,
+      }))
+    : [];
+
+  const upcomingAssessments: UpcomingAssessment[] = Array.isArray(raw.upcoming_assessments)
+    ? (raw.upcoming_assessments as Record<string, unknown>[]).map((u) => ({
+        id: String(u.id ?? ""),
+        name: (u.name as string) ?? "",
+        date: (u.date as string) || null,
+        duration: num(u.duration),
+        url: (u.url as string) || null,
+      }))
+    : [];
+
+  return { priorityActions, recommendedContent, pendingTasks, upcomingAssessments };
+}
+
+export function getEmptyActionPanel(): ActionPanel {
+  return {
+    priorityActions: [],
+    recommendedContent: [],
+    pendingTasks: [],
+    upcomingAssessments: [],
   };
 }
 

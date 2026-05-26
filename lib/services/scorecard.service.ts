@@ -4,6 +4,7 @@ import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
 import {
   mapAchievementsFromApi,
+  mapActionPanelFromApi,
   mapAssessmentPerformanceFromApi,
   mapBehavioralMetricsFromApi,
   mapComparativeInsightsFromApi,
@@ -14,6 +15,7 @@ import {
 } from "./scorecard/mappers";
 import type {
   Achievements,
+  ActionPanel,
   AssessmentPerformance,
   BehavioralMetrics,
   ComparativeInsights,
@@ -126,6 +128,14 @@ export const scorecardService = {
       `/api/scorecard/clients/${clientId}/student/scorecard/achievements/`,
     );
     return mapAchievementsFromApi(response.data);
+  },
+
+  getActionPanel: async (): Promise<ActionPanel> => {
+    const clientId = config.clientId;
+    const response = await apiClient.get<Record<string, unknown>>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/action-panel/`,
+    );
+    return mapActionPanelFromApi(response.data);
   },
 
   exportScorecardPdf: async (): Promise<Blob> => {

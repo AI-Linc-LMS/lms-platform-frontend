@@ -18,6 +18,7 @@ import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { BehavioralMetricsSection } from "@/components/scorecard/detailed/BehavioralMetricsSection";
 import { AchievementsSection } from "@/components/scorecard/detailed/AchievementsSection";
+import { ActionPanelSection } from "@/components/scorecard/detailed/ActionPanelSection";
 import { ComparativeInsightsSection } from "@/components/scorecard/detailed/ComparativeInsightsSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
 import { MockInterviewSection } from "@/components/scorecard/detailed/MockInterviewSection";
@@ -41,6 +42,7 @@ const SECTION_ORDER = [
   "behavioral_metrics",
   "comparative_insights",
   "achievements",
+  "action_panel",
 ] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
@@ -386,6 +388,14 @@ export default function ScorecardPage() {
                       <AchievementsSection
                         key={sectionId}
                         data={data.achievements}
+                      />
+                    );
+                  case "action_panel":
+                    if (!data.actionPanel) return null;
+                    return (
+                      <ActionPanelSection
+                        key={sectionId}
+                        data={data.actionPanel}
                       />
                     );
                   default:
