@@ -294,14 +294,22 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       setShowGsiFallback(true);
     }, POPUP_FALLBACK_DELAY_MS);
 
-    // Attempt to trigger the hidden GSI button programmatically
+    // Attempt to trigger the hidden GSI button programmatically.
+    // This is synchronous inside a click handler so browsers honour it as a
+    // trusted user gesture and allow the popup to open.
     const googleButton = googleButtonRef.current?.querySelector(
       'div[role="button"]'
     ) as HTMLElement | null;
+
     if (googleButton) {
       googleButton.click();
     } else {
-      window.google.accounts.id.prompt();
+      // The rendered button wasn't found (e.g. renderButton failed silently).
+      // prompt() relies on FedCM / One Tap and does NOT fall back to a popup
+      // when FedCM is disabled — skip it and immediately surface the visible
+      // GSI button so the user can click it directly with a real gesture.
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+      setShowGsiFallback(true);
     }
   };
 
