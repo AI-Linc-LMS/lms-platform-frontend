@@ -220,7 +220,8 @@
     "goBack": "Go Back",
     "quickLinks": "Quick Links",
     "todaysLeaders": "Today's Leaders",
-    "profileSettings": "Profile Settings"
+    "profileSettings": "Profile Settings",
+    "dashboard":"Back to dashboard"
   },
   "auth": {
     "login": "Login",
