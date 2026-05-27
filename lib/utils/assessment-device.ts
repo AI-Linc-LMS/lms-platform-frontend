@@ -53,8 +53,17 @@ export function getClientDeviceClass(): AssessmentDeviceClass {
     return "mobile";
   }
 
+  // Windows touch devices (Surface, convertible laptops, 2-in-1s) report
+  // maxTouchPoints > 1 but are fundamentally desktops/laptops — never tablets.
+  // navigator.platform is "Win32"/"Win64" on all Windows browsers;
+  // navigator.userAgentData?.platform is "Windows" on Chromium 90+.
+  const isWindows =
+    /Win/i.test(navigator.platform ?? "") ||
+    // @ts-ignore — userAgentData is available in Chromium 90+
+    (navigator.userAgentData?.platform ?? "").toLowerCase() === "windows";
+
   const w = window.innerWidth;
-  if (maxTouch > 1 && w >= 768 && w <= 1280) {
+  if (!isWindows && maxTouch > 1 && w >= 768 && w <= 1280) {
     return "tablet";
   }
 
