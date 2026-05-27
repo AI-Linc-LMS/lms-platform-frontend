@@ -299,6 +299,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_assessment",
     },
     {
+      label: "Scorecard",
+      labelKey: "nav.adminScorecard",
+      path: "/admin/scorecard",
+      icon: "mdi:chart-box-outline",
+      featureName: "admin_scorecard",
+    },
+    {
       label: "Certificate uploads",
       labelKey: "nav.certificateUploads",
       path: "/admin/certificates",
