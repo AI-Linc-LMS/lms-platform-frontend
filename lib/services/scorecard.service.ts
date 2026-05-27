@@ -140,10 +140,42 @@ export const scorecardService = {
 
   exportScorecardPdf: async (): Promise<Blob> => {
     const clientId = config.clientId;
-    const response = await apiClient.get(`/api/scorecard/clients/${clientId}/student/scorecard/export/pdf/`, {
-      responseType: "blob",
-    });
-    return response.data as Blob;
+    try {
+      const response = await apiClient.get(
+        `/api/scorecard/clients/${clientId}/student/scorecard/export/pdf/`,
+        { responseType: "blob" },
+      );
+      return response.data as Blob;
+    } catch (err: unknown) {
+      // The server returns a JSON error body, but because we asked for a Blob
+      // response, axios hands the error back with `error.response.data` as a
+      // Blob. Read it as text so we can surface the actual message instead of
+      // the generic "Request failed with status code 500".
+      const e = err as {
+        response?: { data?: Blob; status?: number };
+        message?: string;
+      };
+      let message = e?.message || "Failed to download PDF.";
+      const blob = e?.response?.data;
+      if (blob && blob instanceof Blob) {
+        try {
+          const text = await blob.text();
+          try {
+            const json = JSON.parse(text) as { error?: string; hint?: string };
+            const parts: string[] = [];
+            if (json?.error) parts.push(json.error);
+            if (json?.hint) parts.push(json.hint);
+            if (parts.length) message = parts.join(" — ");
+            else if (text) message = text;
+          } catch {
+            if (text) message = text;
+          }
+        } catch {
+          /* fall back to original message */
+        }
+      }
+      throw new Error(message);
+    }
   },
 
   getDashboardSummary: async () => {

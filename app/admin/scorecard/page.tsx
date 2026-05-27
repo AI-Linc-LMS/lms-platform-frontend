@@ -760,8 +760,7 @@ export default function AdminScorecardPage() {
                             />
                           );
                         case "skill_scorecard":
-                          if (!scorecardData.skills || scorecardData.skills.length === 0) return null;
-                          return <SkillScorecardSection key={sectionId} data={scorecardData.skills} />;
+                          return <SkillScorecardSection key={sectionId} data={scorecardData.skills ?? []} />;
                         case "weak_areas":
                           if (!scorecardData.weakAreas) return null;
                           return <WeakAreasSection key={sectionId} data={scorecardData.weakAreas} />;
@@ -774,7 +773,7 @@ export default function AdminScorecardPage() {
                             />
                           );
                         case "mock_interview":
-                          if (!scorecardData.mockInterviewPerformance || scorecardData.mockInterviewPerformance.totalInterviews === 0) return null;
+                          if (!scorecardData.mockInterviewPerformance) return null;
                           return (
                             <MockInterviewSection
                               key={sectionId}

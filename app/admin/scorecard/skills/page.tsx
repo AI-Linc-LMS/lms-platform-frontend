@@ -28,6 +28,8 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminSkillsService,
+  type ContentBrowserPayload,
+  type ContentRow,
   type Skill,
   type SkillContentType,
 } from "@/lib/services/admin/admin-skills.service";
@@ -92,6 +94,9 @@ export default function AdminScorecardSkillsPage() {
   const [taggerOpen, setTaggerOpen] = useState(false);
   const [taggerContentType, setTaggerContentType] = useState<SkillContentType>("mcq");
   const [taggerContentId, setTaggerContentId] = useState<string>("");
+  const [browserData, setBrowserData] = useState<ContentBrowserPayload | null>(null);
+  const [browserLoading, setBrowserLoading] = useState(false);
+  const [browserSearch, setBrowserSearch] = useState("");
 
   const loadSkills = useCallback(async () => {
     setLoading(true);
@@ -177,9 +182,72 @@ export default function AdminScorecardSkillsPage() {
   }, []);
 
   const handleTaggerSaved = useCallback(() => {
-    // Refresh counts since mapping counts may have changed.
+    // Refresh counts since mapping counts may have changed. Also refresh the
+    // browser so the row picks up its new skill_ids without a manual reload.
     void loadSkills();
+    void (async () => {
+      try {
+        const data = await adminSkillsService.listAllTaggedContent();
+        setBrowserData(data);
+      } catch {
+        /* swallow — the next tagger open will retry */
+      }
+    })();
   }, [loadSkills]);
+
+  // Lazy-load the content browser the first time the tagger opens. After
+  // that we keep the data in memory so re-opening is instant.
+  useEffect(() => {
+    if (!taggerOpen || browserData || browserLoading) return;
+    setBrowserLoading(true);
+    adminSkillsService
+      .listAllTaggedContent()
+      .then((data) => setBrowserData(data))
+      .catch((err: unknown) => {
+        const message =
+          err && typeof err === "object" && "message" in err
+            ? String((err as { message?: string }).message)
+            : "Failed to load taggable content.";
+        showToast(message, "error");
+      })
+      .finally(() => setBrowserLoading(false));
+  }, [taggerOpen, browserData, browserLoading, showToast]);
+
+  const taggableRowsForType = useMemo<ContentRow[]>(() => {
+    if (!browserData) return [];
+    switch (taggerContentType) {
+      case "video":
+        return browserData.videos;
+      case "article":
+        return browserData.articles;
+      case "mcq":
+        return browserData.mcqs;
+      case "coding_problem":
+        return browserData.coding_problems;
+      case "assessment":
+        return browserData.assessments;
+      default:
+        return [];
+    }
+  }, [browserData, taggerContentType]);
+
+  const filteredBrowserRows = useMemo<ContentRow[]>(() => {
+    const q = browserSearch.trim().toLowerCase();
+    if (!q) return taggableRowsForType;
+    return taggableRowsForType.filter((row) => row.title.toLowerCase().includes(q));
+  }, [taggableRowsForType, browserSearch]);
+
+  const skillNameById = useMemo<Record<number, string>>(() => {
+    const map: Record<number, string> = {};
+    for (const s of skills) map[s.id] = s.name;
+    return map;
+  }, [skills]);
+
+  const handlePickContent = useCallback((row: ContentRow) => {
+    setTaggerContentId(String(row.id));
+    setTaggerOpen(false);
+    setMappingDialogOpen(true);
+  }, []);
 
   return (
     <MainLayout>
@@ -512,69 +580,254 @@ export default function AdminScorecardSkillsPage() {
           </DialogActions>
         </Dialog>
 
-        {/* Content tagger launcher dialog */}
+        {/* Content tagger — searchable browser */}
         <Dialog
           open={taggerOpen}
           onClose={() => setTaggerOpen(false)}
-          maxWidth="sm"
+          maxWidth="md"
           fullWidth
         >
-          <DialogTitle sx={{ fontWeight: 800 }}>Tag a content row</DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 1, display: "grid", gap: 2 }}>
-              <Box>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: "0.7rem" }}>
-                  Content type
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: 0.75 }}>
-                  {CONTENT_TYPE_OPTIONS.map((opt) => (
-                    <Chip
-                      key={opt.value}
-                      icon={<IconWrapper icon={opt.icon} size={14} />}
-                      label={opt.label}
-                      onClick={() => setTaggerContentType(opt.value)}
-                      sx={{
-                        fontWeight: 600,
-                        bgcolor:
-                          taggerContentType === opt.value
-                            ? "var(--accent-indigo)"
-                            : "color-mix(in srgb, var(--border-default) 35%, transparent)",
-                        color: taggerContentType === opt.value ? "#fff" : "var(--font-secondary)",
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Box>
-              <TextField
-                label="Content ID"
-                size="small"
-                fullWidth
-                value={taggerContentId}
-                onChange={(e) => setTaggerContentId(e.target.value.replace(/[^0-9]/g, ""))}
-                placeholder="Numeric ID of the content row"
-                helperText="Find content IDs in Django admin or the relevant editor page."
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setTaggerOpen(false)} sx={{ textTransform: "none" }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              disabled={!taggerContentId || Number.isNaN(Number(taggerContentId))}
-              onClick={() => {
-                setTaggerOpen(false);
-                // Open the mapping dialog via the floating SkillMappingDialog below.
-                setMappingDialogOpen(true);
-              }}
+          <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>
+            Browse content to tag
+            <Typography
+              variant="body2"
+              sx={{ color: "var(--font-secondary)", fontWeight: 500, mt: 0.5 }}
+            >
+              Pick a content type, search, and click a row to attach skills.
+            </Typography>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            {/* Content type chips */}
+            <Box
               sx={{
-                textTransform: "none",
-                bgcolor: "var(--accent-indigo)",
-                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                px: 3,
+                py: 2,
+                borderBottom: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 0.75,
+                alignItems: "center",
               }}
             >
-              Open tagger
+              {CONTENT_TYPE_OPTIONS.filter((opt) =>
+                ["mcq", "coding_problem", "video", "article", "assessment"].includes(opt.value),
+              ).map((opt) => {
+                const count =
+                  browserData == null
+                    ? null
+                    : opt.value === "video"
+                    ? browserData.videos.length
+                    : opt.value === "article"
+                    ? browserData.articles.length
+                    : opt.value === "mcq"
+                    ? browserData.mcqs.length
+                    : opt.value === "coding_problem"
+                    ? browserData.coding_problems.length
+                    : opt.value === "assessment"
+                    ? browserData.assessments.length
+                    : 0;
+                const selected = taggerContentType === opt.value;
+                return (
+                  <Chip
+                    key={opt.value}
+                    icon={<IconWrapper icon={opt.icon} size={14} />}
+                    label={count != null ? `${opt.label} (${count})` : opt.label}
+                    onClick={() => {
+                      setTaggerContentType(opt.value);
+                      setBrowserSearch("");
+                    }}
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: selected
+                        ? "var(--accent-indigo)"
+                        : "color-mix(in srgb, var(--border-default) 35%, transparent)",
+                      color: selected ? "#fff" : "var(--font-secondary)",
+                      "& .MuiChip-icon": { color: selected ? "#fff" : "var(--font-secondary)" },
+                    }}
+                  />
+                );
+              })}
+            </Box>
+
+            {/* Search input */}
+            <Box sx={{ px: 3, pt: 2, pb: 1.5 }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder={`Search ${taggerContentType.replace("_", " ")} by title…`}
+                value={browserSearch}
+                onChange={(e) => setBrowserSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <IconWrapper icon="mdi:magnify" size={18} color="var(--font-secondary)" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+
+            {/* Results list */}
+            <Box sx={{ maxHeight: 480, overflowY: "auto", px: 3, pb: 2 }}>
+              {browserLoading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                  <CircularProgress size={28} />
+                </Box>
+              ) : filteredBrowserRows.length === 0 ? (
+                <Box
+                  sx={{
+                    py: 6,
+                    textAlign: "center",
+                    color: "var(--font-secondary)",
+                    border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
+                    borderRadius: 2,
+                  }}
+                >
+                  <IconWrapper icon="mdi:tag-off-outline" size={36} color="var(--font-secondary)" />
+                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
+                    {browserSearch
+                      ? `No ${taggerContentType.replace("_", " ")} matching "${browserSearch}".`
+                      : `No ${taggerContentType.replace("_", " ")} found for this client yet.`}
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: "grid", gap: 1 }}>
+                  {filteredBrowserRows.slice(0, 100).map((row) => {
+                    const tagged = row.skill_ids.length > 0;
+                    const skillNames = row.skill_ids
+                      .map((id) => skillNameById[id])
+                      .filter(Boolean) as string[];
+                    return (
+                      <Box
+                        key={`${taggerContentType}-${row.id}`}
+                        onClick={() => handlePickContent(row)}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          p: 1.25,
+                          borderRadius: 2,
+                          border: `1px solid color-mix(in srgb, ${
+                            tagged ? "var(--accent-indigo)" : "var(--border-default)"
+                          } ${tagged ? "30%" : "60%"}, transparent)`,
+                          bgcolor: tagged
+                            ? "color-mix(in srgb, var(--accent-indigo) 6%, transparent)"
+                            : "transparent",
+                          cursor: "pointer",
+                          transition: "all 0.18s ease",
+                          "&:hover": {
+                            borderColor: "var(--accent-indigo)",
+                            bgcolor:
+                              "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                            transform: "translateY(-1px)",
+                          },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 1.25,
+                            bgcolor: tagged
+                              ? "var(--accent-indigo)"
+                              : "color-mix(in srgb, var(--border-default) 60%, transparent)",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            fontSize: "0.7rem",
+                            fontWeight: 800,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          #{row.id}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 700,
+                              color: "var(--font-primary)",
+                              fontSize: "0.88rem",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={row.title}
+                          >
+                            {row.title || `#${row.id}`}
+                          </Typography>
+                          {tagged ? (
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.4, mt: 0.4 }}>
+                              {skillNames.slice(0, 4).map((name) => (
+                                <Chip
+                                  key={name}
+                                  label={name}
+                                  size="small"
+                                  sx={{
+                                    height: 18,
+                                    fontSize: "0.65rem",
+                                    fontWeight: 700,
+                                    bgcolor:
+                                      "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                                    color: "var(--accent-indigo)",
+                                    "& .MuiChip-label": { px: 0.75 },
+                                  }}
+                                />
+                              ))}
+                              {skillNames.length > 4 && (
+                                <Chip
+                                  label={`+${skillNames.length - 4}`}
+                                  size="small"
+                                  sx={{
+                                    height: 18,
+                                    fontSize: "0.65rem",
+                                    fontWeight: 700,
+                                    bgcolor: "color-mix(in srgb, var(--border-default) 50%, transparent)",
+                                    color: "var(--font-secondary)",
+                                    "& .MuiChip-label": { px: 0.75 },
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          ) : (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}
+                            >
+                              Not tagged yet — click to add skills
+                            </Typography>
+                          )}
+                        </Box>
+                        <IconWrapper
+                          icon={tagged ? "mdi:tag-edit-outline" : "mdi:tag-plus-outline"}
+                          size={18}
+                          color="var(--accent-indigo)"
+                        />
+                      </Box>
+                    );
+                  })}
+                  {filteredBrowserRows.length > 100 && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "var(--font-secondary)",
+                        textAlign: "center",
+                        mt: 0.5,
+                      }}
+                    >
+                      Showing first 100 of {filteredBrowserRows.length} — refine the search to
+                      narrow it down.
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 1.5 }}>
+            <Button onClick={() => setTaggerOpen(false)} sx={{ textTransform: "none" }}>
+              Close
             </Button>
           </DialogActions>
         </Dialog>

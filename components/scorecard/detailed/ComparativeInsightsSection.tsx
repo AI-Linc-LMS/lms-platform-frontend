@@ -1,9 +1,19 @@
 "use client";
 
-import { Box, LinearProgress, Tooltip, Typography } from "@mui/material";
+import { useMemo } from "react";
+import { Box, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AnimatedRing, CountUp, Reveal, gridStagger } from "@/components/scorecard/shared";
+import {
+  AnimatedRing,
+  CountUp,
+  Reveal,
+  SectionHero,
+  SectionShell,
+  fadeRise,
+  gridStagger,
+  useViewportEntrance,
+} from "@/components/scorecard/shared";
 import type { BenchmarkComparison, ComparativeInsights } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
 
@@ -11,319 +21,937 @@ interface ComparativeInsightsSectionProps {
   data: ComparativeInsights;
 }
 
+const ACCENT = "var(--accent-indigo)";
+const ACCENT_DARK = "var(--accent-indigo-dark)";
+const POSITIVE = "#10b981";
+const NEGATIVE = "#ef4444";
+const NEUTRAL = "#94a3b8";
+
 function formatValue(value: number | null, unit: string): string {
   if (value == null) return "—";
   if (unit === "hours") return `${value.toFixed(1)}h`;
   return `${value.toFixed(0)}%`;
 }
 
-function ComparisonRow({ row }: { row: BenchmarkComparison }) {
+function ordinalize(n: number): string {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
+  }
+}
+
+function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: number }) {
   const studentAccent =
-    row.unit === "percent" ? proficiencyBandColor(row.studentValue) : "var(--accent-indigo)";
+    row.unit === "percent" ? proficiencyBandColor(row.studentValue) : ACCENT;
+  const isAhead = row.batchAverage != null && row.studentValue > row.batchAverage;
+  const isBehind = row.batchAverage != null && row.studentValue < row.batchAverage;
 
-  const aboveBatch =
-    row.batchAverage != null && row.studentValue > row.batchAverage;
-  const trendIcon = aboveBatch
+  const deltaVsBatch =
+    row.batchAverage != null ? row.studentValue - row.batchAverage : null;
+  const deltaVsTop =
+    row.top10Percent != null ? row.studentValue - row.top10Percent : null;
+
+  const scaleMax =
+    Math.max(
+      row.studentValue,
+      row.batchAverage ?? 0,
+      row.top10Percent ?? 0,
+      row.unit === "percent" ? 100 : 1,
+    ) || 100;
+  const pct = (v: number | null) =>
+    v == null ? 0 : Math.max(0, Math.min(100, (v / scaleMax) * 100));
+
+  const verdict = isAhead ? "Ahead" : isBehind ? "Behind" : "On par";
+  const verdictColor = isAhead ? POSITIVE : isBehind ? NEGATIVE : NEUTRAL;
+  const verdictIcon = isAhead
     ? "mdi:trending-up"
-    : row.batchAverage != null && row.studentValue < row.batchAverage
+    : isBehind
     ? "mdi:trending-down"
-    : "mdi:trending-neutral";
-  const trendColor = aboveBatch
-    ? "#10b981"
-    : row.batchAverage != null && row.studentValue < row.batchAverage
-    ? "#ef4444"
-    : "var(--font-secondary)";
+    : "mdi:approximately-equal";
 
-  // For the bar visualization, use the top10 as 100% reference when available;
-  // otherwise scale to the larger of studentValue / batchAverage.
-  const scaleMax = Math.max(
-    row.studentValue,
-    row.batchAverage ?? 0,
-    row.top10Percent ?? 0,
-    row.unit === "percent" ? 100 : 1,
-  ) || 100;
-  const pct = (v: number | null) => (v == null ? 0 : Math.max(0, Math.min(100, (v / scaleMax) * 100)));
+  const rows: Array<{
+    key: string;
+    label: string;
+    value: number | null;
+    color: string;
+    weight: number;
+    pillBg: string;
+  }> = [
+    {
+      key: "you",
+      label: "You",
+      value: row.studentValue,
+      color: studentAccent,
+      weight: 800,
+      pillBg: `color-mix(in srgb, ${studentAccent} 14%, transparent)`,
+    },
+    {
+      key: "batch",
+      label: "Batch avg",
+      value: row.batchAverage,
+      color: ACCENT,
+      weight: 700,
+      pillBg: `color-mix(in srgb, ${ACCENT} 12%, transparent)`,
+    },
+    {
+      key: "top10",
+      label: "Top 10%",
+      value: row.top10Percent,
+      color: POSITIVE,
+      weight: 700,
+      pillBg: `color-mix(in srgb, ${POSITIVE} 12%, transparent)`,
+    },
+  ];
 
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } },
+        hidden: { opacity: 0, y: 14 },
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as const, delay: index * 0.04 },
+        },
       }}
     >
       <Box
         sx={{
-          p: { xs: 1.5, sm: 2 },
-          borderRadius: 2.5,
+          position: "relative",
+          p: { xs: 2, sm: 2.5 },
+          borderRadius: 3,
           border:
-            "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-          bgcolor: "var(--card-bg)",
+            "1px solid color-mix(in srgb, var(--border-default) 72%, transparent)",
+          bgcolor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+          overflow: "hidden",
+          transition: "all 0.25s ease",
+          "&:hover": {
+            borderColor: `color-mix(in srgb, ${studentAccent} 35%, transparent)`,
+            transform: "translateY(-2px)",
+            boxShadow: `0 22px 40px -28px color-mix(in srgb, ${studentAccent} 55%, transparent)`,
+          },
         }}
       >
+        {/* Accent strip on top */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            background: `linear-gradient(90deg, ${studentAccent} 0%, color-mix(in srgb, ${studentAccent} 35%, transparent) 100%)`,
+          }}
+        />
+
+        {/* Header: label + percentile pill + verdict chip */}
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             justifyContent: "space-between",
             gap: 1,
+            mb: 1.5,
             flexWrap: "wrap",
-            mb: 1.25,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
-            <Box sx={{ color: trendColor }}>
-              <IconWrapper icon={trendIcon} size={16} />
-            </Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
-              {row.label}
-            </Typography>
-          </Box>
-          <Tooltip title={`You scored higher than ${row.percentile.toFixed(0)}% of the cohort on this metric.`} arrow>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="caption"
               sx={{
-                fontWeight: 800,
-                color: studentAccent,
-                fontVariantNumeric: "tabular-nums",
-                fontSize: "0.72rem",
-                bgcolor: `color-mix(in srgb, ${studentAccent} 14%, transparent)`,
-                px: 0.75,
-                py: 0.25,
-                borderRadius: 999,
+                color: "var(--font-secondary)",
+                fontWeight: 700,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                fontSize: "0.62rem",
+                display: "block",
+                mb: 0.25,
               }}
             >
-              {row.percentile.toFixed(0)}p
+              Metric · {row.unit === "hours" ? "hours" : "percent"}
             </Typography>
-          </Tooltip>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 800,
+                color: "var(--font-primary)",
+                fontSize: "1rem",
+                letterSpacing: "-0.01em",
+                lineHeight: 1.2,
+              }}
+            >
+              {row.label}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+            <Tooltip
+              title={`Higher than ${row.percentile.toFixed(0)}% of cohort on this metric`}
+              arrow
+            >
+              <Box
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  gap: 0.5,
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 999,
+                  bgcolor: `color-mix(in srgb, ${studentAccent} 14%, transparent)`,
+                  border: `1px solid color-mix(in srgb, ${studentAccent} 28%, transparent)`,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontWeight: 900,
+                    color: studentAccent,
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: "0.92rem",
+                    lineHeight: 1,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {row.percentile.toFixed(0)}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    color: studentAccent,
+                    fontSize: "0.6rem",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  pctile
+                </Typography>
+              </Box>
+            </Tooltip>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.4,
+                px: 0.85,
+                py: 0.45,
+                borderRadius: 999,
+                bgcolor: `color-mix(in srgb, ${verdictColor} 14%, transparent)`,
+                color: verdictColor,
+              }}
+            >
+              <IconWrapper icon={verdictIcon} size={12} />
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "0.62rem",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: verdictColor,
+                }}
+              >
+                {verdict}
+              </Typography>
+            </Box>
+          </Box>
         </Box>
 
-        {/* Three-bar comparison: you, batch, top 10% */}
-        <Box sx={{ display: "grid", gap: 0.75 }}>
-          {[
-            {
-              label: "You",
-              value: row.studentValue,
-              color: studentAccent,
-              weight: 800,
-              colorOverride: studentAccent,
-            },
-            {
-              label: "Batch avg",
-              value: row.batchAverage,
-              color: "var(--accent-indigo)",
-              weight: 600,
-            },
-            {
-              label: "Top 10%",
-              value: row.top10Percent,
-              color: "#10b981",
-              weight: 600,
-            },
-          ].map((b) => (
-            <Box key={b.label}>
+        {/* Three comparison bars */}
+        <Box sx={{ display: "grid", gap: 1 }}>
+          {rows.map((r) => (
+            <Box key={r.key}>
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  mb: 0.25,
+                  mb: 0.4,
                 }}
               >
                 <Typography
                   variant="caption"
                   sx={{
-                    fontWeight: b.weight,
-                    color: "var(--font-secondary)",
+                    fontWeight: r.weight,
+                    color:
+                      r.key === "you"
+                        ? r.color
+                        : "var(--font-secondary)",
                     fontSize: "0.7rem",
+                    letterSpacing: "0.04em",
+                    textTransform: r.key === "you" ? "uppercase" : "none",
                   }}
                 >
-                  {b.label}
+                  {r.label}
                 </Typography>
-                <Typography
-                  variant="caption"
+                <Box
                   sx={{
-                    fontWeight: 700,
-                    color: "var(--font-primary)",
-                    fontVariantNumeric: "tabular-nums",
-                    fontSize: "0.7rem",
+                    px: 0.75,
+                    py: 0.2,
+                    borderRadius: 999,
+                    bgcolor: r.pillBg,
                   }}
                 >
-                  {formatValue(b.value, row.unit)}
-                </Typography>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      color: r.color,
+                      fontVariantNumeric: "tabular-nums",
+                      fontSize: "0.72rem",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {formatValue(r.value, row.unit)}
+                  </Typography>
+                </Box>
               </Box>
-              <LinearProgress
-                variant="determinate"
-                value={pct(b.value)}
+              <Box
                 sx={{
-                  height: 5,
-                  borderRadius: 3,
-                  bgcolor: "color-mix(in srgb, var(--border-default) 45%, transparent)",
-                  "& .MuiLinearProgress-bar": {
-                    borderRadius: 3,
-                    backgroundColor: b.color,
-                  },
+                  position: "relative",
+                  height: r.key === "you" ? 8 : 5,
+                  borderRadius: 999,
+                  bgcolor: "color-mix(in srgb, var(--border-default) 40%, transparent)",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <Box
+                  component={motion.div}
+                  initial={{ width: 0 }}
+                  whileInView={{ width: `${pct(r.value)}%` }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] as const, delay: 0.1 }}
+                  sx={{
+                    height: "100%",
+                    borderRadius: 999,
+                    background:
+                      r.key === "you"
+                        ? `linear-gradient(90deg, ${r.color} 0%, color-mix(in srgb, ${r.color} 65%, transparent) 100%)`
+                        : r.color,
+                    boxShadow:
+                      r.key === "you"
+                        ? `0 0 12px color-mix(in srgb, ${r.color} 45%, transparent)`
+                        : "none",
+                  }}
+                />
+              </Box>
             </Box>
           ))}
         </Box>
+
+        {/* Footer deltas */}
+        {(deltaVsBatch != null || deltaVsTop != null) && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1.5,
+              mt: 1.75,
+              pt: 1.25,
+              borderTop:
+                "1px dashed color-mix(in srgb, var(--border-default) 70%, transparent)",
+              flexWrap: "wrap",
+            }}
+          >
+            {deltaVsBatch != null && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.66rem",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                  }}
+                >
+                  vs batch
+                </Typography>
+                <Typography
+                  sx={{
+                    color: deltaVsBatch >= 0 ? POSITIVE : NEGATIVE,
+                    fontWeight: 800,
+                    fontSize: "0.78rem",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {deltaVsBatch >= 0 ? "+" : ""}
+                  {deltaVsBatch.toFixed(1)}
+                  {row.unit === "hours" ? "h" : "%"}
+                </Typography>
+              </Box>
+            )}
+            {deltaVsTop != null && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.66rem",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                  }}
+                >
+                  vs top 10%
+                </Typography>
+                <Typography
+                  sx={{
+                    color: deltaVsTop >= 0 ? POSITIVE : NEUTRAL,
+                    fontWeight: 800,
+                    fontSize: "0.78rem",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {deltaVsTop >= 0 ? "+" : ""}
+                  {deltaVsTop.toFixed(1)}
+                  {row.unit === "hours" ? "h" : "%"}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
       </Box>
     </motion.div>
   );
 }
 
 export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionProps) {
+  const entrance = useViewportEntrance();
   const isEmpty = data.comparisons.length === 0;
+
+  const percentileColor = useMemo(
+    () => proficiencyBandColor(data.percentileRank),
+    [data.percentileRank],
+  );
+
+  const peers = Math.max(0, data.cohortSize - 1);
+  const rankApprox = useMemo(() => {
+    if (data.cohortSize <= 0) return null;
+    // Rough rank: students above you ≈ cohortSize * (1 - percentile/100)
+    const ahead = Math.max(0, Math.round(data.cohortSize * (1 - data.percentileRank / 100)));
+    return Math.max(1, ahead + 1);
+  }, [data.cohortSize, data.percentileRank]);
+
+  // Stat pills around the ring
+  const stats = [
+    {
+      key: "better",
+      label: "Ahead on",
+      value: data.vsBatchAverage.better,
+      color: POSITIVE,
+      icon: "mdi:trending-up",
+    },
+    {
+      key: "equal",
+      label: "On par",
+      value: data.vsBatchAverage.equal,
+      color: NEUTRAL,
+      icon: "mdi:approximately-equal",
+    },
+    {
+      key: "worse",
+      label: "Behind on",
+      value: data.vsBatchAverage.worse,
+      color: NEGATIVE,
+      icon: "mdi:trending-down",
+    },
+  ];
 
   return (
     <Reveal as="section">
-      <Box
-        sx={{
-          position: "relative",
-          borderRadius: 4,
-          overflow: "hidden",
-          border:
-            "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-          backgroundColor: "var(--card-bg)",
-          boxShadow:
-            "0 1px 0 color-mix(in srgb, var(--border-default) 60%, transparent), 0 30px 60px -30px rgba(15, 23, 42, 0.18)",
-          backdropFilter: "blur(6px)",
-        }}
+      <SectionShell
+        radialMesh={[
+          `radial-gradient(60% 75% at 100% 0%, color-mix(in srgb, ${ACCENT} 16%, transparent), transparent 60%)`,
+          `radial-gradient(50% 65% at 0% 100%, color-mix(in srgb, ${POSITIVE} 11%, transparent), transparent 60%)`,
+          `radial-gradient(40% 60% at 50% 50%, color-mix(in srgb, ${ACCENT} 6%, transparent), transparent 70%)`,
+        ]}
       >
-        <Box
-          aria-hidden
-          sx={{
-            position: "absolute",
-            inset: 0,
-            opacity: 0.4,
-            backgroundImage: [
-              "radial-gradient(55% 70% at 100% 0%, color-mix(in srgb, var(--accent-indigo) 16%, transparent), transparent 60%)",
-              "radial-gradient(45% 60% at 0% 100%, color-mix(in srgb, #10b981 12%, transparent), transparent 60%)",
-            ].join(", "),
-            pointerEvents: "none",
+        <SectionHero
+          chapter="Chapter 09"
+          title="Comparative Insights"
+          subtitle="See where you stand against your batch — percentile rank, head-to-head deltas, and per-metric standings."
+          iconBadge={{
+            icon: "mdi:account-group-outline",
+            gradient: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,
           }}
         />
 
-        <Box sx={{ position: "relative", p: { xs: 2.5, sm: 3.5, md: 4.5 } }}>
+        {isEmpty ? (
           <Box
             sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: { xs: "flex-start", sm: "center" },
-              justifyContent: "space-between",
-              pb: { xs: 2.5, md: 3 },
-              mb: { xs: 2.5, md: 3 },
-              borderBottom:
-                "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
+              py: { xs: 6, sm: 8 },
+              textAlign: "center",
+              borderRadius: 3,
+              border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
+              bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+              color: "var(--font-secondary)",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
+            <IconWrapper icon="mdi:chart-box-outline" size={48} color="var(--font-secondary)" />
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 2, maxWidth: 380, mx: "auto" }}
+            >
+              Not enough cohort activity yet to compare with peers. Complete a few more sessions and
+              this section will fill in.
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Hero: cohort percentile ring + standings panel */}
+            <Box
+              component={motion.div}
+              variants={fadeRise}
+              {...entrance}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "minmax(0, 320px) minmax(0, 1fr)" },
+                gap: { xs: 2.5, md: 3 },
+                alignItems: "stretch",
+                mb: { xs: 3.5, md: 4.5 },
+              }}
+            >
+              {/* Percentile spotlight */}
               <Box
                 sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+                  position: "relative",
+                  p: { xs: 2.5, md: 3 },
+                  borderRadius: 3,
+                  background: `linear-gradient(160deg, color-mix(in srgb, ${percentileColor} 16%, transparent) 0%, color-mix(in srgb, ${percentileColor} 4%, transparent) 100%)`,
+                  border: `1px solid color-mix(in srgb, ${percentileColor} 24%, transparent)`,
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow:
-                    "0 12px 24px -12px color-mix(in srgb, var(--accent-indigo) 60%, transparent)",
-                  flexShrink: 0,
+                  gap: 1.25,
+                  textAlign: "center",
+                  overflow: "hidden",
                 }}
               >
-                <IconWrapper icon="mdi:account-group-outline" size={22} color="#fff" />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="h6"
+                {/* Decorative dots */}
+                <Box
+                  aria-hidden
                   sx={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundImage: `radial-gradient(color-mix(in srgb, ${percentileColor} 14%, transparent) 1px, transparent 1px)`,
+                    backgroundSize: "16px 16px",
+                    opacity: 0.4,
+                    pointerEvents: "none",
+                  }}
+                />
+                <Box sx={{ position: "relative" }}>
+                  <AnimatedRing
+                    value={data.percentileRank}
+                    size={170}
+                    strokeWidth={13}
+                    color={percentileColor}
+                    colorEnd={`color-mix(in srgb, ${percentileColor} 75%, transparent)`}
+                    caption=""
+                    valueFontSize={38}
+                  />
+                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: percentileColor,
                     fontWeight: 800,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "1.05rem", sm: "1.2rem" },
-                    lineHeight: 1.25,
+                    letterSpacing: "0.2em",
+                    fontSize: "0.65rem",
+                    textTransform: "uppercase",
                   }}
                 >
-                  Comparative Insights
+                  {ordinalize(Math.round(data.percentileRank))} percentile
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem", mt: 0.25 }}>
-                  Where you stand vs your batch — across {data.cohortSize - 1} peers in your cohort.
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    color: "var(--font-primary)",
+                    fontSize: "0.9rem",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Ranked{" "}
+                  {rankApprox != null ? (
+                    <Box component="span" sx={{ fontWeight: 900, color: percentileColor }}>
+                      #{rankApprox}
+                    </Box>
+                  ) : (
+                    "—"
+                  )}{" "}
+                  of {data.cohortSize}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}
+                >
+                  among {peers} peers in your cohort
                 </Typography>
               </Box>
-            </Box>
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <AnimatedRing
-                value={data.percentileRank}
-                size={72}
-                strokeWidth={8}
-                color={proficiencyBandColor(data.percentileRank)}
-                caption="Percentile"
-                valueFontSize={18}
-              />
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                {[
-                  { label: "Better", value: data.vsBatchAverage.better, color: "#10b981", icon: "mdi:trending-up" },
-                  { label: "Equal", value: data.vsBatchAverage.equal, color: "var(--font-secondary)", icon: "mdi:approximately-equal" },
-                  { label: "Worse", value: data.vsBatchAverage.worse, color: "#ef4444", icon: "mdi:trending-down" },
-                ].map((s) => (
-                  <Box
-                    key={s.label}
+              {/* Standings panel */}
+              <Box
+                sx={{
+                  position: "relative",
+                  p: { xs: 2.25, md: 2.75 },
+                  borderRadius: 3,
+                  border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                  bgcolor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1.75,
+                  overflow: "hidden",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="caption"
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      color: s.color,
+                      color: "var(--font-secondary)",
+                      fontWeight: 700,
+                      letterSpacing: "0.16em",
+                      textTransform: "uppercase",
+                      fontSize: "0.66rem",
                     }}
                   >
-                    <IconWrapper icon={s.icon} size={14} />
-                    <Typography sx={{ fontWeight: 700, fontSize: "0.78rem", fontVariantNumeric: "tabular-nums" }}>
-                      <CountUp value={s.value} duration={0.6} />
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}>
-                      {s.label}
-                    </Typography>
-                  </Box>
-                ))}
+                    Head-to-head against batch average
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--font-primary)",
+                      fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.25,
+                      mt: 0.5,
+                      maxWidth: 460,
+                    }}
+                  >
+                    You&apos;re{" "}
+                    <Box component="span" sx={{ color: POSITIVE }}>
+                      ahead on {data.vsBatchAverage.better}
+                    </Box>
+                    , behind on {data.vsBatchAverage.worse}, even on {data.vsBatchAverage.equal}{" "}
+                    metric{data.comparisons.length === 1 ? "" : "s"}.
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                    gap: 1.25,
+                    flex: 1,
+                  }}
+                >
+                  {stats.map((s) => (
+                    <Box
+                      key={s.key}
+                      sx={{
+                        position: "relative",
+                        p: 1.5,
+                        borderRadius: 2.5,
+                        background: `linear-gradient(160deg, color-mix(in srgb, ${s.color} 14%, transparent) 0%, color-mix(in srgb, ${s.color} 3%, transparent) 100%)`,
+                        border: `1px solid color-mix(in srgb, ${s.color} 24%, transparent)`,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                        <Box
+                          sx={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: 1.25,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: `color-mix(in srgb, ${s.color} 20%, transparent)`,
+                            color: s.color,
+                          }}
+                        >
+                          <IconWrapper icon={s.icon} size={14} />
+                        </Box>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: s.color,
+                            fontWeight: 800,
+                            fontSize: "0.66rem",
+                            letterSpacing: "0.14em",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {s.label}
+                        </Typography>
+                      </Box>
+                      <Typography
+                        sx={{
+                          fontWeight: 900,
+                          color: "var(--font-primary)",
+                          fontSize: { xs: "1.7rem", md: "2rem" },
+                          lineHeight: 1,
+                          letterSpacing: "-0.04em",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        <CountUp value={s.value} duration={1.1} />
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
+                      >
+                        metric{s.value === 1 ? "" : "s"}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
               </Box>
             </Box>
-          </Box>
 
-          {isEmpty ? (
+            {/* KPI rail */}
             <Box
-              sx={{
-                py: { xs: 4, sm: 6 },
-                textAlign: "center",
-                borderRadius: 2,
-                border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
-                color: "var(--font-secondary)",
-              }}
-            >
-              <IconWrapper icon="mdi:chart-box-outline" size={40} color="var(--font-secondary)" />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                Not enough activity yet to compare with peers. Complete a few more sessions to populate.
-              </Typography>
-            </Box>
-          ) : (
-            <motion.div
+              component={motion.div}
               variants={gridStagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.1 }}
-              style={{
+              {...entrance}
+              sx={{
                 display: "grid",
-                gap: 12,
-                gridTemplateColumns: "1fr",
+                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                borderBottom:
+                  "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                mb: { xs: 3.5, md: 4.5 },
               }}
             >
-              {data.comparisons.map((row) => (
-                <ComparisonRow key={row.metric} row={row} />
+              {[
+                {
+                  label: "Cohort size",
+                  value: data.cohortSize,
+                  accent: ACCENT,
+                  numeric: true as const,
+                },
+                {
+                  label: "Percentile rank",
+                  value: Math.round(data.percentileRank),
+                  suffix: "p",
+                  accent: percentileColor,
+                  numeric: true as const,
+                },
+                {
+                  label: "Metrics tracked",
+                  value: data.comparisons.length,
+                  accent: "var(--accent-purple, #8b5cf6)",
+                  numeric: true as const,
+                },
+                {
+                  label: "Strongest delta",
+                  value:
+                    data.comparisons.length === 0
+                      ? "—"
+                      : `+${Math.round(
+                          Math.max(
+                            ...data.comparisons.map((c) =>
+                              c.batchAverage != null ? c.studentValue - c.batchAverage : -Infinity,
+                            ),
+                          ),
+                        )}`,
+                  accent: POSITIVE,
+                  numeric: false as const,
+                },
+              ].map((kpi, idx, arr) => (
+                <Box
+                  key={`${kpi.label}-${idx}`}
+                  component={motion.div}
+                  variants={{
+                    hidden: { opacity: 0, y: 18 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as const },
+                    },
+                  }}
+                  sx={{
+                    position: "relative",
+                    py: { xs: 2.25, md: 2.75 },
+                    px: { xs: 1.5, sm: 2 },
+                    borderRight: {
+                      xs:
+                        idx % 2 !== 1
+                          ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
+                          : "none",
+                      md:
+                        idx !== arr.length - 1
+                          ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
+                          : "none",
+                    },
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: 28,
+                      height: 2,
+                      background: kpi.accent,
+                    },
+                  }}
+                >
+                  <Typography
+                    component="div"
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--font-primary)",
+                      fontSize: { xs: "1.65rem", sm: "2.1rem", md: "2.55rem" },
+                      lineHeight: 1,
+                      letterSpacing: "-0.04em",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {kpi.numeric ? (
+                      <>
+                        <CountUp value={Number(kpi.value)} duration={1.3} />
+                        {("suffix" in kpi && kpi.suffix) ? (
+                          <Box
+                            component="span"
+                            sx={{
+                              fontSize: "0.55em",
+                              ml: 0.25,
+                              color: "var(--font-secondary)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {kpi.suffix}
+                          </Box>
+                        ) : null}
+                      </>
+                    ) : (
+                      kpi.value
+                    )}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      display: "block",
+                      mt: 1,
+                    }}
+                  >
+                    {kpi.label}
+                  </Typography>
+                </Box>
               ))}
-            </motion.div>
-          )}
-        </Box>
-      </Box>
+            </Box>
+
+            {/* Per-metric comparison grid */}
+            <Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1.5,
+                  mb: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontWeight: 700,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      fontSize: "0.66rem",
+                    }}
+                  >
+                    Per-metric standings
+                  </Typography>
+                  <Typography
+                    component="h3"
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--font-primary)",
+                      fontSize: { xs: "1.2rem", sm: "1.35rem" },
+                      letterSpacing: "-0.02em",
+                      mt: 0.5,
+                    }}
+                  >
+                    You vs Batch avg vs Top 10%
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 1.25,
+                    px: 1.25,
+                    py: 0.75,
+                    borderRadius: 999,
+                    border:
+                      "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+                    bgcolor: "color-mix(in srgb, var(--card-bg) 80%, transparent)",
+                  }}
+                >
+                  {[
+                    { color: "var(--font-primary)", label: "You" },
+                    { color: ACCENT, label: "Batch" },
+                    { color: POSITIVE, label: "Top 10%" },
+                  ].map((l) => (
+                    <Box key={l.label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: l.color,
+                        }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "var(--font-secondary)",
+                          fontWeight: 700,
+                          fontSize: "0.66rem",
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {l.label}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+
+              <motion.div
+                variants={gridStagger}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.05 }}
+                style={{
+                  display: "grid",
+                  gap: 12,
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                }}
+              >
+                {data.comparisons.map((row, i) => (
+                  <ComparisonCard key={row.metric} row={row} index={i} />
+                ))}
+              </motion.div>
+            </Box>
+          </>
+        )}
+      </SectionShell>
     </Reveal>
   );
 }

@@ -44,6 +44,21 @@ export interface SkillSuggestion {
   exists: boolean; // true if a Skill with this exact name already exists for the client
 }
 
+export interface ContentRow {
+  id: number;
+  title: string;
+  /** Currently-mapped skill ids — empty array if none yet. */
+  skill_ids: number[];
+}
+
+export interface ContentBrowserPayload {
+  videos: ContentRow[];
+  articles: ContentRow[];
+  mcqs: ContentRow[];
+  coding_problems: ContentRow[];
+  assessments: ContentRow[];
+}
+
 function baseUrl(): string {
   return `/admin-dashboard/api/clients/${config.clientId}`;
 }
@@ -126,6 +141,24 @@ export const adminSkillsService = {
       skill_ids: skillIds,
     });
     return response.data?.skill_ids ?? [];
+  },
+
+  /**
+   * Bulk browser: returns every taggable content row (videos, articles, MCQs,
+   * coding problems, assessments) for the client, with its currently-attached
+   * skill ids. Use this to power a searchable content picker.
+   */
+  async listAllTaggedContent(): Promise<ContentBrowserPayload> {
+    const response = await apiClient.get<ContentBrowserPayload>(
+      `${baseUrl()}/skills/content-mappings/all/`,
+    );
+    return {
+      videos: response.data?.videos ?? [],
+      articles: response.data?.articles ?? [],
+      mcqs: response.data?.mcqs ?? [],
+      coding_problems: response.data?.coding_problems ?? [],
+      assessments: response.data?.assessments ?? [],
+    };
   },
 
   /** AI-suggest skills for a content row. Does NOT persist — admin confirms via setMappings. */

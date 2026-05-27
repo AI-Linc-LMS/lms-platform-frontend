@@ -1,10 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Box, Chip, IconButton, LinearProgress, Tooltip, Typography } from "@mui/material";
+import { Box, Chip, IconButton, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AnimatedRing, Reveal, gridStagger } from "@/components/scorecard/shared";
+import {
+  AnimatedRing,
+  CountUp,
+  Reveal,
+  SectionHero,
+  SectionShell,
+  fadeRise,
+  gridStagger,
+  useViewportEntrance,
+} from "@/components/scorecard/shared";
 import type {
   AssessmentDifficultyBreakdown,
   AssessmentPerformance,
@@ -26,16 +35,11 @@ function formatDate(iso: string | null): string {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   } catch {
     return "—";
   }
 }
-
 function formatTime(minutes: number): string {
   if (!minutes || minutes < 1) return "<1 min";
   if (minutes < 60) return `${minutes} min`;
@@ -43,7 +47,6 @@ function formatTime(minutes: number): string {
   const m = minutes % 60;
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
-
 function formatSecondsPerQ(seconds: number): string {
   if (!seconds || seconds <= 0) return "—";
   if (seconds < 60) return `${seconds.toFixed(0)}s`;
@@ -52,10 +55,97 @@ function formatSecondsPerQ(seconds: number): string {
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
 }
 
-function PerformanceRow({ row, expanded, onToggle }: {
+/** Hero "showcase" card — used for both BEST and LATEST split cards in the hero block. */
+function ShowcaseCard({
+  row,
+  label,
+  accent,
+  icon,
+}: {
+  row: AssessmentPerformance;
+  label: string;
+  accent: string;
+  icon: string;
+}) {
+  const score = row.score ?? 0;
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        p: { xs: 2.5, md: 3 },
+        borderRadius: 3,
+        background: `linear-gradient(135deg, color-mix(in srgb, ${accent} 14%, transparent) 0%, color-mix(in srgb, ${accent} 4%, transparent) 100%)`,
+        border: `1px solid color-mix(in srgb, ${accent} 22%, transparent)`,
+        display: "grid",
+        gridTemplateColumns: "auto minmax(0, 1fr)",
+        gap: 2,
+        alignItems: "center",
+      }}
+    >
+      <AnimatedRing
+        value={row.score != null ? score : 0}
+        size={108}
+        strokeWidth={10}
+        color={accent}
+        caption=""
+        valueFontSize={26}
+      />
+      <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, color: accent }}>
+          <IconWrapper icon={icon} size={14} />
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: "0.68rem" }}
+          >
+            {label}
+          </Typography>
+        </Box>
+        <Typography
+          sx={{
+            fontWeight: 800,
+            color: "var(--font-primary)",
+            fontSize: { xs: "1.15rem", md: "1.35rem" },
+            letterSpacing: "-0.02em",
+            lineHeight: 1.2,
+            mt: 0.25,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={row.assessmentName}
+        >
+          {row.assessmentName}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.78rem" }}>
+          {formatDate(row.dateAttempted)}
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1.5, mt: 1, flexWrap: "wrap" }}>
+          {row.percentile != null && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "var(--font-secondary)", fontSize: "0.78rem" }}>
+              <IconWrapper icon="mdi:chart-bell-curve" size={13} />
+              {row.percentile.toFixed(0)}p
+            </Box>
+          )}
+          {row.rank != null && row.cohortCount > 1 && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "var(--font-secondary)", fontSize: "0.78rem" }}>
+              <IconWrapper icon="mdi:trophy-outline" size={13} />#{row.rank} of {row.cohortCount}
+            </Box>
+          )}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "var(--font-secondary)", fontSize: "0.78rem" }}>
+            <IconWrapper icon="mdi:timer-outline" size={13} />
+            {formatTime(row.timeTaken)}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function PerformanceRow({ row, expanded, onToggle, idx }: {
   row: AssessmentPerformance;
   expanded: boolean;
   onToggle: () => void;
+  idx: number;
 }) {
   const scoreLabel =
     row.score != null
@@ -65,9 +155,7 @@ function PerformanceRow({ row, expanded, onToggle }: {
         : "—";
   const accent = row.score != null ? proficiencyBandColor(row.score) : "var(--font-secondary)";
   const totalDifficultyQs =
-    row.difficultyBreakdown.easy.total +
-    row.difficultyBreakdown.medium.total +
-    row.difficultyBreakdown.hard.total;
+    row.difficultyBreakdown.easy.total + row.difficultyBreakdown.medium.total + row.difficultyBreakdown.hard.total;
 
   return (
     <motion.div
@@ -81,16 +169,13 @@ function PerformanceRow({ row, expanded, onToggle }: {
           position: "relative",
           borderRadius: 3,
           overflow: "hidden",
-          border:
-            "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
           bgcolor: "var(--card-bg)",
           transition: "border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease",
           "&:hover": {
-            borderColor:
-              "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+            borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
             transform: "translateY(-1px)",
-            boxShadow:
-              "0 18px 40px -24px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+            boxShadow: "0 18px 40px -24px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
           },
         }}
       >
@@ -109,12 +194,33 @@ function PerformanceRow({ row, expanded, onToggle }: {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "minmax(0, 1fr) auto" },
+            gridTemplateColumns: { xs: "1fr", sm: "auto minmax(0, 1fr) auto" },
             gap: { xs: 2, sm: 2.5 },
             p: { xs: 2, sm: 2.5 },
             pl: { xs: 2.5, sm: 3 },
+            alignItems: "center",
           }}
         >
+          {/* Timeline index pill */}
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              bgcolor: "color-mix(in srgb, var(--border-default) 35%, transparent)",
+              color: "var(--font-secondary)",
+              fontWeight: 800,
+              fontSize: "0.85rem",
+              fontVariantNumeric: "tabular-nums",
+              alignSelf: { xs: "flex-start", sm: "center" },
+            }}
+          >
+            {idx + 1}
+          </Box>
+
           <Box sx={{ minWidth: 0 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5, flexWrap: "wrap" }}>
               <Typography
@@ -122,7 +228,7 @@ function PerformanceRow({ row, expanded, onToggle }: {
                 sx={{
                   fontWeight: 800,
                   color: "var(--font-primary)",
-                  letterSpacing: -0.1,
+                  letterSpacing: "-0.01em",
                   lineHeight: 1.2,
                   minWidth: 0,
                   overflow: "hidden",
@@ -140,7 +246,7 @@ function PerformanceRow({ row, expanded, onToggle }: {
                   sx={{
                     height: 20,
                     fontSize: "0.65rem",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     bgcolor: "color-mix(in srgb, #f59e0b 14%, transparent)",
                     color: "#b45309",
                   }}
@@ -149,26 +255,22 @@ function PerformanceRow({ row, expanded, onToggle }: {
             </Box>
             <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5, color: "var(--font-secondary)", fontSize: "0.78rem", mb: 1.25 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:calendar-month-outline" size={14} />
+                <IconWrapper icon="mdi:calendar-month-outline" size={13} />
                 {formatDate(row.dateAttempted)}
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <IconWrapper icon="mdi:timer-outline" size={14} />
+                <IconWrapper icon="mdi:timer-outline" size={13} />
                 {formatTime(row.timeTaken)}
                 {row.timeAllowed > 0 && (
-                  <Box component="span" sx={{ color: "var(--font-secondary)", opacity: 0.7 }}>
-                    {" "}
-                    / {formatTime(row.timeAllowed)}
+                  <Box component="span" sx={{ opacity: 0.7 }}>
+                    {" "}/ {formatTime(row.timeAllowed)}
                   </Box>
                 )}
               </Box>
               {row.percentile != null && (
-                <Tooltip
-                  title={`You scored higher than ${row.percentile.toFixed(0)}% of ${row.cohortCount} peers.`}
-                  arrow
-                >
+                <Tooltip title={`You scored higher than ${row.percentile.toFixed(0)}% of ${row.cohortCount} peers.`} arrow>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <IconWrapper icon="mdi:chart-bell-curve" size={14} />
+                    <IconWrapper icon="mdi:chart-bell-curve" size={13} />
                     {row.percentile.toFixed(0)}p
                   </Box>
                 </Tooltip>
@@ -176,62 +278,54 @@ function PerformanceRow({ row, expanded, onToggle }: {
               {row.rank != null && row.cohortCount > 1 && (
                 <Tooltip title={`Your rank in this cohort of ${row.cohortCount}.`} arrow>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <IconWrapper icon="mdi:trophy-outline" size={14} />
-                    #{row.rank}
+                    <IconWrapper icon="mdi:trophy-outline" size={13} />#{row.rank}
                   </Box>
                 </Tooltip>
               )}
             </Box>
 
-            {/* Accuracy + difficulty mini-bars share one row */}
-            <Box sx={{ display: "grid", gap: 0.75 }}>
-              {totalDifficultyQs > 0 && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
-                  {(["easy", "medium", "hard"] as const).map((bucket) => {
-                    const cell = row.difficultyBreakdown[bucket];
-                    if (cell.total === 0) return null;
-                    const pct = (cell.correct / Math.max(1, cell.total)) * 100;
-                    const color = DIFFICULTY_COLORS[bucket];
-                    return (
-                      <Box key={bucket} sx={{ minWidth: 110, flex: 1 }}>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.25 }}>
-                          <Typography
-                            variant="caption"
-                            sx={{ fontWeight: 700, textTransform: "capitalize", color: "var(--font-secondary)", fontSize: "0.7rem" }}
-                          >
-                            {bucket}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: "var(--font-primary)", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: "0.7rem" }}>
-                            {cell.correct}/{cell.total}
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={Math.max(0, Math.min(100, pct))}
+            {totalDifficultyQs > 0 && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+                {(["easy", "medium", "hard"] as const).map((bucket) => {
+                  const cell = row.difficultyBreakdown[bucket];
+                  if (cell.total === 0) return null;
+                  const pct = (cell.correct / Math.max(1, cell.total)) * 100;
+                  const color = DIFFICULTY_COLORS[bucket];
+                  return (
+                    <Box key={bucket} sx={{ minWidth: 110, flex: 1 }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.25 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ fontWeight: 800, textTransform: "capitalize", color: "var(--font-secondary)", fontSize: "0.7rem", letterSpacing: "0.04em" }}
+                        >
+                          {bucket}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "var(--font-primary)", fontWeight: 800, fontVariantNumeric: "tabular-nums", fontSize: "0.7rem" }}>
+                          {cell.correct}/{cell.total}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ height: 6, borderRadius: 999, bgcolor: "color-mix(in srgb, var(--border-default) 45%, transparent)", overflow: "hidden" }}>
+                        <Box
                           sx={{
-                            height: 5,
-                            borderRadius: 3,
-                            bgcolor: "color-mix(in srgb, var(--border-default) 45%, transparent)",
-                            "& .MuiLinearProgress-bar": {
-                              borderRadius: 3,
-                              backgroundColor: color,
-                            },
+                            width: `${Math.max(0, Math.min(100, pct))}%`,
+                            height: "100%",
+                            background: `linear-gradient(90deg, ${color} 0%, color-mix(in srgb, ${color} 65%, transparent) 100%)`,
+                            transition: "width 0.6s ease",
                           }}
                         />
                       </Box>
-                    );
-                  })}
-                </Box>
-              )}
-            </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
 
             {expanded && (
               <Box
                 sx={{
                   mt: 1.75,
                   pt: 1.75,
-                  borderTop:
-                    "1px dashed color-mix(in srgb, var(--border-default) 70%, transparent)",
+                  borderTop: "1px dashed color-mix(in srgb, var(--border-default) 70%, transparent)",
                   display: "grid",
                   gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, minmax(0, 1fr))" },
                   gap: 1.25,
@@ -241,17 +335,13 @@ function PerformanceRow({ row, expanded, onToggle }: {
                   { label: "Correct", value: row.questionAnalytics.correct, color: "#10b981" },
                   { label: "Incorrect", value: row.questionAnalytics.incorrect, color: "#ef4444" },
                   { label: "Skipped", value: row.questionAnalytics.skipped, color: "var(--font-secondary)" },
-                  {
-                    label: "Avg / Q",
-                    value: formatSecondsPerQ(row.questionAnalytics.averageTimePerQuestion),
-                    color: "var(--accent-indigo-dark)",
-                  },
+                  { label: "Avg / Q", value: formatSecondsPerQ(row.questionAnalytics.averageTimePerQuestion), color: "var(--accent-indigo-dark)" },
                 ].map((stat) => (
                   <Box key={stat.label}>
-                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", textTransform: "uppercase", fontSize: "0.65rem", fontWeight: 700, letterSpacing: 0.4 }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", textTransform: "uppercase", fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.14em" }}>
                       {stat.label}
                     </Typography>
-                    <Typography sx={{ fontWeight: 800, color: stat.color, fontSize: "1rem", fontVariantNumeric: "tabular-nums" }}>
+                    <Typography sx={{ fontWeight: 800, color: stat.color, fontSize: "1.05rem", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>
                       {stat.value}
                     </Typography>
                   </Box>
@@ -260,7 +350,6 @@ function PerformanceRow({ row, expanded, onToggle }: {
             )}
           </Box>
 
-          {/* Score ring + expand */}
           <Box
             sx={{
               display: "flex",
@@ -277,9 +366,7 @@ function PerformanceRow({ row, expanded, onToggle }: {
                 size={84}
                 strokeWidth={9}
                 color={accent}
-                caption={row.maximumMarks > 0 && row.rawScore != null
-                  ? `${row.rawScore} / ${row.maximumMarks}`
-                  : "Score"}
+                caption={row.maximumMarks > 0 && row.rawScore != null ? `${row.rawScore} / ${row.maximumMarks}` : "Score"}
                 valueFontSize={20}
               />
             ) : (
@@ -296,7 +383,7 @@ function PerformanceRow({ row, expanded, onToggle }: {
                 }}
               >
                 <IconWrapper icon="mdi:hourglass-empty" size={20} color="var(--font-secondary)" />
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 700 }}>
                   {scoreLabel}
                 </Typography>
               </Box>
@@ -306,10 +393,7 @@ function PerformanceRow({ row, expanded, onToggle }: {
               onClick={onToggle}
               sx={{
                 color: "var(--font-secondary)",
-                "&:hover": {
-                  color: "var(--accent-indigo-dark)",
-                  bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                },
+                "&:hover": { color: "var(--accent-indigo-dark)", bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
               }}
               aria-label={expanded ? "Hide question analytics" : "Show question analytics"}
             >
@@ -323,176 +407,202 @@ function PerformanceRow({ row, expanded, onToggle }: {
 }
 
 export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSectionProps) {
+  const entrance = useViewportEntrance();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const summary = useMemo(() => {
     const scored = data.filter((d) => d.score != null) as (AssessmentPerformance & { score: number })[];
     const attempts = data.length;
-    const avgScore = scored.length
-      ? Math.round(scored.reduce((acc, d) => acc + d.score, 0) / scored.length)
-      : 0;
-    const best = scored.length
-      ? Math.round(Math.max(...scored.map((d) => d.score)))
-      : 0;
+    const avgScore = scored.length ? Math.round(scored.reduce((acc, d) => acc + d.score, 0) / scored.length) : 0;
+    const best = scored.length ? scored.reduce((acc, d) => (d.score > acc.score ? d : acc), scored[0]) : null;
+    const latest = scored.length ? scored[0] : null;
     const pending = data.filter((d) => d.reviewStatus === "pending_evaluation").length;
-    return { attempts, avgScore, best, pending };
+    return { attempts, avgScore, best, latest, pending };
   }, [data]);
 
   return (
     <Reveal as="section">
-      <Box
-        sx={{
-          position: "relative",
-          borderRadius: 4,
-          overflow: "hidden",
-          border:
-            "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-          backgroundColor: "var(--card-bg)",
-          boxShadow:
-            "0 1px 0 color-mix(in srgb, var(--border-default) 60%, transparent), 0 30px 60px -30px rgba(15, 23, 42, 0.18)",
-          backdropFilter: "blur(6px)",
-        }}
+      <SectionShell
+        radialMesh={[
+          "radial-gradient(50% 60% at 100% 0%, color-mix(in srgb, var(--accent-cyan) 14%, transparent), transparent 60%)",
+          "radial-gradient(45% 55% at 0% 0%, color-mix(in srgb, var(--accent-indigo) 14%, transparent), transparent 60%)",
+        ]}
       >
-        <Box
-          aria-hidden
-          sx={{
-            position: "absolute",
-            inset: 0,
-            opacity: 0.4,
-            backgroundImage: [
-              "radial-gradient(55% 70% at 100% 0%, color-mix(in srgb, var(--accent-cyan) 14%, transparent), transparent 60%)",
-              "radial-gradient(45% 60% at 0% 0%, color-mix(in srgb, var(--accent-indigo) 14%, transparent), transparent 60%)",
-            ].join(", "),
-            pointerEvents: "none",
+        <SectionHero
+          chapter="Chapter 06"
+          title="Assessment & Test Performance"
+          subtitle="Each attempt with score, percentile, difficulty breakdown, and timing."
+          iconBadge={{
+            icon: "mdi:clipboard-check-outline",
+            gradient: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
           }}
         />
 
-        <Box sx={{ position: "relative", p: { xs: 2.5, sm: 3.5, md: 4.5 } }}>
+        {data.length === 0 ? (
           <Box
             sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: { xs: "flex-start", sm: "center" },
-              justifyContent: "space-between",
-              pb: { xs: 2.5, md: 3 },
-              mb: { xs: 2.5, md: 3 },
-              borderBottom:
-                "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
+              py: { xs: 5, sm: 7 },
+              textAlign: "center",
+              borderRadius: 3,
+              border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
+              color: "var(--font-secondary)",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
+            <IconWrapper icon="mdi:clipboard-text-outline" size={48} color="var(--font-secondary)" />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+              No completed assessments yet. Take an assessment to populate this section.
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Hero: Best + Latest split cards */}
+            {(summary.best || summary.latest) && (
               <Box
+                component={motion.div}
+                variants={fadeRise}
+                {...entrance}
                 sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  background:
-                    "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow:
-                    "0 12px 24px -12px color-mix(in srgb, var(--accent-indigo) 60%, transparent)",
-                  flexShrink: 0,
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                  gap: 2,
+                  mb: { xs: 3.5, md: 4.5 },
                 }}
               >
-                <IconWrapper icon="mdi:clipboard-check-outline" size={22} color="#fff" />
+                {summary.best && (
+                  <ShowcaseCard row={summary.best} label="Best performance" accent="#10b981" icon="mdi:trophy" />
+                )}
+                {summary.latest && summary.latest !== summary.best && (
+                  <ShowcaseCard row={summary.latest} label="Most recent" accent="var(--accent-indigo)" icon="mdi:clock-fast" />
+                )}
+                {summary.latest && summary.latest === summary.best && (
+                  <Box
+                    sx={{
+                      p: { xs: 2.5, md: 3 },
+                      borderRadius: 3,
+                      bgcolor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, transparent)",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ color: "var(--accent-indigo-dark)", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: "0.68rem" }}>
+                      🌟 Your latest IS your best
+                    </Typography>
+                    <Typography sx={{ color: "var(--font-primary)", fontWeight: 700, fontSize: "0.92rem", lineHeight: 1.5 }}>
+                      You&apos;re trending up — keep this momentum on the next attempt.
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 800,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "1.05rem", sm: "1.2rem" },
-                    lineHeight: 1.25,
-                  }}
-                >
-                  Assessment & Test Performance
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem", mt: 0.25 }}>
-                  Each attempt with score, percentile, difficulty breakdown, and timing.
-                </Typography>
-              </Box>
-            </Box>
+            )}
 
+            {/* KPI rail */}
             <Box
+              component={motion.div}
+              variants={gridStagger}
+              {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(4, auto)" },
-                gap: { xs: 1, sm: 1.5 },
+                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                mb: { xs: 3.5, md: 4.5 },
               }}
             >
               {[
-                { label: "Attempts", value: summary.attempts, color: "var(--accent-indigo-dark)" },
-                { label: "Avg", value: `${summary.avgScore}%`, color: proficiencyBandColor(summary.avgScore) },
-                { label: "Best", value: `${summary.best}%`, color: proficiencyBandColor(summary.best) },
-                { label: "Pending", value: summary.pending, color: summary.pending > 0 ? "#f59e0b" : "var(--font-secondary)" },
-              ].map((stat) => (
+                { label: "Attempts", value: summary.attempts, accent: "var(--accent-indigo-dark)" },
+                { label: "Avg score", value: summary.avgScore, suffix: "%", accent: proficiencyBandColor(summary.avgScore) },
+                { label: "Best", value: summary.best?.score ?? 0, suffix: "%", accent: proficiencyBandColor(summary.best?.score ?? 0) },
+                { label: "Pending review", value: summary.pending, accent: summary.pending > 0 ? "#f59e0b" : "var(--font-secondary)" },
+              ].map((kpi, idx) => (
                 <Box
-                  key={stat.label}
+                  key={kpi.label}
+                  component={motion.div}
+                  variants={{
+                    hidden: { opacity: 0, y: 18 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as const } },
+                  }}
                   sx={{
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: 2,
-                    bgcolor:
-                      "color-mix(in srgb, var(--border-default) 30%, transparent)",
-                    display: "flex",
-                    flexDirection: "column",
-                    minWidth: 78,
+                    position: "relative",
+                    py: { xs: 2.25, md: 2.75 },
+                    px: { xs: 1.5, sm: 2 },
+                    borderRight: {
+                      xs: idx % 2 !== 1 ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" : "none",
+                      md: idx !== 3 ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" : "none",
+                    },
+                    borderBottom: { xs: idx < 2 ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" : "none", md: "none" },
+                    "&:hover": { backgroundColor: `color-mix(in srgb, ${kpi.accent} 6%, transparent)` },
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: 28,
+                      height: 2,
+                      background: kpi.accent,
+                    },
                   }}
                 >
                   <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", fontSize: "0.65rem" }}
-                  >
-                    {stat.label}
-                  </Typography>
-                  <Typography
                     sx={{
                       fontWeight: 800,
-                      color: stat.color,
-                      fontSize: "1.05rem",
-                      lineHeight: 1.2,
+                      color: "var(--font-primary)",
+                      fontSize: { xs: "1.7rem", sm: "2.1rem", md: "2.6rem" },
+                      lineHeight: 1,
+                      letterSpacing: "-0.04em",
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {stat.value}
+                    <CountUp value={Math.round(Number(kpi.value))} duration={1.4} />
+                    {kpi.suffix}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      display: "block",
+                      mt: 1,
+                    }}
+                  >
+                    {kpi.label}
                   </Typography>
                 </Box>
               ))}
             </Box>
-          </Box>
 
-          {data.length === 0 ? (
-            <Box
+            <Typography
+              variant="caption"
               sx={{
-                py: { xs: 4, sm: 6 },
-                textAlign: "center",
-                borderRadius: 2,
-                border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
                 color: "var(--font-secondary)",
+                fontSize: "0.7rem",
+                fontWeight: 800,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                display: "block",
+                mb: 1.5,
               }}
             >
-              <IconWrapper icon="mdi:clipboard-text-outline" size={40} color="var(--font-secondary)" />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                No completed assessments yet. Take an assessment to populate this section.
-              </Typography>
-            </Box>
-          ) : (
+              Timeline · most recent first
+            </Typography>
+
             <motion.div
               variants={gridStagger}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, amount: 0.1 }}
+              viewport={{ once: true, amount: 0.05 }}
               style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}
             >
               {data.map((row, idx) => (
                 <PerformanceRow
                   key={`${row.assessmentId}-${row.dateAttempted ?? idx}`}
                   row={row}
+                  idx={idx}
                   expanded={expandedId === `${row.assessmentId}-${idx}`}
                   onToggle={() =>
                     setExpandedId(expandedId === `${row.assessmentId}-${idx}` ? null : `${row.assessmentId}-${idx}`)
@@ -500,9 +610,9 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                 />
               ))}
             </motion.div>
-          )}
-        </Box>
-      </Box>
+          </>
+        )}
+      </SectionShell>
     </Reveal>
   );
 }

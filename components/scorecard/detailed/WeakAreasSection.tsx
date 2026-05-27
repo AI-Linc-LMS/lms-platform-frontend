@@ -1,9 +1,18 @@
 "use client";
 
-import { Box, Chip, LinearProgress, Tooltip, Typography } from "@mui/material";
+import { Box, Chip, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { Reveal, gridStagger } from "@/components/scorecard/shared";
+import {
+  AnimatedRing,
+  CountUp,
+  Reveal,
+  SectionHero,
+  SectionShell,
+  fadeRise,
+  gridStagger,
+  useViewportEntrance,
+} from "@/components/scorecard/shared";
 import type { WeakAreas } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
 
@@ -11,14 +20,13 @@ interface WeakAreasSectionProps {
   data: WeakAreas;
 }
 
-const RECOMMENDATION_ICON: Record<string, string> = {
+const RECO_ICON: Record<string, string> = {
   mcq: "mdi:format-list-checks",
   revise: "mdi:book-open-page-variant",
   video: "mdi:play-circle-outline",
   interview: "mdi:account-voice",
 };
-
-const RECOMMENDATION_ACCENT: Record<string, string> = {
+const RECO_ACCENT: Record<string, string> = {
   mcq: "var(--accent-indigo)",
   revise: "#f59e0b",
   video: "#10b981",
@@ -48,7 +56,7 @@ function Breadcrumb({
         gap: 0.5,
         flexWrap: "wrap",
         color: "var(--font-secondary)",
-        fontSize: "0.75rem",
+        fontSize: "0.72rem",
         mt: 0.5,
       }}
     >
@@ -57,26 +65,22 @@ function Breadcrumb({
           size="small"
           label={contentType.replace(/_/g, " ")}
           sx={{
-            height: 20,
-            fontSize: "0.65rem",
-            fontWeight: 700,
+            height: 18,
+            fontSize: "0.62rem",
+            fontWeight: 800,
             textTransform: "capitalize",
             bgcolor: "color-mix(in srgb, var(--border-default) 35%, transparent)",
             color: "var(--font-secondary)",
           }}
         />
       )}
-      {parts.length > 0 && (
-        <Box component="span" sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {parts.join(" › ")}
-        </Box>
-      )}
+      {parts.length > 0 && <Box component="span">{parts.join(" › ")}</Box>}
       {itemName && (
         <Box
           component="span"
           sx={{
             color: "var(--font-primary)",
-            fontWeight: 600,
+            fontWeight: 700,
             minWidth: 0,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -92,104 +96,36 @@ function Breadcrumb({
 }
 
 export function WeakAreasSection({ data }: WeakAreasSectionProps) {
-  const {
-    weakThreshold,
-    skillsBelowThreshold,
-    topicsFrequentlyIncorrect,
-    skippedQuestions,
-    recommendations,
-  } = data;
+  const entrance = useViewportEntrance();
+  const { weakThreshold, skillsBelowThreshold, topicsFrequentlyIncorrect, skippedQuestions, recommendations } = data;
 
   const isAllClear =
-    skillsBelowThreshold.length === 0 &&
-    topicsFrequentlyIncorrect.length === 0 &&
-    skippedQuestions.length === 0;
+    skillsBelowThreshold.length === 0 && topicsFrequentlyIncorrect.length === 0 && skippedQuestions.length === 0;
+
+  // Spotlight = the weakest skill (lowest currentScore). If none, fall back to most-missed topic.
+  const spotlight = skillsBelowThreshold[0];
 
   return (
     <Reveal as="section">
-      <Box
-        sx={{
-          position: "relative",
-          borderRadius: 4,
-          overflow: "hidden",
-          border:
-            "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-          backgroundColor: "var(--card-bg)",
-          boxShadow:
-            "0 1px 0 color-mix(in srgb, var(--border-default) 60%, transparent), 0 30px 60px -30px rgba(15, 23, 42, 0.18)",
-          backdropFilter: "blur(6px)",
-        }}
+      <SectionShell
+        radialMesh={[
+          "radial-gradient(55% 70% at 0% 0%, color-mix(in srgb, #f59e0b 16%, transparent), transparent 60%)",
+          "radial-gradient(45% 60% at 100% 0%, color-mix(in srgb, var(--accent-indigo) 10%, transparent), transparent 60%)",
+        ]}
       >
-        {/* Amber/red radial mesh to telegraph the alert nature without alarming. */}
-        <Box
-          aria-hidden
-          sx={{
-            position: "absolute",
-            inset: 0,
-            opacity: 0.45,
-            backgroundImage: [
-              "radial-gradient(55% 70% at 0% 0%, color-mix(in srgb, #f59e0b 16%, transparent), transparent 60%)",
-              "radial-gradient(45% 60% at 100% 0%, color-mix(in srgb, var(--accent-indigo) 12%, transparent), transparent 60%)",
-            ].join(", "),
-            pointerEvents: "none",
+        <SectionHero
+          chapter="Chapter 05"
+          title="Weak Areas & Attention Alerts"
+          subtitle={`Skills below ${Math.round(weakThreshold)}%, topics you keep missing, and questions you skipped.`}
+          accentTop="#f59e0b"
+          accentBottom="#d97706"
+          iconBadge={{
+            icon: "mdi:alert-decagram-outline",
+            gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
           }}
-        />
-
-        <Box sx={{ position: "relative", p: { xs: 2.5, sm: 3.5, md: 4.5 } }}>
-          {/* Header */}
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: { xs: "flex-start", sm: "center" },
-              justifyContent: "space-between",
-              pb: { xs: 2.5, md: 3 },
-              mb: { xs: 2.5, md: 3 },
-              borderBottom:
-                "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow:
-                    "0 12px 24px -12px color-mix(in srgb, #f59e0b 60%, transparent)",
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper icon="mdi:alert-decagram-outline" size={22} color="#fff" />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 800,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "1.05rem", sm: "1.2rem" },
-                    lineHeight: 1.25,
-                  }}
-                >
-                  Weak Areas & Attention Alerts
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.85rem", mt: 0.25 }}
-                >
-                  Skills below {Math.round(weakThreshold)}%, topics you keep missing, and questions you skipped.
-                </Typography>
-              </Box>
-            </Box>
+          rightSlot={
             <Tooltip
-              title={`Skills with proficiency below ${Math.round(weakThreshold)}% surface here as priority practice.`}
+              title={`Skills below ${Math.round(weakThreshold)}% surface here as priority practice.`}
               arrow
             >
               <Chip
@@ -197,210 +133,248 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                 icon={<IconWrapper icon="mdi:flag" size={14} />}
                 label={`Threshold: ${Math.round(weakThreshold)}%`}
                 sx={{
-                  fontWeight: 700,
+                  fontWeight: 800,
                   bgcolor: "color-mix(in srgb, #f59e0b 14%, transparent)",
                   color: "#b45309",
                 }}
               />
             </Tooltip>
-          </Box>
+          }
+        />
 
-          {isAllClear ? (
-            <Box
-              sx={{
-                py: { xs: 4, sm: 5 },
-                textAlign: "center",
-                borderRadius: 2,
-                border: "1px dashed color-mix(in srgb, #10b981 50%, transparent)",
-                bgcolor: "color-mix(in srgb, #10b981 6%, transparent)",
-                color: "var(--font-primary)",
-              }}
-            >
-              <IconWrapper icon="mdi:check-decagram" size={42} color="#10b981" />
-              <Typography variant="subtitle1" sx={{ mt: 1, fontWeight: 700 }}>
-                All clear — no flagged weak areas right now.
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Keep going! Cards reappear if proficiency drops below {Math.round(weakThreshold)}% or topics are repeatedly missed.
-              </Typography>
-            </Box>
-          ) : (
-            <motion.div
-              variants={gridStagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.1 }}
-              style={{
-                display: "grid",
-                gap: 16,
-                gridTemplateColumns: "1fr",
-              }}
-            >
-              {/* Recommendations row — surface the call-to-action first. */}
-              {recommendations.length > 0 && (
-                <Box
-                  sx={{
-                    display: "grid",
-                    gap: 1.25,
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(auto-fit, minmax(220px, 1fr))",
-                    },
-                  }}
-                >
-                  {recommendations.map((rec) => {
-                    const accent = RECOMMENDATION_ACCENT[rec.type] ?? "var(--accent-indigo)";
-                    const icon = RECOMMENDATION_ICON[rec.type] ?? "mdi:lightbulb-outline";
-                    const isLink = !!rec.actionUrl;
-                    const Wrapper: any = isLink ? "a" : "div";
-                    return (
+        {isAllClear ? (
+          <Box
+            component={motion.div}
+            variants={fadeRise}
+            {...entrance}
+            sx={{
+              py: { xs: 6, sm: 8 },
+              textAlign: "center",
+              borderRadius: 3,
+              border: "1px dashed color-mix(in srgb, #10b981 50%, transparent)",
+              bgcolor: "color-mix(in srgb, #10b981 6%, transparent)",
+              color: "var(--font-primary)",
+            }}
+          >
+            <IconWrapper icon="mdi:check-decagram" size={56} color="#10b981" />
+            <Typography variant="h6" sx={{ mt: 1.5, fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
+              All clear — no flagged weak areas right now.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 480, mx: "auto" }}>
+              Keep going. Cards reappear if proficiency drops below {Math.round(weakThreshold)}% or topics are repeatedly missed.
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Spotlight hero — biggest weakness, with action prompt */}
+            {spotlight && (
+              <Box
+                component={motion.div}
+                variants={fadeRise}
+                {...entrance}
+                sx={{
+                  position: "relative",
+                  p: { xs: 2.5, md: 3.5 },
+                  borderRadius: 3,
+                  mb: { xs: 3.5, md: 4.5 },
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, #ef4444 12%, transparent) 0%, color-mix(in srgb, #f59e0b 10%, transparent) 100%)",
+                  border: "1px solid color-mix(in srgb, #ef4444 22%, transparent)",
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "auto minmax(0, 1fr)" },
+                  gap: { xs: 2.5, md: 3 },
+                  alignItems: "center",
+                }}
+              >
+                <AnimatedRing
+                  value={spotlight.currentScore}
+                  size={130}
+                  strokeWidth={11}
+                  color="#ef4444"
+                  caption=""
+                  valueFontSize={28}
+                />
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#b45309",
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.16em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Top priority · weakest skill
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--font-primary)",
+                      fontSize: { xs: "1.4rem", sm: "1.7rem", md: "2rem" },
+                      letterSpacing: "-0.025em",
+                      lineHeight: 1.15,
+                      mt: 0.25,
+                    }}
+                  >
+                    {spotlight.skillName}
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, mt: 1, flexWrap: "wrap" }}>
+                    <Typography sx={{ fontWeight: 700, color: "var(--font-secondary)", fontSize: "0.9rem" }}>
+                      Currently
+                    </Typography>
+                    <Typography sx={{ fontWeight: 800, color: "#ef4444", fontSize: "1.4rem", fontVariantNumeric: "tabular-nums" }}>
+                      {spotlight.currentScore.toFixed(0)}%
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, color: "var(--font-secondary)", fontSize: "0.9rem" }}>
+                      vs threshold
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "1.1rem", fontVariantNumeric: "tabular-nums" }}>
+                      {Math.round(spotlight.threshold)}%
+                    </Typography>
+                  </Box>
+                  {spotlight.recommendation && (
+                    <Typography variant="body2" sx={{ mt: 1.5, color: "var(--font-primary)", lineHeight: 1.5 }}>
+                      {spotlight.recommendation}
+                    </Typography>
+                  )}
+                  {spotlight.sourceContext && (
+                    <Breadcrumb
+                      contentType={spotlight.sourceContext.contentType}
+                      itemName={spotlight.sourceContext.itemName}
+                      courseName={spotlight.sourceContext.courseName}
+                      moduleName={spotlight.sourceContext.moduleName}
+                      submoduleName={spotlight.sourceContext.submoduleName}
+                    />
+                  )}
+                </Box>
+              </Box>
+            )}
+
+            {/* Recommendations row */}
+            {recommendations.length > 0 && (
+              <Box
+                component={motion.div}
+                variants={gridStagger}
+                {...entrance}
+                sx={{
+                  display: "grid",
+                  gap: 1.5,
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(auto-fit, minmax(240px, 1fr))" },
+                  mb: { xs: 3, md: 4 },
+                }}
+              >
+                {recommendations.map((rec) => {
+                  const accent = RECO_ACCENT[rec.type] ?? "var(--accent-indigo)";
+                  const icon = RECO_ICON[rec.type] ?? "mdi:lightbulb-outline";
+                  const isLink = !!rec.actionUrl;
+                  const Wrapper: any = isLink ? "a" : motion.div;
+                  return (
+                    <motion.div
+                      key={`${rec.type}-${rec.title}`}
+                      variants={{
+                        hidden: { opacity: 0, y: 12 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const } },
+                      }}
+                    >
                       <Wrapper
-                        key={`${rec.type}-${rec.title}`}
                         {...(isLink ? { href: rec.actionUrl, target: "_self", rel: "noreferrer" } : {})}
-                        style={{ textDecoration: "none" }}
+                        style={{ textDecoration: "none", display: "block" }}
                       >
                         <Box
                           sx={{
-                            position: "relative",
-                            p: 1.75,
+                            p: 2,
                             borderRadius: 2.5,
-                            border:
-                              "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
                             bgcolor: "var(--card-bg)",
                             cursor: isLink ? "pointer" : "default",
-                            transition: "border-color 0.18s ease, transform 0.18s ease",
-                            "&:hover": isLink
-                              ? {
-                                  borderColor: `color-mix(in srgb, ${accent} 50%, transparent)`,
-                                  transform: "translateY(-1px)",
-                                }
-                              : undefined,
+                            transition: "border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease",
+                            ...(isLink && {
+                              "&:hover": {
+                                borderColor: `color-mix(in srgb, ${accent} 50%, transparent)`,
+                                transform: "translateY(-2px)",
+                                boxShadow: `0 18px 40px -24px color-mix(in srgb, ${accent} 40%, transparent)`,
+                              },
+                            }),
                           }}
                         >
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 0.75 }}>
                             <Box
                               sx={{
-                                width: 28,
-                                height: 28,
+                                width: 30,
+                                height: 30,
                                 borderRadius: 1.5,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                bgcolor: `color-mix(in srgb, ${accent} 16%, transparent)`,
+                                bgcolor: `color-mix(in srgb, ${accent} 18%, transparent)`,
                                 color: accent,
                               }}
                             >
                               <IconWrapper icon={icon} size={16} />
                             </Box>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ fontWeight: 800, color: "var(--font-primary)" }}
-                            >
+                            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
                               {rec.title}
                             </Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.82rem" }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.82rem", lineHeight: 1.5 }}>
                             {rec.description}
                           </Typography>
                         </Box>
                       </Wrapper>
-                    );
-                  })}
-                </Box>
-              )}
+                    </motion.div>
+                  );
+                })}
+              </Box>
+            )}
 
-              {/* Skills below threshold */}
-              {skillsBelowThreshold.length > 0 && (
+            {/* Sub-panels: remaining weak skills + topics + skipped */}
+            <Box
+              component={motion.div}
+              variants={gridStagger}
+              {...entrance}
+              sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" } }}
+            >
+              {skillsBelowThreshold.length > 1 && (
                 <Box
+                  component={motion.div}
+                  variants={fadeRise}
                   sx={{
-                    p: { xs: 1.75, sm: 2 },
-                    borderRadius: 2.5,
-                    border:
-                      "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-                    bgcolor:
-                      "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+                    p: 2,
+                    borderRadius: 3,
+                    border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+                    bgcolor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.25 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        bgcolor: "#ef4444",
-                        boxShadow:
-                          "0 0 0 4px color-mix(in srgb, #ef4444 18%, transparent)",
-                      }}
-                    />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
-                      Skills below threshold ({skillsBelowThreshold.length})
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#ef4444", boxShadow: "0 0 0 4px color-mix(in srgb, #ef4444 18%, transparent)" }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
+                      Other skills below threshold (<CountUp value={skillsBelowThreshold.length - 1} />)
                     </Typography>
                   </Box>
                   <Box sx={{ display: "grid", gap: 1.25 }}>
-                    {skillsBelowThreshold.slice(0, 6).map((s) => {
+                    {skillsBelowThreshold.slice(1, 6).map((s) => {
                       const accent = proficiencyBandColor(s.currentScore);
                       return (
                         <Box key={s.skillName}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              gap: 1,
-                              mb: 0.5,
-                            }}
-                          >
-                            <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+                          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={s.skillName}>
                               {s.skillName}
                             </Typography>
-                            <Tooltip
-                              title={`Threshold ${Math.round(s.threshold)}% · current ${s.currentScore.toFixed(0)}%`}
-                              arrow
-                            >
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  fontWeight: 800,
-                                  fontVariantNumeric: "tabular-nums",
-                                  color: accent,
-                                }}
-                              >
-                                {s.currentScore.toFixed(0)}% / {Math.round(s.threshold)}%
-                              </Typography>
-                            </Tooltip>
-                          </Box>
-                          <LinearProgress
-                            variant="determinate"
-                            value={Math.max(0, Math.min(100, s.currentScore))}
-                            sx={{
-                              height: 6,
-                              borderRadius: 3,
-                              bgcolor:
-                                "color-mix(in srgb, var(--border-default) 45%, transparent)",
-                              "& .MuiLinearProgress-bar": {
-                                borderRadius: 3,
-                                backgroundColor: accent,
-                              },
-                            }}
-                          />
-                          {s.recommendation && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: "block", mt: 0.5 }}
-                            >
-                              {s.recommendation}
+                            <Typography variant="caption" sx={{ fontWeight: 800, color: accent, fontVariantNumeric: "tabular-nums" }}>
+                              {s.currentScore.toFixed(0)}% / {Math.round(s.threshold)}%
                             </Typography>
-                          )}
-                          {s.sourceContext && (
-                            <Breadcrumb
-                              contentType={s.sourceContext.contentType}
-                              itemName={s.sourceContext.itemName}
-                              courseName={s.sourceContext.courseName}
-                              moduleName={s.sourceContext.moduleName}
-                              submoduleName={s.sourceContext.submoduleName}
+                          </Box>
+                          <Box sx={{ height: 6, borderRadius: 999, bgcolor: "color-mix(in srgb, var(--border-default) 45%, transparent)", overflow: "hidden" }}>
+                            <Box
+                              sx={{
+                                width: `${Math.max(0, Math.min(100, s.currentScore))}%`,
+                                height: "100%",
+                                background: `linear-gradient(90deg, ${accent} 0%, color-mix(in srgb, ${accent} 65%, transparent) 100%)`,
+                                transition: "width 0.6s ease",
+                              }}
                             />
-                          )}
+                          </Box>
                         </Box>
                       );
                     })}
@@ -408,41 +382,25 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                 </Box>
               )}
 
-              {/* Topics frequently incorrect */}
               {topicsFrequentlyIncorrect.length > 0 && (
                 <Box
+                  component={motion.div}
+                  variants={fadeRise}
                   sx={{
-                    p: { xs: 1.75, sm: 2 },
-                    borderRadius: 2.5,
-                    border:
-                      "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-                    bgcolor:
-                      "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+                    p: 2,
+                    borderRadius: 3,
+                    border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+                    bgcolor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.25 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        bgcolor: "#f59e0b",
-                        boxShadow:
-                          "0 0 0 4px color-mix(in srgb, #f59e0b 18%, transparent)",
-                      }}
-                    />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#f59e0b", boxShadow: "0 0 0 4px color-mix(in srgb, #f59e0b 18%, transparent)" }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
                       Topics you keep missing
                     </Typography>
                   </Box>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gap: 1,
-                      gridTemplateColumns: { xs: "1fr", sm: "repeat(auto-fit, minmax(220px, 1fr))" },
-                    }}
-                  >
-                    {topicsFrequentlyIncorrect.map((t) => {
+                  <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr", sm: "repeat(auto-fit, minmax(180px, 1fr))" } }}>
+                    {topicsFrequentlyIncorrect.slice(0, 6).map((t) => {
                       const ratio = t.totalAttempts > 0 ? t.incorrectCount / t.totalAttempts : 0;
                       const pct = Math.round(ratio * 100);
                       return (
@@ -451,18 +409,14 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                           sx={{
                             p: 1.25,
                             borderRadius: 2,
-                            border:
-                              "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
                             bgcolor: "var(--card-bg)",
                           }}
                         >
                           <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                             {t.topicName}
                           </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "#b45309", fontWeight: 700 }}
-                          >
+                          <Typography variant="caption" sx={{ color: "#b45309", fontWeight: 800, letterSpacing: "0.02em" }}>
                             {t.incorrectCount}/{t.totalAttempts} wrong · {pct}%
                           </Typography>
                           {t.sourceContext && (
@@ -481,44 +435,25 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                 </Box>
               )}
 
-              {/* Skipped questions */}
               {skippedQuestions.length > 0 && (
                 <Box
+                  component={motion.div}
+                  variants={fadeRise}
                   sx={{
-                    p: { xs: 1.75, sm: 2 },
-                    borderRadius: 2.5,
-                    border:
-                      "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-                    bgcolor:
-                      "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+                    p: 2,
+                    borderRadius: 3,
+                    border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+                    bgcolor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+                    gridColumn: { md: "1 / -1" },
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.25 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        bgcolor: "var(--accent-indigo)",
-                        boxShadow:
-                          "0 0 0 4px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
-                      }}
-                    />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "var(--accent-indigo)", boxShadow: "0 0 0 4px color-mix(in srgb, var(--accent-indigo) 18%, transparent)" }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
                       Questions you skipped recently
                     </Typography>
                   </Box>
-                  <Box
-                    component="ul"
-                    sx={{
-                      pl: 2.25,
-                      m: 0,
-                      display: "grid",
-                      gap: 0.5,
-                      color: "var(--font-primary)",
-                      fontSize: "0.85rem",
-                    }}
-                  >
+                  <Box component="ul" sx={{ pl: 2.25, m: 0, display: "grid", gap: 0.5, color: "var(--font-primary)", fontSize: "0.85rem" }}>
                     {skippedQuestions.map((q, idx) => (
                       <Box component="li" key={`${q}-${idx}`} sx={{ lineHeight: 1.5 }}>
                         {q}
@@ -527,10 +462,10 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                   </Box>
                 </Box>
               )}
-            </motion.div>
-          )}
-        </Box>
-      </Box>
+            </Box>
+          </>
+        )}
+      </SectionShell>
     </Reveal>
   );
 }
