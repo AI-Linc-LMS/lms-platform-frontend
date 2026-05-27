@@ -27,9 +27,12 @@ import {
   Comment as CommentType,
   PostType,
   POST_TYPE_CONFIG,
-  UserXP,
+  ReportReason,
 } from "@/lib/services/community.service";
-import { MilestoneWidget } from "@/components/community/MilestoneWidget";
+import { ShareDialog } from "@/components/community/ShareDialog";
+import { ReportDialog } from "@/components/community/ReportDialog";
+import { ImageGallery } from "@/components/community/ImageGallery";
+import { useXPGain } from "@/components/community/XPGainProvider";
 import { useToast } from "@/components/common/Toast";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 import { softBreakMarkdown } from "@/lib/utils/html-utils";
@@ -65,6 +68,7 @@ export default function ThreadDetailPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const { showXPGain } = useXPGain();
   const threadId = Number(params.threadId);
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
@@ -72,7 +76,12 @@ export default function ThreadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [userXP, setUserXP] = useState<UserXP | null>(null);
+  // Note: thread detail no longer renders the milestone widget — the XP-gain
+  // floating popup handles immediate reward feedback. We omit a userXP state
+  // here entirely to avoid extra network round-trips.
+  const [shareOpen, setShareOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportCommentId, setReportCommentId] = useState<number | null>(null);
   const optimisticCommentVotesRef = useRef<
     Map<number, "upvote" | "downvote" | null>
   >(new Map());
@@ -159,7 +168,6 @@ export default function ThreadDetailPage() {
       optimisticThreadBookmarkRef.current = loadThreadBookmarkFromStorage();
       setExtras(loadThreadExtras(threadId));
       loadThread();
-      communityService.getUserXP().then(setUserXP).catch(() => {});
     }
   }, [threadId]);
 
@@ -298,98 +306,25 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.voteThread(threadId, type);
-      refreshXP();
-      const updatedThread = await communityService.getThreadDetail(threadId);
-
-      setThread((prev) => {
-        const mergeCommentVotes = (
-          comments: CommentType[]
-        ): CommentType[] => {
-          return comments.map((c) => {
-            const optimisticVote = optimisticCommentVotesRef.current.get(c.id);
-
-            const updatedComment = {
-              ...c,
-              user_vote:
-                c.user_vote !== undefined
-                  ? c.user_vote
-                  : optimisticVote ?? null,
-            };
-
-            if (c.replies && c.replies.length > 0) {
-              return {
-                ...updatedComment,
-                replies: mergeCommentVotes(c.replies),
-              };
-            }
-
-            return updatedComment;
-          });
-        };
-
-        return prev
-          ? {
-              ...updatedThread,
-              // Always trust backend data first - use backend user_vote if provided
-              // Only use optimistic state as fallback if backend doesn't provide it
-              user_vote:
-                updatedThread.user_vote !== undefined
-                  ? updatedThread.user_vote
-                  : optimisticThreadVoteRef.current ?? null,
-              upvotes: updatedThread.upvotes,
-              downvotes: updatedThread.downvotes,
-              comments: mergeCommentVotes(updatedThread.comments),
-              // Always trust backend data first - use backend user_bookmarked if provided
-              // Only use optimistic state as fallback if backend doesn't provide it
-              user_bookmarked:
-                updatedThread.user_bookmarked !== undefined
-                  ? updatedThread.user_bookmarked
-                  : optimisticThreadBookmarkRef.current ?? prev.user_bookmarked ?? false,
-            }
-          : updatedThread;
-      });
-
-      // Update optimistic state to match backend response
-      if (updatedThread.user_vote !== undefined) {
-        optimisticThreadVoteRef.current = updatedThread.user_vote;
+      // Show "+2 IP" only when this isn't a toggle-off (which awards nothing).
+      if (currentVote !== type) {
+        showXPGain(2, type === "upvote" ? "mdi:thumb-up" : "mdi:thumb-down", "Voted");
       }
-      if (updatedThread.user_bookmarked !== undefined) {
-        optimisticThreadBookmarkRef.current = updatedThread.user_bookmarked;
-      }
-
-      // Also update the shared community list storage to keep them in sync
-      // This ensures when user navigates back to list page, it shows correct state
+      // Trust the optimistic update — re-fetching the full thread detail on
+      // every vote was the main source of the perceived lag. The cross-page
+      // sessionStorage keeps the feed view in sync without a network call.
       if (typeof window !== "undefined") {
         try {
           const VOTES_STORAGE_KEY = "community_thread_votes";
-          const BOOKMARKS_STORAGE_KEY = "community_thread_bookmarks";
-          
           const storedVotes = sessionStorage.getItem(VOTES_STORAGE_KEY);
           const votesMap = storedVotes ? JSON.parse(storedVotes) : {};
-          
-          const storedBookmarks = sessionStorage.getItem(BOOKMARKS_STORAGE_KEY);
-          const bookmarksMap = storedBookmarks ? JSON.parse(storedBookmarks) : {};
-          
-          // Update with backend data
-          if (updatedThread.user_vote !== undefined) {
-            votesMap[threadId] = updatedThread.user_vote;
-          }
-          if (updatedThread.user_bookmarked !== undefined) {
-            bookmarksMap[threadId] = updatedThread.user_bookmarked;
-          }
-          
+          votesMap[threadId] = newUserVote;
           sessionStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(votesMap));
-          sessionStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarksMap));
-        } catch (error) {
-          // Silently handle storage errors
+        } catch {
+          /* no-op */
         }
       }
-
-      saveCommentVotesToStorage(optimisticCommentVotesRef.current);
-      saveThreadVoteToStorage(optimisticThreadVoteRef.current ?? null);
-      saveThreadBookmarkToStorage(
-        optimisticThreadBookmarkRef.current ?? false
-      );
+      saveThreadVoteToStorage(newUserVote);
     } catch (error) {
       optimisticThreadVoteRef.current = thread.user_vote ?? null;
       saveThreadVoteToStorage(optimisticThreadVoteRef.current);
@@ -493,64 +428,22 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.voteComment(threadId, commentId, type);
-      refreshXP();
-      const updatedThread = await communityService.getThreadDetail(threadId);
-
-      const mergeCommentVotes = (comments: CommentType[]): CommentType[] => {
-        return comments.map((c) => {
-          const optimisticVote = optimisticCommentVotesRef.current.get(c.id);
-
-          if (c.id === commentId) {
-            return {
-              ...c,
-              upvotes: c.upvotes,
-              downvotes: c.downvotes,
-              user_vote:
-                c.user_vote !== undefined ? c.user_vote : optimisticVote ?? null,
-            };
-          }
-
-          const updatedComment = {
-            ...c,
-            user_vote:
-              c.user_vote !== undefined ? c.user_vote : optimisticVote ?? null,
-          };
-
-          if (c.replies && c.replies.length > 0) {
-            return {
-              ...updatedComment,
-              replies: mergeCommentVotes(c.replies),
-            };
-          }
-
-          return updatedComment;
-        });
-      };
-
-      setThread((prev) =>
-        prev
-          ? {
-              ...updatedThread,
-              comments: mergeCommentVotes(updatedThread.comments),
-              user_vote:
-                updatedThread.user_vote !== undefined
-                  ? updatedThread.user_vote
-                  : optimisticThreadVoteRef.current ?? prev?.user_vote ?? null,
-              user_bookmarked:
-                updatedThread.user_bookmarked !== undefined
-                  ? updatedThread.user_bookmarked
-                  : optimisticThreadBookmarkRef.current ?? prev?.user_bookmarked ?? false,
-            }
-          : updatedThread
-      );
+      if (currentVote !== type) {
+        showXPGain(2, type === "upvote" ? "mdi:thumb-up" : "mdi:thumb-down", "Voted");
+      }
+      // Trust the optimistic update. The whole-thread re-fetch was needlessly
+      // expensive and the source of the perceived lag on each vote.
+      saveCommentVotesToStorage(optimisticCommentVotesRef.current);
     } catch (error) {
       optimisticCommentVotesRef.current.delete(commentId);
       await loadThread();
       showToast(t("community.failedToVote"), "error");
     }
-  }, [thread, threadId, showToast, t]);
+  }, [thread, threadId, showToast, t, showXPGain]);
 
-  const refreshXP = () => communityService.getUserXP().then(setUserXP).catch(() => {});
+  // Kept as a no-op so callers don't need conditional plumbing. The floating
+  // XP-gain popup is now the canonical feedback channel for IP changes here.
+  const refreshXP = () => {};
 
   const handleAddComment = async () => {
     if (!commentBody.trim()) return;
@@ -560,6 +453,7 @@ export default function ThreadDetailPage() {
       await communityService.createComment(threadId, { body: commentBody.trim() });
       setCommentBody("");
       await loadThread();
+      showXPGain(5, "mdi:comment-outline", "Answered");
       refreshXP();
       showToast(t("community.commentAdded"), "success");
     } catch (error) {
@@ -573,32 +467,41 @@ export default function ThreadDetailPage() {
     try {
       await communityService.createComment(threadId, { body, parent_id: parentId });
       await loadThread();
+      showXPGain(5, "mdi:reply", "Replied");
       refreshXP();
       showToast(t("community.replyAdded"), "success");
     } catch (error) {
       showToast(t("community.failedToAddReply"), "error");
       throw error;
     }
-  }, [threadId, showToast, t]);
+  }, [threadId, showToast, t, showXPGain]);
 
   const handleAcceptComment = useCallback(async (commentId: number) => {
     try {
       const updated = await communityService.acceptComment(threadId, commentId);
+      // Mark the target comment with the server's new state. Do NOT auto-unmark
+      // the others — multiple comments can now be flagged helpful (up to the cap).
       setThread((prev) => {
         if (!prev) return prev;
         const updateComment = (comments: CommentType[]): CommentType[] =>
           comments.map((c) => {
-            if (c.id === commentId) return { ...c, is_accepted: updated.is_accepted, accepted_at: updated.accepted_at };
-            if (c.id !== commentId && updated.is_accepted) return { ...c, is_accepted: false, accepted_at: null };
+            if (c.id === commentId) {
+              return { ...c, is_accepted: updated.is_accepted, accepted_at: updated.accepted_at };
+            }
             return { ...c, replies: c.replies ? updateComment(c.replies) : c.replies };
           });
         return { ...prev, comments: updateComment(prev.comments) };
       });
-      communityService.getUserXP().then(setUserXP).catch(() => {});
-    } catch {
-      showToast(t("community.failedToAcceptAnswer"), "error");
+      // Marking helpful awards +5 IP to the thread author (us, here). Unmarking awards none.
+      if (updated.is_accepted) {
+        showXPGain(5, "mdi:check-decagram", "Marked helpful");
+      }
+    } catch (err) {
+      // Surface the server message (e.g. cap-reached) verbatim — the backend
+      // hands us a useful string in `detail` and the service forwards it.
+      showToast(err instanceof Error ? err.message : t("community.failedToAcceptAnswer"), "error");
     }
-  }, [threadId, showToast, t]);
+  }, [threadId, showToast, t, showXPGain]);
 
   const handleBookmark = async () => {
     if (!thread) return;
@@ -630,95 +533,24 @@ export default function ThreadDetailPage() {
 
     try {
       await communityService.bookmarkThread(threadId);
-      refreshXP();
-      const updatedThread = await communityService.getThreadDetail(threadId);
-
-      setThread((prev) => {
-        const mergeCommentVotes = (
-          comments: CommentType[]
-        ): CommentType[] => {
-          return comments.map((c) => {
-            const optimisticVote = optimisticCommentVotesRef.current.get(c.id);
-
-            const updatedComment = {
-              ...c,
-              user_vote:
-                c.user_vote !== undefined
-                  ? c.user_vote
-                  : optimisticVote ?? null,
-            };
-
-            if (c.replies && c.replies.length > 0) {
-              return {
-                ...updatedComment,
-                replies: mergeCommentVotes(c.replies),
-              };
-            }
-
-            return updatedComment;
-          });
-        };
-
-        return prev
-          ? {
-              ...updatedThread,
-              // Always trust backend data first - use backend user_bookmarked if provided
-              // Only use optimistic state as fallback if backend doesn't provide it
-              user_bookmarked:
-                updatedThread.user_bookmarked !== undefined
-                  ? updatedThread.user_bookmarked
-                  : optimisticThreadBookmarkRef.current ?? prev.user_bookmarked ?? false,
-              bookmarks_count: updatedThread.bookmarks_count,
-              // Always trust backend data first - use backend user_vote if provided
-              // Only use optimistic state as fallback if backend doesn't provide it
-              user_vote:
-                updatedThread.user_vote !== undefined
-                  ? updatedThread.user_vote
-                  : optimisticThreadVoteRef.current ?? prev.user_vote ?? null,
-              comments: mergeCommentVotes(updatedThread.comments),
-            }
-          : updatedThread;
-      });
-
-      // Update optimistic state to match backend response
-      if (updatedThread.user_bookmarked !== undefined) {
-        optimisticThreadBookmarkRef.current = updatedThread.user_bookmarked;
+      if (!isBookmarked) {
+        showXPGain(1, "mdi:bookmark", "Saved");
       }
-      if (updatedThread.user_vote !== undefined) {
-        optimisticThreadVoteRef.current = updatedThread.user_vote;
-      }
-
-      // Also update the shared community list storage to keep them in sync
+      // Trust the optimistic update. Sync the cross-page storage so the feed
+      // shows the new bookmark state without a network round-trip.
       if (typeof window !== "undefined") {
         try {
-          const VOTES_STORAGE_KEY = "community_thread_votes";
           const BOOKMARKS_STORAGE_KEY = "community_thread_bookmarks";
-          
-          const storedVotes = sessionStorage.getItem(VOTES_STORAGE_KEY);
-          const votesMap = storedVotes ? JSON.parse(storedVotes) : {};
-          
           const storedBookmarks = sessionStorage.getItem(BOOKMARKS_STORAGE_KEY);
           const bookmarksMap = storedBookmarks ? JSON.parse(storedBookmarks) : {};
-          
-          // Update with backend data
-          if (updatedThread.user_vote !== undefined) {
-            votesMap[threadId] = updatedThread.user_vote;
-          }
-          if (updatedThread.user_bookmarked !== undefined) {
-            bookmarksMap[threadId] = updatedThread.user_bookmarked;
-          }
-          
-          sessionStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(votesMap));
+          bookmarksMap[threadId] = newUserBookmarked;
           sessionStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarksMap));
-        } catch (error) {
-          // Silently handle storage errors
+        } catch {
+          /* no-op */
         }
       }
+      saveThreadBookmarkToStorage(newUserBookmarked);
 
-      // Save optimistic state to storage after successful API call
-      saveThreadBookmarkToStorage(optimisticThreadBookmarkRef.current ?? false);
-      saveThreadVoteToStorage(optimisticThreadVoteRef.current ?? null);
-      
       showToast(
         newUserBookmarked ? t("community.threadBookmarked") : t("community.bookmarkRemoved"),
         "success"
@@ -754,11 +586,22 @@ export default function ThreadDetailPage() {
     return (
       <MainLayout fullWidthContent>
         <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
-          <Paper elevation={0} sx={{ p: 8, textAlign: "center" }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 8,
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1.5,
+            }}
+          >
+            <IconWrapper icon="mdi:forum-remove-outline" size={56} color="var(--font-tertiary)" />
             <Typography variant="h6" color="text.secondary">
               {t("community.threadNotFound")}
             </Typography>
-            <Button onClick={() => router.push("/community")} sx={{ mt: 2 }}>
+            <Button onClick={() => router.push("/community")} sx={{ mt: 1 }}>
               {t("community.backToCommunity")}
             </Button>
           </Paper>
@@ -804,10 +647,9 @@ export default function ThreadDetailPage() {
           <Typography color="text.primary">{thread.title}</Typography>
         </Breadcrumbs>
 
-        {/* Two-column layout: main content + sidebar */}
-        <Box sx={{ display: "flex", gap: { md: 3, lg: 3.5 }, alignItems: "flex-start" }}>
-        {/* Main content column */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Single-column layout — the milestone widget belongs on the feed page,
+            not in the middle of a discussion. Gives the post and answers full width. */}
+        <Box sx={{ maxWidth: 980, mx: "auto", width: "100%" }}>
 
         {/* Thread Content */}
         <Paper
@@ -865,19 +707,25 @@ export default function ThreadDetailPage() {
                 {thread.title}
               </Typography>
 
-              {/* Tags */}
+              {/* Tags — clickable, route back to feed pre-filtered */}
               {thread.tags.length > 0 && (
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
                   {thread.tags.map((tag) => (
                     <Chip
                       key={tag.id}
-                      label={tag.name}
+                      label={`#${tag.name}`}
                       size="small"
+                      onClick={() => router.push(`/community?tag=${encodeURIComponent(tag.name)}`)}
                       sx={{
                         backgroundColor:
                           "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
                         color: "var(--accent-indigo)",
                         fontWeight: 500,
+                        cursor: "pointer",
+                        "&:hover": {
+                          backgroundColor:
+                            "color-mix(in srgb, var(--accent-indigo) 22%, var(--surface) 78%)",
+                        },
                       }}
                     />
                   ))}
@@ -960,29 +808,12 @@ export default function ThreadDetailPage() {
                 </ReactMarkdown>
               </Box>
 
-              {/* Attached images */}
+              {/* Attached images — Instagram-style gallery with click-to-zoom */}
               {(() => {
                 const imageUrls = thread.image_urls?.length ? thread.image_urls : extras.image_urls;
                 return imageUrls && imageUrls.length > 0 ? (
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2.5 }}>
-                    {imageUrls.map((url, i) => (
-                      <Box
-                        key={i}
-                        component="img"
-                        src={url}
-                        alt=""
-                        sx={{
-                          maxWidth: "100%",
-                          width: imageUrls.length === 1 ? "100%" : "calc(50% - 4px)",
-                          maxHeight: 360,
-                          objectFit: "cover",
-                          borderRadius: "10px",
-                          border: "1px solid var(--border-default)",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => window.open(url, "_blank")}
-                      />
-                    ))}
+                  <Box sx={{ mb: 2.5 }}>
+                    <ImageGallery urls={imageUrls} variant="detail" />
                   </Box>
                 ) : null;
               })()}
@@ -1044,28 +875,58 @@ export default function ThreadDetailPage() {
                   </Box>
                 </Box>
 
-                <Button
-                  startIcon={
-                    <IconWrapper
-                      icon={
-                        thread.user_bookmarked
-                          ? "mdi:bookmark"
-                          : "mdi:bookmark-outline"
-                      }
-                    />
-                  }
-                  onClick={handleBookmark}
-                  sx={{
-                    textTransform: "none",
-                    color: "inherit",
-                    "&:hover": {
-                      backgroundColor: "rgba(0, 0, 0, 0.04)",
-                    },
-                  }}
-                >
-                  {thread.user_bookmarked ? t("community.bookmarked") : t("community.bookmark")} (
-                  {thread.bookmarks_count})
-                </Button>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Button
+                    startIcon={<IconWrapper icon="mdi:share-variant-outline" />}
+                    onClick={() => setShareOpen(true)}
+                    sx={{
+                      textTransform: "none",
+                      color: "var(--font-secondary)",
+                      "&:hover": {
+                        color: "var(--accent-indigo)",
+                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                      },
+                    }}
+                  >
+                    Share
+                  </Button>
+                  <Button
+                    startIcon={<IconWrapper icon="mdi:flag-outline" />}
+                    onClick={() => setReportOpen(true)}
+                    sx={{
+                      textTransform: "none",
+                      color: "var(--font-secondary)",
+                      "&:hover": {
+                        color: "#ef4444",
+                        backgroundColor: "rgba(239,68,68,0.08)",
+                      },
+                    }}
+                  >
+                    Report
+                  </Button>
+                  <Button
+                    startIcon={
+                      <IconWrapper
+                        icon={
+                          thread.user_bookmarked
+                            ? "mdi:bookmark"
+                            : "mdi:bookmark-outline"
+                        }
+                      />
+                    }
+                    onClick={handleBookmark}
+                    sx={{
+                      textTransform: "none",
+                      color: "inherit",
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                      },
+                    }}
+                  >
+                    {thread.user_bookmarked ? t("community.bookmarked") : t("community.bookmark")} (
+                    {thread.bookmarks_count})
+                  </Button>
+                </Box>
               </Box>
             </Box>
           </Box>
@@ -1082,46 +943,71 @@ export default function ThreadDetailPage() {
             overflow: "hidden",
           }}
         >
-          <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
             {thread.comments_count}{" "}
             {t("community.answer", { count: thread.comments_count })}
           </Typography>
 
-          {/* Add Comment Form */}
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              placeholder={t("community.writeAnswerPlaceholder")}
-              value={commentBody}
-              onChange={(e) => setCommentBody(e.target.value)}
-              fullWidth
-              multiline
-              rows={4}
-              sx={{ mb: 1 }}
-            />
-            <Button
-              variant="contained"
-              onClick={handleAddComment}
-              disabled={!commentBody.trim() || submitting}
-              startIcon={<IconWrapper icon="mdi:send" />}
+          {/* Add Comment Form — disabled when thread is locked */}
+          {thread.is_locked ? (
+            <Box
               sx={{
-                textTransform: "none",
-                backgroundColor: "var(--accent-indigo)",
-                color: "var(--font-light)",
-                "&:hover": {
-                  backgroundColor: "var(--accent-indigo-dark)",
-                },
-                "&.Mui-disabled": {
-                  backgroundColor:
-                    "color-mix(in srgb, var(--accent-indigo) 45%, var(--surface) 55%)",
-                  color: "var(--font-secondary)",
-                  WebkitTextFillColor: "var(--font-secondary)",
-                  opacity: 1,
-                },
+                mb: 3,
+                p: 2,
+                borderRadius: "10px",
+                border: "1px solid rgba(107,114,128,0.3)",
+                backgroundColor: "rgba(107,114,128,0.06)",
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
               }}
             >
-              {submitting ? t("community.posting") : t("community.postAnswer")}
-            </Button>
-          </Box>
+              <IconWrapper icon="mdi:lock-outline" size={20} color="#6b7280" />
+              <Box>
+                <Typography variant="body2" fontWeight={700} sx={{ color: "#374151" }}>
+                  This thread is locked
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  A moderator has closed it to new replies. Existing comments still vote.
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                placeholder={t("community.writeAnswerPlaceholder")}
+                value={commentBody}
+                onChange={(e) => setCommentBody(e.target.value)}
+                fullWidth
+                multiline
+                rows={4}
+                sx={{ mb: 1 }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleAddComment}
+                disabled={!commentBody.trim() || submitting}
+                startIcon={<IconWrapper icon="mdi:send" />}
+                sx={{
+                  textTransform: "none",
+                  backgroundColor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": {
+                    backgroundColor: "var(--accent-indigo-dark)",
+                  },
+                  "&.Mui-disabled": {
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 45%, var(--surface) 55%)",
+                    color: "var(--font-secondary)",
+                    WebkitTextFillColor: "var(--font-secondary)",
+                    opacity: 1,
+                  },
+                }}
+              >
+                {submitting ? t("community.posting") : t("community.postAnswer")}
+              </Button>
+            </Box>
+          )}
 
           {/* Comments List */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1142,6 +1028,8 @@ export default function ThreadDetailPage() {
                   onReply={handleReply}
                   onAccept={handleAcceptComment}
                   isThreadAuthor={canAcceptAnswers}
+                  onAuthorClick={(id) => router.push(`/community/user/${id}`)}
+                  onReport={(id) => setReportCommentId(id)}
                 />
               </Box>
             ))}
@@ -1171,24 +1059,43 @@ export default function ThreadDetailPage() {
           </Box>
         </Paper>
 
-        </Box>{/* end main content column */}
+        </Box>{/* end single-column layout */}
 
-        {/* Sidebar — fluid width, sticky */}
-        <Box
-          sx={{
-            display: { xs: "none", md: "block" },
-            width: { md: "26%", lg: "23%", xl: "20%" },
-            maxWidth: 320,
-            minWidth: 220,
-            flexShrink: 0,
-            position: "sticky",
-            top: 80,
-          }}
-        >
-          {userXP && <MilestoneWidget xp={userXP} />}
-        </Box>
+        {/* Share */}
+        {shareOpen && (
+          <ShareDialog
+            open
+            onClose={() => setShareOpen(false)}
+            title={thread.title}
+            url={typeof window !== "undefined" ? window.location.href : ""}
+          />
+        )}
 
-        </Box>{/* end two-column layout */}
+        {/* Report (thread) */}
+        {reportOpen && (
+          <ReportDialog
+            open
+            onClose={() => setReportOpen(false)}
+            target="thread"
+            onSubmit={async (payload: { reason: ReportReason; details?: string }) => {
+              await communityService.reportThread(threadId, payload);
+              showToast("Report submitted. Thanks for letting us know.", "success");
+            }}
+          />
+        )}
+
+        {/* Report (comment) */}
+        {reportCommentId !== null && (
+          <ReportDialog
+            open
+            onClose={() => setReportCommentId(null)}
+            target="comment"
+            onSubmit={async (payload: { reason: ReportReason; details?: string }) => {
+              await communityService.reportComment(threadId, reportCommentId, payload);
+              showToast("Report submitted. Thanks for letting us know.", "success");
+            }}
+          />
+        )}
       </Box>
     </MainLayout>
   );

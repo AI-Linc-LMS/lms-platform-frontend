@@ -12,6 +12,7 @@
     "postinstall": "node scripts/vendor-noise-suppression.mjs"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.90.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",

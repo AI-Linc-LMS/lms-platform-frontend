@@ -63,6 +63,26 @@ const NOTIFICATION_TYPE_CONFIG: Record<
     color: "var(--primary-500)",
     bgColor: "color-mix(in srgb, var(--primary-500) 12%, var(--surface) 88%)",
   },
+  community_mention: {
+    icon: "mdi:at",
+    color: "var(--accent-purple)",
+    bgColor: "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
+  },
+  community_answer_accepted: {
+    icon: "mdi:check-decagram",
+    color: "var(--success-500)",
+    bgColor: "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)",
+  },
+  community_bounty_won: {
+    icon: "mdi:fire",
+    color: "#f59e0b",
+    bgColor: "color-mix(in srgb, #f59e0b 14%, var(--surface) 86%)",
+  },
+  community_new_follower: {
+    icon: "mdi:account-plus",
+    color: "var(--accent-purple)",
+    bgColor: "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
+  },
   custom: {
     icon: "mdi:bell",
     color: "var(--font-secondary)",

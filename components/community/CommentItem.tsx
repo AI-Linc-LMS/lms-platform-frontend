@@ -9,6 +9,7 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import type { Comment } from "@/lib/services/community.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { VoteButtons } from "./VoteButtons";
+import { MentionText } from "./MentionText";
 
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 
@@ -34,6 +35,8 @@ interface CommentItemProps {
   onVote: (commentId: number, type: "upvote" | "downvote") => Promise<void>;
   onReply: (commentId: number, body: string) => Promise<void>;
   onAccept?: (commentId: number) => Promise<void>;
+  onReport?: (commentId: number) => void;
+  onAuthorClick?: (authorId: number) => void;
   isThreadAuthor?: boolean;
   depth?: number;
   parentAuthorName?: string;
@@ -45,6 +48,8 @@ export const CommentItem = memo(function CommentItem({
   onVote,
   onReply,
   onAccept,
+  onReport,
+  onAuthorClick,
   isThreadAuthor = false,
   depth = 0,
   parentAuthorName,
@@ -94,23 +99,14 @@ export const CommentItem = memo(function CommentItem({
         isAccepted
           ? {
               borderRadius: "10px",
-              border: "1.5px solid #22c55e",
-              backgroundColor: "rgba(34,197,94,0.04)",
+              border: "1.5px solid rgba(22,163,74,0.55)",
+              backgroundColor: "rgba(22,163,74,0.06)",
               p: 1.25,
               mx: -1.25,
             }
           : {}
       }
     >
-      {isAccepted && (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.75 }}>
-          <IconWrapper icon="mdi:check-circle" size={14} color="#22c55e" />
-          <Typography variant="caption" fontWeight={700} sx={{ color: "#22c55e", fontSize: "0.7rem", letterSpacing: "0.03em" }}>
-            Accepted Answer
-          </Typography>
-        </Box>
-      )}
-
       <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: avatarSize }}>
           <Avatar
@@ -135,7 +131,23 @@ export const CommentItem = memo(function CommentItem({
 
         <Box sx={{ flex: 1, minWidth: 0, pb: hasReplies ? 1.5 : 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75, mb: 0.4 }}>
-            <Typography variant={depth === 0 ? "body2" : "caption"} fontWeight={700} sx={{ color: "var(--font-primary)" }}>
+            <Typography
+              variant={depth === 0 ? "body2" : "caption"}
+              fontWeight={700}
+              onClick={
+                onAuthorClick && comment.author.id
+                  ? () => onAuthorClick(comment.author.id)
+                  : undefined
+              }
+              sx={{
+                color: "var(--font-primary)",
+                cursor: onAuthorClick && comment.author.id ? "pointer" : "default",
+                "&:hover":
+                  onAuthorClick && comment.author.id
+                    ? { color: "var(--accent-indigo)", textDecoration: "underline" }
+                    : undefined,
+              }}
+            >
               {comment.author.name}
             </Typography>
             {tier && tier !== "bronze" && (
@@ -172,6 +184,7 @@ export const CommentItem = memo(function CommentItem({
 
           <Typography
             variant="body2"
+            component="div"
             sx={{
               color: "var(--font-secondary)",
               lineHeight: 1.65,
@@ -181,7 +194,7 @@ export const CommentItem = memo(function CommentItem({
               mb: 0.75,
             }}
           >
-            {comment.body}
+            <MentionText text={comment.body} inline />
           </Typography>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -214,23 +227,61 @@ export const CommentItem = memo(function CommentItem({
             )}
 
             {isThreadAuthor && depth === 0 && onAccept && (
-              <Tooltip title={isAccepted ? "Unmark as accepted" : "Mark as accepted answer"}>
-                <IconButton
+              <Tooltip
+                title={
+                  isAccepted
+                    ? "Unmark as helpful"
+                    : "Mark as helpful (up to 3 per thread)"
+                }
+              >
+                <Button
                   size="small"
                   onClick={handleAccept}
                   disabled={accepting}
+                  startIcon={
+                    <IconWrapper
+                      icon={isAccepted ? "mdi:check-decagram" : "mdi:check-decagram-outline"}
+                      size={15}
+                      color={isAccepted ? "#16a34a" : undefined}
+                    />
+                  }
                   sx={{
-                    p: 0.5,
-                    color: isAccepted ? "#22c55e" : "var(--font-tertiary)",
-                    "&:hover": { color: "#22c55e", backgroundColor: "rgba(34,197,94,0.08)" },
-                    transition: "color 0.15s",
+                    textTransform: "none",
+                    fontSize: "0.78rem",
+                    fontWeight: isAccepted ? 700 : 500,
+                    minWidth: "auto",
+                    px: 1,
+                    py: 0.25,
+                    color: isAccepted ? "#15803d" : "var(--font-secondary)",
+                    backgroundColor: isAccepted ? "rgba(22,163,74,0.10)" : "transparent",
+                    border: isAccepted
+                      ? "1px solid rgba(22,163,74,0.32)"
+                      : "1px solid transparent",
+                    borderRadius: "6px",
+                    "&:hover": {
+                      color: "#15803d",
+                      backgroundColor: "rgba(22,163,74,0.14)",
+                      borderColor: "rgba(22,163,74,0.36)",
+                    },
                   }}
                 >
-                  <IconWrapper
-                    icon={isAccepted ? "mdi:star" : "mdi:star-outline"}
-                    size={17}
-                    color={isAccepted ? "#22c55e" : undefined}
-                  />
+                  Helpful
+                </Button>
+              </Tooltip>
+            )}
+            {onReport && (
+              <Tooltip title="Report comment">
+                <IconButton
+                  size="small"
+                  onClick={() => onReport(comment.id)}
+                  sx={{
+                    p: 0.5,
+                    ml: "auto",
+                    color: "var(--font-tertiary)",
+                    "&:hover": { color: "#ef4444", backgroundColor: "rgba(239,68,68,0.08)" },
+                  }}
+                >
+                  <IconWrapper icon="mdi:flag-outline" size={15} />
                 </IconButton>
               </Tooltip>
             )}

@@ -15,12 +15,32 @@ import {
   IconButton,
   Tooltip,
   Divider,
+  Autocomplete,
+  createFilterOptions,
+  Popover,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
-import { PostType, POST_TYPE_CONFIG, communityService } from "@/lib/services/community.service";
+import { PostType, POST_TYPE_CONFIG, Tag, communityService } from "@/lib/services/community.service";
 import { softBreakMarkdown } from "@/lib/utils/html-utils";
+
+interface TagOption extends Tag {
+  inputValue?: string; // populated when offering "Create new tag" option
+}
+const tagFilter = createFilterOptions<TagOption>();
+
+// Common emoji set — covers smileys, gestures, dev/tech, and reactions.
+// Keeps bundle small (no extra dep). Users can paste their own emoji freely.
+const EMOJI_SET = [
+  "😀", "😂", "🤣", "😊", "😍", "🥺", "😅", "🤔",
+  "😎", "🤩", "🙃", "😴", "🙄", "😤", "😭", "🤯",
+  "👍", "👎", "👏", "🙏", "🙌", "🤝", "💪", "✌️",
+  "🔥", "🚀", "💡", "✨", "⭐", "🎉", "🎯", "💯",
+  "❤️", "💔", "💖", "💙", "💚", "💛", "💜", "🖤",
+  "💻", "🐛", "⚙️", "🔧", "🛠️", "📚", "📦", "🗂️",
+  "✅", "❌", "⚠️", "❓", "❗", "💬", "📌", "🔗",
+];
 
 interface CreateThreadDialogProps {
   open: boolean;
@@ -172,8 +192,13 @@ export function CreateThreadDialog({
   const [tldr, setTldr] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [tagBusy, setTagBusy] = useState(false);
+
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -187,10 +212,13 @@ export function CreateThreadDialog({
       setPunchline("");
       setStance("");
       setTldr("");
+      setSelectedTags([]);
       attachedFiles.forEach((f) => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
       setAttachedFiles([]);
     } else {
       setPostType(initialPostType);
+      // Lazy-fetch tags when dialog opens
+      communityService.getTags().then(setAllTags).catch(() => setAllTags([]));
     }
   }, [open, initialPostType]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -318,7 +346,7 @@ export function CreateThreadDialog({
       await onSubmit({
         title: title.trim(),
         body: body.trim(),
-        tag_ids: [],
+        tag_ids: selectedTags.map((t) => t.id),
         post_type: postType,
         poll_options: postType === "poll" ? pollOptions.filter((o) => o.trim()) : undefined,
         resource_url: postType === "resource" && resourceUrl.trim() ? resourceUrl.trim() : undefined,
@@ -645,6 +673,93 @@ export function CreateThreadDialog({
             </Box>
           )}
 
+          {/* ── Tag picker ───────────────────────────────────────────────── */}
+          <Box sx={{ mb: 2 }}>
+            <Autocomplete<TagOption, true, false, false>
+              multiple
+              freeSolo={false}
+              options={allTags as TagOption[]}
+              value={selectedTags as TagOption[]}
+              loading={tagBusy}
+              size="small"
+              getOptionLabel={(option) =>
+                typeof option === "string" ? option : option.inputValue ? `Create "${option.inputValue}"` : option.name
+              }
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              filterOptions={(options, params) => {
+                const filtered = tagFilter(options, params);
+                const input = params.inputValue.trim();
+                const existing = options.some((o) => o.name.toLowerCase() === input.toLowerCase());
+                if (input && !existing) {
+                  filtered.push({ id: -1, name: input, inputValue: input });
+                }
+                return filtered;
+              }}
+              onChange={async (_, newValue) => {
+                // Promote any "create new" placeholder into a real tag via backend.
+                const finalTags: Tag[] = [];
+                for (const item of newValue) {
+                  if (typeof item === "string") continue;
+                  if (item.inputValue && item.id === -1) {
+                    setTagBusy(true);
+                    try {
+                      const created = await communityService.createTag(item.inputValue);
+                      finalTags.push(created);
+                      setAllTags((prev) =>
+                        prev.some((t) => t.id === created.id) ? prev : [...prev, created]
+                      );
+                    } catch {
+                      // silently skip
+                    } finally {
+                      setTagBusy(false);
+                    }
+                  } else {
+                    finalTags.push({ id: item.id, name: item.name });
+                  }
+                }
+                // dedupe by id
+                const seen = new Set<number>();
+                setSelectedTags(finalTags.filter((t) => !seen.has(t.id) && seen.add(t.id)));
+              }}
+              renderTags={(value, getTagProps) =>
+                value.map((tag, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={tag.id}
+                    label={`#${tag.name}`}
+                    size="small"
+                    sx={{
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)",
+                      color: "var(--accent-indigo)",
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                    }}
+                  />
+                ))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Tags (optional)"
+                  placeholder={selectedTags.length === 0 ? "Add tags to help people find this post" : ""}
+                  size="small"
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <>
+                        <Box sx={{ pl: 0.5, pr: 0.5, display: "flex" }}>
+                          <IconWrapper icon="mdi:tag-multiple-outline" size={16} color="var(--font-secondary)" />
+                        </Box>
+                        {params.InputProps.startAdornment}
+                      </>
+                    ),
+                  }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }}
+                />
+              )}
+            />
+          </Box>
+
           {/* ── Markdown Editor ──────────────────────────────────────────── */}
           <Box sx={{ border: "1px solid var(--border-default)", borderRadius: "10px", overflow: "hidden" }}>
             {/* Toolbar */}
@@ -703,6 +818,16 @@ export function CreateThreadDialog({
                       sx={{ width: 28, height: 28, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
                     >
                       <IconWrapper icon="mdi:paperclip" size={16} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Insert emoji">
+                    <IconButton
+                      size="small"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => setEmojiAnchor(e.currentTarget)}
+                      sx={{ width: 28, height: 28, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
+                    >
+                      <IconWrapper icon="mdi:emoticon-happy-outline" size={16} />
                     </IconButton>
                   </Tooltip>
                   <input type="file" ref={fileInputRef} accept="image/*,video/*" multiple style={{ display: "none" }} onChange={handleFileSelect} />
@@ -882,6 +1007,56 @@ export function CreateThreadDialog({
           {anyUploading ? "Uploading images..." : `Post ${typeConfig.label}`}
         </LoadingButton>
       </DialogActions>
+
+      {/* Emoji picker popover */}
+      <Popover
+        open={Boolean(emojiAnchor)}
+        anchorEl={emojiAnchor}
+        onClose={() => setEmojiAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        PaperProps={{
+          sx: {
+            mt: 0.5,
+            p: 1,
+            borderRadius: "10px",
+            border: "1px solid var(--border-default)",
+            maxWidth: 296,
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(8, 1fr)",
+            gap: 0.25,
+          }}
+        >
+          {EMOJI_SET.map((emoji) => (
+            <Box
+              key={emoji}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                insertAtCursor(emoji, "", emoji);
+                setEmojiAnchor(null);
+              }}
+              sx={{
+                width: 32,
+                height: 32,
+                fontSize: "1.2rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "6px",
+                cursor: "pointer",
+                userSelect: "none",
+                "&:hover": { backgroundColor: "var(--surface)" },
+              }}
+            >
+              {emoji}
+            </Box>
+          ))}
+        </Box>
+      </Popover>
     </Dialog>
   );
 }

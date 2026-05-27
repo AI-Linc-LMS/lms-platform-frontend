@@ -35,16 +35,50 @@ export function BountySection({ bounties }: BountySectionProps) {
 
   return (
     <Box sx={{ mb: 3.5 }}>
-      {/* Section header */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.75 }}>
+      {/* Section header — clickable, routes to the full bounty browser */}
+      <Box
+        onClick={() => router.push("/community/bounties")}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          mb: 1.75,
+          cursor: "pointer",
+          userSelect: "none",
+          width: "fit-content",
+          pr: 1,
+          "&:hover": {
+            "& .bounty-arrow": { transform: "translateX(3px)", opacity: 1 },
+            "& .bounty-title": { color: RED },
+          },
+        }}
+      >
         <IconWrapper icon="mdi:target" size={18} color={RED} />
         <Typography
+          className="bounty-title"
           variant="subtitle2"
           fontWeight={700}
-          sx={{ color: "var(--font-primary)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "0.72rem" }}
+          sx={{
+            color: "var(--font-primary)",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            fontSize: "0.72rem",
+            transition: "color 0.15s",
+          }}
         >
           High-Value Bounties
         </Typography>
+        <Box
+          className="bounty-arrow"
+          sx={{
+            display: "inline-flex",
+            opacity: 0.55,
+            transition: "all 0.18s",
+            color: "var(--font-secondary)",
+          }}
+        >
+          <IconWrapper icon="mdi:chevron-right" size={16} />
+        </Box>
       </Box>
 
       {/* Horizontal scroll row */}
