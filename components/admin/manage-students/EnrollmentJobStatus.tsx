@@ -83,19 +83,18 @@ export function EnrollmentJobStatus({
         setLoading(false);
         setError(null);
 
-        // If job is already completed or failed, don't start polling
+        // If job is already completed or failed, don't start polling and
+        // don't notify the parent. onComplete is meant to fire when an
+        // in-progress job *transitions* to completed so the parent can
+        // refresh its list — there's nothing to report when the job was
+        // already terminal at click time. Calling it here causes the
+        // parent's loadJobs() to toggle loading=true, which unmounts the
+        // table (incl. this component), which remounts, which re-runs
+        // initialFetch, which fires onComplete again... ad infinitum.
+        // The polling path (fetchJobStatus) already guards with
+        // wasAlreadyCompleted; this matches that behaviour.
         if (jobData.status === "COMPLETED" || jobData.status === "FAILED") {
           hasCompletedRef.current = true;
-          // If the parent provided an onComplete handler, call it after a short delay
-          if (jobData.status === "COMPLETED" && onComplete) {
-            setTimeout(() => {
-              try {
-                onComplete();
-              } catch (e) {
-                // swallow
-              }
-            }, 1200);
-          }
           return; // Don't start polling for already-completed jobs
         }
 
