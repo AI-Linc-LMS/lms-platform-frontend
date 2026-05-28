@@ -584,7 +584,7 @@ export function AssessmentTable({
                       <ListItemText>Manage re-attempts</ListItemText>
                     </MenuItem>
                   )}
-                  {!actionsReadOnly && onTriggerEmailJob && (() => {
+                  {!actionsReadOnly && onTriggerEmailJob && (assessment.email_notification_enabled ?? assessment.send_communication) && (() => {
                     const job = assessmentEmailJobMap[assessment.id];
                     const isTriggering = triggeringEmailJobId === assessment.id;
                     if (job) {

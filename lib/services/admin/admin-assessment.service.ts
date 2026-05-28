@@ -314,6 +314,10 @@ export interface Assessment {
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
+  /** Whether the assessment-created notification email is configured to send. */
+  email_notification_enabled?: boolean;
+  /** Legacy alias for `email_notification_enabled` on older saved assessments. */
+  send_communication?: boolean;
 }
 
 export interface AssessmentDetail extends Assessment {
