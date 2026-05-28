@@ -175,6 +175,13 @@ export function AssessmentTable({
     assessment.live_streaming === true &&
     isProctoredAssessmentInLiveWindow(assessment);
 
+  const canTrigggerEmailJob=(assessment: Assessment): boolean =>{
+    const enabled=assessment.email_notification_enabled
+    if(enabled){
+      return true
+    }
+    return  false
+  }
   // Mobile Card View
   if (isMobile) {
     return (
@@ -584,7 +591,10 @@ export function AssessmentTable({
                       <ListItemText>Manage re-attempts</ListItemText>
                     </MenuItem>
                   )}
-                  {!actionsReadOnly && onTriggerEmailJob && (assessment.email_notification_enabled ?? assessment.send_communication) && (() => {
+
+
+               
+                  {!actionsReadOnly && onTriggerEmailJob && (canTrigggerEmailJob(assessment)) && (() => {
                     const job = assessmentEmailJobMap[assessment.id];
                     const isTriggering = triggeringEmailJobId === assessment.id;
                     if (job) {
@@ -1367,7 +1377,7 @@ export function AssessmentTable({
                           <ListItemText>Manage re-attempts</ListItemText>
                         </MenuItem>
                       )}
-                      {!actionsReadOnly && onTriggerEmailJob && (() => {
+                      {!actionsReadOnly && onTriggerEmailJob && canTrigggerEmailJob(assessment)&& (() => {
                         const job = assessmentEmailJobMap[assessment.id];
                         const isTriggering = triggeringEmailJobId === assessment.id;
                         if (job) {
