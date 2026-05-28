@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import {
   Box,
   Typography,
@@ -58,16 +58,24 @@ export function EnrollmentJobHistory({
   const [loading, setLoading] = useState(true);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  // Tracks whether the first load has resolved. Subsequent refreshes (refresh
+  // button, child onComplete callback) update jobs in-place without flipping
+  // `loading` back to true, so the full-page CircularProgress doesn't unmount
+  // the table — that unmount/remount cycle previously turned a transient
+  // child-side bug into an infinite re-render loop.
+  const initialLoadDoneRef = useRef(false);
 
   // Backend allows enrollment jobs list only for admin/superadmin — skip for course_manager etc.
   const loadJobs = useCallback(async () => {
     if (!isClientOrgAdminRole(user?.role)) {
       setJobs([]);
       setLoading(false);
+      initialLoadDoneRef.current = true;
       return;
     }
+    const isInitial = !initialLoadDoneRef.current;
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const jobsData = await adminStudentEnrollmentService.listAllJobs();
       setJobs(jobsData);
     } catch (error: unknown) {
@@ -75,7 +83,8 @@ export function EnrollmentJobHistory({
         error instanceof Error ? error.message : String(error ?? "");
       showToast(message || t("adminManageStudents.failedToLoadJobHistory"), "error");
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
+      initialLoadDoneRef.current = true;
     }
   }, [t, showToast, user?.role]);
 
