@@ -31,6 +31,10 @@ import { WeakAreasSection } from "@/components/scorecard/detailed/WeakAreasSecti
 import { profileService, type HeatmapData } from "@/lib/services/profile.service";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
+import {
+  useClientInfo,
+  useIsScorecardEnabled,
+} from "@/lib/contexts/ClientInfoContext";
 
 const SECTION_ORDER = [
   "overview",
@@ -98,6 +102,18 @@ function ScrollProgressBar() {
 
 export default function ScorecardPage() {
   const router = useRouter();
+  const { loading: loadingClientInfo } = useClientInfo();
+  const scorecardEnabled = useIsScorecardEnabled();
+  // When the tenant's super-admin has disabled the "scorecard" feature,
+  // bounce the learner back to the dashboard. The backend endpoint will
+  // 403 anyway, but redirecting before the fetch avoids a flash of error
+  // UI and matches the behavior of other feature-gated routes in this app.
+  useEffect(() => {
+    if (!loadingClientInfo && !scorecardEnabled) {
+      router.replace("/dashboard");
+    }
+  }, [loadingClientInfo, scorecardEnabled, router]);
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ScorecardData | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
@@ -131,8 +147,12 @@ export default function ScorecardPage() {
   }, []);
 
   useEffect(() => {
+    // Skip the fetch when the feature is disabled — the redirect-on-disabled
+    // effect above will move the user to /dashboard and there's no point
+    // burning a backend call in the interim.
+    if (loadingClientInfo || !scorecardEnabled) return;
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, loadingClientInfo, scorecardEnabled]);
 
   const handleDownloadPdf = useCallback(async () => {
     if (downloading) return;

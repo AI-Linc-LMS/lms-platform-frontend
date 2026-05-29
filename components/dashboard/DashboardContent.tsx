@@ -4,7 +4,10 @@ import { Box } from "@mui/material";
 
 import { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { ScorecardWidget } from "@/components/scorecard/dashboard/ScorecardWidget";
-import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
+import {
+  useHideLeaderboardView,
+  useIsScorecardEnabled,
+} from "@/lib/contexts/ClientInfoContext";
 
 import { DashboardSidebar } from "./DashboardSidebar";
 import { MyCoursesSection } from "./MyCoursesSection";
@@ -24,6 +27,7 @@ export const DashboardContent = ({
   currentStreak,
 }: DashboardContentProps) => {
   const hideLeaderboardView = useHideLeaderboardView();
+  const scorecardEnabled = useIsScorecardEnabled();
   return (
     <Box
       sx={{
@@ -40,7 +44,7 @@ export const DashboardContent = ({
       <Box>
         <WelcomeMessage />
         <Box sx={{ mt: 3, width: hideLeaderboardView ? "70%" : "auto" }}>
-          <ScorecardWidget />
+          {scorecardEnabled && <ScorecardWidget />}
           <MyCoursesSection courses={courses} loading={loading} />
         </Box>
       </Box>

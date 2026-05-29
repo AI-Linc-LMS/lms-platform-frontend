@@ -1163,6 +1163,96 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                   </Box>
                 </Box>
 
+                {/* Next milestone — fills the visual gap when the card is
+                    stretched to match the podium height beside it. Uses a
+                    standard streak ladder (3 / 7 / 14 / 30 / 60 / 100 / 365)
+                    and shows progress toward the next rung with a segmented
+                    bar of 7 dots. */}
+                {(() => {
+                  const cur = data.streakRewards.currentStreak;
+                  const ladder = [3, 7, 14, 30, 60, 100, 365];
+                  const next = ladder.find((m) => m > cur) ?? 365;
+                  const prev = [0, ...ladder].filter((m) => m <= cur).slice(-1)[0] ?? 0;
+                  const span = Math.max(1, next - prev);
+                  const pct = Math.max(0, Math.min(100, ((cur - prev) / span) * 100));
+                  const remaining = Math.max(0, next - cur);
+                  return (
+                    <Box
+                      sx={{
+                        position: "relative",
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        gap: 1.25,
+                        py: 0.5,
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, flexWrap: "wrap" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: STREAK,
+                            fontWeight: 800,
+                            letterSpacing: "0.16em",
+                            textTransform: "uppercase",
+                            fontSize: "0.62rem",
+                          }}
+                        >
+                          Next milestone
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontWeight: 800,
+                            color: "var(--font-primary)",
+                            fontSize: "0.95rem",
+                            letterSpacing: "-0.01em",
+                          }}
+                        >
+                          {remaining === 0 ? "All caught up" : `${remaining}d → ${next}-day streak`}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(7, 1fr)",
+                          gap: 0.5,
+                        }}
+                      >
+                        {Array.from({ length: 7 }).map((_, i) => {
+                          const filled = pct >= ((i + 1) / 7) * 100;
+                          return (
+                            <Box
+                              key={i}
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                background: filled
+                                  ? `linear-gradient(90deg, ${STREAK} 0%, #f97316 100%)`
+                                  : "color-mix(in srgb, var(--border-default) 35%, transparent)",
+                                boxShadow: filled
+                                  ? `0 4px 10px -4px color-mix(in srgb, ${STREAK} 55%, transparent)`
+                                  : "none",
+                                transition: "background 0.3s ease",
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "var(--font-secondary)",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {cur} of {next} days · keep the chain alive
+                      </Typography>
+                    </Box>
+                  );
+                })()}
+
                 {/* Divider */}
                 <Box
                   sx={{

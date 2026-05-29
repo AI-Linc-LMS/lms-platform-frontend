@@ -153,3 +153,22 @@ export function useIsCourseEnabled(): boolean {
   const { clientInfo } = useClientInfo();
   return Boolean(clientInfo?.features?.some((f) => f.name === "course"));
 }
+
+/** Returns true when the learner-side "scorecard" feature is enabled for this
+ *  client. Gates the dashboard widget and the /user/scorecard route.
+ *  Super-admins manage this from the super-admin portal's Client Features. */
+export function useIsScorecardEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "scorecard"));
+}
+
+/** Returns true when "admin_scorecard" is enabled — gates the admin sidebar
+ *  entry and /admin/scorecard/* routes. Separate from the learner-side flag
+ *  so a tenant can offer scorecards to learners without exposing the admin
+ *  configuration surface. */
+export function useIsAdminScorecardEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(
+    clientInfo?.features?.some((f) => f.name === "admin_scorecard"),
+  );
+}
