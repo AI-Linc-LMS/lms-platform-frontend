@@ -2,6 +2,74 @@ import apiClient from "./api";
 import { config } from "@/lib/config";
 import { profileService } from "./profile.service";
 import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/build-scorecard";
+
+// Response cache for the umbrella + dashboard scorecard endpoints. Same TTL as
+// the backend's view-level cache so a learner can navigate dashboard ↔ full
+// scorecard and back without re-fetching, and React StrictMode's double-mount
+// in dev doesn't fire twice. Stored in memory for instant hits and mirrored
+// to sessionStorage so the cache survives a single tab's reloads (but not a
+// re-login — it's tab-scoped, not localStorage).
+const SCORECARD_CACHE_TTL_MS = 90 * 1000;
+const SCORECARD_CACHE_PREFIX = "scorecard-cache:";
+const scorecardMemoryCache = new Map<string, { ts: number; data: ScorecardApiPayload }>();
+
+function readScorecardCache(url: string): ScorecardApiPayload | null {
+  const mem = scorecardMemoryCache.get(url);
+  if (mem && Date.now() - mem.ts < SCORECARD_CACHE_TTL_MS) {
+    return mem.data;
+  }
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${SCORECARD_CACHE_PREFIX}${url}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; data: ScorecardApiPayload };
+    if (parsed?.ts && Date.now() - parsed.ts < SCORECARD_CACHE_TTL_MS) {
+      scorecardMemoryCache.set(url, parsed);
+      return parsed.data;
+    }
+  } catch {
+    /* corrupted entry / quota / privacy mode — ignore */
+  }
+  return null;
+}
+
+function writeScorecardCache(url: string, data: ScorecardApiPayload): void {
+  const entry = { ts: Date.now(), data };
+  scorecardMemoryCache.set(url, entry);
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(`${SCORECARD_CACHE_PREFIX}${url}`, JSON.stringify(entry));
+  } catch {
+    /* quota exceeded — fine, memory cache still works */
+  }
+}
+
+/** Drop every cached scorecard payload. Call after actions that meaningfully
+ *  change the scorecard (e.g. finishing an assessment) so the next load
+ *  reflects fresh data instead of waiting out the TTL.
+ */
+export function invalidateScorecardCache(): void {
+  scorecardMemoryCache.clear();
+  if (typeof window === "undefined") return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const k = window.sessionStorage.key(i);
+      if (k && k.startsWith(SCORECARD_CACHE_PREFIX)) keysToRemove.push(k);
+    }
+    for (const k of keysToRemove) window.sessionStorage.removeItem(k);
+  } catch {
+    /* ignore */
+  }
+}
+
+async function fetchScorecardPayload(url: string): Promise<ScorecardApiPayload> {
+  const cached = readScorecardCache(url);
+  if (cached) return cached;
+  const response = await apiClient.get<ScorecardApiPayload>(url);
+  writeScorecardCache(url, response.data);
+  return response.data;
+}
 import {
   mapAchievementsFromApi,
   mapActionPanelFromApi,
@@ -47,10 +115,23 @@ async function mergeProfilePicture<T extends { overview: { profilePicUrl?: strin
 export const scorecardService = {
   getScorecardData: async () => {
     const clientId = config.clientId;
-    const response = await apiClient.get<ScorecardApiPayload>(
-      `/api/scorecard/clients/${clientId}/student/scorecard/`,
-    );
-    const result = scorecardFromApiPayload(response.data);
+    const url = `/api/scorecard/clients/${clientId}/student/scorecard/`;
+    const data = await fetchScorecardPayload(url);
+    const result = scorecardFromApiPayload(data);
+    return await mergeProfilePicture(result);
+  },
+
+  /** Lightweight payload used by the dashboard widget — overview + learning
+   *  consumption only. Hits the dedicated /dashboard/ endpoint so the backend
+   *  skips the 10+ heavy section builders (skills, weak areas, comparative
+   *  insights, behavioral metrics, etc.) that the full /scorecard/ endpoint
+   *  runs. The frontend mapper handles the missing sections gracefully.
+   */
+  getDashboardScorecardData: async () => {
+    const clientId = config.clientId;
+    const url = `/api/scorecard/clients/${clientId}/student/scorecard/dashboard/`;
+    const data = await fetchScorecardPayload(url);
+    const result = scorecardFromApiPayload(data);
     return await mergeProfilePicture(result);
   },
 
@@ -178,7 +259,7 @@ export const scorecardService = {
   },
 
   getDashboardSummary: async () => {
-    const fullData = await scorecardService.getScorecardData();
+    const fullData = await scorecardService.getDashboardScorecardData();
     const lc = fullData.learningConsumption;
     const totalAssigned =
       lc.videos.totalAssigned +
