@@ -2,16 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import {
   Box,
   Typography,
   Button,
   Paper,
   Skeleton,
-  LinearProgress,
-  Chip,
-  Tooltip,
   alpha,
   useTheme,
 } from "@mui/material";
@@ -19,8 +15,16 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { formatTimeSpent, scorecardService } from "@/lib/services/scorecard.service";
 import type { LearningConsumption, PerformanceLevel } from "@/lib/types/scorecard.types";
-
-import { OverallScoreCard } from "./OverallScoreCard";
+import {
+  AnimatedRing,
+  CountUp,
+  Reveal,
+  SectionShell,
+} from "@/components/scorecard/shared";
+import {
+  gradeLevelColor,
+  gradeLevelGradient,
+} from "@/lib/utils/scorecard-visual";
 
 interface DashboardSummary {
   overallScore: number;
@@ -34,11 +38,11 @@ interface DashboardSummary {
   learningProgressPct: number;
 }
 
-const fadeUp = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
-};
+const WIDGET_MESH = [
+  "radial-gradient(60% 50% at 0% 0%, color-mix(in srgb, var(--accent-indigo) 12%, transparent), transparent 65%)",
+  "radial-gradient(50% 50% at 100% 0%, color-mix(in srgb, var(--accent-cyan) 10%, transparent), transparent 65%)",
+  "radial-gradient(45% 45% at 100% 100%, color-mix(in srgb, var(--accent-purple) 9%, transparent), transparent 65%)",
+];
 
 export function ScorecardWidget() {
   const theme = useTheme();
@@ -65,97 +69,48 @@ export function ScorecardWidget() {
     fetchData();
   }, [fetchData]);
 
-  const primary = theme.palette.primary.main;
-
   if (loading) {
     return (
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 2.5, sm: 3.5, md: 4 },
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
-          backgroundImage: (t) =>
-            `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.04)} 0%, ${t.palette.background.paper} 50%)`,
-          boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)",
-          mb: 3,
-          overflow: "hidden",
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
-            pb: 2.5,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Skeleton variant="circular" width={52} height={52} animation="wave" sx={{ flexShrink: 0 }} />
-            <Box sx={{ flex: 1 }}>
-              <Skeleton variant="rounded" width={200} height={28} animation="wave" sx={{ mb: 0.75, borderRadius: 1 }} />
-              <Skeleton variant="rounded" width={260} height={18} animation="wave" sx={{ borderRadius: 1 }} />
+      <Box sx={{ mb: 3 }}>
+        <SectionShell radialMesh={WIDGET_MESH}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 4,
+              gap: 2,
+              flexWrap: "wrap",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+              <Skeleton variant="rounded" width={48} height={48} animation="wave" sx={{ borderRadius: 1.5 }} />
+              <Box sx={{ flex: 1 }}>
+                <Skeleton variant="text" width={140} height={20} animation="wave" sx={{ mb: 0.75 }} />
+                <Skeleton variant="text" width="60%" height={36} animation="wave" sx={{ mb: 0.5 }} />
+                <Skeleton variant="text" width="40%" height={20} animation="wave" />
+              </Box>
             </Box>
+            <Skeleton variant="rounded" width={170} height={42} animation="wave" sx={{ borderRadius: 999, display: { xs: "none", sm: "block" } }} />
           </Box>
-          <Skeleton
-            variant="rounded"
-            width={132}
-            height={42}
-            animation="wave"
-            sx={{ borderRadius: 3, display: { xs: "none", sm: "block" } }}
-          />
-        </Box>
-        <Box
-          sx={{
-            display: "grid",
-            gap: 2.5,
-            gridTemplateColumns: { xs: "1fr", md: "minmax(0, 5fr) minmax(0, 7fr)" },
-          }}
-        >
-          <Box sx={{ minWidth: 0 }}>
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "divider",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1.5,
-              }}
-            >
-              <Skeleton variant="circular" width={128} height={128} animation="wave" />
-              <Skeleton variant="rounded" width={88} height={26} animation="wave" sx={{ borderRadius: 2 }} />
-              <Skeleton variant="rounded" width={120} height={18} animation="wave" />
-            </Box>
+          <Box
+            sx={{
+              display: "grid",
+              gap: 3,
+              gridTemplateColumns: { xs: "1fr", md: "minmax(0, 5fr) minmax(0, 7fr)" },
+              mb: 3,
+            }}
+          >
+            <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 3 }} />
+            <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 3 }} />
           </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Skeleton variant="rounded" height={200} animation="wave" sx={{ borderRadius: 3, width: "100%" }} />
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" } }}>
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} variant="rectangular" height={90} animation="wave" />
+            ))}
           </Box>
-          <Box sx={{ gridColumn: { xs: "1", md: "1 / -1" }, minWidth: 0 }}>
-            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-              {[1, 2, 3].map((i) => (
-                <Skeleton
-                  key={i}
-                  variant="rounded"
-                  height={84}
-                  animation="wave"
-                  sx={{ borderRadius: 2, flex: "1 1 130px", minWidth: 120 }}
-                />
-              ))}
-            </Box>
-          </Box>
-        </Box>
-      </Paper>
+        </SectionShell>
+      </Box>
     );
   }
 
@@ -165,11 +120,11 @@ export function ScorecardWidget() {
         elevation={0}
         sx={{
           p: { xs: 3, sm: 4 },
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
+          borderRadius: 4,
+          border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
           mb: 3,
           textAlign: "center",
+          backgroundColor: "var(--card-bg)",
           backgroundImage: (t) =>
             `linear-gradient(135deg, ${alpha(t.palette.error.main, 0.04)} 0%, ${t.palette.background.paper} 45%)`,
         }}
@@ -196,10 +151,19 @@ export function ScorecardWidget() {
           Check your connection and try again, or open the full scorecard page.
         </Typography>
         <Box sx={{ display: "flex", gap: 1.5, justifyContent: "center", flexWrap: "wrap" }}>
-          <Button variant="outlined" color="primary" onClick={() => fetchData()} sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => fetchData()}
+            sx={{ textTransform: "none", fontWeight: 600, borderRadius: 999, px: 2.5 }}
+          >
             Retry
           </Button>
-          <Button variant="contained" onClick={() => router.push("/user/scorecard")} sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}>
+          <Button
+            variant="contained"
+            onClick={() => router.push("/user/scorecard")}
+            sx={{ textTransform: "none", fontWeight: 600, borderRadius: 999, px: 2.5 }}
+          >
             Open scorecard
           </Button>
         </Box>
@@ -208,398 +172,649 @@ export function ScorecardWidget() {
   }
 
   const lc = data.learningConsumption;
-  const stats = [
-    {
-      label: "Total time",
-      value: formatTimeSpent(data.totalTimeSpentSeconds),
-      icon: "mdi:clock-outline",
-      color: primary,
-      hint: "Time tracked across your learning activity.",
-    },
-    {
-      label: "Active streak",
-      value: `${data.activeDaysStreak} days`,
-      icon: "mdi:fire",
-      color: theme.palette.warning.main,
-      hint: "Consecutive days with activity.",
-    },
-    {
-      label: "Program completion",
-      value: `${data.completionPercentage}%`,
-      icon: "mdi:check-circle-outline",
-      color: theme.palette.success.main,
-      hint: "Overall completion across your program.",
-    },
-  ];
+  const gradeColor = gradeLevelColor(data.overallGrade);
+  const gradeGrad = gradeLevelGradient(data.overallGrade);
 
-  const breakdown = [
+  const breakdown: ReadonlyArray<{
+    key: string;
+    label: string;
+    icon: string;
+    accent: string;
+    completed: number;
+    total: number;
+  }> = [
     {
       key: "videos",
       label: "Videos",
-      icon: "mdi:play-circle" as const,
-      accent: primary,
-      value: `${lc.videos.completed} / ${lc.videos.totalAssigned}`,
+      icon: "mdi:play-circle",
+      accent: theme.palette.primary.main,
+      completed: lc.videos.completed,
+      total: lc.videos.totalAssigned,
     },
     {
       key: "articles",
       label: "Articles",
-      icon: "mdi:book-open-variant" as const,
+      icon: "mdi:book-open-variant",
       accent: theme.palette.success.main,
-      value: `${lc.articles.read} / ${lc.articles.totalAssigned}`,
+      completed: lc.articles.read,
+      total: lc.articles.totalAssigned,
     },
     {
       key: "quizzes",
       label: "Course quizzes",
-      icon: "mdi:help-circle-outline" as const,
+      icon: "mdi:help-circle-outline",
       accent: theme.palette.warning.main,
-      value: `${lc.practice.mcqsAttempted} / ${lc.practice.mcqsTotal}`,
+      completed: lc.practice.mcqsAttempted,
+      total: lc.practice.mcqsTotal,
     },
     {
       key: "coding",
       label: "Coding",
-      icon: "mdi:code-braces" as const,
+      icon: "mdi:code-braces",
       accent: theme.palette.info.main,
-      value: `${lc.codingProblems.completed} / ${lc.codingProblems.totalAssigned}`,
+      completed: lc.codingProblems.completed,
+      total: lc.codingProblems.totalAssigned,
     },
     {
       key: "mock",
       label: "Mock interviews",
-      icon: "mdi:account-voice" as const,
+      icon: "mdi:account-voice",
       accent: theme.palette.secondary.main,
-      value: `${lc.mockInterviews.completed} / ${lc.mockInterviews.totalAssigned}`,
+      completed: lc.mockInterviews.completed,
+      total: lc.mockInterviews.totalAssigned,
     },
     {
       key: "assessments",
       label: "Assessments",
-      icon: "mdi:clipboard-text-outline" as const,
-      accent: theme.palette.secondary.main,
-      value: `${lc.practice.assessmentsAttempted} / ${lc.practice.totalAssessmentsPresent ?? "—"}`,
+      icon: "mdi:clipboard-text-outline",
+      accent: "#8b5cf6",
+      completed: lc.practice.assessmentsAttempted,
+      total: lc.practice.totalAssessmentsPresent ?? 0,
     },
   ];
 
-  return (
-    <Paper
-      component={motion.div}
-      initial={fadeUp.initial}
-      animate={fadeUp.animate}
-      transition={fadeUp.transition}
-      elevation={0}
-      sx={{
-        p: { xs: 2.5, sm: 3.5, md: 4 },
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
-        backgroundImage: (t) =>
-          `linear-gradient(145deg, ${alpha(t.palette.primary.main, 0.06)} 0%, ${alpha(t.palette.primary.main, 0.02)} 28%, ${t.palette.background.paper} 55%)`,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.045)",
-        mb: 3,
-        overflow: "hidden",
-        position: "relative",
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 3,
-          background: `linear-gradient(90deg, ${primary} 0%, ${alpha(primary, 0.5)} 50%, ${alpha(primary, 0.2)} 100%)`,
-          opacity: 0.9,
-        },
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          mb: 3,
-          pb: 2.5,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          gap: 2,
-          flexWrap: "wrap",
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, minWidth: 0, flex: 1 }}>
-          <Box
-            sx={{
-              width: 52,
-              height: 52,
-              borderRadius: 2.5,
-              flexShrink: 0,
-              background: `linear-gradient(135deg, ${primary} 0%, ${alpha(primary, 0.75)} 100%)`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: `0 2px 8px ${alpha(primary, 0.2)}`,
-            }}
-          >
-            <IconWrapper icon="mdi:chart-timeline-variant" size={26} color="#ffffff" />
+  const bottomStats = [
+    {
+      key: "time",
+      label: "Total time",
+      value: formatTimeSpent(data.totalTimeSpentSeconds),
+      icon: "mdi:clock-outline",
+      accent: "#0a66c2",
+    },
+    {
+      key: "streak",
+      label: "Active streak",
+      value: (
+        <>
+          <CountUp value={data.activeDaysStreak} />
+          <Box component="span" sx={{ ml: 0.5, fontSize: "0.5em", fontWeight: 700, color: "var(--font-secondary)" }}>
+            days
           </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.5 }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 800,
-                  color: "text.primary",
-                  fontSize: { xs: "1.35rem", sm: "1.65rem", md: "1.85rem" },
-                  lineHeight: 1.2,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                Learning scorecard
-              </Typography>
-              <Chip
-                size="small"
-                label="Snapshot"
-                sx={{
-                  height: 24,
-                  fontWeight: 700,
-                  fontSize: "0.7rem",
-                  bgcolor: alpha(primary, 0.12),
-                  color: primary,
-                  border: "1px solid",
-                  borderColor: alpha(primary, 0.25),
-                }}
-              />
-            </Box>
-            <Typography variant="body2" sx={{ fontSize: "0.9rem", lineHeight: 1.5, color: "var(--font-secondary)" }}>
-              Performance ring, learning progress, and quick stats — tap below for the full report.
-            </Typography>
+        </>
+      ),
+      icon: "mdi:fire",
+      accent: "#f59e0b",
+    },
+    {
+      key: "completion",
+      label: "Program completion",
+      value: (
+        <>
+          <CountUp value={data.completionPercentage} />
+          <Box component="span" sx={{ ml: 0.25, fontSize: "0.5em", fontWeight: 700, color: "var(--font-secondary)" }}>
+            %
           </Box>
-        </Box>
-        <Button
-          variant="contained"
-          endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
-          onClick={() => router.push("/user/scorecard")}
-          sx={{
-            backgroundColor: primary,
-            color: "#ffffff",
-            textTransform: "none",
-            fontWeight: 700,
-            fontSize: "0.9rem",
-            px: 2.75,
-            py: 1.1,
-            borderRadius: 2.5,
-            boxShadow: `0 2px 8px ${alpha(primary, 0.22)}`,
-            flexShrink: 0,
-            "&:hover": {
-              bgcolor: theme.palette.primary.dark,
-              boxShadow: `0 3px 10px ${alpha(primary, 0.28)}`,
-              transform: "translateY(-1px)",
-            },
-            transition: "all 0.2s ease",
-            display: { xs: "none", sm: "inline-flex" },
-          }}
-        >
-          View full scorecard
-        </Button>
-      </Box>
+        </>
+      ),
+      icon: "mdi:progress-check",
+      accent: "#10b981",
+    },
+  ];
 
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2.5,
-          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 5fr) minmax(0, 7fr)" },
-        }}
-      >
-        <Box sx={{ minWidth: 0 }}>
-          <OverallScoreCard score={data.overallScore} grade={data.overallGrade} />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
+  const learningProgress = Math.max(0, Math.min(100, data.learningProgressPct));
+
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Reveal as="section">
+        <SectionShell radialMesh={WIDGET_MESH} meshOpacity={0.55}>
+          {/* Editorial header */}
           <Box
             sx={{
-              p: 2.5,
-              borderRadius: 3,
-              border: "1px solid",
-              borderColor: alpha(primary, 0.2),
-              background: (t) =>
-                `linear-gradient(160deg, ${alpha(t.palette.primary.main, 0.08)} 0%, ${alpha(t.palette.primary.main, 0.02)} 42%, ${t.palette.background.paper} 100%)`,
-              boxShadow: `0 0 0 1px ${alpha(primary, 0.06)}, 0 2px 10px rgba(0,0,0,0.035)`,
-              height: "100%",
-              position: "relative",
-              overflow: "hidden",
-              transition: "box-shadow 0.25s ease, border-color 0.25s ease",
-              "&:hover": {
-                borderColor: alpha(primary, 0.35),
-                boxShadow: `0 0 0 1px ${alpha(primary, 0.08)}, 0 4px 14px rgba(0,0,0,0.05)`,
-              },
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                background: `linear-gradient(90deg, ${primary} 0%, ${alpha(primary, 0.4)} 100%)`,
-              },
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: { xs: "flex-start", sm: "center" },
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
+              pb: { xs: 3, md: 3.5 },
+              mb: { xs: 3, md: 4 },
+              borderBottom: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, pt: 0.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 0, flex: 1 }}>
               <Box
                 sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 2,
-                  bgcolor: alpha(primary, 0.12),
+                  width: 48,
+                  height: 48,
+                  borderRadius: 1.5,
+                  flexShrink: 0,
+                  background:
+                    "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  boxShadow:
+                    "0 14px 28px -14px color-mix(in srgb, var(--accent-indigo) 65%, transparent)",
                 }}
               >
-                <IconWrapper icon="mdi:chart-arc" size={22} color={primary} />
+                <IconWrapper icon="mdi:chart-timeline-variant" size={24} color="#ffffff" />
               </Box>
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "text.primary", fontSize: "1.05rem", lineHeight: 1.2 }}>
-                  Learning progress
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
-                  Completed vs assigned across content types
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem" }}>
-                Weighted completion
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 800, color: primary, fontVariantNumeric: "tabular-nums" }}>
-                {data.learningProgressPct}%
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={Math.min(100, data.learningProgressPct)}
-              sx={{
-                height: 12,
-                borderRadius: 6,
-                mb: 2,
-                bgcolor: alpha(primary, 0.12),
-                "& .MuiLinearProgress-bar": {
-                  borderRadius: 6,
-                  background: `linear-gradient(90deg, ${primary} 0%, ${theme.palette.primary.dark} 100%)`,
-                },
-              }}
-            />
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(3, 1fr)" },
-                gap: 1.25,
-              }}
-            >
-              {breakdown.map((row) => (
-                <Tooltip key={row.key} title={`${row.label}: completed vs assigned`} arrow placement="top">
-                  <Box
-                    sx={{
-                      p: 1.35,
-                      borderRadius: 2,
-                      bgcolor: alpha(row.accent, theme.palette.mode === "dark" ? 0.12 : 0.06),
-                      border: "1px solid",
-                      borderColor: alpha(row.accent, 0.22),
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                      cursor: "default",
-                      "&:hover": {
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 2px 6px ${alpha(row.accent, 0.1)}`,
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
-                      <IconWrapper icon={row.icon} size={16} color={row.accent} />
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, fontSize: "0.68rem", lineHeight: 1.2 }}>
-                        {row.label}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", color: "text.primary", fontSize: "0.875rem" }}>
-                      {row.value}
-                    </Typography>
-                  </Box>
-                </Tooltip>
-              ))}
-            </Box>
-          </Box>
-        </Box>
-
-        <Box sx={{ gridColumn: { xs: "1", md: "1 / -1" }, minWidth: 0 }}>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-              gap: 1.5,
-            }}
-          >
-            {stats.map((s) => (
-              <Tooltip key={s.label} title={s.hint} arrow>
+              <Box sx={{ minWidth: 0 }}>
                 <Box
                   sx={{
-                    p: 2,
-                    borderRadius: 2.5,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    display: "flex",
+                    display: "inline-flex",
                     alignItems: "center",
-                    gap: 1.5,
-                    bgcolor: alpha(s.color, theme.palette.mode === "dark" ? 0.1 : 0.04),
-                    transition: "all 0.2s ease",
-                    "&:hover": {
-                      borderColor: alpha(s.color, 0.35),
-                      bgcolor: alpha(s.color, theme.palette.mode === "dark" ? 0.14 : 0.07),
-                    },
+                    gap: 0.75,
+                    mb: 0.5,
                   }}
                 >
                   <Box
                     sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 2,
-                      bgcolor: alpha(s.color, 0.15),
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "var(--accent-indigo)",
+                      boxShadow:
+                        "0 0 0 3px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
                     }}
                   >
-                    <IconWrapper icon={s.icon} size={22} color={s.color} />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: "block", letterSpacing: "0.02em" }}>
-                      {s.label}
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 800, fontSize: "1.1rem", lineHeight: 1.25, fontVariantNumeric: "tabular-nums" }}>
-                      {s.value}
-                    </Typography>
-                  </Box>
+                    Learning Scorecard · Snapshot
+                  </Typography>
                 </Box>
-              </Tooltip>
+                <Typography
+                  component="h2"
+                  sx={{
+                    fontWeight: 800,
+                    color: "var(--font-primary)",
+                    fontSize: { xs: "1.6rem", sm: "1.9rem", md: "2.25rem" },
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.035em",
+                  }}
+                >
+                  Performance,{" "}
+                  <Box
+                    component="span"
+                    sx={{
+                      background:
+                        "linear-gradient(120deg, var(--accent-indigo) 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    at a glance.
+                  </Box>
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.9rem",
+                    mt: 0.75,
+                    maxWidth: 520,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Your performance ring, learning progress, and quick stats — tap below for the full report.
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              endIcon={<IconWrapper icon="mdi:arrow-top-right" size={16} />}
+              onClick={() => router.push("/user/scorecard")}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                px: 2.5,
+                py: 1,
+                borderRadius: 999,
+                color: "#ffffff",
+                background:
+                  "linear-gradient(120deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
+                boxShadow:
+                  "0 14px 30px -14px color-mix(in srgb, var(--accent-indigo) 70%, transparent)",
+                flexShrink: 0,
+                "&:hover": {
+                  background:
+                    "linear-gradient(120deg, var(--accent-indigo-dark) 0%, var(--accent-purple) 100%)",
+                },
+                display: { xs: "none", sm: "inline-flex" },
+              }}
+            >
+              View full scorecard
+            </Button>
+          </Box>
+
+          {/* Hero grid: performance ring + learning progress */}
+          <Box
+            sx={{
+              display: "grid",
+              gap: { xs: 3, md: 3 },
+              gridTemplateColumns: { xs: "1fr", md: "minmax(0, 5fr) minmax(0, 7fr)" },
+              mb: { xs: 3, md: 4 },
+            }}
+          >
+            {/* Left: overall performance ring */}
+            <Box
+              sx={{
+                position: "relative",
+                p: { xs: 3, sm: 3.5 },
+                borderRadius: 3,
+                overflow: "hidden",
+                background: `linear-gradient(160deg, ${gradeColor}18 0%, ${gradeColor}04 60%, transparent 100%)`,
+                border: `1px solid ${gradeColor}30`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 2.5,
+                minHeight: 280,
+              }}
+            >
+              <AnimatedRing
+                value={data.overallScore}
+                size={180}
+                strokeWidth={12}
+                color={gradeColor}
+                colorEnd={"#0a66c2"}
+                valueFontSize={44}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "text.secondary",
+                  textAlign: "center",
+                  mt: -0.5,
+                }}
+              >
+                Overall Performance
+              </Typography>
+              <Box
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  px: 1.75,
+                  py: 0.625,
+                  borderRadius: 999,
+                  background: gradeGrad,
+                  color: "#ffffff",
+                  boxShadow: `0 8px 20px -8px ${gradeColor}88`,
+                }}
+              >
+                <IconWrapper icon="mdi:star-four-points" size={14} color="#ffffff" />
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {data.overallGrade}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Right: learning progress panel */}
+            <Box
+              sx={{
+                position: "relative",
+                p: { xs: 2.5, sm: 3 },
+                borderRadius: 3,
+                overflow: "hidden",
+                backgroundColor: "var(--card-bg)",
+                border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, transparent)",
+                backgroundImage:
+                  "linear-gradient(160deg, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 0%, transparent 60%)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 1.5,
+                    background:
+                      "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-cyan) 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow:
+                      "0 10px 20px -10px color-mix(in srgb, var(--accent-indigo) 60%, transparent)",
+                  }}
+                >
+                  <IconWrapper icon="mdi:chart-arc" size={20} color="#ffffff" />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--font-primary)",
+                      fontSize: "1.05rem",
+                      lineHeight: 1.2,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    Learning progress
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontSize: "0.78rem",
+                      display: "block",
+                      mt: 0.25,
+                    }}
+                  >
+                    Completed vs assigned across content types
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Weighted completion */}
+              <Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 0.75,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.12em",
+                      fontSize: "0.65rem",
+                    }}
+                  >
+                    Weighted completion
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--accent-indigo)",
+                      fontSize: "0.95rem",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    <CountUp value={learningProgress} duration={1.2} />%
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    height: 6,
+                    borderRadius: 999,
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      height: "100%",
+                      width: `${learningProgress}%`,
+                      borderRadius: 999,
+                      background:
+                        "linear-gradient(90deg, var(--accent-indigo) 0%, var(--accent-cyan) 100%)",
+                      boxShadow:
+                        "0 0 14px color-mix(in srgb, var(--accent-indigo) 60%, transparent)",
+                      transition: "width 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {/* Content type mini bento */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" },
+                  gap: 1.25,
+                }}
+              >
+                {breakdown.map((row) => (
+                  <BreakdownTile
+                    key={row.key}
+                    accent={row.accent}
+                    icon={row.icon}
+                    label={row.label}
+                    completed={row.completed}
+                    total={row.total}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Bottom stats strip — editorial hairline cells */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+              borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+              borderLeft: { sm: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" },
+              borderRadius: 2,
+              overflow: "hidden",
+            }}
+          >
+            {bottomStats.map((stat) => (
+              <Box
+                key={stat.key}
+                sx={{
+                  position: "relative",
+                  p: { xs: 2, sm: 2.5 },
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.75,
+                  borderBottom: { xs: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", sm: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" },
+                  borderRight: { sm: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" },
+                  borderLeft: { xs: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", sm: "none" },
+                  backgroundImage: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${stat.accent} 4%, transparent) 100%)`,
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: 32,
+                    height: 2,
+                    background: stat.accent,
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 1.5,
+                    backgroundColor: `color-mix(in srgb, ${stat.accent} 14%, transparent)`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <IconWrapper icon={stat.icon} size={20} color={stat.accent} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "var(--font-secondary)",
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      display: "block",
+                    }}
+                  >
+                    {stat.label}
+                  </Typography>
+                  <Typography
+                    component="div"
+                    sx={{
+                      fontWeight: 800,
+                      color: "var(--font-primary)",
+                      fontSize: "1.4rem",
+                      lineHeight: 1.05,
+                      letterSpacing: "-0.02em",
+                      fontVariantNumeric: "tabular-nums",
+                      mt: 0.25,
+                    }}
+                  >
+                    {stat.value}
+                  </Typography>
+                </Box>
+              </Box>
             ))}
           </Box>
-        </Box>
-      </Box>
 
-      <Box sx={{ mt: 2.5, display: { xs: "flex", sm: "none" }, justifyContent: "stretch" }}>
-        <Button
-          variant="contained"
-          fullWidth
-          endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
-          onClick={() => router.push("/user/scorecard")}
+          {/* Mobile-only CTA */}
+          <Box sx={{ mt: 2.5, display: { xs: "block", sm: "none" } }}>
+            <Button
+              fullWidth
+              endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
+              onClick={() => router.push("/user/scorecard")}
+              sx={{
+                py: 1.35,
+                borderRadius: 999,
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.95rem",
+                color: "#ffffff",
+                background:
+                  "linear-gradient(120deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
+                boxShadow:
+                  "0 14px 30px -14px color-mix(in srgb, var(--accent-indigo) 70%, transparent)",
+                "&:hover": {
+                  background:
+                    "linear-gradient(120deg, var(--accent-indigo-dark) 0%, var(--accent-purple) 100%)",
+                },
+              }}
+            >
+              View full scorecard
+            </Button>
+          </Box>
+        </SectionShell>
+      </Reveal>
+    </Box>
+  );
+}
+
+interface BreakdownTileProps {
+  accent: string;
+  icon: string;
+  label: string;
+  completed: number;
+  total: number;
+}
+
+function BreakdownTile({ accent, icon, label, completed, total }: BreakdownTileProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        p: 1.5,
+        borderRadius: 2,
+        backgroundColor: alpha(accent, isDark ? 0.12 : 0.05),
+        border: `1px solid ${alpha(accent, isDark ? 0.28 : 0.18)}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 0.5,
+        minWidth: 0,
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        aria-hidden
+        sx={{
+          position: "absolute",
+          top: -16,
+          right: -16,
+          width: 60,
+          height: 60,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${alpha(accent, 0.18)} 0%, transparent 70%)`,
+          filter: "blur(8px)",
+          pointerEvents: "none",
+        }}
+      />
+      <Box sx={{ position: "relative", display: "flex", alignItems: "center", gap: 0.5 }}>
+        <IconWrapper icon={icon} size={14} color={accent} />
+        <Typography
+          variant="caption"
           sx={{
-            backgroundColor: primary,
-            py: 1.35,
-            borderRadius: 2.5,
-            textTransform: "none",
+            color: "var(--font-secondary)",
+            fontSize: "0.68rem",
             fontWeight: 700,
-            fontSize: "0.95rem",
-            boxShadow: `0 2px 8px ${alpha(primary, 0.2)}`,
-            "&:hover": {
-              bgcolor: theme.palette.primary.dark,
-            },
+            letterSpacing: "0.06em",
+            lineHeight: 1.2,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          title={label}
+        >
+          {label}
+        </Typography>
+      </Box>
+      <Typography
+        component="div"
+        sx={{
+          position: "relative",
+          fontWeight: 800,
+          color: "var(--font-primary)",
+          fontSize: "1.05rem",
+          lineHeight: 1.1,
+          letterSpacing: "-0.01em",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <CountUp value={completed} duration={1.1} />
+        <Box
+          component="span"
+          sx={{
+            color: "var(--font-secondary)",
+            fontWeight: 600,
+            fontSize: "0.85em",
+            ml: 0.5,
           }}
         >
-          View full scorecard
-        </Button>
-      </Box>
-    </Paper>
+          / {total}
+        </Box>
+      </Typography>
+    </Box>
   );
 }

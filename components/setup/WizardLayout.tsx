@@ -230,7 +230,7 @@ export function WizardLayout({
             {/* Label line below bars */}
             <div
               className="aw-mono mt-3 flex h-[14px] items-center text-[10px] uppercase tracking-[0.32em]"
-              style={{ color: "rgb(var(--aw-fg) / 0.5)" }}
+              style={{ color: "rgb(var(--aw-fg) / 0.75)" }}
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -276,7 +276,7 @@ export function WizardLayout({
             >
               <p
                 className="aw-mono text-[10px] uppercase tracking-[0.32em]"
-                style={{ color: "rgb(var(--aw-fg) / 0.5)" }}
+                style={{ color: "rgb(var(--aw-fg) / 0.75)" }}
               >
                 Step {stepNumber}{" "}
                 <span style={{ color: "rgb(var(--aw-line) / 0.32)" }}>/</span>{" "}
@@ -290,8 +290,8 @@ export function WizardLayout({
               </h1>
               {description ? (
                 <p
-                  className="mt-6 max-w-[620px] text-[15px] leading-[1.7]"
-                  style={{ color: "rgb(var(--aw-fg) / 0.75)" }}
+                  className="mt-6 max-w-[620px] text-[17px] font-semibold leading-[1.65]"
+                  style={{ color: "rgb(var(--aw-fg) / 0.92)" }}
                 >
                   {description}
                 </p>
@@ -300,7 +300,7 @@ export function WizardLayout({
               {/* Single thin meta line */}
               <div
                 className="aw-mono mt-7 flex items-center gap-3 text-[10px] uppercase tracking-[0.32em]"
-                style={{ color: "rgb(var(--aw-fg) / 0.42)" }}
+                style={{ color: "rgb(var(--aw-fg) / 0.7)" }}
               >
                 <span className="inline-flex items-center gap-1.5">
                   <svg

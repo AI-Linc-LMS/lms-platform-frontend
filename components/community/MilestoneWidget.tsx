@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Typography, LinearProgress } from "@mui/material";
+import { Box, Typography, LinearProgress, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { UserXP } from "@/lib/services/community.service";
 
@@ -11,18 +11,18 @@ const TIER_COLORS = {
   platinum: "#a78bfa",
 } as const;
 
-const TIER_BG = {
-  bronze:   "rgba(205,127,50,0.10)",
-  silver:   "rgba(148,163,184,0.10)",
-  gold:     "rgba(251,191,36,0.10)",
-  platinum: "rgba(167,139,250,0.10)",
-} as const;
-
 const TIER_ICON = {
   bronze:   "mdi:shield-outline",
   silver:   "mdi:shield-half-full",
   gold:     "mdi:trophy",
   platinum: "mdi:crown",
+} as const;
+
+const TIER_LABEL = {
+  bronze:   "Bronze",
+  silver:   "Silver",
+  gold:     "Gold",
+  platinum: "Platinum",
 } as const;
 
 const TIER_ORDER = ["bronze", "silver", "gold", "platinum"] as const;
@@ -32,19 +32,24 @@ interface MilestoneWidgetProps {
   xp: UserXP;
 }
 
+/**
+ * Clean MUI-only milestone card. Stack:
+ *   1. Header label
+ *   2. Current-tier hero row: icon tile + tier name + IP balance
+ *   3. Linear progress bar to next tier
+ *   4. Compact "X IP to <Tier>" caption
+ *   5. Tier badge row (visited tiers filled, others muted)
+ */
 export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
   const tier = (xp.tier as Tier) || "bronze";
-  const color  = TIER_COLORS[tier];
-  const bgTint = TIER_BG[tier];
-  const icon   = TIER_ICON[tier];
+  const color = TIER_COLORS[tier];
+  const icon = TIER_ICON[tier];
   const tierIdx = TIER_ORDER.indexOf(tier);
-
-  const pointsToNext  = xp.next_tier_threshold != null ? xp.next_tier_threshold - xp.balance : null;
-  const nextTierLabel =
-    tier === "bronze"   ? "Contributor (Silver)"
-    : tier === "silver" ? "Mentor (Gold)"
-    : tier === "gold"   ? "Expert (Platinum)"
+  const nextTier = tierIdx < TIER_ORDER.length - 1 ? TIER_ORDER[tierIdx + 1] : null;
+  const pointsToNext = xp.next_tier_threshold != null
+    ? Math.max(0, xp.next_tier_threshold - xp.balance)
     : null;
+  const pct = nextTier ? Math.min(100, Math.max(0, xp.progress_pct)) : 100;
 
   const [tierName, tierRole] = xp.tier_display.includes("•")
     ? xp.tier_display.split(" • ")
@@ -55,177 +60,215 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
       sx={{
         backgroundColor: "var(--card-bg)",
         border: "1px solid var(--border-default)",
-        borderRadius: "16px",
+        borderRadius: "14px",
         overflow: "hidden",
         width: "100%",
       }}
     >
-      <Box sx={{ height: 3, background: `linear-gradient(90deg, ${color}, ${color}55)` }} />
+      {/* Tier-tinted top strip */}
+      <Box sx={{ height: 3, backgroundColor: color }} />
 
       <Box sx={{ p: 2 }}>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.75 }}>
-          <IconWrapper icon="mdi:chart-timeline-variant-shimmer" size={13} color={color} />
-          <Typography
-            sx={{
-              fontSize: "0.63rem", fontWeight: 800,
-              letterSpacing: "0.07em", textTransform: "uppercase",
-              color: "var(--font-primary)",
-            }}
-          >
-            Your Milestones
-          </Typography>
-        </Box>
-
-        <Box
+        {/* Header */}
+        <Typography
           sx={{
-            display: "flex", alignItems: "center", gap: 1.5,
-            p: 1.5, borderRadius: "12px",
-            backgroundColor: bgTint,
-            border: `1px solid ${color}30`,
-            mb: 2,
+            fontSize: "0.62rem",
+            fontWeight: 800,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--font-secondary)",
+            mb: 1.75,
           }}
         >
+          Your Progress
+        </Typography>
+
+        {/* Hero row: icon tile + tier name + balance */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
           <Box
             sx={{
-              width: 46, height: 46, flexShrink: 0,
-              borderRadius: "11px",
-              background: `linear-gradient(145deg, ${color}30, ${color}12)`,
-              border: `1.5px solid ${color}45`,
-              display: "flex", alignItems: "center", justifyContent: "center",
+              width: 52,
+              height: 52,
+              flexShrink: 0,
+              borderRadius: "12px",
+              backgroundColor: `${color}1a`,
+              border: `1.5px solid ${color}55`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <IconWrapper icon={icon} size={25} color={color} />
+            <IconWrapper icon={icon} size={26} color={color} />
           </Box>
-
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
-              <Typography sx={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--font-primary)", lineHeight: 1.25 }}>
-                {tierName}
+            <Typography
+              sx={{
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                color: "var(--font-primary)",
+                lineHeight: 1.2,
+              }}
+            >
+              {tierName}
+            </Typography>
+            {tierRole && (
+              <Typography
+                sx={{
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  color: "var(--font-secondary)",
+                  mt: 0.1,
+                }}
+              >
+                {tierRole}
               </Typography>
-              {tierRole && (
-                <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, color, lineHeight: 1.25 }}>
-                  • {tierRole}
-                </Typography>
-              )}
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.3, mt: 0.25 }}>
-              <Typography sx={{ fontSize: "1.1rem", fontWeight: 800, color, lineHeight: 1 }}>
+            )}
+            <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.4, mt: 0.4 }}>
+              <Typography
+                sx={{
+                  fontSize: "1.25rem",
+                  fontWeight: 800,
+                  color,
+                  lineHeight: 1,
+                  letterSpacing: "-0.01em",
+                }}
+              >
                 {xp.balance.toLocaleString()}
               </Typography>
-              <Typography sx={{ fontSize: "0.7rem", fontWeight: 500, color: "var(--font-secondary)" }}>
+              <Typography
+                sx={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--font-secondary)" }}
+              >
                 IP
               </Typography>
             </Box>
           </Box>
         </Box>
 
-        {nextTierLabel && (
-          <Box sx={{ mb: 1.75 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.6 }}>
-              <Typography sx={{ fontSize: "0.68rem", color: "var(--font-secondary)" }}>
-                Next: <span style={{ fontWeight: 600 }}>{nextTierLabel}</span>
-              </Typography>
-              <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color }}>
-                {xp.progress_pct}%
+        {/* Progress to next tier */}
+        {nextTier ? (
+          <Box sx={{ mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 0.6,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <IconWrapper icon={TIER_ICON[nextTier]} size={12} color={TIER_COLORS[nextTier]} />
+                <Typography
+                  sx={{ fontSize: "0.72rem", fontWeight: 700, color: TIER_COLORS[nextTier] }}
+                >
+                  Next: {TIER_LABEL[nextTier]}
+                </Typography>
+              </Box>
+              <Typography
+                sx={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--font-secondary)" }}
+              >
+                {pct}%
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
-              value={xp.progress_pct}
+              value={pct}
               sx={{
-                height: 7, borderRadius: 4,
-                backgroundColor: `${color}18`,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: "var(--surface)",
                 "& .MuiLinearProgress-bar": {
-                  background: `linear-gradient(90deg, ${color}bb, ${color})`,
+                  backgroundColor: TIER_COLORS[nextTier],
                   borderRadius: 4,
                 },
               }}
             />
-            {pointsToNext != null && (
-              <Typography sx={{ fontSize: "0.67rem", color: "var(--font-tertiary)", mt: 0.6 }}>
-                {pointsToNext.toLocaleString()} points to go
+            {pointsToNext != null && pointsToNext > 0 && (
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: "var(--font-tertiary)",
+                  mt: 0.7,
+                }}
+              >
+                <Box component="span" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                  {pointsToNext.toLocaleString()}
+                </Box>{" "}
+                IP to go
               </Typography>
             )}
           </Box>
-        )}
-
-        {tier === "platinum" && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 1.75 }}>
-            <IconWrapper icon="mdi:crown" size={13} color={color} />
-            <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color }}>
-              Maximum tier reached!
+        ) : (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.6,
+              p: 1.25,
+              borderRadius: "8px",
+              backgroundColor: `${color}12`,
+              border: `1px solid ${color}40`,
+              mb: 2,
+            }}
+          >
+            <IconWrapper icon="mdi:crown" size={15} color={color} />
+            <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color }}>
+              Maximum tier reached
             </Typography>
           </Box>
         )}
 
+        {/* Tier journey row — simple linear stack, no SVG, no overlap */}
         <Box
           sx={{
             pt: 1.5,
             borderTop: "1px solid var(--border-default)",
             display: "flex",
-            alignItems: "flex-start",
-            position: "relative",
+            justifyContent: "space-between",
+            alignItems: "stretch",
+            gap: 0.75,
           }}
         >
-          <Box
-            sx={{
-              position: "absolute",
-              top: "calc(1.5rem + 5px)",
-              left: "calc(12.5%)",
-              right: "calc(12.5%)",
-              height: 2,
-              backgroundColor: "var(--border-default)",
-              zIndex: 0,
-            }}
-          />
-          {tierIdx > 0 && (
-            <Box
-              sx={{
-                position: "absolute",
-                top: "calc(1.5rem + 5px)",
-                left: "calc(12.5%)",
-                width: `calc(${(tierIdx / 3) * 75}%)`,
-                height: 2,
-                background: `linear-gradient(90deg, ${TIER_COLORS.bronze}, ${color})`,
-                zIndex: 0,
-              }}
-            />
-          )}
           {TIER_ORDER.map((t, i) => {
-            const tColor  = TIER_COLORS[t as Tier];
-            const isReached  = i <= tierIdx;
-            const isCurrent  = i === tierIdx;
+            const tColor = TIER_COLORS[t];
+            const reached = i <= tierIdx;
+            const isCurrent = i === tierIdx;
             return (
-              <Box
-                key={t}
-                sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5, zIndex: 1 }}
-              >
+              <Tooltip key={t} title={TIER_LABEL[t]} arrow>
                 <Box
                   sx={{
-                    width: 11, height: 11, borderRadius: "50%",
-                    backgroundColor: isReached ? tColor : "var(--border-default)",
-                    border: isCurrent ? `2.5px solid ${tColor}` : `1.5px solid ${isReached ? tColor : "var(--border-default)"}`,
-                    outline: isCurrent ? `3px solid ${tColor}28` : "none",
-                    outlineOffset: 1,
-                    transition: "all 0.2s",
-                  }}
-                />
-                <Typography
-                  sx={{
-                    fontSize: "0.58rem",
-                    fontWeight: isCurrent ? 700 : 400,
-                    color: isReached ? tColor : "var(--font-tertiary)",
-                    lineHeight: 1,
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 0.5,
+                    py: 0.5,
+                    borderRadius: "8px",
+                    border: isCurrent ? `1.5px solid ${tColor}` : "1.5px solid transparent",
+                    backgroundColor: isCurrent ? `${tColor}10` : "transparent",
+                    transition: "all 0.18s",
                   }}
                 >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </Typography>
-              </Box>
+                  <IconWrapper
+                    icon={TIER_ICON[t]}
+                    size={18}
+                    color={reached ? tColor : "var(--font-tertiary)"}
+                  />
+                  <Typography
+                    sx={{
+                      fontSize: "0.62rem",
+                      fontWeight: isCurrent ? 800 : 600,
+                      color: reached ? tColor : "var(--font-tertiary)",
+                      letterSpacing: "0.02em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {TIER_LABEL[t]}
+                  </Typography>
+                </Box>
+              </Tooltip>
             );
           })}
         </Box>
-
       </Box>
     </Box>
   );

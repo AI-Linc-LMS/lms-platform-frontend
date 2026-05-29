@@ -36,11 +36,6 @@ const OPTIONS: {
     desc: "Cherry-pick from our 425+ curated courses. We'll duplicate each one (modules, submodules, content references) into your tenant on launch — you own the copies and can edit freely.",
   },
   {
-    value: "build",
-    label: "Build with AI",
-    desc: "Skip the catalogue and use the platform's AI Course Builder to generate courses from a prompt. Drop a topic + audience + duration; the builder scaffolds modules, outlines lessons, and seeds quiz banks.",
-  },
-  {
     value: "skip",
     label: "Skip for now",
     desc: "Launch with an empty library. Add courses anytime later from Admin → Course builder or Admin → Import from catalogue.",
@@ -150,17 +145,6 @@ export function CourseLibraryStep({ data, onChange }: Props) {
           </motion.div>
         ) : null}
 
-        {lib.choice === "build" ? (
-          <motion.div
-            key="build"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.3 }}
-          >
-            <BuildWithAIPanel />
-          </motion.div>
-        ) : null}
       </AnimatePresence>
     </div>
   );
@@ -519,105 +503,3 @@ function CatalogueSkeleton() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   "Build with AI" — explainer panel for the in-platform AI Course Builder.
-   No data to capture here; the actual builder is post-launch UX.
-   ───────────────────────────────────────────────────────────────────────── */
-function BuildWithAIPanel() {
-  return (
-    <div
-      className="rounded-[16px] p-5"
-      style={{
-        border: "1px solid rgba(0, 224, 255, 0.22)",
-        background:
-          "radial-gradient(ellipse 80% 60% at 0% 0%, rgba(35, 86, 214, 0.10), transparent 60%), rgba(0, 224, 255, 0.03)",
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px]"
-          style={{
-            background: "linear-gradient(135deg, #00e0ff 0%, #2356d6 100%)",
-            boxShadow: "0 6px 18px -8px #00e0ff",
-          }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#05070f"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M12 2l2 5 5 .5-4 3.5 1 5L12 13l-4 3 1-5L5 7.5 10 7z" />
-          </svg>
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="aw-mono text-[10px] uppercase tracking-[0.28em] text-[#00e0ff]">
-            AI Course Builder
-          </p>
-          <h4 className="aw-text mt-1 text-[16px] font-semibold">
-            We&apos;ll generate courses from a prompt
-          </h4>
-          <p className="aw-text-dim mt-2 text-[13px] leading-relaxed">
-            Inside the admin portal you&apos;ll find the AI Course Builder
-            under <span className="aw-text font-semibold">Course builder → Generate with AI</span>.
-            Give it a topic (&ldquo;Intro to Python for finance majors&rdquo;), a target audience,
-            and a duration — it scaffolds modules, drafts lesson outlines,
-            seeds quiz banks, and queues up videos for you to record or replace.
-          </p>
-          <ul className="aw-text-dim mt-3 space-y-1.5 text-[12.5px]">
-            <li className="flex items-start gap-2">
-              <BulletDot />
-              <span>
-                Generates 4–12 modules per course with structured submodules
-                and learning objectives.
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <BulletDot />
-              <span>
-                Auto-drafts assessments (MCQs, coding problems, subjective
-                prompts) you can edit before publishing.
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <BulletDot />
-              <span>
-                Every course stays in draft until you click Publish — nothing
-                ships to learners without your review.
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <BulletDot />
-              <span>
-                Toggle the{" "}
-                <span className="aw-mono aw-text">admin_ai_course_builder</span>{" "}
-                module in step 5 if it&apos;s not already on; that&apos;s the
-                feature flag that surfaces the builder in the admin sidebar.
-              </span>
-            </li>
-          </ul>
-          <p className="aw-text-mute mt-3 text-[12px] leading-relaxed">
-            You can still mix-and-match — import a few courses from the
-            catalogue now and use the AI builder later. This step just picks
-            the starting posture.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BulletDot() {
-  return (
-    <span
-      aria-hidden
-      className="mt-[7px] inline-block h-1 w-1 shrink-0 rounded-full"
-      style={{ background: "#00e0ff" }}
-    />
-  );
-}

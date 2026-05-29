@@ -9,19 +9,47 @@ import {
   Button,
   Skeleton,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { motion, useScroll, useSpring } from "framer-motion";
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
+import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
+import { BehavioralMetricsSection } from "@/components/scorecard/detailed/BehavioralMetricsSection";
+import { AchievementsSection } from "@/components/scorecard/detailed/AchievementsSection";
+import { ActionPanelSection } from "@/components/scorecard/detailed/ActionPanelSection";
+import { ComparativeInsightsSection } from "@/components/scorecard/detailed/ComparativeInsightsSection";
 import { LearningConsumptionSection } from "@/components/scorecard/detailed/LearningConsumptionSection";
+import { MockInterviewSection } from "@/components/scorecard/detailed/MockInterviewSection";
+import { PerformanceTrendsSection } from "@/components/scorecard/detailed/PerformanceTrendsSection";
+import { SkillScorecardSection } from "@/components/scorecard/detailed/SkillScorecardSection";
 import { StudentOverviewSection } from "@/components/scorecard/detailed/StudentOverviewSection";
+import { WeakAreasSection } from "@/components/scorecard/detailed/WeakAreasSection";
 import { profileService, type HeatmapData } from "@/lib/services/profile.service";
 import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
+import {
+  useClientInfo,
+  useIsScorecardEnabled,
+} from "@/lib/contexts/ClientInfoContext";
 
-const SECTION_ORDER = ["overview", "activity_heatmap", "learning_consumption"] as const;
+const SECTION_ORDER = [
+  "overview",
+  "activity_heatmap",
+  "learning_consumption",
+  "performance_trends",
+  "skill_scorecard",
+  "weak_areas",
+  "assessment_performance",
+  "mock_interview",
+  "behavioral_metrics",
+  "comparative_insights",
+  "achievements",
+  "action_panel",
+] as const;
 
 /** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
 function PageBackdrop() {
@@ -74,11 +102,27 @@ function ScrollProgressBar() {
 
 export default function ScorecardPage() {
   const router = useRouter();
+  const { loading: loadingClientInfo } = useClientInfo();
+  const scorecardEnabled = useIsScorecardEnabled();
+  // When the tenant's super-admin has disabled the "scorecard" feature,
+  // bounce the learner back to the dashboard. The backend endpoint will
+  // 403 anyway, but redirecting before the fetch avoids a flash of error
+  // UI and matches the behavior of other feature-gated routes in this app.
+  useEffect(() => {
+    if (!loadingClientInfo && !scorecardEnabled) {
+      router.replace("/dashboard");
+    }
+  }, [loadingClientInfo, scorecardEnabled, router]);
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ScorecardData | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    setLoadError(null);
     setLoading(true);
     try {
       const [scorecardData, heatmapRes] = await Promise.all([
@@ -89,16 +133,59 @@ export default function ScorecardPage() {
       ]);
       setData(scorecardData);
       setHeatmapData(heatmapRes.heatmap_data ?? {});
-    } catch {
-      /* Error state: data remains null */
+    } catch (err: unknown) {
+      console.error("[scorecard] failed to load", err);
+      setData(null);
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: string }).message)
+          : "We couldn't load your scorecard right now.";
+      setLoadError(message);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // Skip the fetch when the feature is disabled — the redirect-on-disabled
+    // effect above will move the user to /dashboard and there's no point
+    // burning a backend call in the interim.
+    if (loadingClientInfo || !scorecardEnabled) return;
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, loadingClientInfo, scorecardEnabled]);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const blob = await scorecardService.exportScorecardPdf();
+      const safeName = (data?.overview.studentName || "scorecard")
+        .trim()
+        .replace(/[^\w\s.-]/g, "")
+        .replace(/\s+/g, "_")
+        .toLowerCase();
+      const today = new Date().toISOString().slice(0, 10);
+      const filename = `scorecard_${safeName}_${today}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Give Safari a moment before revoking so the download starts
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: string }).message)
+          : "Couldn't generate your report. Please try again.";
+      setDownloadError(message);
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading, data?.overview.studentName]);
 
   if (loading) {
     return (
@@ -143,10 +230,59 @@ export default function ScorecardPage() {
   if (!data) {
     return (
       <MainLayout>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
-            Failed to load scorecard data.
-          </Typography>
+        <Container maxWidth="sm" sx={{ py: 8 }}>
+          <Box
+            sx={{
+              p: { xs: 3, sm: 4 },
+              borderRadius: 4,
+              border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+              backgroundColor: "var(--card-bg)",
+              textAlign: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                bgcolor: "color-mix(in srgb, #ef4444 12%, transparent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mx: "auto",
+                mb: 2,
+              }}
+            >
+              <IconWrapper icon="mdi:chart-line-variant" size={28} color="#ef4444" />
+            </Box>
+            <Typography variant="h6" fontWeight={700} color="text.primary" gutterBottom>
+              Couldn&apos;t load your scorecard
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 2.5, maxWidth: 360, mx: "auto" }}
+            >
+              {loadError ?? "Check your connection and try again."}
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1.5, justifyContent: "center", flexWrap: "wrap" }}>
+              <Button
+                variant="contained"
+                onClick={() => fetchData()}
+                disabled={loading}
+                sx={{ textTransform: "none", fontWeight: 600, borderRadius: 999, px: 2.5 }}
+              >
+                {loading ? "Retrying…" : "Retry"}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => router.push("/")}
+                sx={{ textTransform: "none", fontWeight: 600, borderRadius: 999, px: 2.5 }}
+              >
+                Back to dashboard
+              </Button>
+            </Box>
+          </Box>
         </Container>
       </MainLayout>
     );
@@ -267,31 +403,90 @@ export default function ScorecardPage() {
                   consumption across every program you&apos;re enrolled in.
                 </Typography>
               </Box>
-              <Button
+              <Box
                 data-scorecard-pdf-exclude
-                variant="outlined"
-                startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-                onClick={() => router.push("/dashboard")}
                 sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "var(--accent-indigo)",
-                  borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
-                  borderRadius: 999,
-                  px: 2.5,
-                  py: 1,
-                  backdropFilter: "blur(8px)",
-                  backgroundColor: "color-mix(in srgb, var(--card-bg) 60%, transparent)",
-                  "&:hover": {
-                    borderColor: "var(--accent-indigo)",
-                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                  },
-                  display: { xs: "none", sm: "inline-flex" },
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.25,
                   flexShrink: 0,
+                  flexWrap: "wrap",
                 }}
               >
-                Back to Dashboard
-              </Button>
+                {/* Download PDF Report — temporarily hidden while the export
+                    pipeline is being stabilized in production. Restore by
+                    uncommenting this block; handleDownloadPdf above is kept
+                    intact so re-enabling is a one-line edit.
+                <Button
+                  onClick={handleDownloadPdf}
+                  disabled={downloading}
+                  startIcon={
+                    downloading ? (
+                      <CircularProgress size={16} sx={{ color: "#fff" }} />
+                    ) : (
+                      <IconWrapper icon="mdi:file-pdf-box" size={20} />
+                    )
+                  }
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 800,
+                    color: "#fff",
+                    borderRadius: 999,
+                    px: 2.5,
+                    py: 1,
+                    letterSpacing: "-0.01em",
+                    background:
+                      "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple, #8b5cf6) 50%, var(--accent-cyan) 100%)",
+                    backgroundSize: "180% 180%",
+                    backgroundPosition: "0% 50%",
+                    boxShadow:
+                      "0 18px 36px -14px color-mix(in srgb, var(--accent-indigo) 60%, transparent), 0 6px 14px -8px color-mix(in srgb, var(--accent-purple, #8b5cf6) 55%, transparent)",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      backgroundPosition: "100% 50%",
+                      transform: "translateY(-1px)",
+                      boxShadow:
+                        "0 24px 44px -14px color-mix(in srgb, var(--accent-indigo) 75%, transparent), 0 8px 18px -8px color-mix(in srgb, var(--accent-purple, #8b5cf6) 70%, transparent)",
+                    },
+                    "&.Mui-disabled": {
+                      color: "color-mix(in srgb, #fff 75%, transparent)",
+                      background:
+                        "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 65%, transparent) 0%, color-mix(in srgb, var(--accent-purple, #8b5cf6) 55%, transparent) 100%)",
+                      opacity: 0.85,
+                    },
+                    flexShrink: 0,
+                  }}
+                >
+                  {downloading ? "Preparing report…" : "Download Report"}
+                </Button>
+                */}
+
+                {/* Back to Dashboard — secondary, outlined */}
+                <Button
+                  variant="outlined"
+                  startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
+                  onClick={() => router.push("/dashboard")}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    color: "var(--accent-indigo)",
+                    borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                    borderRadius: 999,
+                    px: 2.5,
+                    py: 1,
+                    backdropFilter: "blur(8px)",
+                    backgroundColor: "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+                    "&:hover": {
+                      borderColor: "var(--accent-indigo)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                    },
+                    display: { xs: "none", sm: "inline-flex" },
+                    flexShrink: 0,
+                  }}
+                >
+                  Back to Dashboard
+                </Button>
+              </Box>
             </Box>
 
             {/* Sections - order from enabled_modules when configured */}
@@ -311,6 +506,76 @@ export default function ScorecardPage() {
                         data={data.learningConsumption}
                       />
                     );
+                  case "performance_trends":
+                    // performanceTrends is optional on ScorecardData — earlier
+                    // backend deploys may not return it; render the section
+                    // only when the umbrella payload included it.
+                    if (!data.performanceTrends) return null;
+                    return (
+                      <PerformanceTrendsSection
+                        key={sectionId}
+                        initialData={data.performanceTrends}
+                      />
+                    );
+                  case "skill_scorecard":
+                    // Always render the section so learners see the chapter
+                    // and the empty-state prompt even when no content is
+                    // tagged with skills yet. The component handles `[]`.
+                    return <SkillScorecardSection key={sectionId} data={data.skills ?? []} />;
+                  case "weak_areas":
+                    if (!data.weakAreas) return null;
+                    return <WeakAreasSection key={sectionId} data={data.weakAreas} />;
+                  case "assessment_performance":
+                    if (!data.assessmentPerformance || data.assessmentPerformance.length === 0) return null;
+                    return (
+                      <AssessmentPerformanceSection
+                        key={sectionId}
+                        data={data.assessmentPerformance}
+                      />
+                    );
+                  case "mock_interview":
+                    // Always render so learners see the chapter card. The
+                    // component renders an empty state when no interviews
+                    // have been completed yet.
+                    if (!data.mockInterviewPerformance) return null;
+                    return (
+                      <MockInterviewSection
+                        key={sectionId}
+                        data={data.mockInterviewPerformance}
+                      />
+                    );
+                  case "behavioral_metrics":
+                    if (!data.behavioralMetrics) return null;
+                    return (
+                      <BehavioralMetricsSection
+                        key={sectionId}
+                        data={data.behavioralMetrics}
+                      />
+                    );
+                  case "comparative_insights":
+                    if (!data.comparativeInsights) return null;
+                    return (
+                      <ComparativeInsightsSection
+                        key={sectionId}
+                        data={data.comparativeInsights}
+                      />
+                    );
+                  case "achievements":
+                    if (!data.achievements) return null;
+                    return (
+                      <AchievementsSection
+                        key={sectionId}
+                        data={data.achievements}
+                      />
+                    );
+                  case "action_panel":
+                    if (!data.actionPanel) return null;
+                    return (
+                      <ActionPanelSection
+                        key={sectionId}
+                        data={data.actionPanel}
+                      />
+                    );
                   default:
                     return null;
                 }
@@ -319,6 +584,21 @@ export default function ScorecardPage() {
           </Box>
         </Container>
       </Box>
+      <Snackbar
+        open={!!downloadError}
+        autoHideDuration={5000}
+        onClose={() => setDownloadError(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="error"
+          variant="filled"
+          onClose={() => setDownloadError(null)}
+          sx={{ fontWeight: 600 }}
+        >
+          {downloadError ?? ""}
+        </Alert>
+      </Snackbar>
     </MainLayout>
   );
 }
