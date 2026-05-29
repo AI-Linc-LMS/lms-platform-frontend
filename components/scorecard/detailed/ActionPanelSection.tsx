@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
@@ -707,6 +707,19 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
     [data.pendingTasks],
   );
 
+  // Sub-section list collapses — each subsection caps at TASKS_PREVIEW etc.
+  // and shows a toggle when there's more. Keeps the Action Panel scannable
+  // when the backend returns a long list of recommended content / open loops.
+  const TASKS_PREVIEW = 5;
+  const UPCOMING_PREVIEW = 5;
+  const RECOMMENDED_PREVIEW = 6;
+  const [showAllTasks, setShowAllTasks] = useState(false);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [showAllRecommended, setShowAllRecommended] = useState(false);
+  const visibleTasks = showAllTasks ? data.pendingTasks : data.pendingTasks.slice(0, TASKS_PREVIEW);
+  const visibleUpcoming = showAllUpcoming ? data.upcomingAssessments : data.upcomingAssessments.slice(0, UPCOMING_PREVIEW);
+  const visibleRecommended = showAllRecommended ? data.recommendedContent : data.recommendedContent.slice(0, RECOMMENDED_PREVIEW);
+
   return (
     <Reveal as="section">
       <SectionShell
@@ -1082,10 +1095,19 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                       viewport={{ once: true, amount: 0.1 }}
                       style={{ display: "grid", gap: 8 }}
                     >
-                      {data.pendingTasks.map((task, i) => (
+                      {visibleTasks.map((task, i) => (
                         <TaskRow key={task.id} task={task} index={i} />
                       ))}
                     </motion.div>
+                    {data.pendingTasks.length > TASKS_PREVIEW && (
+                      <ShowAllToggle
+                        expanded={showAllTasks}
+                        onToggle={() => setShowAllTasks((v) => !v)}
+                        total={data.pendingTasks.length}
+                        preview={TASKS_PREVIEW}
+                        label="tasks"
+                      />
+                    )}
                   </Box>
                 )}
 
@@ -1124,10 +1146,19 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                       viewport={{ once: true, amount: 0.1 }}
                       style={{ display: "grid", gap: 8 }}
                     >
-                      {data.upcomingAssessments.map((row, i) => (
+                      {visibleUpcoming.map((row, i) => (
                         <UpcomingRow key={row.id} row={row} index={i} />
                       ))}
                     </motion.div>
+                    {data.upcomingAssessments.length > UPCOMING_PREVIEW && (
+                      <ShowAllToggle
+                        expanded={showAllUpcoming}
+                        onToggle={() => setShowAllUpcoming((v) => !v)}
+                        total={data.upcomingAssessments.length}
+                        preview={UPCOMING_PREVIEW}
+                        label="upcoming"
+                      />
+                    )}
                   </Box>
                 )}
               </Box>
@@ -1182,15 +1213,74 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
                   }}
                 >
-                  {data.recommendedContent.map((item, i) => (
+                  {visibleRecommended.map((item, i) => (
                     <ContentCard key={item.id} item={item} index={i} />
                   ))}
                 </motion.div>
+                {data.recommendedContent.length > RECOMMENDED_PREVIEW && (
+                  <ShowAllToggle
+                    expanded={showAllRecommended}
+                    onToggle={() => setShowAllRecommended((v) => !v)}
+                    total={data.recommendedContent.length}
+                    preview={RECOMMENDED_PREVIEW}
+                    label="picks"
+                  />
+                )}
               </Box>
             )}
           </>
         )}
       </SectionShell>
     </Reveal>
+  );
+}
+
+/** Shared "Show all N / Show recent M" pill. Used by the three collapsible
+ *  subsections inside Action Panel so each list stays scannable. */
+function ShowAllToggle({
+  expanded,
+  onToggle,
+  total,
+  preview,
+  label,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+  total: number;
+  preview: number;
+  label: string;
+}) {
+  return (
+    <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5 }}>
+      <Box
+        component="button"
+        onClick={onToggle}
+        sx={{
+          appearance: "none",
+          border: `1px solid color-mix(in srgb, ${ACCENT} 28%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${ACCENT} 6%, transparent)`,
+          color: ACCENT_DARK,
+          fontWeight: 800,
+          fontSize: "0.72rem",
+          letterSpacing: "0.04em",
+          px: 1.75,
+          py: 0.6,
+          borderRadius: 999,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 0.5,
+          transition: "all 0.18s ease",
+          "&:hover": {
+            borderColor: ACCENT,
+            backgroundColor: `color-mix(in srgb, ${ACCENT} 12%, transparent)`,
+          },
+        }}
+        aria-expanded={expanded}
+      >
+        <IconWrapper icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"} size={14} />
+        {expanded ? `Show recent ${preview}` : `Show all ${total} ${label}`}
+      </Box>
+    </Box>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Box, Chip, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -89,6 +90,192 @@ function Breadcrumb({
           title={itemName}
         >
           — {itemName}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/**
+ * Skipped-questions card. Replaces the previous bare bullet list with a
+ * clean card-style layout that:
+ *   - shows up to PREVIEW questions by default (most-recent first per the
+ *     backend ordering)
+ *   - collapses extras behind a "Show all N" toggle so 50+ skipped items
+ *     don't sprawl the section
+ *   - puts each question in its own slim row with an index pill + truncation
+ */
+function SkippedQuestionsCard({ questions }: { questions: string[] }) {
+  const SKIPPED_PREVIEW = 6;
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? questions : questions.slice(0, SKIPPED_PREVIEW);
+  return (
+    <Box
+      component={motion.div}
+      variants={fadeRise}
+      sx={{
+        p: { xs: 2, md: 2.5 },
+        borderRadius: 3,
+        border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+        bgcolor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
+        gridColumn: { md: "1 / -1" },
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        aria-hidden
+        sx={{
+          position: "absolute",
+          top: -40,
+          right: -40,
+          width: 160,
+          height: 160,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, color-mix(in srgb, var(--accent-indigo) 14%, transparent) 0%, transparent 70%)",
+          filter: "blur(20px)",
+          pointerEvents: "none",
+        }}
+      />
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.75, position: "relative" }}>
+        <Box
+          sx={{
+            width: 32,
+            height: 32,
+            borderRadius: 1.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+            color: "#fff",
+            boxShadow: "0 8px 16px -8px color-mix(in srgb, var(--accent-indigo) 60%, transparent)",
+          }}
+        >
+          <IconWrapper icon="mdi:skip-next-outline" size={16} color="#fff" />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "var(--accent-indigo-dark)",
+              fontSize: "0.62rem",
+              fontWeight: 800,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              display: "block",
+              lineHeight: 1.2,
+            }}
+          >
+            Recently skipped
+          </Typography>
+          <Typography
+            sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em", fontSize: "1rem", lineHeight: 1.2 }}
+          >
+            Questions you didn&apos;t answer
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.5,
+            px: 1,
+            py: 0.4,
+            borderRadius: 999,
+            bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+            color: "var(--accent-indigo-dark)",
+            fontSize: "0.68rem",
+            fontWeight: 800,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          <IconWrapper icon="mdi:counter" size={11} />
+          {questions.length}
+        </Box>
+      </Box>
+      <Box sx={{ display: "grid", gap: 0.75, position: "relative" }}>
+        {visible.map((q, idx) => (
+          <Box
+            key={`${q.slice(0, 32)}-${idx}`}
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 1.25,
+              p: 1.25,
+              borderRadius: 2,
+              border: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
+              bgcolor: "var(--card-bg)",
+              transition: "border-color 0.18s ease, transform 0.18s ease",
+              "&:hover": {
+                borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                transform: "translateX(2px)",
+              },
+            }}
+          >
+            <Box
+              sx={{
+                flexShrink: 0,
+                width: 24,
+                height: 24,
+                borderRadius: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                color: "var(--accent-indigo-dark)",
+                fontSize: "0.7rem",
+                fontWeight: 800,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {idx + 1}
+            </Box>
+            <Typography
+              sx={{
+                fontSize: "0.84rem",
+                lineHeight: 1.5,
+                color: "var(--font-primary)",
+                minWidth: 0,
+                wordBreak: "break-word",
+              }}
+            >
+              {q}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+      {questions.length > SKIPPED_PREVIEW && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5, position: "relative" }}>
+          <Box
+            component="button"
+            onClick={() => setExpanded((v) => !v)}
+            sx={{
+              appearance: "none",
+              border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+              color: "var(--accent-indigo-dark)",
+              fontWeight: 800,
+              fontSize: "0.72rem",
+              letterSpacing: "0.04em",
+              px: 1.75,
+              py: 0.6,
+              borderRadius: 999,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              transition: "all 0.18s ease",
+              "&:hover": {
+                borderColor: "var(--accent-indigo)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+              },
+            }}
+            aria-expanded={expanded}
+          >
+            <IconWrapper icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"} size={14} />
+            {expanded ? `Show recent ${SKIPPED_PREVIEW}` : `Show all ${questions.length} skipped`}
+          </Box>
         </Box>
       )}
     </Box>
@@ -469,31 +656,7 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
               )}
 
               {skippedQuestions.length > 0 && (
-                <Box
-                  component={motion.div}
-                  variants={fadeRise}
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-                    bgcolor: "color-mix(in srgb, var(--card-bg) 96%, transparent)",
-                    gridColumn: { md: "1 / -1" },
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-                    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "var(--accent-indigo)", boxShadow: "0 0 0 4px color-mix(in srgb, var(--accent-indigo) 18%, transparent)" }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
-                      Questions you skipped recently
-                    </Typography>
-                  </Box>
-                  <Box component="ul" sx={{ pl: 2.25, m: 0, display: "grid", gap: 0.5, color: "var(--font-primary)", fontSize: "0.85rem" }}>
-                    {skippedQuestions.map((q, idx) => (
-                      <Box component="li" key={`${q}-${idx}`} sx={{ lineHeight: 1.5 }}>
-                        {q}
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
+                <SkippedQuestionsCard questions={skippedQuestions} />
               )}
             </Box>
           </>
