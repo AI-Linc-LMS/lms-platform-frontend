@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
 import { WizardState } from "@/lib/services/wizard.service";
 
@@ -27,6 +27,16 @@ interface Props {
 
 export function UrlStep({ state, data, onChange }: Props) {
   const url = data.url || {};
+  const hasCustomDomain = Boolean(url.custom_domain);
+  // Default-collapsed so the page leads with the assigned subdomain — most
+  // tenants stay on *.ailinc.com forever. If they're returning to step 3
+  // with a domain already saved, start open so they don't have to dig for
+  // their own data.
+  const [domainOpen, setDomainOpen] = useState(hasCustomDomain);
+  useEffect(() => {
+    if (hasCustomDomain) setDomainOpen(true);
+  }, [hasCustomDomain]);
+
   return (
     <motion.div
       variants={containerVariants}
@@ -57,79 +67,101 @@ export function UrlStep({ state, data, onChange }: Props) {
 
       <motion.div
         variants={itemVariants}
-        className="rounded-2xl p-7"
+        className="overflow-hidden rounded-2xl"
         style={{
           border: "1px dashed rgba(255, 255, 255, 0.12)",
           background: "rgba(255, 255, 255, 0.015)",
         }}
       >
-        <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
-          Bring your own domain (optional)
-        </p>
-        <p className="aw-text-dim mt-3 text-[14px] leading-[1.65]">
-          Want learners to reach your LMS at{" "}
-          <span className="aw-mono text-[13px] text-text">
-            learn.your-org.com
-          </span>{" "}
-          instead of{" "}
-          <span className="aw-mono text-[13px] text-text">
-            {state.subdomain}.ailinc.com
+        <button
+          type="button"
+          onClick={() => setDomainOpen((v) => !v)}
+          aria-expanded={domainOpen}
+          className="flex w-full items-center justify-between gap-3 px-7 py-5 text-left transition-colors hover:bg-[rgba(255,255,255,0.025)]"
+        >
+          <span className="min-w-0">
+            <span className="aw-mono aw-text-mute block text-[10px] uppercase tracking-[0.3em]">
+              Use your own domain (optional)
+            </span>
+            <span className="aw-text-dim mt-2 block text-[13px] leading-[1.6]">
+              Prefer something like{" "}
+              <span className="aw-mono text-[12px] text-text">
+                learn.your-org.com
+              </span>
+              ? Click to set it up — or skip and do it later from Settings.
+            </span>
           </span>
-          ? You can set this up now or anytime later from{" "}
-          <span className="text-text">Settings → Domain</span> — your AI Linc
-          URL keeps working either way.
-        </p>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className="shrink-0 transition-transform"
+            style={{
+              color: "rgb(var(--aw-fg-dim))",
+              transform: domainOpen ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
 
-        <div className="mt-6">
-          <label className="aw-label" htmlFor="custom-domain">
-            Custom domain
-          </label>
-          <input
-            id="custom-domain"
-            type="text"
-            placeholder="learn.your-org.com"
-            value={url.custom_domain || ""}
-            onChange={(e) =>
-              onChange({
-                url: { ...url, custom_domain: e.target.value.trim() },
-              })
-            }
-            className="aw-input"
-          />
-          <p className="aw-help mt-2">
-            Enter the exact subdomain you want to use (e.g.{" "}
-            <span className="aw-mono">learn.acme.com</span>). Apex domains like{" "}
-            <span className="aw-mono">acme.com</span> need an ALIAS or ANAME
-            record instead of CNAME — check your registrar.
-          </p>
-        </div>
+        <AnimatePresence initial={false}>
+          {domainOpen ? (
+            <motion.div
+              key="domain-body"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="px-7 pb-7">
+                <div>
+                  <label className="aw-label" htmlFor="custom-domain">
+                    Your domain
+                  </label>
+                  <input
+                    id="custom-domain"
+                    type="text"
+                    placeholder="learn.your-org.com"
+                    value={url.custom_domain || ""}
+                    onChange={(e) =>
+                      onChange({
+                        url: { ...url, custom_domain: e.target.value.trim() },
+                      })
+                    }
+                    className="aw-input"
+                  />
+                  <p className="aw-help mt-2">
+                    Something like{" "}
+                    <span className="aw-mono">learn.acme.com</span>.
+                  </p>
+                </div>
 
-        <CustomDomainSteps
-          slugUrl={`${state.subdomain}.ailinc.com`}
-          customDomain={url.custom_domain || ""}
-        />
+                <CustomDomainSteps
+                  slugUrl={`${state.subdomain}.ailinc.com`}
+                  customDomain={url.custom_domain || ""}
+                />
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
 }
 
 /**
- * Numbered walkthrough for setting up a custom domain. Shown unconditionally
- * so users can scan what's involved BEFORE they commit a domain name. As soon
- * as they paste a domain into the field above, the snippets become
- * personalised (their actual `learn.example.com` and `slug.ailinc.com` show
- * up in the CNAME row, ready to copy).
- *
- * Two-step model we follow:
- *   (a) User adds a CNAME at their DNS registrar pointing the custom domain
- *       at their existing `<slug>.ailinc.com` (the *.ailinc.com wildcard
- *       handles routing automatically once DNS resolves).
- *   (b) The AI Linc team registers the domain on the Netlify side so SSL
- *       auto-provisions and Netlify accepts the Host header. Triggered
- *       automatically when the form is saved with a custom_domain set.
- *
- * The component lives in this file rather than `components/ui` because it's
- * specific to the wizard's tone (aw-card, aw-mono, etc.) and won't be reused.
+ * Friendly two-step walkthrough for hooking up a custom domain. Designed for
+ * a non-technical admin: only the parts they actually do are numbered, and
+ * the second step is a one-line paste. Everything else (Netlify, SSL, DNS
+ * waiting) gets bundled into a reassuring "we'll handle the rest" strip so
+ * it doesn't feel like a four-step engineering chore.
  */
 function CustomDomainSteps({
   slugUrl,
@@ -139,113 +171,128 @@ function CustomDomainSteps({
   customDomain: string;
 }) {
   const hasDomain = customDomain.length > 0;
-  const target = slugUrl; // CNAME target — your existing AI Linc URL
+  const target = slugUrl;
+  const [open, setOpen] = useState(false);
+
+  // Auto-expand once the user actually commits a domain — at that point the
+  // steps stop being "future homework" and become the thing they need to act
+  // on. Stays open after that (no auto-collapse on clear) so an accidental
+  // delete doesn't hide the steps mid-task.
+  useEffect(() => {
+    if (hasDomain) setOpen(true);
+  }, [hasDomain]);
 
   return (
     <div
-      className="mt-6 rounded-[14px] p-5"
+      className="mt-6 overflow-hidden rounded-[14px]"
       style={{
         border: "1px solid rgba(0, 224, 255, 0.18)",
         background: "rgba(0, 224, 255, 0.04)",
       }}
     >
-      <p className="aw-mono text-[10px] uppercase tracking-[0.3em] text-[#00e0ff]">
-        How to enable a custom domain
-      </p>
-      <p className="aw-text-dim mt-2 text-[13px] leading-relaxed">
-        Four steps — you do steps 1 &amp; 2, we handle steps 3 &amp; 4. Total
-        time is usually 10–30 minutes; DNS propagation is the slow part.
-      </p>
-
-      <ol className="mt-5 space-y-4">
-        <Step
-          n={1}
-          title="Decide which subdomain you want"
-          body={
-            <>
-              Pick something short like{" "}
-              <span className="aw-mono text-text">learn</span>,{" "}
-              <span className="aw-mono text-text">academy</span>, or{" "}
-              <span className="aw-mono text-text">training</span>, then put it
-              in front of your company&apos;s root domain (e.g.{" "}
-              <span className="aw-mono text-text">learn.acme.com</span>). Type
-              it into the &ldquo;Custom domain&rdquo; field above.
-            </>
-          }
-        />
-
-        <Step
-          n={2}
-          title="Add a CNAME record at your DNS provider"
-          body={
-            <>
-              In whichever service manages DNS for your root domain
-              (Cloudflare, GoDaddy, Namecheap, AWS Route 53, Google Domains,
-              etc.), add a single <span className="aw-mono text-text">CNAME</span>{" "}
-              record:
-              <DnsRow
-                hasDomain={hasDomain}
-                host={customDomain ? hostPartOf(customDomain) : "learn"}
-                target={target}
-              />
-              <span className="block mt-2 text-[12px]">
-                TTL can stay at the default (usually 1 hour). If your registrar
-                forces an apex domain (no subdomain), use{" "}
-                <span className="aw-mono text-text">ALIAS</span> or{" "}
-                <span className="aw-mono text-text">ANAME</span> with the same
-                target — both work the same way for our purposes.
-              </span>
-            </>
-          }
-        />
-
-        <Step
-          n={3}
-          title="We register the domain on our side"
-          body={
-            <>
-              When you finish this wizard with a custom domain entered, your
-              request goes to the AI Linc team. We add{" "}
-              <span className="aw-mono text-text">
-                {hasDomain ? customDomain : "your-domain.com"}
-              </span>{" "}
-              to your Netlify site so SSL provisions automatically via
-              Let&apos;s Encrypt. You don&apos;t need to do anything for this
-              step — usually finishes within a few minutes once DNS resolves.
-            </>
-          }
-        />
-
-        <Step
-          n={4}
-          title="Wait for DNS to propagate, then test"
-          body={
-            <>
-              DNS changes typically reach most of the internet within 5–30
-              minutes, occasionally up to 24 hours. You&apos;ll know it&apos;s
-              live when{" "}
-              <span className="aw-mono text-text">
-                https://{hasDomain ? customDomain : "your-domain.com"}
-              </span>{" "}
-              loads your LMS without any certificate warning. Until then,{" "}
-              <span className="aw-mono text-text">{slugUrl}</span> keeps
-              working as a fallback.
-            </>
-          }
-        />
-      </ol>
-
-      <p className="aw-help mt-5">
-        Need help with the DNS part? Email us at{" "}
-        <a
-          href="mailto:hello@ailinc.com"
-          className="aw-mono text-[12px] text-[#00e0ff] hover:underline"
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-[rgba(0,224,255,0.06)]"
+      >
+        <span className="min-w-0">
+          <span className="aw-mono block text-[10px] uppercase tracking-[0.3em] text-[#00e0ff]">
+            How to connect your domain
+          </span>
+          <span className="aw-text-dim mt-1 block text-[13px] leading-relaxed">
+            Two quick things from you — we handle everything else.
+          </span>
+        </span>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          className="shrink-0 transition-transform"
+          style={{
+            color: "#00e0ff",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
         >
-          hello@ailinc.com
-        </a>{" "}
-        with a screenshot of your registrar&apos;s DNS panel — we&apos;ll send
-        back the exact values to paste.
-      </p>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="domain-steps-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="px-5 pb-5">
+              <ol className="space-y-4">
+                <Step
+                  n={1}
+                  title="Type your domain above"
+                  body={
+                    <>
+                      Something like{" "}
+                      <span className="aw-mono text-text">learn.acme.com</span>.
+                    </>
+                  }
+                />
+
+                <Step
+                  n={2}
+                  title="Paste this one record at your domain provider"
+                  body={
+                    <>
+                      Open your domain provider (GoDaddy, Cloudflare,
+                      Namecheap, etc.) and add a CNAME with these values:
+                      <DnsRow
+                        hasDomain={hasDomain}
+                        host={
+                          customDomain ? hostPartOf(customDomain) : "learn"
+                        }
+                        target={target}
+                      />
+                    </>
+                  }
+                />
+              </ol>
+
+              <div
+                className="mt-5 rounded-[10px] px-4 py-3 text-[12px] leading-relaxed"
+                style={{
+                  background: "rgba(0, 224, 255, 0.06)",
+                  color: "rgb(var(--aw-fg-dim))",
+                }}
+              >
+                We&apos;ll wire up SSL and switch you over automatically —
+                usually within 5–30 minutes. Until then,{" "}
+                <span className="aw-mono text-text">{slugUrl}</span> keeps
+                working.
+              </div>
+
+              <p className="aw-help mt-4">
+                Not sure where to click?{" "}
+                <a
+                  href="mailto:hello@ailinc.com"
+                  className="aw-mono text-[12px] text-[#00e0ff] hover:underline"
+                >
+                  hello@ailinc.com
+                </a>{" "}
+                — send a screenshot of your DNS page and we&apos;ll do it
+                with you.
+              </p>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -293,8 +340,8 @@ function DnsRow({
     <div
       className="mt-3 grid gap-2 rounded-[10px] p-3 sm:grid-cols-[auto,1fr,1fr,auto]"
       style={{
-        border: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(0,0,0,0.18)",
+        border: "1px solid rgb(var(--aw-line) / var(--aw-line-2-alpha))",
+        background: "rgb(var(--aw-bg-2))",
       }}
     >
       <Cell label="Type" value="CNAME" />
@@ -304,7 +351,7 @@ function DnsRow({
         value={target}
         copyable
       />
-      <Cell label="TTL" value="3600 (default)" />
+      <Cell label="TTL" value="3600" />
     </div>
   );
 }

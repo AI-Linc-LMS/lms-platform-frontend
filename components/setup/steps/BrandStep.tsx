@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { WizardData } from "@/lib/setup/wizardData";
-import { wizardService, type WizardState } from "@/lib/services/wizard.service";
+import {
+  wizardService,
+  validateWizardAsset,
+  extractWizardUploadError,
+  WIZARD_IMAGE_ACCEPT,
+  WIZARD_FAVICON_ACCEPT,
+  type WizardState,
+} from "@/lib/services/wizard.service";
 
 const containerVariants = {
   hidden: {},
@@ -25,19 +32,11 @@ interface Props {
   onChange: (patch: Partial<WizardData>) => void;
 }
 
-async function upload(file: File, kind: string): Promise<string | null> {
-  try {
-    const r = await wizardService.uploadAsset(file, kind);
-    return r.url;
-  } catch {
-    return null;
-  }
-}
-
 function AssetField({
   label,
   hint,
   kind,
+  variant = "image",
   value,
   prefilled,
   onUploaded,
@@ -45,12 +44,15 @@ function AssetField({
   label: string;
   hint?: string;
   kind: string;
+  /** "favicon" widens the allowed types to include ICO; otherwise PNG/JPG/SVG/WebP. */
+  variant?: "image" | "favicon";
   value?: string;
   /** True when the displayed value is the intake-form upload, not a user upload. */
   prefilled?: boolean;
   onUploaded: (url: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -110,21 +112,42 @@ function AssetField({
           {busy ? "Uploading…" : value ? "Replace" : "Upload"}
           <input
             type="file"
-            accept="image/*"
+            accept={variant === "favicon" ? WIZARD_FAVICON_ACCEPT : WIZARD_IMAGE_ACCEPT}
             disabled={busy}
             className="hidden"
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (!f) return;
+              setError(null);
+              const validationError = validateWizardAsset(f, variant);
+              if (validationError) {
+                setError(validationError);
+                e.target.value = "";
+                return;
+              }
               setBusy(true);
-              const url = await upload(f, kind);
-              setBusy(false);
-              if (url) onUploaded(url);
-              e.target.value = "";
+              try {
+                const r = await wizardService.uploadAsset(f, kind);
+                onUploaded(r.url);
+              } catch (err) {
+                setError(extractWizardUploadError(err));
+              } finally {
+                setBusy(false);
+                e.target.value = "";
+              }
             }}
           />
         </label>
       </div>
+      {error ? (
+        <p
+          role="alert"
+          className="mt-2 text-[13px] font-semibold"
+          style={{ color: "#b91c1c" }}
+        >
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -187,8 +210,9 @@ export function BrandStep({ state, data, onChange }: Props) {
         />
         <AssetField
           label="Favicon"
-          hint="32×32 PNG or ICO. Shows in browser tabs."
+          hint="Optional — 32×32 PNG or ICO. Shows in browser tabs. You can add this later from Settings."
           kind="favicon"
+          variant="favicon"
           value={brand.favicon_url}
           onUploaded={(url) => set({ favicon_url: url })}
         />

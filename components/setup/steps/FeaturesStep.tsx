@@ -4,6 +4,15 @@ import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { motion } from "framer-motion";
 import apiClient from "@/lib/services/api";
 import { WizardData } from "@/lib/setup/wizardData";
+import {
+  adminEntries,
+  learnerEntries,
+  learnerKeyForAdmin,
+  lookupFeatureByKey,
+  pairedKeys,
+  type FeatureIconName,
+  type WizardFeatureEntry,
+} from "@/lib/setup/featureCatalogue";
 
 const cardVariants = {
   hidden: { opacity: 0, y: 12, scale: 0.98 },
@@ -28,7 +37,7 @@ const sectionVariants = {
   },
 };
 
-interface Feature {
+interface ApiFeature {
   id: number;
   name: string;
 }
@@ -38,123 +47,39 @@ interface Props {
   onChange: (patch: Partial<WizardData>) => void;
 }
 
-/**
- * Per-feature short descriptions. Keyed by exact name from the backend.
- * Falls back gracefully — features without a description still render, they
- * just don't show the helper line.
- */
-const FEATURE_DESCRIPTIONS: Record<string, string> = {
-  // Learner-facing
-  LMS: "Core learning management — courses, modules, lessons.",
-  Assessment: "Quizzes, tests, and assignments.",
-  "Live Class": "Real-time virtual classes with Zoom integration.",
-  "Community Forum": "Learner-to-learner discussion threads.",
-  "Mock Interview": "AI-driven mock interviews for prep.",
-  Proctoring: "Browser-based proctoring for high-stakes exams.",
-  "AI Tutor": "Per-lesson AI tutoring chat for learners.",
-  // Admin-facing (matches backend sidebar feature keys)
-  admin_dashboard: "Org-wide KPIs, recent activity, and quick actions.",
-  admin_manage_students: "Add, edit, and segment learner accounts.",
-  admin_course_builder: "Author courses, modules, and lessons.",
-  admin_assessment: "Build and manage quizzes and exams.",
-  admin_mock_interview: "Configure AI mock-interview prompts and rubrics.",
-  admin_scorecard: "Performance dashboards across cohorts.",
-  admin_jobs_v2: "Curated job board for your learners.",
-  admin_live_sessions: "Schedule and manage live classes.",
-  admin_attendance: "Mark and review attendance records.",
-  admin_notifications: "Broadcast announcements to learners.",
-  admin_emails: "Manage transactional and marketing email templates.",
-  admin_certificates: "Issue and manage completion certificates.",
-  admin_branding: "Theme colours, logos, and white-label settings.",
-  admin_pending_instructors: "Approve or reject instructor sign-up requests.",
-  admin_ai_course_builder: "Generate course outlines with AI assistance.",
-  admin_verify_content: "Review user-submitted content before publish.",
-};
-
-/**
- * Convention: AppFeatures whose name starts with "admin_" (case-insensitive)
- * are admin-portal modules. Everything else is learner-facing.
- */
-function isAdminFeature(name: string): boolean {
-  return /^admin[_\s-]/i.test(name);
-}
-
-/**
- * Pretty-print admin feature keys for display ("admin_manage_students" → "Manage Students").
- */
-function formatAdminName(name: string): string {
-  return name
-    .replace(/^admin[_\s-]/i, "")
-    .split(/[_\s-]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-/**
- * Map a learner-facing feature → the admin-portal modules that exist to
- * MANAGE it. Toggling either side of a pair toggles all of its counterparts
- * — you can't have admins managing assessments when learners can't take
- * any, and vice versa. Keys are exact `name` strings from the backend's
- * AppFeatures table.
- *
- * Admin features that aren't anyone's counterpart (admin_branding,
- * admin_pending_instructors, admin_verify_content, etc.) are NOT in this
- * map — those toggle independently because they don't presume a paired
- * learner module.
- */
-const FEATURE_PAIRS: Record<string, string[]> = {
-  LMS: ["admin_course_builder", "admin_manage_students", "admin_dashboard"],
-  Assessment: ["admin_assessment", "admin_scorecard"],
-  "Live Class": ["admin_live_sessions", "admin_attendance"],
-  "Mock Interview": ["admin_mock_interview"],
-  "AI Tutor": ["admin_ai_course_builder"],
-  // Community Forum, Proctoring: intentionally no admin counterparts.
-};
-
-/**
- * For a given feature (by name), return the full list of names that should
- * toggle together. Works in both directions — pass either the learner name
- * or any of its admin counterparts.
- */
-function pairedFeatureNames(name: string): string[] {
-  const direct = FEATURE_PAIRS[name];
-  if (direct) return [name, ...direct];
-  for (const [learner, admins] of Object.entries(FEATURE_PAIRS)) {
-    if (admins.includes(name)) return [learner, ...admins];
-  }
-  return [name];
-}
-
 interface SectionConfig {
   key: "learner" | "admin";
   label: string;
   kicker: string;
   description: string;
   iconBg: string;
+  // Primary brand colour for the section — used for accents, borders, glow.
   accent: string;
-  // Was `JSX.Element` originally — TS 5 / React 19 dropped the global JSX
-  // namespace, so this needs a concrete React type. ReactElement is the
-  // strict form (single element), which is exactly what the SVG icons are.
+  // Soft companion colour for the card backdrop gradient.
+  accentSoft: string;
+  // Vivid second stop for the icon tile gradient.
+  accentDeep: string;
   icon: ReactElement;
 }
 
 const SECTIONS: SectionConfig[] = [
   {
     key: "learner",
-    label: "Learner features",
+    label: "Learner modules",
     kicker: "What learners see",
     description:
-      "Modules that appear in the learner sidebar. Toggle off anything your org doesn't need — you can re-enable later in Settings.",
-    iconBg: "linear-gradient(135deg, #00e0ff 0%, #2356d6 100%)",
-    accent: "#00e0ff",
+      "These show up in the student app sidebar. Pick the ones your org will actually use — admin tools auto-enable to match.",
+    iconBg: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
+    accent: "#0ea5e9",
+    accentSoft: "#bae6fd",
+    accentDeep: "#0369a1",
     icon: (
       <svg
         width="14"
         height="14"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#05070f"
+        stroke="#ffffff"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -167,19 +92,21 @@ const SECTIONS: SectionConfig[] = [
   },
   {
     key: "admin",
-    label: "Admin features",
-    kicker: "Admin portal modules",
+    label: "Admin tools",
+    kicker: "What your team manages",
     description:
-      "Tools and dashboards that show up in the admin sidebar for tenant admins, instructors, and course managers.",
-    iconBg: "linear-gradient(135deg, #ffd166 0%, #ef8354 100%)",
-    accent: "#ffd166",
+      "These show up in the admin portal for tenant admins, instructors, and course managers. Some auto-toggle with a learner module; others are standalone.",
+    iconBg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
+    accent: "#d97706",
+    accentSoft: "#fde68a",
+    accentDeep: "#92400e",
     icon: (
       <svg
         width="14"
         height="14"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#05070f"
+        stroke="#ffffff"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -191,9 +118,16 @@ const SECTIONS: SectionConfig[] = [
   },
 ];
 
+// Catalogue entry + the backend AppFeatures.id we resolved it to.
+interface ResolvedEntry extends WizardFeatureEntry {
+  id: number;
+}
+
 export function FeaturesStep({ data, onChange }: Props) {
-  const [features, setFeatures] = useState<Feature[]>([]);
+  const [apiFeatures, setApiFeatures] = useState<ApiFeature[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
   const selected = useMemo(
     () => new Set<number>(data.features?.selected_feature_ids || []),
     [data.features?.selected_feature_ids]
@@ -203,15 +137,18 @@ export function FeaturesStep({ data, onChange }: Props) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await apiClient.get<Feature[] | { features: Feature[] }>(
-          "/accounts/features/"
-        );
+        const res = await apiClient.get<
+          ApiFeature[] | { features: ApiFeature[] }
+        >("/accounts/features/");
         const list = Array.isArray(res.data)
           ? res.data
           : res.data.features || [];
-        if (!cancelled) setFeatures(list);
+        if (!cancelled) setApiFeatures(list);
       } catch {
-        if (!cancelled) setFeatures([]);
+        if (!cancelled) {
+          setApiFeatures([]);
+          setLoadError(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -221,46 +158,44 @@ export function FeaturesStep({ data, onChange }: Props) {
     };
   }, []);
 
-  const { learnerFeatures, adminFeatures } = useMemo(() => {
-    const learner: Feature[] = [];
-    const admin: Feature[] = [];
-    for (const f of features) {
-      (isAdminFeature(f.name) ? admin : learner).push(f);
-    }
-    learner.sort((a, b) => a.name.localeCompare(b.name));
-    admin.sort((a, b) => formatAdminName(a.name).localeCompare(formatAdminName(b.name)));
-    return { learnerFeatures: learner, adminFeatures: admin };
-  }, [features]);
-
-  /**
-   * Lookup table: feature name → feature object (for resolving paired names
-   * to their ids when toggling cascades fire). Lowercased keys so the
-   * comparison is case-insensitive against pair-map entries.
-   */
-  const featuresByName = useMemo(() => {
-    const m = new Map<string, Feature>();
-    for (const f of features) m.set(f.name.toLowerCase(), f);
+  // API-side index of name → id. Drives the catalogue filter: a catalogue
+  // entry only renders if the backend has the matching AppFeatures row.
+  const apiIdByName = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const f of apiFeatures) m.set(f.name, f.id);
     return m;
-  }, [features]);
+  }, [apiFeatures]);
+
+  // Catalogue entries that have a corresponding backend row, ready to render.
+  const { resolvedLearner, resolvedAdmin } = useMemo(() => {
+    const resolve = (entries: WizardFeatureEntry[]): ResolvedEntry[] => {
+      const out: ResolvedEntry[] = [];
+      for (const e of entries) {
+        const id = apiIdByName.get(e.key);
+        if (typeof id === "number") out.push({ ...e, id });
+      }
+      return out;
+    };
+    return {
+      resolvedLearner: resolve(learnerEntries()),
+      resolvedAdmin: resolve(adminEntries()),
+    };
+  }, [apiIdByName]);
 
   /**
-   * Toggle a single feature AND every feature it's paired with. Treats the
-   * clicked feature's resulting state as the source of truth — clicking
-   * an ON item turns the whole pair OFF; clicking an OFF item turns the
-   * whole pair ON.
+   * Toggle a feature card AND every catalogue-paired key. Treats the
+   * clicked card's new state as the source of truth — turning an ON card
+   * OFF clears the whole pair; turning an OFF card ON enables them all.
    */
-  const toggle = (id: number) => {
-    const target = features.find((f) => f.id === id);
-    if (!target) return;
-    const willTurnOn = !selected.has(id);
-    const namesToToggle = pairedFeatureNames(target.name);
-    const idsToToggle = namesToToggle
-      .map((n) => featuresByName.get(n.toLowerCase())?.id)
+  const toggleEntry = (entry: ResolvedEntry) => {
+    const willTurnOn = !selected.has(entry.id);
+    const idsToToggle = pairedKeys(entry.key)
+      .map((k) => apiIdByName.get(k))
       .filter((x): x is number => typeof x === "number");
     const next = new Set(selected);
-    for (const fid of idsToToggle) {
-      if (willTurnOn) next.add(fid);
-      else next.delete(fid);
+    for (const id of idsToToggle) {
+      if (willTurnOn) next.add(id);
+      else next.delete(id);
     }
     onChange({
       features: {
@@ -270,26 +205,17 @@ export function FeaturesStep({ data, onChange }: Props) {
     });
   };
 
-  const toggleSection = (groupFeatures: Feature[]) => {
+  const toggleSection = (entries: ResolvedEntry[]) => {
+    const allOn = entries.every((e) => selected.has(e.id));
     const next = new Set(selected);
-    const allOn = groupFeatures.every((f) => next.has(f.id));
-    if (allOn) {
-      // Section-level deselect: turn off the whole section AND any paired
-      // features on the other side (so we don't strand admins managing
-      // nothing, or learners using a module with no admin tools).
-      groupFeatures.forEach((f) => {
-        for (const name of pairedFeatureNames(f.name)) {
-          const id = featuresByName.get(name.toLowerCase())?.id;
-          if (typeof id === "number") next.delete(id);
-        }
-      });
-    } else {
-      groupFeatures.forEach((f) => {
-        for (const name of pairedFeatureNames(f.name)) {
-          const id = featuresByName.get(name.toLowerCase())?.id;
-          if (typeof id === "number") next.add(id);
-        }
-      });
+    for (const e of entries) {
+      const ids = pairedKeys(e.key)
+        .map((k) => apiIdByName.get(k))
+        .filter((x): x is number => typeof x === "number");
+      for (const id of ids) {
+        if (allOn) next.delete(id);
+        else next.add(id);
+      }
     }
     onChange({
       features: {
@@ -299,64 +225,44 @@ export function FeaturesStep({ data, onChange }: Props) {
     });
   };
 
-  const learnerOn = learnerFeatures.filter((f) => selected.has(f.id)).length;
-  const adminOn = adminFeatures.filter((f) => selected.has(f.id)).length;
+  const learnerOn = resolvedLearner.filter((e) => selected.has(e.id)).length;
+  const adminOn = resolvedAdmin.filter((e) => selected.has(e.id)).length;
+  const totalAvailable = resolvedLearner.length + resolvedAdmin.length;
 
   return (
     <div className="space-y-7">
       <p className="aw-text-dim text-[14px] leading-[1.65]">
-        Choose what shows up in your tenants&apos; sidebars. Learner features
-        appear in the student app; admin features appear inside the admin
-        portal. You can change either set anytime later in Settings.
+        Pick the modules your LMS will ship with. Learner modules show up in
+        the student app; admin tools live in the admin portal. You can change
+        either set later from Settings.
       </p>
 
       {loading ? (
         <FeaturesLoading />
-      ) : features.length === 0 ? (
+      ) : totalAvailable === 0 ? (
         <div
           className="rounded-[14px] p-4"
           style={{
-            border: "1px solid rgba(255, 198, 109, 0.3)",
-            background: "rgba(255, 198, 109, 0.06)",
+            border: "1px solid rgba(217, 119, 6, 0.3)",
+            background: "rgba(217, 119, 6, 0.06)",
           }}
         >
-          <p className="aw-mono text-[10px] uppercase tracking-[0.3em] text-[#ffc66d]">
+          <p className="aw-mono text-[10px] uppercase tracking-[0.3em] text-[#d97706]">
             Modules unavailable
           </p>
           <p className="aw-text-dim mt-2 text-[13px] leading-relaxed">
-            Couldn&apos;t load modules from the server. You can still launch
-            and enable modules later from Settings.
+            {loadError
+              ? "Couldn't load modules from the server. You can still launch and enable modules later from Settings."
+              : "No modules are currently available for your account. Reach out to support and we'll get you set up."}
           </p>
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Pairing hint banner — explains the auto-toggle behaviour up
-              front so users aren't confused when ticking "Assessment" also
-              switches on the admin counterparts. */}
-          <div
-            className="rounded-[14px] p-3.5"
-            style={{
-              border: "1px solid rgba(0, 224, 255, 0.22)",
-              background: "rgba(0, 224, 255, 0.04)",
-            }}
-          >
-            <p className="aw-mono text-[10px] uppercase tracking-[0.28em] text-[#00e0ff]">
-              How pairing works
-            </p>
-            <p className="aw-text-dim mt-1.5 text-[12.5px] leading-relaxed">
-              Picking a learner module like{" "}
-              <span className="aw-text font-semibold">Assessment</span> also
-              switches on the admin tools needed to run it (
-              <span className="aw-text">Manage assessments</span>,{" "}
-              <span className="aw-text">Scorecard</span>). Untick either side
-              and both sides clear together — we don&apos;t leave admins
-              managing modules learners can&apos;t reach.
-            </p>
-          </div>
+          <PairingBanner />
 
           {SECTIONS.map((section) => {
             const list =
-              section.key === "learner" ? learnerFeatures : adminFeatures;
+              section.key === "learner" ? resolvedLearner : resolvedAdmin;
             if (list.length === 0) return null;
             const onCount =
               section.key === "learner" ? learnerOn : adminOn;
@@ -370,9 +276,6 @@ export function FeaturesStep({ data, onChange }: Props) {
                 aria-labelledby={`features-section-${section.key}`}
                 className="relative overflow-hidden rounded-[18px] p-5 sm:p-6"
                 style={{
-                  // Strong section-level tint + accent left rail so the two
-                  // worlds (Student app vs Admin portal) feel different
-                  // surfaces, not just two lists on the same page.
                   border: `1px solid ${section.accent}24`,
                   background: `linear-gradient(135deg, ${section.accent}08 0%, transparent 40%), rgba(11, 18, 38, 0.02)`,
                 }}
@@ -407,7 +310,7 @@ export function FeaturesStep({ data, onChange }: Props) {
                       >
                         {section.label}
                         <span className="aw-text-mute ml-2 text-[12px] font-normal">
-                          {onCount} / {list.length} selected
+                          {onCount} / {list.length} on
                         </span>
                       </h3>
                     </div>
@@ -422,7 +325,7 @@ export function FeaturesStep({ data, onChange }: Props) {
                       background: `${section.accent}0d`,
                     }}
                   >
-                    {allOn ? "Deselect all" : "Select all"}
+                    {allOn ? "Turn all off" : "Turn all on"}
                   </button>
                 </div>
 
@@ -430,102 +333,17 @@ export function FeaturesStep({ data, onChange }: Props) {
                   {section.description}
                 </p>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {list.map((f, i) => {
-                    const isOn = selected.has(f.id);
-                    const displayName =
-                      section.key === "admin" ? formatAdminName(f.name) : f.name;
-                    const desc =
-                      FEATURE_DESCRIPTIONS[f.name] ||
-                      FEATURE_DESCRIPTIONS[displayName];
-                    // Resolve any paired counterparts so we can hint at them
-                    // on the card. Excludes the feature itself.
-                    const pairedNames = pairedFeatureNames(f.name).filter(
-                      (n) => n !== f.name
-                    );
-                    return (
-                      <motion.button
-                        key={f.id}
-                        custom={i}
-                        variants={cardVariants}
-                        initial="hidden"
-                        animate="visible"
-                        type="button"
-                        onClick={() => toggle(f.id)}
-                        className={`group relative flex items-start gap-3 rounded-[14px] p-3.5 text-left transition-all ${
-                          isOn ? "aw-option-active" : ""
-                        }`}
-                        style={
-                          isOn
-                            ? {
-                                border: `1px solid ${section.accent}88`,
-                                background: `${section.accent}10`,
-                                boxShadow: `inset 0 0 0 1px ${section.accent}33, 0 6px 22px -10px ${section.accent}`,
-                              }
-                            : {
-                                border: `1px solid rgb(var(--aw-line) / var(--aw-line-alpha))`,
-                                background: "rgb(var(--aw-line) / 0.02)",
-                              }
-                        }
-                      >
-                        <div
-                          className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded transition"
-                          style={{
-                            border: isOn
-                              ? `1px solid ${section.accent}`
-                              : `1px solid rgb(var(--aw-line) / var(--aw-line-2-alpha))`,
-                            background: isOn ? section.iconBg : "transparent",
-                          }}
-                        >
-                          {isOn ? (
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="#05070f"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : null}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="aw-text text-[14px] font-semibold">
-                            {displayName}
-                          </p>
-                          {desc ? (
-                            <p className="aw-text-mute mt-1 text-[12px] leading-relaxed">
-                              {desc}
-                            </p>
-                          ) : null}
-                          {pairedNames.length > 0 ? (
-                            <p
-                              className="aw-mono mt-2 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em]"
-                              style={{
-                                color: section.accent,
-                                opacity: 0.85,
-                              }}
-                            >
-                              <span aria-hidden>↔</span>
-                              {section.key === "learner"
-                                ? "Auto-enables admin: "
-                                : "Pairs with learner: "}
-                              <span className="aw-text-dim normal-case tracking-normal">
-                                {pairedNames
-                                  .map((n) =>
-                                    isAdminFeature(n) ? formatAdminName(n) : n
-                                  )
-                                  .join(", ")}
-                              </span>
-                            </p>
-                          ) : null}
-                        </div>
-                      </motion.button>
-                    );
-                  })}
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {list.map((entry, i) => (
+                    <FeatureCard
+                      key={entry.id}
+                      entry={entry}
+                      index={i}
+                      isOn={selected.has(entry.id)}
+                      section={section}
+                      onToggle={() => toggleEntry(entry)}
+                    />
+                  ))}
                 </div>
               </motion.section>
             );
@@ -533,9 +351,9 @@ export function FeaturesStep({ data, onChange }: Props) {
         </div>
       )}
 
-      {!loading && features.length > 0 && (
+      {!loading && totalAvailable > 0 && (
         <p className="aw-mono aw-text-mute text-[10px] uppercase tracking-[0.3em]">
-          {selected.size} of {features.length} modules selected
+          {learnerOn + adminOn} of {totalAvailable} modules on
           <span className="ml-2 opacity-60">
             · {learnerOn} learner · {adminOn} admin
           </span>
@@ -544,6 +362,467 @@ export function FeaturesStep({ data, onChange }: Props) {
     </div>
   );
 }
+
+// ──────────────────────── Card ────────────────────────
+
+interface FeatureCardProps {
+  entry: ResolvedEntry;
+  index: number;
+  isOn: boolean;
+  section: SectionConfig;
+  onToggle: () => void;
+}
+
+/**
+ * Big, opinionated feature card. Four visual layers, back to front:
+ *   1. Base surface — light card colour for the unselected state, tinted
+ *      gradient when selected.
+ *   2. Backdrop watermark — the feature's own icon rendered huge in the
+ *      bottom-right at low opacity, giving each card a unique silhouette
+ *      without using stock photography.
+ *   3. Diagonal gradient sheen — a thin highlight bar across the top that
+ *      brightens on hover, so the card feels lit rather than flat.
+ *   4. Foreground — icon tile (top-left), title, tagline, pair caption,
+ *      and a status badge top-right that flips between an outline circle
+ *      (off) and a vivid filled checkmark (on).
+ */
+function FeatureCard({
+  entry,
+  index,
+  isOn,
+  section,
+  onToggle,
+}: FeatureCardProps) {
+  const { accent, accentSoft, accentDeep, iconBg } = section;
+
+  // One-direction pair caption — fixes the old "Assessment, Assessment" bug.
+  let pairCaption: string | null = null;
+  if (entry.side === "learner" && entry.pairsWithAdmin?.length) {
+    const adminLabels = entry.pairsWithAdmin
+      .map((k) => lookupFeatureByKey(k)?.label)
+      .filter((x): x is string => Boolean(x));
+    if (adminLabels.length) {
+      const more = adminLabels.length > 2 ? ` +${adminLabels.length - 2}` : "";
+      const shown = adminLabels.slice(0, 2).join(" · ");
+      pairCaption = `Auto-enables ${shown}${more}`;
+    }
+  } else if (entry.side === "admin") {
+    const learnerKey = learnerKeyForAdmin(entry.key);
+    if (learnerKey) {
+      const learnerLabel = lookupFeatureByKey(learnerKey)?.label;
+      if (learnerLabel) {
+        pairCaption = `Pairs with ${learnerLabel}`;
+      }
+    }
+  }
+
+  return (
+    <motion.button
+      custom={index}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      type="button"
+      onClick={onToggle}
+      aria-pressed={isOn}
+      className="group relative isolate flex min-h-[180px] flex-col overflow-hidden rounded-[20px] p-6 text-left transition-shadow"
+      style={
+        isOn
+          ? {
+              border: `1.5px solid ${accent}`,
+              background: `linear-gradient(135deg, ${accent}12 0%, ${accentSoft}28 60%, #ffffff 100%)`,
+              boxShadow: `0 18px 40px -18px ${accent}99, 0 2px 6px -2px ${accent}33, inset 0 1px 0 0 #ffffffcc`,
+            }
+          : {
+              border: "1px solid rgb(var(--aw-line) / var(--aw-line-2-alpha))",
+              background:
+                "linear-gradient(135deg, #ffffff 0%, rgb(var(--aw-bg-2)) 100%)",
+              boxShadow:
+                "0 1px 2px -1px rgba(11, 18, 38, 0.04), 0 8px 22px -14px rgba(11, 18, 38, 0.08)",
+            }
+      }
+    >
+      {/* Backdrop: huge feature glyph in the bottom-right, watermark-level
+          opacity. Pointer-events disabled so it never intercepts clicks. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-6 -right-6 z-0"
+        style={{
+          color: isOn ? accent : "rgb(var(--aw-fg))",
+          opacity: isOn ? 0.16 : 0.05,
+          transform: "rotate(-8deg)",
+          filter: isOn ? `drop-shadow(0 6px 18px ${accent}55)` : "none",
+          transition: "opacity 0.25s, color 0.25s",
+        }}
+      >
+        <BigFeatureGlyph name={entry.icon} />
+      </span>
+
+      {/* Hover sheen — diagonal highlight across the top edge. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[1px] opacity-0 transition-opacity group-hover:opacity-100"
+        style={{
+          background: `linear-gradient(90deg, transparent 0%, ${accent}80 50%, transparent 100%)`,
+        }}
+      />
+
+      {/* Foreground content */}
+      <div className="relative z-10 flex items-start justify-between gap-3">
+        <span
+          className="grid h-14 w-14 shrink-0 place-items-center rounded-[16px]"
+          style={{
+            background: isOn ? iconBg : "#ffffff",
+            border: isOn ? "none" : `1px solid ${accent}24`,
+            boxShadow: isOn
+              ? `0 10px 26px -10px ${accentDeep}, inset 0 1px 0 0 #ffffff66`
+              : `0 4px 12px -6px ${accent}33`,
+            transition: "background 0.25s, box-shadow 0.25s",
+          }}
+        >
+          <FeatureIcon
+            name={entry.icon}
+            color={isOn ? "#ffffff" : accent}
+            size={24}
+            strokeWidth={2}
+          />
+        </span>
+        <StatusBadge isOn={isOn} accent={accent} accentDeep={accentDeep} />
+      </div>
+
+      <div className="relative z-10 mt-5 flex-1">
+        <h4 className="aw-text text-[18px] font-bold leading-[1.2] tracking-tight">
+          {entry.label}
+        </h4>
+        <p className="aw-text-dim mt-2 text-[13.5px] leading-[1.55]">
+          {entry.tagline}
+        </p>
+      </div>
+
+      {pairCaption ? (
+        <div className="relative z-10 mt-5 flex items-center gap-2">
+          <span
+            className="aw-mono inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
+            style={{
+              color: isOn ? accentDeep : accent,
+              background: isOn ? `${accent}1f` : `${accent}10`,
+              border: `1px solid ${accent}33`,
+            }}
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+            {pairCaption}
+          </span>
+        </div>
+      ) : null}
+    </motion.button>
+  );
+}
+
+function StatusBadge({
+  isOn,
+  accent,
+  accentDeep,
+}: {
+  isOn: boolean;
+  accent: string;
+  accentDeep: string;
+}) {
+  return (
+    <span
+      aria-hidden
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-full transition-all"
+      style={
+        isOn
+          ? {
+              background: accent,
+              border: `1.5px solid ${accentDeep}`,
+              boxShadow: `0 6px 18px -6px ${accent}, inset 0 1px 0 0 #ffffff66`,
+            }
+          : {
+              background: "transparent",
+              border: "1.5px dashed rgb(var(--aw-line) / 0.32)",
+            }
+      }
+    >
+      {isOn ? (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{ background: "rgb(var(--aw-line) / 0.22)" }}
+        />
+      )}
+    </span>
+  );
+}
+
+/** Oversized version of the feature glyph used as the card backdrop. Same
+ *  shapes as FeatureIcon, but rendered at 140px so it reads as a
+ *  silhouette. */
+function BigFeatureGlyph({ name }: { name: FeatureIconName }) {
+  return (
+    <FeatureIcon
+      name={name}
+      color="currentColor"
+      size={150}
+      strokeWidth={1.4}
+    />
+  );
+}
+
+// ──────────────────────── Icons ────────────────────────
+
+function FeatureIcon({
+  name,
+  color,
+  size = 18,
+  strokeWidth = 1.8,
+}: {
+  name: FeatureIconName;
+  color: string;
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: color,
+    strokeWidth,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  switch (name) {
+    case "book":
+      return (
+        <svg {...common}>
+          <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 1 4 17.5v-13z" />
+          <path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20" />
+        </svg>
+      );
+    case "checklist":
+      return (
+        <svg {...common}>
+          <polyline points="9 11 12 14 22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </svg>
+      );
+    case "live":
+      return (
+        <svg {...common}>
+          <rect x="2" y="6" width="14" height="12" rx="2" />
+          <path d="M22 8l-6 4 6 4z" />
+        </svg>
+      );
+    case "chat":
+      return (
+        <svg {...common}>
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z" />
+        </svg>
+      );
+    case "interview":
+      return (
+        <svg {...common}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 11h-6" />
+          <path d="M19 8l3 3-3 3" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      );
+    case "robot":
+      return (
+        <svg {...common}>
+          <rect x="3" y="8" width="18" height="12" rx="2" />
+          <path d="M12 8V4" />
+          <circle cx="8.5" cy="14" r="1.5" />
+          <circle cx="15.5" cy="14" r="1.5" />
+          <path d="M9 18h6" />
+        </svg>
+      );
+    case "briefcase":
+      return (
+        <svg {...common}>
+          <rect x="2" y="7" width="20" height="14" rx="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      );
+    case "dashboard":
+      return (
+        <svg {...common}>
+          <rect x="3" y="3" width="7" height="9" rx="1" />
+          <rect x="14" y="3" width="7" height="5" rx="1" />
+          <rect x="14" y="12" width="7" height="9" rx="1" />
+          <rect x="3" y="16" width="7" height="5" rx="1" />
+        </svg>
+      );
+    case "users":
+      return (
+        <svg {...common}>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case "builder":
+      return (
+        <svg {...common}>
+          <path d="M12 20l9-5-9-5-9 5 9 5z" />
+          <path d="M3 10l9 5 9-5" />
+          <path d="M3 15l9 5 9-5" />
+        </svg>
+      );
+    case "scorecard":
+      return (
+        <svg {...common}>
+          <line x1="12" y1="20" x2="12" y2="10" />
+          <line x1="18" y1="20" x2="18" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="16" />
+        </svg>
+      );
+    case "calendar":
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      );
+    case "presence":
+      return (
+        <svg {...common}>
+          <polyline points="9 11 12 14 22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" />
+        </svg>
+      );
+    case "bell":
+      return (
+        <svg {...common}>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      );
+    case "mail":
+      return (
+        <svg {...common}>
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <polyline points="22 7 12 13 2 7" />
+        </svg>
+      );
+    case "certificate":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="9" r="6" />
+          <path d="M9 14.5v6L12 19l3 1.5v-6" />
+        </svg>
+      );
+    case "paint":
+      return (
+        <svg {...common}>
+          <circle cx="13.5" cy="6.5" r=".5" />
+          <circle cx="17.5" cy="10.5" r=".5" />
+          <circle cx="8.5" cy="7.5" r=".5" />
+          <circle cx="6.5" cy="12.5" r=".5" />
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+        </svg>
+      );
+    case "approve":
+      return (
+        <svg {...common}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="8.5" cy="7" r="4" />
+          <polyline points="17 11 19 13 23 9" />
+        </svg>
+      );
+    case "sparkles":
+      return (
+        <svg {...common}>
+          <path d="M12 2l1.6 5.6L19 9l-5.4 1.4L12 16l-1.6-5.6L5 9l5.4-1.4z" />
+          <path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z" />
+        </svg>
+      );
+    case "verify":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="9 12 11 14 15 10" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <rect x="4" y="4" width="16" height="16" rx="3" />
+        </svg>
+      );
+  }
+}
+
+// ──────────────────────── Banner ────────────────────────
+
+function PairingBanner() {
+  return (
+    <div
+      className="rounded-[14px] p-3.5"
+      style={{
+        border: "1px solid rgba(14, 165, 233, 0.22)",
+        background: "rgba(14, 165, 233, 0.04)",
+      }}
+    >
+      <p className="aw-mono text-[10px] uppercase tracking-[0.28em] text-[#0284c7]">
+        How pairing works
+      </p>
+      <p className="aw-text-dim mt-1.5 text-[12.5px] leading-relaxed">
+        Pick a learner module — say{" "}
+        <span className="aw-text font-semibold">Quizzes &amp; tests</span> —
+        and we automatically switch on the admin tools that manage it (
+        <span className="aw-text font-semibold">Assessment editor</span>,{" "}
+        <span className="aw-text font-semibold">Scorecard</span>). Untick
+        either side and both sides clear together. You can adjust everything
+        later from Settings.
+      </p>
+    </div>
+  );
+}
+
+// ──────────────────────── Loading ────────────────────────
 
 /**
  * Branded loading panel for the features list — mirrors the AI LINC mark used
@@ -562,7 +841,7 @@ function FeaturesLoading() {
           className="absolute inset-0 -z-10 rounded-full"
           style={{
             background:
-              "radial-gradient(circle, rgba(0,224,255,0.18), transparent 70%)",
+              "radial-gradient(circle, rgba(14,165,233,0.18), transparent 70%)",
             filter: "blur(12px)",
             animation: "aw-fl-pulse 2.2s ease-in-out infinite",
           }}
@@ -591,7 +870,7 @@ function FeaturesLoading() {
           className="h-full"
           style={{
             width: "40%",
-            background: "linear-gradient(90deg, #2356d6 0%, #00e0ff 100%)",
+            background: "linear-gradient(90deg, #0284c7 0%, #0ea5e9 100%)",
             animation: "aw-marquee-scroll 1.6s ease-in-out infinite",
           }}
         />
