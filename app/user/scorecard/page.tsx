@@ -393,7 +393,10 @@ export default function ScorecardPage() {
                   flexWrap: "wrap",
                 }}
               >
-                {/* Download PDF Report — primary CTA, gradient */}
+                {/* Download PDF Report — temporarily hidden while the export
+                    pipeline is being stabilized in production. Restore by
+                    uncommenting this block; handleDownloadPdf above is kept
+                    intact so re-enabling is a one-line edit.
                 <Button
                   onClick={handleDownloadPdf}
                   disabled={downloading}
@@ -436,6 +439,7 @@ export default function ScorecardPage() {
                 >
                   {downloading ? "Preparing report…" : "Download Report"}
                 </Button>
+                */}
 
                 {/* Back to Dashboard — secondary, outlined */}
                 <Button
