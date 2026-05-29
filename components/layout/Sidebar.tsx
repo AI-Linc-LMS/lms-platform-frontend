@@ -383,9 +383,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         if (!effectiveAdminMode && item.featureName === "support") {
           return true;
         }
-        if (effectiveAdminMode && item.featureName === "admin_scorecard") {
-          return true;
-        }
+        // (admin_scorecard used to be unconditionally shown here; it now
+        // honors the per-client feature flag like every other admin item.
+        // Super-admins can toggle "admin_scorecard" via the super-admin
+        // portal's Client Features panel.)
         if (effectiveAdminMode && item.featureName === "admin_tickets") {
           return true;
         }
