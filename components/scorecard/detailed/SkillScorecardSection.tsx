@@ -274,70 +274,180 @@ function SkillCard({ skill, expanded, onToggle }: { skill: Skill; expanded: bool
               </Tooltip>
             </Box>
 
-            <Box sx={{ display: "grid", gap: 0.75 }}>
-              {BREAKDOWN_ROWS.map((row) => {
+            {/* Channel breakdown — only active channels appear as compact
+                stat tiles; empty channels are rolled up into a single
+                muted "X dormant" chip so the card doesn't fill with em-dashes.
+                A horizontal stacked-bar visualization above the tiles shows
+                the proportional contribution of each active channel to the
+                overall proficiency. */}
+            {(() => {
+              const channels = BREAKDOWN_ROWS.map((row) => {
                 const value = skill.breakdown[row.key] ?? 0;
-                const count = row.countKey ? skill.breakdownCounts?.[row.countKey] : undefined;
-                const hasData = (count ?? 0) > 0;
+                const count = row.countKey ? skill.breakdownCounts?.[row.countKey] ?? 0 : 0;
+                return { row, value, count, color: proficiencyBandColor(value) };
+              });
+              const active = channels.filter((c) => c.count > 0);
+              const dormantCount = channels.length - active.length;
+              const totalScore = active.reduce((acc, c) => acc + c.value, 0) || 1;
+              if (active.length === 0) {
                 return (
                   <Box
-                    key={row.key}
                     sx={{
-                      display: "grid",
-                      gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                      display: "flex",
                       alignItems: "center",
                       gap: 1,
+                      p: 1.25,
+                      borderRadius: 2,
+                      border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
+                      color: "var(--font-secondary)",
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                        color: hasData ? "var(--font-primary)" : "var(--font-secondary)",
-                        opacity: hasData ? 1 : 0.55,
-                      }}
-                    >
-                      <IconWrapper icon={row.icon} size={14} />
-                      <Typography variant="caption" sx={{ fontWeight: 700, fontSize: "0.7rem" }}>
-                        {row.label}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{
-                        height: 6,
-                        borderRadius: 999,
-                        bgcolor: "color-mix(in srgb, var(--border-default) 45%, transparent)",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: `${Math.max(0, Math.min(100, value))}%`,
-                          height: "100%",
-                          borderRadius: 999,
-                          background: `linear-gradient(90deg, ${proficiencyBandColor(value)} 0%, color-mix(in srgb, ${proficiencyBandColor(value)} 65%, transparent) 100%)`,
-                          transition: "width 0.6s ease",
-                        }}
-                      />
-                    </Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontVariantNumeric: "tabular-nums",
-                        fontWeight: 700,
-                        color: hasData ? "var(--font-primary)" : "var(--font-secondary)",
-                        minWidth: 56,
-                        textAlign: "right",
-                        fontSize: "0.72rem",
-                      }}
-                    >
-                      {hasData ? `${value.toFixed(0)}% · ${count}` : "—"}
+                    <IconWrapper icon="mdi:flag-outline" size={14} />
+                    <Typography variant="caption" sx={{ fontSize: "0.75rem", fontWeight: 600 }}>
+                      No attempts yet — practice any channel to start scoring this skill.
                     </Typography>
                   </Box>
                 );
-              })}
-            </Box>
+              }
+              return (
+                <Box sx={{ display: "grid", gap: 1.25 }}>
+                  {/* Stacked-bar share visualization — each segment is one
+                       active channel, width proportional to its score share. */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      height: 8,
+                      borderRadius: 999,
+                      overflow: "hidden",
+                      bgcolor: "color-mix(in srgb, var(--border-default) 35%, transparent)",
+                    }}
+                  >
+                    {active
+                      .sort((a, b) => b.value - a.value)
+                      .map((c) => {
+                        const share = (c.value / totalScore) * 100;
+                        return (
+                          <Tooltip
+                            key={c.row.key}
+                            title={`${c.row.label}: ${c.value.toFixed(0)}% · ${c.count} ${c.count === 1 ? "attempt" : "attempts"}`}
+                            arrow
+                            placement="top"
+                          >
+                            <Box
+                              sx={{
+                                width: `${share}%`,
+                                background: `linear-gradient(90deg, ${c.color} 0%, color-mix(in srgb, ${c.color} 70%, transparent) 100%)`,
+                                transition: "width 0.6s ease",
+                                "&:not(:last-of-type)": {
+                                  borderRight: "2px solid var(--card-bg)",
+                                },
+                              }}
+                            />
+                          </Tooltip>
+                        );
+                      })}
+                  </Box>
+                  {/* Active channel tiles */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "repeat(2, minmax(0, 1fr))",
+                        sm: `repeat(${Math.min(active.length, 5)}, minmax(0, 1fr))`,
+                      },
+                      gap: 0.75,
+                    }}
+                  >
+                    {active.map((c) => (
+                      <Box
+                        key={c.row.key}
+                        sx={{
+                          p: 0.85,
+                          borderRadius: 1.5,
+                          background: `linear-gradient(135deg, color-mix(in srgb, ${c.color} 10%, transparent) 0%, transparent 100%)`,
+                          border: `1px solid color-mix(in srgb, ${c.color} 22%, transparent)`,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0.25,
+                          minWidth: 0,
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.4, color: c.color, minWidth: 0 }}>
+                          <IconWrapper icon={c.row.icon} size={12} />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: "0.62rem",
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: c.color,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {c.row.label}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
+                          <Typography
+                            sx={{
+                              fontWeight: 900,
+                              fontSize: "1.05rem",
+                              color: "var(--font-primary)",
+                              fontVariantNumeric: "tabular-nums",
+                              letterSpacing: "-0.02em",
+                              lineHeight: 1,
+                            }}
+                          >
+                            {c.value.toFixed(0)}
+                            <Box component="span" sx={{ fontSize: "0.65em", color: "var(--font-secondary)", ml: 0.25 }}>
+                              %
+                            </Box>
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: "0.65rem",
+                              color: "var(--font-secondary)",
+                              fontWeight: 600,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            · {c.count}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                  {dormantCount > 0 && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                      <Box
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          px: 0.85,
+                          py: 0.3,
+                          borderRadius: 999,
+                          bgcolor: "color-mix(in srgb, var(--border-default) 30%, transparent)",
+                          color: "var(--font-secondary)",
+                        }}
+                      >
+                        <IconWrapper icon="mdi:circle-outline" size={10} />
+                        <Typography variant="caption" sx={{ fontSize: "0.65rem", fontWeight: 700 }}>
+                          {dormantCount} channel{dormantCount > 1 ? "s" : ""} dormant
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" sx={{ fontSize: "0.66rem", color: "var(--font-secondary)" }}>
+                        Practice these to widen the skill base.
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              );
+            })()}
 
             {expanded && skill.breakdownItems && (
               <Box
