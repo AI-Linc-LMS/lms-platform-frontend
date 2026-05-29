@@ -72,8 +72,13 @@ export type FeatureIconName =
 
 export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
   // ──────────── Learner-facing ────────────
+  // All learner keys are lowercase snake_case to match what
+  // components/layout/Sidebar.tsx gates on. Renames from the legacy
+  // title-cased keys ("LMS", "Assessment", "Live Class", "Community
+  // Forum", "Mock Interview", "Proctoring", "AI Tutor") landed in
+  // backend migration accounts/0035_normalize_learner_feature_keys.
   {
-    key: "LMS",
+    key: "course",
     side: "learner",
     label: "Learning hub",
     tagline:
@@ -86,7 +91,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     ],
   },
   {
-    key: "Assessment",
+    key: "assessment",
     side: "learner",
     label: "Quizzes & tests",
     tagline:
@@ -105,16 +110,26 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     icon: "scorecard",
   },
   {
-    key: "Live Class",
+    key: "live_sessions",
     side: "learner",
     label: "Live classes",
     tagline:
       "Scheduled Zoom sessions with attendance tracked automatically.",
     icon: "live",
-    pairsWithAdmin: ["admin_live_sessions", "admin_attendance"],
+    // Cascade learner `attendance` (so students see their record) alongside
+    // the admin tools.
+    pairsWithAdmin: ["attendance", "admin_live_sessions", "admin_attendance"],
   },
   {
-    key: "Community Forum",
+    key: "attendance",
+    side: "learner",
+    label: "My attendance",
+    tagline:
+      "Personal attendance log across every live class — present, late, absent.",
+    icon: "presence",
+  },
+  {
+    key: "community_forum",
     side: "learner",
     label: "Discussion forum",
     tagline:
@@ -122,7 +137,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     icon: "chat",
   },
   {
-    key: "Mock Interview",
+    key: "mock_interview",
     side: "learner",
     label: "Mock interviews",
     tagline:
@@ -131,7 +146,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     pairsWithAdmin: ["admin_mock_interview"],
   },
   {
-    key: "Proctoring",
+    key: "proctoring",
     side: "learner",
     label: "Browser proctoring",
     tagline:
@@ -139,7 +154,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     icon: "shield",
   },
   {
-    key: "AI Tutor",
+    key: "ai_tutor",
     side: "learner",
     label: "AI tutor",
     tagline:
