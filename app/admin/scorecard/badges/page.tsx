@@ -29,6 +29,7 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AdminScorecardSubNav } from "@/components/admin/scorecard/AdminScorecardSubNav";
 import {
   adminBadgesService,
   type Badge,
@@ -274,6 +275,7 @@ export default function AdminScorecardBadgesPage() {
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        <AdminScorecardSubNav active="badges" />
         {/* Header */}
         <Box
           sx={{

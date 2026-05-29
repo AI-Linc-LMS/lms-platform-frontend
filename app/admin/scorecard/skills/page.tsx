@@ -26,6 +26,7 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AdminScorecardSubNav } from "@/components/admin/scorecard/AdminScorecardSubNav";
 import {
   adminSkillsService,
   type ContentBrowserPayload,
@@ -252,6 +253,7 @@ export default function AdminScorecardSkillsPage() {
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        <AdminScorecardSubNav active="skills" />
         {/* Header */}
         <Box
           sx={{

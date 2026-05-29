@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { motion } from "framer-motion";
 import {
@@ -15,11 +15,11 @@ import {
   InputAdornment,
   Paper,
   Skeleton,
-  Tab,
-  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
+
+import { AdminScorecardSubNav } from "@/components/admin/scorecard/AdminScorecardSubNav";
 
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -86,8 +86,10 @@ const statCardVariants = {
 
 export default function AdminScorecardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
-  const [mainTab, setMainTab] = useState<"scorecard" | "config">("scorecard");
+  const initialView = searchParams.get("view") === "config" ? "config" : "scorecard";
+  const [mainTab, setMainTab] = useState<"scorecard" | "config">(initialView);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [scorecardData, setScorecardData] = useState<ScorecardData | null>(null);
@@ -243,15 +245,31 @@ export default function AdminScorecardPage() {
         <Box
           sx={{
             position: "relative",
+            overflow: "hidden",
             marginLeft: { xs: -2, sm: -3, md: -4 },
             marginRight: { xs: -2, sm: -3, md: -4 },
             width: { xs: "calc(100% + 32px)", sm: "calc(100% + 48px)", md: "calc(100% + 64px)" },
-            pt: { xs: 2, md: 3 },
+            pt: { xs: 3, md: 5 },
             pb: { xs: 8, md: 10 },
             px: { xs: 2, sm: 3, md: 4 },
             bgcolor: "background.paper",
           }}
         >
+          {/* Editorial gradient mesh backdrop */}
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              backgroundImage: [
+                "radial-gradient(50% 40% at 0% 0%, color-mix(in srgb, var(--accent-indigo) 14%, transparent), transparent 70%)",
+                "radial-gradient(45% 40% at 100% 10%, color-mix(in srgb, var(--accent-cyan) 12%, transparent), transparent 65%)",
+                "radial-gradient(35% 30% at 50% 100%, color-mix(in srgb, var(--accent-purple) 10%, transparent), transparent 60%)",
+              ].join(", "),
+              opacity: 0.85,
+            }}
+          />
           <Box
             sx={{
               position: "relative",
@@ -269,107 +287,130 @@ export default function AdminScorecardPage() {
               sx={{
                 display: "flex",
                 flexWrap: "wrap",
-                alignItems: "center",
+                alignItems: { xs: "flex-start", sm: "flex-end" },
                 justifyContent: "space-between",
-                gap: 2,
-                mb: 3,
+                gap: 2.5,
+                mb: { xs: 3.5, md: 4.5 },
               }}
             >
-              <Box
-                component={motion.div}
-                variants={headerFadeIn}
-                initial="initial"
-                animate="animate"
-                transition={{ delay: 0.05 }}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                }}
-              >
+              <Box sx={{ maxWidth: 820, minWidth: 0, flex: 1 }}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    bgcolor: "primary.main",
-                    color: "primary.contrastText",
-                    display: "flex",
+                    display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow:
-                      "0 4px 12px color-mix(in srgb, var(--font-primary) 16%, transparent)",
+                    gap: 1,
+                    px: 1.25,
+                    py: 0.5,
+                    mb: 1.75,
+                    borderRadius: 999,
+                    border:
+                      "1px solid color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+                    background:
+                      "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                    color: "var(--accent-indigo)",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
                   }}
                 >
-                  <IconWrapper icon="mdi:chart-box-outline" size={28} color="var(--font-light)" />
-                </Box>
-                <Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: "var(--font-primary)",
-                        letterSpacing: "-0.03em",
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      Scorecard Admin
-                    </Typography>
-                    <Chip
-                      label="Admin"
-                      size="small"
-                      color="primary"
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: "0.7rem",
-                      }}
-                    />
-                  </Box>
-                  <Typography
-                    variant="body2"
+                  <Box
+                    component="span"
                     sx={{
-                      color: "var(--font-secondary)",
-                      mt: 0.5,
-                      fontWeight: 400,
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "var(--accent-indigo)",
+                      boxShadow:
+                        "0 0 0 4px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
+                    }}
+                  />
+                  Admin · Scorecard Workspace
+                </Box>
+                <Typography
+                  component="h1"
+                  sx={{
+                    fontWeight: 800,
+                    color: "var(--font-primary)",
+                    fontSize: { xs: "2rem", sm: "2.75rem", md: "3.25rem", lg: "3.75rem" },
+                    lineHeight: 0.98,
+                    letterSpacing: "-0.045em",
+                    mb: 1.5,
+                  }}
+                >
+                  Every learner,{" "}
+                  <Box
+                    component="span"
+                    sx={{
+                      background:
+                        "linear-gradient(120deg, var(--accent-indigo) 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
                     }}
                   >
-                    View student scorecards and configure visible modules
-                  </Typography>
-                </Box>
+                    measured.
+                  </Box>
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: { xs: "0.95rem", md: "1.05rem" },
+                    maxWidth: 620,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  Browse student scorecards, configure visible modules, and curate the
+                  skills and badges learners see.
+                </Typography>
               </Box>
               <Button
                 component={motion.button}
-                whileHover={{ x: -2, transition: { duration: 0.2 } }}
-                whileTap={{ scale: 0.98 }}
-                variant="text"
-                startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
+                whileTap={{ scale: 0.97 }}
+                variant="outlined"
+                startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
                 onClick={() => router.push("/admin/dashboard")}
                 sx={{
-                  color: "var(--font-primary)",
                   textTransform: "none",
-                  borderRadius: 2,
-                  px: 2,
+                  fontWeight: 600,
+                  color: "var(--accent-indigo)",
+                  borderColor:
+                    "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
+                  borderRadius: 999,
+                  px: 2.5,
                   py: 1,
-                  fontWeight: 500,
+                  backdropFilter: "blur(8px)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+                  flexShrink: 0,
                   "&:hover": {
-                    bgcolor: "action.hover",
+                    borderColor: "var(--accent-indigo)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                   },
                 }}
               >
-                Back
+                Back to Dashboard
               </Button>
             </Box>
 
+            {/* Editorial KPI rail — hairline-divided cells */}
             <Box
               component={motion.div}
               variants={staggerContainer}
               initial="initial"
               animate="animate"
               sx={{
-                display: "flex",
-                gap: 2,
-                flexWrap: "wrap",
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                borderTop:
+                  "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                borderBottom:
+                  "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                bgcolor:
+                  "color-mix(in srgb, var(--card-bg) 70%, transparent)",
+                backdropFilter: "blur(6px)",
+                borderRadius: 0,
               }}
             >
               {[
@@ -377,80 +418,103 @@ export default function AdminScorecardPage() {
                   key: "students",
                   icon: "mdi:account-group",
                   label: "Students",
-                  value: loadingStudents ? "—" : stats.students,
-                  gradient:
-                    "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
-                  delay: 0,
+                  value: loadingStudents ? "—" : String(stats.students),
+                  accent: "var(--accent-indigo)",
                 },
                 {
                   key: "sections",
                   icon: "mdi:view-dashboard-outline",
                   label: "Scorecard sections",
-                  value: stats.sectionTypes,
-                  gradient:
-                    "linear-gradient(135deg, var(--success-500) 0%, color-mix(in srgb, var(--success-500) 82%, var(--accent-indigo-dark)) 100%)",
-                  delay: 0.08,
+                  value: String(stats.sectionTypes),
+                  accent: "#10b981",
                 },
                 {
                   key: "modules",
                   icon: "mdi:view-module",
                   label: "Modules visible",
-                  value: loadingConfig ? "—" : stats.modulesEnabled,
-                  gradient:
-                    "linear-gradient(135deg, var(--accent-purple) 0%, color-mix(in srgb, var(--accent-purple) 82%, var(--accent-indigo-dark)) 100%)",
-                  delay: 0.16,
+                  value: loadingConfig ? "—" : String(stats.modulesEnabled),
+                  accent: "var(--accent-purple)",
                 },
-              ].map((stat) => (
-                <Paper
+              ].map((stat, idx) => (
+                <Box
                   key={stat.key}
                   component={motion.div}
                   variants={statCardVariants}
-                  elevation={0}
                   sx={{
-                    px: 2.5,
-                    py: 2,
-                    borderRadius: 2.5,
-                    bgcolor: "background.paper",
-                    border: "1px solid",
-                    borderColor: "divider",
+                    position: "relative",
+                    py: { xs: 2.5, md: 3 },
+                    px: { xs: 2, md: 3 },
                     display: "flex",
                     alignItems: "center",
                     gap: 2,
-                    minWidth: 140,
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    color: "var(--font-primary)",
-                    "&:hover": {
-                      borderColor: "primary.main",
-                      transform: "translateY(-2px)",
-                      boxShadow:
-                        "0 8px 24px color-mix(in srgb, var(--font-primary) 18%, transparent)",
+                    borderRight: {
+                      sm:
+                        idx < 2
+                          ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
+                          : "none",
+                    },
+                    borderBottom: {
+                      xs:
+                        idx < 2
+                          ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
+                          : "none",
+                      sm: "none",
+                    },
+                    backgroundImage: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${stat.accent} 4%, transparent) 100%)`,
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: 36,
+                      height: 2,
+                      background: stat.accent,
                     },
                   }}
                 >
                   <Box
                     sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 2,
-                      background: stat.gradient,
+                      width: 42,
+                      height: 42,
+                      borderRadius: 1.5,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      boxShadow:
-                        "0 4px 12px color-mix(in srgb, var(--font-primary) 20%, transparent)",
+                      flexShrink: 0,
+                      backgroundColor: `color-mix(in srgb, ${stat.accent} 14%, transparent)`,
                     }}
                   >
-                    <IconWrapper icon={stat.icon} size={24} color="var(--font-light)" />
+                    <IconWrapper icon={stat.icon} size={22} color={stat.accent} />
                   </Box>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "var(--font-secondary)",
+                        fontSize: "0.68rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        display: "block",
+                      }}
+                    >
                       {stat.label}
                     </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)", lineHeight: 1.2 }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        color: "var(--font-primary)",
+                        fontSize: { xs: "2rem", md: "2.4rem" },
+                        lineHeight: 1.02,
+                        letterSpacing: "-0.03em",
+                        fontVariantNumeric: "tabular-nums",
+                        mt: 0.5,
+                      }}
+                    >
                       {stat.value}
                     </Typography>
                   </Box>
-                </Paper>
+                </Box>
               ))}
             </Box>
           </Box>
@@ -472,47 +536,7 @@ export default function AdminScorecardPage() {
           }}
         >
           <Box sx={{ maxWidth: 1536, mx: "auto", width: "100%" }}>
-            <Paper
-              component={motion.div}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              elevation={0}
-              sx={{
-                mb: 3,
-                borderRadius: 2.5,
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "var(--card-bg)",
-                overflow: "hidden",
-                boxShadow:
-                  "0 4px 24px color-mix(in srgb, var(--font-primary) 14%, transparent)",
-              }}
-            >
-              <Tabs
-                value={mainTab}
-                onChange={(_, v) => setMainTab(v)}
-                sx={{
-                  px: 1,
-                  "& .MuiTab-root": { textTransform: "none", fontWeight: 600, minHeight: 56 },
-                  "& .MuiTabs-indicator": { height: 3, borderRadius: "3px 3px 0 0" },
-                  "& .MuiTabs-flexContainer": { gap: 0 },
-                }}
-              >
-                <Tab
-                  value="scorecard"
-                  label="Student Scorecard"
-                  icon={<IconWrapper icon="mdi:chart-box-outline" size={20} />}
-                  iconPosition="start"
-                />
-                <Tab
-                  value="config"
-                  label="Configuration"
-                  icon={<IconWrapper icon="mdi:cog-outline" size={20} />}
-                  iconPosition="start"
-                />
-              </Tabs>
-            </Paper>
+            <AdminScorecardSubNav active={mainTab} onLocalTabChange={setMainTab} />
 
             {mainTab === "scorecard" && (
               <>
