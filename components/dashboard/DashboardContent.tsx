@@ -6,6 +6,7 @@ import { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { ScorecardWidget } from "@/components/scorecard/dashboard/ScorecardWidget";
 import {
   useHideLeaderboardView,
+  useIsCourseEnabled,
   useIsScorecardEnabled,
 } from "@/lib/contexts/ClientInfoContext";
 
@@ -28,6 +29,7 @@ export const DashboardContent = ({
 }: DashboardContentProps) => {
   const hideLeaderboardView = useHideLeaderboardView();
   const scorecardEnabled = useIsScorecardEnabled();
+  const courseEnabled = useIsCourseEnabled();
   return (
     <Box
       sx={{
@@ -45,7 +47,7 @@ export const DashboardContent = ({
         <WelcomeMessage />
         <Box sx={{ mt: 3, width: hideLeaderboardView ? "70%" : "auto" }}>
           {scorecardEnabled && <ScorecardWidget />}
-          <MyCoursesSection courses={courses} loading={loading} />
+          {courseEnabled && <MyCoursesSection courses={courses} loading={loading} />}
         </Box>
       </Box>
       {!hideLeaderboardView && (
