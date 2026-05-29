@@ -161,8 +161,6 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
                       </span>
                     ) : null}
                   </>
-                ) : data.course_library?.choice === "build" ? (
-                  "Build with AI"
                 ) : data.course_library?.choice === "skip" ? (
                   "Skip for now"
                 ) : (
