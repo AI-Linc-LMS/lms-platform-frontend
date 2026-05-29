@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -26,6 +27,13 @@ import { ThreadCard } from "@/components/community/ThreadCard";
 import { CreateThreadDialog } from "@/components/community/CreateThreadDialog";
 import { BountySection } from "@/components/community/BountySection";
 import { MilestoneWidget } from "@/components/community/MilestoneWidget";
+import { ShareDialog } from "@/components/community/ShareDialog";
+import { ReportDialog } from "@/components/community/ReportDialog";
+import { LiveRoomsStrip } from "@/components/community/LiveRoomsStrip";
+import { CreateRoomDialog } from "@/components/community/CreateRoomDialog";
+import { CommunityHelpButton } from "@/components/community/CommunityHelpButton";
+import { useXPGain } from "@/components/community/XPGainProvider";
+import { useAuth } from "@/lib/auth/auth-context";
 import {
   communityService,
   Thread,
@@ -33,11 +41,12 @@ import {
   PostType,
   POST_TYPE_CONFIG,
   UserXP,
+  ReportReason,
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 
-type ActiveFilter = "all" | PostType | "my_posts";
+type ActiveFilter = "all" | PostType | "my_posts" | "bookmarks" | "following";
 
 interface ThreadExtras {
   post_type: PostType;
@@ -110,12 +119,18 @@ const FILTER_CONFIG: { key: ActiveFilter; label: string; icon: string; color: st
     icon: POST_TYPE_CONFIG[t].icon,
     color: POST_TYPE_CONFIG[t].color,
   })),
+  { key: "following", label: "Following", icon: "mdi:account-heart-outline", color: "#ec4899" },
   { key: "my_posts", label: "My Posts", icon: "mdi:account-outline", color: "#6b7280" },
+  { key: "bookmarks", label: "Saved", icon: "mdi:bookmark", color: "#0ea5e9" },
 ];
 
 export default function CommunityPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { showXPGain } = useXPGain();
+  const { user } = useAuth();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [bounties, setBounties] = useState<BountyItem[]>([]);
   const [userXP, setUserXP] = useState<UserXP | null>(null);
@@ -130,6 +145,17 @@ export default function CommunityPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedTag, setSelectedTag] = useState<{ id?: number; name: string } | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ id: number; title: string } | null>(null);
+  const [reportTarget, setReportTarget] = useState<{ id: number } | null>(null);
+  const [createRoomOpen, setCreateRoomOpen] = useState(false);
+
+  // Use auth-context role rather than scraping localStorage — the previous
+  // approach failed for users who hadn't visited /profile in this session.
+  const canCreateRooms = useMemo(
+    () => ["admin", "instructor", "superadmin"].includes(user?.role ?? ""),
+    [user?.role]
+  );
   const threadExtrasRef = useRef<Map<number, ThreadExtras>>(new Map());
   const optimisticVotesRef = useRef<Map<number, "upvote" | "downvote" | null>>(new Map());
   const optimisticBookmarksRef = useRef<Map<number, boolean>>(new Map());
@@ -196,7 +222,21 @@ export default function CommunityPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, sortBy, activeFilter]);
+  }, [searchQuery, sortBy, activeFilter, selectedTag]);
+
+  // Honor ?tag=<name> on the URL — set on mount and whenever it changes.
+  useEffect(() => {
+    const tagParam = searchParams?.get("tag");
+    if (tagParam) {
+      setSelectedTag({ name: tagParam });
+    }
+  }, [searchParams]);
+
+  // Refetch when toggling in or out of the bookmarks-only view.
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFilter]);
 
   const mergeExtrasIntoThread = (thread: Thread): Thread => {
     const extras = threadExtrasRef.current.get(thread.id);
@@ -213,8 +253,14 @@ export default function CommunityPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      const threadFetch =
+        activeFilter === "bookmarks"
+          ? communityService.getMyBookmarks()
+          : activeFilter === "following"
+          ? communityService.getFollowingFeed()
+          : communityService.getThreads();
       const [threadsData, bountiesData] = await Promise.all([
-        communityService.getThreads(),
+        threadFetch,
         communityService.getBounties().catch(() => [] as BountyItem[]),
       ]);
       setBounties(bountiesData);
@@ -337,6 +383,7 @@ export default function CommunityPage() {
               : t
           )
         );
+        showXPGain(10, "mdi:rocket-launch-outline", "Posted");
         refreshXP();
         showToast(t("community.threadCreated"), "success");
       })
@@ -387,21 +434,14 @@ export default function CommunityPage() {
 
     try {
       await communityService.voteThread(threadId, type);
-      refreshXP();
-      const threadsData = await communityService.getThreads();
-
-      const mergedThreads = threadsData.map((backendThread) => {
-        const optimisticVote = optimisticVotesRef.current.get(backendThread.id);
-        const finalUserVote =
-          backendThread.user_vote !== undefined ? backendThread.user_vote : optimisticVote ?? null;
-        if (backendThread.user_vote !== undefined) {
-          optimisticVotesRef.current.set(backendThread.id, backendThread.user_vote);
-        }
-        return mergeExtrasIntoThread({ ...backendThread, user_vote: finalUserVote });
-      });
-
+      // XP awarded on every new/changed vote; toggling off awards none.
+      if (currentVote !== type) {
+        showXPGain(2, type === "upvote" ? "mdi:thumb-up" : "mdi:thumb-down", "Voted");
+      }
+      // Trust the optimistic update — no re-fetch needed. The previous code
+      // called getThreads() after every vote which was the main source of the
+      // perceived lag.
       saveVotesToStorage(optimisticVotesRef.current);
-      setThreads(mergedThreads);
     } catch {
       optimisticVotesRef.current.delete(threadId);
       saveVotesToStorage(optimisticVotesRef.current);
@@ -422,6 +462,7 @@ export default function CommunityPage() {
     );
     try {
       await communityService.createComment(threadId, { body });
+      showXPGain(5, "mdi:comment-outline", "Replied");
       refreshXP();
       showToast(t("community.commentAdded"), "success");
     } catch {
@@ -461,6 +502,10 @@ export default function CommunityPage() {
 
     try {
       const result = await communityService.votePoll(threadId, optionIndex);
+      // Backend awards XP only on first poll vote — not on switching options or removing.
+      if (currentVote === null) {
+        showXPGain(1, "mdi:chart-bar", "Poll voted");
+      }
       refreshXP();
       setThreads((prev) =>
         prev.map((t) =>
@@ -530,25 +575,13 @@ export default function CommunityPage() {
 
     try {
       await communityService.bookmarkThread(threadId);
-      refreshXP();
-      const threadsData = await communityService.getThreads();
-
-      const mergedThreads = threadsData.map((backendThread) => {
-        const optimisticBookmark = optimisticBookmarksRef.current.get(backendThread.id);
-        const finalUserBookmarked =
-          backendThread.user_bookmarked !== undefined
-            ? backendThread.user_bookmarked ?? false
-            : optimisticBookmark ?? false;
-        if (backendThread.user_bookmarked !== undefined) {
-          optimisticBookmarksRef.current.set(
-            backendThread.id,
-            backendThread.user_bookmarked ?? false
-          );
-        }
-        return mergeExtrasIntoThread({ ...backendThread, user_bookmarked: finalUserBookmarked });
-      });
-
-      setThreads(mergedThreads);
+      // Backend awards XP only on create, not on un-bookmark.
+      if (!isBookmarked) {
+        showXPGain(1, "mdi:bookmark", "Saved");
+      }
+      // Trust the optimistic update — re-fetching every thread on each click
+      // was the cause of the perceived bookmark lag.
+      saveBookmarksToStorage(optimisticBookmarksRef.current);
       showToast(
         newUserBookmarked
           ? t("community.threadBookmarked")
@@ -572,14 +605,35 @@ export default function CommunityPage() {
     const currentUserName = getCurrentUserName();
     return threads
       .filter((thread) => {
-        // Post type / my posts filter
-        if (activeFilter !== "all") {
+        // Post type / my posts filter. "bookmarks" + "following" are server-side
+        // (handled in loadData), so we just pass them through here.
+        if (
+          activeFilter !== "all" &&
+          activeFilter !== "bookmarks" &&
+          activeFilter !== "following"
+        ) {
           if (activeFilter === "my_posts") {
-            if (!currentUserName) return false;
-            return thread.author.user_name === currentUserName;
+            // Prefer the backend's authoritative current_user_is_author flag
+            // (always correct). Fall back to local username comparison only
+            // when the backend didn't return the field (older payloads).
+            if (thread.current_user_is_author !== undefined) {
+              if (!thread.current_user_is_author) return false;
+            } else {
+              if (!currentUserName) return false;
+              if (thread.author.user_name !== currentUserName) return false;
+            }
+          } else {
+            const threadType = thread.post_type ?? "question";
+            if (threadType !== activeFilter) return false;
           }
-          const threadType = thread.post_type ?? "question";
-          if (threadType !== activeFilter) return false;
+        }
+        // Active tag chip filter — match by id when known, else by name (e.g.
+        // when arriving via ?tag=python without a pre-resolved id).
+        if (selectedTag) {
+          const matched = thread.tags.some((t) =>
+            selectedTag.id ? t.id === selectedTag.id : t.name.toLowerCase() === selectedTag.name.toLowerCase()
+          );
+          if (!matched) return false;
         }
         // Search filter
         if (searchQuery) {
@@ -597,7 +651,7 @@ export default function CommunityPage() {
         }
         return b.upvotes - b.downvotes - (a.upvotes - a.downvotes);
       });
-  }, [threads, searchQuery, sortBy, activeFilter]);
+  }, [threads, searchQuery, sortBy, activeFilter, selectedTag]);
 
   const paginatedThreads = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -631,7 +685,9 @@ export default function CommunityPage() {
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
+              // Align to the top so the Create Post button lines up with the
+              // sidebar's leaderboard card (which starts at y=0 of the column).
+              alignItems: "flex-start",
               justifyContent: "space-between",
               mb: 3,
               flexWrap: "wrap",
@@ -639,16 +695,20 @@ export default function CommunityPage() {
             }}
           >
             <Box>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
-                {t("community.forumTitle")}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 0 }}>
+                  {t("community.forumTitle")}
+                </Typography>
+                <CommunityHelpButton />
+              </Box>
+              <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
                 {t("community.forumSubtitle")}
               </Typography>
             </Box>
 
             {/* Create Post Button */}
             <Button
+              data-tour-id="tour-create-post"
               variant="contained"
               size="large"
               startIcon={<IconWrapper icon="mdi:plus" size={18} />}
@@ -664,11 +724,23 @@ export default function CommunityPage() {
             </Button>
           </Box>
 
+          {/* Live rooms strip (Instagram-style live circles). Hidden when empty
+              unless the viewer can host. */}
+          <Box data-tour-id="tour-live-rooms">
+            <LiveRoomsStrip
+              canCreate={canCreateRooms}
+              onCreateClick={() => setCreateRoomOpen(true)}
+            />
+          </Box>
+
           {/* Bounty Section */}
-          <BountySection bounties={bounties} />
+          <Box data-tour-id="tour-bounties">
+            <BountySection bounties={bounties} />
+          </Box>
 
           {/* Search + Filters */}
           <Paper
+            data-tour-id="tour-filters"
             elevation={0}
             sx={{
               p: 2,
@@ -792,6 +864,26 @@ export default function CommunityPage() {
               </Tabs>
             </Box>
           </Paper>
+
+          {/* Active tag-filter chip (click tag on a card to set) */}
+          {selectedTag && (
+            <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                Filtered by tag:
+              </Typography>
+              <Chip
+                label={`#${selectedTag.name}`}
+                onDelete={() => setSelectedTag(null)}
+                size="small"
+                sx={{
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)",
+                  color: "var(--accent-indigo)",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                }}
+              />
+            </Box>
+          )}
         </Box>
 
         {/* Thread List */}
@@ -807,20 +899,23 @@ export default function CommunityPage() {
               textAlign: "center",
               border: "1px solid var(--border-default)",
               backgroundColor: "var(--card-bg)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1.5,
             }}
           >
-            <IconWrapper
-              icon="mdi:forum-outline"
-              size={64}
-              color="var(--font-tertiary)"
-              style={{ marginBottom: 16 }}
-            />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+            <IconWrapper icon="mdi:forum-outline" size={64} color="var(--font-tertiary)" />
+            <Typography variant="h6" color="text.secondary">
               {t("community.noThreadsFound")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {searchQuery
                 ? t("community.tryDifferentSearch")
+                : activeFilter === "bookmarks"
+                ? "You haven't bookmarked anything yet. Tap the bookmark icon on a post to save it here."
+                : activeFilter === "following"
+                ? "Your Following feed is quiet. Open a profile and tap Follow to start filling this in."
                 : activeFilter !== "all"
                 ? "No posts in this category yet."
                 : t("community.beFirstToStart")}
@@ -864,6 +959,10 @@ export default function CommunityPage() {
                   onPollVote={handlePollVote}
                   onComment={handleQuickComment}
                   onOfferBounty={handleOfferBounty}
+                  onTagClick={(tag) => setSelectedTag(tag)}
+                  onAuthorClick={(authorId) => router.push(`/community/user/${authorId}`)}
+                  onShare={(id) => setShareTarget({ id, title: thread.title })}
+                  onReport={(id) => setReportTarget({ id })}
                   currentUserName={getCurrentUserName()}
                 />
               ))}
@@ -908,6 +1007,36 @@ export default function CommunityPage() {
           onClose={() => setCreateDialogOpen(false)}
           onSubmit={handleCreateThread}
           initialPostType={selectedPostType}
+        />
+
+        {/* Share dialog */}
+        {shareTarget && (
+          <ShareDialog
+            open
+            onClose={() => setShareTarget(null)}
+            title={shareTarget.title}
+            url={`${typeof window !== "undefined" ? window.location.origin : ""}/community/${shareTarget.id}`}
+          />
+        )}
+
+        {/* Report dialog */}
+        {reportTarget && (
+          <ReportDialog
+            open
+            onClose={() => setReportTarget(null)}
+            target="thread"
+            onSubmit={async (payload: { reason: ReportReason; details?: string }) => {
+              await communityService.reportThread(reportTarget.id, payload);
+              showToast("Report submitted. Thanks for letting us know.", "success");
+            }}
+          />
+        )}
+
+        {/* Create-room dialog (admin / instructor) */}
+        <CreateRoomDialog
+          open={createRoomOpen}
+          onClose={() => setCreateRoomOpen(false)}
+          onCreated={(room) => router.push(`/community/rooms/${room.id}`)}
         />
 
         {/* Offer Bounty Dialog */}
@@ -989,7 +1118,105 @@ export default function CommunityPage() {
             top: 80,
           }}
         >
-          {userXP && <MilestoneWidget xp={userXP} />}
+          {/* Leaderboard shortcut — mirrors MilestoneWidget visuals so the two
+              cards read as a unit: same radius, top accent strip, and uppercase
+              header pattern. */}
+          <Box
+            data-tour-id="tour-leaderboard"
+            onClick={() => router.push("/community/leaderboard")}
+            sx={{
+              mb: 2,
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
+              borderRadius: "14px",
+              overflow: "hidden",
+              width: "100%",
+              cursor: "pointer",
+              transition: "all 0.15s",
+              "&:hover": {
+                borderColor: "rgba(251,191,36,0.5)",
+                boxShadow: "0 4px 14px rgba(251,191,36,0.15)",
+                "& .leaderboard-chevron": { transform: "translateX(3px)" },
+              },
+            }}
+          >
+            {/* Same 3px top strip as MilestoneWidget */}
+            <Box sx={{ height: 3, backgroundColor: "#fbbf24" }} />
+
+            <Box sx={{ p: 2 }}>
+              {/* Header — matches MilestoneWidget's "YOUR PROGRESS" pattern */}
+              <Typography
+                sx={{
+                  fontSize: "0.62rem",
+                  fontWeight: 800,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--font-secondary)",
+                  mb: 1.5,
+                }}
+              >
+                Leaderboard
+              </Typography>
+
+              {/* Hero row — matches MilestoneWidget's icon-tile + text pattern */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 52,
+                    height: 52,
+                    flexShrink: 0,
+                    borderRadius: "12px",
+                    backgroundColor: "rgba(251,191,36,0.12)",
+                    border: "1.5px solid rgba(251,191,36,0.35)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IconWrapper icon="mdi:trophy-outline" size={26} color="#fbbf24" />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      color: "var(--font-primary)",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Top contributors
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "0.72rem",
+                      fontWeight: 600,
+                      color: "var(--font-secondary)",
+                      mt: 0.25,
+                    }}
+                  >
+                    See who&apos;s earned the most IP
+                  </Typography>
+                </Box>
+                <Box
+                  className="leaderboard-chevron"
+                  sx={{
+                    display: "inline-flex",
+                    color: "#fbbf24",
+                    transition: "transform 0.18s",
+                  }}
+                >
+                  <IconWrapper icon="mdi:chevron-right" size={20} />
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+
+          {userXP && (
+            <Box data-tour-id="tour-milestones">
+              <MilestoneWidget xp={userXP} />
+            </Box>
+          )}
+
         </Box>
 
         </Box>{/* end two-column layout */}
