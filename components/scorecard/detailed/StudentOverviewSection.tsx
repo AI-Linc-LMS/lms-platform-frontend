@@ -489,31 +489,42 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     </Tooltip>
                   )}
                   {dailyScore != null && (
-                    <Box
-                      sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 0.75,
-                        px: 1.25,
-                        py: 0.5,
-                        borderRadius: 999,
-                        backgroundColor: "rgba(16, 185, 129, 0.12)",
-                        border: "1px solid rgba(16, 185, 129, 0.32)",
-                      }}
+                    <Tooltip
+                      title={
+                        data.dailyProgressPercentage != null
+                          ? `Today's content completion: ${Math.round(data.dailyProgressPercentage)}%`
+                          : "Today's performance score"
+                      }
+                      placement="top"
+                      arrow
                     >
-                      <IconWrapper icon="mdi:trending-up" size={14} color="#10b981" />
-                      <Typography
+                      <Box
                         sx={{
-                          color: "#059669",
-                          fontWeight: 700,
-                          fontSize: "0.75rem",
-                          letterSpacing: "0.04em",
-                          textTransform: "uppercase",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.75,
+                          px: 1.25,
+                          py: 0.5,
+                          borderRadius: 999,
+                          backgroundColor: "rgba(16, 185, 129, 0.12)",
+                          border: "1px solid rgba(16, 185, 129, 0.32)",
+                          cursor: "help",
                         }}
                       >
-                        Today {dailyScore}
-                      </Typography>
-                    </Box>
+                        <IconWrapper icon="mdi:trending-up" size={14} color="#10b981" />
+                        <Typography
+                          sx={{
+                            color: "#059669",
+                            fontWeight: 700,
+                            fontSize: "0.75rem",
+                            letterSpacing: "0.04em",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Today {dailyScore}
+                        </Typography>
+                      </Box>
+                    </Tooltip>
                   )}
                 </Box>
 
@@ -622,7 +633,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   label="Learning State"
                   value={learningStateLabel(data.statusBadge)}
                   valueAsText
-                  hint={learningStateTooltip(data.statusBadge)}
+                  hint={data.statusCriteria ?? learningStateTooltip(data.statusBadge)}
                 />
               </Box>
             </Box>

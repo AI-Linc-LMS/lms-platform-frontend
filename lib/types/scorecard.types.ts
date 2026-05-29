@@ -1,6 +1,7 @@
-// Scorecard types (overview + learning consumption only)
+// Scorecard types (overview + learning consumption + per-module additions)
 
 export type PerformanceLevel = "Beginner" | "Intermediate" | "Advanced" | "Interview-Ready";
+export type SkillStrength = "Strong" | "Intermediate" | "Needs Attention";
 export type StatusBadge = "Green" | "Amber" | "Red";
 
 export interface CourseProgressItem {
@@ -110,8 +111,341 @@ export interface ScorecardConfig {
   enabledModules: string[];
 }
 
+// Performance Trends (Phase 1) — added incrementally as new modules land.
+// Older mockup branch had these in a single big drop; on stagging they're
+// introduced one section at a time so each phase merges cleanly.
+export interface WeeklyPerformance {
+  week: number;
+  weekLabel: string;
+  /** null when no attempts in this bucket — distinguish from a real 0%. */
+  mcqAccuracy: number | null;
+  subjectiveScore: number | null;
+  assessmentScore: number | null;
+  interviewScore: number | null;
+}
+
+export interface SkillAccuracy {
+  skillName: string;
+  accuracy: number; // 0-100
+  attemptCount: number;
+  confidenceScore: number; // 0-100
+}
+
+export interface PerformanceTrends {
+  granularity?: "weekly" | "bimonthly" | "monthly";
+  weeklyData: WeeklyPerformance[];
+  skillWiseAccuracy: SkillAccuracy[];
+}
+
+// Skill Scorecard (Phase 2)
+export interface SkillBreakdown {
+  quizScore: number; // 0-100
+  assessmentScore: number;
+  interviewScore: number;
+  codingScore: number;
+  videoScore: number;
+}
+
+export interface SkillBreakdownCounts {
+  quizCount: number;
+  videoCount: number;
+  assessmentCount: number;
+  codingCount: number;
+  interviewCount: number;
+}
+
+export interface SkillBreakdownItem {
+  name: string;
+  score?: number;
+  courseName?: string;
+  moduleName?: string;
+  submoduleName?: string;
+}
+
+export interface SkillBreakdownItems {
+  quiz: SkillBreakdownItem[];
+  video: SkillBreakdownItem[];
+  coding: SkillBreakdownItem[];
+  assessment: SkillBreakdownItem[];
+  interview: SkillBreakdownItem[];
+  article?: SkillBreakdownItem[];
+  subjective?: SkillBreakdownItem[];
+}
+
+export interface Skill {
+  id: string | number;
+  name: string;
+  category?: string;
+  proficiencyScore: number; // 0-100
+  level: PerformanceLevel;
+  strength: SkillStrength;
+  confidenceScore: number; // 0-100
+  breakdown: SkillBreakdown;
+  breakdownCounts?: SkillBreakdownCounts;
+  breakdownItems?: SkillBreakdownItems;
+}
+
+// Weak Areas & Attention Alerts (Phase 3)
+export interface WeakAreaSourceContext {
+  contentType?: string;
+  itemName?: string;
+  courseName?: string;
+  moduleName?: string;
+  submoduleName?: string;
+}
+
+export interface WeakArea {
+  skillName: string;
+  currentScore: number;
+  threshold: number;
+  recommendation: string;
+  sourceContext?: WeakAreaSourceContext;
+}
+
+export interface TopicIncorrect {
+  topicName: string;
+  incorrectCount: number;
+  totalAttempts: number;
+  sourceContext?: WeakAreaSourceContext;
+}
+
+export interface WeakAreaRecommendation {
+  type: "revise" | "mcq" | "video" | "interview";
+  title: string;
+  description: string;
+  actionUrl?: string;
+  priority: number;
+}
+
+export interface WeakAreas {
+  weakThreshold: number;
+  skillsBelowThreshold: WeakArea[];
+  topicsFrequentlyIncorrect: TopicIncorrect[];
+  skippedQuestions: string[];
+  recommendations: WeakAreaRecommendation[];
+}
+
+// Assessment Performance (Phase 4)
+export interface AssessmentDifficultyBucket {
+  correct: number;
+  total: number;
+}
+
+export interface AssessmentDifficultyBreakdown {
+  easy: AssessmentDifficultyBucket;
+  medium: AssessmentDifficultyBucket;
+  hard: AssessmentDifficultyBucket;
+}
+
+export interface AssessmentQuestionAnalytics {
+  correct: number;
+  incorrect: number;
+  skipped: number;
+  averageTimePerQuestion: number; // seconds
+  negativeMarkImpact: number;
+}
+
+export interface AssessmentPerformance {
+  assessmentId: string;
+  assessmentName: string;
+  dateAttempted: string | null;
+  /** Normalized percentage (0-100). null when score is missing. */
+  score: number | null;
+  /** Raw points awarded (pre-normalization). Useful for the "X / Y" subtitle. */
+  rawScore: number | null;
+  maximumMarks: number;
+  percentile: number | null;
+  rank: number | null;
+  cohortCount: number;
+  timeTaken: number; // minutes
+  timeAllowed: number; // minutes
+  accuracy: number; // 0-100
+  difficultyBreakdown: AssessmentDifficultyBreakdown;
+  questionAnalytics: AssessmentQuestionAnalytics;
+  reviewStatus?: string;
+}
+
+// Mock Interview Performance (Phase 5)
+export interface InterviewParameter {
+  name: string;
+  score: number; // 0-100
+}
+
+export interface InterviewMentorRatings {
+  overall: number;
+  /** null when the LLM didn't emit a per-channel sub-score. */
+  technical: number | null;
+  communication: number | null;
+}
+
+export interface InterviewFeedback {
+  strengths: string[];
+  areasOfImprovement: string[];
+  mentorComments: string;
+  mentorRatings: InterviewMentorRatings;
+}
+
+export interface MockInterview {
+  interviewId: string;
+  title: string;
+  topic?: string;
+  subtopic?: string;
+  difficulty?: string;
+  date: string | null;
+  overallScore: number | null;
+  parameters: InterviewParameter[];
+  feedback: InterviewFeedback;
+  playbackLink?: string | null;
+}
+
+export interface MockInterviewPerformance {
+  totalInterviews: number;
+  latestInterviewScore: number;
+  interviewReadinessIndex: number;
+  /** null when we can't compute a relative % (single attempt, or first attempt was 0). */
+  improvementSinceFirst: number | null;
+  interviews: MockInterview[];
+}
+
+// Behavioral & Consistency (Phase 6)
+export interface LoginFrequency {
+  week: string;
+  loginCount: number;
+}
+
+export interface StudyTimeByWeek {
+  week: string;
+  hours: number;
+}
+
+export interface StudyTimeDistribution {
+  day: string;
+  hours: number;
+}
+
+export interface BehavioralMetrics {
+  loginFrequency: LoginFrequency[];
+  studyTimeByWeek: StudyTimeByWeek[];
+  studyTimeDistribution: StudyTimeDistribution[];
+  missedDeadlinesCount: number;
+  lastActiveDate: string | null;
+  consistencyScore: number;
+  activityCalendar: Record<string, number>;
+}
+
+// Comparative Insights (Phase 7)
+export interface BenchmarkComparison {
+  metric: string;
+  label: string;
+  unit: "percent" | "hours" | string;
+  studentValue: number;
+  batchAverage: number | null;
+  top10Percent: number | null;
+  percentile: number;
+}
+
+export interface ComparativeInsights {
+  cohortSize: number;
+  percentileRank: number;
+  vsBatchAverage: {
+    better: number;
+    worse: number;
+    equal: number;
+  };
+  comparisons: BenchmarkComparison[];
+}
+
+// Achievements & Gamification (Phase 8)
+export interface BadgeEarned {
+  id: string;
+  name: string;
+  description: string;
+  iconSlug: string;
+  earnedDate: string | null;
+  points: number;
+  snapshotValue: string;
+}
+
+export interface BadgeMilestone {
+  id: string;
+  name: string;
+  description: string;
+  iconSlug: string;
+  progress: number; // 0-100
+}
+
+export interface CertificatesProgress {
+  total: number;
+  completed: number;
+  inProgress: number;
+}
+
+export interface Achievements {
+  badges: BadgeEarned[];
+  milestones: BadgeMilestone[];
+  streakRewards: {
+    currentStreak: number;
+    longestStreak: number;
+    rewards: unknown[];
+  };
+  certificatesProgress: CertificatesProgress;
+  totalPoints: number;
+  badgesEarnedCount: number;
+  badgesAvailableCount: number;
+}
+
+// Action Panel (Phase 9)
+export interface PriorityAction {
+  id: string;
+  title: string;
+  description: string;
+  priority: number;
+  type: "mcq" | "video" | "interview" | "assessment" | "revise" | string;
+  actionUrl?: string | null;
+}
+
+export interface RecommendedContentItem {
+  id: string;
+  title: string;
+  type: string;
+  reason: string;
+  url?: string | null;
+}
+
+export interface PendingTask {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  type: string;
+  url?: string | null;
+}
+
+export interface UpcomingAssessment {
+  id: string;
+  name: string;
+  date: string | null;
+  duration: number;
+  url?: string | null;
+}
+
+export interface ActionPanel {
+  priorityActions: PriorityAction[];
+  recommendedContent: RecommendedContentItem[];
+  pendingTasks: PendingTask[];
+  upcomingAssessments: UpcomingAssessment[];
+}
+
 export interface ScorecardData {
   scorecardConfig?: ScorecardConfig;
   overview: StudentOverview;
   learningConsumption: LearningConsumption;
+  performanceTrends?: PerformanceTrends;
+  skills?: Skill[];
+  weakAreas?: WeakAreas;
+  assessmentPerformance?: AssessmentPerformance[];
+  mockInterviewPerformance?: MockInterviewPerformance;
+  behavioralMetrics?: BehavioralMetrics;
+  comparativeInsights?: ComparativeInsights;
+  achievements?: Achievements;
+  actionPanel?: ActionPanel;
 }

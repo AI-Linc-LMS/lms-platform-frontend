@@ -9,6 +9,28 @@ export const fadeRise: Variants = {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
+    // After the entrance settles, drop the filter entirely. A lingering
+    // `filter: blur(0px)` on the resting element causes Chromium's print
+    // pipeline to skip painting sections past the initial viewport, which
+    // truncates the scorecard PDF after the first ~2 chapters. Setting
+    // `transitionEnd.filter = "none"` clears the inline style once the
+    // animation completes.
+    transitionEnd: { filter: "none" },
+    transition: { duration: 0.65, ease: EASE_OUT_EXPO },
+  },
+};
+
+/**
+ * A print-safe variant of `fadeRise` for static-render contexts (PDF capture)
+ * where no animation runs — `transitionEnd` would never fire, leaving the
+ * resting `filter: blur(0px)` style on the element. This one has no filter
+ * at all so Chromium can paint it past the initial viewport.
+ */
+export const fadeRiseStatic: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
     transition: { duration: 0.65, ease: EASE_OUT_EXPO },
   },
 };

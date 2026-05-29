@@ -1,7 +1,16 @@
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 import {
+  mapAchievementsFromApi,
+  mapActionPanelFromApi,
+  mapAssessmentPerformanceFromApi,
+  mapBehavioralMetricsFromApi,
+  mapComparativeInsightsFromApi,
   mapLearningConsumptionFromApi,
+  mapMockInterviewPerformanceFromApi,
   mapOverviewFromApi,
+  mapPerformanceTrendsFromApi,
+  mapSkillsFromApi,
+  mapWeakAreasFromApi,
   getEmptyLearningConsumption,
   getEmptyOverview,
   getEmptyScorecardData,
@@ -12,6 +21,15 @@ export type ScorecardApiPayload = {
   scorecard_config?: { enabled_modules?: string[]; enabled_content_types_for_skills?: string[] };
   overview?: Record<string, unknown>;
   learning_consumption?: unknown;
+  performance_trends?: unknown;
+  skills?: unknown;
+  weak_areas?: unknown;
+  assessment_performance?: unknown;
+  mock_interview_performance?: unknown;
+  behavioral_metrics?: unknown;
+  comparative_insights?: unknown;
+  achievements?: unknown;
+  action_panel?: unknown;
 };
 
 export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | null): ScorecardData {
@@ -34,6 +52,45 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
     data?.learning_consumption != null && typeof data.learning_consumption === "object"
       ? mapLearningConsumptionFromApi(data.learning_consumption as Record<string, unknown>)
       : getEmptyLearningConsumption();
+
+  // Only set performanceTrends when the backend actually sent it. Leaving it
+  // undefined lets pages render older deploys (Phase 0 backend) without
+  // crashing on missing data — the section component renders an empty state.
+  if (data?.performance_trends != null && typeof data.performance_trends === "object") {
+    result.performanceTrends = mapPerformanceTrendsFromApi(data.performance_trends);
+  }
+
+  if (Array.isArray(data?.skills)) {
+    result.skills = mapSkillsFromApi(data?.skills);
+  }
+
+  if (data?.weak_areas != null && typeof data.weak_areas === "object") {
+    result.weakAreas = mapWeakAreasFromApi(data.weak_areas);
+  }
+
+  if (Array.isArray(data?.assessment_performance)) {
+    result.assessmentPerformance = mapAssessmentPerformanceFromApi(data.assessment_performance);
+  }
+
+  if (data?.mock_interview_performance != null && typeof data.mock_interview_performance === "object") {
+    result.mockInterviewPerformance = mapMockInterviewPerformanceFromApi(data.mock_interview_performance);
+  }
+
+  if (data?.behavioral_metrics != null && typeof data.behavioral_metrics === "object") {
+    result.behavioralMetrics = mapBehavioralMetricsFromApi(data.behavioral_metrics);
+  }
+
+  if (data?.comparative_insights != null && typeof data.comparative_insights === "object") {
+    result.comparativeInsights = mapComparativeInsightsFromApi(data.comparative_insights);
+  }
+
+  if (data?.achievements != null && typeof data.achievements === "object") {
+    result.achievements = mapAchievementsFromApi(data.achievements);
+  }
+
+  if (data?.action_panel != null && typeof data.action_panel === "object") {
+    result.actionPanel = mapActionPanelFromApi(data.action_panel);
+  }
 
   return result;
 }
