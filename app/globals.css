@@ -542,7 +542,11 @@ body {
 
   background: rgb(var(--aw-bg-0));
   color: rgb(var(--aw-fg));
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Align with platform: every shell rendered by the LMS uses Satoshi (see
+     defaultThemeTokens.ts fontFamilySans). Switching the wizard to the same
+     stack so admins doing setup see continuity with the post-launch product. */
+  font-family: 'Satoshi', 'Satoshi Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 500;
   min-height: 100vh;
   position: relative;
 }
@@ -575,24 +579,31 @@ body {
 
 .ailinc-wizard > * { position: relative; z-index: 2; }
 
-/* Typography */
+/* Typography
+ * Both .aw-serif (display headings) and .aw-mono (uppercase labels) used to
+ * pull in Fraunces / ui-monospace, which made the wizard read like a separate
+ * product from the LMS. We now keep the same hierarchy but render everything
+ * in Satoshi — heading weight + tight tracking carries the display feel, and
+ * the uppercase + wide tracking carries the "mono label" feel — so the wizard
+ * inherits the platform's typographic voice. */
 .ailinc-wizard .aw-serif {
-  font-family: 'Fraunces', 'Times New Roman', Georgia, serif;
-  font-variation-settings: "opsz" 144;
-  font-weight: 300;
-  letter-spacing: -0.03em;
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 .ailinc-wizard .aw-mono {
-  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  font-family: inherit;
+  font-weight: 700;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Kicker pill */
 .ailinc-wizard .aw-kicker {
   display: inline-flex;
   align-items: center;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: inherit;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3em;
   color: #00e0ff;
@@ -665,18 +676,23 @@ body {
 /* Label above inputs */
 .ailinc-wizard .aw-label {
   display: block;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: 11px;
-  font-weight: 600;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  color: rgb(var(--aw-fg-dim));
+  color: rgb(var(--aw-fg));
   margin-bottom: 8px;
 }
+/* Helper text under labels — was 12px / fg-mute, which read as the
+   classic "tiny grey caption" against the Satoshi 800 hero. Bumped
+   to 14px / fg-dim / 600 so it carries weight next to the heading. */
 .ailinc-wizard .aw-help {
-  font-size: 12px;
-  color: rgb(var(--aw-fg-mute));
-  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: rgb(var(--aw-fg-dim));
+  margin-top: 8px;
 }
 
 /* Buttons */
@@ -699,14 +715,30 @@ body {
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* Solid azure to match the post-launch LMS primary (azure_bolt_white_bg
+   preset's primary500 = #0ea5e9). The previous gradient ended in pure
+   #00e0ff on the right edge, which on a white canvas read as a bright
+   cyan stripe rather than a button. Clean solid + tonal shadow keeps
+   weight without that edge artifact. */
 .ailinc-wizard .aw-btn-primary {
-  color: #05070f;
-  background: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
-  box-shadow: 0 6px 24px -8px rgba(0, 224, 255, 0.55);
+  color: #ffffff;
+  background: #0ea5e9;
+  border-color: #0284c7;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 6px 18px -8px rgba(14, 165, 233, 0.55);
 }
 .ailinc-wizard .aw-btn-primary:hover:not(:disabled) {
+  background: #0284c7;
+  border-color: #0369a1;
   transform: translateY(-1px);
-  box-shadow: 0 10px 32px -8px rgba(0, 224, 255, 0.75);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 10px 24px -8px rgba(14, 165, 233, 0.7);
+}
+.ailinc-wizard .aw-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  background: #0369a1;
 }
 .ailinc-wizard .aw-btn-ghost {
   color: rgb(var(--aw-fg-dim));
@@ -809,16 +841,15 @@ body {
  * compound selector so these wins against the dark base rules without
  * needing !important anywhere.
  *
- * Contrast target: WCAG AA across all text styles. Headings (aw-serif)
- * stay weight=300 (Fraunces' optical 144 has plenty of presence at large
- * sizes), but `aw-text` colour now lands at ~17:1 on the page bg so body
- * copy reads bold-enough without restyling fonts.
+ * Contrast target: WCAG AA across all text styles. `aw-text` colour lands
+ * at ~17:1 on the page bg, and Satoshi body weight is bumped to 600 below
+ * so body copy reads firmly bold.
  * ======================================================================= */
 .ailinc-wizard[data-aw-theme="light"] {
-  --aw-bg-0: 248 250 253;
-  --aw-bg-1: 240 244 251;
-  --aw-bg-2: 234 240 250;
-  --aw-bg-3: 226 233 246;
+  --aw-bg-0: 255 255 255;
+  --aw-bg-1: 255 255 255;
+  --aw-bg-2: 250 251 253;
+  --aw-bg-3: 244 246 250;
   /* Deep navy near-black: ~17:1 on the light page bg (AAA) */
   --aw-fg: 11 18 38;
   /* Steel slate: ~7:1 (AAA) — used for paragraph copy */
@@ -830,8 +861,11 @@ body {
   --aw-line: 11 18 38;
   --aw-line-alpha: 0.10;
   --aw-line-2-alpha: 0.16;
-  --aw-radial-1: rgba(0, 224, 255, 0.10);
-  --aw-radial-2: rgba(35, 86, 214, 0.06);
+  /* Near-invisible radial tints so the canvas stays white. The dark theme
+     uses these glows for atmosphere; on white they read as a blue cast and
+     the user wants none of it. */
+  --aw-radial-1: rgba(0, 224, 255, 0.03);
+  --aw-radial-2: rgba(35, 86, 214, 0.02);
 }
 
 /* Dampen the heavy grain overlay — mix-blend-overlay reads as muddy
@@ -840,14 +874,18 @@ body {
   opacity: 0.018;
 }
 
-/* The wizard's small Inter body copy looks visibly bolder on light when
-   we lean weight 400 → 500. Headings already use Fraunces 300 with the
-   144 optical axis, which carries enough presence on light. */
+/* Satoshi on a pure-white canvas with low-opacity copy (rgb(--aw-fg) / 0.5
+   etc.) reads thin at 500. Bump body to 600 (semibold), headings to 800
+   (heavy display), kickers to 700 so every text style carries visible
+   weight without restyling each block. */
 .ailinc-wizard[data-aw-theme="light"] {
-  font-weight: 500;
+  font-weight: 600;
 }
 .ailinc-wizard[data-aw-theme="light"] .aw-serif {
-  font-weight: 400;
+  font-weight: 800;
+}
+.ailinc-wizard[data-aw-theme="light"] .aw-mono {
+  font-weight: 700;
 }
 
 /* Selection — black-on-cyan reads too harsh, soften */
@@ -1044,12 +1082,11 @@ body {
 
 /* ---- Enhancements: cinematic motion + flourishes ------------------- */
 
-/* Massive serif step watermark (e.g. "02" pinned to the side) */
+/* Massive numeric step watermark (e.g. "02" pinned to the side) */
 .ailinc-wizard .aw-watermark {
   position: absolute;
-  font-family: 'Fraunces', Georgia, serif;
-  font-variation-settings: "opsz" 144;
-  font-weight: 300;
+  font-family: inherit;
+  font-weight: 800;
   letter-spacing: -0.05em;
   font-size: clamp(120px, 18vw, 280px);
   line-height: 0.85;
@@ -1175,9 +1212,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: inherit;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.32em;
   color: rgb(154, 163, 192);
@@ -1189,9 +1226,9 @@ body {
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: inherit;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   border-radius: 9999px;
