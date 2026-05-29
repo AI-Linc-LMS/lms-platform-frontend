@@ -27,8 +27,15 @@ export function proxy(request: NextRequest) {
     pathname.startsWith(route)
   );
 
+  // Scorecard PDF route is loaded by the backend's Playwright printer with a
+  // pdf_token query param. There is no session cookie in that context; the
+  // backend's AllowScorecardPdfToken permission validates the token. Letting
+  // this through here keeps the auth model intact (data fetch still requires
+  // a valid token) without redirecting Playwright to /login.
+  const isScorecardPdfRoute = pathname.startsWith("/user/scorecard/pdf");
+
   // If accessing a protected route without token, redirect to login
-  if (!isPublicRoute && !token) {
+  if (!isPublicRoute && !isScorecardPdfRoute && !token) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);

@@ -101,10 +101,12 @@ export default function ScorecardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ScorecardData | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    setLoadError(null);
     setLoading(true);
     try {
       const [scorecardData, heatmapRes] = await Promise.all([
@@ -115,8 +117,14 @@ export default function ScorecardPage() {
       ]);
       setData(scorecardData);
       setHeatmapData(heatmapRes.heatmap_data ?? {});
-    } catch {
-      /* Error state: data remains null */
+    } catch (err: unknown) {
+      console.error("[scorecard] failed to load", err);
+      setData(null);
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: string }).message)
+          : "We couldn't load your scorecard right now.";
+      setLoadError(message);
     } finally {
       setLoading(false);
     }
@@ -202,10 +210,59 @@ export default function ScorecardPage() {
   if (!data) {
     return (
       <MainLayout>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
-            Failed to load scorecard data.
-          </Typography>
+        <Container maxWidth="sm" sx={{ py: 8 }}>
+          <Box
+            sx={{
+              p: { xs: 3, sm: 4 },
+              borderRadius: 4,
+              border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+              backgroundColor: "var(--card-bg)",
+              textAlign: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                bgcolor: "color-mix(in srgb, #ef4444 12%, transparent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mx: "auto",
+                mb: 2,
+              }}
+            >
+              <IconWrapper icon="mdi:chart-line-variant" size={28} color="#ef4444" />
+            </Box>
+            <Typography variant="h6" fontWeight={700} color="text.primary" gutterBottom>
+              Couldn&apos;t load your scorecard
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 2.5, maxWidth: 360, mx: "auto" }}
+            >
+              {loadError ?? "Check your connection and try again."}
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1.5, justifyContent: "center", flexWrap: "wrap" }}>
+              <Button
+                variant="contained"
+                onClick={() => fetchData()}
+                disabled={loading}
+                sx={{ textTransform: "none", fontWeight: 600, borderRadius: 999, px: 2.5 }}
+              >
+                {loading ? "Retrying…" : "Retry"}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => router.push("/")}
+                sx={{ textTransform: "none", fontWeight: 600, borderRadius: 999, px: 2.5 }}
+              >
+                Back to dashboard
+              </Button>
+            </Box>
+          </Box>
         </Container>
       </MainLayout>
     );

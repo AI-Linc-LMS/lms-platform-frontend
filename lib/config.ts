@@ -8,7 +8,15 @@ export const config = {
     process.env.NEXT_PUBLIC_API_BASE_URL ||
     (process.env.NODE_ENV === "development" ? "http://localhost:8000" : "")
   ).replace(/\/$/, ""),
-  clientId: process.env.NEXT_PUBLIC_CLIENT_ID || "1",
+  clientId: (() => {
+    const v = process.env.NEXT_PUBLIC_CLIENT_ID;
+    if (!v) {
+      throw new Error(
+        "NEXT_PUBLIC_CLIENT_ID must be set — refusing to fall back to a hardcoded tenant id (would risk cross-tenant data leak).",
+      );
+    }
+    return v;
+  })(),
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
   /**
    * Tenant slug (subdomain) — passed to the central auth proxy so it can route

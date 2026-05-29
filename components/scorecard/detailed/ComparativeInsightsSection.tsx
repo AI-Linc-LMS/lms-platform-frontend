@@ -12,6 +12,7 @@ import {
   SectionShell,
   fadeRise,
   gridStagger,
+  useStaticRender,
   useViewportEntrance,
 } from "@/components/scorecard/shared";
 import type { BenchmarkComparison, ComparativeInsights } from "@/lib/types/scorecard.types";
@@ -49,6 +50,7 @@ function ordinalize(n: number): string {
 }
 
 function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: number }) {
+  const staticRender = useStaticRender();
   const studentAccent =
     row.unit === "percent" ? proficiencyBandColor(row.studentValue) : ACCENT;
   const isAhead = row.batchAverage != null && row.studentValue > row.batchAverage;
@@ -320,9 +322,10 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
               >
                 <Box
                   component={motion.div}
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${pct(r.value)}%` }}
-                  viewport={{ once: true, amount: 0.3 }}
+                  initial={{ width: staticRender ? `${pct(r.value)}%` : 0 }}
+                  {...(staticRender
+                    ? { animate: { width: `${pct(r.value)}%` } }
+                    : { whileInView: { width: `${pct(r.value)}%` }, viewport: { once: true, amount: 0.3 } })}
                   transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] as const, delay: 0.1 }}
                   sx={{
                     height: "100%",
@@ -429,8 +432,10 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
 
   const peers = Math.max(0, data.cohortSize - 1);
   const rankApprox = useMemo(() => {
-    if (data.cohortSize <= 0) return null;
-    // Rough rank: students above you ≈ cohortSize * (1 - percentile/100)
+    // Below 10 peers the percentile→rank conversion is too noisy to display
+    // as a hard rank — show "—" instead so the user doesn't read a precise
+    // "#7 of 9" off of what's really a coarse percentile bucket.
+    if (data.cohortSize < 10) return null;
     const ahead = Math.max(0, Math.round(data.cohortSize * (1 - data.percentileRank / 100)));
     return Math.max(1, ahead + 1);
   }, [data.cohortSize, data.percentileRank]);
@@ -577,9 +582,14 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                 >
                   Ranked{" "}
                   {rankApprox != null ? (
-                    <Box component="span" sx={{ fontWeight: 900, color: percentileColor }}>
-                      #{rankApprox}
-                    </Box>
+                    <Tooltip
+                      title="Approximate rank derived from percentile and cohort size."
+                      arrow
+                    >
+                      <Box component="span" sx={{ fontWeight: 900, color: percentileColor, cursor: "help" }}>
+                        ~#{rankApprox}
+                      </Box>
+                    </Tooltip>
                   ) : (
                     "—"
                   )}{" "}
@@ -749,21 +759,32 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                   accent: "var(--accent-purple, #8b5cf6)",
                   numeric: true as const,
                 },
-                {
-                  label: "Strongest delta",
-                  value:
-                    data.comparisons.length === 0
-                      ? "—"
-                      : `+${Math.round(
-                          Math.max(
-                            ...data.comparisons.map((c) =>
-                              c.batchAverage != null ? c.studentValue - c.batchAverage : -Infinity,
-                            ),
-                          ),
-                        )}`,
-                  accent: POSITIVE,
-                  numeric: false as const,
-                },
+                (() => {
+                  // Compute "strongest delta" as the largest *relative* lead
+                  // above the cohort batch average (delta / batch_avg). Using
+                  // a relative ratio means we can compare a +5%-completion
+                  // delta to a +20h time delta on the same axis — the prior
+                  // formula did a raw Math.max across mixed units, which
+                  // made hours-based metrics always win.
+                  const relativeLeads = data.comparisons
+                    .filter((c) => c.batchAverage != null && c.batchAverage !== 0)
+                    .map((c) => {
+                      const lead = (c.studentValue - (c.batchAverage as number)) / Math.abs(c.batchAverage as number);
+                      return { metric: c, lead };
+                    });
+                  const best = relativeLeads.length
+                    ? relativeLeads.reduce((acc, x) => (x.lead > acc.lead ? x : acc))
+                    : null;
+                  return {
+                    label: "Strongest lead",
+                    value:
+                      best == null || best.lead <= 0
+                        ? "—"
+                        : `${best.metric.label} +${Math.round(best.lead * 100)}%`,
+                    accent: POSITIVE,
+                    numeric: false as const,
+                  };
+                })(),
               ].map((kpi, idx, arr) => (
                 <Box
                   key={`${kpi.label}-${idx}`}

@@ -20,6 +20,10 @@ import { scorecardService } from "@/lib/services/scorecard.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
 
 // Same ordering as /user/scorecard so the PDF mirrors what learners see.
+// `activity_heatmap` is intentionally omitted: the heatmap data is not
+// available via the PDF-token endpoint (separate auth path), so we cannot
+// render it here. The filter below falls back to SHOW-ALL if an admin's
+// enabledModules intersection ends up empty.
 const SECTION_ORDER_PDF = [
   "overview",
   "learning_consumption",
@@ -63,15 +67,67 @@ export default function ScorecardPdfPage() {
 
   useEffect(() => {
     if (!data || error) return;
-    // Allow charts (Recharts ResponsiveContainer) + ring animations a tick
-    // to settle. 2s here vs the old 1.5 because we now render 12 sections,
-    // not just 2. Playwright's wait_for_selector timeout (45s) gives plenty
-    // of headroom.
-    const t = setTimeout(() => {
+    if (typeof document === "undefined") return;
+
+    let cancelled = false;
+    const markReady = () => {
+      if (cancelled) return;
       wrapperRef.current?.setAttribute("data-pdf-ready", "true");
-      if (typeof document !== "undefined") document.body.setAttribute("data-pdf-ready", "true");
-    }, 2000);
-    return () => clearTimeout(t);
+      document.body.setAttribute("data-pdf-ready", "true");
+    };
+
+    // Real readiness signals instead of a fixed 2s timer:
+    //   1. document.fonts.ready  — webfonts loaded so text width is final
+    //   2. every Recharts ResponsiveContainer has measured itself (non-zero box)
+    //   3. a final double-rAF to let any post-layout paints settle
+    // Fall back to a 4s ceiling so a misbehaving chart never strands the
+    // PDF print indefinitely.
+    const start = performance.now();
+    const HARD_TIMEOUT_MS = 4000;
+
+    const allChartsMeasured = (): boolean => {
+      const containers = document.querySelectorAll<HTMLElement>(
+        ".recharts-responsive-container",
+      );
+      // No charts present is fine — readiness is just "nothing left to wait for".
+      if (containers.length === 0) return true;
+      for (const c of Array.from(containers)) {
+        const rect = c.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return false;
+      }
+      return true;
+    };
+
+    const tick = () => {
+      if (cancelled) return;
+      const elapsed = performance.now() - start;
+      if (elapsed >= HARD_TIMEOUT_MS) {
+        markReady();
+        return;
+      }
+      if (!allChartsMeasured()) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      // Charts are measured. Give layout one more double-rAF so any post-
+      // measurement paint (axis ticks, line strokes) actually lands.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(markReady);
+      });
+    };
+
+    const fontsReady: Promise<unknown> =
+      typeof document !== "undefined" && "fonts" in document && document.fonts
+        ? document.fonts.ready
+        : Promise.resolve();
+    fontsReady.then(() => {
+      if (cancelled) return;
+      requestAnimationFrame(tick);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [data, error]);
 
   if (error || (!token && !clientId)) {
@@ -114,9 +170,13 @@ export default function ScorecardPdfPage() {
 
   const enabledModules = data.scorecardConfig?.enabledModules;
   const showAll = !enabledModules || enabledModules.length === 0;
-  const sectionOrder = showAll
+  const filteredSections = showAll
     ? [...SECTION_ORDER_PDF]
     : (SECTION_ORDER_PDF as readonly string[]).filter((id) => (enabledModules as string[]).includes(id));
+  // Guard against an empty intersection (e.g. admin enabled only modules
+  // the PDF can't render — like activity_heatmap). Fall back to show-all
+  // so the PDF always contains content.
+  const sectionOrder = filteredSections.length > 0 ? filteredSections : [...SECTION_ORDER_PDF];
 
   return (
     <Box
@@ -184,7 +244,7 @@ export default function ScorecardPdfPage() {
                     />
                   );
                 case "mock_interview":
-                  if (!data.mockInterviewPerformance || data.mockInterviewPerformance.totalInterviews === 0) return null;
+                  if (!data.mockInterviewPerformance) return null;
                   return (
                     <MockInterviewSection
                       key={sectionId}

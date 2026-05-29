@@ -138,8 +138,23 @@ export function PerformanceTrendsSection({
   const [loading, setLoading] = useState(false);
   const cacheRef = useRef<Partial<Record<PerformanceTrendsGranularity, PerformanceTrends>>>({});
   const fetchIdRef = useRef(0);
+  // Stash the *content* fingerprint of the initialData we last absorbed. The
+  // parent often re-renders with a fresh object reference even when the
+  // underlying trend data is unchanged; we only want to reset state when the
+  // actual payload changes, so the user's granularity selection isn't
+  // stomped on every unrelated parent update.
+  const initialDataKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const key = JSON.stringify({
+      g: initialData.granularity,
+      w: initialData.weeklyData?.length,
+      s: initialData.skillWiseAccuracy?.length,
+      first: initialData.weeklyData?.[0]?.weekLabel,
+      last: initialData.weeklyData?.[initialData.weeklyData.length - 1]?.weekLabel,
+    });
+    if (initialDataKeyRef.current === key) return;
+    initialDataKeyRef.current = key;
     setData(initialData);
     if (initialData.granularity) {
       cacheRef.current[initialData.granularity] = initialData;
@@ -176,10 +191,14 @@ export function PerformanceTrendsSection({
   // KPI snapshot — latest bucket, with delta vs previous bucket.
   const latest = data.weeklyData[data.weeklyData.length - 1];
   const previous = data.weeklyData[data.weeklyData.length - 2];
-  const delta = (key: keyof NonNullable<typeof latest>) =>
-    latest && previous
-      ? Math.round((Number(latest[key]) - Number(previous[key])) * 10) / 10
-      : 0;
+  type WeeklyNumKey = "mcqAccuracy" | "subjectiveScore" | "assessmentScore" | "interviewScore";
+  const delta = (key: WeeklyNumKey): number | null => {
+    if (!latest || !previous) return null;
+    const a = latest[key];
+    const b = previous[key];
+    if (a == null || b == null) return null;
+    return Math.round((a - b) * 10) / 10;
+  };
 
   const kpis = useMemo(() => {
     if (!latest) return [];
@@ -188,28 +207,28 @@ export function PerformanceTrendsSection({
         key: "mcqAccuracy" as const,
         label: "MCQ Accuracy",
         accent: "var(--accent-indigo)",
-        value: Number(latest.mcqAccuracy),
+        value: latest.mcqAccuracy,
         delta: delta("mcqAccuracy"),
       },
       {
         key: "subjectiveScore" as const,
         label: "Subjective",
         accent: "#10b981",
-        value: Number(latest.subjectiveScore),
+        value: latest.subjectiveScore,
         delta: delta("subjectiveScore"),
       },
       {
         key: "assessmentScore" as const,
         label: "Assessment",
         accent: "#f59e0b",
-        value: Number(latest.assessmentScore),
+        value: latest.assessmentScore,
         delta: delta("assessmentScore"),
       },
       {
         key: "interviewScore" as const,
         label: "Interview",
         accent: "#a855f7",
-        value: Number(latest.interviewScore),
+        value: latest.interviewScore,
         delta: delta("interviewScore"),
       },
     ];
@@ -351,9 +370,15 @@ export function PerformanceTrendsSection({
                           fontVariantNumeric: "tabular-nums",
                         }}
                       >
-                        <CountUp value={kpi.value} duration={1.2} />%
+                        {kpi.value == null ? (
+                          <Box component="span" sx={{ color: "var(--font-secondary)" }}>—</Box>
+                        ) : (
+                          <>
+                            <CountUp value={kpi.value} duration={1.2} />%
+                          </>
+                        )}
                       </Typography>
-                      {previous && <DeltaPill value={kpi.delta} label={kpi.label} />}
+                      {previous && kpi.delta != null && <DeltaPill value={kpi.delta} label={kpi.label} />}
                     </Box>
                     <Typography
                       variant="caption"
@@ -435,6 +460,7 @@ export function PerformanceTrendsSection({
                         dot={{ r: 3, strokeWidth: 0 }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                         isAnimationActive
+                        connectNulls={false}
                       />
                     ))}
                   </LineChart>

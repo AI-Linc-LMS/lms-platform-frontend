@@ -102,8 +102,32 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
   const isAllClear =
     skillsBelowThreshold.length === 0 && topicsFrequentlyIncorrect.length === 0 && skippedQuestions.length === 0;
 
-  // Spotlight = the weakest skill (lowest currentScore). If none, fall back to most-missed topic.
-  const spotlight = skillsBelowThreshold[0];
+  // Spotlight = the weakest skill (lowest currentScore). If no skills are flagged,
+  // fall back to the topic the learner missed most often.
+  const skillSpotlight = skillsBelowThreshold[0];
+  const topicFallback = !skillSpotlight ? topicsFrequentlyIncorrect[0] : undefined;
+  const spotlight: typeof skillSpotlight | undefined = skillSpotlight ?? (
+    topicFallback
+      ? {
+          skillName: topicFallback.topicName,
+          currentScore:
+            topicFallback.totalAttempts > 0
+              ? Math.max(
+                  0,
+                  Math.round(
+                    ((topicFallback.totalAttempts - topicFallback.incorrectCount) /
+                      topicFallback.totalAttempts) *
+                      100,
+                  ),
+                )
+              : 0,
+          threshold: weakThreshold,
+          recommendation: `Missed ${topicFallback.incorrectCount} of ${topicFallback.totalAttempts} times — review this topic before your next attempt.`,
+          sourceContext: topicFallback.sourceContext,
+        }
+      : undefined
+  );
+  const spotlightLabel = skillSpotlight ? "Top priority · weakest skill" : "Top priority · most-missed topic";
 
   return (
     <Reveal as="section">
@@ -205,7 +229,7 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                       textTransform: "uppercase",
                     }}
                   >
-                    Top priority · weakest skill
+                    {spotlightLabel}
                   </Typography>
                   <Typography
                     sx={{
@@ -264,10 +288,13 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                   mb: { xs: 3, md: 4 },
                 }}
               >
-                {recommendations.map((rec) => {
+                {[...recommendations]
+                  .sort((a, b) => a.priority - b.priority)
+                  .map((rec) => {
                   const accent = RECO_ACCENT[rec.type] ?? "var(--accent-indigo)";
                   const icon = RECO_ICON[rec.type] ?? "mdi:lightbulb-outline";
                   const isLink = !!rec.actionUrl;
+                  const isExternal = isLink && /^https?:\/\//i.test(rec.actionUrl ?? "");
                   const Wrapper: any = isLink ? "a" : motion.div;
                   return (
                     <motion.div
@@ -278,7 +305,13 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                       }}
                     >
                       <Wrapper
-                        {...(isLink ? { href: rec.actionUrl, target: "_self", rel: "noreferrer" } : {})}
+                        {...(isLink
+                          ? {
+                              href: rec.actionUrl,
+                              target: isExternal ? "_blank" : "_self",
+                              rel: isExternal ? "noopener noreferrer" : undefined,
+                            }
+                          : {})}
                         style={{ textDecoration: "none", display: "block" }}
                       >
                         <Box

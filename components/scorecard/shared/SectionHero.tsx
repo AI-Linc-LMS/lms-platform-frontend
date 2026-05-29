@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { fadeRise } from "./motion";
+import { useStaticRender } from "./StaticRenderContext";
 import { useViewportEntrance } from "./useViewportEntrance";
 
 interface SectionHeroProps {
@@ -275,6 +276,12 @@ export function SectionShell({
   meshOpacity?: number;
   children: ReactNode;
 }) {
+  // In static-render mode (PDF capture) we omit `backdropFilter` — Chromium's
+  // print pipeline skips painting elements that have a CSS filter or
+  // backdrop-filter once they're past the initial viewport, which truncates
+  // the scorecard PDF after the first 2 chapters. The decorative blur isn't
+  // meaningful in a printed page anyway.
+  const staticRender = useStaticRender();
   return (
     <Box
       sx={{
@@ -285,7 +292,7 @@ export function SectionShell({
         backgroundColor: "var(--card-bg)",
         boxShadow:
           "0 1px 0 color-mix(in srgb, var(--border-default) 60%, transparent), 0 30px 60px -30px rgba(15, 23, 42, 0.18)",
-        backdropFilter: "blur(6px)",
+        ...(staticRender ? {} : { backdropFilter: "blur(6px)" }),
       }}
     >
       <Box

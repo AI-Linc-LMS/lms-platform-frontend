@@ -118,45 +118,44 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
   const gradientCompletedId = useId();
   const entrance = useViewportEntrance();
 
+  // Prefer API-canonical byType counts when available, fall back to raw fields.
+  // (Avoids drift when the API computes totals differently than naive sums.)
+  const byType = data.contentCompletionOverview?.byType;
+  const videoTotal = byType?.videos?.total ?? data.videos.totalAssigned;
+  const videoDone = byType?.videos?.completed ?? data.videos.completed;
+  const articleTotal = byType?.articles?.total ?? data.articles.totalAssigned;
+  const articleDone = byType?.articles?.completed ?? data.articles.read;
+  const codingTotal = byType?.codingProblems?.total ?? data.codingProblems.totalAssigned;
+  const codingDone = byType?.codingProblems?.completed ?? data.codingProblems.completed;
+  const mockTotal = byType?.mockInterviews?.total ?? data.mockInterviews.totalAssigned;
+  const mockDone = byType?.mockInterviews?.completed ?? data.mockInterviews.completed;
+
   const totalContent =
     data.totalContent ??
-    data.videos.totalAssigned +
-      data.articles.totalAssigned +
-      data.codingProblems.totalAssigned +
-      data.mockInterviews.totalAssigned +
+    videoTotal +
+      articleTotal +
+      codingTotal +
+      mockTotal +
       (data.practice.totalQuizContents ?? 0);
   const totalContentDisplay = data.totalContent ?? totalContent;
   const totalCompleted =
     data.contentCompletionOverview?.totalCompleted ??
-    data.videos.completed +
-      data.articles.read +
-      data.codingProblems.completed +
-      data.mockInterviews.completed +
-      data.practice.mcqsAttempted;
+    videoDone + articleDone + codingDone + mockDone + data.practice.mcqsAttempted;
 
   const videoCompletion =
-    data.videos.totalAssigned > 0
-      ? Math.round((data.videos.completed / data.videos.totalAssigned) * 100)
-      : 0;
+    videoTotal > 0 ? Math.round((videoDone / videoTotal) * 100) : 0;
   const articleCompletion =
-    data.articles.totalAssigned > 0
-      ? Math.round((data.articles.read / data.articles.totalAssigned) * 100)
-      : 0;
+    articleTotal > 0 ? Math.round((articleDone / articleTotal) * 100) : 0;
   const mcqCompletion =
     data.practice.mcqsTotal > 0
       ? Math.round((data.practice.mcqsAttempted / data.practice.mcqsTotal) * 100)
       : 0;
   const codingCompletion =
-    data.codingProblems.totalAssigned > 0
-      ? Math.round((data.codingProblems.completed / data.codingProblems.totalAssigned) * 100)
-      : 0;
+    codingTotal > 0 ? Math.round((codingDone / codingTotal) * 100) : 0;
   const overallCompletion =
     (totalContent || 0) > 0 ? Math.round((totalCompleted / (totalContent || 1)) * 100) : 0;
 
-  const videoEngagement =
-    data.videos.engagementCount != null
-      ? data.videos.engagementCount
-      : Math.round(data.videos.averageWatchPercentage * 0.7 + videoCompletion * 0.3);
+  const videoEngagement = data.videos.engagementCount;
   const skippedVideosCount = data.videos.skippedCount ?? data.videos.skippedVideos?.length ?? 0;
   const totalAssessmentsPresent = data.practice.totalAssessmentsPresent ?? 0;
 
@@ -174,22 +173,22 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
       ? data.practice.assessmentsEngagementPercentage
       : assessmentCompletionPct;
 
-  const articlesPending = Math.max(0, data.articles.totalAssigned - data.articles.read);
-  const codingPending = Math.max(0, data.codingProblems.totalAssigned - data.codingProblems.completed);
+  const articlesPending = Math.max(0, articleTotal - articleDone);
+  const codingPending = Math.max(0, codingTotal - codingDone);
   const mockInterviewPending = data.mockInterviews.pendingCount;
 
   const chartData = [
     {
       category: "Videos",
-      assigned: data.videos.totalAssigned,
-      completed: data.videos.completed,
-      pending: data.videos.totalAssigned - data.videos.completed,
+      assigned: videoTotal,
+      completed: videoDone,
+      pending: Math.max(0, videoTotal - videoDone),
     },
     {
       category: "Articles",
-      assigned: data.articles.totalAssigned,
-      completed: data.articles.read,
-      pending: data.articles.totalAssigned - data.articles.read,
+      assigned: articleTotal,
+      completed: articleDone,
+      pending: articlesPending,
     },
     {
       category: "Quizzes",
@@ -199,14 +198,14 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
     },
     {
       category: "Coding",
-      assigned: data.codingProblems.totalAssigned,
-      completed: data.codingProblems.completed,
+      assigned: codingTotal,
+      completed: codingDone,
       pending: codingPending,
     },
     {
       category: "Mock",
-      assigned: data.mockInterviews.totalAssigned,
-      completed: data.mockInterviews.completed,
+      assigned: mockTotal,
+      completed: mockDone,
       pending: mockInterviewPending,
     },
   ];
@@ -228,7 +227,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
     },
     {
       value: data.videos.rewatchCount,
-      label: "Engagement Actions",
+      label: "Video Rewatches",
       tip: KPI_TOOLTIPS.engagementActions,
       accent: "#f59e0b",
     },
@@ -595,13 +594,9 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                 stats={[
                   { label: "Avg watch", value: `${data.videos.averageWatchPercentage}%` },
                   { label: "Rewatches", value: data.videos.rewatchCount },
-                  {
-                    label: "Engagement",
-                    value:
-                      data.videos.engagementCount != null
-                        ? videoEngagement
-                        : `${videoEngagement}%`,
-                  },
+                  ...(videoEngagement != null
+                    ? [{ label: "Engagement", value: videoEngagement }]
+                    : []),
                   { label: "Skipped", value: skippedVideosCount, danger: true },
                 ]}
               />

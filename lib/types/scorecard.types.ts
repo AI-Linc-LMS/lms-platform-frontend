@@ -117,10 +117,11 @@ export interface ScorecardConfig {
 export interface WeeklyPerformance {
   week: number;
   weekLabel: string;
-  mcqAccuracy: number;
-  subjectiveScore: number;
-  assessmentScore: number;
-  interviewScore: number;
+  /** null when no attempts in this bucket — distinguish from a real 0%. */
+  mcqAccuracy: number | null;
+  subjectiveScore: number | null;
+  assessmentScore: number | null;
+  interviewScore: number | null;
 }
 
 export interface SkillAccuracy {
@@ -272,8 +273,9 @@ export interface InterviewParameter {
 
 export interface InterviewMentorRatings {
   overall: number;
-  technical: number;
-  communication: number;
+  /** null when the LLM didn't emit a per-channel sub-score. */
+  technical: number | null;
+  communication: number | null;
 }
 
 export interface InterviewFeedback {
@@ -300,7 +302,8 @@ export interface MockInterviewPerformance {
   totalInterviews: number;
   latestInterviewScore: number;
   interviewReadinessIndex: number;
-  improvementSinceFirst: number;
+  /** null when we can't compute a relative % (single attempt, or first attempt was 0). */
+  improvementSinceFirst: number | null;
   interviews: MockInterview[];
 }
 

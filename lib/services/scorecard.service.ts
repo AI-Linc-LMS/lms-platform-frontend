@@ -30,6 +30,9 @@ export type { ScorecardApiPayload };
 export type PerformanceTrendsGranularity = "weekly" | "bimonthly" | "monthly";
 
 async function mergeProfilePicture<T extends { overview: { profilePicUrl?: string } }>(result: T): Promise<T> {
+  if (result.overview.profilePicUrl) {
+    return result;
+  }
   try {
     const profile = await profileService.getUserProfile();
     if (profile?.profile_picture) {
@@ -44,15 +47,11 @@ async function mergeProfilePicture<T extends { overview: { profilePicUrl?: strin
 export const scorecardService = {
   getScorecardData: async () => {
     const clientId = config.clientId;
-    try {
-      const response = await apiClient.get<ScorecardApiPayload>(
-        `/api/scorecard/clients/${clientId}/student/scorecard/`
-      );
-      const result = scorecardFromApiPayload(response.data);
-      return await mergeProfilePicture(result);
-    } catch {
-      return await mergeProfilePicture(scorecardFromApiPayload(undefined));
-    }
+    const response = await apiClient.get<ScorecardApiPayload>(
+      `/api/scorecard/clients/${clientId}/student/scorecard/`,
+    );
+    const result = scorecardFromApiPayload(response.data);
+    return await mergeProfilePicture(result);
   },
 
   getScorecardDataForPdf: async (pdfToken: string, clientId: string) => {

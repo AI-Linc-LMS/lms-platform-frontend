@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { motion, type Variants } from "framer-motion";
-import { fadeRise } from "./motion";
+import { fadeRise, fadeRiseStatic } from "./motion";
 import { useStaticRender } from "./StaticRenderContext";
 
 interface RevealProps {
@@ -15,6 +15,27 @@ interface RevealProps {
   as?: "div" | "section" | "li" | "span";
   className?: string;
   style?: React.CSSProperties;
+}
+
+/**
+ * Strip CSS properties that break Chromium's print/PDF pipeline. Specifically,
+ * `filter: blur(0px)` (left behind on the resting `visible` state of variants
+ * like fadeRise) causes Chromium to skip painting elements past the initial
+ * viewport when generating a PDF — sections later in the document end up as
+ * blank pages. We drop the filter entirely for static (PDF) renders.
+ */
+function stripPrintHostileProps(variants: Variants): Variants {
+  const out: Variants = {};
+  for (const [key, value] of Object.entries(variants)) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { filter: _f, ...rest } = value as Record<string, unknown>;
+      out[key] = rest as Variants[string];
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
 }
 
 /**
@@ -32,6 +53,13 @@ export function Reveal({
 }: RevealProps) {
   const MotionTag = motion[as] as typeof motion.div;
   const staticRender = useStaticRender();
+  // If the caller relied on the default `fadeRise`, prefer the print-safe
+  // sibling. Otherwise sanitize whatever they passed.
+  const effectiveVariants = staticRender
+    ? variants === fadeRise
+      ? fadeRiseStatic
+      : stripPrintHostileProps(variants)
+    : variants;
   return (
     <MotionTag
       className={className}
@@ -40,7 +68,7 @@ export function Reveal({
       animate={staticRender ? "visible" : undefined}
       whileInView={staticRender ? undefined : "visible"}
       viewport={staticRender ? undefined : { once: !repeat, margin: "0px 0px -10% 0px" }}
-      variants={variants}
+      variants={effectiveVariants}
       transition={delay != null ? { delay } : undefined}
     >
       {children}

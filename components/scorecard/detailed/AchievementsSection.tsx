@@ -12,6 +12,7 @@ import {
   SectionShell,
   fadeRise,
   gridStagger,
+  useStaticRender,
   useViewportEntrance,
 } from "@/components/scorecard/shared";
 import type {
@@ -466,6 +467,7 @@ function ProgressMedallion({
   secondary: string;
   gradientKey: string;
 }) {
+  const staticRender = useStaticRender();
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - pct / 100);
@@ -517,9 +519,10 @@ function ProgressMedallion({
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          whileInView={{ strokeDashoffset: dashOffset }}
-          viewport={{ once: true, amount: 0.3 }}
+          initial={{ strokeDashoffset: staticRender ? dashOffset : circumference }}
+          {...(staticRender
+            ? { animate: { strokeDashoffset: dashOffset } }
+            : { whileInView: { strokeDashoffset: dashOffset }, viewport: { once: true, amount: 0.3 } })}
           transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] as const, delay: 0.15 }}
         />
       </Box>
@@ -544,6 +547,7 @@ function ProgressMedallion({
 }
 
 function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index: number }) {
+  const staticRender = useStaticRender();
   const pct = Math.max(0, Math.min(99, milestone.progress));
   const isAlmost = pct >= 75;
   const palette = paletteFor(milestone.id || milestone.name);
@@ -732,9 +736,10 @@ function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index:
                 ))}
                 <Box
                   component={motion.div}
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${pct}%` }}
-                  viewport={{ once: true, amount: 0.3 }}
+                  initial={{ width: staticRender ? `${pct}%` : 0 }}
+                  {...(staticRender
+                    ? { animate: { width: `${pct}%` } }
+                    : { whileInView: { width: `${pct}%` }, viewport: { once: true, amount: 0.3 } })}
                   transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] as const, delay: 0.15 }}
                   sx={{
                     position: "relative",

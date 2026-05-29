@@ -316,13 +316,21 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
   const entrance = useViewportEntrance();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const latest = data.interviews[0] ?? null;
+  // Don't trust API order — sort by date descending so "latest" is always
+  // the newest, even if the backend changes ordering.
+  const latest = useMemo(() => {
+    const dated = data.interviews.filter((i) => i.date);
+    if (!dated.length) return data.interviews[0] ?? null;
+    return [...dated].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))[0];
+  }, [data.interviews]);
   const radarData = useMemo(() => {
     if (!latest) return [];
     return latest.parameters.map((p) => ({ subject: p.name, score: p.score, fullMark: 100 }));
   }, [latest]);
 
-  const improvementColor = data.improvementSinceFirst >= 0 ? "#10b981" : "#ef4444";
+  const improvement = data.improvementSinceFirst;
+  const improvementColor =
+    improvement == null ? "var(--font-secondary)" : improvement >= 0 ? "#10b981" : "#ef4444";
 
   return (
     <Reveal as="section">
@@ -478,12 +486,17 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                     Interview Readiness
                   </Typography>
                   <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.85rem" }}>
-                    {data.totalInterviews} attempts ·{" "}
-                    <Box component="span" sx={{ color: improvementColor, fontWeight: 800 }}>
-                      {data.improvementSinceFirst >= 0 ? "+" : ""}
-                      {data.improvementSinceFirst.toFixed(0)}%
-                    </Box>{" "}
-                    since first
+                    {data.totalInterviews} attempts
+                    {improvement != null && (
+                      <>
+                        {" · "}
+                        <Box component="span" sx={{ color: improvementColor, fontWeight: 800 }}>
+                          {improvement >= 0 ? "+" : ""}
+                          {improvement.toFixed(0)}%
+                        </Box>{" "}
+                        since first
+                      </>
+                    )}
                   </Typography>
                 </Box>
               </Box>
@@ -506,7 +519,14 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                 { label: "Interviews", value: data.totalInterviews, accent: "#6d28d9" },
                 { label: "Latest", value: Math.round(data.latestInterviewScore), suffix: "%", accent: proficiencyBandColor(data.latestInterviewScore) },
                 { label: "Readiness", value: Math.round(data.interviewReadinessIndex), suffix: "%", accent: proficiencyBandColor(data.interviewReadinessIndex) },
-                { label: "Improvement", value: Math.round(data.improvementSinceFirst), suffix: "%", accent: improvementColor, sign: data.improvementSinceFirst >= 0 },
+                {
+                  label: "Improvement",
+                  value: improvement == null ? 0 : Math.round(improvement),
+                  suffix: improvement == null ? "" : "%",
+                  accent: improvementColor,
+                  sign: improvement != null && improvement >= 0,
+                  placeholder: improvement == null ? "—" : undefined,
+                },
               ].map((kpi, idx) => (
                 <Box
                   key={kpi.label}
@@ -546,9 +566,15 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {kpi.sign !== undefined && kpi.sign && kpi.value > 0 ? "+" : ""}
-                    <CountUp value={kpi.value} duration={1.4} />
-                    {kpi.suffix}
+                    {"placeholder" in kpi && kpi.placeholder ? (
+                      kpi.placeholder
+                    ) : (
+                      <>
+                        {kpi.sign !== undefined && kpi.sign && kpi.value > 0 ? "+" : ""}
+                        <CountUp value={kpi.value} duration={1.4} />
+                        {kpi.suffix}
+                      </>
+                    )}
                   </Typography>
                   <Typography
                     variant="caption"

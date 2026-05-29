@@ -95,6 +95,7 @@ export default function AdminScorecardSkillsPage() {
   const [taggerOpen, setTaggerOpen] = useState(false);
   const [taggerContentType, setTaggerContentType] = useState<SkillContentType>("mcq");
   const [taggerContentId, setTaggerContentId] = useState<string>("");
+  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
   const [browserData, setBrowserData] = useState<ContentBrowserPayload | null>(null);
   const [browserLoading, setBrowserLoading] = useState(false);
   const [browserSearch, setBrowserSearch] = useState("");
@@ -836,6 +837,8 @@ export default function AdminScorecardSkillsPage() {
 
         {/* SkillMappingDialog driver. Sits as a sibling so admin can open it from the tagger launcher above. */}
         <MappingDialogHost
+          open={mappingDialogOpen}
+          onClose={() => setMappingDialogOpen(false)}
           contentType={taggerContentType}
           contentId={Number(taggerContentId) || 0}
           onSaved={handleTaggerSaved}
@@ -845,39 +848,29 @@ export default function AdminScorecardSkillsPage() {
   );
 }
 
-// --- Local driver for SkillMappingDialog ----------------------------------
-// Wraps the dialog so we can drive its open state from outside the form
-// without leaking that state up to the parent's render-tree (the launcher
-// dialog above resolves the form, then triggers this).
-let setMappingDialogOpenFn: ((v: boolean) => void) | null = null;
-function setMappingDialogOpen(v: boolean) {
-  setMappingDialogOpenFn?.(v);
-}
-
 function MappingDialogHost({
+  open,
+  onClose,
   contentType,
   contentId,
   onSaved,
 }: {
+  open: boolean;
+  onClose: () => void;
   contentType: SkillContentType;
   contentId: number;
   onSaved?: (ids: number[]) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  // Register the local setter so the launcher dialog can pop us open.
-  // useEffect-less assignment is intentional — we want it to update on every
-  // render so the latest closure is always called.
-  setMappingDialogOpenFn = setOpen;
   if (!contentId) return null;
   return (
     <SkillMappingDialog
       open={open}
-      onClose={() => setOpen(false)}
+      onClose={onClose}
       contentType={contentType}
       contentId={contentId}
       contentTitle={`${contentType} #${contentId}`}
       onSaved={(ids) => {
-        setOpen(false);
+        onClose();
         onSaved?.(ids);
       }}
     />

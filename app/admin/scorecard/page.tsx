@@ -203,9 +203,16 @@ export default function AdminScorecardPage() {
   const handleSaveConfig = async () => {
     setSavingConfig(true);
     try {
+      // Persist what the admin actually intended:
+      //   • empty array  → "show all sections" (one canonical encoding)
+      //   • non-empty    → explicit allowlist in `moduleOrder` order
+      // Previously we expanded the empty case to the full moduleOrder, which
+      // made "show all" a one-way trip: after reload the array was length 12,
+      // so toggling one off looked the same as before, but the UI could never
+      // collapse back to the implicit "all" state.
       const toSave =
         enabledModules.length === 0
-          ? moduleOrder
+          ? []
           : moduleOrder.filter((id) => enabledModules.includes(id));
       await updateAdminScorecardConfig({ enabled_modules: toSave });
       setConfigDirty(false);

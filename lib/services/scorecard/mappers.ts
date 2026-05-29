@@ -32,20 +32,22 @@ import type {
 } from "@/lib/types/scorecard.types";
 
 export function mapOverviewFromApi(overview: Record<string, unknown>): StudentOverview {
+  const totalTimeSpentSeconds =
+    overview.total_time_spent_seconds != null
+      ? num(overview.total_time_spent_seconds)
+      : num(overview.total_time_spent) * 3600;
   const mapped: StudentOverview = {
     studentName: (overview.student_name as string) ?? "",
     programName: (overview.program_name as string) ?? "—",
     cohort: (overview.cohort as string) ?? "—",
-    currentWeek: Number(overview.current_week) ?? 1,
+    currentWeek: numOrUndefined(overview.current_week) ?? 1,
     currentModule: (overview.current_module as string) ?? "—",
-    overallPerformanceScore: Number(overview.overall_performance_score) ?? 0,
+    overallPerformanceScore: num(overview.overall_performance_score),
     overallGrade: (overview.overall_grade as StudentOverview["overallGrade"]) ?? "Beginner",
-    totalTimeSpentSeconds:
-      Number(overview.total_time_spent_seconds) ??
-      (Number(overview.total_time_spent) || 0) * 3600,
-    totalDaysActive: Number(overview.total_days_active) ?? 0,
-    activeDaysStreak: Number(overview.active_days_streak) ?? 0,
-    completionPercentage: Number(overview.completion_percentage) ?? 0,
+    totalTimeSpentSeconds,
+    totalDaysActive: num(overview.total_days_active),
+    activeDaysStreak: num(overview.active_days_streak),
+    completionPercentage: num(overview.completion_percentage),
     statusBadge: (overview.status_badge as StudentOverview["statusBadge"]) ?? "Amber",
   };
   if (overview.current_course_name != null && overview.current_course_name !== "") {
@@ -54,9 +56,9 @@ export function mapOverviewFromApi(overview: Record<string, unknown>): StudentOv
   const rawProgress = overview.course_progress as Array<Record<string, unknown>> | undefined;
   if (Array.isArray(rawProgress) && rawProgress.length > 0) {
     mapped.courseProgress = rawProgress.map((p) => ({
-      courseId: Number(p.course_id),
+      courseId: num(p.course_id),
       courseName: (p.course_name as string) ?? "—",
-      currentWeek: Number(p.current_week) ?? 1,
+      currentWeek: numOrUndefined(p.current_week) ?? 1,
       currentModule: (p.current_module as string) ?? "—",
     }));
   }
@@ -275,10 +277,10 @@ export function mapPerformanceTrendsFromApi(api: unknown): PerformanceTrends {
     ? (raw.weekly_data as Record<string, unknown>[]).map((w) => ({
         week: num(w.week),
         weekLabel: (w.week_label as string) ?? "",
-        mcqAccuracy: num(w.mcq_accuracy),
-        subjectiveScore: num(w.subjective_score),
-        assessmentScore: num(w.assessment_score),
-        interviewScore: num(w.interview_score),
+        mcqAccuracy: numOrNull(w.mcq_accuracy),
+        subjectiveScore: numOrNull(w.subjective_score),
+        assessmentScore: numOrNull(w.assessment_score),
+        interviewScore: numOrNull(w.interview_score),
       }))
     : [];
   const skillWiseAccuracy = Array.isArray(raw.skill_wise_accuracy)
@@ -521,8 +523,8 @@ function mapInterview(raw: unknown): MockInterview {
       mentorComments: (feedbackRaw.mentor_comments as string) ?? "",
       mentorRatings: {
         overall: num(ratingsRaw.overall),
-        technical: num(ratingsRaw.technical),
-        communication: num(ratingsRaw.communication),
+        technical: numOrNull(ratingsRaw.technical),
+        communication: numOrNull(ratingsRaw.communication),
       },
     },
     playbackLink: (o.playback_link as string) || null,
@@ -541,7 +543,7 @@ export function mapMockInterviewPerformanceFromApi(api: unknown): MockInterviewP
     totalInterviews: num(raw.total_interviews),
     latestInterviewScore: num(raw.latest_interview_score),
     interviewReadinessIndex: num(raw.interview_readiness_index),
-    improvementSinceFirst: num(raw.improvement_since_first),
+    improvementSinceFirst: numOrNull(raw.improvement_since_first),
     interviews,
   };
 }
@@ -765,7 +767,7 @@ export function getEmptyMockInterviewPerformance(): MockInterviewPerformance {
     totalInterviews: 0,
     latestInterviewScore: 0,
     interviewReadinessIndex: 0,
-    improvementSinceFirst: 0,
+    improvementSinceFirst: null,
     interviews: [],
   };
 }
