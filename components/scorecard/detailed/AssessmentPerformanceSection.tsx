@@ -580,6 +580,11 @@ function PerformanceRow({
 export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSectionProps) {
   const entrance = useViewportEntrance();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Timeline collapse: show the 10 most recent attempts by default. With a
+  // heavy test cycle the section can otherwise hit 30+ rows and dwarf the
+  // KPI rail above it. The full list is one click away.
+  const TIMELINE_PREVIEW = 10;
+  const [showAllAttempts, setShowAllAttempts] = useState(false);
 
   const summary = useMemo(() => {
     const scored = data.filter((d) => d.score != null) as (AssessmentPerformance & { score: number })[];
@@ -822,13 +827,14 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
               viewport={{ once: true, amount: 0.05 }}
               style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}
             >
-              {data.map((row, idx) => {
+              {(showAllAttempts ? data : data.slice(0, TIMELINE_PREVIEW)).map((row, idx) => {
                 // Use the same key schema for React-key and expanded-state so two
                 // attempts of the same assessment can be toggled independently.
                 // Previously the expanded-state key dropped `dateAttempted`, so
                 // any duplicate `assessmentId` caused the second row's toggle
                 // to flip the first row's state.
                 const rowKey = `${row.assessmentId}-${row.dateAttempted ?? idx}`;
+                const visibleCount = showAllAttempts ? data.length : Math.min(TIMELINE_PREVIEW, data.length);
                 return (
                   <PerformanceRow
                     key={rowKey}
@@ -837,7 +843,7 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                     prevScore={summary.prevScoreByIdx.get(idx) ?? null}
                     isBest={!!summary.best && row === summary.best}
                     isLatest={!!summary.latest && row === summary.latest && summary.latest !== summary.best}
-                    isLast={idx === data.length - 1}
+                    isLast={idx === visibleCount - 1}
                     expanded={expandedId === rowKey}
                     onToggle={() =>
                       setExpandedId(expandedId === rowKey ? null : rowKey)
@@ -846,6 +852,46 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                 );
               })}
             </motion.div>
+
+            {/* "Show all" toggle for the timeline. Hides when the full list
+                already fits in the preview window. */}
+            {data.length > TIMELINE_PREVIEW && (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 2.5 }}>
+                <Box
+                  component="button"
+                  onClick={() => setShowAllAttempts((v) => !v)}
+                  sx={{
+                    appearance: "none",
+                    border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                    color: "var(--accent-indigo-dark)",
+                    fontWeight: 800,
+                    fontSize: "0.78rem",
+                    letterSpacing: "0.04em",
+                    px: 2.25,
+                    py: 1,
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    transition: "all 0.18s ease",
+                    "&:hover": {
+                      borderColor: "var(--accent-indigo)",
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                      transform: "translateY(-1px)",
+                    },
+                  }}
+                  aria-expanded={showAllAttempts}
+                  aria-label={showAllAttempts ? "Collapse the timeline" : `Show all ${data.length} attempts`}
+                >
+                  <IconWrapper icon={showAllAttempts ? "mdi:chevron-up" : "mdi:chevron-down"} size={16} />
+                  {showAllAttempts
+                    ? `Show recent ${TIMELINE_PREVIEW}`
+                    : `Show all ${data.length} attempts`}
+                </Box>
+              </Box>
+            )}
           </>
         )}
       </SectionShell>

@@ -459,14 +459,38 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
   }, [data, sortMode, selectedCategory]);
 
   const summary = useMemo(() => {
-    if (!data.length) return { total: 0, avg: 0, strong: 0, interviewReady: 0, topThree: [] as Skill[] };
+    if (!data.length) return { total: 0, avg: 0, strong: 0, interviewReady: 0, topThree: [] as Skill[], distribution: [] as { label: string; count: number; color: string }[] };
     const total = data.length;
     const avg = Math.round(data.reduce((acc, s) => acc + (Number.isFinite(s.proficiencyScore) ? s.proficiencyScore : 0), 0) / total);
     const strong = data.filter((s) => s.strength === "Strong").length;
     const interviewReady = data.filter((s) => s.level === "Interview-Ready").length;
     const topThree = [...data].sort((a, b) => b.proficiencyScore - a.proficiencyScore).slice(0, 3);
-    return { total, avg, strong, interviewReady, topThree };
+    // Proficiency distribution buckets (0-20 / 20-40 / 40-60 / 60-80 / 80-100)
+    // so the section can show "where do my skills sit" without needing 35 rows.
+    const buckets = [
+      { label: "0–20", min: 0, max: 20, color: "#ef4444" },
+      { label: "20–40", min: 20, max: 40, color: "#f97316" },
+      { label: "40–60", min: 40, max: 60, color: "#f59e0b" },
+      { label: "60–80", min: 60, max: 80, color: "#10b981" },
+      { label: "80–100", min: 80, max: 100, color: "#0a66c2" },
+    ];
+    const distribution = buckets.map((b) => ({
+      label: b.label,
+      color: b.color,
+      count: data.filter((s) => s.proficiencyScore >= b.min && (b.max === 100 ? s.proficiencyScore <= 100 : s.proficiencyScore < b.max)).length,
+    }));
+    return { total, avg, strong, interviewReady, topThree, distribution };
   }, [data]);
+
+  // Collapse the list once it gets long. The top 8 stay visible by default;
+  // the rest sit behind a "Show all" toggle so the section doesn't sprawl
+  // into a 35-skill wall.
+  const SKILLS_PREVIEW_LIMIT = 8;
+  const [showAllSkills, setShowAllSkills] = useState(false);
+  const visibleSkills = useMemo(
+    () => (showAllSkills ? filteredAndSorted : filteredAndSorted.slice(0, SKILLS_PREVIEW_LIMIT)),
+    [filteredAndSorted, showAllSkills],
+  );
 
   if (data.length === 0) {
     return (
@@ -671,6 +695,107 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
           ))}
         </Box>
 
+        {/* Proficiency distribution — quick "where do my skills sit" read */}
+        {summary.distribution.length > 0 && summary.total >= 3 && (
+          <Box
+            component={motion.div}
+            variants={fadeRise}
+            {...entrance}
+            sx={{
+              p: { xs: 2, md: 2.5 },
+              borderRadius: 3,
+              border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+              bgcolor: "color-mix(in srgb, var(--card-bg) 92%, transparent)",
+              mb: { xs: 3, md: 4 },
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+              <IconWrapper icon="mdi:chart-bar" size={14} color="var(--accent-indigo-dark)" />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 800,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  fontSize: "0.66rem",
+                  color: "var(--font-secondary)",
+                }}
+              >
+                Proficiency distribution
+              </Typography>
+              <Box
+                sx={{
+                  flex: 1,
+                  height: 1,
+                  ml: 0.5,
+                  background:
+                    "linear-gradient(90deg, color-mix(in srgb, var(--border-default) 70%, transparent) 0%, transparent 100%)",
+                }}
+              />
+            </Box>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${summary.distribution.length}, 1fr)`,
+                gap: { xs: 0.5, sm: 1 },
+                alignItems: "end",
+                height: { xs: 96, md: 112 },
+              }}
+            >
+              {(() => {
+                const maxCount = Math.max(1, ...summary.distribution.map((b) => b.count));
+                return summary.distribution.map((bucket) => {
+                  const pctHeight = (bucket.count / maxCount) * 100;
+                  return (
+                    <Box key={bucket.label} sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: `${Math.max(6, pctHeight)}%`,
+                          borderRadius: "8px 8px 4px 4px",
+                          background: `linear-gradient(180deg, ${bucket.color} 0%, color-mix(in srgb, ${bucket.color} 60%, transparent) 100%)`,
+                          boxShadow: `inset 0 -2px 6px color-mix(in srgb, ${bucket.color} 70%, transparent)`,
+                          transition: "height 0.6s ease",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "center",
+                          pt: 0.5,
+                        }}
+                      >
+                        {bucket.count > 0 && (
+                          <Typography
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: "0.7rem",
+                              color: "#fff",
+                              fontVariantNumeric: "tabular-nums",
+                              textShadow: "0 1px 2px rgba(0,0,0,0.18)",
+                            }}
+                          >
+                            {bucket.count}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontSize: "0.66rem",
+                          fontWeight: 700,
+                          color: "var(--font-secondary)",
+                          letterSpacing: "0.04em",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {bucket.label}%
+                      </Typography>
+                    </Box>
+                  );
+                });
+              })()}
+            </Box>
+          </Box>
+        )}
+
         {/* Filter + sort row */}
         <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5, mb: 2 }}>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
@@ -734,7 +859,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
           viewport={{ once: true, amount: 0.05 }}
           style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}
         >
-          {filteredAndSorted.map((skill) => (
+          {visibleSkills.map((skill) => (
             <SkillCard
               key={skill.id}
               skill={skill}
@@ -743,6 +868,47 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
             />
           ))}
         </motion.div>
+
+        {/* "Show all" toggle — keeps the section scannable when there are
+            many tracked skills. Hides itself when the filter+sort already
+            yields ≤ preview limit. */}
+        {filteredAndSorted.length > SKILLS_PREVIEW_LIMIT && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 2.5 }}>
+            <Box
+              component="button"
+              onClick={() => setShowAllSkills((v) => !v)}
+              sx={{
+                appearance: "none",
+                border: "1px solid color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
+                color: "var(--accent-indigo-dark)",
+                fontWeight: 800,
+                fontSize: "0.78rem",
+                letterSpacing: "0.04em",
+                px: 2.25,
+                py: 1,
+                borderRadius: 999,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.75,
+                transition: "all 0.18s ease",
+                "&:hover": {
+                  borderColor: "var(--accent-indigo)",
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                  transform: "translateY(-1px)",
+                },
+              }}
+              aria-expanded={showAllSkills}
+              aria-label={showAllSkills ? "Show fewer skills" : `Show all ${filteredAndSorted.length} skills`}
+            >
+              <IconWrapper icon={showAllSkills ? "mdi:chevron-up" : "mdi:chevron-down"} size={16} />
+              {showAllSkills
+                ? `Show top ${SKILLS_PREVIEW_LIMIT}`
+                : `Show all ${filteredAndSorted.length} skills`}
+            </Box>
+          </Box>
+        )}
       </SectionShell>
     </Reveal>
   );
