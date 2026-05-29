@@ -189,6 +189,14 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     icon: "users",
   },
   {
+    key: "admin_manage_instructors",
+    side: "admin",
+    label: "Instructor management",
+    tagline:
+      "Add or remove instructors, assign them to courses, manage permissions.",
+    icon: "users",
+  },
+  {
     key: "admin_course_builder",
     side: "admin",
     label: "Course builder",
