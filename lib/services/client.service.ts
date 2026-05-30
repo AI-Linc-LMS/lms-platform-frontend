@@ -107,6 +107,8 @@ export interface ClientInfo {
   allow_instructor_self_signup?: boolean;
   /** Enables admin live proctoring/monitoring features in UI. */
   live_proctoring_enabled?: boolean;
+  /** When true, students only see enrolled courses; the "Available Courses" UI is hidden. */
+  hide_available_courses_from_students?: boolean;
   /** Optional assets for learner-facing certificates */
   certificate_signature_url?: string | null;
   certificate_signatory_name?: string | null;
