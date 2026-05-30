@@ -6,6 +6,7 @@ import { memo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PauseProgressBar } from "./PauseProgressBar";
+import { MicWaveform } from "./MicWaveform";
 
 export interface AnswerInputAreaProps {
   currentAnswer: string;
@@ -62,6 +63,12 @@ export interface AnswerInputAreaProps {
    * command so the candidate sees which past question the AI is re-speaking.
    */
   focusedHistoryQuestionId?: number | null;
+  /**
+   * Live 0..1 microphone-loudness ref (updated every frame by the take page's Web Audio
+   * analyser). Drives the MicWaveform so the candidate gets a real "you're being heard"
+   * signal that grows with their voice.
+   */
+  micLevelRef?: { current: number };
 }
 
 export const AnswerInputArea = memo(function AnswerInputArea({
@@ -84,6 +91,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
   isFetchingNext = false,
   submitDisabled = false,
   focusedHistoryQuestionId = null,
+  micLevelRef,
 }: AnswerInputAreaProps) {
   const { t } = useTranslation("common");
   const displayValue =
@@ -164,19 +172,9 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                   : "Speak naturally — your answer is being recorded."}
               </Typography>
             </Box>
-            <Box
-              sx={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                backgroundColor: "var(--ats-success)",
-                animation: "listeningPulse 1.2s ease-in-out infinite",
-                "@keyframes listeningPulse": {
-                  "0%, 100%": { opacity: 1, transform: "scale(1)" },
-                  "50%": { opacity: 0.6, transform: "scale(1.2)" },
-                },
-              }}
-            />
+            {/* Live mic waveform — bars grow with the candidate's loudness so they get a
+                clear "you're being heard" signal instead of a single static dot. */}
+            <MicWaveform levelRef={micLevelRef} active color="var(--ats-success)" />
           </>
         ) : (
           <>
@@ -424,6 +422,13 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
               {conversationStatus || "Listening"}
             </Typography>
+            <Box sx={{ flex: 1 }} />
+            <MicWaveform
+              levelRef={micLevelRef}
+              active={isListening}
+              bars={7}
+              color={isListening ? "var(--ats-success)" : "var(--accent-indigo)"}
+            />
           </Box>
           {pauseProgressRef ? (
             <PauseProgressBar

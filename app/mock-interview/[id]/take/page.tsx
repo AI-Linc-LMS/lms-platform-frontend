@@ -2099,6 +2099,7 @@ export default function TakeMockInterviewPage() {
               questionHistory={isDynamicInterview ? questionHistory : []}
               focusedHistoryQuestionId={focusedHistoryQuestionId}
               submitDisabled={isClosingRemark && isSpeaking}
+              micLevelRef={audioLevelRef}
             />
           )}
         </Box>
