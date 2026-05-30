@@ -577,6 +577,13 @@ export interface AdminReleaseBulkResponse {
   message: string;
 }
 
+export interface AdminEvaluatePendingResponse {
+  template_id: number;
+  /** How many completed-but-unevaluated attempts were queued for AI evaluation. */
+  queued: number;
+  message: string;
+}
+
 const adminMockInterviewService = {
   /**
    * Get dashboard overview with KPIs, trends, and top performers
@@ -737,6 +744,21 @@ const adminMockInterviewService = {
   ): Promise<AdminReleaseBulkResponse> => {
     const response = await apiClient.post(
       `${TEMPLATES_BASE_URL}/${templateId}/release-results/`,
+    );
+    return response.data;
+  },
+
+  /**
+   * Trigger AI (re)evaluation for every completed attempt of a template whose evaluation
+   * never landed (result stuck on "evaluation pending"). Runs in the background server-side;
+   * the returned `queued` count is how many attempts are being evaluated. Reopen the
+   * attempts list shortly after to release the freshly-scored ones.
+   */
+  evaluatePendingTemplateResults: async (
+    templateId: number,
+  ): Promise<AdminEvaluatePendingResponse> => {
+    const response = await apiClient.post(
+      `${TEMPLATES_BASE_URL}/${templateId}/evaluate-pending/`,
     );
     return response.data;
   },

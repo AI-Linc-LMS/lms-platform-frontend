@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, memo, useCallback } from "react";
+import { useEffect, useRef, useState, memo, useCallback, useMemo } from "react";
 import { Box } from "@mui/material";
 import { useInterviewerVoice } from "@/lib/hooks/useInterviewerVoice";
 
@@ -143,6 +143,39 @@ export const AIAvatar = memo(function AIAvatar({
     onSpeakStart: handleSpeakStart,
     onSpeakComplete: handleSpeakComplete,
   });
+
+  // Progressive caption reveal — the subtitle text appears word-by-word as the avatar
+  // "speaks" rather than dumping the whole sentence at once. We pace at roughly a natural
+  // TTS speaking cadence; exact word-level sync isn't possible across the browser/cloud
+  // voice paths, but a steady reveal reads as "the text comes as the interviewer talks".
+  // It resets whenever a new question starts speaking.
+  const captionWords = useMemo(
+    () => (question ? question.trim().split(/\s+/).filter(Boolean) : []),
+    [question],
+  );
+  const [revealedWordCount, setRevealedWordCount] = useState(0);
+  useEffect(() => {
+    if (!isAnimating || captionWords.length === 0) {
+      setRevealedWordCount(0);
+      return;
+    }
+    let shown = 1;
+    setRevealedWordCount(shown);
+    const PER_WORD_MS = 280; // ~215 wpm, close to the avatar's spoken pace
+    const id = window.setInterval(() => {
+      shown += 1;
+      setRevealedWordCount(shown);
+      if (shown >= captionWords.length) {
+        window.clearInterval(id);
+      }
+    }, PER_WORD_MS);
+    return () => window.clearInterval(id);
+  }, [isAnimating, captionWords]);
+
+  const revealedCaption = useMemo(
+    () => captionWords.slice(0, revealedWordCount).join(" "),
+    [captionWords, revealedWordCount],
+  );
 
   const isTalking = isAnimating && !isUserSpeaking;
   const isListening = isUserSpeaking && !isAnimating;
@@ -371,7 +404,7 @@ export const AIAvatar = memo(function AIAvatar({
             }}
             aria-live="polite"
           >
-            {question}
+            {revealedCaption || " "}
           </Box>
         </Box>
       )}
