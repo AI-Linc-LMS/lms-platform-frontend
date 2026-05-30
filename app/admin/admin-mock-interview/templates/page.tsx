@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -144,6 +144,10 @@ export default function AdminInterviewTemplatesPage() {
   const [attemptsLoading, setAttemptsLoading] = useState(false);
   const [releasingAttemptId, setReleasingAttemptId] = useState<number | null>(null);
   const [bulkReleasing, setBulkReleasing] = useState(false);
+  const [evaluatingTemplateId, setEvaluatingTemplateId] = useState<number | null>(null);
+  // Mirrors the currently-open attempts dialog so a delayed refresh can check whether it's
+  // still open without capturing a stale value in a setTimeout closure.
+  const attemptsDialogTemplateRef = useRef<InterviewTemplate | null>(null);
 
   const isEditing = selectedTemplate !== null;
 
@@ -179,6 +183,10 @@ export default function AdminInterviewTemplatesPage() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  useEffect(() => {
+    attemptsDialogTemplateRef.current = attemptsDialogTemplate;
+  }, [attemptsDialogTemplate]);
 
   // Quick course lookup so the list view can render attached-course chips without a join.
   const courseById = useMemo(() => {
@@ -326,6 +334,31 @@ export default function AdminInterviewTemplatesPage() {
       showToast("Bulk release failed", "error");
     } finally {
       setBulkReleasing(false);
+    }
+  };
+
+  const handleEvaluatePending = async (templateId: number) => {
+    setEvaluatingTemplateId(templateId);
+    try {
+      const res =
+        await adminMockInterviewService.evaluatePendingTemplateResults(templateId);
+      showToast(res.message, res.queued > 0 ? "success" : "info");
+      // If the attempts dialog is still open for this template, refresh it after a short
+      // beat so the admin sees has_evaluation flip and can release. The backend evaluates in
+      // the background, so we give it a moment before re-fetching. The ref check avoids
+      // re-opening a dialog the admin closed in the meantime.
+      if (res.queued > 0) {
+        setTimeout(() => {
+          const open = attemptsDialogTemplateRef.current;
+          if (open && open.id === templateId) {
+            void openAttemptsDialog(open);
+          }
+        }, 8000);
+      }
+    } catch (err) {
+      showToast("Could not start AI evaluation", "error");
+    } finally {
+      setEvaluatingTemplateId(null);
     }
   };
 
@@ -545,6 +578,23 @@ export default function AdminInterviewTemplatesPage() {
                             }}
                           >
                             Attempts
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="text"
+                            disabled={evaluatingTemplateId === t.id}
+                            startIcon={
+                              <IconWrapper icon="mdi:robot-outline" size={16} />
+                            }
+                            onClick={() => handleEvaluatePending(t.id)}
+                            sx={{
+                              textTransform: "none",
+                              color: "var(--accent-indigo)",
+                            }}
+                          >
+                            {evaluatingTemplateId === t.id
+                              ? "Evaluating…"
+                              : "AI Evaluation"}
                           </Button>
                           <Button
                             size="small"
@@ -1036,21 +1086,33 @@ export default function AdminInterviewTemplatesPage() {
                           }}
                         />
                       ) : a.status === "completed" ? (
-                        <Button
-                          size="small"
-                          variant="contained"
-                          disabled={releasingAttemptId === a.id}
-                          onClick={() => handleReleaseSingleAttempt(a.id)}
-                          sx={{
-                            textTransform: "none",
-                            backgroundColor: "var(--accent-indigo)",
-                            "&:hover": {
-                              backgroundColor: "var(--accent-indigo-dark)",
-                            },
-                          }}
-                        >
-                          {releasingAttemptId === a.id ? "Releasing…" : "Release"}
-                        </Button>
+                        a.has_evaluation ? (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            disabled={releasingAttemptId === a.id}
+                            onClick={() => handleReleaseSingleAttempt(a.id)}
+                            sx={{
+                              textTransform: "none",
+                              backgroundColor: "var(--accent-indigo)",
+                              "&:hover": {
+                                backgroundColor: "var(--accent-indigo-dark)",
+                              },
+                            }}
+                          >
+                            {releasingAttemptId === a.id ? "Releasing…" : "Release"}
+                          </Button>
+                        ) : (
+                          <Chip
+                            label="Evaluation pending"
+                            size="small"
+                            sx={{
+                              backgroundColor: "var(--warning-100)",
+                              color: "var(--ats-warning-muted)",
+                              fontWeight: 600,
+                            }}
+                          />
+                        )
                       ) : (
                         <Chip
                           label={a.status}
@@ -1068,14 +1130,36 @@ export default function AdminInterviewTemplatesPage() {
             )}
           </DialogContent>
           <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
-            <Button
-              variant="outlined"
-              disabled={bulkReleasing || attemptsList.every((a) => a.result_visible_to_student)}
-              onClick={handleBulkReleaseTemplate}
-              sx={{ textTransform: "none" }}
-            >
-              {bulkReleasing ? "Releasing all…" : "Release all pending"}
-            </Button>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<IconWrapper icon="mdi:robot-outline" size={16} />}
+                disabled={
+                  attemptsDialogTemplate === null ||
+                  evaluatingTemplateId === attemptsDialogTemplate?.id ||
+                  !attemptsList.some(
+                    (a) => a.status === "completed" && !a.has_evaluation,
+                  )
+                }
+                onClick={() =>
+                  attemptsDialogTemplate &&
+                  handleEvaluatePending(attemptsDialogTemplate.id)
+                }
+                sx={{ textTransform: "none" }}
+              >
+                {evaluatingTemplateId === attemptsDialogTemplate?.id
+                  ? "Starting AI evaluation…"
+                  : "AI evaluate pending"}
+              </Button>
+              <Button
+                variant="outlined"
+                disabled={bulkReleasing || attemptsList.every((a) => a.result_visible_to_student)}
+                onClick={handleBulkReleaseTemplate}
+                sx={{ textTransform: "none" }}
+              >
+                {bulkReleasing ? "Releasing all…" : "Release all pending"}
+              </Button>
+            </Box>
             <Button
               onClick={() => setAttemptsDialogTemplate(null)}
               sx={{ textTransform: "none" }}
