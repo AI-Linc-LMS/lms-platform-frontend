@@ -93,10 +93,16 @@ export default function DeviceCheckPage({
     minFaceSize: 20, // Strictly reject faces beyond 2-3 meters
     maxFaceSize: 75,
     lookingAwayThreshold: 0.3,
-    minConfidence: 0.4,
+    // Permissive thresholds for the device-check screen: this is just verifying
+    // "camera works and we can see a face" — not anti-cheat. On low-end devices
+    // and grainy 640x480 webcams BlazeFace returns lower-confidence boxes and
+    // noisier landmarks for real faces, which previously read as "No face".
+    // The take/proctoring pages keep their own (stricter) thresholds.
+    minConfidence: 0.2,
     smoothFrameCount: 3,
     poorLightingThreshold: 0.4,
-    minConfidenceForValidFace: 0.82, // Stricter on device check: reject hand covering face
+    minConfidenceForValidFace: 0.5,
+    minEyeSpreadRatio: 0.18,
     onViolation: (violation) => {
       // Once the user has committed to starting the assessment, freeze
       // validation state — stopping the detector for hand-off to the take

@@ -45,6 +45,10 @@ export interface ProctoringConfig {
   poorLightingThreshold?: number;
   /** Minimum confidence to accept face as "properly visible" (reject hand/obstruction). Default 0.65. */
   minConfidenceForValidFace?: number;
+  /** Min ratio of inter-eye distance to face width before we treat landmarks as
+   *  collapsed (i.e. face covered / not visible). Lower = more permissive on
+   *  low-res webcams where BlazeFace landmarks are noisier. Default 0.22. */
+  minEyeSpreadRatio?: number;
 
   // Callbacks
   onViolation?: (violation: ProctoringViolation) => void;
@@ -62,6 +66,7 @@ const DEFAULT_CONFIG: ProctoringConfig = {
   smoothFrameCount: 3, // Require 3 consistent frames to reduce flicker
   poorLightingThreshold: 0.4, // Only flag lighting if confidence < 0.4
   minConfidenceForValidFace: 0.78, // Require high confidence for "face OK" (reject hand covering face)
+  minEyeSpreadRatio: 0.22, // Default landmark spread sanity check
 };
 
 export class ProctoringService {
@@ -104,9 +109,17 @@ export class ProctoringService {
     try {
       this.isModelLoading = true;
 
-      // Set backend
-      await tf.setBackend("webgl");
-      await tf.ready();
+      // Prefer WebGL for speed, but fall back to CPU on low-end devices /
+      // browsers where WebGL is missing or blocked. CPU is slower but keeps
+      // the device-check from failing outright. Without this fallback, users
+      // on restricted GPU drivers saw a permanent "No face" state.
+      try {
+        await tf.setBackend("webgl");
+        await tf.ready();
+      } catch {
+        await tf.setBackend("cpu");
+        await tf.ready();
+      }
 
       // Load the model
       this.model = await blazeface.load();
@@ -683,7 +696,8 @@ export class ProctoringService {
         const eyeDistance = Math.sqrt(eyeDx * eyeDx + eyeDy * eyeDy);
         const eyeSpreadRatio = eyeDistance / faceWidth;
         // Real face: eyes are ~30–50% of face width apart. Hand/covered gives tiny or weird ratio
-        if (eyeSpreadRatio < 0.22) {
+        const minEyeSpread = this.config.minEyeSpreadRatio ?? 0.22;
+        if (eyeSpreadRatio < minEyeSpread) {
           violations.push(
             this.createViolation("FACE_NOT_VISIBLE", faceNotVisibleMsg, "high")
           );
