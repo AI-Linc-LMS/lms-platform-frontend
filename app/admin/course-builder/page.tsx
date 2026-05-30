@@ -12,6 +12,9 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  Switch,
+  FormControlLabel,
+  Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -36,6 +39,11 @@ import { SearchResultsInfo } from "@/components/admin/course-builder/SearchResul
 import { EmptyState } from "@/components/admin/course-builder/EmptyState";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import {
+  useHideAvailableCourses,
+  updateHideAvailableCourses,
+} from "@/lib/admin/courseVisibility";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
 export default function CourseBuilderPage() {
   const { showToast } = useToast();
@@ -43,6 +51,32 @@ export default function CourseBuilderPage() {
   const router = useRouter();
   const { user } = useAuth();
   const isCourseManager = isCourseManagerRole(user?.role);
+  const hideAvailableCourses = useHideAvailableCourses();
+  const { refreshClientInfo } = useClientInfo();
+  const [savingVisibility, setSavingVisibility] = useState(false);
+
+  const handleToggleHideAvailable = async (next: boolean) => {
+    try {
+      setSavingVisibility(true);
+      await updateHideAvailableCourses(next);
+      await refreshClientInfo();
+      showToast(
+        next
+          ? "Available courses are now hidden from students."
+          : "Available courses are now visible to students.",
+        "success"
+      );
+    } catch (error: any) {
+      showToast(
+        error?.response?.data?.error ||
+          error?.message ||
+          "Failed to update course visibility.",
+        "error"
+      );
+    } finally {
+      setSavingVisibility(false);
+    }
+  };
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -215,6 +249,68 @@ export default function CourseBuilderPage() {
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <CourseBuilderHeader />
+
+        {!isCourseManager && (
+          <Paper
+            sx={{
+              p: { xs: 2, sm: 2.5 },
+              mb: 2,
+              borderRadius: 2,
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                justifyContent: "space-between",
+                alignItems: { xs: "flex-start", sm: "center" },
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  sx={{ color: "var(--font-primary-dark)" }}
+                >
+                  Student course visibility
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.5 }}
+                >
+                  When on, the student course module only shows enrolled
+                  courses — the "Available Courses" tab is hidden. Applies to
+                  every student of this tenant.
+                </Typography>
+              </Box>
+              <FormControlLabel
+                sx={{ flexShrink: 0, m: 0 }}
+                control={
+                  <Switch
+                    checked={hideAvailableCourses}
+                    onChange={(e) => handleToggleHideAvailable(e.target.checked)}
+                    disabled={savingVisibility}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2" fontWeight={600}>
+                    {savingVisibility
+                      ? "Saving…"
+                      : hideAvailableCourses
+                        ? "Available courses hidden"
+                        : "Available courses visible"}
+                  </Typography>
+                }
+                labelPlacement="start"
+              />
+            </Box>
+          </Paper>
+        )}
 
         <Paper
           sx={{

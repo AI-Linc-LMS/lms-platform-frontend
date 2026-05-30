@@ -32,6 +32,7 @@ import { usePayment } from "@/hooks/usePayment";
 import type { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { PaymentType } from "@/lib/services/payment.service";
 import { useIsCourseEnabled, useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { useHideAvailableCourses } from "@/lib/admin/courseVisibility";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -43,6 +44,7 @@ export default function CoursesPage() {
   const router = useRouter();
   const isCourseEnabled = useIsCourseEnabled();
   const { loading: clientLoading } = useClientInfo();
+  const hideAvailableCourses = useHideAvailableCourses();
   const [courses, setCourses] = useState<CourseCardCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,6 +77,16 @@ export default function CoursesPage() {
     hasLoadedRef.current = true;
     loadCourses();
   }, []);
+
+  // If the admin flips on "hide available courses" while the user is sitting
+  // on the Available tab, snap them back to "all" so they aren't stuck on an
+  // empty view.
+  useEffect(() => {
+    if (hideAvailableCourses && filter === "available") {
+      setFilter("all");
+      setPage(1);
+    }
+  }, [hideAvailableCourses, filter]);
 
   const loadCourses = async () => {
     try {
@@ -135,21 +147,33 @@ export default function CoursesPage() {
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
-    courses.forEach((c) =>
+    const source = hideAvailableCourses
+      ? courses.filter((c) => c.is_enrolled)
+      : courses;
+    source.forEach((c) =>
       (c.tags || []).forEach((tag) => {
         const t = tag.trim();
         if (t) set.add(t);
       })
     );
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [courses]);
+  }, [courses, hideAvailableCourses]);
 
-  const totalCount = courses.length;
-  const enrolledCount = courses.filter((c) => c.is_enrolled).length;
-  const availableCount = courses.filter((c) => !c.is_enrolled).length;
+  // When the admin has hidden "available" courses tenant-wide, drop
+  // non-enrolled courses from the working set entirely. This makes the
+  // counts, the "All" tab, search, and pagination all reflect enrolled-only.
+  const visibleCourses = useMemo(
+    () =>
+      hideAvailableCourses ? courses.filter((c) => c.is_enrolled) : courses,
+    [courses, hideAvailableCourses]
+  );
+
+  const totalCount = visibleCourses.length;
+  const enrolledCount = visibleCourses.filter((c) => c.is_enrolled).length;
+  const availableCount = visibleCourses.filter((c) => !c.is_enrolled).length;
 
   const filteredCourses = useMemo(() => {
-    let result = courses.filter(
+    let result = visibleCourses.filter(
       (course) =>
         course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.description?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -185,7 +209,7 @@ export default function CoursesPage() {
       }
       return 0;
     });
-  }, [courses, searchTerm, filter, filters, sortBy]);
+  }, [visibleCourses, searchTerm, filter, filters, sortBy]);
 
   const paginatedCourses = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -305,7 +329,7 @@ export default function CoursesPage() {
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              sm: "repeat(3, 1fr)",
+              sm: hideAvailableCourses ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
             },
             gap: 2,
             mb: 3,
@@ -386,39 +410,41 @@ export default function CoursesPage() {
               </Box>
             </Box>
           </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2.5,
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              backgroundColor: "var(--card-bg)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  backgroundColor: "var(--surface-blue-light)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <IconWrapper icon="mdi:play-circle" size={24} color="var(--accent-blue-light)" />
+          {!hideAvailableCourses && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                border: "1px solid var(--border-default)",
+                borderRadius: 2,
+                backgroundColor: "var(--card-bg)",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    backgroundColor: "var(--surface-blue-light)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IconWrapper icon="mdi:play-circle" size={24} color="var(--accent-blue-light)" />
+                </Box>
+                <Box>
+                  <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
+                    {availableCount}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {t("courses.allAvailable")}
+                  </Typography>
+                </Box>
               </Box>
-              <Box>
-                <Typography variant="h4" fontWeight={700} color="var(--font-primary-dark)">
-                  {availableCount}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t("courses.allAvailable")}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
+            </Paper>
+          )}
         </Box>
 
         <Paper
@@ -456,7 +482,9 @@ export default function CoursesPage() {
           >
             <Tab label={`${t("courses.all")} (${totalCount})`} value="all" />
             <Tab label={`${t("courses.enrolledTab")} (${enrolledCount})`} value="enrolled" />
-            <Tab label={`${t("courses.availableTab")} (${availableCount})`} value="available" />
+            {!hideAvailableCourses && (
+              <Tab label={`${t("courses.availableTab")} (${availableCount})`} value="available" />
+            )}
           </Tabs>
 
           <Box
