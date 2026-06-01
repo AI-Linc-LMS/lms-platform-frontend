@@ -82,7 +82,7 @@ export function WizardNav({
           }`}
         >
           {nextLoading ? (
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#05070f] border-r-transparent" />
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-r-transparent" />
           ) : null}
           <span>{nextLabel || (isFinal ? "Launch My LMS" : "Continue")}</span>
           {!isFinal ? (

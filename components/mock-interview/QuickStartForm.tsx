@@ -294,7 +294,8 @@ const QuickStartFormComponent = ({
                     key={mins}
                     onClick={() => handleDurationChange(mins)}
                     sx={{
-                      p: 2,
+                      py: 1.25,
+                      px: 1,
                       borderRadius: 2,
                       border: "2px solid",
                       borderColor: selected
@@ -307,6 +308,14 @@ const QuickStartFormComponent = ({
                       textAlign: "center",
                       transition: "all 0.2s ease",
                       position: "relative",
+                      // Stack the number above the "min" label so every option renders on a
+                      // consistent two-line layout. (Previously "10 min"/"20 min" wrapped to
+                      // two lines only on narrow cells, so the grid looked ragged.)
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      lineHeight: 1,
                       "&:hover": {
                         borderColor: "var(--course-cta)",
                         backgroundColor:
@@ -315,13 +324,27 @@ const QuickStartFormComponent = ({
                     }}
                   >
                     <Typography
-                      variant="body2"
+                      component="span"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: "1.15rem",
+                        lineHeight: 1.1,
+                        color: selected ? "var(--course-cta)" : "var(--font-primary)",
+                      }}
+                    >
+                      {mins}
+                    </Typography>
+                    <Typography
+                      component="span"
                       sx={{
                         fontWeight: 600,
+                        fontSize: "0.72rem",
+                        letterSpacing: "0.02em",
+                        mt: 0.25,
                         color: selected ? "var(--course-cta)" : "var(--font-secondary)",
                       }}
                     >
-                      {mins} min
+                      min
                     </Typography>
                     {isAdminOnlyOption && (
                       <Box

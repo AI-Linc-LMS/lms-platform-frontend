@@ -144,10 +144,13 @@ export default function MockInterviewDeviceCheckPage() {
     minFaceSize: 20,
     maxFaceSize: 75,
     lookingAwayThreshold: 0.3,
-    minConfidence: 0.4,
+    // Permissive thresholds for device-check (see assessments/[slug]/device-check
+    // for the rationale). The interview take page keeps stricter values.
+    minConfidence: 0.2,
     smoothFrameCount: 3,
     poorLightingThreshold: 0.4,
-    minConfidenceForValidFace: 0.82,
+    minConfidenceForValidFace: 0.5,
+    minEyeSpreadRatio: 0.18,
     onViolation: (violation) => {
       setFaceValidationPassed(false);
       setFaceValidationMessage(violation.message);

@@ -21,6 +21,8 @@ import { DirectionSync } from "@/components/providers/DirectionSync";
 import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
 import { ProfileActivationBlocker } from "@/components/auth/ProfileActivationBlocker";
 import { TenantSetupBlocker } from "@/components/auth/TenantSetupBlocker";
+import { XPGainProvider } from "@/components/community/XPGainProvider";
+import { TourProvider } from "@/components/community/TourProvider";
 import { config } from "@/lib/config";
 import { themeToCssBlock } from "@/lib/theme/themeToCssBlock";
 
@@ -119,9 +121,13 @@ export default async function RootLayout({
                           <CameraRouteGuard>
                             <TelemetryProvider>
                               <ToastProvider>
-                                <ProfileActivationBlocker />
-                                <TenantSetupBlocker />
-                                {children}
+                                <XPGainProvider>
+                                  <TourProvider>
+                                    <ProfileActivationBlocker />
+                                    <TenantSetupBlocker />
+                                    {children}
+                                  </TourProvider>
+                                </XPGainProvider>
                               </ToastProvider>
                             </TelemetryProvider>
                           </CameraRouteGuard>

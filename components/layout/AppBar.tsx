@@ -886,6 +886,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               onClose={handleStreakLeave}
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
+              disableRestoreFocus
+              sx={{ pointerEvents: "none" }}
               PaperProps={{
                 sx: {
                   mt: 1,
@@ -894,6 +896,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   borderRadius: 2,
                   border: "1px solid var(--border-default)",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                  pointerEvents: "auto",
                 },
               }}
             >

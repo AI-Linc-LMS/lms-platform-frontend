@@ -39,7 +39,7 @@ export interface WizardData {
   // refine permissions post-launch via Settings → Admin permissions.
 
   course_library?: {
-    choice?: "import" | "build" | "skip";
+    choice?: "import" | "skip";
     /**
      * Course IDs picked from the AI Linc master catalogue. The launch
      * handler duplicates each one into the new tenant's client so the

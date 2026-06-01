@@ -158,7 +158,6 @@ export function SetupWizard({ initialState }: Props) {
           // Fall back to the intake-form logo if the user kept it as-is.
           Boolean(state.logo_url);
         if (!hasAnyLogo) missing.push("upload a logo");
-        if (!data.brand?.favicon_url) missing.push("upload a favicon");
         return missing;
       }
       case 5:

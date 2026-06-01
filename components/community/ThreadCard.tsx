@@ -12,6 +12,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { VoteButtons } from "./VoteButtons";
 import { PollWidget } from "./PollWidget";
 import { QuickCommentBar } from "./QuickCommentBar";
+import { ImageGallery } from "./ImageGallery";
 
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 
@@ -52,10 +53,26 @@ interface ThreadCardProps {
   onPollVote?: (threadId: number, optionIndex: number) => Promise<void>;
   onComment?: (threadId: number, body: string) => Promise<void>;
   onOfferBounty?: (threadId: number) => void;
+  onTagClick?: (tag: { id: number; name: string }) => void;
+  onAuthorClick?: (authorId: number) => void;
+  onShare?: (threadId: number) => void;
+  onReport?: (threadId: number) => void;
   currentUserName?: string | null;
 }
 
-export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, onOfferBounty, currentUserName }: ThreadCardProps) {
+export function ThreadCard({
+  thread,
+  onVote,
+  onBookmark,
+  onPollVote,
+  onComment,
+  onOfferBounty,
+  onTagClick,
+  onAuthorClick,
+  onShare,
+  onReport,
+  currentUserName,
+}: ThreadCardProps) {
   const router = useRouter();
   const { t } = useTranslation("common");
 
@@ -109,8 +126,8 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, 
 
           {/* Thread Content */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            {/* Top row: post-type badge + timestamp */}
-            <Box sx={{ display: "flex", alignItems: "center", mb: 0.75 }}>
+            {/* Top row: post-type badge + pin/lock + timestamp */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75 }}>
               <Chip
                 icon={<IconWrapper icon={postTypeCfg.icon} size={12} color={postTypeCfg.color} />}
                 label={postTypeCfg.label}
@@ -122,6 +139,36 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, 
                   "& .MuiChip-icon": { ml: 0.5 },
                 }}
               />
+              {thread.is_pinned && (
+                <Tooltip title="Pinned by a moderator">
+                  <Chip
+                    icon={<IconWrapper icon="mdi:pin" size={11} color="#f59e0b" />}
+                    label="Pinned"
+                    size="small"
+                    sx={{
+                      height: 20, fontSize: "0.67rem", fontWeight: 600,
+                      backgroundColor: "rgba(245,158,11,0.12)", color: "#b45309",
+                      border: "1px solid rgba(245,158,11,0.3)",
+                      "& .MuiChip-icon": { ml: 0.5 },
+                    }}
+                  />
+                </Tooltip>
+              )}
+              {thread.is_locked && (
+                <Tooltip title="Locked — new comments disabled">
+                  <Chip
+                    icon={<IconWrapper icon="mdi:lock-outline" size={11} color="#6b7280" />}
+                    label="Locked"
+                    size="small"
+                    sx={{
+                      height: 20, fontSize: "0.67rem", fontWeight: 600,
+                      backgroundColor: "rgba(107,114,128,0.12)", color: "#374151",
+                      border: "1px solid rgba(107,114,128,0.3)",
+                      "& .MuiChip-icon": { ml: 0.5 },
+                    }}
+                  />
+                </Tooltip>
+              )}
               <Typography variant="caption" sx={{ ml: "auto", color: "var(--font-secondary)", whiteSpace: "nowrap", fontSize: "0.75rem" }}>
                 {formatDistanceToNow(thread.created_at)}
               </Typography>
@@ -187,33 +234,10 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, 
               </Box>
             )}
 
-            {/* Attached images */}
+            {/* Attached images — Instagram-style gallery with lightbox */}
             {thread.image_urls && thread.image_urls.length > 0 && (
-              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mb: isPoll ? 1 : 1.5 }}>
-                {thread.image_urls.slice(0, 4).map((url, i) => (
-                  <Box
-                    key={i}
-                    component="img"
-                    src={url}
-                    alt=""
-                    sx={{ width: 72, height: 72, objectFit: "cover", borderRadius: "8px", border: "1px solid var(--border-default)", cursor: "pointer" }}
-                    onClick={handleThreadClick}
-                  />
-                ))}
-                {thread.image_urls.length > 4 && (
-                  <Box
-                    onClick={handleThreadClick}
-                    sx={{
-                      width: 72, height: 72, borderRadius: "8px",
-                      border: "1px solid var(--border-default)", backgroundColor: "var(--surface)",
-                      display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight={600} color="var(--font-secondary)">
-                      +{thread.image_urls.length - 4}
-                    </Typography>
-                  </Box>
-                )}
+              <Box sx={{ mb: isPoll ? 1 : 1.5 }}>
+                <ImageGallery urls={thread.image_urls} variant="card" />
               </Box>
             )}
 
@@ -228,13 +252,17 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, 
                 {thread.tags.map((tag) => (
                   <Chip
                     key={tag.id}
-                    label={tag.name}
+                    label={`#${tag.name}`}
                     size="small"
+                    onClick={onTagClick ? (e) => { e.stopPropagation(); onTagClick(tag); } : undefined}
                     sx={{
                       backgroundColor: "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)",
                       color: "var(--accent-indigo)", fontWeight: 600, fontSize: "0.75rem",
                       height: 26, borderRadius: "6px",
-                      "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 26%, var(--surface) 74%)" },
+                      cursor: onTagClick ? "pointer" : "default",
+                      "&:hover": onTagClick
+                        ? { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 32%, var(--surface) 68%)" }
+                        : undefined,
                     }}
                   />
                 ))}
@@ -243,11 +271,39 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, 
 
             {/* Meta row: author + stats */}
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                onClick={
+                  onAuthorClick && thread.author.id
+                    ? (e) => { e.stopPropagation(); onAuthorClick(thread.author.id); }
+                    : undefined
+                }
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  cursor: onAuthorClick && thread.author.id ? "pointer" : "default",
+                  borderRadius: "6px",
+                  px: 0.5,
+                  mx: -0.5,
+                  "&:hover": onAuthorClick && thread.author.id
+                    ? { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" }
+                    : undefined,
+                }}
+              >
                 <Avatar src={thread.author.profile_pic_url} sx={{ width: 20, height: 20 }}>
                   {thread.author.name.charAt(0)}
                 </Avatar>
-                <Typography variant="caption" color="var(--font-secondary)">{thread.author.name}</Typography>
+                <Typography
+                  variant="caption"
+                  color="var(--font-secondary)"
+                  sx={
+                    onAuthorClick && thread.author.id
+                      ? { "&:hover": { color: "var(--accent-indigo)", textDecoration: "underline" } }
+                      : undefined
+                  }
+                >
+                  {thread.author.name}
+                </Typography>
                 <Chip
                   label={thread.author.role}
                   size="small"
@@ -281,6 +337,34 @@ export function ThreadCard({ thread, onVote, onBookmark, onPollVote, onComment, 
                         Bounty
                       </Typography>
                     </Box>
+                  </Tooltip>
+                )}
+                {onShare && !isSaving && (
+                  <Tooltip title="Share">
+                    <IconButton
+                      size="small"
+                      onClick={() => onShare(thread.id)}
+                      sx={{
+                        color: "var(--font-secondary)",
+                        "&:hover": { color: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
+                      }}
+                    >
+                      <IconWrapper icon="mdi:share-variant-outline" size={18} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {onReport && !isSaving && !isAuthor && (
+                  <Tooltip title="Report">
+                    <IconButton
+                      size="small"
+                      onClick={() => onReport(thread.id)}
+                      sx={{
+                        color: "var(--font-secondary)",
+                        "&:hover": { color: "#ef4444", backgroundColor: "rgba(239,68,68,0.08)" },
+                      }}
+                    >
+                      <IconWrapper icon="mdi:flag-outline" size={18} />
+                    </IconButton>
                   </Tooltip>
                 )}
                 {onBookmark && !isSaving && (
