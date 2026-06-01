@@ -113,9 +113,12 @@ export async function initBrowserTracer() {
       if (matchesByUrl || matchesByHost) {
         batchProcessor.onEnd(span as never);
 
-        // Fire-and-forget alert for 4xx/5xx responses
+        // Fire-and-forget alert for 4xx/5xx responses.
+        // Skip: OTEL exporter calls (telemetry not enabled on all clients),
+        // and pure network failures (no HTTP status = ERR_NAME_NOT_RESOLVED etc.).
         const code = parseInt(String(statusCode), 10);
-        if (!isNaN(code) && code >= 400) {
+        const isOtelEndpoint = traceEndpoint && urlStr.startsWith(traceEndpoint.replace(/\/$/, ""));
+        if (!isNaN(code) && code >= 400 && !isOtelEndpoint) {
           const ctx = span.spanContext?.();
           void sendFailureAlert({
             traceId: ctx?.traceId,
