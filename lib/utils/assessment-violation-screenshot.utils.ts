@@ -132,20 +132,17 @@ export async function captureViolationScreenshotFile(
     return null;
   }
 
-  const body = document.body;
-  const w = Math.max(body.scrollWidth, body.clientWidth, 1);
-  const scale = Math.min(1, MAX_CAPTURE_WIDTH / w);
+  // Capture only the visible viewport — not the full scrollable body. This dramatically
+  // reduces the DOM area html2canvas must rasterize, cutting main-thread time from
+  // several seconds down to well under a second on typical hardware.
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  const scale = Math.min(1, MAX_CAPTURE_WIDTH / Math.max(vw, 1));
 
   let quality = 0.82;
   let captureScale = scale;
 
-  // html2canvas runs synchronously on the main thread. Old budget was 8 attempts ×
-  // 22s = up to ~3 minutes of main-thread blocking per violation when the browser
-  // can't render the page (e.g. unsupported `color-mix()` CSS). That alone could be
-  // the dominant cause of "page is unresponsive" complaints. New budget: 3 × 7s ≈
-  // 21s worst-case, then placeholder. We also short-circuit on the early-fail
-  // signature (instant throws), since CSS-incompatibility doesn't get better by retrying.
-  const HTML2CANVAS_TIMEOUT_MS = 7_000;
+  const HTML2CANVAS_TIMEOUT_MS = 10_000;
   const MAX_ATTEMPTS = 3;
   const FAST_FAIL_MS = 250;
   let consecutiveFastFails = 0;
@@ -154,12 +151,17 @@ export async function captureViolationScreenshotFile(
     const attemptStart = Date.now();
     try {
       const canvasOrTimeout = await withTimeout(
-        html2canvas(body, {
+        html2canvas(document.body, {
           scale: captureScale,
           useCORS: true,
           allowTaint: false,
           logging: false,
           backgroundColor: "#f9fafb",
+          // Clip to viewport so html2canvas doesn't walk off-screen DOM
+          width: vw,
+          height: vh,
+          x: window.scrollX,
+          y: window.scrollY,
           ignoreElements: (el) => el instanceof HTMLAudioElement,
           onclone: (clonedDoc) => {
             injectLiveVideoFramesIntoClone(clonedDoc, document.body);

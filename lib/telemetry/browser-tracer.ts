@@ -16,6 +16,33 @@ function getAttr(span: { attributes: Record<string, unknown> }, key: string): st
   return String(v);
 }
 
+interface FailureAlertPayload {
+  traceId?: string;
+  spanId?: string;
+  spanName?: string;
+  url?: string;
+  statusCode?: number;
+  serviceName?: string;
+  timestamp?: string;
+}
+
+async function sendFailureAlert(payload: FailureAlertPayload): Promise<void> {
+  try {
+    await fetch("/api/telemetry/alert", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.NEXT_PUBLIC_TELEMETRY_ALERT_SECRET
+          ? { "x-alert-secret": process.env.NEXT_PUBLIC_TELEMETRY_ALERT_SECRET }
+          : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Never throw — alerting must not affect the app
+  }
+}
+
 export async function initBrowserTracer() {
   if (typeof window === "undefined") return;
 
@@ -74,7 +101,7 @@ export async function initBrowserTracer() {
     onStart(span: unknown, parentContext: unknown) {
       batchProcessor.onStart(span as never, parentContext as never);
     },
-    onEnd(span: { attributes: Record<string, unknown>; name?: string }) {
+    onEnd(span: { attributes: Record<string, unknown>; name?: string; spanContext?: () => { traceId?: string; spanId?: string } }) {
       const urlStr =
         getAttr(span, "url.full") || getAttr(span, "http.url") || "";
       const serverAddr = getAttr(span, "server.address");
@@ -85,6 +112,22 @@ export async function initBrowserTracer() {
 
       if (matchesByUrl || matchesByHost) {
         batchProcessor.onEnd(span as never);
+
+        // Fire-and-forget alert for 4xx/5xx responses
+        const code = parseInt(String(statusCode), 10);
+        if (!isNaN(code) && code >= 400) {
+          const ctx = span.spanContext?.();
+          void sendFailureAlert({
+            traceId: ctx?.traceId,
+            spanId: ctx?.spanId,
+            spanName: span.name,
+            url: urlStr,
+            statusCode: code,
+            serviceName,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
         if (OTEL_DEBUG) {
           console.log("[OTel] exported span", {
             name: span.name,

@@ -31,3 +31,8 @@ next-env.d.ts
 /CON
 package-lock.json
 
+# Playwright
+/playwright-report/
+/test-results/
+e2e/.auth/
+
