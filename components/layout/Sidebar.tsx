@@ -45,6 +45,91 @@ import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
 const DRAWER_WIDTH = 240;
 const DRAWER_WIDTH_COLLAPSED = 64;
 
+function SidebarNavButton({
+  icon,
+  label,
+  isActive,
+  collapsed,
+  rtl,
+  shell,
+}: {
+  icon: string;
+  label: string;
+  isActive: boolean;
+  collapsed: boolean;
+  rtl: boolean;
+  shell: ReturnType<typeof useTenantShellTheme>;
+}) {
+  return (
+    <ListItemButton
+      sx={{
+        borderRadius: 1.5,
+        backgroundColor: isActive ? shell.activeBg : "transparent",
+        color: isActive ? shell.activeText : shell.navMuted,
+        py: 1,
+        px: collapsed ? 1.25 : 1.5,
+        justifyContent: collapsed ? "center" : rtl ? "flex-end" : "flex-start",
+        flexDirection: rtl && !collapsed ? "row-reverse" : "row",
+        minHeight: 40,
+        position: "relative",
+        "&::before": isActive
+          ? {
+              content: '""',
+              position: "absolute",
+              ...(rtl ? { right: 0, left: "auto" } : { left: 0, right: "auto" }),
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: 3,
+              height: "50%",
+              backgroundColor: shell.p500,
+              borderRadius: rtl ? "3px 0 0 3px" : "0 3px 3px 0",
+            }
+          : {},
+        "&:hover": {
+          backgroundColor: isActive ? shell.activeBgHover : shell.navHoverBg,
+          color: isActive ? shell.activeText : shell.nav,
+          "& .MuiListItemIcon-root svg": {
+            transform: "translateY(-2px) scale(1.1)",
+            filter: shell.dropHover,
+          },
+        },
+      }}
+    >
+      <ListItemIcon
+        sx={{
+          minWidth: collapsed ? 0 : 36,
+          color: "inherit",
+          justifyContent: "center",
+          position: "relative",
+          ...(rtl && !collapsed && { marginRight: 0, marginLeft: 1 }),
+          "& svg": {
+            filter: isActive
+              ? shell.dropIconActive
+              : "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))",
+            transform: isActive
+              ? "translateY(-1px) scale(1.05)"
+              : "translateY(0) scale(1)",
+            transition: "all 0.2s ease",
+          },
+        }}
+      >
+        <IconWrapper icon={icon} size={18} />
+      </ListItemIcon>
+      {!collapsed && (
+        <ListItemText
+          primary={label}
+          slotProps={{
+            primary: {
+              fontSize: "1rem",
+              fontWeight: isActive ? 600 : 500,
+            },
+          }}
+        />
+      )}
+    </ListItemButton>
+  );
+}
+
 interface NavigationItem {
   label: string;
   labelKey: string;
@@ -588,74 +673,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     style={{ textDecoration: "none", color: "inherit", width: "100%" }}
                     onClick={() => handleNavigation(item)}
                   >
-                    <ListItemButton
-                      sx={{
-                        borderRadius: 1.5,
-                        backgroundColor: isActive
-                          ? shell.activeBg
-                          : "transparent",
-                        color: isActive ? shell.activeText : shell.navMuted,
-                        py: 1,
-                        px: collapsed ? 1.25 : 1.5,
-                        justifyContent: collapsed ? "center" : rtl ? "flex-end" : "flex-start",
-                        flexDirection: rtl && !collapsed ? "row-reverse" : "row",
-                        minHeight: 40,
-                        position: "relative",
-                        "&::before": isActive
-                          ? {
-                              content: '""',
-                              position: "absolute",
-                              ...(rtl ? { right: 0, left: "auto" } : { left: 0, right: "auto" }),
-                              top: "50%",
-                              transform: "translateY(-50%)",
-                              width: 3,
-                              height: "50%",
-                              backgroundColor: shell.p500,
-                              borderRadius: rtl ? "3px 0 0 3px" : "0 3px 3px 0",
-                            }
-                          : {},
-                        "&:hover": {
-                          backgroundColor: isActive
-                            ? shell.activeBgHover
-                            : shell.navHoverBg,
-                          color: isActive ? shell.activeText : shell.nav,
-                          "& .MuiListItemIcon-root svg": {
-                            transform: "translateY(-2px) scale(1.1)",
-                            filter: shell.dropHover,
-                          },
-                        },
-                      }}
-                    >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: collapsed ? 0 : 36,
-                        color: "inherit",
-                        justifyContent: "center",
-                        position: "relative",
-                        ...(rtl && !collapsed && { marginRight: 0, marginLeft: 1 }),
-                        "& svg": {
-                          filter: isActive
-                            ? shell.dropIconActive
-                            : "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))",
-                          transform: isActive
-                            ? "translateY(-1px) scale(1.05)"
-                            : "translateY(0) scale(1)",
-                          transition: "all 0.2s ease",
-                        },
-                      }}
-                    >
-                      <IconWrapper icon={item.icon} size={18} />
-                    </ListItemIcon>
-                    {!collapsed && (
-                      <ListItemText
-                        primary={t(item.labelKey)}
-                        primaryTypographyProps={{
-                          fontSize: "1rem",
-                          fontWeight: isActive ? 600 : 500,
-                        }}
-                      />
-                    )}
-                  </ListItemButton>
+                    <SidebarNavButton
+                      icon={item.icon}
+                      label={t(item.labelKey)}
+                      isActive={!!isActive}
+                      collapsed={collapsed}
+                      rtl={rtl}
+                      shell={shell}
+                    />
                   </Link>
                 </ListItem>
               );
