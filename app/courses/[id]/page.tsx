@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Box, Typography, Fab, Tooltip, CircularProgress } from "@mui/material";
+import dynamic from "next/dynamic";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   coursesService,
@@ -19,7 +20,15 @@ import { CourseOverview } from "@/components/course/CourseOverview";
 import { ProgressDashboard } from "@/components/course/ProgressDashboard";
 import { CourseLeaderboard } from "@/components/course/CourseLeaderboard";
 import { InstructorCard } from "@/components/course/InstructorCard";
-import { CertificateButtons } from "@/components/course/CertificateButtons";
+// Lazy: CertificateButtons drags in jspdf + html-to-image (~500KB gz). Only
+// needed when a course is certifiable, so defer it off the initial bundle.
+const CertificateButtons = dynamic(
+  () =>
+    import("@/components/course/CertificateButtons").then((m) => ({
+      default: m.CertificateButtons,
+    })),
+  { ssr: false }
+);
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
 import { useHideLeaderboardView, useIsCourseEnabled, useClientInfo } from "@/lib/contexts/ClientInfoContext";
