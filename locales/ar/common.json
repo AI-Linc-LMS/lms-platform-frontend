@@ -28,7 +28,9 @@
     "branding": "العلامة والمظهر",
     "certificateUploads": "رفع الشهادات",
     "support": "تذاكري",
-    "adminTickets": "إدارة التذاكر"
+    "adminTickets": "إدارة التذاكر",
+    "adaptiveQuizzes": "الاختبارات التكيفية",
+    "adminAdaptiveQuizzes": "الاختبارات التكيفية"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",

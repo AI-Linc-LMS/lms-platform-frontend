@@ -172,3 +172,13 @@ export function useIsAdminScorecardEnabled(): boolean {
     clientInfo?.features?.some((f) => f.name === "admin_scorecard"),
   );
 }
+
+/** Returns true when the adaptive quiz surface is enabled for the tenant.
+ *  Per-quiz opt-in (AdaptiveQuizConfig.is_active) gates the surface further on
+ *  the backend, so this hook only governs whether the route renders content. */
+export function useIsAdaptiveQuizEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(
+    clientInfo?.features?.some((f) => f.name === "adaptive_quiz"),
+  );
+}

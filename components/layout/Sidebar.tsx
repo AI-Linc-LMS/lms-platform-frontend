@@ -129,6 +129,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "assessment",
     },
     {
+      label: "Adaptive Quizzes",
+      labelKey: "nav.adaptiveQuizzes",
+      path: "/adaptive-quizzes",
+      icon: "mdi:tune-vertical",
+      featureName: "adaptive_quiz",
+    },
+    {
       label: "Mock Interview",
       labelKey: "nav.mockInterview",
       path: "/mock-interview",
@@ -297,6 +304,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/assessment",
       icon: "mdi:file-document-edit",
       featureName: "admin_assessment",
+    },
+    {
+      label: "Adaptive Quizzes",
+      labelKey: "nav.adminAdaptiveQuizzes",
+      path: "/admin/adaptive-quizzes",
+      icon: "mdi:brain",
+      featureName: "admin_adaptive_quizzes",
     },
     {
       label: "Scorecard",
