@@ -86,6 +86,8 @@ export interface AdminInterviewListItem {
   student_email: string;
   student_id: number;
   overall_score?: number;
+  /** True 0-100 percentage (from overall_percentage, or derived from score/max). */
+  overall_percentage?: number;
 }
 
 export interface InterviewsPagination {
@@ -531,6 +533,9 @@ export interface InterviewTemplate {
   num_mcq_questions: number;
   result_release_mode: InterviewResultReleaseMode;
   result_release_at: string | null;
+  resume_enabled: boolean;
+  /** Minutes from start within which a dropped attempt may be resumed; null = default. */
+  resume_window_minutes: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -548,6 +553,8 @@ export interface InterviewTemplateCreatePayload {
   num_mcq_questions?: number;
   result_release_mode?: InterviewResultReleaseMode;
   result_release_at?: string | null;
+  resume_enabled?: boolean;
+  resume_window_minutes?: number | null;
 }
 
 export type InterviewTemplateUpdatePayload = Partial<InterviewTemplateCreatePayload>;
@@ -558,10 +565,27 @@ export interface AdminTemplateAttempt {
   student_name: string;
   student_email: string | null;
   status: string;
+  started_at: string | null;
   submitted_at: string | null;
   result_visible_to_student: boolean;
   result_released_at: string | null;
   has_evaluation: boolean;
+  superseded: boolean;
+}
+
+export type ReattemptScope = "all" | "failed" | "completed";
+
+export interface AdminReattemptSingleResponse {
+  id: number;
+  superseded: boolean;
+  message: string;
+}
+
+export interface AdminReattemptBulkResponse {
+  template_id: number;
+  scope: ReattemptScope;
+  granted: number;
+  message: string;
 }
 
 export interface AdminReleaseSingleResponse {
@@ -759,6 +783,33 @@ const adminMockInterviewService = {
   ): Promise<AdminEvaluatePendingResponse> => {
     const response = await apiClient.post(
       `${TEMPLATES_BASE_URL}/${templateId}/evaluate-pending/`,
+    );
+    return response.data;
+  },
+
+  /**
+   * Grant ONE student a retake. Marks their attempt superseded so it no longer blocks their
+   * pending list; claiming the interview again creates a fresh attempt.
+   */
+  reattemptSingleInterview: async (
+    interviewId: number,
+  ): Promise<AdminReattemptSingleResponse> => {
+    const response = await apiClient.post(
+      `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/admin/reattempt/`,
+    );
+    return response.data;
+  },
+
+  /**
+   * Bulk-grant retakes for a template, scoped by attempt status (all / failed / completed).
+   */
+  reattemptTemplateAttempts: async (
+    templateId: number,
+    scope: ReattemptScope = "all",
+  ): Promise<AdminReattemptBulkResponse> => {
+    const response = await apiClient.post(
+      `${TEMPLATES_BASE_URL}/${templateId}/reattempt/`,
+      { status: scope },
     );
     return response.data;
   },

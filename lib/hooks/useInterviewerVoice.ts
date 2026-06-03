@@ -73,7 +73,19 @@ export function useInterviewerVoice(
   }, []);
 
   useEffect(() => {
-    if (!question || !isSpeaking) return;
+    if (!isSpeaking) return;
+    if (!question || !question.trim()) {
+      // The parent flagged "speaking" but there's nothing to say. Fire completion promptly
+      // so `isSpeaking` can't get stuck true and stall the take page (the avatar would
+      // otherwise appear to speak forever with no audio — a freeze the watchdog would then
+      // have to clean up). This is the source-level fix for that deadlock.
+      const emptyTimer = setTimeout(() => {
+        try {
+          onSpeakCompleteRef.current?.();
+        } catch {}
+      }, 250);
+      return () => clearTimeout(emptyTimer);
+    }
 
     const sessionId = sessionIdRef.current + 1;
     sessionIdRef.current = sessionId;

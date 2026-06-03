@@ -13,6 +13,10 @@ const OverallFeedbackComponent = ({
   areas_for_improvement,
   overall_feedback,
 }: OverallFeedbackProps) => {
+  // Defense-in-depth: the parent already defaults these, but guard here too so a partial
+  // evaluation payload can never crash the result page on .length / .map.
+  const areas = Array.isArray(areas_for_improvement) ? areas_for_improvement : [];
+  const feedback = overall_feedback || "No overall feedback available.";
   return (
     <Box
       sx={{
@@ -22,7 +26,7 @@ const OverallFeedbackComponent = ({
       }}
     >
       {/* Areas for Improvement */}
-      {areas_for_improvement.length > 0 && (
+      {areas.length > 0 && (
         <Paper
           elevation={0}
           sx={{
@@ -51,7 +55,7 @@ const OverallFeedbackComponent = ({
             </Typography>
           </Box>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {areas_for_improvement.map((area, idx) => (
+            {areas.map((area, idx) => (
               <Box
                 key={idx}
                 sx={{
@@ -127,7 +131,7 @@ const OverallFeedbackComponent = ({
           }}
         >
           <Typography variant="body2" sx={{ color: "#1e40af", lineHeight: 1.8 }}>
-            {overall_feedback}
+            {feedback}
           </Typography>
         </Paper>
       </Paper>

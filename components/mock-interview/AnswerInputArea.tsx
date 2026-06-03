@@ -172,9 +172,21 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                   : "Speak naturally — your answer is being recorded."}
               </Typography>
             </Box>
-            {/* Live mic waveform — bars grow with the candidate's loudness so they get a
-                clear "you're being heard" signal instead of a single static dot. */}
-            <MicWaveform levelRef={micLevelRef} active color="var(--ats-success)" />
+            {/* Small pulsing presence dot only. The loudness-reactive waveform lives once,
+                in the conversation-status row below, so the candidate sees a single wave. */}
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor: "var(--ats-success)",
+                animation: "listeningPulse 1.2s ease-in-out infinite",
+                "@keyframes listeningPulse": {
+                  "0%, 100%": { opacity: 1, transform: "scale(1)" },
+                  "50%": { opacity: 0.6, transform: "scale(1.2)" },
+                },
+              }}
+            />
           </>
         ) : (
           <>
@@ -307,7 +319,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                 display: "flex",
                 flexDirection: "column",
                 gap: 1.5,
-                maxHeight: 200,
+                maxHeight: 150,
                 overflowY: "auto",
                 pr: 1,
                 scrollBehavior: "smooth",
@@ -318,8 +330,14 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                 },
               }}
             >
-              {questionHistory.map((q, idx) => {
-                const isCurrent = idx === questionHistory.length - 1;
+              {/* Render only the last 2 turns so the video tiles never get squeezed as the
+                  conversation grows. We slice for DISPLAY only — the full `questionHistory`
+                  is kept intact above so the count chip and the "repeat question N" voice
+                  lookup (which indexes the full timeline) stay correct. `realIdx` recovers
+                  each row's true 1-based position. */}
+              {questionHistory.slice(-2).map((q, idx, shown) => {
+                const realIdx = questionHistory.length - shown.length + idx;
+                const isCurrent = realIdx === questionHistory.length - 1;
                 const isFocused = focusedHistoryQuestionId === q.id && !isCurrent;
                 return (
                   <Box
@@ -370,7 +388,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {idx + 1}
+                      {realIdx + 1}
                     </Box>
                     <Typography
                       variant="body2"
