@@ -129,10 +129,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "assessment",
     },
     {
-      label: "Adaptive Quizzes",
+      label: "Adaptive Course",
       labelKey: "nav.adaptiveQuizzes",
-      path: "/adaptive-quizzes",
-      icon: "mdi:tune-vertical",
+      path: "/adaptive-courses",
+      icon: "mdi:book-education-outline",
       featureName: "adaptive_quiz",
     },
     {
@@ -306,10 +306,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_assessment",
     },
     {
-      label: "Adaptive Quizzes",
+      label: "Adaptive Course Builder",
       labelKey: "nav.adminAdaptiveQuizzes",
-      path: "/admin/adaptive-quizzes",
-      icon: "mdi:brain",
+      path: "/admin/adaptive-courses",
+      icon: "mdi:robot-excited-outline",
       featureName: "admin_adaptive_quizzes",
     },
     {

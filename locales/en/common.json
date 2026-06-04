@@ -29,8 +29,8 @@
     "certificateUploads": "Certificate uploads",
     "support": "My Tickets",
     "adminTickets": "Ticket Management",
-    "adaptiveQuizzes": "Adaptive Quizzes",
-    "adminAdaptiveQuizzes": "Adaptive Quizzes"
+    "adaptiveQuizzes": "Adaptive Course",
+    "adminAdaptiveQuizzes": "Adaptive Course Builder"
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",
