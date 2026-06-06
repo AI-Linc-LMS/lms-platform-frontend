@@ -208,7 +208,7 @@ export async function initBrowserTracer() {
           name: span.name,
           url: urlStr || "(empty)",
           serverAddress: serverAddr || "(empty)",
-          statusCode: statusCode || "(none)",
+          statusCode: statusCodeRaw || "(none)",
           apiBase: apiBaseNormalized,
         });
       }
