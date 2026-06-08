@@ -25,6 +25,8 @@ import {
   type AdminAdaptiveCourseDetail,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { CourseQuizEditor } from "@/components/admin/adaptive-course/CourseQuizEditor";
+import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArticleViewer";
+import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodingViewer";
 
 type DialogState =
   | { kind: "module" }
@@ -51,6 +53,8 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [suggesting, setSuggesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
+  const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
+  const [expandedCoding, setExpandedCoding] = useState<number | null>(null);
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -74,6 +78,8 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["Easy", "Medium", "Hard"]);
   const [perCell, setPerCell] = useState(2);
   const [subCount, setSubCount] = useState(3);
+  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding">>(["quiz", "article"]);
+  const [codingClipboard, setCodingClipboard] = useState(false);
 
   function openDialog(state: DialogState) {
     // Reset controls to sane defaults each time the dialog opens.
@@ -82,7 +88,16 @@ export default function AdminAdaptiveCourseDetailPage() {
     setDifficulties(["Easy", "Medium", "Hard"]);
     setPerCell(2);
     setSubCount(3);
+    setContentTypes(["quiz", "article"]);
+    setCodingClipboard(false);
     setDialog(state);
+  }
+
+  function toggleContentType(t: "quiz" | "article" | "coding") {
+    setContentTypes((prev) => {
+      const next = prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t];
+      return (["quiz", "article", "coding"] as const).filter((x) => next.includes(x));
+    });
   }
 
   async function handleSuggest() {
@@ -141,9 +156,16 @@ export default function AdminAdaptiveCourseDetailPage() {
   }
 
   async function handleDialogSubmit() {
-    if (!dialog || !course || topic.trim().length < 2 || difficulties.length === 0 || submitting) return;
+    if (!dialog || !course || topic.trim().length < 2 || difficulties.length === 0 || contentTypes.length === 0 || submitting) return;
     setSubmitting(true);
-    const config = { difficulty_levels: difficulties, questions_per_cell: perCell };
+    const config = {
+      difficulty_levels: difficulties,
+      questions_per_cell: perCell,
+      content_types: contentTypes,
+      ...(contentTypes.includes("coding")
+        ? { coding_problems_per_submodule: 2, coding_language: "Python", coding_allow_clipboard: codingClipboard }
+        : {}),
+    };
     try {
       const job =
         dialog.kind === "module"
@@ -221,23 +243,30 @@ export default function AdminAdaptiveCourseDetailPage() {
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.25, flexWrap: "wrap" }}>
                     <Icon icon="mdi:brain" width={18} style={{ color: "#a855f7" }} />
                     <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7" }}>
-                      Skills this course tests
+                      Skills this course builds
                     </Typography>
                     <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 700 }}>
-                      · {course.skills.length} skill{course.skills.length === 1 ? "" : "s"} · AI-tagged across the quiz banks
+                      · {course.skills.length} skill{course.skills.length === 1 ? "" : "s"} · measured by quizzes, built by articles
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                     {course.skills.map((s) => (
                       <Box key={s.skill} sx={{
-                        display: "inline-flex", alignItems: "center", gap: 0.6, pl: 1.25, pr: 0.5, py: 0.5, borderRadius: 999,
+                        display: "inline-flex", alignItems: "center", gap: 0.5, pl: 1.25, pr: 0.5, py: 0.5, borderRadius: 999,
                         color: "white", fontWeight: 800, fontSize: "0.78rem",
                         background: "linear-gradient(135deg, #6366f1 0%, #a855f7 70%, #ec4899 100%)",
                       }}>
                         {prettySkill(s.skill)}
-                        <Box component="span" sx={{ px: 0.7, py: 0.1, borderRadius: 999, fontSize: "0.7rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)" }}>
-                          {s.question_count}
-                        </Box>
+                        {s.question_count > 0 && (
+                          <Box component="span" title={`${s.question_count} quiz questions`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.6, py: 0.1, borderRadius: 999, fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)" }}>
+                            <Icon icon="mdi:help-circle-outline" width={11} />{s.question_count}
+                          </Box>
+                        )}
+                        {s.article_count > 0 && (
+                          <Box component="span" title={`${s.article_count} articles`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.6, py: 0.1, borderRadius: 999, fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)" }}>
+                            <Icon icon="mdi:book-open-variant" width={11} />{s.article_count}
+                          </Box>
+                        )}
                       </Box>
                     ))}
                   </Box>
@@ -312,6 +341,44 @@ export default function AdminAdaptiveCourseDetailPage() {
                           >
                             <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>{sub.title}</Typography>
                             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 1 }}>
+                              {sub.articles.map((a) => {
+                                const open = expandedArticle === a.article_id;
+                                return (
+                                  <Box
+                                    key={a.article_id}
+                                    sx={{
+                                      borderRadius: 2.5,
+                                      border: "1px solid color-mix(in srgb, var(--border-default) 65%, transparent)",
+                                      bgcolor: open ? "color-mix(in srgb, #a855f7 6%, transparent)" : "transparent",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    <ButtonBase
+                                      onClick={() => setExpandedArticle(open ? null : a.article_id)}
+                                      sx={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25 }}
+                                    >
+                                      <Icon icon="mdi:book-open-variant" width={15} style={{ color: "#a855f7" }} />
+                                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{a.title}</Typography>
+                                      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                                        adaptive article · {a.default_tier} · ~{a.reading_time_minutes} min · {a.available_tiers.length} tier
+                                        {a.available_tiers.length === 1 ? "" : "s"} ready
+                                        {a.is_active ? "" : " · inactive"}
+                                      </Typography>
+                                      <Box sx={{ flex: 1 }} />
+                                      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#a855f7", fontSize: "0.75rem", fontWeight: 800 }}>
+                                        <Icon icon="mdi:book-open-page-variant-outline" width={14} />
+                                        {open ? "Hide article" : "View article"}
+                                        <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
+                                      </Box>
+                                    </ButtonBase>
+                                    {open && (
+                                      <Box sx={{ px: 1.25, pb: 1.5 }}>
+                                        <AdminArticleViewer courseId={course.id} articleId={a.article_id} />
+                                      </Box>
+                                    )}
+                                  </Box>
+                                );
+                              })}
                               {sub.quizzes.map((q) => {
                                 const open = expandedQuiz === q.config_id;
                                 return (
@@ -361,11 +428,90 @@ export default function AdminAdaptiveCourseDetailPage() {
                                   </Box>
                                 );
                               })}
-                              {sub.quizzes.length === 0 && (
-                                <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                                  No quiz generated for this submodule.
-                                </Typography>
-                              )}
+                              {(sub.coding_sets ?? []).map((set) => (
+                                <Box key={`set-${set.config_id}`} sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                                  {/* Set-level controls: copy-paste policy for this coding set's editor */}
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 0.5 }}>
+                                    <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                      AI Coding Mentor set
+                                    </Typography>
+                                    <Box sx={{ flex: 1 }} />
+                                    <ButtonBase
+                                      onClick={async () => {
+                                        try {
+                                          const res = await adminAdaptiveCourseService.toggleCodingConfigClipboard(set.config_id);
+                                          showToast(res.allow_clipboard ? "Copy-paste enabled for this set." : "Copy-paste disabled for this set.", "success");
+                                          void load();
+                                        } catch (e) {
+                                          showToast(e instanceof Error ? e.message : "Couldn't update.", "error");
+                                        }
+                                      }}
+                                      sx={{
+                                        display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderRadius: 999,
+                                        fontSize: "0.74rem", fontWeight: 800,
+                                        color: set.allow_clipboard ? "#10b981" : "#f59e0b",
+                                        border: `1px solid color-mix(in srgb, ${set.allow_clipboard ? "#10b981" : "#f59e0b"} 35%, transparent)`,
+                                        background: `color-mix(in srgb, ${set.allow_clipboard ? "#10b981" : "#f59e0b"} 10%, transparent)`,
+                                      }}
+                                    >
+                                      <Icon icon={set.allow_clipboard ? "mdi:content-copy" : "mdi:content-copy-off-outline"} width={14} />
+                                      Copy-paste: {set.allow_clipboard ? "On" : "Off"}
+                                    </ButtonBase>
+                                  </Box>
+                                  {set.problems.map((p) => {
+                                    const open = expandedCoding === p.problem_id;
+                                    return (
+                                      <Box
+                                        key={`c-${p.problem_id}`}
+                                        sx={{
+                                          borderRadius: 2.5,
+                                          border: "1px solid color-mix(in srgb, var(--border-default) 65%, transparent)",
+                                          bgcolor: open ? "color-mix(in srgb, #ec4899 5%, transparent)" : "transparent",
+                                          overflow: "hidden",
+                                        }}
+                                      >
+                                        <ButtonBase
+                                          onClick={() => setExpandedCoding(open ? null : p.problem_id)}
+                                          sx={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25 }}
+                                        >
+                                          <Icon icon="mdi:robot-happy-outline" width={15} style={{ color: "#ec4899" }} />
+                                          <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{p.title}</Typography>
+                                          <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                                            AI coding mentor · {p.difficulty_level}
+                                            {p.target_skills.length ? ` · ${p.target_skills.slice(0, 2).join(", ")}` : ""}
+                                            {p.is_active === false ? " · inactive" : ""}
+                                          </Typography>
+                                          <Box sx={{ flex: 1 }} />
+                                          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#ec4899", fontSize: "0.75rem", fontWeight: 800 }}>
+                                            <Icon icon="mdi:eye-outline" width={14} />
+                                            {open ? "Hide" : "View / edit"}
+                                            <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
+                                          </Box>
+                                        </ButtonBase>
+                                        {open && (
+                                          <Box sx={{ px: 1.25, pb: 1.5 }}>
+                                            <AdminCodingViewer
+                                              problemId={p.problem_id}
+                                              onChanged={load}
+                                              onDeleted={() => {
+                                                setExpandedCoding(null);
+                                                void load();
+                                              }}
+                                            />
+                                          </Box>
+                                        )}
+                                      </Box>
+                                    );
+                                  })}
+                                </Box>
+                              ))}
+                              {sub.quizzes.length === 0 &&
+                                sub.articles.length === 0 &&
+                                (sub.coding_sets?.length ?? 0) === 0 && (
+                                  <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                                    No content generated for this submodule.
+                                  </Typography>
+                                )}
                             </Box>
                           </Box>
                         ))}
@@ -388,7 +534,8 @@ export default function AdminAdaptiveCourseDetailPage() {
         <DialogContent>
           <Typography sx={{ color: "text.secondary", fontSize: "0.85rem", mb: 2 }}>
             Describe the topic / focus. The engine designs the {dialog?.kind === "module" ? "module's submodules" : "submodule"} and
-            generates an adaptive quiz for each new submodule.
+            generates the selected content types ({contentTypes.length ? contentTypes.map((t) => (t === "coding" ? "AI Coding Mentor" : t)).join(" · ") : "none selected"}) for each new submodule.
+            Pick <strong>AI Coding Mentor</strong> below to add coding problems.
           </Typography>
           <TextField
             autoFocus
@@ -432,6 +579,50 @@ export default function AdminAdaptiveCourseDetailPage() {
           )}
 
           <Box sx={{ mt: 2.5 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.8rem", mb: 1 }}>Content types</Typography>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {([
+                ["article", "Article", "mdi:book-open-variant"],
+                ["quiz", "Quiz", "mdi:tune-vertical"],
+                ["coding", "AI Coding Mentor", "mdi:robot-happy-outline"],
+              ] as const).map(([key, label, icon]) => {
+                const active = contentTypes.includes(key);
+                return (
+                  <ButtonBase
+                    key={key}
+                    onClick={() => toggleContentType(key)}
+                    sx={{
+                      px: 2, py: 0.7, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", gap: 0.5,
+                      color: active ? "white" : "text.primary",
+                      background: active ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+                      border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                    }}
+                  >
+                    <Icon icon={icon} width={14} />
+                    {label}
+                  </ButtonBase>
+                );
+              })}
+            </Box>
+            {contentTypes.includes("coding") && (
+              <Box
+                component="button"
+                onClick={() => setCodingClipboard((v) => !v)}
+                sx={{
+                  all: "unset", cursor: "pointer", mt: 1.25, display: "inline-flex", alignItems: "center", gap: 0.75,
+                  fontSize: "0.8rem", fontWeight: 700, color: "text.secondary",
+                }}
+              >
+                <Icon icon={codingClipboard ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"} width={18} style={{ color: codingClipboard ? "#6366f1" : undefined }} />
+                Allow copy-paste in the coding editor
+                <Typography component="span" sx={{ fontSize: "0.72rem", color: "text.disabled" }}>
+                  (off = anti-paste hardening; you can change this per set later)
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          <Box sx={{ mt: 2.5 }}>
             <Typography sx={{ fontWeight: 800, fontSize: "0.8rem", mb: 1 }}>Difficulty tiers</Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
               {ALL_DIFFICULTIES.map((d) => {
@@ -473,8 +664,17 @@ export default function AdminAdaptiveCourseDetailPage() {
               Estimated to add
             </Typography>
             <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", lineHeight: 1.6 }}>
-              {submodulesToAdd} submodule{submodulesToAdd === 1 ? "" : "s"} · ~{perSubmodule} questions each ·{" "}
-              <strong>~{estTotalQuestions} questions total</strong>
+              {submodulesToAdd} submodule{submodulesToAdd === 1 ? "" : "s"}
+              {contentTypes.includes("quiz") && (
+                <>
+                  {" "}· ~{perSubmodule} questions each · <strong>~{estTotalQuestions} questions total</strong>
+                </>
+              )}
+              {contentTypes.includes("coding") && (
+                <>
+                  {" "}· <strong>~{submodulesToAdd * difficulties.length * 2} coding problems</strong>
+                </>
+              )}
               <br />
               ({EST_CONCEPTS_PER_SUBMODULE} concepts × {difficulties.length} difficulty tier
               {difficulties.length === 1 ? "" : "s"} × {perCell}/cell — the AI sets 2–4 concepts per submodule,

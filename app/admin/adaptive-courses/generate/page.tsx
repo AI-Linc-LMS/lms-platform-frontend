@@ -37,9 +37,19 @@ export default function GenerateAdaptiveCoursePage() {
   const [minQuestions, setMinQuestions] = useState(8);
   const [maxQuestions, setMaxQuestions] = useState(20);
   const [confidence, setConfidence] = useState(true);
+  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding">>(["quiz", "article"]);
+  const [codingClipboard, setCodingClipboard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = title.trim().length > 1 && description.trim().length > 4 && difficulties.length > 0;
+  const canSubmit =
+    title.trim().length > 1 && description.trim().length > 4 && difficulties.length > 0 && contentTypes.length > 0;
+
+  function toggleContentType(t: "quiz" | "article" | "coding") {
+    setContentTypes((prev) => {
+      const next = prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t];
+      return (["quiz", "article", "coding"] as const).filter((x) => next.includes(x));
+    });
+  }
 
   // Rough preview — outline picks ~3 submodules/module; bank ≈ submodules ×
   // ~3 sub-skills × difficulties × questions/cell.
@@ -47,13 +57,19 @@ export default function GenerateAdaptiveCoursePage() {
     const modules = Math.max(1, Math.round(durationWeeks * 0.75));
     const submodules = modules * 3;
     const bankPerQuiz = 3 * difficulties.length * questionsPerCell;
+    const hasQuiz = contentTypes.includes("quiz");
+    const hasCoding = contentTypes.includes("coding");
     return {
       modules,
       submodules,
-      quizzes: submodules,
-      bankItems: submodules * bankPerQuiz,
+      hasQuiz,
+      hasCoding,
+      quizzes: hasQuiz ? submodules : 0,
+      bankItems: hasQuiz ? submodules * bankPerQuiz : 0,
+      // Coding generates ~2 problems per difficulty tier per submodule (see builder).
+      codingProblems: hasCoding ? submodules * difficulties.length * 2 : 0,
     };
-  }, [durationWeeks, difficulties.length, questionsPerCell]);
+  }, [durationWeeks, difficulties.length, questionsPerCell, contentTypes]);
 
   function toggleDifficulty(d: Difficulty) {
     setDifficulties((prev) => {
@@ -72,6 +88,10 @@ export default function GenerateAdaptiveCoursePage() {
       min_questions: minQuestions,
       max_questions: maxQuestions,
       confidence_prompt_enabled: confidence,
+      content_types: contentTypes,
+      ...(contentTypes.includes("coding")
+        ? { coding_problems_per_submodule: 2, coding_language: "Python", coding_allow_clipboard: codingClipboard }
+        : {}),
     };
     try {
       const job = await adminAdaptiveCourseService.generateCourse({
@@ -156,6 +176,54 @@ export default function GenerateAdaptiveCoursePage() {
                   onChange={(e) => setQuestionsPerCell(clamp(Number(e.target.value), 1, 10))}
                   sx={{ width: 220 }}
                 />
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", mb: 1 }}>
+                  Content types (per submodule)
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  {([
+                    ["article", "Adaptive Article", "mdi:book-open-variant"],
+                    ["quiz", "Adaptive Quiz", "mdi:tune-vertical"],
+                    ["coding", "AI Coding Mentor", "mdi:robot-happy-outline"],
+                  ] as const).map(([key, label, icon]) => {
+                    const active = contentTypes.includes(key);
+                    return (
+                      <ButtonBase
+                        key={key}
+                        onClick={() => toggleContentType(key)}
+                        sx={{
+                          px: 2, py: 0.85, borderRadius: 999, fontWeight: 800, fontSize: "0.82rem", gap: 0.5,
+                          color: active ? "white" : "text.primary",
+                          background: active
+                            ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)"
+                            : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+                          border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                        }}
+                      >
+                        <Icon icon={icon} width={15} />
+                        {label}
+                      </ButtonBase>
+                    );
+                  })}
+                </Box>
+                {contentTypes.includes("coding") && (
+                  <Box
+                    component="button"
+                    onClick={() => setCodingClipboard((v) => !v)}
+                    sx={{
+                      all: "unset", cursor: "pointer", mt: 1.25, display: "inline-flex", alignItems: "center", gap: 0.75,
+                      fontSize: "0.82rem", fontWeight: 700, color: "text.secondary",
+                    }}
+                  >
+                    <Icon icon={codingClipboard ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"} width={18} style={{ color: codingClipboard ? "#6366f1" : undefined }} />
+                    Allow copy-paste in the coding editor
+                    <Typography component="span" sx={{ fontSize: "0.74rem", color: "text.disabled" }}>
+                      (off = anti-paste hardening; changeable per set later)
+                    </Typography>
+                  </Box>
+                )}
               </Box>
 
               <Box>
@@ -248,13 +316,14 @@ export default function GenerateAdaptiveCoursePage() {
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
                 <Icon icon="mdi:sparkles" width={20} />
-                <Typography sx={{ fontWeight: 800 }}>What you'll get</Typography>
+                <Typography sx={{ fontWeight: 800 }}>{"What you'll get"}</Typography>
               </Box>
               <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
                 <PreviewStat value={`~${preview.modules}`} label="Modules" />
                 <PreviewStat value={`~${preview.submodules}`} label="Submodules" />
-                <PreviewStat value={`~${preview.quizzes}`} label="Adaptive quizzes" />
-                <PreviewStat value={`~${preview.bankItems}`} label="Calibrated quiz items" />
+                {preview.hasQuiz && <PreviewStat value={`~${preview.quizzes}`} label="Adaptive quizzes" />}
+                {preview.hasQuiz && <PreviewStat value={`~${preview.bankItems}`} label="Calibrated quiz items" />}
+                {preview.hasCoding && <PreviewStat value={`~${preview.codingProblems}`} label="Coding problems" />}
               </Box>
               <Typography sx={{ mt: 2.5, fontSize: "0.82rem", opacity: 0.92, lineHeight: 1.5 }}>
                 Every submodule ships a branching IRT quiz that picks each next question by

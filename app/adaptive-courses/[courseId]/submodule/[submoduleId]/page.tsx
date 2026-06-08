@@ -73,11 +73,57 @@ export default function AdaptiveCourseSubmodulePage() {
                 accent="indigo"
               />
 
-              {submodule.quizzes.length === 0 ? (
-                <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
-                  No quizzes in this submodule yet.
-                </Typography>
-              ) : (
+              {submodule.articles.length === 0 &&
+                submodule.quizzes.length === 0 &&
+                (submodule.coding_sets?.length ?? 0) === 0 && (
+                  <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
+                    No content in this submodule yet.
+                  </Typography>
+                )}
+
+              {/* Articles — read first */}
+              {submodule.articles.length > 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: submodule.quizzes.length ? 2.5 : 0 }}>
+                  {submodule.articles.map((article, idx) => (
+                    <Reveal key={article.article_id} delay={Math.min(idx, 8) * 0.05}>
+                      <Box
+                        sx={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2,
+                          borderRadius: 4, p: 2.25,
+                          bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)",
+                          border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                        }}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: "1rem" }}>{article.title}</Typography>
+                          <Box sx={{ display: "flex", gap: 1.5, mt: 0.75, flexWrap: "wrap" }}>
+                            <Chip icon="mdi:book-open-variant" text="Adaptive article" />
+                            <Chip icon="mdi:clock-outline" text={`~${article.reading_time_minutes} min`} />
+                            <Chip icon="mdi:tune-vertical" text={`${article.default_tier} · adapts`} />
+                          </Box>
+                        </Box>
+                        <ButtonBase
+                          onClick={() =>
+                            router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/article/${article.article_id}`)
+                          }
+                          sx={{
+                            flexShrink: 0, px: 2.5, py: 1.2, borderRadius: 999, fontWeight: 800, color: "white",
+                            fontSize: "0.88rem", gap: 0.6,
+                            background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
+                            boxShadow: "0 16px 32px -16px rgba(168, 85, 247, 0.55)",
+                            "&:hover": { transform: "translateY(-1px)" }, transition: "transform 120ms ease",
+                          }}
+                        >
+                          <Icon icon="mdi:book-open-page-variant-outline" width={16} />
+                          Read
+                        </ButtonBase>
+                      </Box>
+                    </Reveal>
+                  ))}
+                </Box>
+              )}
+
+              {submodule.quizzes.length > 0 && (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                   {submodule.quizzes.map((quiz, idx) => (
                     <Reveal key={quiz.config_id} delay={Math.min(idx, 8) * 0.05}>
@@ -134,6 +180,54 @@ export default function AdaptiveCourseSubmodulePage() {
                       </Box>
                     </Reveal>
                   ))}
+                </Box>
+              )}
+
+              {/* Coding problems — AI Coding Mentor */}
+              {(submodule.coding_sets?.length ?? 0) > 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: submodule.quizzes.length ? 2.5 : 0 }}>
+                  {submodule.coding_sets!.flatMap((set) =>
+                    set.problems.map((problem, idx) => (
+                      <Reveal key={problem.problem_id} delay={Math.min(idx, 8) * 0.05}>
+                        <Box
+                          sx={{
+                            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2,
+                            borderRadius: 4, p: 2.25,
+                            bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                          }}
+                        >
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: "1rem" }}>{problem.title}</Typography>
+                            <Box sx={{ display: "flex", gap: 1.5, mt: 0.75, flexWrap: "wrap" }}>
+                              <Chip icon="mdi:robot-happy-outline" text="AI Coding Mentor" />
+                              <Chip icon="mdi:speedometer" text={problem.difficulty_level} />
+                              {problem.target_skills.slice(0, 2).map((s) => (
+                                <Chip key={s} icon="mdi:tag-outline" text={s} />
+                              ))}
+                            </Box>
+                          </Box>
+                          <ButtonBase
+                            onClick={() =>
+                              router.push(
+                                `/adaptive-courses/${courseId}/submodule/${submoduleId}/coding/${problem.problem_id}?configId=${set.config_id}`,
+                              )
+                            }
+                            sx={{
+                              flexShrink: 0, px: 2.5, py: 1.2, borderRadius: 999, fontWeight: 800, color: "white",
+                              fontSize: "0.88rem", gap: 0.6,
+                              background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
+                              boxShadow: "0 16px 32px -16px rgba(168, 85, 247, 0.55)",
+                              "&:hover": { transform: "translateY(-1px)" }, transition: "transform 120ms ease",
+                            }}
+                          >
+                            <Icon icon="mdi:code-tags" width={16} />
+                            Solve
+                          </ButtonBase>
+                        </Box>
+                      </Reveal>
+                    )),
+                  )}
                 </Box>
               )}
             </>

@@ -13,12 +13,72 @@ export interface AdaptiveCourseQuizSummary {
   confidence_prompt_enabled: boolean;
 }
 
+export type ReadingTier = "Beginner" | "Intermediate" | "Advanced" | "Expert";
+export const READING_TIERS: ReadingTier[] = ["Beginner", "Intermediate", "Advanced", "Expert"];
+
+export interface AdaptiveCourseArticleSummary {
+  article_id: number;
+  title: string;
+  default_tier: ReadingTier;
+  available_tiers: ReadingTier[];
+  reading_time_minutes: number;
+  concepts: string[];
+}
+
+export interface AdaptiveArticleDetail {
+  id: number;
+  title: string;
+  default_tier: ReadingTier;
+  rendered_tier: ReadingTier;
+  available_tiers: ReadingTier[];
+  content_html: string;
+  reading_time_minutes: number;
+  summary: string;
+  concepts: string[];
+  glossary: Record<string, string>;
+  explain_terms: string[];
+}
+
+export interface ArticleTierResult {
+  tier: ReadingTier;
+  content_html: string;
+  reading_time_minutes: number;
+}
+
+export interface ExplainResult {
+  explanation: string;
+  followups: { even_simpler: string; show_diagram: string; real_example: string };
+}
+
+export interface SummariseResult {
+  summary_html: string;
+  bullets: string[];
+}
+
+export interface AdaptiveCourseCodingProblemSummary {
+  problem_id: number;
+  title: string;
+  difficulty_level: "Easy" | "Medium" | "Hard";
+  target_skills: string[];
+}
+
+export interface AdaptiveCourseCodingSet {
+  config_id: number;
+  title: string;
+  target_skills: string[];
+  default_language: string;
+  hint_layers: number;
+  problems: AdaptiveCourseCodingProblemSummary[];
+}
+
 export interface AdaptiveCourseSubModule {
   id: number;
   order: number;
   title: string;
   description: string;
+  articles: AdaptiveCourseArticleSummary[];
   quizzes: AdaptiveCourseQuizSummary[];
+  coding_sets?: AdaptiveCourseCodingSet[];
 }
 
 export interface AdaptiveCourseModule {
@@ -39,6 +99,8 @@ export interface AdaptiveCourseListItem {
   module_count: number;
   submodule_count: number;
   quiz_count: number;
+  article_count: number;
+  coding_count?: number;
   updated_at: string;
 }
 
@@ -63,6 +125,44 @@ export const adaptiveCourseService = {
   ): Promise<AdaptiveCourseSubModule> {
     const { data } = await apiClient.get<AdaptiveCourseSubModule>(
       `${BASE}/courses/${courseId}/submodules/${submoduleId}/`,
+    );
+    return data;
+  },
+
+  async getArticle(articleId: number, tier?: ReadingTier): Promise<AdaptiveArticleDetail> {
+    const { data } = await apiClient.get<AdaptiveArticleDetail>(
+      `${BASE}/articles/${articleId}/`,
+      { params: tier ? { tier } : {} },
+    );
+    return data;
+  },
+
+  async renderArticleTier(articleId: number, tier: ReadingTier): Promise<ArticleTierResult> {
+    const { data } = await apiClient.post<ArticleTierResult>(
+      `${BASE}/articles/${articleId}/tier/${tier}/`,
+      {},
+    );
+    return data;
+  },
+
+  async explainTerm(
+    articleId: number,
+    payload: { term: string; context?: string; tier?: ReadingTier },
+  ): Promise<ExplainResult> {
+    const { data } = await apiClient.post<ExplainResult>(
+      `${BASE}/articles/${articleId}/explain/`,
+      payload,
+    );
+    return data;
+  },
+
+  async summarise(
+    articleId: number,
+    payload: { up_to_text?: string; tier?: ReadingTier },
+  ): Promise<SummariseResult> {
+    const { data } = await apiClient.post<SummariseResult>(
+      `${BASE}/articles/${articleId}/summarise/`,
+      payload,
     );
     return data;
   },

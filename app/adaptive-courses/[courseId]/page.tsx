@@ -151,24 +151,62 @@ export default function AdaptiveCourseDetailPage() {
                               )}
                             </Box>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
-                              <Box
-                                component="span"
-                                sx={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  px: 1,
-                                  py: 0.4,
-                                  borderRadius: 999,
-                                  fontSize: "0.72rem",
-                                  fontWeight: 800,
-                                  color: "#6366f1",
-                                  bgcolor: "color-mix(in srgb, #6366f1 12%, transparent)",
-                                }}
-                              >
-                                <Icon icon="mdi:tune-vertical" width={14} />
-                                {sub.quizzes.length} quiz{sub.quizzes.length === 1 ? "" : "zes"}
-                              </Box>
+                              {sub.articles.length > 0 && (
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    px: 1,
+                                    py: 0.4,
+                                    borderRadius: 999,
+                                    fontSize: "0.72rem",
+                                    fontWeight: 800,
+                                    color: "#a855f7",
+                                    bgcolor: "color-mix(in srgb, #a855f7 12%, transparent)",
+                                  }}
+                                >
+                                  <Icon icon="mdi:book-open-variant" width={14} />
+                                  {sub.articles.length} article{sub.articles.length === 1 ? "" : "s"}
+                                </Box>
+                              )}
+                              {sub.quizzes.length > 0 && (
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    px: 1,
+                                    py: 0.4,
+                                    borderRadius: 999,
+                                    fontSize: "0.72rem",
+                                    fontWeight: 800,
+                                    color: "#6366f1",
+                                    bgcolor: "color-mix(in srgb, #6366f1 12%, transparent)",
+                                  }}
+                                >
+                                  <Icon icon="mdi:tune-vertical" width={14} />
+                                  {sub.quizzes.length} quiz{sub.quizzes.length === 1 ? "" : "zes"}
+                                </Box>
+                              )}
+                              {(() => {
+                                const codingCount = (sub.coding_sets ?? []).reduce((n, s) => n + s.problems.length, 0);
+                                return codingCount > 0 ? (
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      display: "inline-flex", alignItems: "center", gap: 0.5,
+                                      px: 1, py: 0.4, borderRadius: 999, fontSize: "0.72rem", fontWeight: 800,
+                                      color: "#ec4899", bgcolor: "color-mix(in srgb, #ec4899 12%, transparent)",
+                                    }}
+                                  >
+                                    <Icon icon="mdi:robot-happy-outline" width={14} />
+                                    {codingCount} coding
+                                  </Box>
+                                ) : null;
+                              })()}
                               <Icon icon="mdi:chevron-right" width={20} style={{ opacity: 0.5 }} />
                             </Box>
                           </ButtonBase>

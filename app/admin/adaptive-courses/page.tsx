@@ -59,8 +59,12 @@ export default function AdminAdaptiveCoursesPage() {
   const stats = useMemo(() => {
     const published = courses.filter((c) => c.is_published).length;
     let quizzes = 0;
-    for (const c of courses) quizzes += c.quiz_count;
-    return { total: courses.length, published, drafts: courses.length - published, quizzes };
+    let coding = 0;
+    for (const c of courses) {
+      quizzes += c.quiz_count;
+      coding += c.coding_count ?? 0;
+    }
+    return { total: courses.length, published, drafts: courses.length - published, quizzes, coding };
   }, [courses]);
 
   async function handleConfirmDelete() {
@@ -134,6 +138,7 @@ export default function AdminAdaptiveCoursesPage() {
                 { value: stats.published, label: "Published", accent: "#10b981" },
                 { value: stats.drafts, label: "Drafts", accent: "#94a3b8" },
                 { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
+                { value: stats.coding, label: "Coding mentors", accent: "#a855f7" },
               ]}
             />
           )}
@@ -299,7 +304,9 @@ function CourseCard({
         <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
           <Metric icon="mdi:view-module-outline" value={course.module_count} label="modules" />
           <Metric icon="mdi:file-tree-outline" value={course.submodule_count} label="submodules" />
+          <Metric icon="mdi:book-open-variant" value={course.article_count} label="articles" />
           <Metric icon="mdi:tune-vertical" value={course.quiz_count} label="quizzes" />
+          <Metric icon="mdi:robot-happy-outline" value={course.coding_count ?? 0} label="coding" />
         </Box>
       </ButtonBase>
 

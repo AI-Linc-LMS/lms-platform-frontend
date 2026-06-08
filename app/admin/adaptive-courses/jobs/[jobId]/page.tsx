@@ -21,7 +21,7 @@ const ORDER = ["pending", "generating_outline", "creating_structure", "generatin
 const STEPS: Array<{ key: string; label: string; detail: string }> = [
   { key: "generating_outline", label: "Planning outline", detail: "Modules & submodules" },
   { key: "creating_structure", label: "Building structure", detail: "Course tree" },
-  { key: "generating_content", label: "Generating quizzes", detail: "IRT bank per submodule" },
+  { key: "generating_content", label: "Generating content", detail: "Quizzes & articles per submodule" },
   { key: "completed", label: "Done", detail: "Every submodule has an adaptive quiz" },
 ];
 const DIFF_COLOR: Record<string, string> = { Easy: "#10b981", Medium: "#f59e0b", Hard: "#ef4444" };
@@ -269,10 +269,12 @@ function StatsRail({ stats, status, percent, stalled }: { stats: AdaptiveCourseJ
       </Box>
 
       {/* Stat cards */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(4, 1fr)" }, gap: 1.5, mt: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(6, 1fr)" }, gap: 1.5, mt: 2 }}>
         <StatCard label="Submodules" value={`${stats.submodules_done} / ${stats.submodules_total}`} accent="#6366f1" icon="mdi:file-tree-outline" />
         <StatCard label="Questions" value={qPlanned > 0 ? `${qDone} / ~${qPlanned}` : `${qDone}`} accent="#a855f7" icon="mdi:help-box-multiple-outline" />
-        <StatCard label="Elapsed" value={fmtElapsed(stats.elapsed_seconds)} accent="#ec4899" icon="mdi:timer-outline" />
+        <StatCard label="Articles" value={`${stats.articles_generated ?? 0}`} accent="#10b981" icon="mdi:book-open-variant" />
+        <StatCard label="Coding" value={`${stats.coding_generated ?? 0}`} accent="#ec4899" icon="mdi:robot-happy-outline" />
+        <StatCard label="Elapsed" value={fmtElapsed(stats.elapsed_seconds)} accent="#f59e0b" icon="mdi:timer-outline" />
         <DifficultyCard byDifficulty={stats.by_difficulty} />
       </Box>
     </Box>
@@ -331,15 +333,15 @@ function GenerationLog({
 }) {
   const [shown, setShown] = useState<AdaptiveCourseJobLogEntry[]>([]);
   const [finished, setFinished] = useState(0);
-  // Typed text keyed to the entry id so a stale partial never lands on a new line.
-  const [typed, setTyped] = useState<{ id: number; text: string }>({ id: -1, text: "" });
-  const seenRef = useRef<Set<number>>(new Set());
+  // Typed text keyed to the entry key so a stale partial never lands on a new line.
+  const [typed, setTyped] = useState<{ key: string; text: string }>({ key: "", text: "" });
+  const seenRef = useRef<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const fresh = entries.filter((e) => !seenRef.current.has(e.id));
+    const fresh = entries.filter((e) => !seenRef.current.has(e.key));
     if (fresh.length === 0) return;
-    fresh.forEach((e) => seenRef.current.add(e.id));
+    fresh.forEach((e) => seenRef.current.add(e.key));
     setShown((prev) => [...prev, ...fresh]);
   }, [entries]);
 
@@ -359,7 +361,7 @@ function GenerationLog({
         return;
       }
       const n = Math.min(target.length, Math.floor((performance.now() - start) / charMs));
-      setTyped({ id: current.id, text: target.slice(0, n) });
+      setTyped({ key: current.key, text: target.slice(0, n) });
       if (n < target.length) raf = requestAnimationFrame(tick);
       else setTimeout(() => setFinished((f) => f + 1), 110);
     };
@@ -374,7 +376,7 @@ function GenerationLog({
   const matches = (e: AdaptiveCourseJobLogEntry) => filter === "all" || e.difficulty === filter;
   const doneLines = shown.slice(0, finished).filter(matches);
   const current = shown[finished];
-  const currentText = current && typed.id === current.id ? typed.text : "";
+  const currentText = current && typed.key === current.key ? typed.text : "";
   const totalShown = doneLines.length + (current && matches(current) ? 1 : 0);
 
   return (
@@ -388,11 +390,11 @@ function GenerationLog({
     >
       {totalShown === 0 && (
         <Typography sx={{ color: "#64748b", fontFamily: "inherit", fontSize: "inherit" }}>
-          {active ? "Waiting for the engine to start writing questions…" : "No questions to show for this filter."}
+          {active ? "Waiting for the engine to start writing…" : "Nothing to show for this filter."}
         </Typography>
       )}
       {doneLines.map((e) => (
-        <LogLine key={e.id} entry={e} text={e.text} done />
+        <LogLine key={e.key} entry={e} text={e.text} done />
       ))}
       {current && matches(current) && <LogLine entry={current} text={currentText} />}
     </Box>
@@ -400,14 +402,21 @@ function GenerationLog({
 }
 
 function LogLine({ entry, text, done }: { entry: AdaptiveCourseJobLogEntry; text: string; done?: boolean }) {
-  const dColor = DIFF_COLOR[entry.difficulty] ?? "#94a3b8";
+  const isArticle = entry.kind === "article";
+  const isCoding = entry.kind === "coding";
+  const dColor = isArticle ? "#a855f7" : isCoding ? "#ec4899" : DIFF_COLOR[entry.difficulty] ?? "#94a3b8";
+  const tag = isArticle
+    ? `article·${entry.title || ""}`.slice(0, 28)
+    : isCoding
+      ? `coding·${entry.difficulty}`
+      : `${entry.skill || "general"}·${entry.difficulty}`;
   return (
     <Box sx={{ mb: 0.75, display: "flex", gap: 0.75, alignItems: "flex-start" }}>
       <Box component="span" sx={{ color: done ? "#10b981" : "#a855f7", flexShrink: 0 }}>
         {done ? "✓" : "✎"}
       </Box>
       <Box component="span" sx={{ color: dColor, flexShrink: 0, fontSize: "0.7rem", pt: "1px", fontWeight: 700 }}>
-        [{entry.skill || "general"}·{entry.difficulty}]
+        [{tag}]
       </Box>
       <Box component="span" sx={{ color: "#e2e8f0", wordBreak: "break-word" }}>
         {text}

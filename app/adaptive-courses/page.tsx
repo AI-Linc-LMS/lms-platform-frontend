@@ -45,11 +45,13 @@ export default function AdaptiveCourseListPage() {
   const stats = useMemo(() => {
     let modules = 0;
     let quizzes = 0;
+    let articles = 0;
     for (const c of items) {
       modules += c.module_count;
       quizzes += c.quiz_count;
+      articles += c.article_count;
     }
-    return { courses: items.length, modules, quizzes };
+    return { courses: items.length, modules, quizzes, articles };
   }, [items]);
 
   if (!featureOn) {
@@ -57,10 +59,10 @@ export default function AdaptiveCourseListPage() {
       <MainLayout>
         <Container sx={{ py: 8, textAlign: "center" }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Adaptive Course isn't enabled for this organisation.
+            {"Adaptive Course isn't enabled for this organisation."}
           </Typography>
           <Typography sx={{ color: "text.secondary", mt: 1 }}>
-            Ask your administrator to switch on the "Adaptive Quiz" feature.
+            {'Ask your administrator to switch on the "Adaptive Quiz" feature.'}
           </Typography>
         </Container>
       </MainLayout>
@@ -84,6 +86,7 @@ export default function AdaptiveCourseListPage() {
               items={[
                 { value: stats.courses, label: "Courses available", accent: "#6366f1" },
                 { value: stats.modules, label: "Modules", accent: "#a855f7" },
+                { value: stats.articles, label: "Adaptive articles", accent: "#10b981" },
                 { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
               ]}
             />
@@ -210,7 +213,11 @@ function CourseCard({
       <Box sx={{ display: "flex", gap: 2, mt: 2, flexWrap: "wrap" }}>
         <Metric icon="mdi:view-module-outline" label="modules" value={course.module_count} />
         <Metric icon="mdi:file-tree-outline" label="submodules" value={course.submodule_count} />
+        <Metric icon="mdi:book-open-variant" label="articles" value={course.article_count} />
         <Metric icon="mdi:tune-vertical" label="quizzes" value={course.quiz_count} />
+        {(course.coding_count ?? 0) > 0 && (
+          <Metric icon="mdi:robot-happy-outline" label="coding" value={course.coding_count ?? 0} />
+        )}
       </Box>
     </ButtonBase>
   );
@@ -246,8 +253,7 @@ function EmptyState() {
         No adaptive courses yet.
       </Typography>
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
-        Your instructor hasn't published an adaptive course on this account yet.
-        Check back soon — once one is ready, it'll appear here.
+        {"Your instructor hasn't published an adaptive course on this account yet. Check back soon — once one is ready, it'll appear here."}
       </Typography>
     </Box>
   );
