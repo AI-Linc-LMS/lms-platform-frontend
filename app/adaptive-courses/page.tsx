@@ -72,7 +72,7 @@ export default function AdaptiveCourseListPage() {
   return (
     <MainLayout>
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell>
+        <AdaptiveSectionShell meshOpacity={0.18}>
           <AdaptiveSectionHero
             chapter="Library · Adaptive Engine"
             title="Adaptive Course"
@@ -146,14 +146,16 @@ function CourseCard({
         height: "100%",
         textAlign: "left",
         display: "block",
-        borderRadius: 4,
+        borderRadius: 3,
         p: 2.5,
-        bgcolor: "color-mix(in srgb, var(--card-bg) 75%, transparent)",
-        border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-        transition: "transform 140ms ease, box-shadow 140ms ease",
+        bgcolor: "var(--card-bg, #fff)",
+        border: "1px solid var(--border-default, #ececf1)",
+        boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 10px 26px -22px rgba(16,24,40,0.18)",
+        transition: "transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
         "&:hover": {
           transform: "translateY(-3px)",
-          boxShadow: "0 22px 44px -24px rgba(168, 85, 247, 0.5)",
+          borderColor: "color-mix(in srgb, #6366f1 40%, transparent)",
+          boxShadow: "0 20px 40px -26px rgba(99, 102, 241, 0.45)",
         },
       }}
     >
@@ -217,6 +219,9 @@ function CourseCard({
         <Metric icon="mdi:tune-vertical" label="quizzes" value={course.quiz_count} />
         {(course.coding_count ?? 0) > 0 && (
           <Metric icon="mdi:robot-happy-outline" label="coding" value={course.coding_count ?? 0} />
+        )}
+        {(course.video_count ?? 0) > 0 && (
+          <Metric icon="mdi:play-circle-outline" label="videos" value={course.video_count ?? 0} />
         )}
       </Box>
     </ButtonBase>

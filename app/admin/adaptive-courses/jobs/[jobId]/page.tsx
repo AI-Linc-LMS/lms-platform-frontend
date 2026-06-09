@@ -74,13 +74,16 @@ export default function AdaptiveCourseJobPage() {
   // changed in a ref and flipping `stalled` from the timer callback only.
   const STALL_MS = 90_000;
   const [stalled, setStalled] = useState(false);
-  const progressRef = useRef<{ q: number; at: number }>({ q: -1, at: 0 });
+  const progressRef = useRef<{ p: number; at: number }>({ p: -1, at: 0 });
 
   useEffect(() => {
     if (!job) return;
-    const q = job.stats.questions_generated;
-    if (q !== progressRef.current.q) {
-      progressRef.current = { q, at: Date.now() };
+    // Track overall items completed (advances for every content type), not just
+    // questions — a video/article-only run generates zero questions but still
+    // makes progress, and must not be flagged as stalled.
+    const p = job.completed_content_items;
+    if (p !== progressRef.current.p) {
+      progressRef.current = { p, at: Date.now() };
     }
   }, [job]);
 
@@ -144,8 +147,8 @@ export default function AdaptiveCourseJobPage() {
                   <Box>
                     <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>Generation has stalled</Typography>
                     <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", lineHeight: 1.5 }}>
-                      No new questions for over a minute while the job is still marked in-progress — the Celery worker was
-                      likely restarted mid-run. The {job.stats.questions_generated} questions already generated are saved.
+                      No new content for over a minute while the job is still marked in-progress — the Celery worker was
+                      likely restarted mid-run. The {job.completed_content_items} item{job.completed_content_items === 1 ? "" : "s"} already generated are saved.
                       Delete this draft course and re-generate to finish cleanly.
                     </Typography>
                   </Box>
@@ -239,14 +242,22 @@ function fmtElapsed(sec: number): string {
 function StatsRail({ stats, status, percent, stalled }: { stats: AdaptiveCourseJobStats; status: string; percent: number; stalled: boolean }) {
   const qPlanned = stats.questions_planned;
   const qDone = stats.questions_generated;
-  const qPct = qPlanned > 0 ? Math.min(100, Math.round((qDone / qPlanned) * 100)) : percent;
+  // Quizzes give the finest live signal (per-question); when a run has no quiz,
+  // fall back to overall submodule progress with a neutral label rather than
+  // showing a misleading "Questions 0" bar.
+  const hasQuiz = qPlanned > 0;
+  const barTitle = hasQuiz ? "Questions" : "Progress";
+  const barValue = hasQuiz
+    ? `${qDone} / ~${qPlanned}`
+    : `${stats.submodules_done} / ${stats.submodules_total}`;
+  const qPct = hasQuiz ? Math.min(100, Math.round((qDone / qPlanned) * 100)) : percent;
   const live = !["completed", "failed"].includes(status);
   return (
     <Box>
-      {/* Question-level progress (finer than submodule %) */}
+      {/* Finest available live signal: per-question for quiz runs, else submodule % */}
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "0.85rem" }}>
-          Questions
+          {barTitle}
           {live && stalled && (
             <Box component="span" sx={{ ml: 1, fontSize: "0.7rem", fontWeight: 800, color: "#f59e0b" }}>
               <Box component="span" sx={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", bgcolor: "#f59e0b", mr: 0.5 }} />
@@ -261,7 +272,7 @@ function StatsRail({ stats, status, percent, stalled }: { stats: AdaptiveCourseJ
           )}
         </Typography>
         <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#a855f7" }}>
-          {qDone}{qPlanned > 0 ? ` / ~${qPlanned}` : ""}
+          {barValue}
         </Typography>
       </Box>
       <Box sx={{ height: 8, borderRadius: 999, bgcolor: "color-mix(in srgb, var(--border-default) 60%, transparent)", overflow: "hidden" }}>
@@ -269,11 +280,12 @@ function StatsRail({ stats, status, percent, stalled }: { stats: AdaptiveCourseJ
       </Box>
 
       {/* Stat cards */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(6, 1fr)" }, gap: 1.5, mt: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(7, 1fr)" }, gap: 1.5, mt: 2 }}>
         <StatCard label="Submodules" value={`${stats.submodules_done} / ${stats.submodules_total}`} accent="#6366f1" icon="mdi:file-tree-outline" />
         <StatCard label="Questions" value={qPlanned > 0 ? `${qDone} / ~${qPlanned}` : `${qDone}`} accent="#a855f7" icon="mdi:help-box-multiple-outline" />
         <StatCard label="Articles" value={`${stats.articles_generated ?? 0}`} accent="#10b981" icon="mdi:book-open-variant" />
         <StatCard label="Coding" value={`${stats.coding_generated ?? 0}`} accent="#ec4899" icon="mdi:robot-happy-outline" />
+        <StatCard label="Videos" value={`${stats.videos_generated ?? 0}`} accent="#6366f1" icon="mdi:play-circle-outline" />
         <StatCard label="Elapsed" value={fmtElapsed(stats.elapsed_seconds)} accent="#f59e0b" icon="mdi:timer-outline" />
         <DifficultyCard byDifficulty={stats.by_difficulty} />
       </Box>
@@ -404,12 +416,15 @@ function GenerationLog({
 function LogLine({ entry, text, done }: { entry: AdaptiveCourseJobLogEntry; text: string; done?: boolean }) {
   const isArticle = entry.kind === "article";
   const isCoding = entry.kind === "coding";
-  const dColor = isArticle ? "#a855f7" : isCoding ? "#ec4899" : DIFF_COLOR[entry.difficulty] ?? "#94a3b8";
+  const isVideo = entry.kind === "video";
+  const dColor = isArticle ? "#a855f7" : isCoding ? "#ec4899" : isVideo ? "#6366f1" : DIFF_COLOR[entry.difficulty] ?? "#94a3b8";
   const tag = isArticle
     ? `article·${entry.title || ""}`.slice(0, 28)
     : isCoding
       ? `coding·${entry.difficulty}`
-      : `${entry.skill || "general"}·${entry.difficulty}`;
+      : isVideo
+        ? `video·${entry.title || ""}`.slice(0, 28)
+        : `${entry.skill || "general"}·${entry.difficulty}`;
   return (
     <Box sx={{ mb: 0.75, display: "flex", gap: 0.75, alignItems: "flex-start" }}>
       <Box component="span" sx={{ color: done ? "#10b981" : "#a855f7", flexShrink: 0 }}>

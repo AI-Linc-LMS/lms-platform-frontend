@@ -23,10 +23,12 @@ import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveS
 import {
   adminAdaptiveCourseService,
   type AdminAdaptiveCourseDetail,
+  type AdminAdaptiveCourseModule,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { CourseQuizEditor } from "@/components/admin/adaptive-course/CourseQuizEditor";
 import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArticleViewer";
 import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodingViewer";
+import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVideoReview";
 
 type DialogState =
   | { kind: "module" }
@@ -38,6 +40,13 @@ const ALL_DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
 // The AI decides 2–4 sub-skills (key_concepts) per submodule; we use this for a
 // best-effort estimate of how many questions a quiz will hold.
 const EST_CONCEPTS_PER_SUBMODULE = 3;
+
+const CONTENT_TYPE_LABEL: Record<"quiz" | "article" | "coding" | "video", string> = {
+  quiz: "Quiz",
+  article: "Article",
+  coding: "AI Coding Mentor",
+  video: "Video Companion",
+};
 
 export default function AdminAdaptiveCourseDetailPage() {
   const router = useRouter();
@@ -78,7 +87,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["Easy", "Medium", "Hard"]);
   const [perCell, setPerCell] = useState(2);
   const [subCount, setSubCount] = useState(3);
-  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding">>(["quiz", "article"]);
+  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding" | "video">>(["quiz", "article"]);
   const [codingClipboard, setCodingClipboard] = useState(false);
 
   function openDialog(state: DialogState) {
@@ -93,10 +102,10 @@ export default function AdminAdaptiveCourseDetailPage() {
     setDialog(state);
   }
 
-  function toggleContentType(t: "quiz" | "article" | "coding") {
+  function toggleContentType(t: "quiz" | "article" | "coding" | "video") {
     setContentTypes((prev) => {
       const next = prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t];
-      return (["quiz", "article", "coding"] as const).filter((x) => next.includes(x));
+      return (["quiz", "article", "coding", "video"] as const).filter((x) => next.includes(x));
     });
   }
 
@@ -285,37 +294,43 @@ export default function AdminAdaptiveCourseDetailPage() {
                       sx={{
                         borderRadius: 4,
                         p: { xs: 2, md: 2.5 },
-                        bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)",
-                        border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                        bgcolor: "var(--card-bg, #fff)",
+                        border: "1px solid var(--border-default, #ececf1)",
+                        boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 10px 26px -22px rgba(16,24,40,0.18)",
                       }}
                     >
                       <Box
                         sx={{
                           display: "flex",
-                          alignItems: "center",
+                          alignItems: "flex-start",
                           justifyContent: "space-between",
                           gap: 1.5,
                           mb: 1.75,
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
                           <Box
                             sx={{
-                              minWidth: 36,
-                              height: 36,
-                              px: 1,
-                              borderRadius: 2,
+                              width: 44,
+                              height: 44,
+                              borderRadius: 2.5,
                               display: "grid",
                               placeItems: "center",
-                              fontWeight: 800,
-                              fontSize: "0.8rem",
                               color: "white",
+                              flexShrink: 0,
                               background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                              boxShadow: "0 12px 24px -14px rgba(168,85,247,0.6)",
                             }}
                           >
-                            W{mod.weekno}
+                            <Icon icon="mdi:calendar-week-outline" width={22} />
                           </Box>
-                          <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>{mod.title}</Typography>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a855f7" }}>
+                              Week {mod.weekno}
+                            </Typography>
+                            <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.25 }}>{mod.title}</Typography>
+                            <ModuleSummary mod={mod} />
+                          </Box>
                         </Box>
                         <ButtonBase
                           onClick={() =>
@@ -505,9 +520,13 @@ export default function AdminAdaptiveCourseDetailPage() {
                                   })}
                                 </Box>
                               ))}
+                              {(sub.video_companions ?? []).map((vc) => (
+                                <MatchedVideoReview key={vc.id} companion={vc} onChanged={() => void load()} />
+                              ))}
                               {sub.quizzes.length === 0 &&
                                 sub.articles.length === 0 &&
-                                (sub.coding_sets?.length ?? 0) === 0 && (
+                                (sub.coding_sets?.length ?? 0) === 0 &&
+                                (sub.video_companions?.length ?? 0) === 0 && (
                                   <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
                                     No content generated for this submodule.
                                   </Typography>
@@ -534,8 +553,10 @@ export default function AdminAdaptiveCourseDetailPage() {
         <DialogContent>
           <Typography sx={{ color: "text.secondary", fontSize: "0.85rem", mb: 2 }}>
             Describe the topic / focus. The engine designs the {dialog?.kind === "module" ? "module's submodules" : "submodule"} and
-            generates the selected content types ({contentTypes.length ? contentTypes.map((t) => (t === "coding" ? "AI Coding Mentor" : t)).join(" · ") : "none selected"}) for each new submodule.
-            Pick <strong>AI Coding Mentor</strong> below to add coding problems.
+            generates the selected content types ({contentTypes.length ? contentTypes.map((t) => CONTENT_TYPE_LABEL[t]).join(" · ") : "none selected"}) for each new submodule.
+            {contentTypes.includes("video") && (
+              <> Video Companion AI-matches a transcribed Vimeo video from your catalog (review &amp; swap after).</>
+            )}
           </Typography>
           <TextField
             autoFocus
@@ -585,6 +606,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                 ["article", "Article", "mdi:book-open-variant"],
                 ["quiz", "Quiz", "mdi:tune-vertical"],
                 ["coding", "AI Coding Mentor", "mdi:robot-happy-outline"],
+                ["video", "Video Companion", "mdi:play-circle-outline"],
               ] as const).map(([key, label, icon]) => {
                 const active = contentTypes.includes(key);
                 return (
@@ -622,6 +644,7 @@ export default function AdminAdaptiveCourseDetailPage() {
             )}
           </Box>
 
+          {(contentTypes.includes("quiz") || contentTypes.includes("coding")) && (
           <Box sx={{ mt: 2.5 }}>
             <Typography sx={{ fontWeight: 800, fontSize: "0.8rem", mb: 1 }}>Difficulty tiers</Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -644,14 +667,17 @@ export default function AdminAdaptiveCourseDetailPage() {
               })}
             </Box>
           </Box>
+          )}
 
-          <TextField
-            type="number"
-            label="Questions per skill cell"
-            value={perCell}
-            onChange={(e) => setPerCell(clamp(Number(e.target.value), 1, 10))}
-            sx={{ mt: 2.5, width: 220 }}
-          />
+          {contentTypes.includes("quiz") && (
+            <TextField
+              type="number"
+              label="Questions per skill cell"
+              value={perCell}
+              onChange={(e) => setPerCell(clamp(Number(e.target.value), 1, 10))}
+              sx={{ mt: 2.5, width: 220 }}
+            />
+          )}
 
           <Box
             sx={{
@@ -675,10 +701,30 @@ export default function AdminAdaptiveCourseDetailPage() {
                   {" "}· <strong>~{submodulesToAdd * difficulties.length * 2} coding problems</strong>
                 </>
               )}
-              <br />
-              ({EST_CONCEPTS_PER_SUBMODULE} concepts × {difficulties.length} difficulty tier
-              {difficulties.length === 1 ? "" : "s"} × {perCell}/cell — the AI sets 2–4 concepts per submodule,
-              so the real count varies a little.)
+              {contentTypes.includes("article") && (
+                <>
+                  {" "}· <strong>{submodulesToAdd} article{submodulesToAdd === 1 ? "" : "s"}</strong>
+                </>
+              )}
+              {contentTypes.includes("video") && (
+                <>
+                  {" "}· <strong>{submodulesToAdd} video companion{submodulesToAdd === 1 ? "" : "s"}</strong>
+                </>
+              )}
+              {(contentTypes.includes("quiz") || contentTypes.includes("coding")) && (
+                <>
+                  <br />
+                  ({EST_CONCEPTS_PER_SUBMODULE} concepts × {difficulties.length} difficulty tier
+                  {difficulties.length === 1 ? "" : "s"} × {perCell}/cell — the AI sets 2–4 concepts per submodule,
+                  so the real count varies a little.)
+                </>
+              )}
+              {contentTypes.includes("video") && (
+                <>
+                  <br />
+                  (Video Companion needs a synced Vimeo catalog with transcribed videos.)
+                </>
+              )}
             </Typography>
           </Box>
         </DialogContent>
@@ -706,6 +752,35 @@ export default function AdminAdaptiveCourseDetailPage() {
 function clamp(n: number, min: number, max: number): number {
   if (Number.isNaN(n)) return min;
   return Math.min(max, Math.max(min, n));
+}
+
+/** Compact per-module content summary: submodule count + totals by content type. */
+function ModuleSummary({ mod }: { mod: AdminAdaptiveCourseModule }) {
+  const subs = mod.submodules;
+  const sum = (fn: (s: (typeof subs)[number]) => number) => subs.reduce((n, s) => n + fn(s), 0);
+  const articles = sum((s) => s.articles.length);
+  const quizzes = sum((s) => s.quizzes.length);
+  const coding = sum((s) => (s.coding_sets ?? []).reduce((n, c) => n + c.problems.length, 0));
+  const videos = sum((s) => s.video_companions?.length ?? 0);
+
+  const items: { icon: string; n: number; label: string; accent: string }[] = [
+    { icon: "mdi:file-tree-outline", n: subs.length, label: `submodule${subs.length === 1 ? "" : "s"}`, accent: "#6366f1" },
+    { icon: "mdi:book-open-variant", n: articles, label: "articles", accent: "#a855f7" },
+    { icon: "mdi:tune-vertical", n: quizzes, label: "quizzes", accent: "#6366f1" },
+    { icon: "mdi:robot-happy-outline", n: coding, label: "coding", accent: "#ec4899" },
+    { icon: "mdi:play-circle-outline", n: videos, label: "videos", accent: "#0ea5e9" },
+  ].filter((x) => x.n > 0);
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mt: 0.6, flexWrap: "wrap" }}>
+      {items.map((x) => (
+        <Box key={x.label} component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, fontSize: "0.74rem", fontWeight: 700, color: "text.secondary" }}>
+          <Icon icon={x.icon} width={13} style={{ color: x.accent }} />
+          {x.n} {x.label}
+        </Box>
+      ))}
+    </Box>
+  );
 }
 
 function prettySkill(s: string): string {

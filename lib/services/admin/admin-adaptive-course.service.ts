@@ -17,7 +17,7 @@ export interface AdaptiveCourseGenConfig {
   se_threshold?: number;
   hint_tokens?: number;
   confidence_prompt_enabled?: boolean;
-  content_types?: Array<"quiz" | "article" | "coding">;
+  content_types?: Array<"quiz" | "article" | "coding" | "video">;
   /** AI Coding Mentor knobs — only used when content_types includes "coding". */
   coding_problems_per_submodule?: number;
   coding_language?: string;
@@ -68,8 +68,10 @@ export interface AdaptiveCourseJobTreeSubmodule {
   quiz_ready: boolean;
   article_ready?: boolean;
   coding_ready?: boolean;
+  video_ready?: boolean;
   question_count: number;
   coding_problem_count?: number;
+  video_count?: number;
 }
 
 export interface AdaptiveCourseJobTreeModule {
@@ -81,7 +83,7 @@ export interface AdaptiveCourseJobTreeModule {
 
 export interface AdaptiveCourseJobLogEntry {
   key: string;
-  kind: "quiz" | "article" | "coding";
+  kind: "quiz" | "article" | "coding" | "video";
   id: number;
   skill: string;
   difficulty: string;
@@ -96,6 +98,7 @@ export interface AdaptiveCourseJobStats {
   questions_generated: number;
   articles_generated: number;
   coding_generated?: number;
+  videos_generated?: number;
   by_difficulty: Record<string, number>;
   elapsed_seconds: number;
 }
@@ -182,6 +185,16 @@ export interface AdminCodingProblemDetail {
   updated_at: string;
 }
 
+export interface AdminAdaptiveCourseVideoCompanion {
+  id: number;
+  title: string;
+  video_title: string;
+  thumbnail_url: string;
+  duration_seconds: number;
+  check_in_count: number;
+  is_active: boolean;
+}
+
 export interface AdminAdaptiveCourseSubModule {
   id: number;
   order: number;
@@ -190,6 +203,7 @@ export interface AdminAdaptiveCourseSubModule {
   articles: AdminAdaptiveCourseArticle[];
   quizzes: AdminAdaptiveCourseQuiz[];
   coding_sets?: AdminAdaptiveCourseCodingSet[];
+  video_companions?: AdminAdaptiveCourseVideoCompanion[];
 }
 
 export interface AdminAdaptiveCourseModule {
@@ -213,6 +227,7 @@ export interface AdminAdaptiveCourseListItem {
   quiz_count: number;
   article_count: number;
   coding_count?: number;
+  video_count?: number;
   created_at: string;
   updated_at: string;
 }

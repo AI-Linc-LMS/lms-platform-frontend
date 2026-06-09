@@ -71,6 +71,15 @@ export interface AdaptiveCourseCodingSet {
   problems: AdaptiveCourseCodingProblemSummary[];
 }
 
+export interface AdaptiveCourseVideoCompanionSummary {
+  id: number;
+  title: string;
+  video_title: string;
+  thumbnail_url: string;
+  duration_seconds: number;
+  check_in_count: number;
+}
+
 export interface AdaptiveCourseSubModule {
   id: number;
   order: number;
@@ -79,6 +88,7 @@ export interface AdaptiveCourseSubModule {
   articles: AdaptiveCourseArticleSummary[];
   quizzes: AdaptiveCourseQuizSummary[];
   coding_sets?: AdaptiveCourseCodingSet[];
+  video_companions?: AdaptiveCourseVideoCompanionSummary[];
 }
 
 export interface AdaptiveCourseModule {
@@ -101,6 +111,7 @@ export interface AdaptiveCourseListItem {
   quiz_count: number;
   article_count: number;
   coding_count?: number;
+  video_count?: number;
   updated_at: string;
 }
 

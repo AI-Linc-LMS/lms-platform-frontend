@@ -142,7 +142,8 @@ function HeroCard({
 }) {
   const isArticle = hero?.kind === "article";
   const isCoding = hero?.kind === "coding";
-  const accent = isArticle ? "#a855f7" : isCoding ? "#ec4899" : hero ? DIFF[hero.difficulty] ?? "#6366f1" : "#6366f1";
+  const isVideo = hero?.kind === "video";
+  const accent = isArticle ? "#a855f7" : isCoding ? "#ec4899" : isVideo ? "#6366f1" : hero ? DIFF[hero.difficulty] ?? "#6366f1" : "#6366f1";
   return (
     <Box
       sx={{
@@ -167,11 +168,12 @@ function HeroCard({
           fontWeight: 800, fontSize: "0.64rem", letterSpacing: "0.1em",
           color: done ? "#10b981" : "#6366f1",
           bgcolor: done ? "color-mix(in srgb, #10b981 12%, transparent)" : "color-mix(in srgb, #6366f1 12%, transparent)" }}>
-          <Icon icon={done ? "mdi:check" : isArticle ? "mdi:book-open-variant" : isCoding ? "mdi:robot-happy-outline" : "mdi:fountain-pen-tip"} width={12} />
-          {done ? "COMPLETE" : isArticle ? "WRITING ARTICLE" : isCoding ? "WRITING CODING PROBLEM" : "WRITING NOW"}
+          <Icon icon={done ? "mdi:check" : isArticle ? "mdi:book-open-variant" : isCoding ? "mdi:robot-happy-outline" : isVideo ? "mdi:play-circle-outline" : "mdi:fountain-pen-tip"} width={12} />
+          {done ? "COMPLETE" : isArticle ? "WRITING ARTICLE" : isCoding ? "WRITING CODING PROBLEM" : isVideo ? "BUILDING VIDEO COMPANION" : "WRITING NOW"}
         </Box>
         {hero && isArticle && hero.title && <Chip label={hero.title} color="#a855f7" subtle />}
         {hero && isCoding && hero.title && <Chip label={hero.title} color="#ec4899" subtle />}
+        {hero && isVideo && hero.title && <Chip label={hero.title} color="#6366f1" subtle />}
         {hero && isCoding && <Chip label={hero.difficulty} color="#ec4899" subtle />}
         {hero && !isArticle && !isCoding && <Chip label={hero.difficulty} color={accent} subtle />}
         {hero && !isArticle && !isCoding && hero.skill && <Chip label={hero.skill} color="#6366f1" subtle />}
@@ -234,8 +236,8 @@ function TreeCard({ tree }: { tree: AdaptiveCourseJobTreeModule[] }) {
           kind: "sub",
           key: `s${sub.id}`,
           title: sub.title,
-          ready: Boolean(sub.quiz_ready || sub.article_ready || sub.coding_ready),
-          count: sub.question_count + (sub.coding_problem_count ?? 0),
+          ready: Boolean(sub.quiz_ready || sub.article_ready || sub.coding_ready || sub.video_ready),
+          count: sub.question_count + (sub.coding_problem_count ?? 0) + (sub.video_count ?? 0),
         });
       }
     }
@@ -361,7 +363,8 @@ function SkillsCard({ skills }: { skills: AdaptiveCourseSkill[] }) {
 function RecentCard({ entry }: { entry: AdaptiveCourseJobLogEntry }) {
   const isArticle = entry.kind === "article";
   const isCoding = entry.kind === "coding";
-  const accent = isArticle ? "#a855f7" : isCoding ? "#ec4899" : DIFF[entry.difficulty] ?? "#6366f1";
+  const isVideo = entry.kind === "video";
+  const accent = isArticle ? "#a855f7" : isCoding ? "#ec4899" : isVideo ? "#6366f1" : DIFF[entry.difficulty] ?? "#6366f1";
   return (
     <Box sx={{
       height: "100%", borderRadius: 4, p: 1.75, position: "relative", overflow: "hidden",
@@ -370,15 +373,17 @@ function RecentCard({ entry }: { entry: AdaptiveCourseJobLogEntry }) {
     }}>
       <Box sx={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, bgcolor: accent }} />
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, mb: 0.6 }}>
-        <Icon icon={isArticle ? "mdi:book-open-variant" : isCoding ? "mdi:robot-happy-outline" : "mdi:check"} width={13} style={{ color: isArticle ? "#a855f7" : isCoding ? "#ec4899" : "#10b981" }} />
+        <Icon icon={isArticle ? "mdi:book-open-variant" : isCoding ? "mdi:robot-happy-outline" : isVideo ? "mdi:play-circle-outline" : "mdi:check"} width={13} style={{ color: isArticle ? "#a855f7" : isCoding ? "#ec4899" : isVideo ? "#6366f1" : "#10b981" }} />
         {isArticle ? (
           <Chip label="Article" color={accent} small />
         ) : isCoding ? (
           <Chip label="Coding" color={accent} small />
+        ) : isVideo ? (
+          <Chip label="Video" color={accent} small />
         ) : (
           <Chip label={entry.difficulty} color={accent} small />
         )}
-        {(isArticle || isCoding) && entry.title ? (
+        {(isArticle || isCoding || isVideo) && entry.title ? (
           <Typography sx={{ fontSize: "0.68rem", color: "text.secondary", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>· {entry.title}</Typography>
         ) : entry.skill ? (
           <Typography sx={{ fontSize: "0.68rem", color: "text.secondary", fontWeight: 700 }}>· {entry.skill}</Typography>

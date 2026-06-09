@@ -169,7 +169,7 @@ export default function AdminAdaptiveCoursesPage() {
                   </Box>
                   <ProgressBar pct={job.progress_percentage} />
                   <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", mt: 0.75 }}>
-                    {statusLabel(job.status)} · {job.completed_content_items}/{job.total_content_items} quizzes
+                    {statusLabel(job.status)} · {job.completed_content_items}/{job.total_content_items} items
                   </Typography>
                 </ButtonBase>
               ))}
@@ -307,6 +307,9 @@ function CourseCard({
           <Metric icon="mdi:book-open-variant" value={course.article_count} label="articles" />
           <Metric icon="mdi:tune-vertical" value={course.quiz_count} label="quizzes" />
           <Metric icon="mdi:robot-happy-outline" value={course.coding_count ?? 0} label="coding" />
+          {(course.video_count ?? 0) > 0 && (
+            <Metric icon="mdi:play-circle-outline" value={course.video_count ?? 0} label="videos" />
+          )}
         </Box>
       </ButtonBase>
 
@@ -388,7 +391,7 @@ export function statusLabel(status: string): string {
     case "creating_structure":
       return "Building structure";
     case "generating_content":
-      return "Generating quizzes";
+      return "Generating content";
     case "completed":
       return "Completed";
     case "failed":

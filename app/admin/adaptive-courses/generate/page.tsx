@@ -37,17 +37,17 @@ export default function GenerateAdaptiveCoursePage() {
   const [minQuestions, setMinQuestions] = useState(8);
   const [maxQuestions, setMaxQuestions] = useState(20);
   const [confidence, setConfidence] = useState(true);
-  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding">>(["quiz", "article"]);
+  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding" | "video">>(["quiz", "article"]);
   const [codingClipboard, setCodingClipboard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const canSubmit =
     title.trim().length > 1 && description.trim().length > 4 && difficulties.length > 0 && contentTypes.length > 0;
 
-  function toggleContentType(t: "quiz" | "article" | "coding") {
+  function toggleContentType(t: "quiz" | "article" | "coding" | "video") {
     setContentTypes((prev) => {
       const next = prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t];
-      return (["quiz", "article", "coding"] as const).filter((x) => next.includes(x));
+      return (["quiz", "article", "coding", "video"] as const).filter((x) => next.includes(x));
     });
   }
 
@@ -187,6 +187,7 @@ export default function GenerateAdaptiveCoursePage() {
                     ["article", "Adaptive Article", "mdi:book-open-variant"],
                     ["quiz", "Adaptive Quiz", "mdi:tune-vertical"],
                     ["coding", "AI Coding Mentor", "mdi:robot-happy-outline"],
+                    ["video", "Video Companion", "mdi:play-circle-outline"],
                   ] as const).map(([key, label, icon]) => {
                     const active = contentTypes.includes(key);
                     return (
@@ -223,6 +224,12 @@ export default function GenerateAdaptiveCoursePage() {
                       (off = anti-paste hardening; changeable per set later)
                     </Typography>
                   </Box>
+                )}
+                {contentTypes.includes("video") && (
+                  <Typography sx={{ mt: 1.25, fontSize: "0.78rem", color: "text.secondary", display: "flex", gap: 0.5, alignItems: "center" }}>
+                    <Icon icon="mdi:information-outline" width={16} />
+                    We AI-match a transcribed Vimeo video per submodule from your catalog (review &amp; swap after). Sync the catalog first if it&apos;s empty.
+                  </Typography>
                 )}
               </Box>
 
