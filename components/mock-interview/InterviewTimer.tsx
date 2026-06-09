@@ -19,44 +19,55 @@ export function InterviewTimer({
   paused = false,
   bonusSeconds = 0,
 }: InterviewTimerProps) {
-  const [timeRemaining, setTimeRemaining] = useState(durationMinutes * 60);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(
+    durationMinutes * 60 + bonusSeconds,
+  );
   const startTimeRef = useRef<Date>(startedAt || new Date());
-  const initialBonusRef = useRef(bonusSeconds);
-
-  useEffect(() => {
-    if (startedAt) {
-      startTimeRef.current = startedAt;
-      const wallElapsed = Math.floor(
-        (new Date().getTime() - startedAt.getTime()) / 1000
-      );
-      const adjustedElapsed = Math.max(
-        0,
-        wallElapsed - initialBonusRef.current,
-      );
-      setTimeRemaining(Math.max(0, durationMinutes * 60 - adjustedElapsed));
-    } else {
-      setTimeRemaining(durationMinutes * 60);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [durationMinutes, startedAt]);
-
-  useEffect(() => {
-    if (paused) return;
-    if (timeRemaining <= 0) return;
-
-    intervalRef.current = setInterval(() => {
-      setTimeRemaining((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [timeRemaining, paused]);
-
+  // Total seconds the timer has spent paused (e.g. while a coding modal is open), plus the
+  // start of the current pause window if we're paused right now. The countdown is derived
+  // from wall-clock minus paused time, so it can never drift or "freeze at 6:58".
+  const pausedAccumRef = useRef(0);
+  const pauseStartedRef = useRef<number | null>(null);
   const onTimeUpFiredRef = useRef(false);
+
+  useEffect(() => {
+    if (startedAt) startTimeRef.current = startedAt;
+  }, [startedAt]);
+
+  // Track pause windows so the effective elapsed time excludes paused stretches.
+  useEffect(() => {
+    if (paused) {
+      if (pauseStartedRef.current === null) pauseStartedRef.current = Date.now();
+    } else if (pauseStartedRef.current !== null) {
+      pausedAccumRef.current += (Date.now() - pauseStartedRef.current) / 1000;
+      pauseStartedRef.current = null;
+    }
+  }, [paused]);
+
+  // Single ticking loop. Recomputes remaining from the wall clock every tick and ALWAYS
+  // includes the live `bonusSeconds` (coding turns credit extra time) — the previous code
+  // snapshotted bonus once at mount, so coding bonus never extended the visible countdown
+  // and the timer could hit zero early and fire a spurious auto-submit.
+  useEffect(() => {
+    const total = durationMinutes * 60 + bonusSeconds;
+    const compute = () => {
+      const now = Date.now();
+      const pausedNow =
+        pauseStartedRef.current !== null
+          ? (now - pauseStartedRef.current) / 1000
+          : 0;
+      const elapsed = Math.floor(
+        (now - startTimeRef.current.getTime()) / 1000 -
+          pausedAccumRef.current -
+          pausedNow,
+      );
+      return Math.max(0, total - Math.max(0, elapsed));
+    };
+    setTimeRemaining(compute());
+    const id = setInterval(() => setTimeRemaining(compute()), 500);
+    return () => clearInterval(id);
+  }, [durationMinutes, bonusSeconds, startedAt]);
+
   useEffect(() => {
     if (timeRemaining > 0) {
       onTimeUpFiredRef.current = false;

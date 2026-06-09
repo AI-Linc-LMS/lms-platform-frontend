@@ -39,6 +39,20 @@ export interface MockInterviewDetail extends MockInterview {
    * so the visible timer's effective budget stays correct across reloads.
    */
   bonus_seconds?: number;
+  /**
+   * Resume support (dynamic interviews). `conversation_history` is the prior answered Q&A so a
+   * reload/reconnect can rebuild the conversation panel; `is_resume` is true when this /start/
+   * is a reconnect rather than a fresh begin. `resume_window_expired` is returned (with
+   * status="completed") when the admin's resume window lapsed — the backend auto-submitted the
+   * partial answers and the client should route to the result page.
+   */
+  conversation_history?: Array<{
+    question_id: number;
+    question_text: string;
+    answer: string;
+  }>;
+  is_resume?: boolean;
+  resume_window_expired?: boolean;
 }
 
 export interface InterviewQuestion {
@@ -61,6 +75,14 @@ export interface InterviewQuestion {
     language: string;
     sample_input?: string;
     sample_output?: string;
+    // Enriched (optional) fields from the upgraded generator. Legacy problems omit them.
+    title?: string;
+    constraints?: string[];
+    examples?: Array<{ input: string; output: string; explanation?: string }>;
+    time_complexity_expectation?: string;
+    space_complexity_expectation?: string;
+    input_format?: string;
+    output_format?: string;
   };
 
   /**
@@ -85,6 +107,12 @@ export interface NextQuestionRequest {
    * backend skips the regular-question branch and returns the closing remark directly.
    */
   force_close?: boolean;
+  /**
+   * Seconds the candidate actually spent in the coding editor for the turn being answered.
+   * The backend credits this (capped at the difficulty budget) as the coding "free time", so
+   * submitting a coding question early credits less and can't inflate the remaining time.
+   */
+  coding_seconds_spent?: number;
 }
 
 export interface NextQuestionResponse {
@@ -225,6 +253,22 @@ const mockInterviewService = {
   },
 
   /**
+   * Mark an attempt as abandoned/failed when the candidate backs out during the device-check
+   * (never reached the interviewer). Best-effort: the backend only marks 'failed' if the
+   * attempt hasn't actually started, so a mid-interview disconnect stays resumable. Safe to
+   * call fire-and-forget.
+   */
+  abandonInterview: async (interviewId: number): Promise<void> => {
+    try {
+      await apiClient.post(
+        `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/abandon/`
+      );
+    } catch {
+      // Non-fatal — the server-side stale sweep will reconcile abandoned attempts anyway.
+    }
+  },
+
+  /**
    * Fetch the next follow-up question for a dynamic (turn-based) interview. The backend uses
    * the candidate's previous answer + the interview plan to generate a real follow-up question,
    * so the client does NOT need to know future questions in advance.
@@ -239,7 +283,12 @@ const mockInterviewService = {
   ): Promise<NextQuestionResponse> => {
     const response = await apiClient.post(
       `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/next-question/`,
-      data
+      data,
+      // Hard per-request timeout: apiClient has no global timeout, so a hung LLM round-trip
+      // would otherwise leave the UI stuck on "following up…" indefinitely. On timeout the
+      // promise rejects into handleNextQuestion's catch/finally, which clears isFetchingNext
+      // so the conversation can recover.
+      { timeout: 25000 },
     );
     return response.data;
   },

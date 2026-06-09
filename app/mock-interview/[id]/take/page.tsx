@@ -13,6 +13,7 @@ import mockInterviewService, {
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
+import { readSttEngine } from "@/lib/utils/stt-engine";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { stopAllMediaTracks, registerMediaStream } from "@/lib/utils/cameraUtils";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
@@ -73,6 +74,9 @@ export default function TakeMockInterviewPage() {
   const [isCodingModalOpen, setIsCodingModalOpen] = useState<boolean>(false);
   const [isMCQModalOpen, setIsMCQModalOpen] = useState<boolean>(false);
   const lastStructuredQuestionIdRef = useRef<number | null>(null);
+  // When the coding modal opened — used to credit the ACTUAL seconds spent coding (capped
+  // server-side) so an early submit doesn't hand back unused time.
+  const codingModalOpenedAtRef = useRef<number>(0);
 
   const [nudgeText, setNudgeText] = useState<string | null>(null);
   const nudgeSilenceCountRef = useRef(0);
@@ -87,6 +91,12 @@ export default function TakeMockInterviewPage() {
 
   const [codingTimeBudgetSeconds, setCodingTimeBudgetSeconds] = useState<number>(0);
   const [interviewBonusSeconds, setInterviewBonusSeconds] = useState<number>(0);
+  // Which STT engine the device-check mic test proved works in this browser. Read once on
+  // mount (client-side) and forced into useSpeechToText so the interview uses the exact path
+  // that passed the test — the fix for "mic works on the test page but fails inside".
+  const [forcedSttEngine] = useState<"browser" | "whisper" | undefined>(() =>
+    readSttEngine(),
+  );
 
   const isInitializingRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -100,6 +110,27 @@ export default function TakeMockInterviewPage() {
   const lastTranscriptChangeAtRef = useRef<number>(0);
   const eyeMovementCountRef = useRef(0);
   const lastEyeMovementWarningRef = useRef(0);
+  // ── Freeze watchdog state ──────────────────────────────────────────────
+  // `lastPipelineActivityRef` is the heartbeat: it's bumped whenever the interview pipeline
+  // is demonstrably alive (the silence-detector tick, STT activity, the avatar producing
+  // audio, a fetch in flight). A GENUINE total freeze is the only thing that lets it go
+  // stale — normal thinking-silence keeps the detector ticking, so it is never mistaken for
+  // a freeze. `speakingStartedAtRef`/`fetchStartedAtRef` catch the two "stuck" sub-cases
+  // (avatar stuck with no audio; next-question call hung). `freezeRecoverPhaseRef` sequences
+  // a gentle in-place recovery before a last-resort reload. `intentionalReloadRef` lets that
+  // reload skip the "are you sure you want to leave" guard.
+  const lastPipelineActivityRef = useRef<number>(Date.now());
+  const speakingStartedAtRef = useRef<number>(0);
+  const fetchStartedAtRef = useRef<number>(0);
+  const freezeRecoverPhaseRef = useRef<"idle" | "soft">("idle");
+  const softRecoverAtRef = useRef<number>(0);
+  const intentionalReloadRef = useRef<boolean>(false);
+  // True while the interviewer voice is genuinely producing audio (lifted from AIAvatar). The
+  // watchdog uses it to tell a long question (audio playing) from a dead-TTS stall.
+  const audioActiveRef = useRef<boolean>(false);
+  // After any recovery we hold off re-evaluating for a beat so a settling pipeline can't be
+  // re-flagged → this is what stops the "reconnecting again and again" loop.
+  const recoverCooldownUntilRef = useRef<number>(0);
   // Timestamp recorded when proctoring starts. Used to silently drop NO_FACE /
   // POOR_LIGHTING violation toasts during the first PROCTORING_WARMUP_MS while the
   // camera stream is still attaching + the face-detection model is warming up. The
@@ -358,11 +389,13 @@ export default function TakeMockInterviewPage() {
   // engine is active for a given utterance pipes its `final` chunk through `onFinal`
   // here → `setCurrentAnswer` → ultimately the `transcript.responses[].answer` field
   // the backend evaluator reads. So the evaluation transcript IS Whisper-quality
-  // whenever browser STT is unreliable. To upgrade ALL evaluations to Whisper-quality
-  // (at the cost of additional OpenAI spend or a separate audio-upload pipeline), see
-  // the "Whisper-on-recorded-audio" architectural note in the project README.
+  // whenever browser STT is unreliable. A future enhancement is to re-transcribe only the
+  // low-quality (noise-garbled) answers with Whisper at submit time from per-answer
+  // recorded audio — selectively, so we fix noise without "fixing" genuinely wrong answers.
   const speechToText = useSpeechToText({
     onFinal: (text) => {
+      // Heartbeat: real speech proves the candidate is being heard (pipeline alive).
+      lastPipelineActivityRef.current = Date.now();
       const cleaned = sanitizeSttFragment(text || "");
       if (!cleaned) {
         // Whole chunk was hallucinated boilerplate — discard, don't append.
@@ -374,11 +407,18 @@ export default function TakeMockInterviewPage() {
       );
       setInterimTranscript("");
     },
-    onInterim: (text) => setInterimTranscript(text || ""),
+    onInterim: (text) => {
+      lastPipelineActivityRef.current = Date.now();
+      setInterimTranscript(text || "");
+    },
     continuous: true,
     lang: "en-US",
     preferWhisper: true,
     paused: isSpeaking,
+    // Use the exact engine the device-check mic test proved works in this browser, so the
+    // interview never diverges from the test (the core "passes on testing, fails inside" fix,
+    // esp. on Edge → "whisper").
+    forcedEngine: forcedSttEngine,
   });
   const {
     start: startStt,
@@ -421,6 +461,21 @@ export default function TakeMockInterviewPage() {
     // this is a no-op and the existing index-driven flow takes over.
     const applyDynamicSeed = (started: MockInterviewDetail) => {
       if (!started.is_dynamic) return;
+      // Resume: rebuild the prior answered turns BEFORE setting the current question so the
+      // "conversation so far" panel, the rewind, and the numbered "repeat question N" voice
+      // lookup all line up with the real timeline after a reload/reconnect.
+      if (
+        Array.isArray(started.conversation_history) &&
+        started.conversation_history.length > 0
+      ) {
+        setResponses(
+          started.conversation_history.map((c) => ({
+            question_id: c.question_id,
+            answer: c.answer || "",
+            question_text: c.question_text || "",
+          })),
+        );
+      }
       if (started.current_question) {
         setDynamicCurrentQuestion(started.current_question);
       }
@@ -441,6 +496,33 @@ export default function TakeMockInterviewPage() {
       const turnNo = started.turn_number ?? 1;
       const maxT = started.max_turns ?? 5;
       setDynamicIsFinalQuestion(turnNo >= maxT);
+
+      // Freeze hard-recovery checkpoint: if we reloaded to recover from a freeze, restore the
+      // candidate's un-submitted answer for the current question (prior turns are already
+      // replayed via conversation_history above).
+      try {
+        const ckptKey = `mockInterviewResume_${interviewId}`;
+        const raw = sessionStorage.getItem(ckptKey);
+        if (raw) {
+          sessionStorage.removeItem(ckptKey);
+          const saved = JSON.parse(raw) as {
+            interviewId?: number;
+            currentAnswer?: string;
+            ts?: number;
+          };
+          if (
+            saved &&
+            saved.interviewId === interviewId &&
+            saved.currentAnswer &&
+            typeof saved.ts === "number" &&
+            Date.now() - saved.ts < 180000
+          ) {
+            setCurrentAnswer(saved.currentAnswer);
+          }
+        }
+      } catch {
+        // ignore malformed checkpoint
+      }
     };
 
     const storageKey = `mockInterviewStarted_${interviewId}`;
@@ -467,6 +549,17 @@ export default function TakeMockInterviewPage() {
         const startedInterview = await mockInterviewService.startInterview(
           interviewId
         );
+        // Resume window lapsed (or resume disabled): the backend already auto-submitted the
+        // partial answers and marked the attempt completed. Send the candidate to their
+        // result instead of trying to resume an expired session.
+        if (startedInterview.resume_window_expired) {
+          showToast(
+            "Your session expired — we submitted your answers and are preparing your result.",
+            "info",
+          );
+          router.push(`/mock-interview/${interviewId}/result`);
+          return;
+        }
         setInterview(startedInterview);
         setStartTime(new Date(startedInterview.started_at || new Date()));
         applyDynamicSeed(startedInterview);
@@ -533,6 +626,11 @@ export default function TakeMockInterviewPage() {
         if (!hasAudio) registerMediaStream(stream);
 
         const audioContext = new AudioContext();
+        // A context created off the gesture path can come up suspended; resume so the
+        // analyser reports real levels (otherwise the waveform/silence-detector see silence).
+        if (audioContext.state === "suspended") {
+          audioContext.resume().catch(() => {});
+        }
         const analyser = audioContext.createAnalyser();
         const microphone = audioContext.createMediaStreamSource(stream);
         microphone.connect(analyser);
@@ -590,6 +688,19 @@ export default function TakeMockInterviewPage() {
     setInterviewStarted(true);
 
     try {
+      // Resume any suspended AudioContext on THIS user gesture. Browsers (Edge/Safari, and
+      // Chrome under strict-autoplay) create AudioContexts in "suspended" state until a user
+      // gesture resumes them. While suspended the analyser reports ~0 level, which the
+      // silence detector reads as "not speaking" and fires the false "check your mic" nudge
+      // (and makes the mic look unrecognized). The Start click is our gesture — use it.
+      try {
+        if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+          await audioContextRef.current.resume();
+        }
+      } catch {
+        // non-fatal — the level meter recovers when the context resumes later
+      }
+
       // Wait for video element to be rendered (use requestAnimationFrame for next render)
       await new Promise<void>((resolve) => {
         const checkVideoElement = () => {
@@ -681,6 +792,7 @@ export default function TakeMockInterviewPage() {
     if (qtype === "coding" && currentQuestion.coding_problem) {
       setIsCodingModalOpen(true);
       setIsMCQModalOpen(false);
+      codingModalOpenedAtRef.current = Date.now();
       lastStructuredQuestionIdRef.current = currentQuestion.id;
     } else if (qtype === "mcq" && (currentQuestion.mcq_options?.length ?? 0) >= 2) {
       setIsMCQModalOpen(true);
@@ -751,6 +863,21 @@ export default function TakeMockInterviewPage() {
     return () => window.clearTimeout(timeout);
   }, [isFetchingNext]);
 
+  // Stamp when the avatar starts speaking and when a next-question fetch starts — the freeze
+  // watchdog uses these to detect the two "stuck" sub-cases (avatar stuck with no audio,
+  // hung fetch) without mistaking a legitimately-long question/fetch for a freeze. While
+  // either is genuinely active we also keep the pipeline heartbeat warm.
+  useEffect(() => {
+    // Bump the heartbeat on BOTH transitions so the brief gap between speech ending and the
+    // silence loop re-arming is never misread as a stall.
+    lastPipelineActivityRef.current = Date.now();
+    if (isSpeaking) speakingStartedAtRef.current = Date.now();
+  }, [isSpeaking]);
+  useEffect(() => {
+    lastPipelineActivityRef.current = Date.now();
+    if (isFetchingNext) fetchStartedAtRef.current = Date.now();
+  }, [isFetchingNext]);
+
   const handleSpeakComplete = useCallback(() => {
     setIsSpeaking(false);
     if (nudgeText !== null) {
@@ -763,6 +890,24 @@ export default function TakeMockInterviewPage() {
       }
     }
   }, [nudgeText]);
+
+  // Stable callback for AIAvatar's "voice is actually playing" signal. Updates the ref and
+  // keeps the freeze-watchdog heartbeat warm while real audio is playing, so a long question
+  // (or slow cloud-TTS startup) is never mistaken for a stall.
+  const handleAudioActiveChange = useCallback(
+    (active: boolean) => {
+      audioActiveRef.current = active;
+      if (active) {
+        lastPipelineActivityRef.current = Date.now();
+        // Real audio played → the pipeline is healthy. Reset the hard-reload budget so a much
+        // later, unrelated freeze still gets a fresh recovery allowance.
+        try {
+          sessionStorage.removeItem(`mockInterviewHardReloads_${interviewId}`);
+        } catch {}
+      }
+    },
+    [interviewId],
+  );
 
   // Handle answer change (clear interim when user types)
   const handleAnswerChange = useCallback((answer: string) => {
@@ -804,7 +949,7 @@ export default function TakeMockInterviewPage() {
   const handleNextQuestionRef = useRef<
     | ((
         overrideAnswerText?: unknown,
-        options?: { forceClose?: boolean },
+        options?: { forceClose?: boolean; codingSecondsSpent?: number },
       ) => Promise<void>)
     | null
   >(null);
@@ -842,6 +987,13 @@ export default function TakeMockInterviewPage() {
   useEffect(() => {
     currentAnswerRef.current = currentAnswer;
   }, [currentAnswer]);
+
+  // Live mirror of currentQuestion for the freeze watchdog's soft-recovery (so it can re-ask
+  // the current question without re-running on every question change).
+  const currentQuestionRef = useRef<InterviewQuestion | null>(null);
+  useEffect(() => {
+    currentQuestionRef.current = currentQuestion;
+  }, [currentQuestion]);
 
   // Auto-save answer when it changes (debounced)
   useEffect(() => {
@@ -1040,11 +1192,12 @@ export default function TakeMockInterviewPage() {
 
   const handleNextQuestion = useCallback(async (
     overrideAnswerText?: unknown,
-    options?: { forceClose?: boolean },
+    options?: { forceClose?: boolean; codingSecondsSpent?: number },
   ) => {
     const overrideString =
       typeof overrideAnswerText === "string" ? overrideAnswerText : undefined;
     const forceClose = !!options?.forceClose;
+    const codingSecondsSpent = options?.codingSecondsSpent;
 
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
@@ -1100,20 +1253,22 @@ export default function TakeMockInterviewPage() {
       // ("hash and stop using…") doesn't trigger; only if the *answer overall* is an
       // explicit end-request.
       const lowerAnswer = answerForThisTurn.toLowerCase();
+      // Every pattern now REQUIRES an explicit "interview"/"session" noun (or an
+      // unmistakable sign-off), so a real answer that merely contains "stop", "finish", or
+      // "no more questions" as content can no longer trigger a submit. The "End Interview"
+      // button is always available as the deliberate fallback.
       const endPhrases = [
-        /\bi\s+want\s+to\s+end\s+(this\s+)?interview\b/,
-        /\b(let'?s|can\s+we)\s+(end|stop|finish|wrap\s*up)\s+(this\s+)?(interview)?\b/,
-        /\bno\s+more\s+questions?\b/,
-        /\b(end|stop|finish|exit)\s+(the\s+)?interview\b/,
-        /\bthat'?s\s+(all|enough)\s+for\s+(me|today|now)\b/,
-        /\bi'?m\s+done\s+(with\s+)?(this\s+)?(interview|now)\b/,
+        /\b(end|stop|finish|exit|quit)\s+(the\s+|this\s+|my\s+)?(interview|session)\b/,
+        /\b(let'?s|can\s+we|could\s+we|please)\s+(end|stop|finish|wrap\s*up)\s+(the\s+|this\s+|my\s+)?(interview|session)\b/,
+        /\bi\s+(want|'?d\s+like|wanna)\s+to\s+(end|stop|finish|quit)\s+(the\s+|this\s+|my\s+)?(interview|session)\b/,
+        /\bi'?m\s+done\s+with\s+(the\s+|this\s+|my\s+)?(interview|session)\b/,
+        /\bthat'?s\s+(all|enough)\s+(for\s+(me|today|now)|from\s+me)\b/,
       ];
       const isEndRequest =
-        // Only allow the end-request match for short utterances; if the candidate gave a
-        // long answer that happens to contain "end the interview" as a side reference,
-        // they probably didn't mean to actually end it.
+        // Only a SHORT utterance that is essentially just the end-request counts. A longer
+        // answer that happens to reference ending is treated as content, not a command.
         lowerAnswer.length > 0 &&
-        lowerAnswer.length < 200 &&
+        lowerAnswer.length < 60 &&
         endPhrases.some((rx) => rx.test(lowerAnswer));
       if (isEndRequest) {
         showToast("Okay — wrapping up the interview now.", "info");
@@ -1316,6 +1471,9 @@ export default function TakeMockInterviewPage() {
             previous_question_id: currentQuestion.id,
             candidate_answer: answerForThisTurn,
             force_close: forceClose,
+            ...(typeof codingSecondsSpent === "number"
+              ? { coding_seconds_spent: codingSecondsSpent }
+              : {}),
           });
 
         // Closing-remark path: backend says we're at the wrap-up, hands us a natural
@@ -1403,9 +1561,12 @@ export default function TakeMockInterviewPage() {
             ? next.coding_time_budget_seconds
             : 0,
         );
-        if (typeof next.bonus_seconds === "number") {
-          setInterviewBonusSeconds(next.bonus_seconds);
-        }
+        // NOTE: we intentionally do NOT fold the backend's running bonus_seconds into the
+        // visible timer mid-session. The main timer is PAUSED during the coding modal, which
+        // already gives the coding time back for free — adding the bonus on top is exactly the
+        // double-count that let an early coding submit inflate the remaining time. The bonus
+        // baseline is seeded once from /start/ (for resume, where the pause history is lost),
+        // and the backend still records the actual coding seconds for that resume baseline.
         setCurrentAnswer("");
         setInterimTranscript("");
         setIsSpeaking(true);
@@ -1469,9 +1630,15 @@ export default function TakeMockInterviewPage() {
   const handleCodingModalSubmit = useCallback(
     (payload: { code: string; language: string }) => {
       const formatted = `[Coding answer · ${payload.language}]\n${payload.code}`;
+      // Actual time spent in the editor — the backend credits this (capped) so an early
+      // submit credits less and never inflates the remaining interview time.
+      const codingSecondsSpent = codingModalOpenedAtRef.current
+        ? Math.max(0, Math.round((Date.now() - codingModalOpenedAtRef.current) / 1000))
+        : 0;
+      codingModalOpenedAtRef.current = 0;
       setIsCodingModalOpen(false);
       setCurrentAnswer(formatted);
-      void handleNextQuestion(formatted);
+      void handleNextQuestion(formatted, { codingSecondsSpent });
     },
     [handleNextQuestion],
   );
@@ -1615,6 +1782,10 @@ export default function TakeMockInterviewPage() {
     }
 
     const intervalId = window.setInterval(() => {
+      // Heartbeat: this loop only runs while we're legitimately waiting for an answer, so
+      // its tick is proof the pipeline is alive. The freeze watchdog reads this — normal
+      // thinking-silence keeps it warm and is therefore never treated as a freeze.
+      lastPipelineActivityRef.current = Date.now();
       const text = currentAnswerRef.current.trim();
       const sinceLastChange = Date.now() - lastTranscriptChangeAtRef.current;
 
@@ -1756,6 +1927,177 @@ export default function TakeMockInterviewPage() {
     PROBE_NUDGES,
   ]);
 
+  // ── Freeze watchdog ────────────────────────────────────────────────────
+  // Recovers ONLY from a genuine total stall — the rare "everything stopped" case the user
+  // described (timer/avatar/mic all dead at once). It deliberately does NOT fire on normal
+  // thinking-silence (the silence loop keeps the heartbeat warm) or while the interviewer is
+  // speaking. Detected freeze types:
+  //   • stuck-speaking : avatar flagged speaking but no audio for too long (dead TTS),
+  //   • stuck-fetch    : the next-question request hung,
+  //   • stall          : the conversation loop flat-lined with nothing happening,
+  //   • mic-dead       : the microphone track ended mid-interview.
+  // First we try a seamless in-place recovery (cancel stuck speech, re-arm mic, re-ask the
+  // current question — no page reload, no camera re-grant). If it's still frozen a few
+  // seconds later, we checkpoint the answer and reload; /start/ then replays the
+  // conversation so the candidate resumes from the last point.
+  useEffect(() => {
+    if (!interviewStarted || !isDynamicInterview) return;
+
+    const FREEZE_STALL_MS = 15000;
+    // Only a dead-TTS stall: flagged speaking but NO audio for this long. Cloud-TTS fetch +
+    // retries can legitimately take ~10s before audio starts, so keep this comfortably above
+    // that. A long question that IS playing keeps audioActive true and is never flagged.
+    const STUCK_SPEAKING_NO_AUDIO_MS = 22000;
+    const STUCK_FETCH_MS = 28000;
+    const SOFT_TO_HARD_MS = 8000;
+    const RECOVER_COOLDOWN_MS = 20000;
+    const MAX_HARD_RELOADS = 2;
+
+    const doSoftRecover = () => {
+      showToast("Reconnecting the interview…", "info");
+      try {
+        window.speechSynthesis?.cancel();
+      } catch {}
+      setIsSpeaking(false);
+      setIsFetchingNext(false);
+      setNudgeText(null);
+      nudgeSilenceCountRef.current = 0;
+      advanceAfterNudgeRef.current = false;
+      // Re-arm speech-to-text (the engine may have died silently).
+      try {
+        stopStt();
+      } catch {}
+      try {
+        startStt();
+      } catch {}
+      lastTranscriptChangeAtRef.current = Date.now();
+      lastPipelineActivityRef.current = Date.now();
+      // Hold off re-evaluating while the pipeline settles — this is what prevents a
+      // repeated "reconnecting again and again" loop.
+      recoverCooldownUntilRef.current = Date.now() + RECOVER_COOLDOWN_MS;
+      // Re-ask the current question so the avatar speaks again (no media re-grant needed).
+      window.setTimeout(() => {
+        if (currentQuestionRef.current) {
+          setIsSpeaking(true);
+        }
+      }, 250);
+    };
+
+    const doHardRecover = () => {
+      // Cap auto-reloads so a browser with genuinely dead TTS can't reload-loop forever.
+      let reloadCount = 0;
+      try {
+        reloadCount = parseInt(
+          sessionStorage.getItem(`mockInterviewHardReloads_${interviewId}`) || "0",
+          10,
+        ) || 0;
+      } catch {}
+      if (reloadCount >= MAX_HARD_RELOADS) {
+        // Give up on auto-reload; fall back to a soft recover and a longer cooldown so the
+        // candidate can keep going (and use the End Interview button if truly stuck).
+        recoverCooldownUntilRef.current = Date.now() + RECOVER_COOLDOWN_MS * 3;
+        freezeRecoverPhaseRef.current = "idle";
+        doSoftRecover();
+        return;
+      }
+      try {
+        sessionStorage.setItem(
+          `mockInterviewHardReloads_${interviewId}`,
+          String(reloadCount + 1),
+        );
+      } catch {}
+      showToast("Recovering your session — resuming where you left off…", "info");
+      // Checkpoint the un-submitted current answer so it survives the reload (the prior
+      // turns are replayed by /start/).
+      try {
+        sessionStorage.setItem(
+          `mockInterviewResume_${interviewId}`,
+          JSON.stringify({
+            interviewId,
+            currentAnswer: currentAnswerRef.current || "",
+            interim: interimTranscript || "",
+            ts: Date.now(),
+          }),
+        );
+      } catch {}
+      intentionalReloadRef.current = true;
+      try {
+        stopProctoring();
+      } catch {}
+      stopAllMediaTracks();
+      window.setTimeout(() => window.location.reload(), 150);
+    };
+
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      // Post-recovery cooldown: don't re-flag while a recovery is settling.
+      if (now < recoverCooldownUntilRef.current) {
+        lastPipelineActivityRef.current = now;
+        return;
+      }
+      // Modals / closing remark are legitimate "busy" states (candidate is coding/answering
+      // an MCQ, or the interview is wrapping up) — never a freeze.
+      if (isCodingModalOpen || isMCQModalOpen || isClosingRemark || isEndingInterview) {
+        lastPipelineActivityRef.current = now;
+        freezeRecoverPhaseRef.current = "idle";
+        return;
+      }
+      // stuck-speaking ONLY when flagged speaking but NO audio is actually playing (real dead
+      // TTS). A long question that's genuinely playing keeps audioActive true → not a freeze.
+      const stuckSpeaking =
+        isSpeaking &&
+        !audioActiveRef.current &&
+        now - speakingStartedAtRef.current > STUCK_SPEAKING_NO_AUDIO_MS;
+      const stuckFetch =
+        isFetchingNext && now - fetchStartedAtRef.current > STUCK_FETCH_MS;
+      const stalled =
+        !isSpeaking &&
+        !isFetchingNext &&
+        !audioActiveRef.current &&
+        now - lastPipelineActivityRef.current > FREEZE_STALL_MS;
+      const stream = userStreamRef.current;
+      const micDead =
+        !isSpeaking &&
+        !!stream &&
+        stream.getAudioTracks().length > 0 &&
+        stream.getAudioTracks().every((t) => t.readyState === "ended");
+      const frozen = stuckSpeaking || stuckFetch || stalled || micDead;
+
+      if (!frozen) {
+        freezeRecoverPhaseRef.current = "idle";
+        return;
+      }
+      if (freezeRecoverPhaseRef.current === "idle") {
+        freezeRecoverPhaseRef.current = "soft";
+        softRecoverAtRef.current = now;
+        doSoftRecover();
+        return;
+      }
+      // Still frozen after the soft attempt's grace window → reload + resume.
+      if (now - softRecoverAtRef.current > SOFT_TO_HARD_MS) {
+        window.clearInterval(id);
+        doHardRecover();
+      }
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, [
+    interviewStarted,
+    isDynamicInterview,
+    isSpeaking,
+    isFetchingNext,
+    isCodingModalOpen,
+    isMCQModalOpen,
+    isClosingRemark,
+    isEndingInterview,
+    interimTranscript,
+    interviewId,
+    startStt,
+    stopStt,
+    stopProctoring,
+    showToast,
+  ]);
+
   // Handle previous question
   const handlePreviousQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
@@ -1877,6 +2219,9 @@ export default function TakeMockInterviewPage() {
     };
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // The freeze watchdog's hard-recovery reload is intentional — don't nag with the
+      // "are you sure you want to leave" prompt (it would block the auto-reload).
+      if (intentionalReloadRef.current) return undefined;
       event.preventDefault();
       event.returnValue =
         "Are you sure you want to leave? Your progress may be lost.";
@@ -2054,6 +2399,7 @@ export default function TakeMockInterviewPage() {
             interviewTitle={cleanInterviewTitle(interview?.title)}
             questionsCount={questions?.length}
             durationMinutes={interview.duration_minutes}
+            onAudioActiveChange={handleAudioActiveChange}
           />
 
           {interviewStarted && currentQuestion && (

@@ -30,6 +30,13 @@ interface Question {
     language: string;
     sample_input?: string;
     sample_output?: string;
+    title?: string;
+    constraints?: string[];
+    examples?: Array<{ input: string; output: string; explanation?: string }>;
+    time_complexity_expectation?: string;
+    space_complexity_expectation?: string;
+    input_format?: string;
+    output_format?: string;
   };
   mcq_options?: { id: string; text: string }[];
   mcq_multi_select?: boolean;
@@ -382,28 +389,32 @@ const QuestionPerformanceComponent = ({
                   </Box>
                 )}
 
-                {/* Expected Key Points */}
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 1, color: "#1f2937" }}
-                  >
-                    Expected Key Points
-                  </Typography>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                    {question.expected_key_points.map((point, idx) => (
-                      <Box
-                        key={idx}
-                        sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
-                      >
-                        <IconWrapper icon="mdi:circle-small" size={18} color="#6b7280" />
-                        <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                          {point}
-                        </Typography>
-                      </Box>
-                    ))}
+                {/* Expected Key Points — only when present (guards against missing/empty
+                    expected_key_points so a structured/coding turn without them doesn't crash
+                    or render an empty heading). */}
+                {(question.expected_key_points ?? []).length > 0 && (
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, mb: 1, color: "#1f2937" }}
+                    >
+                      Expected Key Points
+                    </Typography>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                      {(question.expected_key_points ?? []).map((point, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}
+                        >
+                          <IconWrapper icon="mdi:circle-small" size={18} color="#6b7280" />
+                          <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                            {point}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
-                </Box>
+                )}
               </AccordionDetails>
             </Accordion>
           );

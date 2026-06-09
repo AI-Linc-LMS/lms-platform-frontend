@@ -44,6 +44,13 @@ interface InterviewResult {
       language: string;
       sample_input?: string;
       sample_output?: string;
+      title?: string;
+      constraints?: string[];
+      examples?: Array<{ input: string; output: string; explanation?: string }>;
+      time_complexity_expectation?: string;
+      space_complexity_expectation?: string;
+      input_format?: string;
+      output_format?: string;
     };
     mcq_options?: { id: string; text: string }[];
     mcq_multi_select?: boolean;
@@ -140,11 +147,17 @@ export default function InterviewResultPage() {
 
     let cancelled = false;
 
-    const isEvaluationReady = (data: { evaluation_score?: { overall_percentage?: number } } | null) => {
+    const isEvaluationReady = (
+      data: { evaluation_score?: { overall_percentage?: number; question_scores?: unknown } } | null,
+    ) => {
       return (
         !!data &&
         !!data.evaluation_score &&
-        typeof data.evaluation_score.overall_percentage === "number"
+        typeof data.evaluation_score.overall_percentage === "number" &&
+        // Require question_scores to be a real object too, so a half-written evaluation
+        // keeps polling briefly instead of rendering an incomplete result.
+        !!data.evaluation_score.question_scores &&
+        typeof data.evaluation_score.question_scores === "object"
       );
     };
 
@@ -412,7 +425,29 @@ export default function InterviewResultPage() {
     );
   }
 
-  const scoreColors = getScoreColor(result.evaluation_score.overall_percentage);
+  // Normalized view-model: the API can return partial/missing nested objects (a
+  // half-written evaluation, an interview with no transcript metadata, etc.). Accessing
+  // those directly is what made the user-side result page throw a blank/error screen while
+  // the admin page — which maps through its own defaulting adapter — worked. Default every
+  // field once here and render from these locals only.
+  const evaluation = {
+    overall_score: result.evaluation_score.overall_score ?? 0,
+    max_possible_score: result.evaluation_score.max_possible_score ?? 0,
+    overall_percentage: result.evaluation_score.overall_percentage ?? 0,
+    question_scores: result.evaluation_score.question_scores ?? {},
+    strengths: result.evaluation_score.strengths ?? [],
+    areas_for_improvement: result.evaluation_score.areas_for_improvement ?? [],
+    overall_feedback: result.evaluation_score.overall_feedback ?? "",
+  };
+  const transcript = result.interview_transcript ?? ({} as InterviewResult["interview_transcript"]);
+  const metadata = transcript.metadata ?? ({} as InterviewResult["interview_transcript"]["metadata"]);
+  const responses = Array.isArray(transcript.responses) ? transcript.responses : [];
+  const questions = Array.isArray(result.questions_for_interview)
+    ? result.questions_for_interview
+    : [];
+  const totalDurationSeconds = transcript.total_duration_seconds ?? 0;
+
+  const scoreColors = getScoreColor(evaluation.overall_percentage);
 
   return (
     <MainLayout>
@@ -422,10 +457,8 @@ export default function InterviewResultPage() {
         subtopic={result.subtopic}
         difficulty={result.difficulty}
         duration_minutes={result.duration_minutes}
-        overall_percentage={result.evaluation_score.overall_percentage}
-        performanceLabel={getPerformanceLabel(
-          result.evaluation_score.overall_percentage
-        )}
+        overall_percentage={evaluation.overall_percentage}
+        performanceLabel={getPerformanceLabel(evaluation.overall_percentage)}
         scoreColors={scoreColors}
         onBack={handleBack}
       />
@@ -448,64 +481,47 @@ export default function InterviewResultPage() {
                 const d = new Date(candidate);
                 if (!Number.isNaN(d.getTime()) && d.getTime() > 0) return candidate;
               }
-              if (result.submitted_at && result.interview_transcript?.total_duration_seconds) {
+              if (result.submitted_at && totalDurationSeconds) {
                 const submitted = new Date(result.submitted_at);
                 if (!Number.isNaN(submitted.getTime()) && submitted.getTime() > 0) {
                   return new Date(
-                    submitted.getTime() -
-                      result.interview_transcript.total_duration_seconds * 1000,
+                    submitted.getTime() - totalDurationSeconds * 1000,
                   ).toISOString();
                 }
               }
               return result.created_at;
             })()}
             submitted_at={result.submitted_at}
-            total_duration_seconds={
-              result.interview_transcript.total_duration_seconds
-            }
+            total_duration_seconds={totalDurationSeconds}
             formatDate={formatDate}
             formatDuration={formatDuration}
           />
 
           <PerformanceSummary
-            overall_score={result.evaluation_score.overall_score}
-            max_possible_score={result.evaluation_score.max_possible_score}
-            overall_percentage={result.evaluation_score.overall_percentage}
-            completed_questions={
-              result.interview_transcript.metadata.completed_questions
-            }
-            total_questions={
-              result.interview_transcript.metadata.total_questions
-            }
-            performanceLabel={getPerformanceLabel(
-              result.evaluation_score.overall_percentage
-            )}
+            overall_score={evaluation.overall_score}
+            max_possible_score={evaluation.max_possible_score}
+            overall_percentage={evaluation.overall_percentage}
+            completed_questions={metadata.completed_questions ?? responses.length}
+            total_questions={metadata.total_questions ?? questions.length}
+            performanceLabel={getPerformanceLabel(evaluation.overall_percentage)}
           />
         </Box>
 
         {/* Proctoring Report */}
         <ProctoringReport
-          tabSwitches={result.interview_transcript.metadata.tabSwitches ?? 0}
-          windowSwitches={result.interview_transcript.metadata.windowSwitches ?? 0}
-          fullscreen_exits={
-            result.interview_transcript.metadata.fullscreen_exits ?? 0
-          }
-          face_validation_failures={
-            result.interview_transcript.metadata.face_validation_failures ?? 0
-          }
-          looking_away_count={
-            result.interview_transcript.metadata.looking_away_count ?? 0
-          }
-          multiple_face_detections={
-            result.interview_transcript.metadata.multiple_face_detections ?? 0
-          }
+          tabSwitches={metadata.tabSwitches ?? 0}
+          windowSwitches={metadata.windowSwitches ?? 0}
+          fullscreen_exits={metadata.fullscreen_exits ?? 0}
+          face_validation_failures={metadata.face_validation_failures ?? 0}
+          looking_away_count={metadata.looking_away_count ?? 0}
+          multiple_face_detections={metadata.multiple_face_detections ?? 0}
         />
 
         {/* Questions & Performance */}
         <QuestionPerformance
-          questions={result.questions_for_interview}
-          question_scores={result.evaluation_score.question_scores}
-          responses={result.interview_transcript.responses}
+          questions={questions}
+          question_scores={evaluation.question_scores}
+          responses={responses}
           expandedQuestion={expandedQuestion}
           onQuestionToggle={handleQuestionToggle}
           getScoreColor={getScoreColor}
@@ -513,8 +529,8 @@ export default function InterviewResultPage() {
 
         {/* Overall Feedback */}
         <OverallFeedback
-          areas_for_improvement={result.evaluation_score.areas_for_improvement}
-          overall_feedback={result.evaluation_score.overall_feedback}
+          areas_for_improvement={evaluation.areas_for_improvement}
+          overall_feedback={evaluation.overall_feedback}
         />
       </Container>
     </MainLayout>

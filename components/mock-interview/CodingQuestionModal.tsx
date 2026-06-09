@@ -13,14 +13,12 @@ import {
 } from "@mui/material";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { CodingProblemBody, type CodingProblemData } from "./coding/CodingProblemBody";
 
-export interface CodingProblemPayload {
-  statement: string;
+export type CodingProblemPayload = CodingProblemData & {
   starter_code: string;
   language: string;
-  sample_input?: string;
-  sample_output?: string;
-}
+};
 
 interface CodingQuestionModalProps {
   open: boolean;
@@ -242,94 +240,7 @@ function CodingQuestionModalComponent({
                 </Typography>
               </Paper>
             )}
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "var(--font-secondary)",
-                mb: 1,
-              }}
-            >
-              Problem
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.6,
-                color: "var(--font-primary-dark)",
-                mb: 2.5,
-              }}
-            >
-              {problem.statement}
-            </Typography>
-
-            {problem.sample_input && (
-              <>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "var(--font-secondary)",
-                    mt: 1,
-                    mb: 0.5,
-                  }}
-                >
-                  Sample Input
-                </Typography>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 1.25,
-                    fontFamily: "ui-monospace, Menlo, monospace",
-                    fontSize: "0.8rem",
-                    backgroundColor: "var(--surface)",
-                    border: "1px solid var(--border-default)",
-                    borderRadius: 1.5,
-                    whiteSpace: "pre-wrap",
-                    color: "var(--font-primary-dark)",
-                  }}
-                >
-                  {problem.sample_input}
-                </Paper>
-              </>
-            )}
-            {problem.sample_output && (
-              <>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "var(--font-secondary)",
-                    mt: 1.5,
-                    mb: 0.5,
-                  }}
-                >
-                  Sample Output
-                </Typography>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 1.25,
-                    fontFamily: "ui-monospace, Menlo, monospace",
-                    fontSize: "0.8rem",
-                    backgroundColor: "var(--surface)",
-                    border: "1px solid var(--border-default)",
-                    borderRadius: 1.5,
-                    whiteSpace: "pre-wrap",
-                    color: "var(--font-primary-dark)",
-                  }}
-                >
-                  {problem.sample_output}
-                </Paper>
-              </>
-            )}
+            <CodingProblemBody problem={problem} />
           </Box>
 
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>

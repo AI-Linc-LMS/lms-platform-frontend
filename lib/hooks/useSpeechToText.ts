@@ -122,6 +122,15 @@ export interface UseSpeechToTextOptions {
   continuous?: boolean;
   preferWhisper?: boolean;
   paused?: boolean;
+  /**
+   * Force a specific STT engine instead of auto-deciding. The take page sets this from the
+   * device-check result so the interview uses the EXACT engine that passed the mic test
+   * rather than re-deciding (which is why a test could pass but the interview fail). The key
+   * case: Edge, where native SpeechRecognition exists but is broken — device-check finds
+   * Whisper works, so we force "whisper" and skip the broken native path (and its ~10s of
+   * failing retries) entirely.
+   */
+  forcedEngine?: "browser" | "whisper";
 }
 
 export type SttMode = "browser" | "whisper-only" | "unavailable";
@@ -150,6 +159,7 @@ export function useSpeechToText(
     continuous = true,
     preferWhisper = true,
     paused = false,
+    forcedEngine,
   } = options;
 
   const [transcript, setTranscript] = useState("");
@@ -632,6 +642,19 @@ export function useSpeechToText(
     whisperActiveRef.current = false;
     if (pausedRef.current) return;
 
+    // Honor the engine the device-check page proved works in THIS browser, so the interview
+    // never diverges from the mic test. "whisper" → go straight to Whisper, skipping the
+    // (possibly broken, e.g. on Edge) native SpeechRecognition and its ~10s of failing
+    // retries. "browser" falls through to the normal browser-first path below (with Whisper
+    // still available as the after-retries safety net).
+    if (forcedEngine === "whisper" && preferWhisper) {
+      browserSttDisabledRef.current = true;
+      whisperActiveRef.current = true;
+      setMode("whisper-only");
+      startWhisperRecording();
+      return;
+    }
+
     // Browser STT is the primary path; Whisper stays on hold and only takes over if
     // browser STT is unsupported (Safari/Firefox) or fails permanently (Edge `network`
     // bug, exhausted retries, etc.). This keeps OpenAI cost at zero for the common case
@@ -665,7 +688,7 @@ export function useSpeechToText(
     setMode("unavailable");
     setError("Speech recognition is not supported in this browser. Please type your answer.");
     setNeedsTypingFallback(true);
-  }, [startBrowserStt, startWhisperRecording, preferWhisper]);
+  }, [startBrowserStt, startWhisperRecording, preferWhisper, forcedEngine]);
 
   const stop = useCallback(() => {
     startedRef.current = false;

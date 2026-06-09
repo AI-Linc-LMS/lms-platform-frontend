@@ -18,6 +18,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService from "@/lib/services/mock-interview.service";
+import { persistSttEngine } from "@/lib/utils/stt-engine";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import {
   detectBrowser,
@@ -508,6 +509,10 @@ export default function MockInterviewDeviceCheckPage() {
               showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
               return;
             }
+            // Whisper produced the transcript here → this browser should use Whisper inside
+            // the interview too (native STT was unavailable or failed). Pin it so the
+            // interview doesn't re-try the broken native path.
+            persistSttEngine("whisper");
             setRecognizedText(text);
             evaluateSpeechMatch(text);
           } catch {
@@ -572,6 +577,9 @@ export default function MockInterviewDeviceCheckPage() {
           showToast(t("mockInterview.deviceCheck.noSpeech"), "error");
           return;
         }
+        // Native browser STT produced the transcript → use the browser engine inside the
+        // interview too.
+        persistSttEngine("browser");
         setRecognizedText(transcript);
         evaluateSpeechMatch(transcript);
       };
@@ -1217,7 +1225,14 @@ export default function MockInterviewDeviceCheckPage() {
           <Button
             variant="outlined"
             size="large"
-            onClick={() => router.push("/mock-interview")}
+            onClick={() => {
+              // Backing out of device-check means the candidate never reached the
+              // interviewer — mark the claimed attempt failed (fire-and-forget) so it shows
+              // as "Failed" for the admin and frees the template to be retaken, rather than
+              // lingering as a phantom in-progress/scheduled attempt.
+              void mockInterviewService.abandonInterview(Number(params.id));
+              router.push("/mock-interview");
+            }}
             sx={{
               textTransform: "none",
               fontWeight: 600,

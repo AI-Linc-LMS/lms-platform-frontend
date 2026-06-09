@@ -108,7 +108,14 @@ export default function AdminMockInterviewStudentDetailPage() {
     load();
   }, [load]);
 
-  const handleBack = () => router.push("/admin/admin-mock-interview");
+  const handleBack = () => {
+    // One step back to the previous page (e.g. the Students list), not a fixed hub.
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/admin/admin-mock-interview");
+    }
+  };
   const handleViewInterview = (interviewId: number) => {
     router.push(`/admin/admin-mock-interview/interviews/${interviewId}`);
   };

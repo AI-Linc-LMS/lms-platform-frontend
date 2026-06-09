@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { CodingProblemBody, type CodingProblemData } from "../coding/CodingProblemBody";
 
 export interface StructuredQuestionViewModalProps {
   open: boolean;
@@ -20,12 +21,9 @@ export interface StructuredQuestionViewModalProps {
         id: number;
         type: string;
         question_text: string;
-        coding_problem?: {
-          statement: string;
-          starter_code: string;
-          language: string;
-          sample_input?: string;
-          sample_output?: string;
+        coding_problem?: CodingProblemData & {
+          starter_code?: string;
+          language?: string;
         };
         mcq_options?: { id: string; text: string }[];
         mcq_multi_select?: boolean;
@@ -167,32 +165,18 @@ function CodingProblemView({
   const submitted = parseCodingAnswer(candidateAnswer);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-      <Section title="Problem">
-        <Typography
-          variant="body2"
-          sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+      {/* Statement + constraints + examples + complexity, rendered identically to the live
+          coding modal via the shared CodingProblemBody (Markdown-aware). */}
+      <CodingProblemBody problem={problem} />
+
+      {problem.starter_code && (
+        <Section
+          title={`Starter Code (${problem.language || "code"})`}
+          chip={problem.language ? problem.language.toUpperCase() : undefined}
         >
-          {problem.statement}
-        </Typography>
-      </Section>
-
-      {problem.sample_input && (
-        <Section title="Sample Input">
-          <CodeBlock content={problem.sample_input} />
+          <CodeBlock content={problem.starter_code} maxHeight={260} />
         </Section>
       )}
-      {problem.sample_output && (
-        <Section title="Sample Output">
-          <CodeBlock content={problem.sample_output} />
-        </Section>
-      )}
-
-      <Section
-        title={`Starter Code (${problem.language || "code"})`}
-        chip={problem.language ? problem.language.toUpperCase() : undefined}
-      >
-        <CodeBlock content={problem.starter_code} maxHeight={260} />
-      </Section>
 
       {submitted.code && (
         <Section
