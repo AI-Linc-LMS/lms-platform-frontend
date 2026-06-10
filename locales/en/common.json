@@ -28,7 +28,9 @@
     "branding": "Branding & theme",
     "certificateUploads": "Certificate uploads",
     "support": "My Tickets",
-    "adminTickets": "Ticket Management"
+    "adminTickets": "Ticket Management",
+    "adaptiveQuizzes": "Adaptive Course",
+    "adminAdaptiveQuizzes": "Adaptive Course Builder"
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",

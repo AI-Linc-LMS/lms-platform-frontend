@@ -42,7 +42,13 @@ const regularNavigationItems: NavigationItem[] = [
     path: "/assessments",
     icon: "mdi:file-document-edit",
     featureName: "assessment",
-  }, 
+  },
+  {
+    label: "Adaptive",
+    path: "/adaptive-quizzes",
+    icon: "mdi:tune-vertical",
+    featureName: "adaptive_quiz",
+  },
   {
     label: "Jobs",
     path: "/jobs-v2",
