@@ -26,21 +26,6 @@ import {
   Student,
   CourseCompletionStats,
 } from "@/lib/services/admin/admin-student.service";
-import { studentRiskFlags } from "@/lib/utils/student-risk";
-
-const formatLastActive = (value: string | null): string => {
-  if (!value) return "Never active";
-  try {
-    const d = new Date(value);
-    const days = Math.floor((Date.now() - d.getTime()) / 86400000);
-    if (days <= 0) return "Active today";
-    if (days === 1) return "Active 1 day ago";
-    if (days < 30) return `Active ${days} days ago`;
-    return `Active ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
-  } catch {
-    return value;
-  }
-};
 
 type SortOption =
   | "name"
@@ -475,7 +460,6 @@ export function StudentsTable({
             ) : (
               students.map((student) => {
                 const stats = completionStats[student.user_id] || completionStats[student.id];
-                const risk = studentRiskFlags(student, stats);
                 return (
                   <TableRow
                     key={student.id}
@@ -567,37 +551,6 @@ export function StudentsTable({
                                 }}
                               />
                             )}
-                            {student.is_active && risk.atRisk && (
-                              <Tooltip
-                                title={
-                                  risk.inactive
-                                    ? "No activity in 30+ days"
-                                    : "Low course completion (<30%)"
-                                }
-                                enterDelay={300}
-                              >
-                                <Chip
-                                  icon={
-                                    <IconWrapper
-                                      icon="mdi:alert-circle-outline"
-                                      size={12}
-                                      color="#b45309"
-                                    />
-                                  }
-                                  label="At risk"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: "#fef3c7",
-                                    color: "#b45309",
-                                    fontSize: "0.65rem",
-                                    height: 18,
-                                    fontWeight: 700,
-                                    "& .MuiChip-label": { px: 0.5 },
-                                    "& .MuiChip-icon": { ml: 0.4 },
-                                  }}
-                                />
-                              </Tooltip>
-                            )}
                           </Box>
                           <Typography
                             variant="caption"
@@ -611,18 +564,6 @@ export function StudentsTable({
                             }}
                           >
                             {student.email || t("adminManageStudents.na")}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: risk.inactive
-                                ? "#b45309"
-                                : "var(--font-tertiary)",
-                              fontSize: { xs: "0.6rem", sm: "0.68rem" },
-                              display: "block",
-                            }}
-                          >
-                            {formatLastActive(student.last_activity_date)}
                           </Typography>
                         </Box>
                       </Box>
