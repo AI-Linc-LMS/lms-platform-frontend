@@ -1,38 +1,51 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
   Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Pagination,
+  Tabs,
+  Tab,
   CircularProgress,
+  Chip,
 } from "@mui/material";
-import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminStudentService,
   StudentDetail,
+  StudentLearningJourney,
 } from "@/lib/services/admin/admin-student.service";
-import { IconWrapper } from "@/components/common/IconWrapper";
-import { StudentMetricCards } from "@/components/admin/manage-students/StudentMetricCards";
-import { StudentProfileCard } from "@/components/admin/manage-students/StudentProfileCard";
-import { PersonalInformationCard } from "@/components/admin/manage-students/PersonalInformationCard";
-import { AccountStatusCard } from "@/components/admin/manage-students/AccountStatusCard";
-import { EnrolledCoursesTable } from "@/components/admin/manage-students/EnrolledCoursesTable";
-import { CourseManagementCard } from "@/components/admin/manage-students/CourseManagementCard";
-import { formatDate } from "@/lib/utils/date-utils";
+import {
+  SectionHero,
+  KpiRail,
+  SectionShell,
+} from "@/components/scorecard/shared";
+import { ManageTab } from "@/components/admin/manage-students/detail/ManageTab";
+import { OverviewTab } from "@/components/admin/manage-students/detail/OverviewTab";
+import { CoursesTab } from "@/components/admin/manage-students/detail/CoursesTab";
+import { AssessmentsTab } from "@/components/admin/manage-students/detail/AssessmentsTab";
+import { MockInterviewsTab } from "@/components/admin/manage-students/detail/MockInterviewsTab";
+import { AdaptiveTab } from "@/components/admin/manage-students/detail/AdaptiveTab";
+import { TimelineTab } from "@/components/admin/manage-students/detail/TimelineTab";
+import {
+  ADAPTIVE,
+  ADAPTIVE_MESH,
+  formatDate,
+} from "@/components/admin/manage-students/detail/shared";
+
+type TabKey =
+  | "overview"
+  | "courses"
+  | "assessments"
+  | "mock"
+  | "adaptive"
+  | "timeline"
+  | "manage";
 
 export default function StudentDetailsPage() {
   const router = useRouter();
@@ -42,115 +55,76 @@ export default function StudentDetailsPage() {
   const studentId = params?.id ? Number(params.id) : null;
 
   const [student, setStudent] = useState<StudentDetail | null>(null);
+  const [journey, setJourney] = useState<StudentLearningJourney | null>(null);
   const [loading, setLoading] = useState(true);
+  const [journeyLoading, setJourneyLoading] = useState(true);
+  const [tab, setTab] = useState<TabKey>("overview");
+
+  // Manage-tab edit state
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [assessmentPage, setAssessmentPage] = useState(1);
-  const [assessmentLimit, setAssessmentLimit] = useState(10);
-  const [activityPage, setActivityPage] = useState(1);
-  const [activityLimit, setActivityLimit] = useState(10);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     email: "",
   });
 
-  const formatDateTime = (value?: string | null) => {
-    if (!value) return "-";
+  const loadStudent = useCallback(async () => {
+    if (!studentId) return;
     try {
-      return new Date(value).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });;
-    } catch {
-      return value;
+      setLoading(true);
+      const data = await adminStudentService.getStudent(studentId);
+      setStudent(data);
+      setFormData({
+        first_name: data.personal_info.first_name || "",
+        last_name: data.personal_info.last_name || "",
+        email: data.personal_info.email || "",
+      });
+    } catch (error: unknown) {
+      showToast(
+        (error as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || t("manageStudents.failedToLoadStudent"),
+        "error"
+      );
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [studentId, showToast, t]);
 
-  const sectionPaperSx = {
-    p: 3,
-    borderRadius: 3,
-    boxShadow:
-      "0 10px 24px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-    border: "1px solid var(--border-default)",
-    background:
-      "linear-gradient(180deg, var(--card-bg) 0%, color-mix(in srgb, var(--surface) 80%, transparent) 100%)",
-  } as const;
-
-  const tableHeaderRowSx = {
-    backgroundColor: "var(--surface)",
-    "& .MuiTableCell-root": {
-      fontWeight: 700,
-      color: "var(--font-primary)",
-      borderBottom: "1px solid var(--border-default)",
-    },
-  } as const;
-
-  const tableContainerSx = {
-    border: "1px solid var(--border-default)",
-    borderRadius: 2,
-    overflowX: "auto",
-    "&::-webkit-scrollbar": { height: 8, width: 8 },
-    "&::-webkit-scrollbar-track": { backgroundColor: "var(--surface)" },
-    "&::-webkit-scrollbar-thumb": {
-      backgroundColor: "var(--border-default)",
-      borderRadius: 4,
-    },
-  } as const;
+  const loadJourney = useCallback(async () => {
+    if (!studentId) return;
+    try {
+      setJourneyLoading(true);
+      const data = await adminStudentService.getLearningJourney(studentId);
+      setJourney(data);
+    } catch {
+      // Journey is supplementary — keep the page usable if it fails.
+      setJourney(null);
+    } finally {
+      setJourneyLoading(false);
+    }
+  }, [studentId]);
 
   useEffect(() => {
-    if (!studentId) return;
-
-    const loadStudent = async () => {
-      try {
-        setLoading(true);
-        const data = await adminStudentService.getStudent(studentId);
-        setStudent(data);
-        setFormData({
-          first_name: data.personal_info.first_name || "",
-          last_name: data.personal_info.last_name || "",
-          email: data.personal_info.email || "",
-        });
-      } catch (error: any) {
-        showToast(
-          error?.response?.data?.detail || t("manageStudents.failedToLoadStudent"),
-          "error"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadStudent();
-  }, [studentId, showToast]);
+    loadJourney();
+  }, [loadStudent, loadJourney]);
 
   const handleSavePersonalInfo = async () => {
     if (!student || !studentId) return;
     try {
       setSaving(true);
-      await adminStudentService.updateStudent(studentId, {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
-      });
+      await adminStudentService.updateStudent(studentId, { ...formData });
       setStudent({
         ...student,
-        personal_info: {
-          ...student.personal_info,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-        },
+        personal_info: { ...student.personal_info, ...formData },
       });
       showToast(t("manageStudents.personalInfoUpdated"), "success");
       setEditing(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       showToast(
-        error?.response?.data?.detail ||
-          t("manageStudents.failedToUpdatePersonalInfo"),
+        (error as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || t("manageStudents.failedToUpdatePersonalInfo"),
         "error"
       );
     } finally {
@@ -159,11 +133,8 @@ export default function StudentDetailsPage() {
   };
 
   const handleEnrollmentChange = async () => {
-    if (!studentId) return;
-    try {
-      const data = await adminStudentService.getStudent(studentId);
-      setStudent(data);
-    } catch (error: any) {}
+    // Refresh both the management view and the breakdown after enroll/unenroll.
+    await Promise.all([loadStudent(), loadJourney()]);
   };
 
   const handleToggleActive = async () => {
@@ -171,29 +142,25 @@ export default function StudentDetailsPage() {
     try {
       setSaving(true);
       const newActiveStatus = !student.personal_info.is_active;
-
       if (newActiveStatus) {
-        // Activate: Use POST with action: "activate"
         await adminStudentService.activateStudent(studentId);
       } else {
-        // Deactivate: Use DELETE
         await adminStudentService.deactivateStudent(studentId);
       }
-
       setStudent({
         ...student,
-        personal_info: {
-          ...student.personal_info,
-          is_active: newActiveStatus,
-        },
+        personal_info: { ...student.personal_info, is_active: newActiveStatus },
       });
       showToast(
-        newActiveStatus ? t("manageStudents.studentActivated") : t("manageStudents.studentDeactivated"),
+        newActiveStatus
+          ? t("manageStudents.studentActivated")
+          : t("manageStudents.studentDeactivated"),
         "success"
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       showToast(
-        error?.response?.data?.detail || t("manageStudents.failedToUpdateStatus"),
+        (error as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || t("manageStudents.failedToUpdateStatus"),
         "error"
       );
     } finally {
@@ -201,6 +168,39 @@ export default function StudentDetailsPage() {
     }
   };
 
+  const handleExportReport = () => {
+    if (!journey) return;
+    const s = journey.summary;
+    const lines: string[] = [];
+    lines.push("Field,Value");
+    lines.push(`Name,"${journey.student.name}"`);
+    lines.push(`Email,"${journey.student.email}"`);
+    lines.push(`Active,${journey.student.is_active ? "Yes" : "No"}`);
+    lines.push(`Enrolled courses,${s.enrolled_courses_count}`);
+    lines.push(`Overall completion %,${s.overall_completion_pct}`);
+    lines.push(`Total marks,${s.total_marks}`);
+    lines.push(`Total time (hrs),${s.total_time_hours}`);
+    lines.push(`Current streak,${s.current_streak}`);
+    lines.push(`Assessments,${s.assessments_count}`);
+    lines.push(`Mock interviews,${s.mock_interviews_count}`);
+    lines.push(`Adaptive sessions,${s.adaptive_sessions_count}`);
+    lines.push("");
+    lines.push("Course,Completed,Total,Progress %,Marks");
+    journey.courses.forEach((c) =>
+      lines.push(
+        `"${c.title}",${c.completed_contents},${c.total_contents},${c.progress_percentage},${c.marks}`
+      )
+    );
+    const blob = new Blob([lines.join("\r\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `student-${studentId}-report.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -216,7 +216,7 @@ export default function StudentDetailsPage() {
           }}
         >
           <CircularProgress size={36} />
-          <Typography variant="body1" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
+          <Typography sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
             {t("manageStudents.loadingStudentProfile")}
           </Typography>
         </Box>
@@ -227,398 +227,162 @@ export default function StudentDetailsPage() {
   if (!student) {
     return (
       <MainLayout>
-        <Box
-          sx={{
-            p: { xs: 2, sm: 3, md: 4 },
-            minHeight: "50vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Paper
-            sx={{
-              px: 4,
-              py: 5,
-              textAlign: "center",
-              borderRadius: 3,
-              border: "1px solid var(--border-default)",
-              boxShadow:
-                "0 10px 24px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-            }}
-          >
-            <Box sx={{ mb: 1.5 }}>
-              <IconWrapper icon="mdi:account-alert-outline" size={38} color="var(--font-tertiary)" />
-            </Box>
-            <Typography variant="h6" sx={{ color: "var(--font-primary)", fontWeight: 600 }}>
-              {t("manageStudents.studentNotFound")}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
-              {t("manageStudents.studentNotFoundDesc")}
-            </Typography>
-          </Paper>
+        <Box sx={{ p: 4, textAlign: "center", minHeight: "50vh" }}>
+          <IconWrapper icon="mdi:account-alert-outline" size={38} color="var(--font-tertiary)" />
+          <Typography variant="h6" sx={{ fontWeight: 600, mt: 1 }}>
+            {t("manageStudents.studentNotFound")}
+          </Typography>
+          <Button onClick={() => router.push("/admin/manage-students")} sx={{ mt: 2 }}>
+            {t("common.back")}
+          </Button>
         </Box>
       </MainLayout>
     );
   }
 
-  const { personal_info, academic_summary, enrolled_courses } = student;
-  const assessmentTotalPages = Math.max(
-    1,
-    Math.ceil((student.assessments?.length || 0) / assessmentLimit)
-  );
-  const assessmentStartIndex = (assessmentPage - 1) * assessmentLimit;
-  const assessmentEndIndex = assessmentStartIndex + assessmentLimit;
-  const paginatedAssessments = (student.assessments || []).slice(
-    assessmentStartIndex,
-    assessmentEndIndex
-  );
-  const activityTotalPages = Math.max(
-    1,
-    Math.ceil((student.activity_pattern_30_days?.length || 0) / activityLimit)
-  );
-  const activityStartIndex = (activityPage - 1) * activityLimit;
-  const activityEndIndex = activityStartIndex + activityLimit;
-  const paginatedActivity = (student.activity_pattern_30_days || []).slice(
-    activityStartIndex,
-    activityEndIndex
-  );
+  const pi = student.personal_info;
+  const name = `${pi.first_name} ${pi.last_name}`.trim() || pi.username;
+  const summary = journey?.summary;
+
+  const kpis = [
+    { label: "Courses", value: summary?.enrolled_courses_count ?? student.academic_summary.enrolled_courses_count, accent: ADAPTIVE.indigo },
+    { label: "Completion", value: summary ? `${summary.overall_completion_pct}%` : "—", accent: ADAPTIVE.green, numeric: false },
+    { label: "Marks", value: summary?.total_marks ?? student.academic_summary.total_marks, accent: ADAPTIVE.purple },
+    { label: "Streak", value: summary?.current_streak ?? student.academic_summary.current_streak, accent: ADAPTIVE.amber },
+    { label: "Time (hrs)", value: summary?.total_time_hours ?? student.academic_summary.total_time_spent.value, accent: ADAPTIVE.blue, numeric: false },
+    { label: "Activities", value: summary?.total_activities ?? student.academic_summary.total_activities, accent: ADAPTIVE.pink },
+  ];
+
+  const tabDefs: Array<{ key: TabKey; label: string; icon: string }> = [
+    { key: "overview", label: "Overview", icon: "mdi:view-dashboard-outline" },
+    { key: "courses", label: "Courses & Content", icon: "mdi:book-open-variant" },
+    { key: "assessments", label: "Assessments", icon: "mdi:clipboard-text-outline" },
+    { key: "mock", label: "Mock Interviews", icon: "mdi:account-voice" },
+    { key: "adaptive", label: "Adaptive", icon: "mdi:brain" },
+    { key: "timeline", label: "Timeline", icon: "mdi:timeline-clock-outline" },
+    { key: "manage", label: "Manage", icon: "mdi:cog-outline" },
+  ];
+
+  const journeyPending = journeyLoading && !journey;
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Header with Back Button */}
-        <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
-          <Button
-            startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
-            onClick={() => router.push("/admin/manage-students")}
-            sx={{ color: "var(--accent-indigo)" }}
-          >
-            {t("common.back")}
-          </Button>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: "var(--font-primary)",
-              fontSize: { xs: "1.5rem", sm: "2rem" },
-            }}
-          >
-            {t("manageStudents.studentDetails")}
-          </Typography>
-        </Box>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1320, mx: "auto", width: "100%" }}>
+        <Button
+          startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
+          onClick={() => router.back()}
+          sx={{ color: "var(--accent-indigo)", mb: 2 }}
+        >
+          {t("common.back")}
+        </Button>
 
-        {/* Metric Cards */}
-        <StudentMetricCards
-          enrollments={academic_summary.enrolled_courses_count}
-          totalMarks={academic_summary.total_marks}
-          activities={academic_summary.total_activities}
-          streak={academic_summary.current_streak}
+        <SectionHero
+          chapter="Student Profile"
+          title={name}
+          subtitle={pi.email}
+          iconBadge={{ icon: "mdi:account-school", gradient: ADAPTIVE.gradient }}
+          rightSlot={
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Chip
+                size="small"
+                label={pi.is_active ? "Active" : "Inactive"}
+                sx={{
+                  fontWeight: 700,
+                  color: pi.is_active ? ADAPTIVE.green : "#94a3b8",
+                  bgcolor: pi.is_active
+                    ? "color-mix(in srgb, #10b981 14%, transparent)"
+                    : "color-mix(in srgb, #94a3b8 16%, transparent)",
+                }}
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                onClick={handleExportReport}
+                disabled={!journey}
+                sx={{ borderColor: ADAPTIVE.indigo, color: ADAPTIVE.indigo, fontWeight: 700 }}
+              >
+                Export
+              </Button>
+            </Box>
+          }
         />
 
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 3,
-          }}
-        >
-          {/* Left Sidebar - Student Information */}
-          <Box sx={{ width: { xs: "100%", md: "33.333%" } }}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <StudentProfileCard student={student} />
-              <AccountStatusCard
-                student={student}
-                saving={saving}
-                onToggle={handleToggleActive}
+        <KpiRail items={kpis} />
+
+        {summary?.last_activity_date && (
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 2, mt: -2 }}>
+            Last active {formatDate(summary.last_activity_date)} · joined {formatDate(pi.date_joined)}
+          </Typography>
+        )}
+
+        <Box sx={{ borderBottom: "1px solid var(--border-default)", mb: 3 }}>
+          <Tabs
+            value={tab}
+            onChange={(_, v) => setTab(v)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              "& .MuiTab-root": { fontWeight: 700, textTransform: "none", minHeight: 48 },
+              "& .Mui-selected": { color: `${ADAPTIVE.indigo} !important` },
+              "& .MuiTabs-indicator": { background: ADAPTIVE.gradient, height: 3 },
+            }}
+          >
+            {tabDefs.map((d) => (
+              <Tab
+                key={d.key}
+                value={d.key}
+                label={d.label}
+                icon={<IconWrapper icon={d.icon} size={18} />}
+                iconPosition="start"
               />
-                 {/* Activity Breakdown */}
-                 <Paper sx={sectionPaperSx}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 2, letterSpacing: 0.2 }}
-                >
-                  {t("manageStudents.activityBreakdown")}
-                </Typography>
-                {student.activity_breakdown &&
-                Object.keys(student.activity_breakdown).length > 0 ? (
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                    {Object.entries(student.activity_breakdown).map(([type, count]) => (
-                      <Chip key={type} label={`${type}: ${count}`} sx={{ fontWeight: 500 }} />
-                    ))}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    {t("manageStudents.noActivityBreakdown")}
-                  </Typography>
-                )}
-              </Paper>
-            </Box>
-          </Box>
-
-          {/* Main Content Area */}
-          <Box sx={{ flex: 1, width: { xs: "100%", md: "66.666%" } }}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {/* Personal Information - Moved to Right */}
-              <PersonalInformationCard
-                student={student}
-                editing={editing}
-                formData={formData}
-                saving={saving}
-                onEdit={() => setEditing(true)}
-                onCancel={() => {
-                  setEditing(false);
-                  setFormData({
-                    first_name: personal_info.first_name || "",
-                    last_name: personal_info.last_name || "",
-                    email: personal_info.email || "",
-                  });
-                }}
-                onSave={handleSavePersonalInfo}
-                onFormChange={(field, value) =>
-                  setFormData({ ...formData, [field]: value })
-                }
-              />
-
-              {/* Course Management */}
-              <CourseManagementCard
-                studentId={studentId!}
-                enrolledCourseIds={enrolled_courses.map((c) => c.id)}
-                onEnrollmentChange={handleEnrollmentChange}
-              />
-
-              {/* Enrolled Courses Table */}
-              <EnrolledCoursesTable courses={enrolled_courses} />
-
-              {/* Assessment History */}
-              <Paper sx={sectionPaperSx}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 2, letterSpacing: 0.2 }}
-                >
-                  {t("manageStudents.assessmentHistory")}
-                </Typography>
-                {student.assessments?.length ? (
-                  <>
-                    <TableContainer sx={tableContainerSx}>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow sx={tableHeaderRowSx}>
-                            <TableCell>{t("manageStudents.assessment")}</TableCell>
-                            <TableCell>{t("manageStudents.score")}</TableCell>
-                            <TableCell>{t("manageStudents.status")}</TableCell>
-                            <TableCell>{t("manageStudents.startedAt")}</TableCell>
-                            <TableCell>{t("manageStudents.submittedAt")}</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {paginatedAssessments.map((assessment) => (
-                            <TableRow
-                              key={assessment.id}
-                              sx={{
-                                "&:nth-of-type(odd)": { backgroundColor: "color-mix(in srgb, var(--card-bg) 80%, var(--surface) 20%)" },
-                                "&:hover": { backgroundColor: "var(--surface)" },
-                              }}
-                            >
-                              <TableCell>
-                                {assessment.assessment_title || assessment.title || `Assessment #${assessment.id}`}
-                              </TableCell>
-                              <TableCell>{assessment.score ?? "-"}</TableCell>
-                              <TableCell>
-                                <Chip
-                                  size="small"
-                                  label={assessment.status || "N/A"}
-                                  sx={{
-                                    backgroundColor:
-                                      assessment.status === "submitted"
-                                        ? "color-mix(in srgb, var(--success-500) 16%, var(--surface) 84%)"
-                                        : "var(--surface)",
-                                    color:
-                                      assessment.status === "submitted"
-                                        ? "var(--success-500)"
-                                        : "var(--font-secondary)",
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell>{formatDateTime(assessment.started_at || assessment.date)}</TableCell>
-                              <TableCell>{formatDateTime(assessment.submitted_at || assessment.date)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-
-                    <Box
-                      sx={{
-                        mt: 2,
-                        pt: 2,
-                        borderTop: "1px solid var(--border-default)",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        flexDirection: { xs: "column", sm: "row" },
-                        gap: 2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 2,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "var(--font-secondary)",
-                            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                          }}
-                        >
-                          {t("manageStudents.showingAssessments", {
-                            start: paginatedAssessments.length === 0 ? 0 : assessmentStartIndex + 1,
-                            end: Math.min(assessmentEndIndex, student.assessments.length),
-                            total: student.assessments.length,
-                          })}
-                        </Typography>
-                        <PerPageSelect
-                          value={assessmentLimit}
-                          onChange={(v) => {
-                            setAssessmentLimit(v);
-                            setAssessmentPage(1);
-                          }}
-                          options={[5, 10, 15, 30]}
-                          displayEmpty
-                          ariaLabel={t("manageStudents.assessmentsPerPage")}
-                          minWidth={120}
-                          SelectSx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                        />
-                      </Box>
-                      <Pagination
-                        count={assessmentTotalPages}
-                        page={assessmentPage}
-                        onChange={(_, value) => setAssessmentPage(value)}
-                        color="primary"
-                        size="small"
-                        showFirstButton
-                        showLastButton
-                      />
-                    </Box>
-                  </>
-                ) : (
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    {t("manageStudents.noAssessmentsFound")}
-                  </Typography>
-                )}
-              </Paper>
-
-           
-
-              {/* Activity Pattern - 30 Days */}
-              <Paper sx={sectionPaperSx}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 2, letterSpacing: 0.2 }}
-                >
-                  {t("manageStudents.last30DaysActivity")}
-                </Typography>
-                {student.activity_pattern_30_days?.length ? (
-                  <>
-                    <TableContainer sx={tableContainerSx}>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow sx={tableHeaderRowSx}>
-                            <TableCell>{t("manageStudents.date")}</TableCell>
-                            <TableCell>{t("manageStudents.activities")}</TableCell>
-                            <TableCell>{t("manageStudents.timeSpentHrs")}</TableCell>
-                            <TableCell>{t("manageStudents.marksEarned")}</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {paginatedActivity.map((day) => (
-                            <TableRow
-                              key={day.date}
-                              sx={{
-                                "&:nth-of-type(odd)": { backgroundColor: "color-mix(in srgb, var(--card-bg) 80%, var(--surface) 20%)" },
-                                "&:hover": { backgroundColor: "var(--surface)" },
-                              }}
-                            >
-                              <TableCell>{formatDate(day.date)}</TableCell>
-                              <TableCell>{day.activity_count}</TableCell>
-                              <TableCell>{day.time_spent_hours}</TableCell>
-                              <TableCell>{day.marks_earned}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-
-                    <Box
-                    sx={{
-                      mt: 2,
-                      pt: 2,
-                      borderTop: "1px solid var(--border-default)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexDirection: { xs: "column", sm: "row" },
-                      gap: 2,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "var(--font-secondary)",
-                          fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                        }}
-                      >
-                        {t("manageStudents.showingDays", {
-                          start: paginatedActivity.length === 0 ? 0 : activityStartIndex + 1,
-                          end: Math.min(activityEndIndex, student.activity_pattern_30_days.length),
-                          total: student.activity_pattern_30_days.length,
-                        })}
-                      </Typography>
-                      <PerPageSelect
-                        value={activityLimit}
-                        onChange={(v) => {
-                          setActivityLimit(v);
-                          setActivityPage(1);
-                        }}
-                        options={[5, 10, 15, 30]}
-                        displayEmpty
-                        ariaLabel={t("manageStudents.daysPerPage")}
-                        minWidth={120}
-                        SelectSx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                      />
-                    </Box>
-                    <Pagination
-                      count={activityTotalPages}
-                      page={activityPage}
-                      onChange={(_, value) => setActivityPage(value)}
-                      color="primary"
-                      size="small"
-                      showFirstButton
-                      showLastButton
-                    />
-                    </Box>
-                  </>
-                ) : (
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    {t("manageStudents.no30DayActivity")}
-                  </Typography>
-                )}
-              </Paper>
-            </Box>
-          </Box>
+            ))}
+          </Tabs>
         </Box>
+
+        <SectionShell radialMesh={ADAPTIVE_MESH} meshOpacity={0.35}>
+          {tab === "manage" ? (
+            <ManageTab
+              student={student}
+              studentId={studentId!}
+              editing={editing}
+              formData={formData}
+              saving={saving}
+              onEdit={() => setEditing(true)}
+              onCancel={() => {
+                setEditing(false);
+                setFormData({
+                  first_name: pi.first_name || "",
+                  last_name: pi.last_name || "",
+                  email: pi.email || "",
+                });
+              }}
+              onSave={handleSavePersonalInfo}
+              onFormChange={(field, value) =>
+                setFormData({ ...formData, [field]: value })
+              }
+              onToggleActive={handleToggleActive}
+              onEnrollmentChange={handleEnrollmentChange}
+            />
+          ) : journeyPending ? (
+            <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : !journey ? (
+            <Typography sx={{ color: "var(--font-secondary)", textAlign: "center", py: 6 }}>
+              Couldn&apos;t load the activity breakdown. Try refreshing.
+            </Typography>
+          ) : (
+            <>
+              {tab === "overview" && <OverviewTab journey={journey} />}
+              {tab === "courses" && <CoursesTab courses={journey.courses} />}
+              {tab === "assessments" && <AssessmentsTab assessments={journey.assessments} />}
+              {tab === "mock" && <MockInterviewsTab data={journey.mock_interviews} />}
+              {tab === "adaptive" && <AdaptiveTab adaptive={journey.adaptive} />}
+              {tab === "timeline" && <TimelineTab timeline={journey.timeline} />}
+            </>
+          )}
+        </SectionShell>
       </Box>
     </MainLayout>
   );
