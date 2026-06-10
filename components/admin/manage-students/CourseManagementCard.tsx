@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
-  Paper,
   Select,
   MenuItem,
   FormControl,
@@ -31,6 +30,15 @@ interface CourseManagementCardProps {
   onEnrollmentChange: () => void;
 }
 
+const INDIGO = "#6366f1";
+
+function errMessage(error: unknown, fallback: string): string {
+  return (
+    (error as { response?: { data?: { detail?: string } } })?.response?.data
+      ?.detail || fallback
+  );
+}
+
 export function CourseManagementCard({
   studentId,
   enrolledCourseIds,
@@ -42,180 +50,97 @@ export function CourseManagementCard({
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(100);
-  const [hasMore, setHasMore] = useState(true);
-
-  // Load courses with pagination
-  const loadCourses = async (pageNum: number = 1) => {
-    try {
-      setLoadingCourses(true);
-      const response = await adminCoursesService.getCourses({
-        page: pageNum,
-        limit,
-      });
-
-      // Handle different response structures
-      let coursesData: Course[] = [];
-      if (Array.isArray(response)) {
-        coursesData = response;
-        setHasMore(coursesData.length === limit);
-      } else if (response?.results) {
-        coursesData = response.results;
-        setHasMore(!!response.next);
-      } else if (response?.courses) {
-        coursesData = response.courses;
-        setHasMore(coursesData.length === limit);
-      } else if (response?.data) {
-        coursesData = Array.isArray(response.data) ? response.data : [];
-        setHasMore(coursesData.length === limit);
-      } else {
-        coursesData = [];
-        setHasMore(false);
-      }
-
-      if (pageNum === 1) {
-        setCourses(coursesData);
-      } else {
-        setCourses((prev) => [...prev, ...coursesData]);
-      }
-    } catch (error: any) {
-      showToast(
-        error?.response?.data?.detail || t("manageStudents.failedToLoadCourses"),
-        "error"
-      );
-    } finally {
-      setLoadingCourses(false);
-    }
-  };
 
   useEffect(() => {
-    loadCourses(1);
-  }, []);
+    const loadCourses = async () => {
+      try {
+        setLoadingCourses(true);
+        const response = await adminCoursesService.getCourses({ page: 1, limit: 100 });
+        // Normalize the various response shapes the courses API can return.
+        let coursesData: Course[] = [];
+        if (Array.isArray(response)) coursesData = response;
+        else if (response?.results) coursesData = response.results;
+        else if (response?.courses) coursesData = response.courses;
+        else if (Array.isArray(response?.data)) coursesData = response.data;
+        setCourses(coursesData);
+      } catch (error: unknown) {
+        showToast(errMessage(error, t("manageStudents.failedToLoadCourses")), "error");
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    loadCourses();
+  }, [showToast, t]);
 
-  const handleEnroll = async () => {
+  const runAction = async (
+    action: "enroll_course" | "unenroll_course" | "reset_progress",
+    successKey: string,
+    failKey: string
+  ) => {
     if (!selectedCourseId || typeof selectedCourseId !== "number") return;
-
     try {
       setLoading(true);
-      await adminStudentService.manageStudentAction(
-        studentId,
-        "enroll_course",
-        Number(selectedCourseId)
-      );
-      showToast(t("manageStudents.studentEnrolledSuccess"), "success");
+      await adminStudentService.manageStudentAction(studentId, action, Number(selectedCourseId));
+      showToast(t(successKey), "success");
       setSelectedCourseId("");
       onEnrollmentChange();
-    } catch (error: any) {
-      showToast(
-        error?.response?.data?.detail || t("manageStudents.failedToEnroll"),
-        "error"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUnenroll = async () => {
-    if (!selectedCourseId || typeof selectedCourseId !== "number") return;
-
-    try {
-      setLoading(true);
-      await adminStudentService.manageStudentAction(
-        studentId,
-        "unenroll_course",
-        Number(selectedCourseId)
-      );
-      showToast(t("manageStudents.studentUnenrolledSuccess"), "success");
-      setSelectedCourseId("");
-      onEnrollmentChange();
-    } catch (error: any) {
-      showToast(
-        error?.response?.data?.detail || t("manageStudents.failedToUnenroll"),
-        "error"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetProgress = async () => {
-    if (!selectedCourseId || typeof selectedCourseId !== "number") return;
-
-    try {
-      setLoading(true);
-      await adminStudentService.manageStudentAction(
-        studentId,
-        "reset_progress",
-        Number(selectedCourseId)
-      );
-      showToast(t("manageStudents.progressResetSuccess"), "success");
-      setSelectedCourseId("");
-      onEnrollmentChange();
-    } catch (error: any) {
-      showToast(
-        error?.response?.data?.detail || t("manageStudents.failedToResetProgress"),
-        "error"
-      );
+    } catch (error: unknown) {
+      showToast(errMessage(error, t(failKey)), "error");
     } finally {
       setLoading(false);
     }
   };
 
   const isEnrolled =
-    selectedCourseId !== "" &&
-    enrolledCourseIds.includes(Number(selectedCourseId));
+    selectedCourseId !== "" && enrolledCourseIds.includes(Number(selectedCourseId));
 
   return (
-    <Paper
+    <Box
       sx={{
-        p: 3,
-        borderRadius: 2,
-        border: "1px solid var(--border-default)",
+        borderRadius: 3,
+        border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
         backgroundColor: "var(--card-bg)",
-        boxShadow:
-          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-        mb: 3,
+        overflow: "hidden",
       }}
     >
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 2,
-          mb: 3,
-          pb: 2,
-          borderBottom: "1px solid var(--border-default)",
+          gap: 1.5,
+          px: { xs: 2, md: 2.5 },
+          py: 1.75,
+          borderBottom: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
         }}
       >
         <Box
           sx={{
-            width: 48,
-            height: 48,
-            borderRadius: 2,
-            backgroundColor:
-              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+            width: 34,
+            height: 34,
+            borderRadius: 1.5,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            bgcolor: `color-mix(in srgb, ${INDIGO} 14%, transparent)`,
           }}
         >
-          <IconWrapper icon="mdi:book-education" size={24} color="var(--accent-indigo)" />
+          <IconWrapper icon="mdi:book-education-outline" size={19} color={INDIGO} />
         </Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+        <Typography sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
           {t("manageStudents.courseManagement")}
         </Typography>
       </Box>
 
       <Box
         sx={{
+          p: { xs: 2, md: 2.5 },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
-          gap: 2,
+          gap: 1.5,
           alignItems: { xs: "stretch", sm: "flex-end" },
         }}
       >
-        <FormControl fullWidth sx={{ minWidth: { xs: "100%", sm: 300 } }}>
+        <FormControl fullWidth sx={{ minWidth: { xs: "100%", sm: 280 } }}>
           <InputLabel id="course-select-label">{t("manageStudents.selectCourse")}</InputLabel>
           <Select
             labelId="course-select-label"
@@ -223,10 +148,11 @@ export function CourseManagementCard({
             onChange={(e) => setSelectedCourseId(e.target.value as number)}
             label={t("manageStudents.selectCourse")}
             disabled={loading || loadingCourses}
+            sx={{ borderRadius: 2 }}
           >
             {loadingCourses && courses.length === 0 ? (
               <MenuItem disabled>
-                <CircularProgress size={20} sx={{ mr: 1 }} />
+                <CircularProgress size={18} sx={{ mr: 1 }} />
                 {t("manageStudents.loadingCourses")}
               </MenuItem>
             ) : (
@@ -239,24 +165,21 @@ export function CourseManagementCard({
           </Select>
         </FormControl>
 
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            flexWrap: "wrap",
-            flex: { xs: "1 1 100%", sm: "0 0 auto" },
-          }}
-        >
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <Button
             variant="contained"
-            startIcon={<IconWrapper icon="mdi:plus-circle" size={20} />}
-            onClick={handleEnroll}
+            disableElevation
+            startIcon={<IconWrapper icon="mdi:plus-circle" size={18} />}
+            onClick={() =>
+              runAction("enroll_course", "manageStudents.studentEnrolledSuccess", "manageStudents.failedToEnroll")
+            }
             disabled={!selectedCourseId || loading || isEnrolled}
             sx={{
-              bgcolor: "var(--success-500)",
-              color: "var(--font-light)",
-              "&:hover": { bgcolor: "color-mix(in srgb, var(--success-500) 85%, black 15%)" },
-              minWidth: { xs: "100%", sm: 120 },
+              borderRadius: 999,
+              textTransform: "none",
+              fontWeight: 700,
+              bgcolor: "#10b981",
+              "&:hover": { bgcolor: "#0e9f70" },
             }}
           >
             {t("manageStudents.enroll")}
@@ -264,14 +187,18 @@ export function CourseManagementCard({
 
           <Button
             variant="contained"
-            startIcon={<IconWrapper icon="mdi:minus-circle" size={20} />}
-            onClick={handleUnenroll}
+            disableElevation
+            startIcon={<IconWrapper icon="mdi:minus-circle" size={18} />}
+            onClick={() =>
+              runAction("unenroll_course", "manageStudents.studentUnenrolledSuccess", "manageStudents.failedToUnenroll")
+            }
             disabled={!selectedCourseId || loading || !isEnrolled}
             sx={{
-              bgcolor: "var(--warning-500)",
-              color: "var(--font-light)",
-              "&:hover": { bgcolor: "color-mix(in srgb, var(--warning-500) 85%, black 15%)" },
-              minWidth: { xs: "100%", sm: 120 },
+              borderRadius: 999,
+              textTransform: "none",
+              fontWeight: 700,
+              bgcolor: "#f59e0b",
+              "&:hover": { bgcolor: "#d98a09" },
             }}
           >
             {t("manageStudents.unenroll")}
@@ -279,23 +206,24 @@ export function CourseManagementCard({
 
           <Button
             variant="outlined"
-            startIcon={<IconWrapper icon="mdi:refresh" size={20} />}
-            onClick={handleResetProgress}
+            startIcon={<IconWrapper icon="mdi:refresh" size={18} />}
+            onClick={() =>
+              runAction("reset_progress", "manageStudents.progressResetSuccess", "manageStudents.failedToResetProgress")
+            }
             disabled={!selectedCourseId || loading || !isEnrolled}
             sx={{
-              borderColor: "var(--warning-500)",
-              color: "var(--warning-500)",
-              "&:hover": {
-                borderColor: "color-mix(in srgb, var(--warning-500) 80%, black 20%)",
-                bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
-              },
-              minWidth: { xs: "100%", sm: 140 },
+              borderRadius: 999,
+              textTransform: "none",
+              fontWeight: 700,
+              borderColor: "#f59e0b",
+              color: "#b45309",
+              "&:hover": { borderColor: "#d98a09", bgcolor: "color-mix(in srgb, #f59e0b 10%, transparent)" },
             }}
           >
             {t("manageStudents.resetProgress")}
           </Button>
         </Box>
       </Box>
-    </Paper>
+    </Box>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Paper, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -24,6 +25,12 @@ import { StudentsTable } from "../../../components/admin/manage-students/Student
 import { StudentsPagination } from "../../../components/admin/manage-students/StudentsPagination";
 import { BulkEnrollmentDialog } from "../../../components/admin/manage-students/BulkEnrollmentDialog";
 import { EnrollmentJobHistory } from "../../../components/admin/manage-students/EnrollmentJobHistory";
+import { BulkActionToolbar } from "../../../components/admin/manage-students/BulkActionToolbar";
+import {
+  matchesSegment,
+  type SegmentKey,
+} from "@/lib/utils/student-risk";
+import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
 
 type SortOption =
   | "name"
@@ -35,6 +42,112 @@ type SortOption =
   | "attendance_pct"
   | "saved_resume";
 type SortOrder = "asc" | "desc";
+
+const SORT_OPTIONS: SortOption[] = [
+  "name",
+  "marks",
+  "last_activity",
+  "time_spent",
+  "streak",
+  "completion_pct",
+  "attendance_pct",
+  "saved_resume",
+];
+
+/**
+ * Snapshot of every filter / sort / pagination control. Persisted to the URL
+ * query string so the directory survives navigation (open a student → Back),
+ * refresh, and link sharing. Fixes the "filters reset on any operation" bug.
+ */
+type DirectoryState = {
+  selectedCourses: string[];
+  status: string;
+  resumeFilter: "all" | "yes" | "no";
+  segment: SegmentKey;
+  searchTerm: string;
+  page: number;
+  limit: number;
+  sortBy: SortOption;
+  sortOrder: SortOrder;
+};
+
+const DEFAULT_DIRECTORY_STATE: DirectoryState = {
+  selectedCourses: [],
+  status: "all",
+  resumeFilter: "all",
+  segment: "all",
+  searchTerm: "",
+  page: 1,
+  limit: 10,
+  sortBy: "name",
+  sortOrder: "asc",
+};
+
+const SEGMENT_KEYS: SegmentKey[] = [
+  "all",
+  "at_risk",
+  "inactive",
+  "low_completion",
+  "high_performers",
+];
+
+function parseDirectoryState(
+  params: URLSearchParams | null
+): DirectoryState {
+  if (!params) return { ...DEFAULT_DIRECTORY_STATE };
+  const num = (key: string, fallback: number) => {
+    const raw = params.get(key);
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+  const coursesRaw = params.get("courses");
+  const status = params.get("status") || DEFAULT_DIRECTORY_STATE.status;
+  const resume = params.get("resume");
+  const segmentRaw = params.get("segment") as SegmentKey | null;
+  const sortByRaw = params.get("sortBy") as SortOption | null;
+  const sortOrderRaw = params.get("sortOrder");
+  return {
+    selectedCourses: coursesRaw
+      ? coursesRaw.split(",").map((s) => s.trim()).filter(Boolean)
+      : [],
+    status: ["all", "active", "inactive"].includes(status) ? status : "all",
+    resumeFilter:
+      resume === "yes" || resume === "no" ? resume : "all",
+    segment:
+      segmentRaw && SEGMENT_KEYS.includes(segmentRaw) ? segmentRaw : "all",
+    searchTerm: params.get("q") || "",
+    page: num("page", DEFAULT_DIRECTORY_STATE.page),
+    limit: num("limit", DEFAULT_DIRECTORY_STATE.limit),
+    sortBy:
+      sortByRaw && SORT_OPTIONS.includes(sortByRaw)
+        ? sortByRaw
+        : DEFAULT_DIRECTORY_STATE.sortBy,
+    sortOrder: sortOrderRaw === "desc" ? "desc" : "asc",
+  };
+}
+
+/** Serialize state to a query string, omitting default values to keep URLs clean. */
+function serializeDirectoryState(state: DirectoryState): string {
+  const params = new URLSearchParams();
+  if (state.selectedCourses.length > 0)
+    params.set("courses", state.selectedCourses.join(","));
+  if (state.status !== DEFAULT_DIRECTORY_STATE.status)
+    params.set("status", state.status);
+  if (state.resumeFilter !== DEFAULT_DIRECTORY_STATE.resumeFilter)
+    params.set("resume", state.resumeFilter);
+  if (state.segment !== DEFAULT_DIRECTORY_STATE.segment)
+    params.set("segment", state.segment);
+  if (state.searchTerm.trim()) params.set("q", state.searchTerm.trim());
+  if (state.page !== DEFAULT_DIRECTORY_STATE.page)
+    params.set("page", String(state.page));
+  if (state.limit !== DEFAULT_DIRECTORY_STATE.limit)
+    params.set("limit", String(state.limit));
+  if (state.sortBy !== DEFAULT_DIRECTORY_STATE.sortBy)
+    params.set("sortBy", state.sortBy);
+  if (state.sortOrder !== DEFAULT_DIRECTORY_STATE.sortOrder)
+    params.set("sortOrder", state.sortOrder);
+  return params.toString();
+}
 
 function apiErrorMessage(error: unknown): string | null {
   if (!error || typeof error !== "object") return null;
@@ -60,6 +173,15 @@ export default function ManageStudentsPage() {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Snapshot the URL once on mount to seed initial filter state. Subsequent URL
+  // writes are driven by state (one-way state -> URL) to avoid feedback loops.
+  const initialDirectoryState = useRef<DirectoryState>(
+    parseDirectoryState(
+      searchParams ? new URLSearchParams(searchParams.toString()) : null
+    )
+  );
   const courseManagerUser = isScopedAdminRole(user?.role);
   // Bulk enrollment and job history are available to org admins AND scoped admins
   // (instructor / course_manager). Backend validates that target courses are in
@@ -78,23 +200,42 @@ export default function ManageStudentsPage() {
   const [loading, setLoading] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
 
-  // Filters
-  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
-  const [status, setStatus] = useState<string>("all");
+  // Filters (seeded from the URL so navigation/refresh preserves them)
+  const [selectedCourses, setSelectedCourses] = useState<string[]>(
+    initialDirectoryState.current.selectedCourses
+  );
+  const [status, setStatus] = useState<string>(
+    initialDirectoryState.current.status
+  );
   /** all | yes | no — filter by has_saved_resume */
-  const [resumeFilter, setResumeFilter] = useState<"all" | "yes" | "no">("all");
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [resumeFilter, setResumeFilter] = useState<"all" | "yes" | "no">(
+    initialDirectoryState.current.resumeFilter
+  );
+  /** Engagement-health quick-filter segment (at-risk, inactive, etc.) */
+  const [segment, setSegment] = useState<SegmentKey>(
+    initialDirectoryState.current.segment
+  );
+  const [searchTerm, setSearchTerm] = useState<string>(
+    initialDirectoryState.current.searchTerm
+  );
 
   // Pagination & Sorting
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [sortBy, setSortBy] = useState<SortOption>("name");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [page, setPage] = useState(initialDirectoryState.current.page);
+  const [limit, setLimit] = useState(initialDirectoryState.current.limit);
+  const [sortBy, setSortBy] = useState<SortOption>(
+    initialDirectoryState.current.sortBy
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    initialDirectoryState.current.sortOrder
+  );
 
   // Bulk Enrollment
   const [bulkEnrollDialogOpen, setBulkEnrollDialogOpen] = useState(false);
   const enrollmentJobSectionRef = useRef<HTMLDivElement | null>(null);
   const loadStudentsSeqRef = useRef(0);
+
+  // Row selection for bulk course actions on existing students
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Load courses for filter
   useEffect(() => {
@@ -376,12 +517,48 @@ export default function ManageStudentsPage() {
     loadStudents();
   }, [loadStudents]);
 
+  // Persist filter/sort/pagination state to the URL (replace, so we don't spam
+  // browser history). This is what makes filters survive an open-student → Back
+  // round-trip and page refresh.
+  useEffect(() => {
+    const query = serializeDirectoryState({
+      selectedCourses,
+      status,
+      resumeFilter,
+      segment,
+      searchTerm,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+    const current = searchParams?.toString() ?? "";
+    if (query !== current) {
+      router.replace(query ? `?${query}` : "?", { scroll: false });
+    }
+    // searchParams intentionally omitted: this effect is the writer, reading it
+    // here would re-fire on our own writes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selectedCourses,
+    status,
+    resumeFilter,
+    segment,
+    searchTerm,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    router,
+  ]);
+
   // Client-side filtering, sorting, and pagination
   // This runs entirely in the browser - no API calls for search, status, sort, or pagination changes
   const hasFilter = Boolean(
     selectedCourses.length > 0 ||
       status !== "all" ||
       resumeFilter !== "all" ||
+      segment !== "all" ||
       (searchTerm && searchTerm.trim())
   );
   const { filteredStudents, paginatedStudents, totalCount, totalPages } =
@@ -409,6 +586,17 @@ export default function ManageStudentsPage() {
         filtered = filtered.filter((s) => s.has_saved_resume === true);
       } else if (resumeFilter === "no") {
         filtered = filtered.filter((s) => !s.has_saved_resume);
+      }
+
+      // Step 2c: Engagement-health segment (at-risk / inactive / low completion / high performers)
+      if (segment !== "all") {
+        filtered = filtered.filter((s) =>
+          matchesSegment(
+            segment,
+            s,
+            completionStats[s.user_id] ?? completionStats[s.id]
+          )
+        );
       }
 
       // Step 3: Sort (completion_pct and attendance_pct use completionStats)
@@ -487,6 +675,7 @@ export default function ManageStudentsPage() {
       searchTerm,
       status,
       resumeFilter,
+      segment,
       sortBy,
       sortOrder,
       page,
@@ -527,6 +716,11 @@ export default function ManageStudentsPage() {
     setPage(1);
   };
 
+  const handleSegmentChange = (value: SegmentKey) => {
+    setSegment((prev) => (prev === value ? "all" : value));
+    setPage(1);
+  };
+
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setPage(1);
@@ -552,6 +746,49 @@ export default function ManageStudentsPage() {
         block: "start",
       });
     });
+  };
+
+  // ── Row selection for bulk course actions ──────────────────────────────
+  const handleToggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedStudents = useMemo(
+    () => filteredStudents.filter((s) => selectedIds.has(s.id)),
+    [filteredStudents, selectedIds]
+  );
+  const allFilteredSelected =
+    filteredStudents.length > 0 &&
+    filteredStudents.every((s) => selectedIds.has(s.id));
+  const someFilteredSelected = filteredStudents.some((s) =>
+    selectedIds.has(s.id)
+  );
+
+  const handleToggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      // If everything in the filtered set is already selected, clear those;
+      // otherwise add every filtered student id (select-all-filtered).
+      if (allFilteredSelected) {
+        const next = new Set(prev);
+        filteredStudents.forEach((s) => next.delete(s.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredStudents.forEach((s) => next.add(s.id));
+      return next;
+    });
+  };
+
+  const handleClearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkActionDone = () => {
+    setSelectedIds(new Set());
+    loadStudents();
   };
 
   const escapeCsvValue = (value: string | number): string => {
@@ -638,6 +875,68 @@ export default function ManageStudentsPage() {
           onSearchChange={handleSearchChange}
         />
 
+        {/* Engagement-health quick segments — set the (URL-persisted) filters */}
+        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mr: 0.5 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--font-secondary)",
+              }}
+            >
+              Segments
+            </Typography>
+            <InfoButton ariaLabel="How segments are calculated">
+              <RiskCriteriaContent />
+            </InfoButton>
+          </Box>
+          {(
+            [
+              { key: "at_risk", label: "At risk", icon: "mdi:alert-circle-outline", color: "var(--danger-500, #ef4444)" },
+              { key: "inactive", label: "Inactive 30d", icon: "mdi:sleep", color: "#f59e0b" },
+              { key: "low_completion", label: "Low completion", icon: "mdi:chart-line-variant", color: "#a855f7" },
+              { key: "high_performers", label: "High performers", icon: "mdi:trophy-outline", color: "#10b981" },
+            ] as Array<{ key: SegmentKey; label: string; icon: string; color: string }>
+          ).map((seg) => {
+            const active = segment === seg.key;
+            return (
+              <Box
+                key={seg.key}
+                component="button"
+                onClick={() => handleSegmentChange(seg.key)}
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  px: 1.5,
+                  py: 0.6,
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  border: "1px solid",
+                  borderColor: active ? seg.color : "var(--border-default)",
+                  color: active ? "#fff" : "var(--font-secondary)",
+                  background: active
+                    ? seg.color
+                    : "color-mix(in srgb, var(--card-bg) 70%, transparent)",
+                  transition: "all 0.15s ease",
+                  "&:hover": {
+                    borderColor: seg.color,
+                    color: active ? "#fff" : seg.color,
+                  },
+                }}
+              >
+                <IconWrapper icon={seg.icon} size={16} />
+                {seg.label}
+              </Box>
+            );
+          })}
+        </Box>
+
         <Box
           sx={{
             display: "flex",
@@ -685,6 +984,15 @@ export default function ManageStudentsPage() {
           </Box>
         </Box>
 
+        {showOrgAdminEnrollmentTools && (
+          <BulkActionToolbar
+            selected={selectedStudents}
+            courses={courses}
+            onClear={handleClearSelection}
+            onDone={handleBulkActionDone}
+          />
+        )}
+
         <Paper
           elevation={0}
           sx={{
@@ -706,6 +1014,12 @@ export default function ManageStudentsPage() {
             sortOrder={sortOrder}
             onSort={handleSort}
             wrapInPaper={false}
+            selectable={showOrgAdminEnrollmentTools}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleSelectAll={handleToggleSelectAll}
+            allSelected={allFilteredSelected}
+            someSelected={someFilteredSelected}
           />
           <StudentsPagination
             totalPages={totalPages}
