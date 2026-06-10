@@ -14,12 +14,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import type { StudentDetail } from "@/lib/services/admin/admin-student.service";
 import { CourseManagementCard } from "@/components/admin/manage-students/CourseManagementCard";
-import {
-  ADAPTIVE,
-  InfoButton,
-  RiskCriteriaContent,
-  formatDate,
-} from "./shared";
+import { ADAPTIVE, formatDate } from "./shared";
+import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
 
 interface ManageTabProps {
   student: StudentDetail;
@@ -159,6 +155,7 @@ export function ManageTab({
         <Panel title="Account" icon="mdi:account-circle-outline">
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
             <Avatar
+              src={pi.profile_pic_url || undefined}
               sx={{
                 width: 56,
                 height: 56,

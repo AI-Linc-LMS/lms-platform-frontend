@@ -30,10 +30,7 @@ import {
   matchesSegment,
   type SegmentKey,
 } from "@/lib/utils/student-risk";
-import {
-  InfoButton,
-  RiskCriteriaContent,
-} from "../../../components/admin/manage-students/detail/shared";
+import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
 
 type SortOption =
   | "name"
