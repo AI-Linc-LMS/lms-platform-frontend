@@ -520,6 +520,7 @@ export function StudentsTable({
                         }}
                       >
                         <Avatar
+                          src={student.profile_pic_url || undefined}
                           sx={{
                             width: { xs: 32, sm: 40 },
                             height: { xs: 32, sm: 40 },

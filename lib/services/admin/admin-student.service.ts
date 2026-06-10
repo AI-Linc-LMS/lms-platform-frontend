@@ -9,6 +9,7 @@ export interface Student {
   last_name: string;
   email: string;
   username: string;
+  profile_pic_url?: string | null;
   is_active: boolean;
   date_joined: string;
   last_login: string | null;
@@ -82,6 +83,7 @@ export interface StudentDetail {
     last_name: string;
     email: string;
     username: string;
+    profile_pic_url?: string | null;
     date_joined: string;
     last_login: string | null;
     is_active: boolean;
@@ -259,6 +261,7 @@ export interface StudentLearningJourney {
     last_name: string;
     email: string;
     username: string;
+    profile_pic_url?: string | null;
     is_active: boolean;
     date_joined: string;
     last_login: string | null;
