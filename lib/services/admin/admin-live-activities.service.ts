@@ -32,6 +32,7 @@ export interface LiveActivity {
   instructor?: unknown;
   is_zoom: boolean;
   is_google_meet?: boolean;
+  zoom_meeting_type?: "meeting" | "webinar" | null;
   closes_at?: string | null;
   zoom_meeting_id?: string | null;
   zoom_meeting_uuid?: string | null;
