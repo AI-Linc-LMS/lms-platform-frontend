@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Paper,
   Table,
@@ -19,6 +20,9 @@ import {
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { StudentLiveSession } from "@/lib/services/live-sessions";
+import { StudentSessionSummaryDialog } from "./StudentSessionSummaryDialog";
+import { RecordingPlayerDialog } from "./RecordingPlayerDialog";
+import { PlatformChip } from "./ui/LiveSessionUI";
 
 interface LiveSessionsTableProps {
   sessions: StudentLiveSession[];
@@ -48,6 +52,7 @@ export function LiveSessionsTable({
   formatSessionStatusCaption,
 }: LiveSessionsTableProps) {
   const { t } = useTranslation("common");
+  const [playerActivity, setPlayerActivity] = useState<StudentLiveSession | null>(null);
   const paginatedSessions = sessions.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -143,6 +148,7 @@ export function LiveSessionsTable({
   };
 
   return (
+    <>
     <Paper
       sx={{
         borderRadius: 2,
@@ -219,10 +225,11 @@ export function LiveSessionsTable({
                   <TableCell>
                     <Typography
                       variant="body2"
-                      sx={{ fontWeight: 600, color: "var(--font-primary)" }}
+                      sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.5 }}
                     >
                       {activity.topic_name ?? activity.name ?? "—"}
                     </Typography>
+                    <PlatformChip isZoom={activity.is_zoom} isGoogleMeet={activity.is_google_meet} />
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
@@ -244,6 +251,29 @@ export function LiveSessionsTable({
                       }}
                     >
                       {statusChip(activity)}
+                      {(activity.meeting_status === "ended" ||
+                        activity.meeting_status === "expired") &&
+                        activity.my_attendance != null && (
+                          <Chip
+                            label={
+                              activity.my_attendance.attended
+                                ? t("liveSessions.youAttended", "You attended")
+                                : t("liveSessions.youMissed", "You missed this")
+                            }
+                            size="small"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: "0.7rem",
+                              height: 20,
+                              backgroundColor: activity.my_attendance.attended
+                                ? "color-mix(in srgb, var(--success-500) 16%, transparent)"
+                                : "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+                              color: activity.my_attendance.attended
+                                ? "var(--success-500)"
+                                : "var(--warning-500)",
+                            }}
+                          />
+                        )}
                       {statusCaption ? (
                         <Typography
                           variant="caption"
@@ -358,7 +388,7 @@ export function LiveSessionsTable({
                                 />
                               )
                             }
-                            onClick={() => onWatchRecording(activity)}
+                            onClick={() => setPlayerActivity(activity)}
                             sx={{
                               fontSize: "0.75rem",
                               textTransform: "none",
@@ -409,6 +439,15 @@ export function LiveSessionsTable({
                             </span>
                           </Tooltip>
                         ))}
+                      {(activity.meeting_status === "ended" ||
+                        activity.meeting_status === "expired") &&
+                        (Boolean(activity.zoom_ai_summary?.trim()) ||
+                          Boolean(activity.zoom_transcript_synced_at)) && (
+                          <StudentSessionSummaryDialog
+                            activityId={activity.id}
+                            topicName={activity.topic_name ?? activity.name ?? ""}
+                          />
+                        )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -440,5 +479,12 @@ export function LiveSessionsTable({
         }}
       />
     </Paper>
+    <RecordingPlayerDialog
+      open={playerActivity != null}
+      liveClassId={playerActivity?.id ?? null}
+      title={playerActivity?.topic_name ?? playerActivity?.name}
+      onClose={() => setPlayerActivity(null)}
+    />
+    </>
   );
 }

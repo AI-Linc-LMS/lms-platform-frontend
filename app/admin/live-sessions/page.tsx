@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Container,
-  Typography,
   Box,
   Button,
   CircularProgress,
   LinearProgress,
+  Typography,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -19,13 +19,30 @@ import { useAdminLiveSessions } from "@/components/admin/live-sessions/useAdminL
 import { CreateLiveSessionDialog } from "@/components/admin/live-sessions/CreateLiveSessionDialog";
 import { LiveSessionDetailDrawer } from "@/components/admin/live-sessions/LiveSessionDetailDrawer";
 import { ZoomCredentialsDialog } from "@/components/admin/live-sessions/ZoomCredentialsDialog";
+import { ZoomSetupCard, ZoomSetupStatus } from "@/components/admin/live-sessions/ZoomSetupCard";
+import {
+  SessionsPageHeader,
+  SessionStatCard,
+  SessionFilterChips,
+} from "@/components/live-sessions/ui/LiveSessionUI";
 import { zoomService } from "@/lib/services/zoom.service";
+
+const PAST = new Set(["ended", "expired"]);
 
 export default function AdminLiveSessionsPage() {
   const { t } = useTranslation("common");
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [hasCheckedCredentials, setHasCheckedCredentials] = useState(false);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [zoomStatus, setZoomStatus] = useState<ZoomSetupStatus>({
+    loading: true,
+    configured: false,
+    active: false,
+    webhookConfigured: false,
+    webhookUrl: null,
+  });
+
   const {
     authLoading,
     canAccessAdmin,
@@ -54,31 +71,59 @@ export default function AdminLiveSessionsPage() {
     openViewSession,
   } = useAdminLiveSessions();
 
-  // Auto-open Zoom credentials dialog once for first-time users (no creds set). Must run before any conditional return (Rules of Hooks).
-  useEffect(() => {
-    if (hasCheckedCredentials || !hasAdminLiveSessionsFeature) return;
-    let cancelled = false;
-    setHasCheckedCredentials(true);
+  const refreshZoomStatus = useCallback((autoOpenIfEmpty = false) => {
     zoomService
       .getZoomCredentials()
       .then((data) => {
-        if (cancelled) return;
+        const configured = Boolean(
+          data?.account_id?.trim() && data?.zoom_client_id?.trim()
+        );
         setWebhookConfigured(data?.webhook_configured ?? false);
-        const empty =
-          data == null ||
-          (!(data.account_id && data.account_id.trim()) &&
-            !(data.zoom_client_id && data.zoom_client_id.trim()));
-        if (empty) setCredentialsDialogOpen(true);
+        setZoomStatus({
+          loading: false,
+          configured,
+          active: Boolean(data?.is_active),
+          webhookConfigured: Boolean(data?.webhook_configured),
+          webhookUrl: data?.webhook_url ?? null,
+        });
+        if (autoOpenIfEmpty && !configured) setCredentialsDialogOpen(true);
       })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [hasAdminLiveSessionsFeature, hasCheckedCredentials]);
+      .catch(() => setZoomStatus((s) => ({ ...s, loading: false })));
+  }, []);
 
-  if (!authLoading && !canAccessAdmin) {
-    return null;
-  }
+  // Fetch Zoom status once; auto-open setup only for brand-new (unconfigured) tenants.
+  useEffect(() => {
+    if (hasCheckedCredentials || !hasAdminLiveSessionsFeature) return;
+    setHasCheckedCredentials(true);
+    refreshZoomStatus(true);
+  }, [hasAdminLiveSessionsFeature, hasCheckedCredentials, refreshZoomStatus]);
+
+  const counts = useMemo(() => {
+    let upcoming = 0;
+    let live = 0;
+    let past = 0;
+    for (const s of sessions) {
+      if (s.meeting_status === "scheduled") upcoming++;
+      else if (s.meeting_status === "live") live++;
+      else if (PAST.has(s.meeting_status ?? "")) past++;
+    }
+    return { upcoming, live, past, total: sessions.length };
+  }, [sessions]);
+
+  const filteredSessions = useMemo(() => {
+    if (filter === "all") return sessions;
+    if (filter === "upcoming") return sessions.filter((s) => s.meeting_status === "scheduled");
+    if (filter === "live") return sessions.filter((s) => s.meeting_status === "live");
+    if (filter === "past") return sessions.filter((s) => PAST.has(s.meeting_status ?? ""));
+    return sessions;
+  }, [sessions, filter]);
+
+  // Reset to first page when the filter changes.
+  useEffect(() => {
+    setPage(0);
+  }, [filter, setPage]);
+
+  if (!authLoading && !canAccessAdmin) return null;
 
   if (loadingClientInfo) {
     return (
@@ -114,94 +159,76 @@ export default function AdminLiveSessionsPage() {
     );
   }
 
+  const filterOptions = [
+    { key: "all", label: t("adminLiveSessions.filterAll", "All"), count: counts.total, color: "var(--accent-indigo)" },
+    { key: "upcoming", label: t("adminLiveSessions.filterUpcoming", "Upcoming"), count: counts.upcoming, color: "var(--accent-indigo)" },
+    { key: "live", label: t("adminLiveSessions.filterLive", "Live"), count: counts.live, color: "var(--success-500)" },
+    { key: "past", label: t("adminLiveSessions.filterPast", "Past"), count: counts.past, color: "var(--font-tertiary)" },
+  ];
+
   return (
     <MainLayout>
       <Container maxWidth="lg" sx={{ py: 4, position: "relative" }}>
         {loading && sessions.length > 0 && (
-          <LinearProgress
-            sx={{
-              position: "absolute",
-              insetInlineStart: 0,
-              insetInlineEnd: 0,
-              top: 0,
-              zIndex: 1,
-            }}
-          />
+          <LinearProgress sx={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, zIndex: 1 }} />
         )}
-        <Box
-          sx={{
-            mb: 4,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 1 }}
-            >
-              {t("adminLiveSessions.title")}
-            </Typography>
-            <Typography variant="body1" sx={{ color: "var(--font-secondary)" }}>
-              {t("adminLiveSessions.subtitle")}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Button
-              variant="outlined"
-              startIcon={<IconWrapper icon="mdi:video-account" size={20} />}
-              onClick={() => setCredentialsDialogOpen(true)}
-              sx={{
-                borderColor: "var(--accent-indigo)",
-                color: "var(--accent-indigo)",
-                "&:hover": {
-                  borderColor: "var(--accent-indigo-dark)",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
-                },
-              }}
-            >
-              {t("adminLiveSessions.zoomCredentials")}
-            </Button>
+
+        <SessionsPageHeader
+          title={t("adminLiveSessions.title")}
+          subtitle={t("adminLiveSessions.subtitle")}
+          actions={
             <Button
               variant="contained"
               startIcon={<IconWrapper icon="mdi:plus" size={20} />}
               onClick={() => setCreateDialogOpen(true)}
-              sx={{
-                bgcolor: "var(--accent-indigo)",
-                color: "var(--font-light)",
-                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-              }}
+              sx={{ bgcolor: "var(--accent-indigo)", color: "var(--font-light)", "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
             >
               {t("adminLiveSessions.createLiveSession")}
             </Button>
-          </Box>
-        </Box>
+          }
+        />
+
+        <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
 
         {sessions.length === 0 ? (
-          <AdminLiveSessionsEmptyState />
+          <AdminLiveSessionsEmptyState onCreate={() => setCreateDialogOpen(true)} />
         ) : (
-          <AdminLiveSessionsTable
-            sessions={sessions}
-            uniqueAttendanceCounts={uniqueAttendanceCounts}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={(_, newPage) => setPage(newPage)}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
-            creatingZoomId={creatingZoomId}
-            watchingRecordingId={watchingRecordingId}
-            onCreateZoom={handleCreateZoom}
-            onWatchRecording={handleWatchRecording}
-            onCopyPassword={handleCopyPassword}
-            onViewSession={openViewSession}
-            formatDateTime={formatDateTime}
-          />
+          <>
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", mb: 3 }}>
+              <SessionStatCard icon="mdi:calendar-clock" label={t("adminLiveSessions.filterUpcoming", "Upcoming")} value={counts.upcoming} color="var(--accent-indigo)" />
+              <SessionStatCard icon="mdi:broadcast" label={t("adminLiveSessions.filterLive", "Live now")} value={counts.live} color="var(--success-500)" />
+              <SessionStatCard icon="mdi:history" label={t("adminLiveSessions.filterPast", "Completed")} value={counts.past} color="var(--font-tertiary)" />
+            </Box>
+
+            <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
+
+            {filteredSessions.length === 0 ? (
+              <Box sx={{ textAlign: "center", py: 6 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                  {t("adminLiveSessions.noSessionsForFilter", "No sessions match this filter.")}
+                </Typography>
+              </Box>
+            ) : (
+              <AdminLiveSessionsTable
+                sessions={filteredSessions}
+                uniqueAttendanceCounts={uniqueAttendanceCounts}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                creatingZoomId={creatingZoomId}
+                watchingRecordingId={watchingRecordingId}
+                onCreateZoom={handleCreateZoom}
+                onWatchRecording={handleWatchRecording}
+                onCopyPassword={handleCopyPassword}
+                onViewSession={openViewSession}
+                formatDateTime={formatDateTime}
+              />
+            )}
+          </>
         )}
 
         <CreateLiveSessionDialog
@@ -228,9 +255,7 @@ export default function AdminLiveSessionsPage() {
           open={credentialsDialogOpen}
           onClose={() => {
             setCredentialsDialogOpen(false);
-            zoomService.getZoomCredentials().then((data) => {
-              setWebhookConfigured(data?.webhook_configured ?? false);
-            }).catch(() => {});
+            refreshZoomStatus(false);
           }}
         />
       </Container>

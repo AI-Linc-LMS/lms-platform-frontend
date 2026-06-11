@@ -26,6 +26,7 @@ import {
   ZOOM_MEETING_ALREADY_EXISTS_MESSAGE,
   copyToClipboard,
 } from "@/lib/utils/live-session-errors";
+import { InfoCallout } from "@/components/live-sessions/ui/LiveSessionUI";
 
 function isValidHttpUrl(s: string): boolean {
   try {
@@ -303,6 +304,52 @@ export function CreateLiveSessionDialog({
         </Box>
       </DialogTitle>
       <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
+        {(() => {
+          const labels =
+            sessionType === "meet"
+              ? [t("adminLiveSessions.stepDetails", "Details"), t("adminLiveSessions.stepDone", "Done")]
+              : [
+                  t("adminLiveSessions.stepDetails", "Details"),
+                  t("adminLiveSessions.stepZoomMeeting", "Zoom meeting"),
+                  t("adminLiveSessions.stepDone", "Done"),
+                ];
+          const activeIdx = step === "form" ? 0 : step === "create-zoom" ? 1 : sessionType === "meet" ? 1 : 2;
+          return (
+            <Box sx={{ display: "flex", gap: 1, mb: 2.5, mt: 0.5 }}>
+              {labels.map((lbl, i) => {
+                const done = i < activeIdx;
+                const active = i === activeIdx;
+                return (
+                  <Box key={i} sx={{ flex: 1, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        height: 5,
+                        borderRadius: 999,
+                        bgcolor: done || active ? "var(--accent-indigo)" : "var(--border-default)",
+                        opacity: done ? 0.55 : 1,
+                        transition: "all 0.2s",
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: "block",
+                        mt: 0.5,
+                        fontWeight: active ? 700 : 500,
+                        color: active ? "var(--accent-indigo)" : "var(--font-tertiary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {i + 1}. {lbl}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          );
+        })()}
         {step === "form" && (
           <Box
             sx={{
@@ -316,13 +363,26 @@ export function CreateLiveSessionDialog({
               select
               label={t("adminLiveSessions.sessionType")}
               value={sessionType}
-              onChange={(e) => setSessionType(e.target.value as "zoom" | "meet")}
+              onChange={(e) => {
+                const v = e.target.value as "zoom" | "meet";
+                setSessionType(v);
+                // Clear Meet-only fields when switching back to Zoom so stale values don't submit.
+                if (v === "zoom") {
+                  setMeetLink("");
+                  setClosesAt("");
+                }
+              }}
               fullWidth
               size="small"
             >
               <MenuItem value="zoom">{t("adminLiveSessions.sessionTypeZoom")}</MenuItem>
               <MenuItem value="meet">{t("adminLiveSessions.sessionTypeMeet")}</MenuItem>
             </TextField>
+            <InfoCallout icon={sessionType === "zoom" ? "mdi:video" : "mdi:google"}>
+              {sessionType === "zoom"
+                ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you, email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
+                : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Students get the link by email, but attendance, recording and transcript aren't available for Google Meet.")}
+            </InfoCallout>
             <TextField
               label={t("adminLiveSessions.topicName")}
               value={topicName}
@@ -435,6 +495,11 @@ export function CreateLiveSessionDialog({
             <Typography variant="body1" sx={{ color: "var(--font-secondary)", mb: 2 }}>
               {t("adminLiveSessions.sessionCreatedPrompt", { topic: createdSession?.topic_name ?? createdSession?.title ?? "—" })}
             </Typography>
+            <Box sx={{ mb: 2 }}>
+              <InfoCallout icon="mdi:email-fast-outline">
+                {t("adminLiveSessions.createZoomHint", "Creating the meeting emails the join link to all enrolled students and turns on automatic attendance, recording and transcript sync.")}
+              </InfoCallout>
+            </Box>
             <Button
               variant="contained"
               onClick={handleCreateZoom}
