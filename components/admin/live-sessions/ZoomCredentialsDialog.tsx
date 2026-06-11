@@ -22,6 +22,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
 import { config } from "@/lib/config";
+import { ZoomSetupGuide } from "./ZoomSetupGuide";
 
 interface ZoomCredentialsDialogProps {
   open: boolean;
@@ -73,8 +74,6 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
       setHasExistingConfig(data != null);
       setWebhookUrl(data?.webhook_url ?? null);
       setWebhookConfigured(data?.webhook_configured ?? false);
-      // Show the Zoom Marketplace setup guide by default for first-time setup.
-      setShowSetupHelp(data == null);
       setForm(
         data
           ? {
@@ -284,7 +283,8 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
               <Button
                 size="small"
                 onClick={() => setShowSetupHelp((v) => !v)}
-                startIcon={
+                startIcon={<IconWrapper icon="mdi:help-circle-outline" size={18} />}
+                endIcon={
                   <IconWrapper icon={showSetupHelp ? "mdi:chevron-up" : "mdi:chevron-down"} size={18} />
                 }
                 sx={{
@@ -296,53 +296,12 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                   },
                 }}
               >
-                {t("adminLiveSessions.zoomMarketplaceSetup")}
+                {showSetupHelp
+                  ? t("adminLiveSessions.hideSetupGuide", "Hide setup guide")
+                  : t("adminLiveSessions.viewSetupGuide", "First time? View the step-by-step setup guide")}
               </Button>
               <Collapse in={showSetupHelp}>
-                <Box
-                  sx={{
-                    mt: 1,
-                    p: 2,
-                    bgcolor: "var(--surface)",
-                    borderRadius: 1,
-                    border: "1px solid var(--border-default)",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}
-                  >
-                    {t("adminLiveSessions.requiredScopes")}
-                  </Typography>
-                  <Box
-                    component="ul"
-                    sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "var(--font-secondary)" }}
-                  >
-                    <li>{t("adminLiveSessions.scopeMeetingWrite")}</li>
-                    <li>{t("adminLiveSessions.scopeRecordingRead")}</li>
-                    <li>{t("adminLiveSessions.scopeMeetingReadAdmin")}</li>
-                  </Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ display: "block", mt: 1, color: "var(--font-tertiary)" }}
-                  >
-                    {t("adminLiveSessions.reauthorizeHint")}
-                  </Typography>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, color: "var(--font-primary)", mt: 2, mb: 1 }}
-                  >
-                    {t("adminLiveSessions.eventSubscriptions")}
-                  </Typography>
-                  <Box
-                    component="ul"
-                    sx={{ m: 0, pl: 2.5, fontSize: "0.8125rem", color: "var(--font-secondary)" }}
-                  >
-                    <li>{t("adminLiveSessions.endpointUrlHint")}</li>
-                    <li>{t("adminLiveSessions.secretTokenHint")}</li>
-                    <li>{t("adminLiveSessions.subscribeToEvents")}</li>
-                  </Box>
-                </Box>
+                <ZoomSetupGuide webhookUrl={derivedWebhookUrl} />
               </Collapse>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>

@@ -282,7 +282,15 @@ export function MeetingStatusChip({ status, size = "small" }: { status?: string 
   );
 }
 
-export function PlatformChip({ isZoom, isGoogleMeet }: { isZoom?: boolean; isGoogleMeet?: boolean }) {
+export function PlatformChip({
+  isZoom,
+  isGoogleMeet,
+  zoomMeetingType,
+}: {
+  isZoom?: boolean;
+  isGoogleMeet?: boolean;
+  zoomMeetingType?: string | null;
+}) {
   const { t } = useTranslation("common");
   if (isGoogleMeet) {
     return (
@@ -302,11 +310,12 @@ export function PlatformChip({ isZoom, isGoogleMeet }: { isZoom?: boolean; isGoo
     );
   }
   if (isZoom) {
+    const isWebinar = zoomMeetingType === "webinar";
     return (
       <Chip
         size="small"
-        icon={<IconWrapper icon="mdi:video" size={13} />}
-        label={t("liveSessions.zoom", "Zoom")}
+        icon={<IconWrapper icon={isWebinar ? "mdi:presentation" : "mdi:video"} size={13} />}
+        label={isWebinar ? t("liveSessions.zoomWebinar", "Zoom Webinar") : t("liveSessions.zoom", "Zoom")}
         sx={{
           bgcolor: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
           color: "var(--accent-indigo)",

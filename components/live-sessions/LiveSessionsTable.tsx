@@ -229,7 +229,7 @@ export function LiveSessionsTable({
                     >
                       {activity.topic_name ?? activity.name ?? "—"}
                     </Typography>
-                    <PlatformChip isZoom={activity.is_zoom} isGoogleMeet={activity.is_google_meet} />
+                    <PlatformChip isZoom={activity.is_zoom} isGoogleMeet={activity.is_google_meet} zoomMeetingType={activity.zoom_meeting_type} />
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>

@@ -7,6 +7,7 @@ export interface StudentLiveSession {
   time_remaining_minutes: number;
   is_zoom?: boolean;
   is_google_meet?: boolean;
+  zoom_meeting_type?: "meeting" | "webinar" | null;
   join_link?: string | null;
   zoom_join_url?: string | null;
   zoom_password?: string | null;
