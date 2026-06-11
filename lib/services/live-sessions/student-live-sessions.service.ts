@@ -9,6 +9,7 @@ import { config } from "../../config";
 import type {
   StudentLiveSession,
   LiveSessionRecordingResponse,
+  StudentLiveSessionTranscript,
 } from "./types";
 
 const BASE = `/live-class/api/clients/${config.clientId}`;
@@ -28,6 +29,9 @@ interface LiveActivityListItem {
   zoom_meeting_ended_at?: string | null;
   meeting_status?: "scheduled" | "live" | "ended" | "expired" | null;
   time_remaining_minutes?: number;
+  my_attendance?: { attended: boolean; duration_seconds: number } | null;
+  zoom_ai_summary?: string | null;
+  zoom_transcript_synced_at?: string | null;
   [key: string]: unknown;
 }
 
@@ -46,6 +50,9 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     zoom_meeting_ended_at: item.zoom_meeting_ended_at,
     meeting_status: item.meeting_status,
     time_remaining_minutes: item.time_remaining_minutes ?? 0,
+    my_attendance: item.my_attendance ?? null,
+    zoom_ai_summary: item.zoom_ai_summary ?? null,
+    zoom_transcript_synced_at: item.zoom_transcript_synced_at ?? null,
   };
 }
 
@@ -74,6 +81,15 @@ export const studentLiveSessionsService = {
   ): Promise<LiveSessionRecordingResponse> => {
     const response = await apiClient.get<LiveSessionRecordingResponse>(
       `${BASE}/live-activities/${activityId}/recording/`
+    );
+    return response.data;
+  },
+
+  getTranscript: async (
+    activityId: number
+  ): Promise<StudentLiveSessionTranscript> => {
+    const response = await apiClient.get<StudentLiveSessionTranscript>(
+      `${BASE}/live-activities/${activityId}/zoom/transcript/`
     );
     return response.data;
   },

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Paper,
   Table,
@@ -20,6 +21,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
+import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 
 interface AdminLiveSessionsTableProps {
   sessions: LiveActivity[];
@@ -53,12 +55,14 @@ export function AdminLiveSessionsTable({
   formatDateTime,
 }: AdminLiveSessionsTableProps) {
   const { t } = useTranslation("common");
+  const [playerActivity, setPlayerActivity] = useState<LiveActivity | null>(null);
   const paginatedSessions = sessions.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
 
   return (
+    <>
     <Paper
       sx={{
         borderRadius: 2,
@@ -371,31 +375,21 @@ export function AdminLiveSessionsTable({
                     {(activity.meeting_status === "scheduled" ||
                       activity.meeting_status === "live") &&
                       activity.zoom_password && (
-                      <Typography
-                        variant="caption"
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<IconWrapper icon="mdi:key-variant" size={14} />}
+                        onClick={() => onCopyPassword(activity.zoom_password!)}
                         sx={{
+                          textTransform: "none",
+                          fontSize: "0.72rem",
                           color: "var(--font-secondary)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
+                          alignSelf: "flex-end",
+                          "& .MuiButton-startIcon": { color: "inherit" },
                         }}
                       >
-                        {t("liveSessions.password")}: {activity.zoom_password}
-                        <Button
-                          size="small"
-                          sx={{
-                            minWidth: 0,
-                            p: 0.25,
-                            fontSize: "0.7rem",
-                            textTransform: "none",
-                          }}
-                          onClick={() =>
-                            onCopyPassword(activity.zoom_password!)
-                          }
-                        >
-                          {t("liveSessions.copy")}
-                        </Button>
-                      </Typography>
+                        {t("adminLiveSessions.copyPasscode", "Copy passcode")}
+                      </Button>
                     )}
                     {(activity.meeting_status === "ended" ||
                       activity.meeting_status === "expired") &&
@@ -414,7 +408,7 @@ export function AdminLiveSessionsTable({
                               />
                             )
                           }
-                          onClick={() => onWatchRecording(activity)}
+                          onClick={() => setPlayerActivity(activity)}
                           sx={{
                             fontSize: "0.75rem",
                             textTransform: "none",
@@ -502,5 +496,12 @@ export function AdminLiveSessionsTable({
         }}
       />
     </Paper>
+    <RecordingPlayerDialog
+      open={playerActivity != null}
+      liveClassId={playerActivity?.id ?? null}
+      title={playerActivity?.topic_name}
+      onClose={() => setPlayerActivity(null)}
+    />
+    </>
   );
 }
