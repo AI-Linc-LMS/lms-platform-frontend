@@ -50,7 +50,7 @@ export function CreateLiveSessionDialog({
 }: CreateLiveSessionDialogProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
-  const [sessionType, setSessionType] = useState<"zoom" | "meet">("zoom");
+  const [sessionType, setSessionType] = useState<"zoom" | "webinar" | "meet">("zoom");
   const [step, setStep] = useState<"form" | "create-zoom" | "success">("form");
   const [topicName, setTopicName] = useState("");
   const [description, setDescription] = useState("");
@@ -194,6 +194,7 @@ export function CreateLiveSessionDialog({
         duration_minutes: duration,
         instructor_id: getValidInstructorId(),
         course: courseId ?? undefined,
+        zoom_meeting_type: sessionType === "webinar" ? "webinar" : "meeting",
       });
       setCreatedSession(session);
       setStep("create-zoom");
@@ -364,10 +365,10 @@ export function CreateLiveSessionDialog({
               label={t("adminLiveSessions.sessionType")}
               value={sessionType}
               onChange={(e) => {
-                const v = e.target.value as "zoom" | "meet";
+                const v = e.target.value as "zoom" | "webinar" | "meet";
                 setSessionType(v);
-                // Clear Meet-only fields when switching back to Zoom so stale values don't submit.
-                if (v === "zoom") {
+                // Clear Meet-only fields when switching to a Zoom type so stale values don't submit.
+                if (v !== "meet") {
                   setMeetLink("");
                   setClosesAt("");
                 }
@@ -376,12 +377,15 @@ export function CreateLiveSessionDialog({
               size="small"
             >
               <MenuItem value="zoom">{t("adminLiveSessions.sessionTypeZoom")}</MenuItem>
+              <MenuItem value="webinar">{t("adminLiveSessions.sessionTypeWebinar", "Zoom Webinar")}</MenuItem>
               <MenuItem value="meet">{t("adminLiveSessions.sessionTypeMeet")}</MenuItem>
             </TextField>
-            <InfoCallout icon={sessionType === "zoom" ? "mdi:video" : "mdi:google"}>
+            <InfoCallout icon={sessionType === "meet" ? "mdi:google" : sessionType === "webinar" ? "mdi:presentation" : "mdi:video"}>
               {sessionType === "zoom"
                 ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you, email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
-                : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Students get the link by email, but attendance, recording and transcript aren't available for Google Meet.")}
+                : sessionType === "webinar"
+                  ? t("adminLiveSessions.webinarTypeHint", "We create a Zoom webinar (requires the Zoom Webinar add-on on your account), email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
+                  : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Students get the link by email, but attendance, recording and transcript aren't available for Google Meet.")}
             </InfoCallout>
             <TextField
               label={t("adminLiveSessions.topicName")}
@@ -522,7 +526,11 @@ export function CreateLiveSessionDialog({
                 },
               }}
             >
-              {creatingZoom ? t("adminLiveSessions.creating") : t("adminLiveSessions.createZoomMeeting")}
+              {creatingZoom
+                ? t("adminLiveSessions.creating")
+                : sessionType === "webinar"
+                  ? t("adminLiveSessions.createWebinar", "Create Webinar")
+                  : t("adminLiveSessions.createZoomMeeting")}
             </Button>
           </Box>
         )}

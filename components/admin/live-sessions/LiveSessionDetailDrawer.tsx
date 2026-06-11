@@ -219,7 +219,7 @@ export function LiveSessionDetailDrawer({
           <SectionCard sx={{ mb: 2 }}>
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
               <MeetingStatusChip status={activity.meeting_status} />
-              <PlatformChip isZoom={activity.is_zoom} isGoogleMeet={activity.is_google_meet} />
+              <PlatformChip isZoom={activity.is_zoom} isGoogleMeet={activity.is_google_meet} zoomMeetingType={activity.zoom_meeting_type} />
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 0.75 }}>
               {activity.topic_name ?? "—"}

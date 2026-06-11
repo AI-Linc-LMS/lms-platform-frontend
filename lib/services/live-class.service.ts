@@ -31,6 +31,7 @@ export interface CreateLiveClassSessionPayload {
   course?: number | null;
   join_link?: string;
   is_google_meet?: boolean;
+  zoom_meeting_type?: "meeting" | "webinar";
   closes_at?: string | null;
 }
 

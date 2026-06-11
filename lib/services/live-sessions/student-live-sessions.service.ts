@@ -22,6 +22,7 @@ interface LiveActivityListItem {
   duration_minutes?: number;
   is_zoom?: boolean;
   is_google_meet?: boolean;
+  zoom_meeting_type?: "meeting" | "webinar" | null;
   join_link?: string | null;
   zoom_join_url?: string | null;
   zoom_password?: string | null;
@@ -43,6 +44,7 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     duration_minutes: item.duration_minutes,
     is_zoom: item.is_zoom,
     is_google_meet: item.is_google_meet,
+    zoom_meeting_type: item.zoom_meeting_type ?? null,
     join_link: item.join_link,
     zoom_join_url: item.zoom_join_url,
     zoom_password: item.zoom_password,
