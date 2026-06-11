@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   MenuItem,
@@ -18,6 +19,7 @@ import {
   Paper,
   Select,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -31,6 +33,7 @@ import adminMockInterviewService, {
   type InterviewTemplateDifficulty,
   type InterviewResultReleaseMode,
   type AdminTemplateAttempt,
+  type ReattemptScope,
 } from "@/lib/services/admin/admin-mock-interview.service";
 import {
   INTERVIEW_TOPICS,
@@ -83,6 +86,8 @@ interface DraftTemplate {
   num_mcq_questions: number;
   result_release_mode: InterviewResultReleaseMode;
   result_release_at: string;
+  resume_enabled: boolean;
+  resume_window_minutes: number | "";
 }
 
 const EMPTY_DRAFT: DraftTemplate = {
@@ -97,6 +102,8 @@ const EMPTY_DRAFT: DraftTemplate = {
   num_mcq_questions: 1,
   result_release_mode: "manual",
   result_release_at: "",
+  resume_enabled: true,
+  resume_window_minutes: "",
 };
 
 function toDraft(t: InterviewTemplate): DraftTemplate {
@@ -115,6 +122,9 @@ function toDraft(t: InterviewTemplate): DraftTemplate {
     result_release_at: t.result_release_at
       ? t.result_release_at.slice(0, 16)
       : "",
+    resume_enabled: t.resume_enabled ?? true,
+    resume_window_minutes:
+      typeof t.resume_window_minutes === "number" ? t.resume_window_minutes : "",
   };
 }
 
@@ -145,6 +155,9 @@ export default function AdminInterviewTemplatesPage() {
   const [releasingAttemptId, setReleasingAttemptId] = useState<number | null>(null);
   const [bulkReleasing, setBulkReleasing] = useState(false);
   const [evaluatingTemplateId, setEvaluatingTemplateId] = useState<number | null>(null);
+  const [reattemptScope, setReattemptScope] = useState<ReattemptScope>("all");
+  const [reattemptingId, setReattemptingId] = useState<number | null>(null);
+  const [bulkReattempting, setBulkReattempting] = useState(false);
   // Mirrors the currently-open attempts dialog so a delayed refresh can check whether it's
   // still open without capturing a stale value in a setTimeout closure.
   const attemptsDialogTemplateRef = useRef<InterviewTemplate | null>(null);
@@ -223,6 +236,13 @@ export default function AdminInterviewTemplatesPage() {
     if (draft.result_release_mode === "scheduled" && !draft.result_release_at) {
       return "Pick a scheduled release date/time.";
     }
+    if (
+      draft.resume_enabled &&
+      draft.resume_window_minutes !== "" &&
+      (Number(draft.resume_window_minutes) < 5 || Number(draft.resume_window_minutes) > 1440)
+    ) {
+      return "Resume window must be 5-1440 minutes (or leave blank for the default).";
+    }
     return null;
   };
 
@@ -251,6 +271,9 @@ export default function AdminInterviewTemplatesPage() {
           draft.result_release_mode === "scheduled" && draft.result_release_at
             ? new Date(draft.result_release_at).toISOString()
             : null,
+        resume_enabled: draft.resume_enabled,
+        resume_window_minutes:
+          draft.resume_window_minutes === "" ? null : Number(draft.resume_window_minutes),
       };
       if (isEditing && selectedTemplate) {
         await adminMockInterviewService.updateTemplate(
@@ -284,6 +307,7 @@ export default function AdminInterviewTemplatesPage() {
 
   const openAttemptsDialog = async (t: InterviewTemplate) => {
     setAttemptsDialogTemplate(t);
+    setReattemptScope("all");
     setAttemptsLoading(true);
     setAttemptsList([]);
     try {
@@ -359,6 +383,40 @@ export default function AdminInterviewTemplatesPage() {
       showToast("Could not start AI evaluation", "error");
     } finally {
       setEvaluatingTemplateId(null);
+    }
+  };
+
+  const handleReattemptSingle = async (interviewId: number) => {
+    setReattemptingId(interviewId);
+    try {
+      await adminMockInterviewService.reattemptSingleInterview(interviewId);
+      showToast("Reattempt granted — the student can take it again.", "success");
+      setAttemptsList((prev) =>
+        prev.map((a) => (a.id === interviewId ? { ...a, superseded: true } : a)),
+      );
+    } catch {
+      showToast("Could not grant reattempt", "error");
+    } finally {
+      setReattemptingId(null);
+    }
+  };
+
+  const handleBulkReattempt = async () => {
+    if (!attemptsDialogTemplate) return;
+    setBulkReattempting(true);
+    try {
+      const res = await adminMockInterviewService.reattemptTemplateAttempts(
+        attemptsDialogTemplate.id,
+        reattemptScope,
+      );
+      showToast(res.message, res.granted > 0 ? "success" : "info");
+      if (attemptsDialogTemplate) {
+        await openAttemptsDialog(attemptsDialogTemplate);
+      }
+    } catch {
+      showToast("Bulk reattempt failed", "error");
+    } finally {
+      setBulkReattempting(false);
     }
   };
 
@@ -808,6 +866,59 @@ export default function AdminInterviewTemplatesPage() {
                 }}
               >
                 <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Resume on disconnect
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", color: "var(--font-secondary)", mb: 1 }}
+                >
+                  If a student drops mid-interview (refresh, network, crash) they can rejoin
+                  the same attempt within this window. After it lapses, their answers so far
+                  are auto-submitted for evaluation.
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={draft.resume_enabled}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, resume_enabled: e.target.checked }))
+                      }
+                    />
+                  }
+                  label="Allow resume"
+                  sx={{ mb: 1 }}
+                />
+                {draft.resume_enabled && (
+                  <TextField
+                    label="Resume window (minutes)"
+                    type="number"
+                    inputProps={{ min: 5, max: 1440, step: 5 }}
+                    placeholder="Default: max(duration, 30)"
+                    value={draft.resume_window_minutes}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setDraft((d) => ({
+                        ...d,
+                        resume_window_minutes: raw === "" ? "" : parseInt(raw, 10) || "",
+                      }));
+                    }}
+                    fullWidth
+                    size="small"
+                    helperText="Leave blank to use the default."
+                  />
+                )}
+              </Box>
+
+              <Box
+                sx={{
+                  mt: 1,
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--surface)",
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
                   Result release
                 </Typography>
                 <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
@@ -1029,17 +1140,54 @@ export default function AdminInterviewTemplatesPage() {
             Attempts · {attemptsDialogTemplate?.title}
           </DialogTitle>
           <DialogContent dividers>
+            {/* Filter — choosing a scope both narrows the list AND scopes the bulk
+                "Reattempt" action in the footer. */}
+            <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+              {(["all", "completed", "failed"] as ReattemptScope[]).map((s) => {
+                const active = reattemptScope === s;
+                return (
+                  <Chip
+                    key={s}
+                    label={s === "all" ? "All" : s === "completed" ? "Completed" : "Failed"}
+                    size="small"
+                    onClick={() => setReattemptScope(s)}
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      backgroundColor: active ? "var(--accent-indigo)" : "var(--surface)",
+                      color: active ? "var(--font-light)" : "var(--font-secondary)",
+                      border: "1px solid",
+                      borderColor: active ? "var(--accent-indigo)" : "var(--border-default)",
+                    }}
+                  />
+                );
+              })}
+            </Box>
             {attemptsLoading ? (
               <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                 Loading attempts…
               </Typography>
-            ) : attemptsList.length === 0 ? (
-              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                No students have attempted this interview yet.
-              </Typography>
-            ) : (
+            ) : (() => {
+              const shown = attemptsList.filter((a) =>
+                reattemptScope === "all" ? true : a.status === reattemptScope,
+              );
+              if (attemptsList.length === 0) {
+                return (
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                    No students have attempted this interview yet.
+                  </Typography>
+                );
+              }
+              if (shown.length === 0) {
+                return (
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                    No {reattemptScope} attempts.
+                  </Typography>
+                );
+              }
+              return (
               <Stack spacing={1}>
-                {attemptsList.map((a) => {
+                {shown.map((a) => {
                   const submittedText = a.submitted_at
                     ? new Date(a.submitted_at).toLocaleString("en-US", {
                         month: "short",
@@ -1048,6 +1196,8 @@ export default function AdminInterviewTemplatesPage() {
                         minute: "2-digit",
                       })
                     : "Not submitted";
+                  const canReattempt =
+                    !a.superseded && (a.status === "completed" || a.status === "failed");
                   return (
                     <Box
                       key={a.id}
@@ -1075,59 +1225,94 @@ export default function AdminInterviewTemplatesPage() {
                           {a.student_email || `Student #${a.student_id}`} · {a.status} · {submittedText}
                         </Typography>
                       </Box>
-                      {a.result_visible_to_student ? (
-                        <Chip
-                          label="Released"
-                          size="small"
-                          sx={{
-                            backgroundColor: "var(--surface-green-light)",
-                            color: "var(--ats-success-muted)",
-                            fontWeight: 600,
-                          }}
-                        />
-                      ) : a.status === "completed" ? (
-                        a.has_evaluation ? (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            disabled={releasingAttemptId === a.id}
-                            onClick={() => handleReleaseSingleAttempt(a.id)}
-                            sx={{
-                              textTransform: "none",
-                              backgroundColor: "var(--accent-indigo)",
-                              "&:hover": {
-                                backgroundColor: "var(--accent-indigo-dark)",
-                              },
-                            }}
-                          >
-                            {releasingAttemptId === a.id ? "Releasing…" : "Release"}
-                          </Button>
-                        ) : (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
+                        {a.result_visible_to_student ? (
                           <Chip
-                            label="Evaluation pending"
+                            label="Released"
                             size="small"
                             sx={{
-                              backgroundColor: "var(--warning-100)",
-                              color: "var(--ats-warning-muted)",
+                              backgroundColor: "var(--surface-green-light)",
+                              color: "var(--ats-success-muted)",
                               fontWeight: 600,
                             }}
                           />
-                        )
-                      ) : (
-                        <Chip
-                          label={a.status}
-                          size="small"
-                          sx={{
-                            backgroundColor: "var(--surface)",
-                            color: "var(--font-tertiary)",
-                          }}
-                        />
-                      )}
+                        ) : a.status === "completed" ? (
+                          a.has_evaluation ? (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={releasingAttemptId === a.id}
+                              onClick={() => handleReleaseSingleAttempt(a.id)}
+                              sx={{
+                                textTransform: "none",
+                                backgroundColor: "var(--accent-indigo)",
+                                "&:hover": {
+                                  backgroundColor: "var(--accent-indigo-dark)",
+                                },
+                              }}
+                            >
+                              {releasingAttemptId === a.id ? "Releasing…" : "Release"}
+                            </Button>
+                          ) : (
+                            <Chip
+                              label="Evaluation pending"
+                              size="small"
+                              sx={{
+                                backgroundColor: "var(--warning-100)",
+                                color: "var(--ats-warning-muted)",
+                                fontWeight: 600,
+                              }}
+                            />
+                          )
+                        ) : a.status === "failed" ? (
+                          <Chip
+                            label="Failed"
+                            size="small"
+                            sx={{
+                              backgroundColor: "var(--error-100)",
+                              color: "var(--error-600)",
+                              fontWeight: 600,
+                            }}
+                          />
+                        ) : (
+                          <Chip
+                            label={a.status}
+                            size="small"
+                            sx={{
+                              backgroundColor: "var(--surface)",
+                              color: "var(--font-tertiary)",
+                            }}
+                          />
+                        )}
+                        {a.superseded ? (
+                          <Chip
+                            label="Retake granted"
+                            size="small"
+                            sx={{
+                              backgroundColor: "var(--surface-indigo-light)",
+                              color: "var(--accent-indigo)",
+                              fontWeight: 600,
+                            }}
+                          />
+                        ) : canReattempt ? (
+                          <Button
+                            size="small"
+                            variant="text"
+                            disabled={reattemptingId === a.id}
+                            startIcon={<IconWrapper icon="mdi:restart" size={16} />}
+                            onClick={() => handleReattemptSingle(a.id)}
+                            sx={{ textTransform: "none", color: "var(--accent-indigo)" }}
+                          >
+                            {reattemptingId === a.id ? "…" : "Reattempt"}
+                          </Button>
+                        ) : null}
+                      </Box>
                     </Box>
                   );
                 })}
               </Stack>
-            )}
+              );
+            })()}
           </DialogContent>
           <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -1158,6 +1343,26 @@ export default function AdminInterviewTemplatesPage() {
                 sx={{ textTransform: "none" }}
               >
                 {bulkReleasing ? "Releasing all…" : "Release all pending"}
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<IconWrapper icon="mdi:restart" size={16} />}
+                disabled={
+                  bulkReattempting ||
+                  !attemptsList.some(
+                    (a) =>
+                      !a.superseded &&
+                      (reattemptScope === "all"
+                        ? a.status === "completed" || a.status === "failed"
+                        : a.status === reattemptScope),
+                  )
+                }
+                onClick={handleBulkReattempt}
+                sx={{ textTransform: "none" }}
+              >
+                {bulkReattempting
+                  ? "Granting…"
+                  : `Reattempt ${reattemptScope === "all" ? "all" : reattemptScope}`}
               </Button>
             </Box>
             <Button

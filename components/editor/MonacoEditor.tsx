@@ -43,6 +43,32 @@ interface MonacoEditorProps {
    * (paste a known-good answer, hit submit) is quick. See CodingQuestionModal.
    */
   allowClipboard?: boolean;
+  /**
+   * 1-based line to flag with a gutter glyph + line highlight — used by the AI
+   * Coding Mentor to anchor its root-cause diagnosis (InlineCodeAnnotation).
+   * Null/undefined clears any existing marker. Off (and zero layout impact)
+   * for every existing caller that doesn't pass it.
+   */
+  glyphLine?: number | null;
+  /** Hover message shown over the gutter glyph (the mentor's one-line note). */
+  glyphMessage?: string;
+}
+
+// Inject the mentor decoration CSS once. Monaco decoration classNames must exist
+// in global CSS, so we append a <style> the first time an editor needs it.
+let _mentorStyleInjected = false;
+function ensureMentorDecorationStyle() {
+  if (_mentorStyleInjected || typeof document === "undefined") return;
+  _mentorStyleInjected = true;
+  const style = document.createElement("style");
+  style.textContent = `
+    .mentor-rootcause-line { background: rgba(239, 68, 68, 0.14); }
+    .mentor-rootcause-glyph {
+      background: radial-gradient(circle at 50% 50%, #ef4444 0 4px, transparent 5px);
+      cursor: pointer;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 export function CodeEditor({
@@ -53,15 +79,45 @@ export function CodeEditor({
   readOnly = false,
   theme = "vs-dark",
   allowClipboard = false,
+  glyphLine = null,
+  glyphMessage = "",
 }: MonacoEditorProps) {
   const [mounted, setMounted] = useState(false);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
+  const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const valueRef = useRef(value);
   const isUserTypingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Apply / clear the mentor root-cause gutter marker whenever the line changes.
+  useEffect(() => {
+    const ed = editorRef.current;
+    const mon = monacoRef.current;
+    if (!ed || !mon) return;
+    if (decorationsRef.current) {
+      decorationsRef.current.clear();
+      decorationsRef.current = null;
+    }
+    if (!glyphLine || glyphLine < 1) return;
+    ensureMentorDecorationStyle();
+    decorationsRef.current = ed.createDecorationsCollection([
+      {
+        range: new mon.Range(glyphLine, 1, glyphLine, 1),
+        options: {
+          isWholeLine: true,
+          className: "mentor-rootcause-line",
+          glyphMarginClassName: "mentor-rootcause-glyph",
+          glyphMarginHoverMessage: glyphMessage ? { value: glyphMessage } : undefined,
+          overviewRuler: { color: "#ef4444", position: mon.editor.OverviewRulerLane.Left },
+        },
+      },
+    ]);
+    ed.revealLineInCenter(glyphLine);
+  }, [glyphLine, glyphMessage, mounted]);
 
   // Update value ref
   useEffect(() => {
@@ -95,6 +151,24 @@ export function CodeEditor({
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    // If a root-cause line was set before mount, draw it now.
+    if (glyphLine && glyphLine >= 1) {
+      ensureMentorDecorationStyle();
+      decorationsRef.current = editor.createDecorationsCollection([
+        {
+          range: new monaco.Range(glyphLine, 1, glyphLine, 1),
+          options: {
+            isWholeLine: true,
+            className: "mentor-rootcause-line",
+            glyphMarginClassName: "mentor-rootcause-glyph",
+            glyphMarginHoverMessage: glyphMessage ? { value: glyphMessage } : undefined,
+            overviewRuler: { color: "#ef4444", position: monaco.editor.OverviewRulerLane.Left },
+          },
+        },
+      ]);
+    }
 
     // Default: disable cut, copy, paste keyboard shortcuts so candidates can't paste a
     // pre-written solution. When `allowClipboard` is true (admin-only 2-min test
@@ -157,6 +231,9 @@ export function CodeEditor({
         options={{
           readOnly,
           minimap: { enabled: false },
+          // Reserve the glyph margin only when a marker is in play, so existing
+          // editors that don't use it render exactly as before.
+          glyphMargin: Boolean(glyphLine),
           fontSize: 14,
           lineNumbers: "on",
           scrollBeyondLastLine: false,

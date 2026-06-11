@@ -28,7 +28,9 @@
     "branding": "العلامة والمظهر",
     "certificateUploads": "رفع الشهادات",
     "support": "تذاكري",
-    "adminTickets": "إدارة التذاكر"
+    "adminTickets": "إدارة التذاكر",
+    "adaptiveQuizzes": "الاختبارات التكيفية",
+    "adminAdaptiveQuizzes": "الاختبارات التكيفية"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",
@@ -2022,6 +2024,7 @@
     "titleColumn": "العنوان",
     "student": "الطالب",
     "score": "الدرجة",
+    "percentage": "النسبة المئوية",
     "created": "تاريخ الإنشاء",
     "actions": "إجراءات",
     "view": "عرض",
@@ -2066,8 +2069,8 @@
     "studentsAppearWhenComplete": "سيظهر الطلاب هنا بعد إكمال المقابلات. جرّب تعديل البحث أو تحقق لاحقاً.",
     "tipSearchNameOrEmail": "استخدم البحث أعلاه للعثور على الطلاب بالاسم أو البريد",
     "completedColumn": "مكتمل",
-    "avgScore": "متوسط الدرجة",
-    "highestColumn": "الأعلى",
+    "avgScore": "متوسط النسبة %",
+    "highestColumn": "الأعلى %",
     "completion": "الإكمال",
     "topics": "المواضيع",
     "lastInterview": "آخر مقابلة",

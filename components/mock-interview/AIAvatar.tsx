@@ -25,6 +25,13 @@ interface AIAvatarProps {
   onSpeakComplete?: () => void;
   isUserSpeaking?: boolean;
   interviewVideoSrc?: string;
+  /**
+   * Reports whether the interviewer's voice is ACTUALLY producing audio right now (browser
+   * or cloud). The take page's freeze watchdog uses this to tell a legitimately-long question
+   * (audio playing) apart from a dead-TTS stall (flagged speaking but silent), so it never
+   * "reconnects" on a normal long question.
+   */
+  onAudioActiveChange?: (active: boolean) => void;
 }
 
 export const AIAvatar = memo(function AIAvatar({
@@ -33,6 +40,7 @@ export const AIAvatar = memo(function AIAvatar({
   onSpeakComplete,
   isUserSpeaking = false,
   interviewVideoSrc,
+  onAudioActiveChange,
 }: AIAvatarProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const interviewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -137,12 +145,22 @@ export const AIAvatar = memo(function AIAvatar({
     onSpeakComplete?.();
   }, [interviewVideoSrc, onSpeakComplete]);
 
-  useInterviewerVoice({
+  const { audioActive } = useInterviewerVoice({
     question,
     isSpeaking,
     onSpeakStart: handleSpeakStart,
     onSpeakComplete: handleSpeakComplete,
   });
+
+  // Surface the real "audio is playing" signal to the parent (freeze watchdog). Routed
+  // through a ref so a changing callback identity never re-fires the effect.
+  const onAudioActiveChangeRef = useRef(onAudioActiveChange);
+  useEffect(() => {
+    onAudioActiveChangeRef.current = onAudioActiveChange;
+  });
+  useEffect(() => {
+    onAudioActiveChangeRef.current?.(audioActive);
+  }, [audioActive]);
 
   // Progressive caption reveal — the subtitle text appears word-by-word as the avatar
   // "speaks" rather than dumping the whole sentence at once. We pace at roughly a natural

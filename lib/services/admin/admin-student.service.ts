@@ -9,6 +9,7 @@ export interface Student {
   last_name: string;
   email: string;
   username: string;
+  profile_pic_url?: string | null;
   is_active: boolean;
   date_joined: string;
   last_login: string | null;
@@ -82,6 +83,7 @@ export interface StudentDetail {
     last_name: string;
     email: string;
     username: string;
+    profile_pic_url?: string | null;
     date_joined: string;
     last_login: string | null;
     is_active: boolean;
@@ -138,6 +140,189 @@ export interface StudentDetail {
   activity_breakdown: Record<string, number>;
 }
 
+// ── Learning Journey (full activity breakdown for the detail page) ──────────
+
+export interface JourneySubmodule {
+  id: number;
+  title: string;
+  order: number;
+  total: number;
+  completed: number;
+  progress_percentage: number;
+}
+
+export interface JourneyModule {
+  id: number;
+  weekno: number;
+  title: string;
+  total: number;
+  completed: number;
+  progress_percentage: number;
+  submodules: JourneySubmodule[];
+}
+
+export interface JourneyCourse {
+  id: number;
+  title: string;
+  total_contents: number;
+  completed_contents: number;
+  progress_percentage: number;
+  marks: number;
+  last_activity: string | null;
+  modules: JourneyModule[];
+}
+
+export interface JourneyAssessment {
+  id: number;
+  assessment_title: string | null;
+  score: number | null;
+  status: string;
+  started_at: string | null;
+  submitted_at: string | null;
+  offered_scholarship_percentage: number | null;
+}
+
+export interface JourneyMockInterview {
+  id: number;
+  title: string;
+  topic: string;
+  subtopic: string;
+  difficulty: string;
+  status: string;
+  score: number | null;
+  scheduled_date_time: string | null;
+  started_at: string | null;
+  submitted_at: string | null;
+}
+
+export interface JourneyAdaptive {
+  quiz: {
+    session_count: number;
+    completed_count: number;
+    skill_ability: Record<string, number>;
+    sessions: Array<{
+      id: string;
+      status: string;
+      question_count: number;
+      hints_used: number;
+      started_at: string | null;
+      completed_at: string | null;
+    }>;
+  };
+  coding: {
+    session_count: number;
+    passed_count: number;
+    mastery: Record<string, number>;
+    misconceptions: unknown[];
+    sessions: Array<{
+      id: string;
+      status: string;
+      language: string;
+      passed: boolean;
+      run_count: number;
+      submit_count: number;
+      hints_revealed: number;
+      started_at: string | null;
+      completed_at: string | null;
+    }>;
+  };
+  video: {
+    session_count: number;
+    completed_count: number;
+    avg_comprehension: number | null;
+    sessions: Array<{
+      id: string;
+      status: string;
+      watch_mode: string;
+      completeness_pct: number;
+      comprehension_score: number;
+      started_at: string | null;
+      completed_at: string | null;
+    }>;
+  };
+}
+
+export interface JourneyWeekItem {
+  id: number;
+  title: string;
+  /** Normalized category: article | video | quiz | coding | other */
+  type: string;
+  completed_at: string | null;
+}
+
+export interface JourneyWeek {
+  weekno: number;
+  module_title: string;
+  completed_count: number;
+  type_counts: Record<string, number>;
+  items: JourneyWeekItem[];
+}
+
+export interface JourneyCourseWeeks {
+  course_id: number;
+  course_title: string;
+  weeks: JourneyWeek[];
+}
+
+export interface JourneyTimelineEntry {
+  type: string;
+  activity_type?: string;
+  title: string | null;
+  course?: string | null;
+  score?: number | null;
+  status?: string;
+  timestamp: string;
+}
+
+export interface StudentLearningJourney {
+  student: {
+    id: number;
+    user_id: number;
+    name: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    username: string;
+    profile_pic_url?: string | null;
+    is_active: boolean;
+    date_joined: string;
+    last_login: string | null;
+  };
+  summary: {
+    enrolled_courses_count: number;
+    total_marks: number;
+    total_time_hours: number;
+    current_streak: number;
+    total_activities: number;
+    overall_completion_pct: number;
+    last_activity_date: string | null;
+    assessments_count: number;
+    mock_interviews_count: number;
+    adaptive_sessions_count: number;
+  };
+  courses: JourneyCourse[];
+  weekly_progress: JourneyCourseWeeks[];
+  assessments: JourneyAssessment[];
+  mock_interviews: {
+    summary: {
+      total?: number;
+      completed?: number;
+      average_score?: number | null;
+      highest_score?: number | null;
+    };
+    items: JourneyMockInterview[];
+  };
+  adaptive: JourneyAdaptive;
+  activity_breakdown: Record<string, number>;
+  activity_pattern_30_days: Array<{
+    date: string;
+    activity_count: number;
+    time_spent_hours: number;
+    marks_earned: number;
+  }>;
+  timeline: JourneyTimelineEntry[];
+}
+
 export const adminStudentService = {
   // Get student list with filters
   getManageStudents: async (
@@ -187,6 +372,16 @@ export const adminStudentService = {
     return response.data;
   },
 
+  // Get full learning journey (activity breakdown across every surface)
+  getLearningJourney: async (
+    studentId: number
+  ): Promise<StudentLearningJourney> => {
+    const response = await apiClient.get<StudentLearningJourney>(
+      `/admin-dashboard/api/clients/${config.clientId}/student-learning-journey/${studentId}/`
+    );
+    return response.data;
+  },
+
   // Update student
   updateStudent: async (
     studentId: number,
@@ -218,6 +413,29 @@ export const adminStudentService = {
   deactivateStudent: async (studentId: number) => {
     const response = await apiClient.delete(
       `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/`
+    );
+    return response.data;
+  },
+
+  // Bulk enroll / unenroll EXISTING students across courses (synchronous M2M op)
+  bulkCourseAction: async (
+    action: "enroll" | "unenroll",
+    studentIds: number[],
+    courseIds: number[]
+  ): Promise<{
+    action: string;
+    succeeded: number;
+    failed: number;
+    results: Array<{
+      student_id: number;
+      course_id: number | null;
+      status: string;
+      detail?: string;
+    }>;
+  }> => {
+    const response = await apiClient.post(
+      `/admin-dashboard/api/clients/${config.clientId}/students/bulk-course-action/`,
+      { action, student_ids: studentIds, course_ids: courseIds }
     );
     return response.data;
   },

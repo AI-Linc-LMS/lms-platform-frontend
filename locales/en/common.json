@@ -28,7 +28,9 @@
     "branding": "Branding & theme",
     "certificateUploads": "Certificate uploads",
     "support": "My Tickets",
-    "adminTickets": "Ticket Management"
+    "adminTickets": "Ticket Management",
+    "adaptiveQuizzes": "Adaptive Course",
+    "adminAdaptiveQuizzes": "Adaptive Course Builder"
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",
@@ -2158,6 +2160,7 @@
     "titleColumn": "Title",
     "student": "Student",
     "score": "Score",
+    "percentage": "Percentage",
     "created": "Created",
     "actions": "Actions",
     "view": "View",
@@ -2202,8 +2205,8 @@
     "studentsAppearWhenComplete": "Students will appear here once they complete interviews. Try adjusting your search or check back later.",
     "tipSearchNameOrEmail": "Tip: Use the search above to find students by name or email",
     "completedColumn": "Completed",
-    "avgScore": "Avg Score",
-    "highestColumn": "Highest",
+    "avgScore": "Avg %",
+    "highestColumn": "Highest %",
     "completion": "Completion",
     "topics": "Topics",
     "lastInterview": "Last Interview",

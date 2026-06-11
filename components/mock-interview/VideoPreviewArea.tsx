@@ -34,6 +34,8 @@ interface VideoPreviewAreaProps {
   onSpeakComplete: () => void;
   isUserSpeaking?: boolean;
   interviewVideoSrc?: string;
+  /** Forwarded to AIAvatar: reports whether the interviewer voice is actually playing. */
+  onAudioActiveChange?: (active: boolean) => void;
   // Interview info
   interviewTitle?: string;
   questionsCount?: number;
@@ -58,6 +60,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
   interviewTitle,
   questionsCount,
   durationMinutes,
+  onAudioActiveChange,
 }: VideoPreviewAreaProps) {
   return (
     <Paper
@@ -206,6 +209,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               onSpeakComplete={onSpeakComplete}
               isUserSpeaking={isUserSpeaking}
               interviewVideoSrc={interviewVideoSrc}
+              onAudioActiveChange={onAudioActiveChange}
             />
             <Box
               sx={{

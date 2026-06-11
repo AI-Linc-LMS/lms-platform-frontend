@@ -1,0 +1,173 @@
+// Wire shapes for the adaptive quiz module.
+// Mirrors `adaptive_quiz.services.session_service.QuestionPayload` and friends on the backend.
+
+export interface AdaptiveOption {
+  id: "A" | "B" | "C" | "D" | string;
+  label: string;
+  value: string;
+}
+
+export interface AdaptiveQuestion {
+  mcq_id: number;
+  question_text: string;
+  options: AdaptiveOption[];
+  target_skill: string;
+  difficulty_label: "Easy" | "Medium" | "Hard" | string;
+  selector_rationale: string;
+  predicted_p_correct: number; // 0..1
+}
+
+export interface AdaptiveSessionMeta {
+  min_questions: number;
+  max_questions: number;
+  target_skills: string[];
+  confidence_prompt_enabled: boolean;
+  hint_tokens: number;
+}
+
+export interface StartSessionResponse {
+  session_id: string;
+  first_question: AdaptiveQuestion | null;
+  meta: AdaptiveSessionMeta;
+}
+
+export interface ThetaDeltaEntry {
+  before: number;
+  after: number;
+  se: number;
+}
+
+export interface SubmitAnswerResponse {
+  is_correct: boolean;
+  theta_delta: Record<string, ThetaDeltaEntry>;
+  next_question: AdaptiveQuestion | null;
+  session_complete: boolean;
+  progress: {
+    answered: number;
+    min_questions: number;
+    max_questions: number;
+    avg_se: number | null;
+  };
+  ability_state: Record<string, number>;
+  se_state: Record<string, number>;
+}
+
+export interface AdaptiveResponseMcqDetail {
+  id: number;
+  question_text: string;
+  options: AdaptiveOption[];
+  correct_option: string;
+  difficulty_level: string;
+  explanation: string;
+}
+
+export interface AdaptiveResponseRow {
+  order_index: number;
+  mcq: number;
+  mcq_detail: AdaptiveResponseMcqDetail;
+  target_skill: string;
+  selected_option: string;
+  is_correct: boolean;
+  confidence: number | null;
+  time_ms: number;
+  hint_used: boolean;
+  theta_after: Record<string, number>;
+  se_after: Record<string, number>;
+  asked_at: string;
+}
+
+export interface AdaptiveAINarration {
+  headline: string;
+  score_summary: {
+    correct: number;
+    total: number;
+    accuracy: number;
+    time_total_ms: number;
+  };
+  skill_mastery: Array<{
+    skill: string;
+    theta: number;
+    se: number;
+    mastery_pct: number;
+    /** Change in mastery vs the user's previous attempt on this same quiz.
+     *  ``null`` = first attempt or first time we've measured this skill —
+     *  the UI swaps the +X chip for a "First attempt" badge. */
+    delta_pct: number | null;
+    /** Baseline mastery% used to compute ``delta_pct``. ``null`` when there's
+     *  no prior session — drives the dashed ghost-marker on the bar. */
+    previous_mastery_pct?: number | null;
+    band: "emerging" | "developing" | "proficient" | "mastered" | string;
+  }>;
+  /** Populated only for re-quiz sessions (config targets exactly one skill).
+   *  Drives the "Skill mastered" / "Improving" / "Keep practising" banner. */
+  target_outcome?: {
+    kind: "mastered" | "improving" | "no_progress";
+    target_skill: string;
+    mastery_pct: number;
+    delta_pct: number | null;
+    previous_mastery_pct: number | null;
+  } | null;
+  misconceptions: Array<{
+    title: string;
+    evidence_question_indices: number[];
+    explanation: string;
+    fix: string;
+  }>;
+  per_question: Array<{
+    index: number;
+    rationale: string;
+    correct_concept: string;
+    your_mistake: string | null;
+    diagram_suggestion: string | null;
+  }>;
+  remediation_path: Array<{
+    step: 1 | 2 | 3 | number;
+    title: string;
+    why: string;
+    action_kind: "read" | "practice" | "watch" | string;
+    target_skill: string;
+    est_minutes: number;
+  }>;
+}
+
+export interface AdaptiveSessionDetail {
+  id: string;
+  status: "active" | "completed" | "abandoned";
+  started_at: string;
+  completed_at: string | null;
+  question_count: number;
+  hints_used: number;
+  ability_state: Record<string, number>;
+  se_state: Record<string, number>;
+  pending_question: AdaptiveQuestion | null;
+  ai_narration: AdaptiveAINarration | null;
+  ai_narration_generated_at: string | null;
+  config: {
+    id: number;
+    quiz_title: string;
+    is_active: boolean;
+    target_skills: string[];
+    min_questions: number;
+    max_questions: number;
+    se_threshold: number;
+    confidence_prompt_enabled: boolean;
+    hint_tokens: number;
+  };
+  responses: AdaptiveResponseRow[];
+  /** Populated only on re-quiz sessions (seeded_from set on the server). The
+   *  breadcrumb on the live quiz + results headers links back to this attempt. */
+  source_attempt: {
+    session_id: string;
+    quiz_title: string;
+    completed_at: string | null;
+  } | null;
+}
+
+export type ConfidenceLevel = 1 | 2 | 3 | 4;
+
+export const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
+  1: "Guessing",
+  2: "Unsure",
+  3: "Pretty sure",
+  4: "Certain",
+};

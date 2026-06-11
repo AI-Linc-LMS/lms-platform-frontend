@@ -41,7 +41,14 @@ export default function AdminInterviewDetailPage() {
   }, [params.id, router, showToast, t]);
 
   const handleBack = () => {
-    router.push("/admin/admin-mock-interview");
+    // Go ONE step back to wherever the admin came from (e.g. the Interviews list with its
+    // filters/page intact), not a fixed hub. Fall back to the interview admin only when there
+    // is no history to go back to (e.g. the page was opened directly).
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/admin/mock-interview");
+    }
   };
 
   if (loading) {

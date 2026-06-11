@@ -6,12 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "playwright:install": "playwright install --with-deps chromium",
     "lint": "eslint",
     "ngrok": "ngrok http  5173",
     "vendor-noise-suppression": "node scripts/vendor-noise-suppression.mjs",
     "postinstall": "node scripts/vendor-noise-suppression.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1057.0",
     "@daily-co/daily-js": "^0.90.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
@@ -76,6 +81,7 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",

@@ -208,7 +208,7 @@ export function MockInterviewTable({
                     {t("adminMockInterview.status")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
-                    {t("adminMockInterview.score")}
+                    {t("adminMockInterview.percentage")}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, backgroundColor: "var(--surface)" }}>
                     {t("adminMockInterview.created")}
@@ -281,20 +281,20 @@ export function MockInterviewTable({
                       />
                     </TableCell>
                     <TableCell>
-                      {row.overall_score != null ? (
+                      {row.overall_percentage != null ? (
                         <Typography
                           variant="body2"
                           sx={{
                             fontWeight: 600,
                             color:
-                              (row.overall_score ?? 0) >= 70
+                              (row.overall_percentage ?? 0) >= 70
                                 ? "var(--success-500)"
-                                : (row.overall_score ?? 0) >= 50
+                                : (row.overall_percentage ?? 0) >= 50
                                 ? "var(--warning-500)"
                                 : "var(--error-500)",
                           }}
                         >
-                          {row.overall_score}%
+                          {row.overall_percentage}%
                         </Typography>
                       ) : (
                         "-"

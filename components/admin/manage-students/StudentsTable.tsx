@@ -14,6 +14,7 @@ import {
   IconButton,
   Chip,
   Avatar,
+  Checkbox,
   CircularProgress,
   LinearProgress,
   Tooltip,
@@ -47,6 +48,16 @@ interface StudentsTableProps {
   onSort: (field: SortOption) => void;
   /** When false, render table only (nest inside a parent Paper on the page). */
   wrapInPaper?: boolean;
+  /** Enable the leading selection checkbox column (for bulk actions). */
+  selectable?: boolean;
+  /** Selected student ids (UserProfile.id) — controlled by the parent. */
+  selectedIds?: Set<number>;
+  onToggleSelect?: (id: number) => void;
+  /** Toggle selection of every student currently rendered. */
+  onToggleSelectAll?: () => void;
+  /** Header checkbox state across the full (filtered) set. */
+  allSelected?: boolean;
+  someSelected?: boolean;
 }
 
 const getSortIcon = (
@@ -85,9 +96,16 @@ export function StudentsTable({
   sortOrder,
   onSort,
   wrapInPaper = true,
+  selectable = false,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  allSelected = false,
+  someSelected = false,
 }: StudentsTableProps) {
   const router = useRouter();
   const { t } = useTranslation("common");
+  const colCount = selectable ? 8 : 7;
 
   const shell = (children: ReactNode) =>
     wrapInPaper ? (
@@ -150,6 +168,18 @@ export function StudentsTable({
                 },
               }}
             >
+              {selectable && (
+                <TableCell padding="checkbox" sx={{ backgroundColor: "var(--surface)" }}>
+                  <Checkbox
+                    size="small"
+                    checked={allSelected}
+                    indeterminate={!allSelected && someSelected}
+                    onChange={() => onToggleSelectAll?.()}
+                    sx={{ color: "var(--accent-indigo)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
+                    inputProps={{ "aria-label": "Select all students" }}
+                  />
+                </TableCell>
+              )}
               <TableCell
                 sx={{
                   fontWeight: 600,
@@ -387,7 +417,7 @@ export function StudentsTable({
             {!Array.isArray(students) || students.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={colCount}
                   align="center"
                   sx={{
                     py: 6,
@@ -447,7 +477,19 @@ export function StudentsTable({
                         borderBottom: "none",
                       },
                     }}
+                    selected={selectable && selectedIds?.has(student.id)}
                   >
+                    {selectable && (
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          size="small"
+                          checked={selectedIds?.has(student.id) ?? false}
+                          onChange={() => onToggleSelect?.(student.id)}
+                          sx={{ color: "var(--accent-indigo)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
+                          inputProps={{ "aria-label": `Select ${student.name}` }}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell
                       sx={{
                         py: 2,
@@ -462,6 +504,7 @@ export function StudentsTable({
                         }}
                       >
                         <Avatar
+                          src={student.profile_pic_url || undefined}
                           sx={{
                             width: { xs: 32, sm: 40 },
                             height: { xs: 32, sm: 40 },
