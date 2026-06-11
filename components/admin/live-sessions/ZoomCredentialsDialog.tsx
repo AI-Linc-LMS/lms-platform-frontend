@@ -21,6 +21,7 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
+import { config } from "@/lib/config";
 
 interface ZoomCredentialsDialogProps {
   open: boolean;
@@ -72,6 +73,8 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
       setHasExistingConfig(data != null);
       setWebhookUrl(data?.webhook_url ?? null);
       setWebhookConfigured(data?.webhook_configured ?? false);
+      // Show the Zoom Marketplace setup guide by default for first-time setup.
+      setShowSetupHelp(data == null);
       setForm(
         data
           ? {
@@ -133,6 +136,12 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
       setSaving(false);
     }
   };
+
+  // Webhook URL is deterministic from the API base + tenant id, so show it immediately (don't make
+  // the admin save first just to read the URL they need to paste into Zoom).
+  const derivedWebhookUrl = (
+    webhookUrl?.trim() || `${config.apiBaseUrl}/webhooks/clients/${config.clientId}/zoom/`
+  ).trim();
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -202,61 +211,56 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 autoComplete="off"
                 helperText={t("adminLiveSessions.webhookSecretHelper")}
               />
-              {hasExistingConfig && (
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}
+                >
+                  {t("adminLiveSessions.subscriptionEndpointUrl")}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <TextField
+                    value={derivedWebhookUrl}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem", fontFamily: "monospace" } }}
+                  />
+                  <IconButton
+                    size="small"
+                    disabled={!derivedWebhookUrl}
+                    onClick={() => {
+                      if (!derivedWebhookUrl) return;
+                      navigator.clipboard.writeText(derivedWebhookUrl).then(
+                        () => showToast(t("adminLiveSessions.webhookUrlCopied"), "success"),
+                        () => showToast(t("adminLiveSessions.failedToCopy"), "error")
+                      );
+                    }}
+                    aria-label={t("adminLiveSessions.copyWebhookUrl")}
                   >
-                    {t("adminLiveSessions.subscriptionEndpointUrl")}
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <TextField
-                      value={webhookUrl?.trim() ?? ""}
-                      size="small"
-                      fullWidth
-                      placeholder={webhookUrl ? undefined : t("adminLiveSessions.saveCredentialsToSeeWebhook")}
-                      InputProps={{ readOnly: true }}
-                      sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem", fontFamily: "monospace" } }}
-                    />
-                    <IconButton
-                      size="small"
-                      disabled={!webhookUrl?.trim()}
-                      onClick={() => {
-                        const url = webhookUrl?.trim();
-                        if (!url) return;
-                        navigator.clipboard.writeText(url).then(
-                          () => showToast(t("adminLiveSessions.webhookUrlCopied"), "success"),
-                          () => showToast(t("adminLiveSessions.failedToCopy"), "error")
-                        );
-                      }}
-                      aria-label={t("adminLiveSessions.copyWebhookUrl")}
-                    >
-                      <IconWrapper icon="mdi:content-copy" size={18} />
-                    </IconButton>
-                  </Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "var(--font-tertiary)", mt: 0.5, display: "block" }}
-                  >
-                    {t("adminLiveSessions.webhookEndpointHint")}
-                  </Typography>
-                  {webhookConfigured && (
-                    <Chip
-                      label={t("adminLiveSessions.webhookActive")}
-                      size="small"
-                      sx={{
-                        mt: 1,
-                        bgcolor:
-                          "color-mix(in srgb, var(--success-500) 16%, transparent)",
-                        color: "var(--success-500)",
-                        fontWeight: 600,
-                        fontSize: "0.7rem",
-                      }}
-                    />
-                  )}
+                    <IconWrapper icon="mdi:content-copy" size={18} />
+                  </IconButton>
                 </Box>
-              )}
+                <Typography
+                  variant="caption"
+                  sx={{ color: "var(--font-tertiary)", mt: 0.5, display: "block" }}
+                >
+                  {t("adminLiveSessions.webhookEndpointHint")}
+                </Typography>
+                <Chip
+                  label={webhookConfigured ? t("adminLiveSessions.webhookActive") : t("adminLiveSessions.webhookPending", "Webhook not verified yet")}
+                  size="small"
+                  sx={{
+                    mt: 1,
+                    bgcolor: webhookConfigured
+                      ? "color-mix(in srgb, var(--success-500) 16%, transparent)"
+                      : "color-mix(in srgb, var(--warning-500) 18%, transparent)",
+                    color: webhookConfigured ? "var(--success-500)" : "var(--warning-500)",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                  }}
+                />
+              </Box>
               <TextField
                 label={t("adminLiveSessions.timezoneOptional")}
                 value={form.timezone ?? ""}
