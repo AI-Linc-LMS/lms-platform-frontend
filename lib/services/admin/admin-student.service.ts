@@ -242,6 +242,28 @@ export interface JourneyAdaptive {
   };
 }
 
+export interface JourneyWeekItem {
+  id: number;
+  title: string;
+  /** Normalized category: article | video | quiz | coding | other */
+  type: string;
+  completed_at: string | null;
+}
+
+export interface JourneyWeek {
+  weekno: number;
+  module_title: string;
+  completed_count: number;
+  type_counts: Record<string, number>;
+  items: JourneyWeekItem[];
+}
+
+export interface JourneyCourseWeeks {
+  course_id: number;
+  course_title: string;
+  weeks: JourneyWeek[];
+}
+
 export interface JourneyTimelineEntry {
   type: string;
   activity_type?: string;
@@ -279,6 +301,7 @@ export interface StudentLearningJourney {
     adaptive_sessions_count: number;
   };
   courses: JourneyCourse[];
+  weekly_progress: JourneyCourseWeeks[];
   assessments: JourneyAssessment[];
   mock_interviews: {
     summary: {
