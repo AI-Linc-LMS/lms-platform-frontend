@@ -379,7 +379,12 @@ export default function StudentDetailsPage() {
               {tab === "assessments" && <AssessmentsTab assessments={journey.assessments} />}
               {tab === "mock" && <MockInterviewsTab data={journey.mock_interviews} />}
               {tab === "adaptive" && <AdaptiveTab adaptive={journey.adaptive} />}
-              {tab === "timeline" && <TimelineTab timeline={journey.timeline} />}
+              {tab === "timeline" && (
+                <TimelineTab
+                  timeline={journey.timeline}
+                  weeklyProgress={journey.weekly_progress}
+                />
+              )}
             </>
           )}
         </SectionShell>
