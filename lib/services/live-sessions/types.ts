@@ -16,10 +16,22 @@ export interface StudentLiveSession {
   name?: string;
   expires_at?: string;
   has_marked_attendance?: boolean;
+  /** The student's own Zoom attendance (from the live-activities serializer). */
+  my_attendance?: { attended: boolean; duration_seconds: number } | null;
+  zoom_ai_summary?: string | null;
+  zoom_transcript_synced_at?: string | null;
 }
 
 export interface LiveSessionRecordingResponse {
   activity_name: string;
   recording_url: string;
   duration_seconds?: number;
+}
+
+export interface StudentLiveSessionTranscript {
+  transcript_text: string;
+  transcript_url: string;
+  transcript_synced_at: string | null;
+  summary: string;
+  summary_generated_at: string | null;
 }

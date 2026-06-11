@@ -49,6 +49,48 @@ export interface LiveActivity {
   course_detail?: CourseDetail | null;
   attendance_count?: number;
   zoom_attendance_synced_at?: string | null;
+  zoom_transcript_synced_at?: string | null;
+  zoom_ai_summary?: string | null;
+  zoom_ai_summary_generated_at?: string | null;
+  my_attendance?: { attended: boolean; duration_seconds: number } | null;
+}
+
+export interface RosterStudent {
+  user_profile_id: number;
+  name: string;
+  email: string;
+  attended: boolean;
+  duration_seconds: number;
+  join_time: string | null;
+  leave_time: string | null;
+}
+
+export interface UnmatchedParticipant {
+  name: string;
+  email: string;
+  duration_seconds: number;
+  join_time: string | null;
+  leave_time: string | null;
+}
+
+export interface LiveSessionRosterResponse {
+  course_tagged: boolean;
+  enrolled_count: number;
+  joined_count: number;
+  missed_count: number;
+  synced_at: string | null;
+  sync_available: boolean;
+  reliability_note: string;
+  students: RosterStudent[];
+  unmatched_participants: UnmatchedParticipant[];
+}
+
+export interface LiveSessionTranscriptResponse {
+  transcript_text: string;
+  transcript_url: string;
+  transcript_synced_at: string | null;
+  summary: string;
+  summary_generated_at: string | null;
 }
 
 export interface ZoomCreateSuccessData {
@@ -172,6 +214,24 @@ export const adminLiveActivitiesService = {
   ): Promise<SyncAttendanceResponse> => {
     const response = await apiClient.post<SyncAttendanceResponse>(
       `${BASE}/live-activities/${liveClassId}/zoom/sync-attendance/`
+    );
+    return response.data;
+  },
+
+  getRoster: async (
+    liveClassId: number
+  ): Promise<LiveSessionRosterResponse> => {
+    const response = await apiClient.get<LiveSessionRosterResponse>(
+      `${BASE}/live-activities/${liveClassId}/zoom/roster/`
+    );
+    return response.data;
+  },
+
+  getTranscript: async (
+    liveClassId: number
+  ): Promise<LiveSessionTranscriptResponse> => {
+    const response = await apiClient.get<LiveSessionTranscriptResponse>(
+      `${BASE}/live-activities/${liveClassId}/zoom/transcript/`
     );
     return response.data;
   },
