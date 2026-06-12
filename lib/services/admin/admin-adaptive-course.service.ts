@@ -282,6 +282,58 @@ export interface AdminAdaptiveCourseDetail extends AdminAdaptiveCourseListItem {
   skills: AdaptiveCourseSkill[];
 }
 
+// --- Student enrollment / management ---
+
+export interface AdaptiveProgressByType {
+  quiz: { completed: number; total: number };
+  coding: { completed: number; total: number };
+  video: { completed: number; total: number };
+  article: { total: number; read: number | null };
+}
+
+export interface AdaptiveCourseProgress {
+  progress_percentage: number;
+  completed: number;
+  total: number;
+  by_type: AdaptiveProgressByType;
+  last_activity: string | null;
+}
+
+export interface EnrolledAdaptiveStudent {
+  student_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  enrolled_at: string;
+  progress_percentage: number;
+  completed: number;
+  total: number;
+  last_activity: string | null;
+}
+
+export interface EnrolledStudentsResponse {
+  count: number;
+  page: number;
+  page_size: number;
+  results: EnrolledAdaptiveStudent[];
+}
+
+export interface EnrollActionResult {
+  succeeded: number;
+  skipped?: number;
+  failed?: Array<{ student_id: number | null; detail: string }>;
+  missing?: number[];
+}
+
+export interface AdaptiveStudentProgressDetail {
+  student_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  enrolled_at: string;
+  progress: AdaptiveCourseProgress;
+}
+
 export const adminAdaptiveCourseService = {
   async generateCourse(payload: GenerateAdaptiveCoursePayload): Promise<AdaptiveCourseJobDetail> {
     const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
@@ -364,6 +416,45 @@ export const adminAdaptiveCourseService = {
 
   async deleteCourse(courseId: number): Promise<void> {
     await apiClient.delete(`${BASE}/courses/${courseId}/`);
+  },
+
+  // --- Student enrollment / management ---
+
+  async listCourseStudents(
+    courseId: number,
+    params?: { search?: string; page?: number; page_size?: number },
+  ): Promise<EnrolledStudentsResponse> {
+    const { data } = await apiClient.get<EnrolledStudentsResponse>(
+      `${BASE}/courses/${courseId}/students/`,
+      { params },
+    );
+    return data;
+  },
+
+  async enrollStudents(courseId: number, studentIds: number[]): Promise<EnrollActionResult> {
+    const { data } = await apiClient.post<EnrollActionResult>(
+      `${BASE}/courses/${courseId}/students/enroll/`,
+      { student_ids: studentIds },
+    );
+    return data;
+  },
+
+  async unenrollStudents(courseId: number, studentIds: number[]): Promise<EnrollActionResult> {
+    const { data } = await apiClient.post<EnrollActionResult>(
+      `${BASE}/courses/${courseId}/students/unenroll/`,
+      { student_ids: studentIds },
+    );
+    return data;
+  },
+
+  async getStudentProgress(
+    courseId: number,
+    studentId: number,
+  ): Promise<AdaptiveStudentProgressDetail> {
+    const { data } = await apiClient.get<AdaptiveStudentProgressDetail>(
+      `${BASE}/courses/${courseId}/students/${studentId}/`,
+    );
+    return data;
   },
 
   async suggestTopic(
