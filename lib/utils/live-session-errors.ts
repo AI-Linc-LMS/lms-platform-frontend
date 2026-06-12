@@ -76,12 +76,12 @@ export function getLiveSessionErrorMessage(
   if (status === 500 || status === 502 || status === 503 || status == null)
     return GENERIC_ERROR_MESSAGE;
 
-  if (
-    status === 400 ||
-    lower.includes("credential") ||
-    (context === "zoom_create" && lower.includes("zoom"))
-  )
+  // Only the genuine "Zoom isn't set up" case — NOT scope/permission errors, which carry actionable
+  // instructions (e.g. "add webinar:write:admin"). Pass those through so admins can self-serve.
+  if (lower.includes("not configured") || (lower.includes("credential") && lower.includes("zoom")))
     return ZOOM_CREDENTIALS_MESSAGE;
+
+  if (status === 400 && lower.includes("scope")) return msg;
 
   if (
     status === 409 ||
@@ -108,7 +108,7 @@ export function getZoomApiErrorMessage(
 ): string {
   if (!message) return "Something went wrong. Please try again.";
   const lower = message.toLowerCase();
-  if (lower.includes("credential") || (context === "zoom_create" && lower.includes("zoom")))
+  if (lower.includes("not configured") || (lower.includes("credential") && lower.includes("zoom")))
     return ZOOM_CREDENTIALS_MESSAGE;
   if (lower.includes("not finalized") || lower.includes("409"))
     return MEETING_NOT_FINALIZED_MESSAGE;
