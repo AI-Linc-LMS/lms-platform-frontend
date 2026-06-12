@@ -29,6 +29,7 @@ import { CourseQuizEditor } from "@/components/admin/adaptive-course/CourseQuizE
 import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArticleViewer";
 import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodingViewer";
 import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVideoReview";
+import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
 
 type DialogState =
   | { kind: "module" }
@@ -64,6 +65,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
   const [expandedCoding, setExpandedCoding] = useState<number | null>(null);
+  const [tab, setTab] = useState<"content" | "students">("content");
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -243,7 +245,38 @@ export default function AdminAdaptiveCourseDetailPage() {
                 }
               />
 
-              {course.skills.length > 0 && (
+              <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>
+                {([
+                  ["content", "Content", "mdi:book-cog-outline"],
+                  ["students", "Students", "mdi:account-school-outline"],
+                ] as const).map(([key, label, icon]) => {
+                  const active = tab === key;
+                  return (
+                    <ButtonBase
+                      key={key}
+                      onClick={() => setTab(key)}
+                      sx={{
+                        px: 2.25, py: 0.9, borderRadius: 999, fontWeight: 800, fontSize: "0.85rem", gap: 0.6,
+                        display: "inline-flex", alignItems: "center",
+                        color: active ? "white" : "text.primary",
+                        background: active
+                          ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)"
+                          : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+                        border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                      }}
+                    >
+                      <Icon icon={icon} width={16} />
+                      {label}
+                    </ButtonBase>
+                  );
+                })}
+              </Box>
+
+              {tab === "students" && (
+                <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
+              )}
+
+              {tab === "content" && course.skills.length > 0 && (
                 <Box sx={{
                   mb: 2.5, p: { xs: 2, md: 2.5 }, borderRadius: 4,
                   bgcolor: "color-mix(in srgb, #a855f7 6%, var(--card-bg))",
@@ -282,6 +315,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                 </Box>
               )}
 
+              {tab === "content" && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {course.modules.length === 0 && (
                   <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
@@ -539,6 +573,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                   </Reveal>
                 ))}
               </Box>
+              )}
             </>
           )}
         </AdaptiveSectionShell>

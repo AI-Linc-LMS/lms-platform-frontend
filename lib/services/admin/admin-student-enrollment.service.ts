@@ -66,7 +66,10 @@ export function formatEnrollmentJobStudentLabel(
 
 export interface CreateEnrollmentJobRequest {
   students: StudentData[];
-  course_ids: string; // Comma-separated string like "360,361,363"
+  /** Comma-separated legacy course ids like "360,361,363". Optional if adaptive_course_ids given. */
+  course_ids?: string;
+  /** Comma-separated adaptive course ids like "12,13". Optional if course_ids given. */
+  adaptive_course_ids?: string;
 }
 
 export const adminStudentEnrollmentService = {

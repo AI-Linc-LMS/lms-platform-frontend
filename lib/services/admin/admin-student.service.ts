@@ -417,25 +417,33 @@ export const adminStudentService = {
     return response.data;
   },
 
-  // Bulk enroll / unenroll EXISTING students across courses (synchronous M2M op)
+  // Bulk enroll / unenroll EXISTING students across courses (synchronous M2M op).
+  // Accepts legacy course ids and/or adaptive course ids.
   bulkCourseAction: async (
     action: "enroll" | "unenroll",
     studentIds: number[],
-    courseIds: number[]
+    courseIds: number[],
+    adaptiveCourseIds: number[] = []
   ): Promise<{
     action: string;
     succeeded: number;
     failed: number;
     results: Array<{
       student_id: number;
-      course_id: number | null;
+      course_id?: number | null;
+      adaptive_course_id?: number | null;
       status: string;
       detail?: string;
     }>;
   }> => {
     const response = await apiClient.post(
       `/admin-dashboard/api/clients/${config.clientId}/students/bulk-course-action/`,
-      { action, student_ids: studentIds, course_ids: courseIds }
+      {
+        action,
+        student_ids: studentIds,
+        course_ids: courseIds,
+        adaptive_course_ids: adaptiveCourseIds,
+      }
     );
     return response.data;
   },

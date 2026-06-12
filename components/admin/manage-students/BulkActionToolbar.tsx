@@ -22,6 +22,8 @@ import { adminStudentService, Student } from "@/lib/services/admin/admin-student
 interface BulkActionToolbarProps {
   selected: Student[];
   courses: Array<{ id: number; title: string }>;
+  /** Adaptive courses available for bulk enroll/unenroll (optional). */
+  adaptiveCourses?: Array<{ id: number; title: string }>;
   onClear: () => void;
   /** Called after a successful bulk operation so the parent can refresh + clear. */
   onDone: () => void;
@@ -35,6 +37,7 @@ const INDIGO = "#6366f1";
 export function BulkActionToolbar({
   selected,
   courses,
+  adaptiveCourses = [],
   onClear,
   onDone,
 }: BulkActionToolbarProps) {
@@ -42,6 +45,7 @@ export function BulkActionToolbar({
   const [courseDialog, setCourseDialog] = useState<CourseDialogMode>(null);
   const [confirm, setConfirm] = useState<ConfirmMode>(null);
   const [pickedCourses, setPickedCourses] = useState<number[]>([]);
+  const [pickedAdaptiveCourses, setPickedAdaptiveCourses] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
 
   const studentIds = useMemo(() => selected.map((s) => s.id), [selected]);
@@ -50,16 +54,18 @@ export function BulkActionToolbar({
   const closeCourseDialog = () => {
     setCourseDialog(null);
     setPickedCourses([]);
+    setPickedAdaptiveCourses([]);
   };
 
   const runCourseAction = async () => {
-    if (!courseDialog || pickedCourses.length === 0) return;
+    if (!courseDialog || pickedCourses.length + pickedAdaptiveCourses.length === 0) return;
     try {
       setBusy(true);
       const res = await adminStudentService.bulkCourseAction(
         courseDialog,
         studentIds,
-        pickedCourses
+        pickedCourses,
+        pickedAdaptiveCourses
       );
       showToast(
         `${courseDialog === "enroll" ? "Enrolled" : "Unenrolled"}: ${res.succeeded} ok${
@@ -263,6 +269,34 @@ export function BulkActionToolbar({
               </MenuItem>
             ))}
           </TextField>
+
+          {adaptiveCourses.length > 0 && (
+            <TextField
+              select
+              fullWidth
+              label="Adaptive courses"
+              value={pickedAdaptiveCourses}
+              onChange={(e) => {
+                const v = e.target.value as unknown as number[];
+                setPickedAdaptiveCourses(typeof v === "string" ? [] : v);
+              }}
+              sx={{ mt: 2 }}
+              SelectProps={{
+                multiple: true,
+                renderValue: (sel) =>
+                  (sel as number[])
+                    .map((id) => adaptiveCourses.find((c) => c.id === id)?.title || id)
+                    .join(", "),
+              }}
+            >
+              {adaptiveCourses.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  <Checkbox checked={pickedAdaptiveCourses.includes(c.id)} size="small" />
+                  <ListItemText primary={c.title} />
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={closeCourseDialog} disabled={busy}>
@@ -271,7 +305,7 @@ export function BulkActionToolbar({
           <Button
             variant="contained"
             onClick={runCourseAction}
-            disabled={busy || pickedCourses.length === 0}
+            disabled={busy || pickedCourses.length + pickedAdaptiveCourses.length === 0}
             startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
             sx={{ bgcolor: INDIGO, fontWeight: 700, textTransform: "none" }}
           >
