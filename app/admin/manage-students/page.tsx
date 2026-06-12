@@ -14,6 +14,7 @@ import {
   ManageStudentsResponse,
 } from "@/lib/services/admin/admin-student.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isClientOrgAdminRole,
@@ -197,6 +198,9 @@ export default function ManageStudentsPage() {
   const [courses, setCourses] = useState<Array<{ id: number; title: string }>>(
     []
   );
+  const [adaptiveCourses, setAdaptiveCourses] = useState<Array<{ id: number; title: string }>>(
+    []
+  );
   const [loading, setLoading] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
 
@@ -260,7 +264,16 @@ export default function ManageStudentsPage() {
         // Silently fail - courses filter is optional
       }
     };
+    const loadAdaptiveCourses = async () => {
+      try {
+        const list = await adminAdaptiveCourseService.listCourses();
+        setAdaptiveCourses(list.map((c) => ({ id: c.id, title: c.title })));
+      } catch {
+        // Optional — tenant may not have the adaptive feature.
+      }
+    };
     loadCourses();
+    loadAdaptiveCourses();
   }, []);
 
   // Load students from API - only when course filter changes or initial load
@@ -988,6 +1001,7 @@ export default function ManageStudentsPage() {
           <BulkActionToolbar
             selected={selectedStudents}
             courses={courses}
+            adaptiveCourses={adaptiveCourses}
             onClear={handleClearSelection}
             onDone={handleBulkActionDone}
           />

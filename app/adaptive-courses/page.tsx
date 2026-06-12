@@ -255,10 +255,10 @@ function EmptyState() {
     >
       <Icon icon="mdi:book-off-outline" width={48} style={{ color: "#a855f7" }} />
       <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.1rem" }}>
-        No adaptive courses yet.
+        {"You're not enrolled in any adaptive course yet."}
       </Typography>
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
-        {"Your instructor hasn't published an adaptive course on this account yet. Check back soon — once one is ready, it'll appear here."}
+        {"Adaptive courses appear here once your instructor enrolls you. Check back soon — or reach out to your instructor if you're expecting access."}
       </Typography>
     </Box>
   );
