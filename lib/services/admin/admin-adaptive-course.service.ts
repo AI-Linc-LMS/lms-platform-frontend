@@ -33,6 +33,51 @@ export interface GenerateAdaptiveCoursePayload {
   config?: AdaptiveCourseGenConfig;
 }
 
+/** One topic row in a CSV-derived plan → becomes an adaptive submodule. */
+export interface CsvPlanSubmodule {
+  title: string;
+  description: string;
+  /** Sub-skills the submodule teaches — drive quiz/article skill tags. */
+  key_concepts: string[];
+  /** Client-only stable React key (ignored by the backend serializer). */
+  _uid?: string;
+}
+
+/** One week/module in a CSV-derived plan. */
+export interface CsvPlanModule {
+  week: number;
+  title: string;
+  submodules: CsvPlanSubmodule[];
+  /** Client-only stable React key (ignored by the backend serializer). */
+  _uid?: string;
+}
+
+/** Result of AI-mapping an uploaded curriculum CSV (preview, no DB writes). */
+export interface CsvCoursePlan {
+  modules: CsvPlanModule[];
+  /** Which source column the AI mapped to each role (or null). Preview only. */
+  column_mapping: Record<string, string | null>;
+  warnings: string[];
+}
+
+export interface ParseCsvPayload {
+  title?: string;
+  /** Detected CSV headers. */
+  columns: string[];
+  /** Header→cell row objects from a client-side header-mode parse. */
+  rows: Array<Record<string, string>>;
+  /** Free-text guidance for the AI (e.g. "treat Module column as weeks"). */
+  hint?: string;
+}
+
+export interface GenerateFromPlanPayload {
+  title: string;
+  description?: string;
+  /** The (possibly admin-edited) module/submodule structure to build. */
+  modules: CsvPlanModule[];
+  config?: AdaptiveCourseGenConfig;
+}
+
 export type AdaptiveCourseJobStatus =
   | "pending"
   | "generating_outline"
@@ -241,6 +286,24 @@ export const adminAdaptiveCourseService = {
   async generateCourse(payload: GenerateAdaptiveCoursePayload): Promise<AdaptiveCourseJobDetail> {
     const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
       `${BASE}/courses/generate/`,
+      payload,
+    );
+    return data;
+  },
+
+  /** AI-map an uploaded curriculum CSV into an editable course plan (no job). */
+  async parseCsv(payload: ParseCsvPayload): Promise<CsvCoursePlan> {
+    const { data } = await apiClient.post<CsvCoursePlan>(
+      `${BASE}/courses/parse-csv/`,
+      payload,
+    );
+    return data;
+  },
+
+  /** Build an adaptive course from an edited CSV plan — returns the started job. */
+  async generateFromPlan(payload: GenerateFromPlanPayload): Promise<AdaptiveCourseJobDetail> {
+    const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
+      `${BASE}/courses/generate-from-plan/`,
       payload,
     );
     return data;
