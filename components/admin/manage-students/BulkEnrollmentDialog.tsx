@@ -38,6 +38,10 @@ import {
   StudentEnrollmentJob,
 } from "@/lib/services/admin/admin-student-enrollment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import {
+  adminAdaptiveCourseService,
+  type AdminAdaptiveCourseListItem,
+} from "@/lib/services/admin/admin-adaptive-course.service";
 import { Course } from "@/lib/services/courses.service";
 import { EnrollmentJobStatus } from "./EnrollmentJobStatus";
 
@@ -45,12 +49,16 @@ interface BulkEnrollmentDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** When set, the dialog enrolls into this one adaptive course (course-builder
+   *  Students tab). The course-selection step is replaced by a fixed target. */
+  lockedAdaptiveCourse?: { id: number; title: string };
 }
 
 export function BulkEnrollmentDialog({
   open,
   onClose,
   onSuccess,
+  lockedAdaptiveCourse,
 }: BulkEnrollmentDialogProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
@@ -61,9 +69,11 @@ export function BulkEnrollmentDialog({
   const [validationErrors, setValidationErrors] = useState<CSVValidationError[]>([]);
   const [duplicateEmails, setDuplicateEmails] = useState<Array<{ email: string; count: number; students: ParsedStudent[] }>>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [adaptiveCourses, setAdaptiveCourses] = useState<AdminAdaptiveCourseListItem[]>([]);
   const [studentsPage, setStudentsPage] = useState(0);
   const [studentsRowsPerPage, setStudentsRowsPerPage] = useState(10);
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
+  const [selectedAdaptiveCourseIds, setSelectedAdaptiveCourseIds] = useState<number[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [creatingJob, setCreatingJob] = useState(false);
   const [currentJob, setCurrentJob] = useState<StudentEnrollmentJob | null>(null);
@@ -80,6 +90,7 @@ export function BulkEnrollmentDialog({
       setParsedStudents([]);
       setValidationErrors([]);
       setSelectedCourseIds([]);
+      setSelectedAdaptiveCourseIds([]);
       setCurrentJob(null);
       setShowJobStatus(false);
       setStudentsPage(0);
@@ -87,6 +98,8 @@ export function BulkEnrollmentDialog({
   }, [open]);
 
   const loadCourses = async () => {
+    // Locked mode: target course is fixed, no course lists needed.
+    if (lockedAdaptiveCourse) return;
     try {
       setLoadingCourses(true);
       const raw = await adminCoursesService.getCourses();
@@ -97,6 +110,14 @@ export function BulkEnrollmentDialog({
           ? ((raw as { results: unknown[] }).results as unknown[])
           : [];
       setCourses(list as Course[]);
+      // Adaptive courses are optional — failing to load them must not block
+      // legacy enrollment, so swallow errors (e.g. tenant without the feature).
+      try {
+        const adaptive = await adminAdaptiveCourseService.listCourses();
+        setAdaptiveCourses(adaptive);
+      } catch {
+        setAdaptiveCourses([]);
+      }
     } catch (error: any) {
       showToast(t("adminManageStudents.failedToLoadCourses"), "error");
     } finally {
@@ -258,8 +279,13 @@ export function BulkEnrollmentDialog({
       }
       // Allow proceeding even if some rows had errors (they're already skipped)
     } else if (activeStep === 1) {
-      // Validate course selection
-      if (selectedCourseIds.length === 0) {
+      // Validate course selection (legacy and/or adaptive). Locked mode always
+      // has a target, so it passes.
+      if (
+        !lockedAdaptiveCourse &&
+        selectedCourseIds.length === 0 &&
+        selectedAdaptiveCourseIds.length === 0
+      ) {
         showToast(t("adminManageStudents.pleaseSelectCourse"), "error");
         return;
       }
@@ -275,9 +301,13 @@ export function BulkEnrollmentDialog({
     try {
       setCreatingJob(true);
       const courseIdsString = selectedCourseIds.join(",");
+      const adaptiveIdsString = lockedAdaptiveCourse
+        ? String(lockedAdaptiveCourse.id)
+        : selectedAdaptiveCourseIds.join(",");
       const job = await adminStudentEnrollmentService.createEnrollmentJob({
         students: parsedStudents,
         course_ids: courseIdsString,
+        adaptive_course_ids: adaptiveIdsString,
       });
 
       setCurrentJob(job);
@@ -573,53 +603,106 @@ export function BulkEnrollmentDialog({
               {t("adminManageStudents.selectCoursesDesc")}
             </Typography>
 
-            {loadingCourses ? (
+            {lockedAdaptiveCourse ? (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Students will be enrolled into:
+                </Typography>
+                <Chip
+                  icon={<IconWrapper icon="mdi:book-education-outline" size={16} />}
+                  label={lockedAdaptiveCourse.title}
+                  color="primary"
+                />
+              </Box>
+            ) : loadingCourses ? (
               <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                 <CircularProgress />
               </Box>
             ) : (
-              <FormControl fullWidth>
-                <InputLabel>{t("adminManageStudents.courses")}</InputLabel>
-                <Select
-                  multiple
-                  value={selectedCourseIds}
-                  onChange={(e) => setSelectedCourseIds(e.target.value as number[])}
-                  label={t("adminManageStudents.courses")}
-                  MenuProps={{
-                    disablePortal: true,
-                    PaperProps: { style: { maxHeight: 300 } },
-                  }}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                      {selected.map((courseId) => {
-                        const course = courses.find((c) => c.id === courseId);
-                        return (
-                          <Chip
-                            key={courseId}
-                            label={course?.title || `Course ${courseId}`}
-                            size="small"
-                          />
-                        );
-                      })}
-                    </Box>
-                  )}
-                >
-                  {courses.map((course) => (
-                    <MenuItem key={course.id} value={course.id}>
-                      {course.title}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                <FormControl fullWidth>
+                  <InputLabel>{t("adminManageStudents.courses")}</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedCourseIds}
+                    onChange={(e) => setSelectedCourseIds(e.target.value as number[])}
+                    label={t("adminManageStudents.courses")}
+                    MenuProps={{
+                      disablePortal: true,
+                      PaperProps: { style: { maxHeight: 300 } },
+                    }}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                        {selected.map((courseId) => {
+                          const course = courses.find((c) => c.id === courseId);
+                          return (
+                            <Chip
+                              key={courseId}
+                              label={course?.title || `Course ${courseId}`}
+                              size="small"
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
+                  >
+                    {courses.map((course) => (
+                      <MenuItem key={course.id} value={course.id}>
+                        {course.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            {selectedCourseIds.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {t("adminManageStudents.courseSelected", { count: selectedCourseIds.length })}
-                </Typography>
+                {adaptiveCourses.length > 0 && (
+                  <FormControl fullWidth>
+                    <InputLabel>Adaptive courses</InputLabel>
+                    <Select
+                      multiple
+                      value={selectedAdaptiveCourseIds}
+                      onChange={(e) => setSelectedAdaptiveCourseIds(e.target.value as number[])}
+                      label="Adaptive courses"
+                      MenuProps={{
+                        disablePortal: true,
+                        PaperProps: { style: { maxHeight: 300 } },
+                      }}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                          {selected.map((courseId) => {
+                            const course = adaptiveCourses.find((c) => c.id === courseId);
+                            return (
+                              <Chip
+                                key={courseId}
+                                label={course?.title || `Adaptive ${courseId}`}
+                                size="small"
+                                color="secondary"
+                              />
+                            );
+                          })}
+                        </Box>
+                      )}
+                    >
+                      {adaptiveCourses.map((course) => (
+                        <MenuItem key={course.id} value={course.id}>
+                          {course.title}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
               </Box>
             )}
+
+            {!lockedAdaptiveCourse &&
+              selectedCourseIds.length + selectedAdaptiveCourseIds.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t("adminManageStudents.courseSelected", {
+                      count: selectedCourseIds.length + selectedAdaptiveCourseIds.length,
+                    })}
+                  </Typography>
+                </Box>
+              )}
           </Box>
         );
 
@@ -647,7 +730,7 @@ export function BulkEnrollmentDialog({
                   {t("adminManageStudents.courses")}:
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
-                  {selectedCourseIds.length}
+                  {(lockedAdaptiveCourse ? 1 : selectedCourseIds.length) + selectedAdaptiveCourseIds.length}
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", justifyContent: "space-between" }}>
@@ -655,7 +738,9 @@ export function BulkEnrollmentDialog({
                   {t("adminManageStudents.totalEnrollments")}
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
-                  {parsedStudents.length * selectedCourseIds.length}
+                  {parsedStudents.length *
+                    ((lockedAdaptiveCourse ? 1 : selectedCourseIds.length) +
+                      selectedAdaptiveCourseIds.length)}
                 </Typography>
               </Box>
             </Paper>
