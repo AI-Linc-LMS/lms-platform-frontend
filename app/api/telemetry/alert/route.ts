@@ -24,7 +24,7 @@ function makeSESClient() {
   const secretAccessKey =AWS_SECRET_ACCESS_KEY?.trim();
   const region = process.env.AWS_REGION?.trim() || "ap-south-1";
 
-  console.log(accessKeyId,secretAccessKey)
+
 
   if (!accessKeyId) {
     throw new Error("AWS_SES_ACCESS_KEY_ID is missing");
