@@ -17,14 +17,14 @@ const ALERT_TO = (process.env.SES_ALERT_TO_EMAILS ?? "")
   .filter(Boolean);
 
 const AWS_SECRET_ACCESS_KEY=process.env.AWS_SES_SECRET_ACCESS_KEY
-const AWS_SES_KEY_ID=process.env.AWS_ACCESS_KEY_ID
+const AWS_SES_KEY_ID=process.env.AWS_SES_KEY_ID
 
 function makeSESClient() {
   const accessKeyId = AWS_SES_KEY_ID?.trim();
   const secretAccessKey =AWS_SECRET_ACCESS_KEY?.trim();
   const region = process.env.AWS_REGION?.trim() || "ap-south-1";
 
-
+  console.log(accessKeyId,secretAccessKey)
 
   if (!accessKeyId) {
     throw new Error("AWS_SES_ACCESS_KEY_ID is missing");
