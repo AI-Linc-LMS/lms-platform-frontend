@@ -20,7 +20,7 @@ const AWS_SECRET_ACCESS_KEY=process.env.AWS_SES_SECRET_ACCESS_KEY
 const AWS_SES_KEY_ID=process.env.AWS_ACCESS_KEY_ID
 
 function makeSESClient() {
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
+  const accessKeyId = AWS_SES_KEY_ID?.trim();
   const secretAccessKey =AWS_SECRET_ACCESS_KEY?.trim();
   const region = process.env.AWS_REGION?.trim() || "ap-south-1";
 
