@@ -121,10 +121,14 @@ export interface AdaptiveCourseListItem {
   article_count: number;
   coding_count?: number;
   video_count?: number;
+  /** AI/admin card thumbnail; null when absent or hidden by the admin. */
+  card_image_url?: string | null;
   updated_at: string;
 }
 
 export interface AdaptiveCourseDetail extends AdaptiveCourseListItem {
+  /** AI/admin header banner; null when absent or hidden by the admin. */
+  header_image_url?: string | null;
   modules: AdaptiveCourseModule[];
 }
 

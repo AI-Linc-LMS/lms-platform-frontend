@@ -159,6 +159,27 @@ function CourseCard({
         },
       }}
     >
+      {course.card_image_url && (
+        <Box
+          sx={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            borderRadius: 2.5,
+            overflow: "hidden",
+            mb: 1.5,
+            bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={course.card_image_url}
+            alt={course.title}
+            loading="lazy"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        </Box>
+      )}
+
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5 }}>
         <Box
           sx={{

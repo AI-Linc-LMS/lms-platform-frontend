@@ -273,6 +273,12 @@ export interface AdminAdaptiveCourseListItem {
   article_count: number;
   coding_count?: number;
   video_count?: number;
+  // Cover art — admins always get the URLs (even when hidden) to preview/manage;
+  // the *_hidden flags drive the toggle state.
+  header_image_url?: string | null;
+  card_image_url?: string | null;
+  header_image_hidden: boolean;
+  card_image_hidden: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -280,6 +286,14 @@ export interface AdminAdaptiveCourseListItem {
 export interface AdminAdaptiveCourseDetail extends AdminAdaptiveCourseListItem {
   modules: AdminAdaptiveCourseModule[];
   skills: AdaptiveCourseSkill[];
+}
+
+export type CourseImageTarget = "header" | "card";
+
+export interface CourseImageResult {
+  target: CourseImageTarget;
+  url: string | null;
+  hidden: boolean;
 }
 
 // --- Student enrollment / management ---
@@ -416,6 +430,45 @@ export const adminAdaptiveCourseService = {
 
   async deleteCourse(courseId: number): Promise<void> {
     await apiClient.delete(`${BASE}/courses/${courseId}/`);
+  },
+
+  // --- Course cover art (header banner + card thumbnail) ---
+
+  async regenerateCourseImage(courseId: number, target: CourseImageTarget): Promise<CourseImageResult> {
+    const { data } = await apiClient.post<CourseImageResult>(
+      `${BASE}/courses/${courseId}/images/regenerate/`,
+      { target },
+    );
+    return data;
+  },
+
+  async uploadCourseImage(
+    courseId: number,
+    target: CourseImageTarget,
+    file: File,
+  ): Promise<CourseImageResult> {
+    const form = new FormData();
+    form.append("target", target);
+    form.append("file", file);
+    // Don't set Content-Type — the browser adds `multipart/form-data; boundary=…`
+    // automatically; forcing it without the boundary breaks DRF's parser.
+    const { data } = await apiClient.post<CourseImageResult>(
+      `${BASE}/courses/${courseId}/images/upload/`,
+      form,
+    );
+    return data;
+  },
+
+  async setCourseImageVisibility(
+    courseId: number,
+    target: CourseImageTarget,
+    hidden: boolean,
+  ): Promise<{ target: CourseImageTarget; hidden: boolean }> {
+    const { data } = await apiClient.post(
+      `${BASE}/courses/${courseId}/images/visibility/`,
+      { target, hidden },
+    );
+    return data;
   },
 
   // --- Student enrollment / management ---

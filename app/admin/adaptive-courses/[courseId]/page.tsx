@@ -30,6 +30,8 @@ import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArti
 import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodingViewer";
 import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVideoReview";
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
+import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
+import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
 
 type DialogState =
   | { kind: "module" }
@@ -155,6 +157,19 @@ export default function AdminAdaptiveCourseDetailPage() {
     void load();
   }, [courseId, load]);
 
+  function handleCoverChange(target: CourseImageTarget, patch: { url?: string | null; hidden?: boolean }) {
+    setCourse((prev) => {
+      if (!prev) return prev;
+      const urlKey = target === "header" ? "header_image_url" : "card_image_url";
+      const hiddenKey = target === "header" ? "header_image_hidden" : "card_image_hidden";
+      return {
+        ...prev,
+        ...(patch.url !== undefined ? { [urlKey]: patch.url } : {}),
+        ...(patch.hidden !== undefined ? { [hiddenKey]: patch.hidden } : {}),
+      };
+    });
+  }
+
   async function handlePublish() {
     if (!course) return;
     try {
@@ -243,6 +258,15 @@ export default function AdminAdaptiveCourseDetailPage() {
                     </ButtonBase>
                   </Box>
                 }
+              />
+
+              <CourseCoverArtPanel
+                courseId={course.id}
+                headerUrl={course.header_image_url}
+                headerHidden={course.header_image_hidden}
+                cardUrl={course.card_image_url}
+                cardHidden={course.card_image_hidden}
+                onChange={handleCoverChange}
               />
 
               <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>

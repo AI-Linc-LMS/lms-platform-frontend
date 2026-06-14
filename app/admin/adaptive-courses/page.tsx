@@ -297,6 +297,23 @@ function CourseCard({
         </ButtonBase>
       </Box>
 
+      {course.card_image_url && (
+        <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 9", borderRadius: 2.5, overflow: "hidden", mb: 1.5, bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={course.card_image_url}
+            alt={course.title}
+            loading="lazy"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: course.card_image_hidden ? 0.45 : 1 }}
+          />
+          {course.card_image_hidden && (
+            <Box sx={{ position: "absolute", top: 6, left: 6, px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", color: "white", bgcolor: "rgba(15,23,42,0.72)", display: "flex", alignItems: "center", gap: 0.4 }}>
+              <Icon icon="mdi:eye-off-outline" width={11} /> Hidden
+            </Box>
+          )}
+        </Box>
+      )}
+
       <ButtonBase onClick={onOpen} sx={{ textAlign: "left", display: "block", flex: 1 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.3 }}>
           {course.title}
