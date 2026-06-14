@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, ButtonBase, Container, Typography } from "@mui/material";
+import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -97,8 +97,8 @@ export default function AdminAdaptiveCoursesPage() {
   const activeJobs = jobs.filter((j) => ACTIVE_STATUSES.has(j.status));
 
   return (
-    <MainLayout>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <AdaptiveSectionShell>
           <AdaptiveSectionHero
             chapter="Manage · Adaptive Engine"
@@ -230,7 +230,7 @@ export default function AdminAdaptiveCoursesPage() {
             </Box>
           )}
         </AdaptiveSectionShell>
-      </Container>
+      </Box>
 
       <ConfirmDialog
         open={pendingDelete !== null}

@@ -70,8 +70,8 @@ export default function AdaptiveCourseListPage() {
   }
 
   return (
-    <MainLayout>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <AdaptiveSectionShell meshOpacity={0.18}>
           <AdaptiveSectionHero
             chapter="Library · Adaptive Engine"
@@ -126,7 +126,7 @@ export default function AdaptiveCourseListPage() {
             </Box>
           )}
         </AdaptiveSectionShell>
-      </Container>
+      </Box>
     </MainLayout>
   );
 }

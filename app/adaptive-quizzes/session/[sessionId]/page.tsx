@@ -28,10 +28,10 @@ export default function AdaptiveQuizSessionPage() {
   }
 
   return (
-    <MainLayout>
-      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
         <AdaptiveQuizLayout sessionId={params.sessionId} />
-      </Container>
+      </Box>
     </MainLayout>
   );
 }

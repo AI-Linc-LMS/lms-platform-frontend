@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   ButtonBase,
-  Container,
   Dialog,
   DialogActions,
   DialogContent,
@@ -216,8 +215,8 @@ export default function AdminAdaptiveCourseDetailPage() {
   }
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => router.push("/admin/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
@@ -604,7 +603,7 @@ export default function AdminAdaptiveCourseDetailPage() {
             </>
           )}
         </AdaptiveSectionShell>
-      </Container>
+      </Box>
 
       <Dialog open={dialog !== null} onClose={() => setDialog(null)} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 800 }}>

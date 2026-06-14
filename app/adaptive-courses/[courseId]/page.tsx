@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, ButtonBase, Container, Typography } from "@mui/material";
+import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
@@ -47,8 +47,8 @@ export default function AdaptiveCourseDetailPage() {
   }, [courseId]);
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => router.push("/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
@@ -230,7 +230,7 @@ export default function AdaptiveCourseDetailPage() {
             </>
           )}
         </AdaptiveSectionShell>
-      </Container>
+      </Box>
     </MainLayout>
   );
 }
