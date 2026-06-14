@@ -55,6 +55,15 @@ export interface SummariseResult {
   bullets: string[];
 }
 
+export interface RunSnippetResult {
+  stdout: string;
+  stderr: string | null;
+  compile_output: string | null;
+  status: string | null;
+  time?: string | null;
+  memory?: number | null;
+}
+
 export interface AdaptiveCourseCodingProblemSummary {
   problem_id: number;
   title: string;
@@ -175,6 +184,11 @@ export const adaptiveCourseService = {
       `${BASE}/articles/${articleId}/summarise/`,
       payload,
     );
+    return data;
+  },
+
+  async runSnippet(payload: { source: string; language: string; stdin?: string }): Promise<RunSnippetResult> {
+    const { data } = await apiClient.post<RunSnippetResult>(`${BASE}/run-snippet/`, payload);
     return data;
   },
 };
