@@ -16,11 +16,13 @@ const ALERT_TO = (process.env.SES_ALERT_TO_EMAILS ?? "")
   .map((e) => e.trim())
   .filter(Boolean);
 
+const AWS_SECRET_ACCESS_KEY=process.env.AWS_SES_SECRET_ACCESS_KEY
+const AWS_SES_KEY_ID=process.env.AWS_SES_KEY_ID
+
 function makeSESClient() {
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
-  const secretAccessKey =
-    process.env.AWS_SECRET_ACCESS_KEY?.trim();
-  const region = process.env.AWS_REGION?.trim() || "ap-south-1";
+  const accessKeyId = AWS_SES_KEY_ID?.trim();
+  const secretAccessKey =AWS_SECRET_ACCESS_KEY?.trim();
+  const region = "ap-south-1";
 
 
 

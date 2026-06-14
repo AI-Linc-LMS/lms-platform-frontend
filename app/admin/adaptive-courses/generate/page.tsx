@@ -38,7 +38,7 @@ export default function GenerateAdaptiveCoursePage() {
   // --- Describe mode ---
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [durationWeeks, setDurationWeeks] = useState(8);
+  const [durationWeeks, setDurationWeeks] = useState(4);
 
   // --- CSV mode ---
   const [csvTitle, setCsvTitle] = useState("");
@@ -51,10 +51,13 @@ export default function GenerateAdaptiveCoursePage() {
   // --- Shared generation config ---
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["Easy", "Medium", "Hard"]);
   const [questionsPerCell, setQuestionsPerCell] = useState(3);
+  const [articlesPerSubmodule, setArticlesPerSubmodule] = useState(1);
   const [minQuestions, setMinQuestions] = useState(8);
   const [maxQuestions, setMaxQuestions] = useState(20);
   const [confidence, setConfidence] = useState(true);
-  const [contentTypes, setContentTypes] = useState<ContentType[]>(["quiz", "article"]);
+  // All four content types auto-selected by default (quiz + article + AI Coding
+  // Mentor + Video Companion); admins can deselect in Advanced options.
+  const [contentTypes, setContentTypes] = useState<ContentType[]>(["quiz", "article", "coding", "video"]);
   const [codingClipboard, setCodingClipboard] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -141,6 +144,7 @@ export default function GenerateAdaptiveCoursePage() {
       difficulty_levels: difficulties,
       difficulty_level: difficulties.includes("Medium") ? "Medium" : difficulties[0],
       questions_per_cell: questionsPerCell,
+      articles_per_submodule: articlesPerSubmodule,
       min_questions: minQuestions,
       max_questions: maxQuestions,
       confidence_prompt_enabled: confidence,
@@ -276,6 +280,8 @@ export default function GenerateAdaptiveCoursePage() {
                 onToggleDifficulty={toggleDifficulty}
                 questionsPerCell={questionsPerCell}
                 onQuestionsPerCellChange={setQuestionsPerCell}
+                articlesPerSubmodule={articlesPerSubmodule}
+                onArticlesPerSubmoduleChange={setArticlesPerSubmodule}
                 minQuestions={minQuestions}
                 onMinQuestionsChange={setMinQuestions}
                 maxQuestions={maxQuestions}

@@ -13,11 +13,13 @@ const CONTENT_META: Record<ContentType, { label: string; icon: string }> = {
 };
 
 /**
- * Generation settings shared by both creation modes (describe + CSV): which
- * content types to build per submodule, the difficulty span, questions per skill
- * cell, and an Advanced drawer (collapsed by default) for the IRT length bounds,
+ * Generation settings shared by both creation modes (describe + CSV). Everything
+ * lives in an Advanced drawer (collapsed by default) — content types, difficulty
+ * span, questions per skill cell, articles per submodule, IRT length bounds,
  * confidence capture, the coding copy-paste toggle, and the Vimeo match note.
- * Lives below the mode panels so switching modes never resets these.
+ * Sensible defaults (all four content types, all difficulties, 1 article) apply
+ * without opening it. Lives below the mode panels so switching modes never
+ * resets these.
  */
 export function SharedGenerationConfig({
   contentTypes,
@@ -26,6 +28,8 @@ export function SharedGenerationConfig({
   onToggleDifficulty,
   questionsPerCell,
   onQuestionsPerCellChange,
+  articlesPerSubmodule,
+  onArticlesPerSubmoduleChange,
   minQuestions,
   onMinQuestionsChange,
   maxQuestions,
@@ -41,6 +45,8 @@ export function SharedGenerationConfig({
   onToggleDifficulty: (d: Difficulty) => void;
   questionsPerCell: number;
   onQuestionsPerCellChange: (v: number) => void;
+  articlesPerSubmodule: number;
+  onArticlesPerSubmoduleChange: (v: number) => void;
   minQuestions: number;
   onMinQuestionsChange: (v: number) => void;
   maxQuestions: number;
@@ -55,123 +61,136 @@ export function SharedGenerationConfig({
   const hasVideo = contentTypes.includes("video");
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-      {/* Content types */}
-      <Box>
-        <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", mb: 1 }}>
-          Content types (per submodule)
+    <Box>
+      <ButtonBase
+        onClick={() => setAdvancedOpen((v) => !v)}
+        sx={{ gap: 0.5, fontWeight: 800, fontSize: "0.9rem", color: "text.primary", py: 0.5 }}
+      >
+        <Icon icon={advancedOpen ? "mdi:chevron-down" : "mdi:chevron-right"} width={22} />
+        <Icon icon="mdi:cog-outline" width={17} />
+        Advanced settings
+      </ButtonBase>
+      {!advancedOpen && (
+        <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", pl: 3.5, mt: -0.25 }}>
+          Defaults: quiz, article, AI mentor &amp; video · all difficulties · 1 article / submodule. Open to customise.
         </Typography>
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          {ALL_CONTENT_TYPES.map((key) => (
-            <Pill
-              key={key}
-              active={contentTypes.includes(key)}
-              onClick={() => onToggleContentType(key)}
-              icon={CONTENT_META[key].icon}
-            >
-              {CONTENT_META[key].label}
-            </Pill>
-          ))}
-        </Box>
-      </Box>
-
-      {/* Difficulty tiers */}
-      <Box>
-        <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", mb: 1 }}>
-          Difficulty tiers (quizzes span these)
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          {ALL_DIFFICULTIES.map((d) => (
-            <Pill key={d} active={difficulties.includes(d)} onClick={() => onToggleDifficulty(d)}>
-              {d}
-            </Pill>
-          ))}
-        </Box>
-      </Box>
-
-      <TextField
-        label="Questions per skill cell"
-        type="number"
-        value={questionsPerCell}
-        onChange={(e) => onQuestionsPerCellChange(clamp(Number(e.target.value), 1, 10))}
-        sx={{ width: 220 }}
-      />
-
-      {/* Advanced options */}
-      <Box>
-        <ButtonBase
-          onClick={() => setAdvancedOpen((v) => !v)}
-          sx={{ gap: 0.5, fontWeight: 800, fontSize: "0.85rem", color: "text.primary", py: 0.5 }}
+      )}
+      <Collapse in={advancedOpen} unmountOnExit>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2.5,
+            mt: 1.75,
+            pl: 1.5,
+            borderLeft: "2px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+          }}
         >
-          <Icon icon={advancedOpen ? "mdi:chevron-down" : "mdi:chevron-right"} width={20} />
-          Advanced options
-        </ButtonBase>
-        <Collapse in={advancedOpen} unmountOnExit>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              mt: 1.5,
-              pl: 1.5,
-              borderLeft: "2px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-            }}
-          >
-            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-              <TextField
-                label="Min questions / quiz"
-                type="number"
-                value={minQuestions}
-                onChange={(e) => onMinQuestionsChange(clamp(Number(e.target.value), 1, 50))}
-                sx={{ width: 200 }}
-              />
-              <TextField
-                label="Max questions / quiz"
-                type="number"
-                value={maxQuestions}
-                onChange={(e) => onMaxQuestionsChange(clamp(Number(e.target.value), 1, 100))}
-                sx={{ width: 200 }}
-              />
+          {/* Content types */}
+          <Box>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", mb: 1 }}>
+              Content types (per submodule)
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              {ALL_CONTENT_TYPES.map((key) => (
+                <Pill
+                  key={key}
+                  active={contentTypes.includes(key)}
+                  onClick={() => onToggleContentType(key)}
+                  icon={CONTENT_META[key].icon}
+                >
+                  {CONTENT_META[key].label}
+                </Pill>
+              ))}
             </Box>
-
-            <FormControlLabel
-              control={<Switch checked={confidence} onChange={(e) => onConfidenceChange(e.target.checked)} />}
-              label="Confidence capture (Guess / Unsure / Sure / Certain under each question)"
-            />
-
-            {hasCoding && (
-              <Box
-                component="button"
-                onClick={() => onCodingClipboardChange(!codingClipboard)}
-                sx={{
-                  all: "unset", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 0.75,
-                  fontSize: "0.82rem", fontWeight: 700, color: "text.secondary",
-                }}
-              >
-                <Icon
-                  icon={codingClipboard ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"}
-                  width={18}
-                  style={{ color: codingClipboard ? "#6366f1" : undefined }}
-                />
-                Allow copy-paste in the coding editor
-                <Typography component="span" sx={{ fontSize: "0.74rem", color: "text.disabled" }}>
-                  (off = anti-paste hardening; changeable per set later)
-                </Typography>
-              </Box>
-            )}
-
-            {hasVideo && (
-              <Typography
-                sx={{ fontSize: "0.78rem", color: "text.secondary", display: "flex", gap: 0.5, alignItems: "center" }}
-              >
-                <Icon icon="mdi:information-outline" width={16} />
-                We AI-match a transcribed Vimeo video per submodule from your catalog (review &amp; swap after). Sync
-                the catalog first if it&apos;s empty.
-              </Typography>
-            )}
           </Box>
-        </Collapse>
-      </Box>
+
+          {/* Difficulty tiers */}
+          <Box>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", mb: 1 }}>
+              Difficulty tiers (quizzes span these)
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              {ALL_DIFFICULTIES.map((d) => (
+                <Pill key={d} active={difficulties.includes(d)} onClick={() => onToggleDifficulty(d)}>
+                  {d}
+                </Pill>
+              ))}
+            </Box>
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <TextField
+              label="Questions per skill cell"
+              type="number"
+              value={questionsPerCell}
+              onChange={(e) => onQuestionsPerCellChange(clamp(Number(e.target.value), 1, 10))}
+              sx={{ width: 220 }}
+            />
+            <TextField
+              label="Articles per submodule"
+              type="number"
+              value={articlesPerSubmodule}
+              onChange={(e) => onArticlesPerSubmoduleChange(clamp(Number(e.target.value), 1, 5))}
+              helperText="Default 1 · up to 5"
+              sx={{ width: 220 }}
+            />
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <TextField
+              label="Min questions / quiz"
+              type="number"
+              value={minQuestions}
+              onChange={(e) => onMinQuestionsChange(clamp(Number(e.target.value), 1, 50))}
+              sx={{ width: 200 }}
+            />
+            <TextField
+              label="Max questions / quiz"
+              type="number"
+              value={maxQuestions}
+              onChange={(e) => onMaxQuestionsChange(clamp(Number(e.target.value), 1, 100))}
+              sx={{ width: 200 }}
+            />
+          </Box>
+
+          <FormControlLabel
+            control={<Switch checked={confidence} onChange={(e) => onConfidenceChange(e.target.checked)} />}
+            label="Confidence capture (Guess / Unsure / Sure / Certain under each question)"
+          />
+
+          {hasCoding && (
+            <Box
+              component="button"
+              onClick={() => onCodingClipboardChange(!codingClipboard)}
+              sx={{
+                all: "unset", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 0.75,
+                fontSize: "0.82rem", fontWeight: 700, color: "text.secondary",
+              }}
+            >
+              <Icon
+                icon={codingClipboard ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"}
+                width={18}
+                style={{ color: codingClipboard ? "#6366f1" : undefined }}
+              />
+              Allow copy-paste in the coding editor
+              <Typography component="span" sx={{ fontSize: "0.74rem", color: "text.disabled" }}>
+                (off = anti-paste hardening; changeable per set later)
+              </Typography>
+            </Box>
+          )}
+
+          {hasVideo && (
+            <Typography
+              sx={{ fontSize: "0.78rem", color: "text.secondary", display: "flex", gap: 0.5, alignItems: "center" }}
+            >
+              <Icon icon="mdi:information-outline" width={16} />
+              We AI-match a transcribed Vimeo video per submodule from your catalog (review &amp; swap after). Sync
+              the catalog first if it&apos;s empty.
+            </Typography>
+          )}
+        </Box>
+      </Collapse>
     </Box>
   );
 }

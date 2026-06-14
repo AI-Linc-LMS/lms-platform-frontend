@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   ButtonBase,
-  Container,
   Dialog,
   DialogActions,
   DialogContent,
@@ -30,6 +29,8 @@ import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArti
 import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodingViewer";
 import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVideoReview";
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
+import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
+import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
 
 type DialogState =
   | { kind: "module" }
@@ -89,7 +90,8 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["Easy", "Medium", "Hard"]);
   const [perCell, setPerCell] = useState(2);
   const [subCount, setSubCount] = useState(3);
-  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding" | "video">>(["quiz", "article"]);
+  const [articlesPerSub, setArticlesPerSub] = useState(1);
+  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding" | "video">>(["quiz", "article", "coding", "video"]);
   const [codingClipboard, setCodingClipboard] = useState(false);
 
   function openDialog(state: DialogState) {
@@ -99,7 +101,8 @@ export default function AdminAdaptiveCourseDetailPage() {
     setDifficulties(["Easy", "Medium", "Hard"]);
     setPerCell(2);
     setSubCount(3);
-    setContentTypes(["quiz", "article"]);
+    setArticlesPerSub(1);
+    setContentTypes(["quiz", "article", "coding", "video"]);
     setCodingClipboard(false);
     setDialog(state);
   }
@@ -155,6 +158,19 @@ export default function AdminAdaptiveCourseDetailPage() {
     void load();
   }, [courseId, load]);
 
+  function handleCoverChange(target: CourseImageTarget, patch: { url?: string | null; hidden?: boolean }) {
+    setCourse((prev) => {
+      if (!prev) return prev;
+      const urlKey = target === "header" ? "header_image_url" : "card_image_url";
+      const hiddenKey = target === "header" ? "header_image_hidden" : "card_image_hidden";
+      return {
+        ...prev,
+        ...(patch.url !== undefined ? { [urlKey]: patch.url } : {}),
+        ...(patch.hidden !== undefined ? { [hiddenKey]: patch.hidden } : {}),
+      };
+    });
+  }
+
   async function handlePublish() {
     if (!course) return;
     try {
@@ -172,6 +188,7 @@ export default function AdminAdaptiveCourseDetailPage() {
     const config = {
       difficulty_levels: difficulties,
       questions_per_cell: perCell,
+      articles_per_submodule: articlesPerSub,
       content_types: contentTypes,
       ...(contentTypes.includes("coding")
         ? { coding_problems_per_submodule: 2, coding_language: "Python", coding_allow_clipboard: codingClipboard }
@@ -198,8 +215,8 @@ export default function AdminAdaptiveCourseDetailPage() {
   }
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => router.push("/admin/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
@@ -243,6 +260,15 @@ export default function AdminAdaptiveCourseDetailPage() {
                     </ButtonBase>
                   </Box>
                 }
+              />
+
+              <CourseCoverArtPanel
+                courseId={course.id}
+                headerUrl={course.header_image_url}
+                headerHidden={course.header_image_hidden}
+                cardUrl={course.card_image_url}
+                cardHidden={course.card_image_hidden}
+                onChange={handleCoverChange}
               />
 
               <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>
@@ -577,7 +603,7 @@ export default function AdminAdaptiveCourseDetailPage() {
             </>
           )}
         </AdaptiveSectionShell>
-      </Container>
+      </Box>
 
       <Dialog open={dialog !== null} onClose={() => setDialog(null)} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 800 }}>
@@ -704,15 +730,27 @@ export default function AdminAdaptiveCourseDetailPage() {
           </Box>
           )}
 
-          {contentTypes.includes("quiz") && (
-            <TextField
-              type="number"
-              label="Questions per skill cell"
-              value={perCell}
-              onChange={(e) => setPerCell(clamp(Number(e.target.value), 1, 10))}
-              sx={{ mt: 2.5, width: 220 }}
-            />
-          )}
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 2.5 }}>
+            {contentTypes.includes("quiz") && (
+              <TextField
+                type="number"
+                label="Questions per skill cell"
+                value={perCell}
+                onChange={(e) => setPerCell(clamp(Number(e.target.value), 1, 10))}
+                sx={{ width: 220 }}
+              />
+            )}
+            {contentTypes.includes("article") && (
+              <TextField
+                type="number"
+                label="Articles per submodule"
+                value={articlesPerSub}
+                onChange={(e) => setArticlesPerSub(clamp(Number(e.target.value), 1, 5))}
+                helperText="Default 1 · up to 5"
+                sx={{ width: 220 }}
+              />
+            )}
+          </Box>
 
           <Box
             sx={{

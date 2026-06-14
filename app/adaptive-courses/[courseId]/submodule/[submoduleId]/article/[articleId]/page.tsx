@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, ButtonBase, CircularProgress, Container, Popover, Typography } from "@mui/material";
+import { Box, ButtonBase, CircularProgress, Popover, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -10,7 +10,8 @@ import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/Adaptive
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { AIBeacon } from "@/components/adaptive-quiz/shared/AIBeacon";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
-import { AdaptiveArticleBody } from "@/components/adaptive-quiz/article/AdaptiveArticleBody";
+import { AdaptiveArticleBody, type ArticleHeading } from "@/components/adaptive-quiz/article/AdaptiveArticleBody";
+import { useArticleNarration } from "@/lib/hooks/useArticleNarration";
 import {
   adaptiveCourseService,
   READING_TIERS,
@@ -54,29 +55,12 @@ export default function AdaptiveArticleReaderPage() {
   const [summary, setSummary] = useState<{ open: boolean; loading: boolean; html: string; bullets: string[] }>({
     open: false, loading: false, html: "", bullets: [],
   });
-  const [speaking, setSpeaking] = useState(false);
-  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
-
-  // Pick the most natural available voice (network/"Natural"/known good names)
-  // so Read aloud sounds less like a flat robot.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    const pick = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices.length) return;
-      const en = voices.filter((v) => v.lang?.toLowerCase().startsWith("en"));
-      const preferred = ["natural", "samantha", "aria", "jenny", "google us english", "google uk english female", "microsoft"];
-      voiceRef.current =
-        en.find((v) => preferred.some((p) => v.name.toLowerCase().includes(p))) ||
-        en.find((v) => !v.localService) ||
-        en[0] ||
-        voices[0] ||
-        null;
-    };
-    pick();
-    window.speechSynthesis.addEventListener("voiceschanged", pick);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", pick);
-  }, []);
+  const [headings, setHeadings] = useState<ArticleHeading[]>([]);
+  const [activeHeading, setActiveHeading] = useState<string>("");
+  const [progress, setProgress] = useState(0);
+  const bodyWrapRef = useRef<HTMLDivElement | null>(null);
+  // Professional onyx narration (replaces robotic browser speechSynthesis).
+  const narration = useArticleNarration(html);
 
   useEffect(() => {
     if (!Number.isFinite(articleId)) return;
@@ -98,8 +82,46 @@ export default function AdaptiveArticleReaderPage() {
     return () => { cancelled = true; };
   }, [articleId]);
 
-  // Stop any TTS when leaving.
-  useEffect(() => () => { if (typeof window !== "undefined") window.speechSynthesis?.cancel(); }, []);
+  // Scroll-spy: highlight the table-of-contents entry nearest the top.
+  useEffect(() => {
+    if (!headings.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActiveHeading((visible[0].target as HTMLElement).id);
+      },
+      { rootMargin: "-84px 0px -68% 0px", threshold: 0 },
+    );
+    headings.forEach((h) => {
+      const el = document.getElementById(h.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [headings]);
+
+  // Reading-progress bar. Capture-phase scroll so it works whichever ancestor scrolls.
+  useEffect(() => {
+    const onScroll = () => {
+      const el = bodyWrapRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      setProgress(total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [article, html]);
+
+  const goToHeading = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   async function switchTier(next: ReadingTier) {
     if (next === tier || tierLoading) return;
@@ -148,39 +170,17 @@ export default function AdaptiveArticleReaderPage() {
     }
   }
 
-  function toggleReadAloud() {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    if (speaking) { window.speechSynthesis.cancel(); setSpeaking(false); return; }
-    const tmp = document.createElement("div");
-    tmp.innerHTML = html;
-    const text = (tmp.textContent || "").trim();
-    if (!text) return;
-    // Read sentence-by-sentence with a warmer voice + slightly slower pace and
-    // tiny inter-sentence pauses, so it lands less like a flat robot.
-    const sentences = text.match(/[^.!?]+[.!?]*\s*/g) || [text];
-    window.speechSynthesis.cancel();
-    sentences.forEach((s, i) => {
-      const chunk = s.trim();
-      if (!chunk) return;
-      const u = new SpeechSynthesisUtterance(chunk);
-      if (voiceRef.current) u.voice = voiceRef.current;
-      u.rate = 0.96;
-      u.pitch = 1.05;
-      if (i === sentences.length - 1) {
-        u.onend = () => setSpeaking(false);
-        u.onerror = () => setSpeaking(false);
-      }
-      window.speechSynthesis.speak(u);
-    });
-    setSpeaking(true);
-  }
-
   const glossaryEntries = useMemo(() => Object.entries(article?.glossary ?? {}), [article]);
   const tierIndex = READING_TIERS.indexOf(tier);
 
   return (
-    <MainLayout>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      {/* Reading-progress bar */}
+      <Box sx={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, zIndex: 1300, pointerEvents: "none" }}>
+        <Box sx={{ height: "100%", width: `${Math.round(progress * 100)}%`,
+          background: "linear-gradient(90deg, #6366f1, #a855f7, #ec4899)", transition: "width 0.1s linear" }} />
+      </Box>
+      <Box sx={{ maxWidth: 1760, mx: "auto", py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
@@ -258,21 +258,29 @@ export default function AdaptiveArticleReaderPage() {
               {/* Toolbar */}
               <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
                 <ToolbarBtn icon="mdi:text-box-outline" label="Summarise so far" onClick={() => void handleSummarise()} />
-                <ToolbarBtn icon={speaking ? "mdi:stop" : "mdi:volume-high"} label={speaking ? "Stop" : "Read aloud"} onClick={toggleReadAloud} />
+                <ToolbarBtn
+                  icon={narration.playing ? "mdi:stop" : narration.loading ? "mdi:loading" : "mdi:volume-high"}
+                  label={narration.playing ? "Stop" : narration.loading ? "Preparing voice…" : "Read aloud"}
+                  onClick={narration.toggle}
+                />
               </Box>
 
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 300px" }, gap: 3, alignItems: "start" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "232px minmax(0, 1fr) 320px" }, gap: { xs: 2, lg: 3 }, alignItems: "start" }}>
+                {/* Table of contents (left rail) */}
+                <TocRail headings={headings} activeId={activeHeading} onJump={goToHeading} />
+
                 {/* Body */}
-                <Box sx={{ position: "relative", borderRadius: 4, p: { xs: 2, md: 3 }, bgcolor: "color-mix(in srgb, var(--card-bg) 75%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", minHeight: 240 }}>
+                <Box ref={bodyWrapRef} sx={{ position: "relative", borderRadius: 4, p: { xs: 2, md: 3.5 }, bgcolor: "color-mix(in srgb, var(--card-bg) 75%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", minHeight: 240 }}>
                   {tierLoading ? (
                     <ConjureLoader tier={pendingTier ?? tier} />
                   ) : (
-                    <AdaptiveArticleBody html={html} explainTerms={article.explain_terms} onExplain={openExplain} reveal />
+                    <AdaptiveArticleBody html={html} explainTerms={article.explain_terms} onExplain={openExplain} onHeadings={setHeadings} reveal />
                   )}
                 </Box>
 
                 {/* Right rail */}
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, position: { lg: "sticky" }, top: { lg: 24 },
+                  maxHeight: { lg: "calc(100vh - 48px)" }, overflowY: { lg: "auto" }, pr: { lg: 0.5 } }}>
                   <Box sx={{ ...railSx, p: 0, overflow: "hidden",
                     background: "linear-gradient(160deg, color-mix(in srgb, #6366f1 12%, var(--card-bg)) 0%, color-mix(in srgb, #ec4899 9%, var(--card-bg)) 100%)",
                     border: "1px solid color-mix(in srgb, #a855f7 22%, transparent)" }}>
@@ -320,7 +328,7 @@ export default function AdaptiveArticleReaderPage() {
             </>
           )}
         </AdaptiveSectionShell>
-      </Container>
+      </Box>
 
       {/* Explain-this popover */}
       <Popover
@@ -581,6 +589,42 @@ function RailLabel({ icon, text, noMargin }: { icon: string; text: string; noMar
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, mb: noMargin ? 0 : 1.25 }}>
       <Icon icon={icon} width={16} style={{ color: "#a855f7" }} />
       <Typography sx={{ fontWeight: 800, fontSize: "0.74rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7" }}>{text}</Typography>
+    </Box>
+  );
+}
+
+/** Sticky table-of-contents rail (left), built from the article's headings with
+ *  scroll-spy. Hidden below lg, where the reading column goes full width. */
+function TocRail({ headings, activeId, onJump }: { headings: ArticleHeading[]; activeId: string; onJump: (id: string) => void }) {
+  return (
+    <Box sx={{ display: { xs: "none", lg: "block" }, position: "sticky", top: 24, maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}>
+      {headings.length > 0 && (
+        <>
+          <RailLabel icon="mdi:format-list-bulleted" text="On this page" />
+          <Box component="nav" sx={{ display: "flex", flexDirection: "column", borderLeft: "2px solid color-mix(in srgb, var(--border-default) 70%, transparent)" }}>
+            {headings.map((h) => {
+              const active = h.id === activeId;
+              return (
+                <ButtonBase
+                  key={h.id}
+                  onClick={() => onJump(h.id)}
+                  sx={{
+                    justifyContent: "flex-start", textAlign: "left",
+                    pl: h.level === 3 ? 2.5 : 1.25, pr: 1, py: 0.6, ml: "-2px",
+                    borderLeft: "2px solid", borderColor: active ? "#a855f7" : "transparent",
+                    color: active ? "#a855f7" : "text.secondary",
+                    fontWeight: active ? 800 : 600, fontSize: "0.8rem", lineHeight: 1.3,
+                    transition: "color 0.15s ease, border-color 0.15s ease",
+                    "&:hover": { color: "#a855f7" },
+                  }}
+                >
+                  {h.text}
+                </ButtonBase>
+              );
+            })}
+          </Box>
+        </>
+      )}
     </Box>
   );
 }
