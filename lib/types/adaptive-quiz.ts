@@ -127,6 +127,12 @@ export interface AdaptiveAINarration {
     action_kind: "read" | "practice" | "watch" | string;
     target_skill: string;
     est_minutes: number;
+    /** Content-grounded link metadata (present when the step maps to a real
+     *  course item). "requiz" = spawn a targeted re-quiz via onStartPath. */
+    content_type?: "article" | "video" | "coding" | "requiz" | string;
+    course_id?: number | null;
+    submodule_id?: number | null;
+    article_id?: number | null;
   }>;
 }
 
