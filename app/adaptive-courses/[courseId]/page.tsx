@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, ButtonBase, Container, Typography } from "@mui/material";
+import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
@@ -47,8 +47,8 @@ export default function AdaptiveCourseDetailPage() {
   }, [courseId]);
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => router.push("/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
@@ -89,6 +89,26 @@ export default function AdaptiveCourseDetailPage() {
 
           {course && (
             <>
+              {course.header_image_url && (
+                <Box
+                  sx={{
+                    width: "100%",
+                    aspectRatio: { xs: "16 / 9", md: "1024 / 300" },
+                    borderRadius: 4,
+                    overflow: "hidden",
+                    mb: 3,
+                    bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)",
+                    boxShadow: "0 18px 44px -22px rgba(99,102,241,0.45)",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={course.header_image_url}
+                    alt={course.title}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                </Box>
+              )}
               <AdaptiveSectionHero
                 chapter="Adaptive Course"
                 title={course.title}
@@ -210,7 +230,7 @@ export default function AdaptiveCourseDetailPage() {
             </>
           )}
         </AdaptiveSectionShell>
-      </Container>
+      </Box>
     </MainLayout>
   );
 }

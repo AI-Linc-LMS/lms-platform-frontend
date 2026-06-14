@@ -3,9 +3,12 @@
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { useRouter } from "next/navigation";
 import { gridStagger, fadeRise } from "@/components/scorecard/shared/motion";
 import { AIPill } from "../shared/AIPill";
 import type { AdaptiveAINarration } from "@/lib/types/adaptive-quiz";
+
+type RemediationStep = AdaptiveAINarration["remediation_path"][number];
 
 interface RemediationPathCardProps {
   steps: AdaptiveAINarration["remediation_path"];
@@ -18,16 +21,40 @@ const ACTION_ICON: Record<string, string> = {
   practice: "mdi:dumbbell",
 };
 
+const ACTION_VERB: Record<string, string> = {
+  read: "Read",
+  watch: "Watch",
+  practice: "Practice",
+};
+
 function prettySkill(s: string): string {
   if (!s) return "General";
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Deep-link to the real course item a step maps to, or null when the step is a
+ *  re-quiz (handled by onStartPath) or carries no link metadata. */
+function stepHref(step: RemediationStep): string | null {
+  if (step.content_type === "article" && step.course_id && step.submodule_id && step.article_id) {
+    return `/adaptive-courses/${step.course_id}/submodule/${step.submodule_id}/article/${step.article_id}`;
+  }
+  if ((step.content_type === "video" || step.content_type === "coding") && step.course_id && step.submodule_id) {
+    return `/adaptive-courses/${step.course_id}/submodule/${step.submodule_id}`;
+  }
+  return null;
+}
+
 export function RemediationPathCard({ steps, onStartPath }: RemediationPathCardProps) {
+  const router = useRouter();
   if (!steps.length) {
     return null;
   }
   const totalMinutes = steps.reduce((acc, s) => acc + (s.est_minutes ?? 5), 0);
+  const openStep = (step: RemediationStep) => {
+    const href = stepHref(step);
+    if (href) router.push(href);
+    else onStartPath?.(); // re-quiz / no link → spawn the targeted re-quiz
+  };
   return (
     <Box
       sx={{
@@ -122,12 +149,32 @@ export function RemediationPathCard({ steps, onStartPath }: RemediationPathCardP
                 <Chip label={step.action_kind.toUpperCase()} accent />
               </Box>
             </Box>
+            <ButtonBase
+              onClick={() => openStep(step)}
+              sx={{
+                alignSelf: "center",
+                flexShrink: 0,
+                px: 1.75,
+                py: 0.8,
+                borderRadius: 999,
+                fontWeight: 800,
+                fontSize: "0.8rem",
+                gap: 0.5,
+                color: "#7c3aed",
+                bgcolor: "color-mix(in srgb, #a855f7 14%, white)",
+                border: "1px solid color-mix(in srgb, #a855f7 35%, transparent)",
+                "&:hover": { bgcolor: "color-mix(in srgb, #a855f7 22%, white)" },
+              }}
+            >
+              <Icon icon={ACTION_ICON[step.action_kind] ?? "mdi:arrow-right"} width={15} />
+              {ACTION_VERB[step.action_kind] ?? "Open"}
+            </ButtonBase>
           </Box>
         ))}
       </Box>
 
       <ButtonBase
-        onClick={onStartPath}
+        onClick={() => openStep(steps[0])}
         disabled={!onStartPath}
         sx={{
           alignSelf: "flex-end",
