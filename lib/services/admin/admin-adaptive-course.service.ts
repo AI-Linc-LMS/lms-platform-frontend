@@ -12,6 +12,8 @@ export interface AdaptiveCourseGenConfig {
   difficulty_levels?: Array<"Easy" | "Medium" | "Hard">;
   difficulty_level?: "Easy" | "Medium" | "Hard";
   questions_per_cell?: number;
+  /** Adaptive articles generated per submodule (default 1). */
+  articles_per_submodule?: number;
   min_questions?: number;
   max_questions?: number;
   se_threshold?: number;

@@ -91,7 +91,8 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["Easy", "Medium", "Hard"]);
   const [perCell, setPerCell] = useState(2);
   const [subCount, setSubCount] = useState(3);
-  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding" | "video">>(["quiz", "article"]);
+  const [articlesPerSub, setArticlesPerSub] = useState(1);
+  const [contentTypes, setContentTypes] = useState<Array<"quiz" | "article" | "coding" | "video">>(["quiz", "article", "coding", "video"]);
   const [codingClipboard, setCodingClipboard] = useState(false);
 
   function openDialog(state: DialogState) {
@@ -101,7 +102,8 @@ export default function AdminAdaptiveCourseDetailPage() {
     setDifficulties(["Easy", "Medium", "Hard"]);
     setPerCell(2);
     setSubCount(3);
-    setContentTypes(["quiz", "article"]);
+    setArticlesPerSub(1);
+    setContentTypes(["quiz", "article", "coding", "video"]);
     setCodingClipboard(false);
     setDialog(state);
   }
@@ -187,6 +189,7 @@ export default function AdminAdaptiveCourseDetailPage() {
     const config = {
       difficulty_levels: difficulties,
       questions_per_cell: perCell,
+      articles_per_submodule: articlesPerSub,
       content_types: contentTypes,
       ...(contentTypes.includes("coding")
         ? { coding_problems_per_submodule: 2, coding_language: "Python", coding_allow_clipboard: codingClipboard }
@@ -728,15 +731,27 @@ export default function AdminAdaptiveCourseDetailPage() {
           </Box>
           )}
 
-          {contentTypes.includes("quiz") && (
-            <TextField
-              type="number"
-              label="Questions per skill cell"
-              value={perCell}
-              onChange={(e) => setPerCell(clamp(Number(e.target.value), 1, 10))}
-              sx={{ mt: 2.5, width: 220 }}
-            />
-          )}
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 2.5 }}>
+            {contentTypes.includes("quiz") && (
+              <TextField
+                type="number"
+                label="Questions per skill cell"
+                value={perCell}
+                onChange={(e) => setPerCell(clamp(Number(e.target.value), 1, 10))}
+                sx={{ width: 220 }}
+              />
+            )}
+            {contentTypes.includes("article") && (
+              <TextField
+                type="number"
+                label="Articles per submodule"
+                value={articlesPerSub}
+                onChange={(e) => setArticlesPerSub(clamp(Number(e.target.value), 1, 5))}
+                helperText="Default 1 · up to 5"
+                sx={{ width: 220 }}
+              />
+            )}
+          </Box>
 
           <Box
             sx={{
