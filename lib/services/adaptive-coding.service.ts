@@ -153,6 +153,20 @@ export interface SubmitResult {
   detail?: string;
 }
 
+/** One past Submit in the learner's per-problem submissions history. */
+export interface CodingSubmissionHistoryItem {
+  id: number;
+  language: string;
+  source: string;
+  passed_count: number;
+  failed_count: number;
+  total_count: number;
+  all_passed: boolean;
+  conceptual_gap: string;
+  whats_wrong: string;
+  created_at: string;
+}
+
 export interface HintResult {
   layer: number;
   title: string;
@@ -207,6 +221,14 @@ export const adaptiveCodingService = {
   /** The learner's recent coding attempts ("your attempts" history). */
   async listMyAttempts(): Promise<CodingSessionSummary[]> {
     const { data } = await apiClient.get<CodingSessionSummary[]>(`${BASE}/sessions/`);
+    return data;
+  },
+
+  /** The learner's past Submit history for one problem (newest first, with code). */
+  async listProblemSubmissions(problemId: number): Promise<CodingSubmissionHistoryItem[]> {
+    const { data } = await apiClient.get<CodingSubmissionHistoryItem[]>(
+      `${BASE}/problems/${problemId}/submissions/`,
+    );
     return data;
   },
 
