@@ -6,7 +6,7 @@ import { Icon } from "@iconify/react";
 
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { AdaptiveCodingProblemPanel } from "@/components/coding/AdaptiveCodingProblemPanel";
-import { AdaptiveCodingPreviousAttempts } from "@/components/coding/AdaptiveCodingPreviousAttempts";
+import { AdaptiveCodingSubmissions } from "@/components/coding/AdaptiveCodingSubmissions";
 import { useToast } from "@/components/common/Toast";
 import {
   getAvailableLanguages,
@@ -282,7 +282,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
 
         <CodingMasteryPanel refreshKey={masteryRefresh} />
 
-        <AdaptiveCodingPreviousAttempts problemId={problemId} refreshKey={masteryRefresh} />
+        <AdaptiveCodingSubmissions problemId={problemId} refreshKey={masteryRefresh} />
       </Box>
 
       {/* Right — editor + toolbar */}
