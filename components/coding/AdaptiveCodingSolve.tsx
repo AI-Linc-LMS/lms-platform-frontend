@@ -5,7 +5,8 @@ import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Typograph
 import { Icon } from "@iconify/react";
 
 import { CodeEditor } from "@/components/editor/MonacoEditor";
-import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
+import { AdaptiveCodingProblemPanel } from "@/components/coding/AdaptiveCodingProblemPanel";
+import { AdaptiveCodingPreviousAttempts } from "@/components/coding/AdaptiveCodingPreviousAttempts";
 import { useToast } from "@/components/common/Toast";
 import {
   getAvailableLanguages,
@@ -245,51 +246,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           </Box>
         )}
 
-        <Box
-          sx={{
-            borderRadius: 3, overflow: "hidden",
-            border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-            background: "var(--card-bg, #fff)",
-          }}
-        >
-          <Box
-            sx={{
-              px: 2, py: 1.5,
-              background: "linear-gradient(135deg, color-mix(in srgb,#6366f1 8%,transparent), color-mix(in srgb,#ec4899 6%,transparent))",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.75 }}>
-              <AIPill icon={<Icon icon="mdi:robot-happy-outline" width={12} />}>AI Coding Mentor</AIPill>
-              <Box sx={{ flex: 1 }} />
-              <DifficultyChip level={problem.difficulty_level} />
-            </Box>
-            <Typography sx={{ fontWeight: 900, fontSize: "1.3rem", lineHeight: 1.2 }}>{problem.title}</Typography>
-            {problem.target_skills.length > 0 && (
-              <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 0.85 }}>
-                {problem.target_skills.slice(0, 5).map((s) => (
-                  <Box
-                    key={s}
-                    sx={{
-                      px: 0.85, py: 0.2, borderRadius: 999, fontSize: "0.7rem", fontWeight: 700,
-                      color: "#6366f1", background: "color-mix(in srgb, #6366f1 10%, transparent)",
-                    }}
-                  >
-                    {s}
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-          <Box sx={{ p: 2 }}>
-            <Box
-              sx={{ fontSize: "0.92rem", lineHeight: 1.6, "& p": { mb: 1 }, "& code": { fontFamily: "monospace", px: 0.5, py: 0.1, borderRadius: 0.5, background: "color-mix(in srgb, var(--border-default) 30%, transparent)" } }}
-              dangerouslySetInnerHTML={{ __html: problem.problem_statement }}
-            />
-            {problem.constraints && (
-              <Box sx={{ mt: 1.25, fontSize: "0.82rem", color: "text.secondary", "& code": { fontFamily: "monospace" } }} dangerouslySetInnerHTML={{ __html: problem.constraints }} />
-            )}
-          </Box>
-        </Box>
+        <AdaptiveCodingProblemPanel problem={problem} />
 
         {solvedAlready && (
           <Box
@@ -324,6 +281,8 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         )}
 
         <CodingMasteryPanel refreshKey={masteryRefresh} />
+
+        <AdaptiveCodingPreviousAttempts problemId={problemId} refreshKey={masteryRefresh} />
       </Box>
 
       {/* Right — editor + toolbar */}
@@ -380,22 +339,6 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           The mentor reads your code on Run and Submit — it names the line and the concept, never writes the fix.
         </Typography>
       </Box>
-    </Box>
-  );
-}
-
-function DifficultyChip({ level }: { level: "Easy" | "Medium" | "Hard" }) {
-  const color = level === "Easy" ? "#10b981" : level === "Medium" ? "#f59e0b" : "#ef4444";
-  return (
-    <Box
-      component="span"
-      sx={{
-        px: 1, py: 0.3, borderRadius: 999, fontSize: "0.7rem", fontWeight: 800,
-        color, background: `color-mix(in srgb, ${color} 12%, transparent)`,
-        border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-      }}
-    >
-      {level}
     </Box>
   );
 }
