@@ -2,13 +2,17 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Container, Box, CircularProgress, Typography } from "@mui/material";
+import { Container, Box, CircularProgress, Pagination, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { LiveSessionsEmptyState } from "@/components/live-sessions/LiveSessionsEmptyState";
 import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessionsFeatureBlocked";
-import { LiveSessionsTable } from "@/components/live-sessions/LiveSessionsTable";
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
-import { SessionsPageHeader, SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
+import type { StudentLiveSession } from "@/lib/services/live-sessions";
 
 const PAST = new Set(["ended", "expired"]);
 
@@ -23,13 +27,10 @@ export default function LiveSessionsPage() {
     page,
     setPage,
     rowsPerPage,
-    setRowsPerPage,
     watchingRecordingId,
     handleCopyPassword,
     handleWatchRecording,
     formatDateTime,
-    formatSessionDuration,
-    formatSessionStatusCaption,
   } = useLiveSessions();
 
   const counts = useMemo(() => {
@@ -50,6 +51,9 @@ export default function LiveSessionsPage() {
     if (filter === "past") return sessions.filter((s) => PAST.has(s.meeting_status ?? ""));
     return sessions;
   }, [sessions, filter]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredSessions.length / rowsPerPage));
+  const pagedSessions = filteredSessions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   useEffect(() => {
     setPage(0);
@@ -86,40 +90,80 @@ export default function LiveSessionsPage() {
 
   return (
     <MainLayout>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <SessionsPageHeader title={t("liveSessions.title")} subtitle={t("liveSessions.subtitle")} />
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+        <AdaptiveSectionShell meshOpacity={0.3}>
+          <AdaptiveSectionHero
+            chapter={t("liveSessions.chapter", "Learn · Live Sessions")}
+            title={t("liveSessions.title", "Live Sessions")}
+            subtitle={t("liveSessions.subtitle", "Join your upcoming live classes and rewatch past recordings.")}
+            accent="indigo"
+            icon="mdi:broadcast"
+          />
 
-        {sessions.length === 0 ? (
-          <LiveSessionsEmptyState />
-        ) : (
-          <>
-            <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
-            {filteredSessions.length === 0 ? (
-              <Box sx={{ textAlign: "center", py: 6 }}>
-                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                  {t("liveSessions.noSessionsForFilter", "No sessions match this filter.")}
-                </Typography>
-              </Box>
-            ) : (
-              <LiveSessionsTable
-                sessions={filteredSessions}
-                page={page}
-                rowsPerPage={rowsPerPage}
-                onPageChange={(_, newPage) => setPage(newPage)}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
-                onCopyPassword={handleCopyPassword}
-                onWatchRecording={handleWatchRecording}
-                watchingRecordingId={watchingRecordingId}
-                formatDateTime={formatDateTime}
-                formatSessionDuration={formatSessionDuration}
-                formatSessionStatusCaption={formatSessionStatusCaption}
+          {sessions.length === 0 ? (
+            <LiveSessionsEmptyState />
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <KpiRail
+                items={[
+                  { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
+                  { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
+                  { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
+                ]}
               />
-            )}
-          </>
-        )}
+
+              <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
+
+              {filteredSessions.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 6 }}>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                    {t("liveSessions.noSessionsForFilter", "No sessions match this filter.")}
+                  </Typography>
+                </Box>
+              ) : (
+                <>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                      gap: 2,
+                      alignItems: "stretch",
+                    }}
+                  >
+                    {pagedSessions.map((s, idx) => (
+                      <Reveal key={s.id} delay={Math.min(idx, 8) * 0.05}>
+                        <LiveSessionCard<StudentLiveSession>
+                          session={s}
+                          variant="student"
+                          watchingRecording={watchingRecordingId === s.id}
+                          onJoin={(sess) => {
+                            const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
+                            if (url) window.open(url, "_blank");
+                          }}
+                          onCopyPasscode={handleCopyPassword}
+                          onWatchRecording={handleWatchRecording}
+                          formatDateTime={formatDateTime}
+                        />
+                      </Reveal>
+                    ))}
+                  </Box>
+
+                  {pageCount > 1 && (
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
+                      <Pagination
+                        count={pageCount}
+                        page={page + 1}
+                        onChange={(_, value) => setPage(value - 1)}
+                        shape="rounded"
+                        color="primary"
+                      />
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
+        </AdaptiveSectionShell>
       </Container>
     </MainLayout>
   );

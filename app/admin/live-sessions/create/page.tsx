@@ -1,0 +1,649 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
+import {
+  Box,
+  Container,
+  Stepper,
+  Step,
+  StepLabel,
+  TextField,
+  MenuItem,
+  Switch,
+  FormControlLabel,
+  ButtonBase,
+  CircularProgress,
+  Typography,
+} from "@mui/material";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { IconWrapper } from "@/components/common/IconWrapper";
+import { useToast } from "@/components/common/Toast";
+import { useAuth } from "@/lib/auth/auth-context";
+import { canAccessAdminArea } from "@/lib/auth/role-utils";
+import { liveClassService, LiveClassSession } from "@/lib/services/live-class.service";
+import {
+  adminLiveActivitiesService,
+  MeetingPreset,
+  MeetingTemplate,
+} from "@/lib/services/admin/admin-live-activities.service";
+import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import {
+  getLiveSessionErrorMessage,
+  getZoomApiErrorMessage,
+  ZOOM_MEETING_ALREADY_EXISTS_MESSAGE,
+  copyToClipboard,
+} from "@/lib/utils/live-session-errors";
+import { InfoCallout, SectionCard } from "@/components/live-sessions/ui/LiveSessionUI";
+
+type SessionType = "zoom" | "webinar" | "meet";
+
+function isValidHttpUrl(s: string): boolean {
+  try {
+    const u = new URL(s.trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const NEXT_GRADIENT = "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)";
+
+export default function CreateLiveSessionPage() {
+  const { t } = useTranslation("common");
+  const { showToast } = useToast();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const canAccessAdmin = canAccessAdminArea(user?.role);
+
+  const [stepIndex, setStepIndex] = useState(0);
+  const [sessionType, setSessionType] = useState<SessionType>("zoom");
+  const [topicName, setTopicName] = useState("");
+  const [description, setDescription] = useState("");
+  const [classDatetime, setClassDatetime] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(60);
+  const [closesAt, setClosesAt] = useState("");
+  const [meetLink, setMeetLink] = useState("");
+  const [instructorId, setInstructorId] = useState("");
+  const [courseId, setCourseId] = useState<number | null>(null);
+  const [courses, setCourses] = useState<{ id: number; title: string }[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
+  const [presets, setPresets] = useState<MeetingPreset[]>([]);
+  const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<number | "">("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [webinarPasscode, setWebinarPasscode] = useState("");
+  const [registrationRequired, setRegistrationRequired] = useState(false);
+
+  const [creating, setCreating] = useState(false);
+  const [createdSession, setCreatedSession] = useState<LiveClassSession | null>(null);
+  const [zoomStartUrl, setZoomStartUrl] = useState<string | null>(null);
+  const [zoomPassword, setZoomPassword] = useState<string | null>(null);
+
+  const isMeet = sessionType === "meet";
+  const isWebinar = sessionType === "webinar";
+
+  // Dynamic step list: Google Meet skips the Zoom-config step.
+  const steps = useMemo(
+    () =>
+      isMeet
+        ? [
+            { key: "details", label: t("adminLiveSessions.stepDetails", "Details") },
+            { key: "review", label: t("adminLiveSessions.stepReview", "Review") },
+            { key: "done", label: t("adminLiveSessions.stepDone", "Done") },
+          ]
+        : [
+            { key: "details", label: t("adminLiveSessions.stepDetails", "Details") },
+            { key: "zoom", label: t("adminLiveSessions.stepZoomConfig", "Zoom setup") },
+            { key: "review", label: t("adminLiveSessions.stepReview", "Review") },
+            { key: "done", label: t("adminLiveSessions.stepDone", "Done") },
+          ],
+    [isMeet, t]
+  );
+  const stepKey = steps[stepIndex]?.key ?? "details";
+  const lastInputStep = steps.length - 2; // the "review" step (before "done")
+
+  useEffect(() => {
+    if (!authLoading && !canAccessAdmin) router.replace("/dashboard");
+  }, [authLoading, canAccessAdmin, router]);
+
+  // Clamp step index if the step list shrinks (e.g. switching to Google Meet).
+  useEffect(() => {
+    if (stepIndex > steps.length - 1) setStepIndex(steps.length - 1);
+  }, [steps.length, stepIndex]);
+
+  // Load courses once.
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingCourses(true);
+    adminCoursesService
+      .getCourses({ limit: 1000 })
+      .then((data: unknown) => {
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : (data as { results?: unknown[] })?.results ?? [];
+        setCourses(
+          list
+            .filter((c: unknown) => c && typeof c === "object" && "id" in c && "title" in c)
+            .map((c: unknown) => ({ id: (c as { id: number }).id, title: (c as { title: string }).title }))
+        );
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoadingCourses(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load presets + native templates for Zoom/Webinar sessions.
+  useEffect(() => {
+    if (isMeet) return;
+    let cancelled = false;
+    setLoadingTemplates(true);
+    const templatePromise = isWebinar
+      ? adminLiveActivitiesService.getWebinarTemplates()
+      : adminLiveActivitiesService.getMeetingTemplates();
+    Promise.allSettled([adminLiveActivitiesService.listPresets(), templatePromise])
+      .then(([presetRes, templateRes]) => {
+        if (cancelled) return;
+        if (presetRes.status === "fulfilled") {
+          setPresets(presetRes.value);
+          const def = presetRes.value.find((p) => p.is_default);
+          if (def) setSelectedPresetId(def.id);
+        }
+        if (templateRes.status === "fulfilled") setTemplates(templateRes.value);
+      })
+      .finally(() => { if (!cancelled) setLoadingTemplates(false); });
+    return () => { cancelled = true; };
+  }, [isMeet, isWebinar]);
+
+  const getValidInstructorId = (): number | undefined => {
+    const trimmed = instructorId.trim();
+    if (!trimmed) return undefined;
+    const num = parseInt(trimmed, 10);
+    if (Number.isNaN(num) || num < 1) return undefined;
+    return num;
+  };
+
+  const instructorInvalid =
+    instructorId.trim().length > 0 && (Number.isNaN(parseInt(instructorId, 10)) || parseInt(instructorId, 10) < 1);
+
+  const detailsValid = useMemo(() => {
+    if (topicName.trim().length < 2) return false;
+    if (!classDatetime.trim()) return false;
+    const t0 = new Date(classDatetime).getTime();
+    if (Number.isNaN(t0) || t0 < Date.now() - 60 * 1000) return false;
+    if (durationMinutes < 1 || durationMinutes > 480) return false;
+    if (instructorInvalid) return false;
+    if (isMeet && (!meetLink.trim() || !isValidHttpUrl(meetLink))) return false;
+    return true;
+  }, [topicName, classDatetime, durationMinutes, instructorInvalid, isMeet, meetLink]);
+
+  const stepValid = stepKey === "details" ? detailsValid : true;
+
+  const applyZoomSuccessState = (
+    detail: { zoom_start_url?: string | null; zoom_join_url?: string | null; zoom_password?: string | null },
+    data?: { zoom_start_url?: string; zoom_join_url?: string; zoom_password?: string }
+  ) => {
+    if (data?.zoom_start_url) setZoomStartUrl(data.zoom_start_url);
+    else if (data?.zoom_join_url) setZoomStartUrl(data.zoom_join_url);
+    else if (detail.zoom_start_url) setZoomStartUrl(detail.zoom_start_url);
+    else if (detail.zoom_join_url) setZoomStartUrl(detail.zoom_join_url);
+    if (detail.zoom_password) setZoomPassword(detail.zoom_password);
+    else if (data?.zoom_password) setZoomPassword(data.zoom_password);
+  };
+
+  const goToDone = () => setStepIndex(steps.length - 1);
+
+  const handleCreate = async () => {
+    if (!detailsValid || creating) return;
+    const trimmedTopic = topicName.trim();
+    const duration = Math.min(480, Math.max(1, Math.floor(durationMinutes)));
+
+    try {
+      setCreating(true);
+
+      if (isMeet) {
+        let closesIso: string | null = null;
+        if (closesAt.trim()) {
+          const cd = new Date(closesAt);
+          if (Number.isNaN(cd.getTime())) {
+            showToast(t("adminLiveSessions.invalidCloseDateTime"), "error");
+            return;
+          }
+          closesIso = cd.toISOString();
+        }
+        const session = await liveClassService.createSession({
+          topic_name: trimmedTopic,
+          description: description.trim() || undefined,
+          class_datetime: classDatetime,
+          duration_minutes: duration,
+          instructor_id: getValidInstructorId(),
+          course: courseId ?? undefined,
+          join_link: meetLink.trim(),
+          is_google_meet: true,
+          closes_at: closesIso,
+        });
+        setCreatedSession(session);
+        setZoomStartUrl(session.join_link?.trim() ?? null);
+        showToast(t("adminLiveSessions.meetSessionCreatedToast"), "success");
+        goToDone();
+        return;
+      }
+
+      // Zoom meeting / webinar: create the session, then create the Zoom object.
+      const session = await liveClassService.createSession({
+        topic_name: trimmedTopic,
+        description: description.trim() || undefined,
+        class_datetime: classDatetime,
+        duration_minutes: duration,
+        instructor_id: getValidInstructorId(),
+        course: courseId ?? undefined,
+        zoom_meeting_type: isWebinar ? "webinar" : "meeting",
+      });
+      setCreatedSession(session);
+
+      const result = await adminLiveActivitiesService.createZoom(session.id, {
+        preset_id: selectedPresetId === "" ? undefined : selectedPresetId,
+        template_id: selectedTemplateId || undefined,
+        passcode: isWebinar && webinarPasscode.trim() ? webinarPasscode.trim() : undefined,
+        registration_required: isWebinar ? registrationRequired : undefined,
+      });
+
+      if (result.status === "error") {
+        const msg = (result.message || "").toLowerCase();
+        if (msg.includes("already exists") || msg.includes("already created")) {
+          const detail = await adminLiveActivitiesService.getLiveActivity(session.id);
+          applyZoomSuccessState(detail, result.data ?? undefined);
+          showToast(ZOOM_MEETING_ALREADY_EXISTS_MESSAGE, "info");
+          goToDone();
+        } else {
+          showToast(getZoomApiErrorMessage(result.message, "zoom_create"), "error");
+        }
+        return;
+      }
+
+      const detail = await adminLiveActivitiesService.getLiveActivity(session.id);
+      applyZoomSuccessState(detail, result.data ?? undefined);
+      showToast(t("adminLiveSessions.zoomMeetingCreated"), "success");
+      goToDone();
+    } catch (error: unknown) {
+      showToast(getLiveSessionErrorMessage(error, "zoom_create"), "error");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (!authLoading && !canAccessAdmin) return null;
+
+  return (
+    <MainLayout>
+      <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
+        <AdaptiveSectionShell meshOpacity={0.3}>
+          <AdaptiveSectionHero
+            chapter={t("adminLiveSessions.createChapter", "Create · Live Sessions")}
+            title={t("adminLiveSessions.createTitle", "New live session")}
+            subtitle={t("adminLiveSessions.createSubtitle", "Set the details, configure Zoom, review, and go live.")}
+            accent="indigo"
+            icon="mdi:video-plus"
+            rightSlot={
+              <ButtonBase
+                onClick={() => router.push("/admin/live-sessions")}
+                sx={{
+                  px: 2.25,
+                  py: 1,
+                  borderRadius: 999,
+                  fontWeight: 700,
+                  color: "var(--font-secondary)",
+                  border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                  fontSize: "0.82rem",
+                }}
+              >
+                {t("adminLiveSessions.cancel", "Cancel")}
+              </ButtonBase>
+            }
+          />
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <Stepper activeStep={stepIndex} alternativeLabel>
+              {steps.map((s) => (
+                <Step key={s.key}>
+                  <StepLabel>{s.label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+
+            <Box
+              sx={{
+                p: { xs: 2, md: 3 },
+                borderRadius: 4,
+                bgcolor: "color-mix(in srgb, var(--card-bg) 65%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
+                backdropFilter: "blur(18px) saturate(140%)",
+              }}
+            >
+              {stepKey === "details" && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <TextField
+                    select
+                    label={t("adminLiveSessions.sessionType")}
+                    value={sessionType}
+                    onChange={(e) => {
+                      const v = e.target.value as SessionType;
+                      setSessionType(v);
+                      if (v !== "meet") { setMeetLink(""); setClosesAt(""); }
+                    }}
+                    fullWidth
+                    size="small"
+                  >
+                    <MenuItem value="zoom">{t("adminLiveSessions.sessionTypeZoom")}</MenuItem>
+                    <MenuItem value="webinar">{t("adminLiveSessions.sessionTypeWebinar", "Zoom Webinar")}</MenuItem>
+                    <MenuItem value="meet">{t("adminLiveSessions.sessionTypeMeet")}</MenuItem>
+                  </TextField>
+                  <InfoCallout icon={isMeet ? "mdi:google" : isWebinar ? "mdi:presentation" : "mdi:video"}>
+                    {sessionType === "zoom"
+                      ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you, email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
+                      : isWebinar
+                        ? t("adminLiveSessions.webinarTypeHint", "We create a Zoom webinar (requires the Zoom Webinar add-on on your account), email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
+                        : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Students get the link by email, but attendance, recording and transcript aren't available for Google Meet.")}
+                  </InfoCallout>
+                  <TextField
+                    label={t("adminLiveSessions.topicName")}
+                    value={topicName}
+                    onChange={(e) => setTopicName(e.target.value)}
+                    placeholder={t("adminLiveSessions.topicPlaceholder")}
+                    fullWidth required size="small"
+                    error={topicName.trim().length > 0 && topicName.trim().length < 2}
+                    helperText={topicName.trim().length > 0 && topicName.trim().length < 2 ? t("adminLiveSessions.atLeast2Chars") : undefined}
+                  />
+                  <TextField
+                    label={t("adminLiveSessions.description")}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    multiline rows={2} fullWidth size="small"
+                  />
+                  <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                    <TextField
+                      label={t("adminLiveSessions.classDateAndTime")}
+                      type="datetime-local"
+                      value={classDatetime}
+                      onChange={(e) => setClassDatetime(e.target.value)}
+                      required size="small"
+                      sx={{ flex: "1 1 240px" }}
+                      InputLabelProps={{ shrink: true }}
+                      helperText={t("adminLiveSessions.timesLocalTimezone")}
+                    />
+                    <TextField
+                      label={t("adminLiveSessions.durationMinutes")}
+                      type="number"
+                      value={durationMinutes}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (e.target.value.trim() === "") setDurationMinutes(60);
+                        else setDurationMinutes(Math.min(480, Math.max(1, Number.isNaN(v) ? 60 : v)));
+                      }}
+                      inputProps={{ min: 1, max: 480 }}
+                      size="small"
+                      sx={{ flex: "1 1 160px" }}
+                      error={durationMinutes < 1 || durationMinutes > 480}
+                      helperText={durationMinutes > 480 ? t("adminLiveSessions.maxDurationHelper") : undefined}
+                    />
+                  </Box>
+                  {isMeet && (
+                    <>
+                      <TextField
+                        label={t("adminLiveSessions.meetLink")}
+                        value={meetLink}
+                        onChange={(e) => setMeetLink(e.target.value)}
+                        placeholder="https://meet.google.com/..."
+                        fullWidth required size="small"
+                        error={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink)}
+                        helperText={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink) ? t("adminLiveSessions.invalidMeetLink") : t("adminLiveSessions.meetLinkHelper")}
+                      />
+                      <TextField
+                        label={t("adminLiveSessions.closeDateAndTimeOptional")}
+                        type="datetime-local"
+                        value={closesAt}
+                        onChange={(e) => setClosesAt(e.target.value)}
+                        fullWidth size="small"
+                        InputLabelProps={{ shrink: true }}
+                        helperText={t("adminLiveSessions.closeDateHelper")}
+                      />
+                    </>
+                  )}
+                  <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                    <TextField
+                      label={t("adminLiveSessions.instructorIdOptional")}
+                      value={instructorId}
+                      onChange={(e) => setInstructorId(e.target.value)}
+                      type="number" size="small"
+                      sx={{ flex: "1 1 160px" }}
+                      error={instructorInvalid}
+                      helperText={instructorInvalid ? t("adminLiveSessions.enterPositiveNumber") : undefined}
+                    />
+                    <TextField
+                      select
+                      label={t("adminLiveSessions.courseOptional")}
+                      value={courseId ?? ""}
+                      onChange={(e) => setCourseId(e.target.value === "" ? null : Number(e.target.value))}
+                      size="small" disabled={loadingCourses}
+                      sx={{ flex: "1 1 240px" }}
+                    >
+                      <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                      {courses.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>{c.title}</MenuItem>
+                      ))}
+                    </TextField>
+                  </Box>
+                </Box>
+              )}
+
+              {stepKey === "zoom" && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <InfoCallout icon="mdi:email-fast-outline">
+                    {t("adminLiveSessions.createZoomHint", "Creating the meeting emails the join link to all enrolled students and turns on automatic attendance, recording and transcript sync.")}
+                  </InfoCallout>
+                  {presets.length > 0 && (
+                    <TextField
+                      select
+                      label={t("adminLiveSessions.meetingPreset", "Settings preset (optional)")}
+                      value={selectedPresetId}
+                      onChange={(e) => setSelectedPresetId(e.target.value === "" ? "" : Number(e.target.value))}
+                      fullWidth size="small"
+                      helperText={t("adminLiveSessions.meetingPresetHelper", "Reusable Zoom settings applied to this meeting.")}
+                    >
+                      <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                      {presets.map((p) => (
+                        <MenuItem key={p.id} value={p.id}>
+                          {p.name}{p.is_default ? ` (${t("adminLiveSessions.default", "default")})` : ""}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                  <TextField
+                    select
+                    label={isWebinar ? t("adminLiveSessions.webinarTemplate", "Zoom webinar template (optional)") : t("adminLiveSessions.meetingTemplate", "Zoom template (optional)")}
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    fullWidth size="small"
+                    disabled={loadingTemplates || templates.length === 0}
+                    helperText={
+                      loadingTemplates
+                        ? t("adminLiveSessions.loadingTemplates", "Loading templates…")
+                        : templates.length === 0
+                          ? isWebinar
+                            ? t("adminLiveSessions.noWebinarTemplates", "No webinar templates found on your Zoom account (create one in Zoom; requires the Webinar add-on). You can still create the webinar without one.")
+                            : t("adminLiveSessions.noMeetingTemplates", "No saved Zoom templates found on your account.")
+                          : isWebinar
+                            ? t("adminLiveSessions.webinarTemplateHelper", "Apply branding, email and registration settings from a saved Zoom webinar template.")
+                            : t("adminLiveSessions.meetingTemplateHelper", "Apply settings from a saved Zoom meeting template.")
+                    }
+                  >
+                    <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                    {templates.map((tpl) => (
+                      <MenuItem key={tpl.id} value={tpl.id}>{tpl.name}</MenuItem>
+                    ))}
+                  </TextField>
+                  {isWebinar && (
+                    <>
+                      <TextField
+                        label={t("adminLiveSessions.webinarPasscodeOptional", "Webinar passcode (optional)")}
+                        value={webinarPasscode}
+                        onChange={(e) => setWebinarPasscode(e.target.value)}
+                        fullWidth size="small"
+                        helperText={t("adminLiveSessions.webinarPasscodeHelper", "Leave blank to let Zoom/the template decide.")}
+                      />
+                      <FormControlLabel
+                        control={<Switch checked={registrationRequired} onChange={(e) => setRegistrationRequired(e.target.checked)} />}
+                        label={t("adminLiveSessions.requireRegistration", "Require registration (attendees register before joining)")}
+                      />
+                    </>
+                  )}
+                </Box>
+              )}
+
+              {stepKey === "review" && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <SectionCard title={t("adminLiveSessions.stepReview", "Review")} icon="mdi:clipboard-check-outline">
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <ReviewRow label={t("adminLiveSessions.sessionType")} value={isMeet ? t("adminLiveSessions.sessionTypeMeet") : isWebinar ? t("adminLiveSessions.sessionTypeWebinar", "Zoom Webinar") : t("adminLiveSessions.sessionTypeZoom")} />
+                      <ReviewRow label={t("adminLiveSessions.topicName")} value={topicName.trim() || "—"} />
+                      <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={classDatetime ? new Date(classDatetime).toLocaleString() : "—"} />
+                      <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
+                      {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
+                      {isMeet && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "—"} />}
+                      {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}
+                      {!isMeet && selectedPresetId !== "" && <ReviewRow label={t("adminLiveSessions.meetingPreset", "Preset")} value={presets.find((p) => p.id === selectedPresetId)?.name ?? String(selectedPresetId)} />}
+                      {isWebinar && <ReviewRow label={t("adminLiveSessions.requireRegistration", "Registration")} value={registrationRequired ? t("liveSessions.yes", "Yes") : t("liveSessions.no", "No")} />}
+                    </Box>
+                  </SectionCard>
+                  <InfoCallout icon="mdi:information-outline">
+                    {isMeet
+                      ? t("adminLiveSessions.reviewMeetHint", "We'll save the session and email the Google Meet link to enrolled students.")
+                      : t("adminLiveSessions.reviewZoomHint", "We'll create the session, set up Zoom, and email the join link to enrolled students.")}
+                  </InfoCallout>
+                </Box>
+              )}
+
+              {stepKey === "done" && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "center", textAlign: "center", py: 2 }}>
+                  <Box
+                    sx={{
+                      width: 64, height: 64, borderRadius: 3,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "linear-gradient(135deg, #10b981 0%, #047857 100%)",
+                      boxShadow: "0 16px 32px -16px color-mix(in srgb, #047857 60%, transparent)",
+                    }}
+                  >
+                    <IconWrapper icon="mdi:check" size={34} color="#fff" />
+                  </Box>
+                  <Typography sx={{ fontWeight: 800, fontSize: "1.2rem", color: "var(--font-primary)" }}>
+                    {t("adminLiveSessions.sessionReadyTitle", "Session created")}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", maxWidth: 440 }}>
+                    {isMeet ? t("adminLiveSessions.meetReadyPrompt") : t("adminLiveSessions.zoomReadyPrompt")}
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, justifyContent: "center", mt: 1 }}>
+                    {zoomStartUrl && (
+                      <ButtonBase
+                        onClick={() => window.open(zoomStartUrl, "_blank")}
+                        sx={{ px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, color: "white", display: "inline-flex", alignItems: "center", gap: 0.75, background: isMeet ? "linear-gradient(135deg, #10b981 0%, #047857 100%)" : NEXT_GRADIENT }}
+                      >
+                        <IconWrapper icon="mdi:video" size={18} color="#fff" />
+                        {isMeet ? t("adminLiveSessions.openGoogleMeet") : t("adminLiveSessions.startMeeting", "Start session")}
+                      </ButtonBase>
+                    )}
+                    {zoomPassword && (
+                      <ButtonBase
+                        onClick={() => copyToClipboard(zoomPassword, showToast, t("liveSessions.passwordCopied"))}
+                        sx={{ px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 700, color: "var(--font-secondary)", border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", display: "inline-flex", alignItems: "center", gap: 0.75 }}
+                      >
+                        <IconWrapper icon="mdi:key-variant" size={16} />
+                        {t("liveSessions.password")}: {zoomPassword}
+                      </ButtonBase>
+                    )}
+                  </Box>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, justifyContent: "center", mt: 1 }}>
+                    {createdSession?.id && (
+                      <ButtonBase
+                        onClick={() => router.push(`/admin/live-sessions/${createdSession.id}`)}
+                        sx={{ px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, color: "white", display: "inline-flex", alignItems: "center", gap: 0.75, background: NEXT_GRADIENT }}
+                      >
+                        <IconWrapper icon="mdi:cog-outline" size={17} color="#fff" />
+                        {t("adminLiveSessions.viewSession", "Manage session")}
+                      </ButtonBase>
+                    )}
+                    <ButtonBase
+                      onClick={() => router.push("/admin/live-sessions")}
+                      sx={{ px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 700, color: "var(--font-secondary)", border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" }}
+                    >
+                      {t("adminLiveSessions.backToList", "Back to list")}
+                    </ButtonBase>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+
+            {/* Wizard navigation (hidden on the Done step) */}
+            {stepKey !== "done" && (
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <ButtonBase
+                  onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
+                  disabled={stepIndex === 0}
+                  sx={{
+                    px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 700,
+                    color: stepIndex === 0 ? "text.disabled" : "var(--font-primary)",
+                    border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                    "&:disabled": { cursor: "not-allowed" },
+                  }}
+                >
+                  ← {t("adminLiveSessions.back", "Back")}
+                </ButtonBase>
+                {stepIndex < lastInputStep ? (
+                  <ButtonBase
+                    onClick={() => stepValid && setStepIndex((i) => i + 1)}
+                    disabled={!stepValid}
+                    sx={{
+                      px: 3, py: 1.2, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.92rem",
+                      background: stepValid ? NEXT_GRADIENT : "color-mix(in srgb, #6366f1 35%, transparent)",
+                      "&:hover": { transform: stepValid ? "translateY(-1px)" : "none" },
+                      transition: "transform 120ms ease",
+                      "&:disabled": { cursor: "not-allowed" },
+                    }}
+                  >
+                    {t("adminLiveSessions.next", "Next")} →
+                  </ButtonBase>
+                ) : (
+                  <ButtonBase
+                    onClick={() => void handleCreate()}
+                    disabled={!detailsValid || creating}
+                    sx={{
+                      px: 3, py: 1.2, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.92rem",
+                      display: "inline-flex", alignItems: "center", gap: 0.75,
+                      background: detailsValid && !creating ? "linear-gradient(135deg, #10b981 0%, #6366f1 100%)" : "color-mix(in srgb, #10b981 40%, transparent)",
+                      "&:disabled": { cursor: "not-allowed" },
+                    }}
+                  >
+                    {creating ? <CircularProgress size={16} sx={{ color: "white" }} /> : <IconWrapper icon="mdi:rocket-launch-outline" size={17} color="#fff" />}
+                    {creating ? t("adminLiveSessions.creating", "Creating…") : t("adminLiveSessions.createSession", "Create session")}
+                  </ButtonBase>
+                )}
+              </Box>
+            )}
+          </Box>
+        </AdaptiveSectionShell>
+      </Container>
+    </MainLayout>
+  );
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, py: 0.5, borderBottom: "1px solid color-mix(in srgb, var(--border-default) 50%, transparent)" }}>
+      <Typography sx={{ fontSize: "0.8rem", color: "var(--font-tertiary)", fontWeight: 700 }}>{label}</Typography>
+      <Typography sx={{ fontSize: "0.84rem", color: "var(--font-primary)", fontWeight: 700, textAlign: "right", wordBreak: "break-word" }}>{value}</Typography>
+    </Box>
+  );
+}

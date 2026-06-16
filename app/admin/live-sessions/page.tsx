@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -8,16 +9,17 @@ import {
   Button,
   CircularProgress,
   LinearProgress,
+  Pagination,
   Typography,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdminLiveSessionsEmptyState } from "@/components/admin/live-sessions/AdminLiveSessionsEmptyState";
 import { AdminLiveSessionsFeatureBlocked } from "@/components/admin/live-sessions/AdminLiveSessionsFeatureBlocked";
-import { AdminLiveSessionsTable } from "@/components/admin/live-sessions/AdminLiveSessionsTable";
 import { useAdminLiveSessions } from "@/components/admin/live-sessions/useAdminLiveSessions";
-import { CreateLiveSessionDialog } from "@/components/admin/live-sessions/CreateLiveSessionDialog";
-import { LiveSessionDetailDrawer } from "@/components/admin/live-sessions/LiveSessionDetailDrawer";
 import { ZoomCredentialsDialog } from "@/components/admin/live-sessions/ZoomCredentialsDialog";
 import { ZoomSetupCard, ZoomSetupStatus } from "@/components/admin/live-sessions/ZoomSetupCard";
 import {
@@ -26,24 +28,22 @@ import {
 } from "@/components/admin/live-sessions/ImportedMeetingsInbox";
 import { MeetingPresetsDialog } from "@/components/admin/live-sessions/MeetingPresetsDialog";
 import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/VirtualBackgroundsDialog";
-import {
-  SessionsPageHeader,
-  SessionStatCard,
-  SessionFilterChips,
-} from "@/components/live-sessions/ui/LiveSessionUI";
+import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
+import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
 import { zoomService } from "@/lib/services/zoom.service";
 
 const PAST = new Set(["ended", "expired"]);
 
 export default function AdminLiveSessionsPage() {
   const { t } = useTranslation("common");
+  const router = useRouter();
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [presetsDialogOpen, setPresetsDialogOpen] = useState(false);
   const [backgroundsDialogOpen, setBackgroundsDialogOpen] = useState(false);
-  const [hasCheckedCredentials, setHasCheckedCredentials] = useState(false);
-  const [webhookConfigured, setWebhookConfigured] = useState(false);
   const [filter, setFilter] = useState("all");
   const inboxRef = useRef<ImportedMeetingsInboxHandle>(null);
+  const credsCheckedRef = useRef(false);
   const [zoomStatus, setZoomStatus] = useState<ZoomSetupStatus>({
     loading: true,
     configured: false,
@@ -63,21 +63,13 @@ export default function AdminLiveSessionsPage() {
     page,
     setPage,
     rowsPerPage,
-    setRowsPerPage,
     watchingRecordingId,
     creatingZoomId,
-    createDialogOpen,
-    setCreateDialogOpen,
-    detailDrawerOpen,
-    setDetailDrawerOpen,
-    selectedLiveClassId,
-    setSelectedLiveClassId,
     loadSessions,
     handleCopyPassword,
     handleCreateZoom,
     handleWatchRecording,
     formatDateTime,
-    openViewSession,
   } = useAdminLiveSessions();
 
   const refreshZoomStatus = useCallback((autoOpenIfEmpty = false) => {
@@ -87,7 +79,6 @@ export default function AdminLiveSessionsPage() {
         const configured = Boolean(
           data?.account_id?.trim() && data?.zoom_client_id?.trim()
         );
-        setWebhookConfigured(data?.webhook_configured ?? false);
         setZoomStatus({
           loading: false,
           configured,
@@ -102,21 +93,23 @@ export default function AdminLiveSessionsPage() {
 
   // Fetch Zoom status once; auto-open setup only for brand-new (unconfigured) tenants.
   useEffect(() => {
-    if (hasCheckedCredentials || !hasAdminLiveSessionsFeature) return;
-    setHasCheckedCredentials(true);
+    if (credsCheckedRef.current || !hasAdminLiveSessionsFeature) return;
+    credsCheckedRef.current = true;
     refreshZoomStatus(true);
-  }, [hasAdminLiveSessionsFeature, hasCheckedCredentials, refreshZoomStatus]);
+  }, [hasAdminLiveSessionsFeature, refreshZoomStatus]);
 
   const counts = useMemo(() => {
     let upcoming = 0;
     let live = 0;
     let past = 0;
+    let webinars = 0;
     for (const s of sessions) {
       if (s.meeting_status === "scheduled") upcoming++;
       else if (s.meeting_status === "live") live++;
       else if (PAST.has(s.meeting_status ?? "")) past++;
+      if (s.zoom_meeting_type === "webinar") webinars++;
     }
-    return { upcoming, live, past, total: sessions.length };
+    return { upcoming, live, past, webinars, total: sessions.length };
   }, [sessions]);
 
   const filteredSessions = useMemo(() => {
@@ -127,10 +120,18 @@ export default function AdminLiveSessionsPage() {
     return sessions;
   }, [sessions, filter]);
 
+  const pageCount = Math.max(1, Math.ceil(filteredSessions.length / rowsPerPage));
+  const pagedSessions = filteredSessions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
   // Reset to first page when the filter changes.
   useEffect(() => {
     setPage(0);
   }, [filter, setPage]);
+
+  const openDetail = useCallback(
+    (s: LiveActivity) => router.push(`/admin/live-sessions/${s.id}`),
+    [router]
+  );
 
   if (!authLoading && !canAccessAdmin) return null;
 
@@ -177,112 +178,136 @@ export default function AdminLiveSessionsPage() {
 
   return (
     <MainLayout>
-      <Container maxWidth="lg" sx={{ py: 4, position: "relative" }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, position: "relative" }}>
         {loading && sessions.length > 0 && (
           <LinearProgress sx={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, zIndex: 1 }} />
         )}
 
-        <SessionsPageHeader
-          title={t("adminLiveSessions.title")}
-          subtitle={t("adminLiveSessions.subtitle")}
-          actions={
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <Button
-                variant="outlined"
-                startIcon={<IconWrapper icon="mdi:tune-variant" size={18} />}
-                onClick={() => setPresetsDialogOpen(true)}
-                sx={{ color: "var(--font-secondary)", borderColor: "var(--border-default)" }}
-              >
-                {t("adminLiveSessions.presets", "Presets")}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<IconWrapper icon="mdi:image-outline" size={18} />}
-                onClick={() => setBackgroundsDialogOpen(true)}
-                sx={{ color: "var(--font-secondary)", borderColor: "var(--border-default)" }}
-              >
-                {t("adminLiveSessions.backgrounds", "Backgrounds")}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-                onClick={() => setCreateDialogOpen(true)}
-                sx={{ bgcolor: "var(--accent-indigo)", color: "var(--font-light)", "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
-              >
-                {t("adminLiveSessions.createLiveSession")}
-              </Button>
-            </Box>
-          }
-        />
-
-        <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
-
-        <ImportedMeetingsInbox
-          ref={inboxRef}
-          formatDateTime={formatDateTime}
-          onAssigned={loadSessions}
-        />
-
-        {sessions.length === 0 ? (
-          <AdminLiveSessionsEmptyState onCreate={() => setCreateDialogOpen(true)} />
-        ) : (
-          <>
-            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", mb: 3 }}>
-              <SessionStatCard icon="mdi:calendar-clock" label={t("adminLiveSessions.filterUpcoming", "Upcoming")} value={counts.upcoming} color="var(--accent-indigo)" />
-              <SessionStatCard icon="mdi:broadcast" label={t("adminLiveSessions.filterLive", "Live now")} value={counts.live} color="var(--success-500)" />
-              <SessionStatCard icon="mdi:history" label={t("adminLiveSessions.filterPast", "Completed")} value={counts.past} color="var(--font-tertiary)" />
-            </Box>
-
-            <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
-
-            {filteredSessions.length === 0 ? (
-              <Box sx={{ textAlign: "center", py: 6 }}>
-                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                  {t("adminLiveSessions.noSessionsForFilter", "No sessions match this filter.")}
-                </Typography>
+        <AdaptiveSectionShell meshOpacity={0.3}>
+          <AdaptiveSectionHero
+            chapter={t("adminLiveSessions.chapter", "Manage · Live Sessions")}
+            title={t("adminLiveSessions.title", "Live Sessions")}
+            subtitle={t("adminLiveSessions.subtitle", "Schedule, run, and review live classes and webinars.")}
+            accent="indigo"
+            icon="mdi:broadcast"
+            rightSlot={
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<IconWrapper icon="mdi:tune-variant" size={18} />}
+                  onClick={() => setPresetsDialogOpen(true)}
+                  sx={{ borderRadius: 999, textTransform: "none", fontWeight: 700, color: "var(--font-secondary)", borderColor: "color-mix(in srgb, var(--border-default) 80%, transparent)" }}
+                >
+                  {t("adminLiveSessions.presets", "Presets")}
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<IconWrapper icon="mdi:image-outline" size={18} />}
+                  onClick={() => setBackgroundsDialogOpen(true)}
+                  sx={{ borderRadius: 999, textTransform: "none", fontWeight: 700, color: "var(--font-secondary)", borderColor: "color-mix(in srgb, var(--border-default) 80%, transparent)" }}
+                >
+                  {t("adminLiveSessions.backgrounds", "Backgrounds")}
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<IconWrapper icon="mdi:plus" size={20} color="#fff" />}
+                  onClick={() => router.push("/admin/live-sessions/create")}
+                  sx={{
+                    borderRadius: 999,
+                    textTransform: "none",
+                    fontWeight: 800,
+                    color: "white",
+                    background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+                    boxShadow: "0 14px 30px -14px color-mix(in srgb, #4338ca 70%, transparent)",
+                    "&:hover": { background: "linear-gradient(135deg, #6366f1 0%, #3730a3 100%)" },
+                  }}
+                >
+                  {t("adminLiveSessions.createLiveSession", "Create Live Session")}
+                </Button>
               </Box>
+            }
+          />
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
+
+            <ImportedMeetingsInbox
+              ref={inboxRef}
+              formatDateTime={formatDateTime}
+              onAssigned={loadSessions}
+            />
+
+            {sessions.length === 0 ? (
+              <AdminLiveSessionsEmptyState onCreate={() => router.push("/admin/live-sessions/create")} />
             ) : (
-              <AdminLiveSessionsTable
-                sessions={filteredSessions}
-                uniqueAttendanceCounts={uniqueAttendanceCounts}
-                page={page}
-                rowsPerPage={rowsPerPage}
-                onPageChange={(_, newPage) => setPage(newPage)}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
-                creatingZoomId={creatingZoomId}
-                watchingRecordingId={watchingRecordingId}
-                onCreateZoom={handleCreateZoom}
-                onWatchRecording={handleWatchRecording}
-                onCopyPassword={handleCopyPassword}
-                onViewSession={openViewSession}
-                formatDateTime={formatDateTime}
-              />
+              <>
+                <KpiRail
+                  items={[
+                    { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
+                    { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
+                    { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
+                    { value: counts.webinars, label: t("adminLiveSessions.webinars", "Webinars"), accent: "#ec4899" },
+                  ]}
+                />
+
+                <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
+
+                {filteredSessions.length === 0 ? (
+                  <Box sx={{ textAlign: "center", py: 6 }}>
+                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                      {t("adminLiveSessions.noSessionsForFilter", "No sessions match this filter.")}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                        gap: 2,
+                        alignItems: "stretch",
+                      }}
+                    >
+                      {pagedSessions.map((s, idx) => (
+                        <Reveal key={s.id} delay={Math.min(idx, 8) * 0.05}>
+                          <LiveSessionCard
+                            session={s}
+                            variant="admin"
+                            attendanceCount={uniqueAttendanceCounts[s.id]}
+                            creatingZoom={creatingZoomId === s.id}
+                            watchingRecording={watchingRecordingId === s.id}
+                            onOpen={openDetail}
+                            onCreateZoom={(sess) => handleCreateZoom(sess.id)}
+                            onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
+                            onJoin={(sess) => {
+                              const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
+                              if (url) window.open(url, "_blank");
+                            }}
+                            onCopyPasscode={handleCopyPassword}
+                            onWatchRecording={handleWatchRecording}
+                            formatDateTime={formatDateTime}
+                          />
+                        </Reveal>
+                      ))}
+                    </Box>
+
+                    {pageCount > 1 && (
+                      <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
+                        <Pagination
+                          count={pageCount}
+                          page={page + 1}
+                          onChange={(_, value) => setPage(value - 1)}
+                          shape="rounded"
+                          color="primary"
+                        />
+                      </Box>
+                    )}
+                  </>
+                )}
+              </>
             )}
-          </>
-        )}
-
-        <CreateLiveSessionDialog
-          open={createDialogOpen}
-          onClose={() => setCreateDialogOpen(false)}
-          onSuccess={() => {
-            setCreateDialogOpen(false);
-            loadSessions();
-          }}
-        />
-
-        <LiveSessionDetailDrawer
-          liveClassId={selectedLiveClassId}
-          open={detailDrawerOpen}
-          onClose={() => {
-            setDetailDrawerOpen(false);
-            setSelectedLiveClassId(null);
-          }}
-          onUpdated={loadSessions}
-          webhookConfigured={webhookConfigured}
-        />
+          </Box>
+        </AdaptiveSectionShell>
 
         <ZoomCredentialsDialog
           open={credentialsDialogOpen}
