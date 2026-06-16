@@ -14,6 +14,8 @@ import {
   IconButton,
   CircularProgress,
   MenuItem,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -78,6 +80,9 @@ export function CreateLiveSessionDialog({
   const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<number | "">("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  // Webinar-only core fields.
+  const [webinarPasscode, setWebinarPasscode] = useState("");
+  const [registrationRequired, setRegistrationRequired] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -105,9 +110,14 @@ export function CreateLiveSessionDialog({
   useEffect(() => {
     if (step !== "create-zoom") return;
     let cancelled = false;
+    // Webinars use Zoom's webinar templates; meetings use meeting templates.
+    const templatePromise =
+      sessionType === "webinar"
+        ? adminLiveActivitiesService.getWebinarTemplates()
+        : adminLiveActivitiesService.getMeetingTemplates();
     Promise.allSettled([
       adminLiveActivitiesService.listPresets(),
-      adminLiveActivitiesService.getMeetingTemplates(),
+      templatePromise,
     ]).then(([presetRes, templateRes]) => {
       if (cancelled) return;
       if (presetRes.status === "fulfilled") {
@@ -120,7 +130,7 @@ export function CreateLiveSessionDialog({
     return () => {
       cancelled = true;
     };
-  }, [step]);
+  }, [step, sessionType]);
 
   const getValidInstructorId = (): number | undefined => {
     const trimmed = instructorId.trim();
@@ -148,6 +158,8 @@ export function CreateLiveSessionDialog({
     setTemplates([]);
     setSelectedPresetId("");
     setSelectedTemplateId("");
+    setWebinarPasscode("");
+    setRegistrationRequired(false);
   };
 
   const handleCreateSession = async () => {
@@ -254,11 +266,14 @@ export function CreateLiveSessionDialog({
     if (!createdSession?.id) return;
     try {
       setCreatingZoom(true);
+      const isWebinar = sessionType === "webinar";
       const result = await adminLiveActivitiesService.createZoom(
         createdSession.id,
         {
           preset_id: selectedPresetId === "" ? undefined : selectedPresetId,
           template_id: selectedTemplateId || undefined,
+          passcode: isWebinar && webinarPasscode.trim() ? webinarPasscode.trim() : undefined,
+          registration_required: isWebinar ? registrationRequired : undefined,
         }
       );
       if (result.status === "error") {
@@ -497,6 +512,27 @@ export function CreateLiveSessionDialog({
                   size="small"
                   InputLabelProps={{ shrink: true }}
                   helperText={t("adminLiveSessions.closeDateHelper")}
+                />
+              </>
+            )}
+            {sessionType === "webinar" && (
+              <>
+                <TextField
+                  label={t("adminLiveSessions.webinarPasscodeOptional", "Webinar passcode (optional)")}
+                  value={webinarPasscode}
+                  onChange={(e) => setWebinarPasscode(e.target.value)}
+                  fullWidth
+                  size="small"
+                  helperText={t("adminLiveSessions.webinarPasscodeHelper", "Leave blank to let Zoom/the template decide.")}
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={registrationRequired}
+                      onChange={(e) => setRegistrationRequired(e.target.checked)}
+                    />
+                  }
+                  label={t("adminLiveSessions.requireRegistration", "Require registration (attendees register before joining)")}
                 />
               </>
             )}

@@ -36,3 +36,6 @@ package-lock.json
 /test-results/
 e2e/.auth/
 
+
+# macOS custom folder icon
+Icon?

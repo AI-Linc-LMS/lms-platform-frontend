@@ -32,6 +32,10 @@ import {
 import { ZoomAttendanceSection } from "./ZoomAttendanceSection";
 import { LiveSessionRosterSection } from "./LiveSessionRosterSection";
 import { LiveSessionTranscriptSection } from "./LiveSessionTranscriptSection";
+import { WebinarInvitationsSection } from "./WebinarInvitationsSection";
+import { WebinarEmailSection } from "./WebinarEmailSection";
+import { WebinarBrandingSection } from "./WebinarBrandingSection";
+import { EditWebinarDialog } from "./EditWebinarDialog";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import {
   MeetingStatusChip,
@@ -64,6 +68,7 @@ export function LiveSessionDetailDrawer({
   const [endingMeeting, setEndingMeeting] = useState(false);
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [tab, setTab] = useState(0);
 
   useEffect(() => {
@@ -172,16 +177,27 @@ export function LiveSessionDetailDrawer({
 
   const hasRecording = Boolean(activity?.zoom_recording_url?.trim());
   const isZoom = Boolean(activity?.is_zoom);
+  const isWebinar = isZoom && activity?.zoom_meeting_type === "webinar" && Boolean(activity?.zoom_meeting_id);
+  const isCancelled = activity?.zoom_status === "cancelled";
   const scheduledOrLive = activity?.meeting_status === "scheduled" || activity?.meeting_status === "live";
 
-  // Tabs depend on platform: Google Meet sessions only have an Overview.
+  // Tabs depend on platform: Google Meet → Overview only; Zoom → base tabs; webinars add
+  // Invitations / Email / Branding (appended so the base tab indices stay stable).
+  const baseZoomTabs = [
+    { icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") },
+    { icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabAttendance", "Attendance") },
+    { icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") },
+    { icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") },
+  ];
+  const webinarTabs = [
+    { icon: "mdi:email-outline", label: t("adminLiveSessions.tabInvitations", "Invitations") },
+    { icon: "mdi:email-fast-outline", label: t("adminLiveSessions.tabEmail", "Email") },
+    { icon: "mdi:palette-outline", label: t("adminLiveSessions.tabBranding", "Branding") },
+  ];
   const tabs = isZoom
-    ? [
-        { icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") },
-        { icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabAttendance", "Attendance") },
-        { icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") },
-        { icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") },
-      ]
+    ? isWebinar
+      ? [...baseZoomTabs, ...webinarTabs]
+      : baseZoomTabs
     : [{ icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") }];
 
   return (
@@ -239,6 +255,14 @@ export function LiveSessionDetailDrawer({
               </Box>
             </Box>
           </SectionCard>
+
+          {isCancelled && (
+            <Box sx={{ mb: 2 }}>
+              <InfoCallout icon="mdi:cancel" color="var(--error-500)">
+                {t("adminLiveSessions.cancelledInZoom", "This webinar was cancelled in Zoom.")}
+              </InfoCallout>
+            </Box>
+          )}
 
           <Tabs
             value={tab}
@@ -310,6 +334,17 @@ export function LiveSessionDetailDrawer({
                       {t("adminLiveSessions.endMeeting")}
                     </Button>
                   )}
+                  {isWebinar && scheduledOrLive && !isCancelled && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<IconWrapper icon="mdi:pencil-outline" size={16} />}
+                      onClick={() => setEditOpen(true)}
+                      sx={{ textTransform: "none", alignSelf: "flex-start" }}
+                    >
+                      {t("adminLiveSessions.editWebinar", "Edit webinar")}
+                    </Button>
+                  )}
                   {!scheduledOrLive && !activity.zoom_password && (
                     <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                       {t("adminLiveSessions.sessionFinished", "This session has finished.")}
@@ -377,6 +412,11 @@ export function LiveSessionDetailDrawer({
               <LiveSessionTranscriptSection liveClassId={activity.id} hasSummary={Boolean(activity.zoom_ai_summary?.trim())} />
             </SectionCard>
           )}
+
+          {/* Webinar management tabs */}
+          {isWebinar && tab === 4 && <WebinarInvitationsSection liveClassId={activity.id} />}
+          {isWebinar && tab === 5 && <WebinarEmailSection liveClassId={activity.id} />}
+          {isWebinar && tab === 6 && <WebinarBrandingSection liveClassId={activity.id} />}
         </Box>
       ) : null}
 
@@ -399,6 +439,15 @@ export function LiveSessionDetailDrawer({
         title={activity?.topic_name ?? undefined}
         onClose={() => setPlayerOpen(false)}
       />
+
+      {activity && isWebinar && (
+        <EditWebinarDialog
+          activity={activity}
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          onSaved={refreshDetail}
+        />
+      )}
     </Drawer>
   );
 }
