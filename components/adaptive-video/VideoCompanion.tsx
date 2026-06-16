@@ -155,13 +155,15 @@ export function VideoCompanion({ configId }: { configId: number }) {
     );
 
   const embed = `${companion.video.embed_url}?api=1&title=0&byline=0&portrait=0`;
+  // Video/module names often arrive snake_cased (e.g. "Module_01_Java_Fundamentals…"); show them humanized.
+  const displayTitle = (companion.video.title || companion.title || "").replace(/_/g, " ").trim();
   const watchedConcepts = companion.concept_map?.nodes?.filter((n) => currentTime >= (n.timestamp_seconds ?? 0)).length ?? 0;
 
   return (
     <Box>
       <AdaptiveSectionHero
         chapter="Watch · Adaptive"
-        title={companion.video.title || companion.title}
+        title={displayTitle}
         subtitle={companion.instructions || "A comprehension companion that watches whether the watching actually worked."}
         icon="mdi:play-circle-outline"
         accent="indigo"
