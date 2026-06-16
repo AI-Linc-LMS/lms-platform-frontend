@@ -80,6 +80,7 @@ export function CreateLiveSessionDialog({
   const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<number | "">("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   // Webinar-only core fields.
   const [webinarPasscode, setWebinarPasscode] = useState("");
   const [registrationRequired, setRegistrationRequired] = useState(false);
@@ -110,6 +111,7 @@ export function CreateLiveSessionDialog({
   useEffect(() => {
     if (step !== "create-zoom") return;
     let cancelled = false;
+    setLoadingTemplates(true);
     // Webinars use Zoom's webinar templates; meetings use meeting templates.
     const templatePromise =
       sessionType === "webinar"
@@ -118,15 +120,19 @@ export function CreateLiveSessionDialog({
     Promise.allSettled([
       adminLiveActivitiesService.listPresets(),
       templatePromise,
-    ]).then(([presetRes, templateRes]) => {
-      if (cancelled) return;
-      if (presetRes.status === "fulfilled") {
-        setPresets(presetRes.value);
-        const def = presetRes.value.find((p) => p.is_default);
-        if (def) setSelectedPresetId(def.id);
-      }
-      if (templateRes.status === "fulfilled") setTemplates(templateRes.value);
-    });
+    ])
+      .then(([presetRes, templateRes]) => {
+        if (cancelled) return;
+        if (presetRes.status === "fulfilled") {
+          setPresets(presetRes.value);
+          const def = presetRes.value.find((p) => p.is_default);
+          if (def) setSelectedPresetId(def.id);
+        }
+        if (templateRes.status === "fulfilled") setTemplates(templateRes.value);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTemplates(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -158,6 +164,7 @@ export function CreateLiveSessionDialog({
     setTemplates([]);
     setSelectedPresetId("");
     setSelectedTemplateId("");
+    setLoadingTemplates(false);
     setWebinarPasscode("");
     setRegistrationRequired(false);
   };
@@ -578,49 +585,74 @@ export function CreateLiveSessionDialog({
                 {t("adminLiveSessions.createZoomHint", "Creating the meeting emails the join link to all enrolled students and turns on automatic attendance, recording and transcript sync.")}
               </InfoCallout>
             </Box>
-            {(presets.length > 0 || templates.length > 0) && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
-                {presets.length > 0 && (
-                  <TextField
-                    select
-                    label={t("adminLiveSessions.meetingPreset", "Settings preset (optional)")}
-                    value={selectedPresetId}
-                    onChange={(e) =>
-                      setSelectedPresetId(e.target.value === "" ? "" : Number(e.target.value))
-                    }
-                    fullWidth
-                    size="small"
-                    helperText={t("adminLiveSessions.meetingPresetHelper", "Reusable Zoom settings applied to this meeting.")}
-                  >
-                    <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
-                    {presets.map((p) => (
-                      <MenuItem key={p.id} value={p.id}>
-                        {p.name}
-                        {p.is_default ? ` (${t("adminLiveSessions.default", "default")})` : ""}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-                {templates.length > 0 && (
-                  <TextField
-                    select
-                    label={t("adminLiveSessions.meetingTemplate", "Zoom template (optional)")}
-                    value={selectedTemplateId}
-                    onChange={(e) => setSelectedTemplateId(e.target.value)}
-                    fullWidth
-                    size="small"
-                    helperText={t("adminLiveSessions.meetingTemplateHelper", "Apply settings from a saved Zoom meeting template.")}
-                  >
-                    <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
-                    {templates.map((tpl) => (
-                      <MenuItem key={tpl.id} value={tpl.id}>
-                        {tpl.name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              </Box>
-            )}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
+              {presets.length > 0 && (
+                <TextField
+                  select
+                  label={t("adminLiveSessions.meetingPreset", "Settings preset (optional)")}
+                  value={selectedPresetId}
+                  onChange={(e) =>
+                    setSelectedPresetId(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  fullWidth
+                  size="small"
+                  helperText={t("adminLiveSessions.meetingPresetHelper", "Reusable Zoom settings applied to this meeting.")}
+                >
+                  <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                  {presets.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.name}
+                      {p.is_default ? ` (${t("adminLiveSessions.default", "default")})` : ""}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+              {/* Always render the template picker so it's discoverable; when the account has
+                  none (or the Webinar add-on/scope is off) we explain why instead of hiding it. */}
+              <TextField
+                select
+                label={
+                  sessionType === "webinar"
+                    ? t("adminLiveSessions.webinarTemplate", "Zoom webinar template (optional)")
+                    : t("adminLiveSessions.meetingTemplate", "Zoom template (optional)")
+                }
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                fullWidth
+                size="small"
+                disabled={loadingTemplates || templates.length === 0}
+                helperText={
+                  loadingTemplates
+                    ? t("adminLiveSessions.loadingTemplates", "Loading templates…")
+                    : templates.length === 0
+                      ? sessionType === "webinar"
+                        ? t(
+                            "adminLiveSessions.noWebinarTemplates",
+                            "No webinar templates found on your Zoom account (create one in Zoom; requires the Webinar add-on). You can still create the webinar without one.",
+                          )
+                        : t(
+                            "adminLiveSessions.noMeetingTemplates",
+                            "No saved Zoom templates found on your account.",
+                          )
+                      : sessionType === "webinar"
+                        ? t(
+                            "adminLiveSessions.webinarTemplateHelper",
+                            "Apply branding, email and registration settings from a saved Zoom webinar template.",
+                          )
+                        : t(
+                            "adminLiveSessions.meetingTemplateHelper",
+                            "Apply settings from a saved Zoom meeting template.",
+                          )
+                }
+              >
+                <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                {templates.map((tpl) => (
+                  <MenuItem key={tpl.id} value={tpl.id}>
+                    {tpl.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
             <Button
               variant="contained"
               onClick={handleCreateZoom}
