@@ -69,6 +69,8 @@ export function LiveSessionDetailDrawer({
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingWebinar, setDeletingWebinar] = useState(false);
   const [tab, setTab] = useState(0);
 
   useEffect(() => {
@@ -137,6 +139,29 @@ export function LiveSessionDetailDrawer({
       showToast(getLiveSessionErrorMessage(error), "error");
     } finally {
       setEndingMeeting(false);
+    }
+  };
+
+  const handleDeleteWebinar = async () => {
+    if (liveClassId == null) return;
+    setDeleteConfirmOpen(false);
+    try {
+      setDeletingWebinar(true);
+      const result = await adminLiveActivitiesService.deleteWebinar(liveClassId);
+      if (result.status === "error") {
+        showToast(
+          getZoomApiErrorMessage(result.message) ||
+            t("adminLiveSessions.deleteWebinarFailed", "Failed to delete webinar"),
+          "error"
+        );
+        return;
+      }
+      showToast(result.message || t("adminLiveSessions.webinarDeleted", "Webinar deleted"), "success");
+      await refreshDetail();
+    } catch (error: unknown) {
+      showToast(getLiveSessionErrorMessage(error), "error");
+    } finally {
+      setDeletingWebinar(false);
     }
   };
 
@@ -345,6 +370,19 @@ export function LiveSessionDetailDrawer({
                       {t("adminLiveSessions.editWebinar", "Edit webinar")}
                     </Button>
                   )}
+                  {isWebinar && scheduledOrLive && !isCancelled && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      startIcon={deletingWebinar ? <CircularProgress size={16} color="inherit" /> : <IconWrapper icon="mdi:trash-can-outline" size={16} />}
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      disabled={deletingWebinar}
+                      sx={{ textTransform: "none", alignSelf: "flex-start" }}
+                    >
+                      {t("adminLiveSessions.deleteWebinar", "Delete webinar")}
+                    </Button>
+                  )}
                   {!scheduledOrLive && !activity.zoom_password && (
                     <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
                       {t("adminLiveSessions.sessionFinished", "This session has finished.")}
@@ -415,7 +453,7 @@ export function LiveSessionDetailDrawer({
 
           {/* Webinar management tabs */}
           {isWebinar && tab === 4 && <WebinarInvitationsSection liveClassId={activity.id} />}
-          {isWebinar && tab === 5 && <WebinarEmailSection liveClassId={activity.id} />}
+          {isWebinar && tab === 5 && <WebinarEmailSection liveClassId={activity.id} editable={scheduledOrLive && !isCancelled} />}
           {isWebinar && tab === 6 && <WebinarBrandingSection liveClassId={activity.id} />}
         </Box>
       ) : null}
@@ -429,6 +467,24 @@ export function LiveSessionDetailDrawer({
           <Button onClick={() => setEndMeetingConfirmOpen(false)}>{t("adminLiveSessions.cancel")}</Button>
           <Button onClick={handleEndMeetingConfirm} color="error" variant="contained" disabled={endingMeeting}>
             {t("adminLiveSessions.endMeeting")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogTitle>{t("adminLiveSessions.deleteWebinarConfirmTitle", "Delete this webinar?")}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t(
+              "adminLiveSessions.deleteWebinarConfirmDesc",
+              "This deletes the webinar in Zoom and marks it cancelled here. Zoom notifies registrants. Any recording and attendance already synced are kept. This can't be undone."
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>{t("adminLiveSessions.cancel")}</Button>
+          <Button onClick={handleDeleteWebinar} color="error" variant="contained" disabled={deletingWebinar}>
+            {t("adminLiveSessions.deleteWebinar", "Delete webinar")}
           </Button>
         </DialogActions>
       </Dialog>
