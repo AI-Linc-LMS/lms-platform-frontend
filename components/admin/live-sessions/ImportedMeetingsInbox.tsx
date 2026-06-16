@@ -45,6 +45,18 @@ export const ImportedMeetingsInbox = forwardRef<
 
   useEffect(() => {
     load();
+    // Webinars/meetings created directly in Zoom arrive via the webhook a few seconds later;
+    // poll so they surface without a manual page reload, and refresh the moment the admin
+    // switches back to this tab (the common "created it in the Zoom tab" flow).
+    const interval = setInterval(load, 30000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load]);
 
   useImperativeHandle(ref, () => ({ refresh: load }), [load]);
