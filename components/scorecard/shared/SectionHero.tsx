@@ -107,6 +107,8 @@ export function SectionHero({
               lineHeight: 1.05,
               letterSpacing: "-0.035em",
               mt: 0.25,
+              // Long/snake_cased titles wrap instead of overflowing into rightSlot (e.g. "Companion ON").
+              overflowWrap: "anywhere",
             }}
           >
             {title}
