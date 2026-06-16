@@ -37,6 +37,11 @@ export interface LiveActivity {
   zoom_source?: "platform" | "imported" | null;
   is_unassigned?: boolean;
   zoom_host_id?: string | null;
+  zoom_status?: "scheduled" | "cancelled" | null;
+  zoom_cancelled_at?: string | null;
+  zoom_registration_url?: string | null;
+  zoom_registration_required?: boolean;
+  zoom_is_recurring?: boolean;
   zoom_meeting_id?: string | null;
   zoom_meeting_uuid?: string | null;
   zoom_start_url?: string | null;
@@ -183,10 +188,86 @@ export interface VirtualBackground {
   is_default?: boolean;
 }
 
-/** Optional preset/template to apply when creating the Zoom meeting. */
+/** Optional preset/template + webinar core fields to apply when creating the Zoom meeting/webinar. */
 export interface CreateZoomOptions {
   preset_id?: number;
   template_id?: string;
+  passcode?: string;
+  registration_required?: boolean;
+}
+
+/** Native Zoom webinar template (GET zoom/webinar-templates/). */
+export interface WebinarTemplate {
+  id: string;
+  name: string;
+}
+
+/** Webinar settings read back from Zoom (Email/Branding tabs). */
+export interface WebinarDetail {
+  id?: number | string;
+  topic?: string;
+  start_time?: string | null;
+  duration?: number;
+  timezone?: string;
+  passcode?: string | null;
+  registration_url?: string | null;
+  approval_type?: number | null;
+  auto_recording?: string | null;
+  contact_name?: string | null;
+  contact_email?: string | null;
+  registrants_confirmation_email?: boolean | null;
+  registrants_email_notification?: boolean | null;
+  attendees_and_panelists_reminder_email?: unknown;
+  alternative_hosts?: string | null;
+  q_and_a?: unknown;
+  recurrence?: unknown;
+}
+
+export interface Panelist {
+  id?: string;
+  name?: string;
+  email: string;
+  join_url?: string;
+}
+
+export interface Registrant {
+  id?: string;
+  registrant_id?: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  status?: string;
+  join_url?: string;
+  create_time?: string;
+}
+
+export interface WebinarBranding {
+  wallpaper: string | null;
+  virtual_backgrounds: Array<{ id?: string; name?: string; url?: string; type?: string }>;
+  banner: string | null;
+  logo: string | null;
+  name_tags: unknown[];
+  readable: boolean;
+  note: string;
+}
+
+export interface WebinarInvitation {
+  registration_url: string;
+  join_url: string;
+  passcode: string;
+  topic: string;
+  start_time: string;
+  invitation_text: string;
+}
+
+export interface WebinarEditInput {
+  topic?: string;
+  start_time?: string;
+  duration?: number;
+  timezone?: string;
+  passcode?: string;
+  approval_type?: number;
+  alternative_hosts?: string;
 }
 
 /** Payload to assign an imported (unassigned) meeting to a course/instructor. */
@@ -376,5 +457,95 @@ export const adminLiveActivitiesService = {
       input
     );
     return response.data;
+  },
+
+  // ── Webinar management ─────────────────────────────────────────────────────
+  getWebinarTemplates: async (): Promise<WebinarTemplate[]> => {
+    const response = await apiClient.get<ZoomApiResponse<{ templates: WebinarTemplate[] }>>(
+      `${BASE}/zoom/webinar-templates/`
+    );
+    return response.data.data?.templates ?? [];
+  },
+
+  getWebinarDetail: async (liveClassId: number): Promise<WebinarDetail> => {
+    const response = await apiClient.get<ZoomApiResponse<WebinarDetail>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/`
+    );
+    return (response.data.data ?? {}) as WebinarDetail;
+  },
+
+  editWebinar: async (
+    liveClassId: number,
+    input: WebinarEditInput
+  ): Promise<ZoomApiResponse<LiveActivity>> => {
+    const response = await apiClient.patch<ZoomApiResponse<LiveActivity>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/edit/`,
+      input
+    );
+    return response.data;
+  },
+
+  getPanelists: async (liveClassId: number): Promise<Panelist[]> => {
+    const response = await apiClient.get<ZoomApiResponse<{ panelists: Panelist[] }>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/panelists/`
+    );
+    return response.data.data?.panelists ?? [];
+  },
+
+  addPanelists: async (
+    liveClassId: number,
+    panelists: Array<{ name?: string; email: string }>
+  ): Promise<ZoomApiResponse<{ panelists: Panelist[] }>> => {
+    const response = await apiClient.post<ZoomApiResponse<{ panelists: Panelist[] }>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/panelists/`,
+      { panelists }
+    );
+    return response.data;
+  },
+
+  deletePanelist: async (liveClassId: number, panelistId: string): Promise<void> => {
+    await apiClient.delete(`${BASE}/live-activities/${liveClassId}/webinar/panelists/`, {
+      params: { panelist_id: panelistId },
+    });
+  },
+
+  getRegistrants: async (
+    liveClassId: number,
+    status: string = "approved"
+  ): Promise<Registrant[]> => {
+    const response = await apiClient.get<ZoomApiResponse<{ registrants: Registrant[] }>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/registrants/`,
+      { params: { status } }
+    );
+    return response.data.data?.registrants ?? [];
+  },
+
+  addRegistrants: async (
+    liveClassId: number,
+    registrants: Array<{ name?: string; email: string; first_name?: string; last_name?: string }>
+  ): Promise<ZoomApiResponse<{ added: unknown[]; failed: Array<{ email: string; reason: string }> }>> => {
+    const response = await apiClient.post<
+      ZoomApiResponse<{ added: unknown[]; failed: Array<{ email: string; reason: string }> }>
+    >(`${BASE}/live-activities/${liveClassId}/webinar/registrants/`, { registrants });
+    return response.data;
+  },
+
+  getWebinarBranding: async (liveClassId: number): Promise<WebinarBranding> => {
+    const response = await apiClient.get<ZoomApiResponse<WebinarBranding>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/branding/`
+    );
+    return (response.data.data ?? {
+      wallpaper: null, virtual_backgrounds: [], banner: null, logo: null,
+      name_tags: [], readable: false, note: "",
+    }) as WebinarBranding;
+  },
+
+  getWebinarInvitation: async (liveClassId: number): Promise<WebinarInvitation> => {
+    const response = await apiClient.get<ZoomApiResponse<WebinarInvitation>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/invitation/`
+    );
+    return (response.data.data ?? {
+      registration_url: "", join_url: "", passcode: "", topic: "", start_time: "", invitation_text: "",
+    }) as WebinarInvitation;
   },
 };
