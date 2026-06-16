@@ -239,18 +239,45 @@ export function WebinarInvitationsSection({ liveClassId }: Props) {
           <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
             {t("adminLiveSessions.panelistCsvHint", "CSV columns: name, email. Zoom allows up to 100 panelists.")}
           </Typography>
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+            {t(
+              "adminLiveSessions.panelistLinkHint",
+              "Each panelist gets a unique join link — use the link icon to copy it and send it to them (Zoom does not email panelists automatically)."
+            )}
+          </Typography>
           {panelists.length > 0 && (
             <List dense>
               {panelists.map((p) => (
                 <ListItem
                   key={p.id || p.email}
                   secondaryAction={
-                    <IconButton edge="end" onClick={() => deletePanelist(p.id)} aria-label="remove">
-                      <IconWrapper icon="mdi:close" size={18} />
-                    </IconButton>
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                      {p.join_url && (
+                        <IconButton
+                          edge="end"
+                          onClick={() =>
+                            copyToClipboard(
+                              p.join_url!,
+                              showToast,
+                              t("adminLiveSessions.panelistLinkCopied", "Panelist join link copied")
+                            )
+                          }
+                          aria-label="copy join link"
+                          title={t("adminLiveSessions.copyPanelistLink", "Copy this panelist's unique join link")}
+                        >
+                          <IconWrapper icon="mdi:link-variant" size={18} />
+                        </IconButton>
+                      )}
+                      <IconButton edge="end" onClick={() => deletePanelist(p.id)} aria-label="remove">
+                        <IconWrapper icon="mdi:close" size={18} />
+                      </IconButton>
+                    </Box>
                   }
                 >
-                  <ListItemText primary={p.name || p.email} secondary={p.name ? p.email : undefined} />
+                  <ListItemText
+                    primary={p.name || p.email}
+                    secondary={p.name ? p.email : undefined}
+                  />
                 </ListItem>
               ))}
             </List>
