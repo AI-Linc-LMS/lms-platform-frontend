@@ -34,7 +34,6 @@ import { LiveSessionRosterSection } from "./LiveSessionRosterSection";
 import { LiveSessionTranscriptSection } from "./LiveSessionTranscriptSection";
 import { WebinarInvitationsSection } from "./WebinarInvitationsSection";
 import { WebinarEmailSection } from "./WebinarEmailSection";
-import { WebinarBrandingSection } from "./WebinarBrandingSection";
 import { EditWebinarDialog } from "./EditWebinarDialog";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import {
@@ -182,7 +181,7 @@ export function LiveSessionDetailDrawer({
   const scheduledOrLive = activity?.meeting_status === "scheduled" || activity?.meeting_status === "live";
 
   // Tabs depend on platform: Google Meet → Overview only; Zoom → base tabs; webinars add
-  // Invitations / Email / Branding (appended so the base tab indices stay stable).
+  // Invitations / Email (appended so the base tab indices stay stable).
   const baseZoomTabs = [
     { icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") },
     { icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabAttendance", "Attendance") },
@@ -192,7 +191,6 @@ export function LiveSessionDetailDrawer({
   const webinarTabs = [
     { icon: "mdi:email-outline", label: t("adminLiveSessions.tabInvitations", "Invitations") },
     { icon: "mdi:email-fast-outline", label: t("adminLiveSessions.tabEmail", "Email") },
-    { icon: "mdi:palette-outline", label: t("adminLiveSessions.tabBranding", "Branding") },
   ];
   const tabs = isZoom
     ? isWebinar
@@ -416,7 +414,6 @@ export function LiveSessionDetailDrawer({
           {/* Webinar management tabs */}
           {isWebinar && tab === 4 && <WebinarInvitationsSection liveClassId={activity.id} />}
           {isWebinar && tab === 5 && <WebinarEmailSection liveClassId={activity.id} />}
-          {isWebinar && tab === 6 && <WebinarBrandingSection liveClassId={activity.id} />}
         </Box>
       ) : null}
 

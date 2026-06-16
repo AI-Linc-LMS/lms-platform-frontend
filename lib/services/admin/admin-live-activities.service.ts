@@ -241,16 +241,6 @@ export interface Registrant {
   create_time?: string;
 }
 
-export interface WebinarBranding {
-  wallpaper: string | null;
-  virtual_backgrounds: Array<{ id?: string; name?: string; url?: string; type?: string }>;
-  banner: string | null;
-  logo: string | null;
-  name_tags: unknown[];
-  readable: boolean;
-  note: string;
-}
-
 export interface WebinarInvitation {
   registration_url: string;
   join_url: string;
@@ -528,16 +518,6 @@ export const adminLiveActivitiesService = {
       ZoomApiResponse<{ added: unknown[]; failed: Array<{ email: string; reason: string }> }>
     >(`${BASE}/live-activities/${liveClassId}/webinar/registrants/`, { registrants });
     return response.data;
-  },
-
-  getWebinarBranding: async (liveClassId: number): Promise<WebinarBranding> => {
-    const response = await apiClient.get<ZoomApiResponse<WebinarBranding>>(
-      `${BASE}/live-activities/${liveClassId}/webinar/branding/`
-    );
-    return (response.data.data ?? {
-      wallpaper: null, virtual_backgrounds: [], banner: null, logo: null,
-      name_tags: [], readable: false, note: "",
-    }) as WebinarBranding;
   },
 
   getWebinarInvitation: async (liveClassId: number): Promise<WebinarInvitation> => {
