@@ -18,7 +18,11 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { liveClassService, LiveClassSession } from "@/lib/services/live-class.service";
-import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
+import {
+  adminLiveActivitiesService,
+  MeetingPreset,
+  MeetingTemplate,
+} from "@/lib/services/admin/admin-live-activities.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import {
   getLiveSessionErrorMessage,
@@ -69,6 +73,11 @@ export function CreateLiveSessionDialog({
   const [courseId, setCourseId] = useState<number | null>(null);
   const [courses, setCourses] = useState<{ id: number; title: string }[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  // Optional Zoom preset / native template applied when creating the meeting.
+  const [presets, setPresets] = useState<MeetingPreset[]>([]);
+  const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<number | "">("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
@@ -92,6 +101,27 @@ export function CreateLiveSessionDialog({
     return () => { cancelled = true; };
   }, [open]);
 
+  // Load presets + native templates once the session exists and we're on the Zoom step.
+  useEffect(() => {
+    if (step !== "create-zoom") return;
+    let cancelled = false;
+    Promise.allSettled([
+      adminLiveActivitiesService.listPresets(),
+      adminLiveActivitiesService.getMeetingTemplates(),
+    ]).then(([presetRes, templateRes]) => {
+      if (cancelled) return;
+      if (presetRes.status === "fulfilled") {
+        setPresets(presetRes.value);
+        const def = presetRes.value.find((p) => p.is_default);
+        if (def) setSelectedPresetId(def.id);
+      }
+      if (templateRes.status === "fulfilled") setTemplates(templateRes.value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [step]);
+
   const getValidInstructorId = (): number | undefined => {
     const trimmed = instructorId.trim();
     if (!trimmed) return undefined;
@@ -114,6 +144,10 @@ export function CreateLiveSessionDialog({
     setMeetLink("");
     setInstructorId("");
     setCourseId(null);
+    setPresets([]);
+    setTemplates([]);
+    setSelectedPresetId("");
+    setSelectedTemplateId("");
   };
 
   const handleCreateSession = async () => {
@@ -221,7 +255,11 @@ export function CreateLiveSessionDialog({
     try {
       setCreatingZoom(true);
       const result = await adminLiveActivitiesService.createZoom(
-        createdSession.id
+        createdSession.id,
+        {
+          preset_id: selectedPresetId === "" ? undefined : selectedPresetId,
+          template_id: selectedTemplateId || undefined,
+        }
       );
       if (result.status === "error") {
         const msg = (result.message || "").toLowerCase();
@@ -504,6 +542,49 @@ export function CreateLiveSessionDialog({
                 {t("adminLiveSessions.createZoomHint", "Creating the meeting emails the join link to all enrolled students and turns on automatic attendance, recording and transcript sync.")}
               </InfoCallout>
             </Box>
+            {(presets.length > 0 || templates.length > 0) && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
+                {presets.length > 0 && (
+                  <TextField
+                    select
+                    label={t("adminLiveSessions.meetingPreset", "Settings preset (optional)")}
+                    value={selectedPresetId}
+                    onChange={(e) =>
+                      setSelectedPresetId(e.target.value === "" ? "" : Number(e.target.value))
+                    }
+                    fullWidth
+                    size="small"
+                    helperText={t("adminLiveSessions.meetingPresetHelper", "Reusable Zoom settings applied to this meeting.")}
+                  >
+                    <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                    {presets.map((p) => (
+                      <MenuItem key={p.id} value={p.id}>
+                        {p.name}
+                        {p.is_default ? ` (${t("adminLiveSessions.default", "default")})` : ""}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+                {templates.length > 0 && (
+                  <TextField
+                    select
+                    label={t("adminLiveSessions.meetingTemplate", "Zoom template (optional)")}
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    fullWidth
+                    size="small"
+                    helperText={t("adminLiveSessions.meetingTemplateHelper", "Apply settings from a saved Zoom meeting template.")}
+                  >
+                    <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                    {templates.map((tpl) => (
+                      <MenuItem key={tpl.id} value={tpl.id}>
+                        {tpl.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              </Box>
+            )}
             <Button
               variant="contained"
               onClick={handleCreateZoom}

@@ -34,6 +34,9 @@ export interface LiveActivity {
   is_google_meet?: boolean;
   zoom_meeting_type?: "meeting" | "webinar" | null;
   closes_at?: string | null;
+  zoom_source?: "platform" | "imported" | null;
+  is_unassigned?: boolean;
+  zoom_host_id?: string | null;
   zoom_meeting_id?: string | null;
   zoom_meeting_uuid?: string | null;
   zoom_start_url?: string | null;
@@ -148,6 +151,51 @@ export interface SyncAttendanceResponse {
   data: SyncAttendanceData | null;
 }
 
+/** Native Zoom meeting template (GET zoom/templates/). */
+export interface MeetingTemplate {
+  id: string;
+  name: string;
+  type?: number;
+}
+
+/** Platform-side reusable meeting-setting preset (zoom/presets/ CRUD). */
+export interface MeetingPreset {
+  id: number;
+  name: string;
+  settings: Record<string, unknown>;
+  template_id: string;
+  is_default: boolean;
+  created_at?: string;
+}
+
+export interface MeetingPresetInput {
+  name: string;
+  settings?: Record<string, unknown>;
+  template_id?: string;
+  is_default?: boolean;
+}
+
+/** Account-level virtual background file (zoom/virtual-backgrounds/). */
+export interface VirtualBackground {
+  id: string;
+  name?: string;
+  type?: string;
+  is_default?: boolean;
+}
+
+/** Optional preset/template to apply when creating the Zoom meeting. */
+export interface CreateZoomOptions {
+  preset_id?: number;
+  template_id?: string;
+}
+
+/** Payload to assign an imported (unassigned) meeting to a course/instructor. */
+export interface AssignMeetingInput {
+  course_id?: number | null;
+  instructor?: string;
+  topic_name?: string;
+}
+
 export const adminLiveActivitiesService = {
   getLiveActivities: async (): Promise<LiveActivity[]> => {
     const response = await apiClient.get<LiveActivity[]>(
@@ -166,10 +214,12 @@ export const adminLiveActivitiesService = {
   },
 
   createZoom: async (
-    liveClassId: number
+    liveClassId: number,
+    options?: CreateZoomOptions
   ): Promise<ZoomApiResponse<ZoomCreateSuccessData>> => {
     const response = await apiClient.post<ZoomApiResponse<ZoomCreateSuccessData>>(
-      `${BASE}/live-activities/${liveClassId}/zoom/create/`
+      `${BASE}/live-activities/${liveClassId}/zoom/create/`,
+      options ?? {}
     );
     return response.data;
   },
@@ -233,6 +283,97 @@ export const adminLiveActivitiesService = {
   ): Promise<LiveSessionTranscriptResponse> => {
     const response = await apiClient.get<LiveSessionTranscriptResponse>(
       `${BASE}/live-activities/${liveClassId}/zoom/transcript/`
+    );
+    return response.data;
+  },
+
+  // ── Native Zoom meeting templates ──────────────────────────────────────────
+  getMeetingTemplates: async (): Promise<MeetingTemplate[]> => {
+    const response = await apiClient.get<
+      ZoomApiResponse<{ templates: MeetingTemplate[] }>
+    >(`${BASE}/zoom/templates/`);
+    return response.data.data?.templates ?? [];
+  },
+
+  // ── Platform-side meeting presets ──────────────────────────────────────────
+  listPresets: async (): Promise<MeetingPreset[]> => {
+    const response = await apiClient.get<
+      ZoomApiResponse<{ presets: MeetingPreset[] }>
+    >(`${BASE}/zoom/presets/`);
+    return response.data.data?.presets ?? [];
+  },
+
+  createPreset: async (input: MeetingPresetInput): Promise<MeetingPreset> => {
+    const response = await apiClient.post<ZoomApiResponse<MeetingPreset>>(
+      `${BASE}/zoom/presets/`,
+      input
+    );
+    return response.data.data as MeetingPreset;
+  },
+
+  updatePreset: async (
+    presetId: number,
+    input: Partial<MeetingPresetInput>
+  ): Promise<MeetingPreset> => {
+    const response = await apiClient.put<ZoomApiResponse<MeetingPreset>>(
+      `${BASE}/zoom/presets/${presetId}/`,
+      input
+    );
+    return response.data.data as MeetingPreset;
+  },
+
+  deletePreset: async (presetId: number): Promise<void> => {
+    await apiClient.delete(`${BASE}/zoom/presets/${presetId}/`);
+  },
+
+  // ── Account-level virtual backgrounds (applies account-wide) ───────────────
+  listVirtualBackgrounds: async (): Promise<{
+    virtual_backgrounds: VirtualBackground[];
+    note: string;
+  }> => {
+    const response = await apiClient.get<
+      ZoomApiResponse<{ virtual_backgrounds: VirtualBackground[]; note: string }>
+    >(`${BASE}/zoom/virtual-backgrounds/`);
+    return (
+      response.data.data ?? { virtual_backgrounds: [], note: "" }
+    );
+  },
+
+  uploadVirtualBackground: async (
+    file: File
+  ): Promise<ZoomApiResponse<{ file: VirtualBackground; note: string }>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<
+      ZoomApiResponse<{ file: VirtualBackground; note: string }>
+    >(`${BASE}/zoom/virtual-backgrounds/`, formData);
+    return response.data;
+  },
+
+  deleteVirtualBackground: async (
+    fileIds: string | string[]
+  ): Promise<void> => {
+    const ids = Array.isArray(fileIds) ? fileIds.join(",") : fileIds;
+    await apiClient.delete(`${BASE}/zoom/virtual-backgrounds/`, {
+      params: { file_ids: ids },
+    });
+  },
+
+  // ── Inbound sync: imported (unassigned) meetings inbox + assign ────────────
+  getUnassigned: async (): Promise<LiveActivity[]> => {
+    const response = await apiClient.get<LiveActivity[]>(
+      `${BASE}/live-activities/unassigned/`
+    );
+    return response.data;
+  },
+
+  assignMeeting: async (
+    liveClassId: number,
+    input: AssignMeetingInput
+  ): Promise<ZoomApiResponse<LiveActivity>> => {
+    const response = await apiClient.post<ZoomApiResponse<LiveActivity>>(
+      `${BASE}/live-activities/${liveClassId}/assign/`,
+      input
     );
     return response.data;
   },
