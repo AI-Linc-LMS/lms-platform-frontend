@@ -268,6 +268,10 @@ export interface WebinarEditInput {
   passcode?: string;
   approval_type?: number;
   alternative_hosts?: string;
+  contact_name?: string;
+  contact_email?: string;
+  registrants_confirmation_email?: boolean;
+  registrants_email_notification?: boolean;
 }
 
 /** Payload to assign an imported (unassigned) meeting to a course/instructor. */
@@ -481,6 +485,15 @@ export const adminLiveActivitiesService = {
     const response = await apiClient.patch<ZoomApiResponse<LiveActivity>>(
       `${BASE}/live-activities/${liveClassId}/webinar/edit/`,
       input
+    );
+    return response.data;
+  },
+
+  deleteWebinar: async (
+    liveClassId: number
+  ): Promise<ZoomApiResponse<LiveActivity>> => {
+    const response = await apiClient.delete<ZoomApiResponse<LiveActivity>>(
+      `${BASE}/live-activities/${liveClassId}/webinar/`
     );
     return response.data;
   },
