@@ -119,11 +119,12 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           </Box>
         </Stack>
 
-        <Box sx={{ mt: 1.25, p: 1, borderRadius: 2, bgcolor: "#f5f3ff" }}>
+        <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.25, p: 1, borderRadius: 2, bgcolor: "#f5f3ff" }}>
+          <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 3 }} />
           <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>
-            <Icon icon="mdi:star-four-points" width={13} style={{ verticalAlign: "-2px" }} /> <b>AI momentum:</b> {momentum}
+            <b>AI momentum:</b> {momentum}
           </Typography>
-        </Box>
+        </Stack>
       </Card>
 
       {/* Leaderboard */}
@@ -141,11 +142,12 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           </Stack>
 
           {leaderboard.climb_plan && (
-            <Box sx={{ mb: 1.25, p: 1, borderRadius: 2, background: "linear-gradient(135deg, #f5f3ff, #fdf2f8)" }}>
+            <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mb: 1.25, p: 1, borderRadius: 2, background: "linear-gradient(135deg, #f5f3ff, #fdf2f8)" }}>
+              <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 3 }} />
               <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>
-                <Icon icon="mdi:star-four-points" width={13} style={{ verticalAlign: "-2px" }} /> {leaderboard.climb_plan.text}
+                {leaderboard.climb_plan.text}
               </Typography>
-            </Box>
+            </Stack>
           )}
 
           <Stack spacing={0.75}>

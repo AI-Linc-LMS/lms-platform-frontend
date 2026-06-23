@@ -177,22 +177,24 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
 
         {current && (
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mt: 1.5 }}>
-            <Typography sx={{ fontSize: "0.74rem", color: "#15803d", fontWeight: 600 }}>
-              <Icon icon="mdi:circle" width={7} style={{ verticalAlign: "middle", marginRight: 4 }} />
-              Available now · earn full {node.score.total} pts{dueAt ? ` before ${fmtDate(dueAt)}` : ""}
-            </Typography>
+            <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+              <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#15803d", flexShrink: 0 }} />
+              <Typography sx={{ fontSize: "0.74rem", color: "#15803d", fontWeight: 600 }}>
+                Available now · earn full {node.score.total} pts{dueAt ? ` before ${fmtDate(dueAt)}` : ""}
+              </Typography>
+            </Stack>
             {navigable && (
-              <ButtonBase onClick={go} sx={{ px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+              <ButtonBase onClick={go} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
                 Continue →
               </ButtonBase>
             )}
           </Stack>
         )}
         {locked && node.lockReason && (
-          <Typography sx={{ fontSize: "0.72rem", color: "#64748b", mt: 1 }}>
-            <Icon icon="mdi:lock-outline" width={12} style={{ verticalAlign: "middle", marginRight: 3 }} />
-            {node.lockReason}
-          </Typography>
+          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
+            <Icon icon="mdi:lock-outline" width={12} color="#64748b" style={{ flexShrink: 0 }} />
+            <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>{node.lockReason}</Typography>
+          </Stack>
         )}
       </Box>
     </Box>
