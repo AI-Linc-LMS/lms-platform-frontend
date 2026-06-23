@@ -266,7 +266,7 @@ function PenaltyCell({ color, bg, head, sub, note }: { color: string; bg: string
   return (
     <Box sx={{ flex: 1, p: 1, borderRadius: 2, bgcolor: bg, border: `1px solid ${color}22` }}>
       <Typography sx={{ fontSize: "0.74rem", fontWeight: 800, color }}>{head}</Typography>
-      <Typography sx={{ fontSize: "0.68rem", color: "#64748b" }}>{sub}</Typography>
+      <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, color: "#0f172a" }}>{sub}</Typography>
       <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color, mt: 0.25 }}>{note}</Typography>
     </Box>
   );
