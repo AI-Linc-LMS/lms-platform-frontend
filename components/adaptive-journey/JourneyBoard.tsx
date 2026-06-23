@@ -138,11 +138,11 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
           borderLeft: "4px solid", borderLeftColor: ns.color,
           borderColor: current ? "#c7d2fe" : "#eef2f7",
           bgcolor: current ? "#fbfbff" : "#fff",
-          boxShadow: current ? `0 10px 26px -18px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
+          boxShadow: current ? `0 4px 14px -14px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
           opacity: locked ? 0.72 : 1,
           cursor: navigable ? "pointer" : "default",
-          transition: "border-color .15s, box-shadow .15s",
-          "&:hover": navigable ? { borderColor: ns.color, boxShadow: `0 12px 28px -18px ${ns.color}` } : {},
+          transition: "border-color .15s",
+          "&:hover": navigable ? { borderColor: "#cbd5e1" } : {},
         }}
       >
         <Stack direction="row" alignItems="flex-start" gap={1.25}>
