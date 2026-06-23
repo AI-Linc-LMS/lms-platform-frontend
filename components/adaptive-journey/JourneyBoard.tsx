@@ -114,12 +114,14 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
   );
 
   return (
-    <Stack direction="row" spacing={1.75} alignItems="stretch">
-      {/* timeline rail */}
-      <Stack alignItems="center" sx={{ flexShrink: 0 }}>
-        {circle}
-        <Box sx={{ width: "2px", flex: 1, bgcolor: "#eef2f7", my: 0.25 }} />
-      </Stack>
+    <Box sx={{ display: "flex", gap: 1.75, alignItems: "stretch" }}>
+      {/* timeline rail — marker vertically centred on the card, continuous line behind */}
+      <Box sx={{ position: "relative", width: 28, flexShrink: 0 }}>
+        <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: -12, width: "2px", bgcolor: "#eef2f7", transform: "translateX(-50%)" }} />
+        <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "grid", placeItems: "center", bgcolor: "#fff", borderRadius: "50%", p: "3px" }}>
+          {circle}
+        </Box>
+      </Box>
 
       <Box
         onClick={go}
@@ -180,7 +182,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
           </Typography>
         )}
       </Box>
-    </Stack>
+    </Box>
   );
 }
 
