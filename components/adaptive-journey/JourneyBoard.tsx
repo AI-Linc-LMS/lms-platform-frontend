@@ -16,7 +16,26 @@ import { JourneyTopCards } from "./JourneyTopCards";
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+function addDays(iso: string, n: number): string {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + n);
+  return d.toISOString();
+}
+
+/** "Jul 11 – 14" when same month, else "Jul 11 – Aug 2". */
+function fmtRange(a: string, b: string): string {
+  try {
+    const da = new Date(a);
+    const db = new Date(b);
+    const mon = (d: Date) => d.toLocaleDateString(undefined, { month: "short" });
+    if (mon(da) === mon(db)) return `${mon(da)} ${da.getDate()} – ${db.getDate()}`;
+    return `${fmtDate(a)} – ${fmtDate(b)}`;
   } catch {
     return "";
   }
@@ -175,38 +194,41 @@ function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; course
     <Box sx={{ border: "1px solid #eef2f7", borderRadius: 4, overflow: "hidden", bgcolor: "#fff", mb: 2 }}>
       <Box sx={{ p: { xs: 2, md: 2.5 }, bgcolor: "#fafbff", borderBottom: "1px solid #eef2f7" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
-          <Box>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Icon icon="mdi:calendar-week" width={18} color="#6366f1" />
-              <Typography sx={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a" }}>
-                {week.weekNo === 0 ? "Get started" : `Week ${week.weekNo}`}{week.title ? ` · ${week.title}` : ""}
-              </Typography>
-              {locked && <Icon icon="mdi:lock" width={14} color="#94a3b8" />}
-            </Stack>
-            <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8", mt: 0.25 }}>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Icon icon="mdi:calendar-month" width={18} color="#a855f7" />
+            <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
+              {week.weekNo === 0 ? "Get started" : `Week ${week.weekNo}`}{week.title ? ` · ${week.title}` : ""}
+            </Typography>
+            <Typography sx={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 600 }}>
               {week.stepsDone} of {week.stepsTotal} steps done
             </Typography>
-          </Box>
-          <Box sx={{ textAlign: "right" }}>
+            {locked && <Icon icon="mdi:lock" width={14} color="#94a3b8" />}
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
             {week.schedule && (
-              <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: dl != null && dl < 0 ? "#b91c1c" : "#475569" }}>
-                Due {fmtDate(week.schedule.dueAt)}{dl != null ? ` · ${dl < 0 ? `${-dl}d overdue` : `${dl} days left`}` : ""}
-              </Typography>
+              <Chip
+                size="small"
+                icon={<Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: dl != null && dl < 0 ? "#ef4444" : "#22c55e", ml: 0.75 }} />}
+                label={`Due ${fmtDate(week.schedule.dueAt)}${dl != null ? ` · ${dl < 0 ? `${-dl}d overdue` : `${dl} days left`}` : ""}`}
+                sx={{ fontWeight: 700, fontSize: "0.74rem", color: dl != null && dl < 0 ? "#b91c1c" : "#15803d", bgcolor: dl != null && dl < 0 ? "#fef2f2" : "#f0fdf4" }}
+              />
             )}
-            <Typography sx={{ fontSize: "0.82rem", fontWeight: 800, color: "#6366f1", mt: 0.25 }}>
-              <Icon icon="mdi:trophy-outline" width={14} style={{ verticalAlign: "middle", marginRight: 3 }} />
-              {week.totals.earned} / {week.totals.total} pts
-            </Typography>
-          </Box>
+            <Chip
+              size="small"
+              icon={<Icon icon="mdi:trophy" width={14} />}
+              label={`${week.totals.earned} / ${week.totals.total} pts`}
+              sx={{ fontWeight: 800, fontSize: "0.74rem", color: "#6d28d9", bgcolor: "#ede9fe", "& .MuiChip-icon": { color: "#6d28d9" } }}
+            />
+          </Stack>
         </Stack>
 
-        <LinearProgress variant="determinate" value={pct} sx={{ mt: 1.25, height: 6, borderRadius: 3, bgcolor: "#eef2f7", "& .MuiLinearProgress-bar": { bgcolor: "#6366f1" } }} />
+        <LinearProgress variant="determinate" value={pct} sx={{ mt: 1.5, height: 6, borderRadius: 3, bgcolor: "#eef2f7", "& .MuiLinearProgress-bar": { borderRadius: 3, background: "linear-gradient(90deg, #6366f1, #a855f7)" } }} />
 
         {week.penaltyStrip && week.schedule && (
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.5 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="stretch" sx={{ mt: 1.5 }}>
             <PenaltyCell color="#15803d" bg="#f0fdf4" head="On time" sub={`by ${fmtDate(week.schedule.dueAt)}`} note="Full score" />
             <Icon icon="mdi:arrow-right" width={16} style={{ color: "#cbd5e1", alignSelf: "center" }} />
-            <PenaltyCell color="#b45309" bg="#fffbeb" head="1–4 days late" sub={`${fmtDate(week.schedule.dueAt)}+`} note="−50% penalty" />
+            <PenaltyCell color="#b45309" bg="#fffbeb" head="1–4 days late" sub={fmtRange(addDays(week.schedule.dueAt, 1), addDays(week.penaltyStrip.zeroAfter, -1))} note="−50% penalty" />
             <Icon icon="mdi:arrow-right" width={16} style={{ color: "#cbd5e1", alignSelf: "center" }} />
             <PenaltyCell color="#b91c1c" bg="#fef2f2" head="After deadline" sub={`from ${fmtDate(week.penaltyStrip.zeroAfter)}`} note="−100% · no credit" />
           </Stack>
@@ -385,12 +407,12 @@ export function JourneyBoard({ courseId, fallback }: { courseId: number; fallbac
             <Chip icon={<Icon icon="mdi:auto-fix" width={15} />} label="Adaptive paths on" size="small" sx={{ fontWeight: 700, color: "#6d28d9", bgcolor: "#ede9fe", "& .MuiChip-icon": { color: "#6d28d9" } }} />
           </Stack>
 
-          <Box sx={{ p: 1.25, mb: 2, borderRadius: 2, bgcolor: "#fafbff", border: "1px solid #eef2f7" }}>
-            <Typography sx={{ fontSize: "0.76rem", color: "#64748b" }}>
-              <Icon icon="mdi:calendar-clock" width={14} style={{ verticalAlign: "middle", marginRight: 5, color: "#a855f7" }} />
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2, bgcolor: "#f8fafc", border: "1px solid #eef2f7" }}>
+            <Icon icon="mdi:note-edit-outline" width={16} color="#94a3b8" style={{ flexShrink: 0 }} />
+            <Typography sx={{ fontSize: "0.8rem", color: "#64748b", lineHeight: 1.4 }}>
               Each week has its own due date. Late penalties apply to the <b>points earned</b> for that week — finish before the date to keep 100%.
             </Typography>
-          </Box>
+          </Stack>
 
           {board.weeks.map((w, i) => (
             <WeekCard key={w.weekNo} week={w} courseId={courseId} startStep={stepStarts[i] ?? 0} />

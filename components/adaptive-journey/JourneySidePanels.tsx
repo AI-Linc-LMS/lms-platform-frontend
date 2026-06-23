@@ -4,21 +4,26 @@ import { useEffect, useState } from "react";
 import { Avatar, Box, ButtonBase, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
-import type { JourneyBoard, Leaderboard, TrendDirection } from "@/lib/types/adaptive-journey";
+import type { JourneyBoard, Leaderboard } from "@/lib/types/adaptive-journey";
+
+// Medal colours for the top-3 rank circles.
+const RANK_BG = ["#fde68a", "#e5e7eb", "#e7c4a0"];
+const RANK_FG = ["#92400e", "#475569", "#7c4a14"];
+const AV_COLORS = ["#6366f1", "#0d9488", "#b91c1c", "#16a34a", "#7c3aed", "#db2777", "#ca8a04", "#0ea5e9"];
+
+function avatarColor(name: string): string {
+  let h = 0;
+  for (const ch of name || "x") h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return AV_COLORS[h % AV_COLORS.length];
+}
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   } catch {
     return "";
   }
-}
-
-function TrendArrow({ trend }: { trend: TrendDirection }) {
-  if (trend === "up") return <Icon icon="mdi:trending-up" width={15} color="#15803d" />;
-  if (trend === "down") return <Icon icon="mdi:trending-down" width={15} color="#b91c1c" />;
-  return <Icon icon="mdi:trending-neutral" width={15} color="#94a3b8" />;
 }
 
 function Card({ children }: { children: React.ReactNode }) {
@@ -122,36 +127,52 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
             <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
               <Icon icon="mdi:trophy" width={17} />
             </Box>
-            <Box>
+            <Box sx={{ flex: 1 }}>
               <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Leaderboard</Typography>
               <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8" }}>Top performers · this course</Typography>
             </Box>
+            <Icon icon="mdi:information-outline" width={16} color="#cbd5e1" />
           </Stack>
 
           {leaderboard.climb_plan && (
-            <Box sx={{ mb: 1, p: 1, borderRadius: 2, bgcolor: "#f5f3ff" }}>
+            <Box sx={{ mb: 1.25, p: 1, borderRadius: 2, background: "linear-gradient(135deg, #f5f3ff, #fdf2f8)" }}>
               <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>
                 <Icon icon="mdi:star-four-points" width={13} style={{ verticalAlign: "-2px" }} /> {leaderboard.climb_plan.text}
               </Typography>
             </Box>
           )}
 
-          <Stack spacing={0.5}>
-            {leaderboard.rows.slice(0, 5).map((row) => (
-              <Stack key={row.rank} direction="row" spacing={1} alignItems="center" sx={{ p: 0.75, borderRadius: 2, bgcolor: row.is_current_user ? "#eef2ff" : "transparent", border: row.is_current_user ? "1px solid #c7d2fe" : "1px solid transparent" }}>
-                <Avatar src={row.profile_pic_url ?? undefined} sx={{ width: 26, height: 26, fontSize: "0.72rem", bgcolor: row.rank <= 3 ? "#fde68a" : "#e2e8f0", color: "#0f172a" }}>
-                  {row.name?.[0]?.toUpperCase()}
-                </Avatar>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: row.is_current_user ? 800 : 700, fontSize: "0.82rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {row.is_current_user ? "You" : row.name}
-                  </Typography>
-                  <Typography sx={{ fontSize: "0.66rem", color: "#94a3b8" }}>Score: {row.score.toLocaleString()}</Typography>
-                </Box>
-                <TrendArrow trend={row.trend} />
-                <Typography sx={{ fontWeight: 800, fontSize: "0.8rem", color: "#475569", width: 26, textAlign: "right" }}>#{row.rank}</Typography>
-              </Stack>
-            ))}
+          <Stack spacing={0.75}>
+            {leaderboard.rows.slice(0, 5).map((row) => {
+              const top3 = row.rank <= 3;
+              return (
+                <Stack
+                  key={row.rank}
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{
+                    p: 0.85, borderRadius: 2.5,
+                    bgcolor: row.is_current_user ? "#eef2ff" : top3 ? "#fffdf2" : "#fff",
+                    border: row.is_current_user ? "1px solid #c7d2fe" : top3 ? "1px solid #fde68a" : "1px solid #eef2f7",
+                  }}
+                >
+                  <Box sx={{ width: 22, height: 22, borderRadius: "50%", display: "grid", placeItems: "center", flexShrink: 0, fontWeight: 800, fontSize: "0.7rem", bgcolor: top3 ? RANK_BG[row.rank - 1] : "#e2e8f0", color: top3 ? RANK_FG[row.rank - 1] : "#64748b" }}>
+                    {row.rank}
+                  </Box>
+                  <Avatar src={row.profile_pic_url ?? undefined} sx={{ width: 28, height: 28, fontSize: "0.74rem", bgcolor: avatarColor(row.name), color: "white", fontWeight: 700 }}>
+                    {row.name?.[0]?.toUpperCase()}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: row.is_current_user ? 800 : 700, fontSize: "0.84rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {row.is_current_user ? <>You <span style={{ color: "#6366f1", fontWeight: 700 }}>(you)</span></> : row.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.66rem", color: "#94a3b8" }}>Score: {row.score.toLocaleString()}</Typography>
+                  </Box>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.84rem", color: "#6d28d9" }}>#{row.rank}</Typography>
+                </Stack>
+              );
+            })}
           </Stack>
         </Card>
       )}
