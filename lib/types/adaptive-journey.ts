@@ -67,6 +67,7 @@ export interface JourneyBoard {
       questionCount: number;
       proctored: boolean;
       configured: boolean;
+      generating: boolean;
       status: "done" | "not_started" | "not_configured";
     } | null;
   };

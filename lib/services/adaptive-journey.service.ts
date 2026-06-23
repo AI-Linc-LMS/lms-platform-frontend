@@ -110,19 +110,14 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  async linkCalibration(courseId: number, assessmentId: number): Promise<{ assessment_id: number }> {
-    const { data } = await apiClient.post(`${ADMIN}/courses/${courseId}/calibration-link/`, {
-      assessment_id: assessmentId,
-    });
-    return data;
-  },
-
   /** Read-only calibration status for a course (admin UI). */
   async getCalibration(courseId: number): Promise<{
     exists: boolean;
     assessment_id: number | null;
     assessment_slug: string | null;
     configured: boolean;
+    generating: boolean;
+    status: "generating" | "ready" | "setup_pending" | "not_started";
     question_count: number;
     node_id: number | null;
     duration_minutes: number | null;
@@ -132,12 +127,13 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  /** One-click provision of a calibration shell (assessment + node) for the course;
-   *  the instructor then only adds the aptitude question set. Idempotent. */
+  /** Kick off AI generation of the course's calibration (field-aptitude questions).
+   *  Runs in the background — returns immediately with generating=true; poll
+   *  getCalibration until ready. Idempotent. */
   async createCalibration(
     courseId: number,
-    opts?: { duration_minutes?: number; points?: number },
-  ): Promise<{ assessment_id: number; assessment_slug: string; node_id: number; configured: boolean }> {
+    opts?: { question_count?: number },
+  ): Promise<{ assessment_id: number; assessment_slug: string; node_id: number; configured: boolean; generating: boolean }> {
     const { data } = await apiClient.post(`${ADMIN}/courses/${courseId}/calibration/create/`, opts ?? {});
     return data;
   },

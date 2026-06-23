@@ -28,19 +28,21 @@ const CALIB_STATUS_CHIP: Record<string, { label: string; color: string }> = {
   done: { label: "DONE", color: "#86efac" },
   not_started: { label: "NOT STARTED", color: "#fcd34d" },
   not_configured: { label: "SETUP PENDING", color: "#cbd5e1" },
+  generating: { label: "PREPARING", color: "#c7d2fe" },
 };
 
 function CalibrationCard({ calibration }: { calibration: JourneyBoard["calibration"] }) {
   const router = useRouter();
   const card = calibration.card;
   if (!card) return null;
-  const status = card.status;
+  const status = card.generating ? "generating" : card.status;
   const slug = card.assessmentSlug;
   const canStart = status === "not_started" && !!slug;
   const chip = CALIB_STATUS_CHIP[status] ?? CALIB_STATUS_CHIP.not_configured;
 
   let ctaLabel = "Start proctored assessment →";
   if (status === "done") ctaLabel = "Calibration complete";
+  else if (status === "generating") ctaLabel = "Calibration is being prepared…";
   else if (status === "not_configured") ctaLabel = "Calibration not set up yet";
 
   return (
@@ -97,7 +99,11 @@ function CalibrationCard({ calibration }: { calibration: JourneyBoard["calibrati
           {ctaLabel}
         </ButtonBase>
         <Typography sx={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", maxWidth: 130 }}>
-          {status === "not_configured" ? "Your instructor will enable this soon" : "Same for everyone · not graded on a curve"}
+          {status === "generating"
+            ? "Being prepared by AI — check back shortly"
+            : status === "not_configured"
+              ? "Your instructor will enable this soon"
+              : "Same for everyone · not graded on a curve"}
         </Typography>
       </Stack>
     </Box>
