@@ -414,7 +414,7 @@ export function JourneyBoard({ courseId, fallback }: { courseId: number; fallbac
       <Hero board={board} courseId={courseId} />
       <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 330px" }, gap: 2.5 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5 }}>
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 1.25 }}>
             <Stack direction="row" spacing={1.25} alignItems="center">
