@@ -69,10 +69,10 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           Complete <b>{c.certificateThreshold}%</b> of the course to unlock certificate download &amp; LinkedIn sharing.
         </Typography>
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-          <ButtonBase disabled={!certReady} sx={{ flex: 1, py: 0.9, borderRadius: 2, fontWeight: 700, fontSize: "0.8rem", gap: 0.5, color: certReady ? "white" : "#94a3b8", bgcolor: certReady ? "#6366f1" : "#f1f5f9", border: "1px solid #eef2f7" }}>
+          <ButtonBase disabled={!certReady} sx={{ flex: 1, py: 0.9, borderRadius: 2, fontWeight: 700, fontSize: "0.8rem", gap: 0.5, color: certReady ? "white" : "#64748b", bgcolor: certReady ? "#6366f1" : "#f1f5f9", border: "1px solid #eef2f7" }}>
             <Icon icon="mdi:download" width={16} /> Certificate
           </ButtonBase>
-          <ButtonBase disabled={!certReady} sx={{ flex: 1, py: 0.9, borderRadius: 2, fontWeight: 700, fontSize: "0.8rem", gap: 0.5, color: certReady ? "#0a66c2" : "#94a3b8", bgcolor: "#f1f5f9", border: "1px solid #eef2f7" }}>
+          <ButtonBase disabled={!certReady} sx={{ flex: 1, py: 0.9, borderRadius: 2, fontWeight: 700, fontSize: "0.8rem", gap: 0.5, color: certReady ? "#0a66c2" : "#64748b", bgcolor: "#f1f5f9", border: "1px solid #eef2f7" }}>
             <Icon icon="mdi:linkedin" width={16} /> Share
           </ButtonBase>
         </Stack>
@@ -86,7 +86,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           </Box>
           <Box>
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Your Progress</Typography>
-            <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8" }}>Track your learning journey</Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>Track your learning journey</Typography>
           </Box>
         </Stack>
 
@@ -100,13 +100,13 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
 
         <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
           <Box sx={{ flex: 1, p: 1, borderRadius: 2, border: "1px solid #eef2f7" }}>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8" }}>POINTS EARNED</Typography>
+            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#64748b" }}>POINTS EARNED</Typography>
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>
-              {pc.pointsEarned}<span style={{ color: "#94a3b8", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.pointsTotal}</span>
+              {pc.pointsEarned}<span style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.pointsTotal}</span>
             </Typography>
           </Box>
           <Box sx={{ flex: 1, p: 1, borderRadius: 2, border: "1px solid #eef2f7" }}>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8" }}>ON-TIME RATE</Typography>
+            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#64748b" }}>ON-TIME RATE</Typography>
             <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
               {pc.onTimeRate != null ? `${Math.round(pc.onTimeRate * 100)}%` : "—"}
             </Typography>
@@ -129,7 +129,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Leaderboard</Typography>
-              <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8" }}>Top performers · this course</Typography>
+              <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>Top performers · this course</Typography>
             </Box>
             <Icon icon="mdi:information-outline" width={16} color="#cbd5e1" />
           </Stack>
@@ -167,7 +167,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
                     <Typography sx={{ fontWeight: row.is_current_user ? 800 : 700, fontSize: "0.84rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {row.is_current_user ? <>You <span style={{ color: "#6366f1", fontWeight: 700 }}>(you)</span></> : row.name}
                     </Typography>
-                    <Typography sx={{ fontSize: "0.66rem", color: "#94a3b8" }}>Score: {row.score.toLocaleString()}</Typography>
+                    <Typography sx={{ fontSize: "0.66rem", color: "#64748b" }}>Score: {row.score.toLocaleString()}</Typography>
                   </Box>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.84rem", color: "#6d28d9" }}>#{row.rank}</Typography>
                 </Stack>
