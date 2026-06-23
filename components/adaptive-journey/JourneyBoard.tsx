@@ -85,9 +85,17 @@ function nodeLabel(n: JourneyNodeView): { main: string; sub?: string; ai?: boole
   return { main: "STEP" };
 }
 
+const NODE_STYLE: Record<string, { color: string; bg: string; icon: string }> = {
+  topic: { color: "#6366f1", bg: "#eef2ff", icon: "mdi:book-open-page-variant" },
+  checkpoint: { color: "#a855f7", bg: "#f5f3ff", icon: "mdi:shield-check" },
+  week_final: { color: "#f59e0b", bg: "#fff7ed", icon: "mdi:flag-checkered" },
+  interview: { color: "#db2777", bg: "#fdf2f8", icon: "mdi:account-voice" },
+};
+
 function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; courseId: number; stepNo: number; dueAt?: string | null }) {
   const router = useRouter();
   const l = nodeLabel(node);
+  const ns = NODE_STYLE[node.type] ?? NODE_STYLE.topic;
   const done = node.status === "done";
   const current = node.status === "current";
   const locked = node.status === "locked";
@@ -108,7 +116,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
       {stepNo}
     </Box>
   ) : (
-    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#e2e8f0", color: "#94a3b8", flexShrink: 0, zIndex: 1 }}>
+    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#e2e8f0", color: "#64748b", flexShrink: 0, zIndex: 1 }}>
       <Icon icon="mdi:lock" width={14} />
     </Box>
   );
@@ -127,36 +135,41 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
         onClick={go}
         sx={{
           flex: 1, mb: 1.5, p: 1.75, borderRadius: 3, border: "1px solid",
+          borderLeft: "4px solid", borderLeftColor: ns.color,
           borderColor: current ? "#c7d2fe" : "#eef2f7",
           bgcolor: current ? "#fbfbff" : "#fff",
+          boxShadow: current ? `0 10px 26px -18px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
           opacity: locked ? 0.72 : 1,
           cursor: navigable ? "pointer" : "default",
-          transition: "border-color .15s",
-          "&:hover": navigable ? { borderColor: "#a5b4fc" } : {},
+          transition: "border-color .15s, box-shadow .15s",
+          "&:hover": navigable ? { borderColor: ns.color, boxShadow: `0 12px 28px -18px ${ns.color}` } : {},
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
-          <Box sx={{ minWidth: 0 }}>
+        <Stack direction="row" alignItems="flex-start" gap={1.25}>
+          <Box sx={{ width: 34, height: 34, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: ns.color, bgcolor: ns.bg }}>
+            <Icon icon={ns.icon} width={18} />
+          </Box>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
-              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: "#64748b" }}>{l.main}</Typography>
+              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: ns.color }}>{l.main}</Typography>
               {l.sub && <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, color: "#a855f7" }}>· {l.sub}</Typography>}
               {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe" }} />}
             </Stack>
             <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", mt: 0.25 }}>{node.title}</Typography>
             {contentSummary(node) && (
-              <Typography sx={{ fontSize: "0.76rem", color: "#94a3b8", mt: 0.25 }}>{contentSummary(node)}</Typography>
+              <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25 }}>{contentSummary(node)}</Typography>
             )}
           </Box>
           <Box sx={{ textAlign: "right", flexShrink: 0 }}>
             {done ? (
               <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#15803d" }}>
-                {node.score.earned}<span style={{ color: "#94a3b8", fontWeight: 600 }}>/{node.score.total}</span>
-                <Typography component="span" sx={{ fontSize: "0.66rem", color: "#94a3b8", display: "block", fontWeight: 600 }}>earned</Typography>
+                {node.score.earned}<span style={{ color: "#64748b", fontWeight: 600 }}>/{node.score.total}</span>
+                <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>earned</Typography>
               </Typography>
             ) : (
               <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#475569" }}>
-                {node.score.total}<span style={{ fontSize: "0.66rem", color: "#94a3b8", fontWeight: 600 }}> pts</span>
-                <Typography component="span" sx={{ fontSize: "0.66rem", color: "#94a3b8", display: "block", fontWeight: 600 }}>on offer</Typography>
+                {node.score.total}<span style={{ fontSize: "0.66rem", color: "#64748b", fontWeight: 600 }}> pts</span>
+                <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>on offer</Typography>
               </Typography>
             )}
           </Box>
@@ -176,7 +189,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
           </Stack>
         )}
         {locked && node.lockReason && (
-          <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", mt: 1 }}>
+          <Typography sx={{ fontSize: "0.72rem", color: "#64748b", mt: 1 }}>
             <Icon icon="mdi:lock-outline" width={12} style={{ verticalAlign: "middle", marginRight: 3 }} />
             {node.lockReason}
           </Typography>
@@ -193,18 +206,20 @@ function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; course
   let step = startStep;
 
   return (
-    <Box sx={{ border: "1px solid #eef2f7", borderRadius: 4, overflow: "hidden", bgcolor: "#fff", mb: 2 }}>
-      <Box sx={{ p: { xs: 2, md: 2.5 }, bgcolor: "#fafbff", borderBottom: "1px solid #eef2f7" }}>
+    <Box sx={{ border: "1px solid #e9e6f7", borderRadius: 4, overflow: "hidden", bgcolor: "#fff", mb: 2, boxShadow: "0 12px 30px -24px rgba(99,102,241,0.45)" }}>
+      <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: "1px solid #eef2f7", backgroundImage: "linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%)" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            <Icon icon="mdi:calendar-month" width={18} color="#a855f7" />
+          <Stack direction="row" spacing={1.25} alignItems="center" flexWrap="wrap">
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+              <Icon icon="mdi:calendar-month" width={18} />
+            </Box>
             <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
               {week.weekNo === 0 ? "Get started" : `Week ${week.weekNo}`}{week.title ? ` · ${week.title}` : ""}
             </Typography>
-            <Typography sx={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 600 }}>
+            <Typography sx={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
               {week.stepsDone} of {week.stepsTotal} steps done
             </Typography>
-            {locked && <Icon icon="mdi:lock" width={14} color="#94a3b8" />}
+            {locked && <Icon icon="mdi:lock" width={14} color="#64748b" />}
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
             {week.schedule && (
@@ -251,7 +266,7 @@ function PenaltyCell({ color, bg, head, sub, note }: { color: string; bg: string
   return (
     <Box sx={{ flex: 1, p: 1, borderRadius: 2, bgcolor: bg, border: `1px solid ${color}22` }}>
       <Typography sx={{ fontSize: "0.74rem", fontWeight: 800, color }}>{head}</Typography>
-      <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8" }}>{sub}</Typography>
+      <Typography sx={{ fontSize: "0.68rem", color: "#64748b" }}>{sub}</Typography>
       <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color, mt: 0.25 }}>{note}</Typography>
     </Box>
   );
@@ -400,19 +415,24 @@ export function JourneyBoard({ courseId, fallback }: { courseId: number; fallbac
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 330px" }, gap: 2.5 }}>
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 1.25 }}>
-            <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a" }}>Course Overview</Typography>
-              <Typography sx={{ fontSize: "0.8rem", color: "#94a3b8" }}>
-                Your learning journey · {board.course.sections} sections · {board.course.items} items
-              </Typography>
-            </Box>
-            <Chip icon={<Icon icon="mdi:auto-fix" width={15} />} label="Adaptive paths on" size="small" sx={{ fontWeight: 700, color: "#6d28d9", bgcolor: "#ede9fe", "& .MuiChip-icon": { color: "#6d28d9" } }} />
+            <Stack direction="row" spacing={1.25} alignItems="center">
+              <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+                <Icon icon="mdi:map-marker-path" width={19} />
+              </Box>
+              <Box>
+                <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a" }}>Course Overview</Typography>
+                <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>
+                  Your learning journey · {board.course.sections} sections · {board.course.items} items
+                </Typography>
+              </Box>
+            </Stack>
+            <Chip icon={<Icon icon="mdi:auto-fix" width={15} />} label="Adaptive paths on" size="small" sx={{ fontWeight: 800, color: "#6d28d9", bgcolor: "#ede9fe", border: "1px solid #ddd6fe", "& .MuiChip-icon": { color: "#6d28d9" } }} />
           </Stack>
 
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2, bgcolor: "#f8fafc", border: "1px solid #eef2f7" }}>
-            <Icon icon="mdi:note-edit-outline" width={16} color="#94a3b8" style={{ flexShrink: 0 }} />
-            <Typography sx={{ fontSize: "0.8rem", color: "#64748b", lineHeight: 1.4 }}>
-              Each week has its own due date. Late penalties apply to the <b>points earned</b> for that week — finish before the date to keep 100%.
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2.5, backgroundImage: "linear-gradient(135deg, #faf5ff, #fff1f7)", border: "1px solid #f0e7fb" }}>
+            <Icon icon="mdi:calendar-alert" width={17} color="#a855f7" style={{ flexShrink: 0 }} />
+            <Typography sx={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
+              Each week has its own due date. Late penalties apply to the <b style={{ color: "#7c3aed" }}>points earned</b> for that week — finish before the date to keep 100%.
             </Typography>
           </Stack>
 

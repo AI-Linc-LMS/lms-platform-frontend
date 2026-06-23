@@ -65,8 +65,14 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
     <>
       {/* Certificate */}
       <Card>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
+            <Icon icon="mdi:certificate" width={17} />
+          </Box>
+          <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Certificate</Typography>
+        </Stack>
         <Typography sx={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
-          Complete <b>{c.certificateThreshold}%</b> of the course to unlock certificate download &amp; LinkedIn sharing.
+          Complete <b style={{ color: "#0f172a" }}>{c.certificateThreshold}%</b> of the course to unlock certificate download &amp; LinkedIn sharing.
         </Typography>
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
           <ButtonBase disabled={!certReady} sx={{ flex: 1, py: 0.9, borderRadius: 2, fontWeight: 700, fontSize: "0.8rem", gap: 0.5, color: certReady ? "white" : "#64748b", bgcolor: certReady ? "#6366f1" : "#f1f5f9", border: "1px solid #eef2f7" }}>
@@ -99,14 +105,14 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
         </Box>
 
         <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
-          <Box sx={{ flex: 1, p: 1, borderRadius: 2, border: "1px solid #eef2f7" }}>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#64748b" }}>POINTS EARNED</Typography>
+          <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f5f3ff", border: "1px solid #ede9fe" }}>
+            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#7c3aed" }}>POINTS EARNED</Typography>
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>
               {pc.pointsEarned}<span style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.pointsTotal}</span>
             </Typography>
           </Box>
-          <Box sx={{ flex: 1, p: 1, borderRadius: 2, border: "1px solid #eef2f7" }}>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#64748b" }}>ON-TIME RATE</Typography>
+          <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
+            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>ON-TIME RATE</Typography>
             <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
               {pc.onTimeRate != null ? `${Math.round(pc.onTimeRate * 100)}%` : "—"}
             </Typography>
