@@ -56,6 +56,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
     <Box
       sx={{
         flex: 1, minWidth: 280, p: 2.5, borderRadius: 4, color: "white", position: "relative", overflow: "hidden",
+        display: "flex", flexDirection: "column",
         backgroundColor: "#0f172a",
         backgroundImage: `${STRIPES}, linear-gradient(135deg, #0f172a 0%, #1e293b 100%)`,
         boxShadow: "0 18px 40px -22px rgba(15,23,42,0.7)",
@@ -90,7 +91,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
         {card.proctored && <Pill dark icon="mdi:lock" iconColor="#fbbf24" label="Lockdown" />}
       </Stack>
 
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: "auto", pt: 2 }}>
         <ButtonBase
           disabled={!canStart}
           onClick={() => canStart && slug && router.push(`/assessments/${slug}/calibration?courseId=${courseId}`)}
@@ -151,6 +152,7 @@ function InterviewerCard({ interview }: { interview: JourneyBoard["interview"] }
     <Box
       sx={{
         flex: 1, minWidth: 280, p: 2.5, borderRadius: 4, border: "1px solid #ece9fb",
+        display: "flex", flexDirection: "column",
         backgroundImage: "radial-gradient(120% 120% at 100% 0%, #faf5ff 0%, #ffffff 45%)",
       }}
     >
@@ -201,7 +203,7 @@ function InterviewerCard({ interview }: { interview: JourneyBoard["interview"] }
         ))}
       </Stack>
 
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: "auto", pt: 2 }}>
         <ButtonBase
           disabled={!configured || busy}
           onClick={launch}
