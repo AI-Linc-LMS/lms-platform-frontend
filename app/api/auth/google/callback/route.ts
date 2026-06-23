@@ -17,26 +17,38 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function POST(req: NextRequest) {
   let credential: string | null = null;
+  // GSI redirect-mode posts the ID token as `credential`; the OpenID implicit
+  // fallback (response_type=id_token) posts it as `id_token`. Accept either.
+  let state: string | null = null;
 
   const contentType = req.headers.get("content-type") ?? "";
 
   if (contentType.includes("application/x-www-form-urlencoded")) {
     const text = await req.text();
     const params = new URLSearchParams(text);
-    credential = params.get("credential");
+    credential = params.get("credential") ?? params.get("id_token");
+    state = params.get("state");
   } else {
     // Fallback: try form-data
     try {
       const form = await req.formData();
-      credential = form.get("credential") as string | null;
+      credential =
+        (form.get("credential") as string | null) ??
+        (form.get("id_token") as string | null);
+      state = form.get("state") as string | null;
     } catch {
       credential = null;
     }
   }
 
   // Determine where to send the user after sign-in completes.
-  // Preserve any ?redirect= param that was on the login page originally.
+  // Preserve any ?redirect= param that was on the login page originally — it is
+  // round-tripped through Google's `state` by the implicit fallback. Only honour
+  // safe same-origin relative paths to avoid an open-redirect.
   const loginUrl = new URL("/login", req.url);
+  if (state && state.startsWith("/") && !state.startsWith("//")) {
+    loginUrl.searchParams.set("redirect", state);
+  }
 
   if (!credential) {
     loginUrl.searchParams.set("google_error", "1");
