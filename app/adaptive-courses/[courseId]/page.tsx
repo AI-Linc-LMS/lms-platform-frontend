@@ -11,6 +11,7 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Reveal } from "@/components/scorecard/shared";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { JourneyBoard } from "@/components/adaptive-journey/JourneyBoard";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 
 export default function AdaptiveCourseDetailPage() {
@@ -117,7 +118,11 @@ export default function AdaptiveCourseDetailPage() {
                 accent="purple"
               />
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <JourneyBoard
+                courseId={courseId}
+                showHeader={false}
+                fallback={
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {course.modules.map((mod, mIdx) => (
                   <Reveal key={mod.id} delay={Math.min(mIdx, 8) * 0.05}>
                     <Box
@@ -226,7 +231,9 @@ export default function AdaptiveCourseDetailPage() {
                     </Box>
                   </Reveal>
                 ))}
-              </Box>
+                  </Box>
+                }
+              />
             </>
           )}
         </AdaptiveSectionShell>
