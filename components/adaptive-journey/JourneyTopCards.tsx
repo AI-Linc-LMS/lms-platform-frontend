@@ -88,7 +88,7 @@ function CalibrationCard({ calibration }: { calibration: JourneyBoard["calibrati
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
         <ButtonBase
           disabled={!canStart}
-          onClick={() => canStart && slug && router.push(`/assessments/${slug}`)}
+          onClick={() => canStart && slug && router.push(`/assessments/${slug}/calibration`)}
           sx={{
             flex: 1, py: 1.1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem",
             bgcolor: canStart ? "#fff" : "rgba(255,255,255,0.12)",
