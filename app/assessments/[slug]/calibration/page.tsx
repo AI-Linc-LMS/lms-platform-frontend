@@ -51,6 +51,7 @@ function CalibrationTakeInner() {
   const [remaining, setRemaining] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [started, setStarted] = useState(false);
   const [result, setResult] = useState<CalibrationResult | null>(null);
   const [resultLoading, setResultLoading] = useState(false);
 
@@ -225,7 +226,7 @@ function CalibrationTakeInner() {
   );
 
   useEffect(() => {
-    if (loading || submitted || error || remaining <= 0) return;
+    if (loading || submitted || error || !started || remaining <= 0) return;
     const t = setInterval(() => {
       setRemaining((r) => {
         if (r <= 1) {
@@ -237,10 +238,23 @@ function CalibrationTakeInner() {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [loading, submitted, error, remaining > 0, doSubmit]);
+  }, [loading, submitted, error, started, remaining > 0, doSubmit]);
 
   const enterLockdown = () => {
     document.documentElement.requestFullscreen?.().catch(() => {});
+  };
+
+  // Begin: a single user gesture lets us enter fullscreen (browsers block it on
+  // navigation), so the proctored test starts in lockdown by default.
+  const begin = async () => {
+    try {
+      await document.documentElement.requestFullscreen?.();
+    } catch {
+      /* user can re-enter via the Lockdown chip if the browser blocked it */
+    }
+    enteredAtRef.current = performance.now();
+    prevIdxRef.current = 0;
+    setStarted(true);
   };
 
   // ---- render states ----
@@ -362,6 +376,39 @@ function CalibrationTakeInner() {
   const q = mcqs[idx];
   const total = mcqs.length;
   const fieldName = title.replace(/\s*[—-]\s*Calibration.*$/i, "").trim();
+
+  // Lockdown gate — one click enters fullscreen so the test starts proctored.
+  if (!started) {
+    return (
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
+        <Stack alignItems="center" spacing={2} sx={{ maxWidth: 460, textAlign: "center" }}>
+          <Box sx={{ width: 56, height: 56, borderRadius: 3, display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,0.08)" }}>
+            <Icon icon="mdi:shield-lock" width={28} color="#a5b4fc" />
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: "1.35rem" }}>
+            Calibration Assessment{fieldName ? ` · ${fieldName}` : ""}
+          </Typography>
+          <Typography sx={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>
+            This is a proctored, lockdown assessment. When you begin, it enters fullscreen and
+            your webcam, tab-switching, and fullscreen are monitored. {total} questions · {fmtClock(remaining)} on the clock.
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.8rem" }}>
+            <Icon icon="mdi:webcam" width={16} /> <span>Webcam</span>
+            <Icon icon="mdi:lock" width={16} /> <span>Fullscreen lockdown</span>
+            <Icon icon="mdi:eye-outline" width={16} /> <span>Tab monitoring</span>
+          </Stack>
+          <Button variant="contained" onClick={begin}
+            startIcon={<Icon icon="mdi:fullscreen" width={20} />}
+            sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.2, bgcolor: "#3b82f6", "&:hover": { bgcolor: "#2563eb" } }}>
+            Enter fullscreen & begin
+          </Button>
+          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.4)" }}>
+            Exiting fullscreen during the test is logged for integrity.
+          </Typography>
+        </Stack>
+      </Box>
+    );
+  }
 
   const Integrity = ({ label, ok, warn }: { label: string; ok?: boolean; warn?: string }) => (
     <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5 }}>
