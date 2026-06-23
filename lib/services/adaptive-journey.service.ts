@@ -117,6 +117,21 @@ export const adaptiveJourneyService = {
     return data;
   },
 
+  /** Read-only calibration status for a course (admin UI). */
+  async getCalibration(courseId: number): Promise<{
+    exists: boolean;
+    assessment_id: number | null;
+    assessment_slug: string | null;
+    configured: boolean;
+    question_count: number;
+    node_id: number | null;
+    duration_minutes: number | null;
+    points: number;
+  }> {
+    const { data } = await apiClient.get(`${ADMIN}/courses/${courseId}/calibration/`);
+    return data;
+  },
+
   /** One-click provision of a calibration shell (assessment + node) for the course;
    *  the instructor then only adds the aptitude question set. Idempotent. */
   async createCalibration(

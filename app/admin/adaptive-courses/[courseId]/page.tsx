@@ -30,6 +30,7 @@ import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodin
 import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVideoReview";
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
 import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
+import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
 import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
 
 type DialogState =
@@ -301,6 +302,8 @@ export default function AdminAdaptiveCourseDetailPage() {
               {tab === "students" && (
                 <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
               )}
+
+              {tab === "content" && <CalibrationAdminSection courseId={course.id} />}
 
               {tab === "content" && course.skills.length > 0 && (
                 <Box sx={{
