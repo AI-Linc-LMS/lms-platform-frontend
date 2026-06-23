@@ -73,6 +73,9 @@ export default function AdaptiveArticleReaderPage() {
         setTier(data.rendered_tier || data.default_tier);
         setHtml(data.content_html);
         setReadingTime(data.reading_time_minutes);
+        // Reading an article counts as course activity: awards points + keeps the
+        // daily streak alive (idempotent server-side per student+article).
+        void adaptiveCourseService.completeArticle(articleId).catch(() => {});
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load article.");
       } finally {
