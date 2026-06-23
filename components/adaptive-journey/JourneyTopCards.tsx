@@ -74,13 +74,13 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
 
       <Typography sx={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.72)", mt: 1.5, lineHeight: 1.5 }}>
         A standardized, <b>non-adaptive</b> test — the same fixed question set for every learner — so we can fairly
-        measure where everyone starts. Your baseline seeds the AI Student Model.
+        measure where everyone starts. Your baseline feeds the AI Student Model that powers the rest of the course.
       </Typography>
 
       <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1.75 }}>
         {card.durationMinutes != null && <Pill dark icon="mdi:clock-outline" label={`${card.durationMinutes} min`} />}
         {card.questionCount > 0 && <Pill dark icon="mdi:help-circle-outline" label={`${card.questionCount} fixed Qs`} />}
-        <Pill dark icon="mdi:star-four-points-outline" label={`${card.points} pts`} />
+        <Pill dark icon="mdi:trophy-outline" label={`${card.points} pts`} />
         {card.proctored && <Pill dark icon="mdi:webcam" label="Webcam proctored" />}
         {card.proctored && <Pill dark icon="mdi:lock-outline" label="Lockdown" />}
       </Stack>
@@ -127,6 +127,9 @@ function InterviewerCard({ courseId }: { courseId: number }) {
             <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>Practice rounds, on demand</Typography>
           </Box>
         </Stack>
+        <ButtonBase onClick={() => router.push("/mock-interview/courses")} sx={{ p: 0.5, borderRadius: "50%", color: "#94a3b8", "&:hover": { color: "#6366f1" } }}>
+          <Icon icon="mdi:arrow-top-right" width={20} />
+        </ButtonBase>
       </Stack>
 
       <Typography sx={{ fontSize: "0.8rem", color: "#64748b", mt: 1.5, lineHeight: 1.5 }}>
@@ -140,17 +143,20 @@ function InterviewerCard({ courseId }: { courseId: number }) {
         ))}
       </Stack>
 
-      <ButtonBase
-        onClick={() => router.push("/mock-interview/courses")}
-        sx={{
-          mt: 2, width: "100%", py: 1.1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem", color: "white",
-          gap: 0.75, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-          boxShadow: "0 12px 26px -14px rgba(124,58,237,0.7)",
-        }}
-      >
-        <Icon icon="mdi:plus" width={18} />
-        Launch Interviewer
-      </ButtonBase>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
+        <ButtonBase
+          onClick={() => router.push("/mock-interview/courses")}
+          sx={{
+            flex: 1, py: 1.1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem", color: "white",
+            gap: 0.75, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+            boxShadow: "0 12px 26px -14px rgba(124,58,237,0.7)",
+          }}
+        >
+          <Icon icon="mdi:plus" width={18} />
+          Launch interviewer
+        </ButtonBase>
+        <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8", maxWidth: 120 }}>Practice rounds, on demand</Typography>
+      </Stack>
     </Box>
   );
 }

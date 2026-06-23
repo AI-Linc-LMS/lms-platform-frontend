@@ -27,6 +27,10 @@ export interface JourneyNodeView {
   lockReason: string | null;
   isCalibration: boolean;
   content?: { articles: number; quizzes: number; coding: number; videos: number } | null;
+  itemCount: number;
+  questionCount: number;
+  proctored: boolean;
+  durationMinutes: number | null;
   ref: JourneyNodeRef;
 }
 
@@ -43,17 +47,33 @@ export interface JourneyWeekView {
   schedule: JourneyWeekSchedule | null;
   penaltyStrip: { onTimeUntil: string; halfCreditUntil: string; zeroAfter: string } | null;
   totals: { earned: number; total: number };
+  stepsDone: number;
+  stepsTotal: number;
   nodes: JourneyNodeView[];
 }
 
 export interface JourneyBoard {
-  course: { id: number; title: string; fieldTier: FieldTier | null; abilityIndex: number | null };
+  course: {
+    id: number;
+    title: string;
+    description: string;
+    fieldTier: FieldTier | null;
+    abilityIndex: number | null;
+    enrolledCount: number;
+    certificateThreshold: number;
+    estHours: number | null;
+    sections: number;
+    items: number;
+    completionPct: number;
+    startedAt: string | null;
+  };
   progressCard: {
     pointsEarned: number;
     pointsTotal: number;
     onTimeRate: number | null;
     nodesDone: number;
     nodesTotal: number;
+    completionPct: number;
   };
   calibration: {
     required: boolean;
