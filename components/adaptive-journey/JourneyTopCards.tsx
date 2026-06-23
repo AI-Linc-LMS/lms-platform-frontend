@@ -83,7 +83,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
         so we can fairly measure where everyone starts. Your baseline feeds the AI Student Model that powers the rest of the course.
       </Typography>
 
-      <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1.75 }}>
+      <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: "auto", pt: 1.75 }}>
         {card.durationMinutes != null && <Pill dark icon="mdi:clock-outline" iconColor="#cbd5e1" label={`${card.durationMinutes} min`} />}
         {card.questionCount > 0 && <Pill dark icon="mdi:help-circle" iconColor="#f87171" label={`${card.questionCount} fixed Qs`} />}
         <Pill dark icon="mdi:trophy" iconColor="#fbbf24" label={`${card.points} pts`} />
@@ -91,7 +91,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
         {card.proctored && <Pill dark icon="mdi:lock" iconColor="#fbbf24" label="Lockdown" />}
       </Stack>
 
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: "auto", pt: 2 }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
         <ButtonBase
           disabled={!canStart}
           onClick={() => canStart && slug && router.push(`/assessments/${slug}/calibration?courseId=${courseId}`)}
@@ -187,7 +187,7 @@ function InterviewerCard({ interview }: { interview: JourneyBoard["interview"] }
         scores communication, depth, and correctness. <b style={{ color: "#0f172a" }}>Adapts</b> to how you respond — and feeds your AI Student Model, just like the calibration test.
       </Typography>
 
-      <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1.75 }}>
+      <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: "auto", pt: 1.75 }}>
         {INTERVIEW_CHIPS.map(({ t, hot }) => (
           <Box
             key={t}
@@ -203,7 +203,7 @@ function InterviewerCard({ interview }: { interview: JourneyBoard["interview"] }
         ))}
       </Stack>
 
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: "auto", pt: 2 }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
         <ButtonBase
           disabled={!configured || busy}
           onClick={launch}
