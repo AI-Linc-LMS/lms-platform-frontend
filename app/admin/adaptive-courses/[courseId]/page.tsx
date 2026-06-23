@@ -67,7 +67,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
   const [expandedCoding, setExpandedCoding] = useState<number | null>(null);
-  const [tab, setTab] = useState<"content" | "students">("content");
+  const [tab, setTab] = useState<"content" | "students" | "cover">("content");
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -263,19 +263,11 @@ export default function AdminAdaptiveCourseDetailPage() {
                 }
               />
 
-              <CourseCoverArtPanel
-                courseId={course.id}
-                headerUrl={course.header_image_url}
-                headerHidden={course.header_image_hidden}
-                cardUrl={course.card_image_url}
-                cardHidden={course.card_image_hidden}
-                onChange={handleCoverChange}
-              />
-
               <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>
                 {([
                   ["content", "Content", "mdi:book-cog-outline"],
                   ["students", "Students", "mdi:account-school-outline"],
+                  ["cover", "Cover art", "mdi:image-outline"],
                 ] as const).map(([key, label, icon]) => {
                   const active = tab === key;
                   return (
@@ -298,6 +290,17 @@ export default function AdminAdaptiveCourseDetailPage() {
                   );
                 })}
               </Box>
+
+              {tab === "cover" && (
+                <CourseCoverArtPanel
+                  courseId={course.id}
+                  headerUrl={course.header_image_url}
+                  headerHidden={course.header_image_hidden}
+                  cardUrl={course.card_image_url}
+                  cardHidden={course.card_image_hidden}
+                  onChange={handleCoverChange}
+                />
+              )}
 
               {tab === "students" && (
                 <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
