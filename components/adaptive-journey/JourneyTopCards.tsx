@@ -31,7 +31,7 @@ const CALIB_STATUS_CHIP: Record<string, { label: string; color: string }> = {
   generating: { label: "PREPARING", color: "#c7d2fe" },
 };
 
-function CalibrationCard({ calibration }: { calibration: JourneyBoard["calibration"] }) {
+function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard["calibration"]; courseId: number }) {
   const router = useRouter();
   const card = calibration.card;
   if (!card) return null;
@@ -88,7 +88,7 @@ function CalibrationCard({ calibration }: { calibration: JourneyBoard["calibrati
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
         <ButtonBase
           disabled={!canStart}
-          onClick={() => canStart && slug && router.push(`/assessments/${slug}/calibration`)}
+          onClick={() => canStart && slug && router.push(`/assessments/${slug}/calibration?courseId=${courseId}`)}
           sx={{
             flex: 1, py: 1.1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem",
             bgcolor: canStart ? "#fff" : "rgba(255,255,255,0.12)",
@@ -158,7 +158,7 @@ function InterviewerCard({ courseId }: { courseId: number }) {
 export function JourneyTopCards({ courseId, calibration }: { courseId: number; calibration: JourneyBoard["calibration"] }) {
   return (
     <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2.5 }}>
-      {calibration.card && <CalibrationCard calibration={calibration} />}
+      {calibration.card && <CalibrationCard calibration={calibration} courseId={courseId} />}
       <InterviewerCard courseId={courseId} />
     </Stack>
   );

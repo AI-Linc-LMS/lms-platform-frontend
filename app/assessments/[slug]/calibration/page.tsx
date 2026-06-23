@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Chip, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { assessmentService } from "@/lib/services/assessment.service";
+import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import type { CalibrationResult } from "@/lib/types/adaptive-journey";
 
 interface CalibMcq {
   id: number | string;
@@ -25,9 +27,19 @@ function fmtClock(total: number): string {
   return `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-export default function CalibrationTakePage() {
+const CARD_SX = {
+  p: { xs: 2, md: 2.5 }, borderRadius: 3,
+  bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+} as const;
+const CHIP_GREEN = { fontWeight: 700, color: "#86efac", bgcolor: "rgba(34,197,94,0.12)" } as const;
+const CHIP_AMBER = { fontWeight: 700, color: "#fcd34d", bgcolor: "rgba(245,158,11,0.12)" } as const;
+const TIER_COLOR: Record<string, string> = { beginner: "#fbbf24", intermediate: "#60a5fa", advanced: "#4ade80" };
+
+function CalibrationTakeInner() {
   const router = useRouter();
   const slug = String(useParams().slug);
+  const courseIdParam = useSearchParams().get("courseId");
+  const courseId = courseIdParam ? Number(courseIdParam) : null;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +51,25 @@ export default function CalibrationTakePage() {
   const [remaining, setRemaining] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [result, setResult] = useState<CalibrationResult | null>(null);
+  const [resultLoading, setResultLoading] = useState(false);
+
+  // Per-question solve time (seconds), captured for the calibration evaluation.
+  const enteredAtRef = useRef<number>(0);
+  const timesRef = useRef<Record<string, number>>({});
+  const prevIdxRef = useRef<number>(0);
+
+  const flushTime = useCallback(
+    (leavingIdx: number) => {
+      const qid = mcqs[leavingIdx]?.id;
+      if (qid != null && enteredAtRef.current) {
+        const key = String(qid);
+        timesRef.current[key] = (timesRef.current[key] || 0) + (performance.now() - enteredAtRef.current) / 1000;
+      }
+      enteredAtRef.current = performance.now();
+    },
+    [mcqs],
+  );
 
   // Proctoring (lightweight, native)
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -124,11 +155,21 @@ export default function CalibrationTakePage() {
     };
   }, [loading, submitted, error]);
 
+  // Start the clock on the first question + accrue time to the question we leave.
+  useEffect(() => {
+    if (!mcqs.length) return;
+    flushTime(prevIdxRef.current);
+    prevIdxRef.current = idx;
+  }, [idx, mcqs.length, flushTime]);
+
   // ---- timer ----
   const doSubmit = useCallback(
     async (auto = false) => {
       if (submitting || submitted || !sectionId) return;
       setSubmitting(true);
+      flushTime(idx); // accrue time spent on the question being submitted from
+      const questionTimes: Record<string, number> = {};
+      Object.entries(timesRef.current).forEach(([k, v]) => { questionTimes[k] = Math.round(v); });
       try {
         const bag: Record<string, unknown> = { ...answers, section_completely_attempted: true };
         const payload = {
@@ -148,8 +189,9 @@ export default function CalibrationTakePage() {
                   started_at: startedAtRef.current,
                   submitted_at: new Date().toISOString(),
                 },
+                calibration: { question_times: questionTimes },
               },
-              total_duration_seconds: 0,
+              total_duration_seconds: Object.values(questionTimes).reduce((a, b) => a + b, 0),
             },
           },
           quizSectionId: [{ [sectionId]: bag }],
@@ -161,13 +203,25 @@ export default function CalibrationTakePage() {
         streamRef.current?.getTracks().forEach((t) => t.stop());
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         setSubmitted(true);
+        // Fetch the "what we learned about you" profile (evaluation runs on submit).
+        if (courseId) {
+          setResultLoading(true);
+          for (let i = 0; i < 4; i++) {
+            try {
+              const r = await adaptiveJourneyService.getCalibrationResult(courseId);
+              if (r.done && r.insight) { setResult(r); break; }
+            } catch { /* retry */ }
+            await new Promise((res) => setTimeout(res, 1500));
+          }
+          setResultLoading(false);
+        }
       } catch {
         setError("Couldn't submit your calibration. Please try again.");
       } finally {
         setSubmitting(false);
       }
     },
-    [answers, sectionId, slug, submitting, submitted, tabSwitches],
+    [answers, courseId, flushTime, idx, sectionId, slug, submitting, submitted, tabSwitches],
   );
 
   useEffect(() => {
@@ -198,18 +252,98 @@ export default function CalibrationTakePage() {
     );
   }
   if (submitted) {
+    const ins = result?.insight;
     return (
-      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
-        <Stack alignItems="center" spacing={1.5}>
-          <Icon icon="mdi:shield-check" width={48} color="#4ade80" />
-          <Typography sx={{ fontWeight: 800, fontSize: "1.3rem" }}>Calibration submitted</Typography>
-          <Typography sx={{ color: "rgba(255,255,255,0.6)", textAlign: "center", maxWidth: 440 }}>
-            Your baseline has been recorded and is seeding your AI Student Model. Your journey is now tuned to you.
-          </Typography>
-          <Button variant="contained" onClick={() => router.push("/adaptive-courses")} sx={{ mt: 1, textTransform: "none", fontWeight: 700, borderRadius: 2 }}>
-            Back to my courses
-          </Button>
-        </Stack>
+      <Box sx={{ minHeight: "100vh", bgcolor: "#0b1220", color: "white", py: { xs: 3, md: 6 }, px: 2, display: "flex", justifyContent: "center" }}>
+        <Box sx={{ width: "100%", maxWidth: 680 }}>
+          <Stack alignItems="center" spacing={1} sx={{ mb: 3 }}>
+            <Icon icon="mdi:shield-check" width={44} color="#4ade80" />
+            <Typography sx={{ fontWeight: 800, fontSize: "1.4rem", textAlign: "center" }}>
+              {ins ? ins.headline : "Calibration submitted"}
+            </Typography>
+            <Typography sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.82rem", textAlign: "center" }}>
+              We don&apos;t show right or wrong answers — this is what we learned about you.
+            </Typography>
+          </Stack>
+
+          {resultLoading && !ins && (
+            <Stack alignItems="center" spacing={1.5} sx={{ py: 4 }}>
+              <CircularProgress size={26} sx={{ color: "#60a5fa" }} />
+              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>Analyzing how you reason…</Typography>
+            </Stack>
+          )}
+
+          {ins && (
+            <Stack spacing={2}>
+              <Box sx={CARD_SX}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography sx={{ fontWeight: 700 }}>Your starting level</Typography>
+                  <Chip label={ins.level_label} sx={{ fontWeight: 800, color: "#0b1220", bgcolor: TIER_COLOR[ins.field_tier] ?? "#60a5fa" }} />
+                </Stack>
+                <Box sx={{ mt: 1.5, height: 8, borderRadius: 4, bgcolor: "rgba(255,255,255,0.08)" }}>
+                  <Box sx={{ width: `${Math.round(ins.ability_index)}%`, height: "100%", borderRadius: 4, bgcolor: TIER_COLOR[ins.field_tier] ?? "#60a5fa" }} />
+                </Box>
+                <Typography sx={{ mt: 1.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.6 }}>{ins.summary}</Typography>
+              </Box>
+
+              {(ins.strengths.length > 0 || ins.growth_areas.length > 0) && (
+                <Box sx={CARD_SX}>
+                  {ins.strengths.length > 0 && (
+                    <>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "#86efac", mb: 0.75 }}>You&apos;re strong at</Typography>
+                      <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: ins.growth_areas.length ? 1.75 : 0 }}>
+                        {ins.strengths.map((s) => (
+                          <Chip key={s.dimension} size="small" icon={<Icon icon="mdi:check-circle" width={14} />} label={s.dimension} sx={CHIP_GREEN} />
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+                  {ins.growth_areas.length > 0 && (
+                    <>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "#fcd34d", mb: 0.75 }}>We&apos;ll support you on</Typography>
+                      <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                        {ins.growth_areas.map((g) => (
+                          <Chip key={g.dimension} size="small" icon={<Icon icon="mdi:trending-up" width={14} />} label={g.dimension} sx={CHIP_AMBER} />
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+                </Box>
+              )}
+
+              {ins.pace?.label && (
+                <Box sx={CARD_SX}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Icon icon="mdi:speedometer" width={18} color="#a5b4fc" />
+                    <Typography sx={{ fontWeight: 700 }}>Your pace: {ins.pace.label}</Typography>
+                  </Stack>
+                  <Typography sx={{ mt: 0.5, color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>
+                    {ins.pace.note}{ins.pace.style ? ` ${ins.pace.style}` : ""}
+                  </Typography>
+                </Box>
+              )}
+
+              <Box sx={{ ...CARD_SX, bgcolor: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)" }}>
+                <Typography sx={{ fontWeight: 800, color: "#c4b5fd", mb: 1 }}>✦ How AI Linc will adapt to you</Typography>
+                <Stack spacing={1}>
+                  {ins.how_ai_helps.map((h, i) => (
+                    <Stack key={i} direction="row" spacing={1}>
+                      <Icon icon="mdi:arrow-right-thin" width={18} color="#c4b5fd" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <Typography sx={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem" }}>{h}</Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Box>
+            </Stack>
+          )}
+
+          <Stack alignItems="center" sx={{ mt: 3 }}>
+            <Button variant="contained" onClick={() => router.push(courseId ? `/adaptive-courses/${courseId}` : "/adaptive-courses")}
+              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.1, bgcolor: "#fff", color: "#0b1220", "&:hover": { bgcolor: "#f1f5f9" } }}>
+              {ins ? "Start my personalized journey →" : "Back to my courses"}
+            </Button>
+          </Stack>
+        </Box>
       </Box>
     );
   }
@@ -354,5 +488,19 @@ export default function CalibrationTakePage() {
         </Box>
       </Box>
     </Box>
+  );
+}
+
+export default function CalibrationTakePage() {
+  return (
+    <Suspense
+      fallback={
+        <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220" }}>
+          <CircularProgress sx={{ color: "#60a5fa" }} />
+        </Box>
+      }
+    >
+      <CalibrationTakeInner />
+    </Suspense>
   );
 }

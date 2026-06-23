@@ -74,6 +74,36 @@ export interface JourneyBoard {
   weeks: JourneyWeekView[];
 }
 
+export interface CalibrationInsight {
+  level_label: string;
+  field_tier: FieldTier;
+  ability_index: number;
+  headline: string;
+  summary: string;
+  strengths: { dimension: string; percent?: number }[];
+  growth_areas: { dimension: string; percent?: number }[];
+  pace: { label: string | null; note: string; style: string | null };
+  how_ai_helps: string[];
+  shows_right_wrong: boolean;
+}
+
+export interface CalibrationResult {
+  done: boolean;
+  ability_index?: number;
+  field_tier?: FieldTier;
+  per_skill?: Record<string, number>;
+  per_difficulty?: Record<string, { seen: number; correct: number; rate: number | null }>;
+  timing?: {
+    answered: number;
+    timed: number;
+    total_seconds: number | null;
+    avg_seconds: number | null;
+    median_seconds: number | null;
+  };
+  pace?: { label: string | null; note: string; style: string | null };
+  insight: CalibrationInsight | null;
+}
+
 export interface PointsDecayCurve {
   base: number;
   grace: number;

@@ -2,6 +2,7 @@ import apiClient from "./api";
 import type {
   AdminJourneyNode,
   AdminNodeWritePayload,
+  CalibrationResult,
   CohortScheduleResponse,
   JourneyBoard,
   Leaderboard,
@@ -31,6 +32,15 @@ export const adaptiveJourneyService = {
 
   async getStreak(courseId: number): Promise<StreakSummary> {
     const { data } = await apiClient.get<StreakSummary>(`${BASE}/courses/${courseId}/streak/`);
+    return data;
+  },
+
+  /** The learner's calibration profile — what we learned about them + how the AI
+   *  adapts. Never includes right/wrong or solutions. */
+  async getCalibrationResult(courseId: number): Promise<CalibrationResult> {
+    const { data } = await apiClient.get<CalibrationResult>(
+      `${BASE}/courses/${courseId}/calibration-result/`,
+    );
     return data;
   },
 
