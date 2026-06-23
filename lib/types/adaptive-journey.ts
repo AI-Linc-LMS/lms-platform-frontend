@@ -202,6 +202,68 @@ export interface AdminJourneyNode {
   ref: { submodule_id?: number; assessment_id?: number; interview_template_id?: number };
 }
 
+// ---- Course-scoped calibration + interview management (admin) ----
+
+export interface CalibrationSubmissionRow {
+  submission_id: number;
+  student_id: number;
+  name: string;
+  email: string | null;
+  profile_pic_url: string | null;
+  score: number | null;
+  status: string;
+  submitted_at: string | null;
+  ability_index: number | null;
+  field_tier: FieldTier | null;
+  pace: string | null;
+  level_label: string | null;
+  summary: string | null;
+  strengths: { dimension: string; percent?: number }[];
+  growth_areas: { dimension: string; percent?: number }[];
+  per_skill: Record<string, number>;
+}
+
+export interface CalibrationSubmissionsResponse {
+  assessment_id: number | null;
+  assessment_slug: string | null;
+  configured: boolean;
+  submission_count: number;
+  submissions: CalibrationSubmissionRow[];
+}
+
+export interface CourseInterviewTemplate {
+  id: number;
+  title: string;
+  topic: string;
+  subtopic: string;
+  difficulty: string;
+  duration_minutes: number;
+  is_level_gauge: boolean;
+  result_release_mode: string;
+}
+
+export interface CourseInterviewAttempt {
+  interview_id: number;
+  student_id: number;
+  name: string;
+  email: string | null;
+  profile_pic_url: string | null;
+  template_id: number | null;
+  template_title: string;
+  topic: string;
+  difficulty: string;
+  status: string;
+  overall_percentage: number | null;
+  result_visible_to_student: boolean;
+  submitted_at: string | null;
+}
+
+export interface CourseInterviewsResponse {
+  templates: CourseInterviewTemplate[];
+  attempt_count: number;
+  attempts: CourseInterviewAttempt[];
+}
+
 export interface AdminNodeWritePayload {
   type: NodeType;
   week_no: number;

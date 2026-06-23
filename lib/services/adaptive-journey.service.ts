@@ -3,7 +3,9 @@ import type {
   AdminJourneyNode,
   AdminNodeWritePayload,
   CalibrationResult,
+  CalibrationSubmissionsResponse,
   CohortScheduleResponse,
+  CourseInterviewsResponse,
   JourneyBoard,
   Leaderboard,
   PointsWallet,
@@ -145,6 +147,18 @@ export const adaptiveJourneyService = {
     opts?: { question_count?: number },
   ): Promise<{ assessment_id: number; assessment_slug: string; node_id: number; configured: boolean; generating: boolean }> {
     const { data } = await apiClient.post(`${ADMIN}/courses/${courseId}/calibration/create/`, opts ?? {});
+    return data;
+  },
+
+  /** Per-student calibration results + the seeded Student Model (course-scoped admin). */
+  async getCalibrationSubmissions(courseId: number): Promise<CalibrationSubmissionsResponse> {
+    const { data } = await apiClient.get(`${ADMIN}/courses/${courseId}/calibration/submissions/`);
+    return data;
+  },
+
+  /** The course's mock-interview templates + per-student attempts & feedback (admin). */
+  async getCourseInterviews(courseId: number): Promise<CourseInterviewsResponse> {
+    const { data } = await apiClient.get(`${ADMIN}/courses/${courseId}/interviews/`);
     return data;
   },
 };

@@ -305,6 +305,51 @@ export default function AdminAdaptiveCourseDetailPage() {
 
               {tab === "content" && <CalibrationAdminSection courseId={course.id} />}
 
+              {tab === "content" && (
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5, mb: 2.5 }}>
+                  {([
+                    {
+                      key: "calibration",
+                      title: "Calibration results",
+                      sub: "Submissions + each student's level, strengths & pace",
+                      icon: "mdi:shield-half-full",
+                      accent: "#6366f1",
+                      href: `/admin/adaptive-courses/${course.id}/calibration`,
+                    },
+                    {
+                      key: "mock-interview",
+                      title: "Mock interviews",
+                      sub: "Templates + per-student attempts & feedback",
+                      icon: "mdi:account-voice",
+                      accent: "#a855f7",
+                      href: `/admin/adaptive-courses/${course.id}/mock-interview`,
+                    },
+                  ] as const).map((c) => (
+                    <ButtonBase
+                      key={c.key}
+                      onClick={() => router.push(c.href)}
+                      sx={{
+                        textAlign: "left", display: "flex", alignItems: "center", gap: 1.5, p: { xs: 1.75, md: 2 },
+                        borderRadius: 4, width: "100%",
+                        bgcolor: "var(--card-bg, #fff)",
+                        border: "1px solid var(--border-default, #ececf1)",
+                        transition: "transform 120ms ease, border-color 120ms ease",
+                        "&:hover": { transform: "translateY(-1px)", borderColor: `color-mix(in srgb, ${c.accent} 45%, transparent)` },
+                      }}
+                    >
+                      <Box sx={{ width: 42, height: 42, borderRadius: 2.5, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: `linear-gradient(135deg, ${c.accent} 0%, #a855f7 100%)` }}>
+                        <Icon icon={c.icon} width={22} />
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>{c.title}</Typography>
+                        <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", mt: 0.1 }}>{c.sub}</Typography>
+                      </Box>
+                      <Icon icon="mdi:arrow-right" width={20} style={{ flexShrink: 0, opacity: 0.5 }} />
+                    </ButtonBase>
+                  ))}
+                </Box>
+              )}
+
               {tab === "content" && course.skills.length > 0 && (
                 <Box sx={{
                   mb: 2.5, p: { xs: 2, md: 2.5 }, borderRadius: 4,
