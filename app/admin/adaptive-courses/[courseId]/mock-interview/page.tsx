@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Avatar, Box, ButtonBase, Chip, CircularProgress, Stack, Typography } from "@mui/material";
+import { Avatar, Box, Button, ButtonBase, Chip, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useToast } from "@/components/common/Toast";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type {
+  CalibrationInterviewStatus,
   CourseInterviewAttempt,
   CourseInterviewTemplate,
   CourseInterviewsResponse,
@@ -22,27 +24,45 @@ const STATUS_CHIP: Record<string, { color: string; bg: string }> = {
 
 export default function AdminMockInterviewPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const courseId = Number(useParams().courseId);
   const [data, setData] = useState<CourseInterviewsResponse | null>(null);
+  const [calib, setCalib] = useState<CalibrationInterviewStatus | null>(null);
+  const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!Number.isFinite(courseId)) return;
     let cancelled = false;
     (async () => {
-      try {
-        const d = await adaptiveJourneyService.getCourseInterviews(courseId);
-        if (!cancelled) setData(d);
-      } catch {
-        /* surfaced as empty state */
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      const [d, c] = await Promise.allSettled([
+        adaptiveJourneyService.getCourseInterviews(courseId),
+        adaptiveJourneyService.getCalibrationInterview(courseId),
+      ]);
+      if (cancelled) return;
+      if (d.status === "fulfilled") setData(d.value);
+      if (c.status === "fulfilled") setCalib(c.value);
+      setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [courseId]);
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const res = await adaptiveJourneyService.createCalibrationInterview(courseId);
+      setCalib(res);
+      const refreshed = await adaptiveJourneyService.getCourseInterviews(courseId);
+      setData(refreshed);
+      showToast("Calibration interview created.", "success");
+    } catch {
+      showToast("Couldn't create the calibration interview.", "error");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <MainLayout fullWidthContent>
@@ -65,6 +85,39 @@ export default function AdminMockInterviewPage() {
             </Typography>
           </Box>
         </Stack>
+
+        {!loading && (
+          <Box sx={{ p: 2, mb: 2.5, borderRadius: 3, bgcolor: "var(--card-bg, #fff)", border: "1px solid var(--border-default, #ececf1)" }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
+              <Box sx={{ minWidth: 0 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography sx={{ fontWeight: 800 }}>Calibration interview</Typography>
+                  <Chip
+                    label={calib?.exists ? "Ready" : "Not set up"}
+                    size="small"
+                    sx={{ height: 20, fontWeight: 800, fontSize: "0.66rem", color: calib?.exists ? "#15803d" : "#64748b", bgcolor: calib?.exists ? "#dcfce7" : "#f1f5f9" }}
+                  />
+                </Stack>
+                <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.25 }}>
+                  {calib?.exists
+                    ? `Live entry level-gauge (~${calib.duration_minutes ?? 10} min) — seeds each student's AI Student Model. New courses get this automatically.`
+                    : "AI conversational level-gauge that seeds the Student Model. New courses get this automatically; create it here for older courses."}
+                </Typography>
+              </Box>
+              {!calib?.exists && (
+                <Button
+                  variant="contained"
+                  disabled={generating}
+                  onClick={generate}
+                  startIcon={generating ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:auto-fix" width={18} />}
+                  sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+                >
+                  {generating ? "Creating…" : "Generate calibration interview (AI)"}
+                </Button>
+              )}
+            </Stack>
+          </Box>
+        )}
 
         {loading ? (
           <Box sx={{ display: "grid", placeItems: "center", py: 6 }}>

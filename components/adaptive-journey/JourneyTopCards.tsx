@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
+import { Box, ButtonBase, Chip, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useToast } from "@/components/common/Toast";
+import mockInterviewService from "@/lib/services/mock-interview.service";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 
 function Pill({ icon, label, dark }: { icon: string; label: string; dark?: boolean }) {
@@ -110,8 +113,30 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
   );
 }
 
-function InterviewerCard({ courseId }: { courseId: number }) {
+function InterviewerCard({ interview }: { interview: JourneyBoard["interview"] }) {
   const router = useRouter();
+  const { showToast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const card = interview.card;
+  const status = card.status;
+  const configured = card.configured && card.templateId != null;
+
+  const launch = async () => {
+    if (!configured || card.templateId == null || busy) return;
+    setBusy(true);
+    try {
+      const created = await mockInterviewService.startTemplateInterview(card.templateId);
+      router.push(`/mock-interview/${created.id}/device-check`);
+    } catch {
+      showToast("Couldn't start the interview. Please try again.", "error");
+      setBusy(false);
+    }
+  };
+
+  let ctaLabel = "Launch interviewer";
+  if (!configured) ctaLabel = "Interview is being set up";
+  else if (status === "done") ctaLabel = "Take it again";
+
   return (
     <Box sx={{ flex: 1, minWidth: 280, p: 2.5, borderRadius: 4, border: "1px solid #eef2f7", bgcolor: "#fff" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -123,18 +148,19 @@ function InterviewerCard({ courseId }: { courseId: number }) {
             <Stack direction="row" spacing={0.75} alignItems="center">
               <Typography sx={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a" }}>AI Mock Interviewer</Typography>
               <Chip label="LIVE" size="small" sx={{ height: 18, fontSize: "0.58rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe" }} />
+              {status === "done" && <Chip label="DONE" size="small" sx={{ height: 18, fontSize: "0.58rem", fontWeight: 800, color: "#15803d", bgcolor: "#dcfce7" }} />}
             </Stack>
             <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>Practice rounds, on demand</Typography>
           </Box>
         </Stack>
-        <ButtonBase onClick={() => router.push("/mock-interview/courses")} sx={{ p: 0.5, borderRadius: "50%", color: "#94a3b8", "&:hover": { color: "#6366f1" } }}>
+        <ButtonBase disabled={!configured} onClick={launch} sx={{ p: 0.5, borderRadius: "50%", color: "#94a3b8", "&:hover": { color: "#6366f1" } }}>
           <Icon icon="mdi:arrow-top-right" width={20} />
         </ButtonBase>
       </Stack>
 
       <Typography sx={{ fontSize: "0.8rem", color: "#64748b", mt: 1.5, lineHeight: 1.5 }}>
         Rehearse with a voice-and-text AI interviewer that asks domain questions, follows up on your answers, and
-        scores communication, depth, and correctness. <b>Adapts</b> to how you respond — unlike the calibration test.
+        scores communication, depth, and correctness. <b>Adapts</b> to how you respond — and feeds your AI Student Model, just like the calibration test.
       </Typography>
 
       <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1.75 }}>
@@ -145,27 +171,38 @@ function InterviewerCard({ courseId }: { courseId: number }) {
 
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
         <ButtonBase
-          onClick={() => router.push("/mock-interview/courses")}
+          disabled={!configured || busy}
+          onClick={launch}
           sx={{
             flex: 1, py: 1.1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem", color: "white",
-            gap: 0.75, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-            boxShadow: "0 12px 26px -14px rgba(124,58,237,0.7)",
+            gap: 0.75, background: configured ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "#cbd5e1",
+            boxShadow: configured ? "0 12px 26px -14px rgba(124,58,237,0.7)" : "none",
           }}
         >
-          <Icon icon="mdi:plus" width={18} />
-          Launch interviewer
+          {busy ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:plus" width={18} />}
+          {ctaLabel}
         </ButtonBase>
-        <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8", maxWidth: 120 }}>Practice rounds, on demand</Typography>
+        <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8", maxWidth: 120 }}>
+          {`Level gauge · ~${card.durationMinutes ?? 10} min`}
+        </Typography>
       </Stack>
     </Box>
   );
 }
 
-export function JourneyTopCards({ courseId, calibration }: { courseId: number; calibration: JourneyBoard["calibration"] }) {
+export function JourneyTopCards({
+  courseId,
+  calibration,
+  interview,
+}: {
+  courseId: number;
+  calibration: JourneyBoard["calibration"];
+  interview: JourneyBoard["interview"];
+}) {
   return (
     <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2.5 }}>
       {calibration.card && <CalibrationCard calibration={calibration} courseId={courseId} />}
-      <InterviewerCard courseId={courseId} />
+      <InterviewerCard interview={interview} />
     </Stack>
   );
 }

@@ -2,6 +2,7 @@ import apiClient from "./api";
 import type {
   AdminJourneyNode,
   AdminNodeWritePayload,
+  CalibrationInterviewStatus,
   CalibrationResult,
   CalibrationSubmissionsResponse,
   CohortScheduleResponse,
@@ -159,6 +160,20 @@ export const adaptiveJourneyService = {
   /** The course's mock-interview templates + per-student attempts & feedback (admin). */
   async getCourseInterviews(courseId: number): Promise<CourseInterviewsResponse> {
     const { data } = await apiClient.get(`${ADMIN}/courses/${courseId}/interviews/`);
+    return data;
+  },
+
+  /** Status of the course's calibration interview (the level-gauge). */
+  async getCalibrationInterview(courseId: number): Promise<CalibrationInterviewStatus> {
+    const { data } = await apiClient.get(`${ADMIN}/courses/${courseId}/interview/`);
+    return data;
+  },
+
+  /** Create the calibration interview for an older course (idempotent). */
+  async createCalibrationInterview(
+    courseId: number,
+  ): Promise<CalibrationInterviewStatus & { template_id: number; node_id: number }> {
+    const { data } = await apiClient.post(`${ADMIN}/courses/${courseId}/interview/`, {});
     return data;
   },
 };

@@ -91,6 +91,20 @@ export interface JourneyBoard {
       status: "done" | "not_started" | "not_configured";
     } | null;
   };
+  interview: {
+    required: boolean;
+    done: boolean;
+    card: {
+      templateId: number | null;
+      title: string;
+      topic: string | null;
+      difficulty: string | null;
+      durationMinutes: number | null;
+      points: number;
+      configured: boolean;
+      status: "done" | "not_started" | "not_configured";
+    };
+  };
   weeks: JourneyWeekView[];
 }
 
@@ -282,6 +296,19 @@ export interface CourseInterviewsResponse {
   templates: CourseInterviewTemplate[];
   attempt_count: number;
   attempts: CourseInterviewAttempt[];
+}
+
+export interface CalibrationInterviewStatus {
+  exists: boolean;
+  template_id: number | null;
+  node_id: number | null;
+  title: string | null;
+  topic: string | null;
+  difficulty: string | null;
+  duration_minutes: number | null;
+  points: number;
+  configured: boolean;
+  status: "ready" | "not_started";
 }
 
 export interface AdminNodeWritePayload {

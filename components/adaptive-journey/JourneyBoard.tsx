@@ -393,7 +393,7 @@ export function JourneyBoard({ courseId, fallback }: { courseId: number; fallbac
   return (
     <Box>
       <Hero board={board} courseId={courseId} />
-      <JourneyTopCards courseId={courseId} calibration={board.calibration} />
+      <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 330px" }, gap: 2.5 }}>
         <Box>
