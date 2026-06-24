@@ -9,6 +9,9 @@ interface OrbProps {
   rotateOnHover?: boolean;
   forceHoverState?: boolean;
   backgroundColor?: string;
+  /** Live 0..1 audio level (e.g. mic) read every frame to make the orb react while you
+   *  speak — a ref so it updates without re-rendering / recreating the WebGL context. */
+  audioLevelRef?: { current: number };
 }
 
 export default function Orb({
@@ -17,8 +20,13 @@ export default function Orb({
   rotateOnHover = true,
   forceHoverState = false,
   backgroundColor = "#000000",
+  audioLevelRef,
 }: OrbProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
+  // Read fast-changing props live in the render loop so toggling them never recreates
+  // the WebGL context (which would flicker on every question/speaking change).
+  const liveRef = useRef({ hoverIntensity, forceHoverState });
+  liveRef.current = { hoverIntensity, forceHoverState };
 
   const vert = /* glsl */ `
     precision highp float;
@@ -272,10 +280,14 @@ export default function Orb({
       lastTime = t;
       program.uniforms.iTime.value = t * 0.001;
       program.uniforms.hue.value = hue;
-      program.uniforms.hoverIntensity.value = hoverIntensity;
 
-      const effectiveHover = forceHoverState ? 1 : targetHover;
-      program.uniforms.hover.value += (effectiveHover - program.uniforms.hover.value) * 0.1;
+      // Live mic level (0..1) makes the orb wobble + light up while the user speaks.
+      const level = audioLevelRef ? Math.min(1, Math.max(0, audioLevelRef.current)) : 0;
+      const { hoverIntensity: hi, forceHoverState: fhs } = liveRef.current;
+      program.uniforms.hoverIntensity.value = hi + level * 1.1;
+
+      const effectiveHover = Math.max(fhs ? 1 : targetHover, level);
+      program.uniforms.hover.value += (effectiveHover - program.uniforms.hover.value) * 0.12;
 
       if (rotateOnHover && effectiveHover > 0.5) {
         currentRot += dt * rotationSpeed;
@@ -295,7 +307,10 @@ export default function Orb({
       container.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, [hue, hoverIntensity, rotateOnHover, forceHoverState, backgroundColor]);
+    // hoverIntensity + forceHoverState are read live via liveRef, so they're intentionally
+    // not deps — the orb mounts once and never recreates the WebGL context.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hue, rotateOnHover, backgroundColor, audioLevelRef]);
 
   return <div ref={ctnDom} className="w-full h-full" />;
 }

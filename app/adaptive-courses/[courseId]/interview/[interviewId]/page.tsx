@@ -60,6 +60,9 @@ function CourseInterviewInner() {
   const respRef = useRef<InterviewResponse[]>([]);
   const startedAtRef = useRef<number>(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const micLevelRef = useRef(0);
+  const sttListeningRef = useRef(false);
+  const micCleanupRef = useRef<(() => void) | null>(null);
 
   // ---- voice: AI speaks the question ----
   const { audioActive } = useInterviewerVoice({
@@ -75,6 +78,46 @@ function CourseInterviewInner() {
     lang: "en-US",
     preferWhisper: true,
   });
+
+  // keep a ref of the listening flag for the mic-analyser loop + clean up on unmount
+  useEffect(() => {
+    sttListeningRef.current = stt.isListening;
+  }, [stt.isListening]);
+  useEffect(() => () => micCleanupRef.current?.(), []);
+
+  // Mic level meter → feeds the orb so it wobbles/lights up while the user speaks.
+  const startMicAnalyser = useCallback(async () => {
+    if (micCleanupRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ctx = new AudioContext();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      let raf = 0;
+      const loop = () => {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        micLevelRef.current = sttListeningRef.current ? Math.min(1, rms * 3.5) : 0;
+        raf = requestAnimationFrame(loop);
+      };
+      loop();
+      micCleanupRef.current = () => {
+        cancelAnimationFrame(raf);
+        stream.getTracks().forEach((t) => t.stop());
+        ctx.close().catch(() => {});
+      };
+    } catch {
+      /* mic denied — the orb just won't react to voice */
+    }
+  }, []);
 
   // timer (elapsed)
   useEffect(() => {
@@ -104,6 +147,7 @@ function CourseInterviewInner() {
       } catch {
         /* optional */
       }
+      void startMicAnalyser();
       const d = await mockInterviewService.startInterview(interviewId);
       if (d.resume_window_expired || ["completed", "finalized"].includes(String(d.status))) {
         setSubmitted(true);
@@ -296,7 +340,7 @@ function CourseInterviewInner() {
         {/* Left — Orb + controls */}
         <Stack alignItems="center" sx={{ p: 3, borderRight: { md: "1px solid rgba(255,255,255,0.08)" } }}>
           <Box sx={{ position: "relative", width: 240, height: 240, mt: 2 }}>
-            <Orb hue={265} hoverIntensity={aiSpeaking ? 0.85 : 0.35} forceHoverState={aiSpeaking || stt.isListening} rotateOnHover backgroundColor="#0b1220" />
+            <Orb hue={265} hoverIntensity={aiSpeaking ? 0.8 : 0.3} forceHoverState={aiSpeaking} rotateOnHover backgroundColor="#0b1220" audioLevelRef={micLevelRef} />
             {stt.isListening && (
               <Box sx={{ position: "absolute", inset: -6, borderRadius: "50%", border: "2px solid #22c55e", animation: "pulse 1.2s ease-in-out infinite", "@keyframes pulse": { "0%,100%": { opacity: 0.3 }, "50%": { opacity: 0.9 } } }} />
             )}
