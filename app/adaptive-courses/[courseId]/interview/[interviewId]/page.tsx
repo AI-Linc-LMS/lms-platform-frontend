@@ -291,10 +291,17 @@ function CourseInterviewInner() {
             {topic ? `${topic} · ` : ""}{difficulty} · a short spoken conversation. The interviewer speaks each question
             out loud; just <b>hold to answer</b> and talk. It adapts to you and gauges your level.
           </Typography>
-          <Stack direction="row" spacing={1.25} sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.8rem" }}>
-            <span><Icon icon="mdi:microphone" width={15} style={{ verticalAlign: "-2px" }} /> Voice</span>
-            <span><Icon icon="mdi:closed-caption-outline" width={15} style={{ verticalAlign: "-2px" }} /> Live transcript</span>
-            <span><Icon icon="mdi:robot-happy-outline" width={15} style={{ verticalAlign: "-2px" }} /> Adaptive</span>
+          <Stack direction="row" spacing={3.5} justifyContent="center" sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.78rem" }}>
+            {[
+              { icon: "mdi:microphone", label: "Voice" },
+              { icon: "mdi:closed-caption-outline", label: "Live transcript" },
+              { icon: "mdi:robot-happy-outline", label: "Adaptive" },
+            ].map((x) => (
+              <Stack key={x.label} alignItems="center" spacing={0.6}>
+                <Icon icon={x.icon} width={20} />
+                <span>{x.label}</span>
+              </Stack>
+            ))}
           </Stack>
           <Button variant="contained" disabled={busy} onClick={begin}
             startIcon={busy ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:microphone" width={20} />}
