@@ -124,7 +124,7 @@ const INTERVIEW_CHIPS: { t: string; hot?: boolean }[] = [
   { t: "Case study" },
 ];
 
-function InterviewerCard({ interview }: { interview: JourneyBoard["interview"] }) {
+function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["interview"]; courseId: number }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -137,7 +137,7 @@ function InterviewerCard({ interview }: { interview: JourneyBoard["interview"] }
     setBusy(true);
     try {
       const created = await mockInterviewService.startTemplateInterview(card.templateId);
-      router.push(`/mock-interview/${created.id}/device-check`);
+      router.push(`/adaptive-courses/${courseId}/interview/${created.id}`);
     } catch {
       showToast("Couldn't start the interview. Please try again.", "error");
       setBusy(false);
@@ -236,7 +236,7 @@ export function JourneyTopCards({
   return (
     <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2.5 }}>
       {calibration.card && <CalibrationCard calibration={calibration} courseId={courseId} />}
-      <InterviewerCard interview={interview} />
+      <InterviewerCard interview={interview} courseId={courseId} />
     </Stack>
   );
 }
