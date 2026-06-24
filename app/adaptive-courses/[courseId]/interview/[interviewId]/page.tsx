@@ -256,11 +256,19 @@ function CourseInterviewInner() {
           <Typography sx={{ fontWeight: 800, fontSize: "1.3rem" }}>Interview submitted</Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>
             We&apos;re evaluating your responses — your AI Student Model updates with what we learned, and the course
-            tunes itself to you. You&apos;ll get a full report with a per-answer rubric + a 3-item practice plan.
+            tunes itself to you. Your full report has a per-answer rubric, model answers, and a 3-item practice plan.
           </Typography>
-          <Button variant="contained" onClick={() => router.push(`/adaptive-courses/${courseId}`)} sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
-            Back to course
-          </Button>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 1 }}>
+            <Button variant="contained" onClick={() => router.push(`/mock-interview/${interviewId}/result`)}
+              startIcon={<Icon icon="mdi:file-chart-outline" width={18} />}
+              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
+              View my report
+            </Button>
+            <Button variant="outlined" onClick={() => router.push(`/adaptive-courses/${courseId}`)}
+              sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, color: "white", borderColor: "rgba(255,255,255,0.3)" }}>
+              Back to course
+            </Button>
+          </Stack>
         </Stack>
       </Box>
     );
