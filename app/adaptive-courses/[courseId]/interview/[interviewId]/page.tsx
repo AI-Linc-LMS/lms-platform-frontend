@@ -398,9 +398,10 @@ function CourseInterviewInner() {
           ) : (
             <Box sx={{ width: "100%" }}>
               <TextField fullWidth multiline minRows={2} placeholder="Type your answer…" value={answer} onChange={(e) => setAnswer(e.target.value)}
+                inputProps={{ style: { color: "#ffffff" } }}
                 sx={{
                   "& .MuiOutlinedInput-root": { bgcolor: "rgba(255,255,255,0.06)", borderRadius: 2, "& fieldset": { borderColor: "rgba(255,255,255,0.18)" }, "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" } },
-                  "& .MuiOutlinedInput-input, & textarea": { color: "#fff" },
+                  "& .MuiInputBase-input, & .MuiOutlinedInput-input, & textarea": { color: "#fff !important" },
                   "& textarea::placeholder": { color: "rgba(255,255,255,0.45)", opacity: 1 },
                 }} />
               <Button onClick={() => setTyping(false)} sx={{ mt: 0.5, textTransform: "none", color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>Use voice</Button>
@@ -410,7 +411,11 @@ function CourseInterviewInner() {
           {(answer.trim() || typing) && (
             <Button fullWidth variant="contained" disabled={busy || !answer.trim()} onClick={sendAnswer}
               endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
-              sx={{ mt: 1, py: 1.1, borderRadius: 2.5, textTransform: "none", fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #a855f7)" }}>
+              sx={{
+                mt: 1, py: 1.1, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff",
+                background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" },
+              }}>
               {busy ? "Sending…" : currentIsFinal ? "Send & finish" : "Send answer"}
             </Button>
           )}
